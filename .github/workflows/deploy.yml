@@ -75,12 +75,7 @@ jobs:
             cd '${{ secrets.DEPLOY_PATH }}'
 
             if [ ! -f .env ]; then
-              echo '❌ ERROR: .env file is missing. Create it on the server manually via SSH or hPanel.'
-              exit 1
-            fi
-
-            if grep -q 'DB_CONNECTION=sqlite' .env; then
-              echo '❌ ERROR: DB_CONNECTION is set to sqlite. Change it to mysql in your .env on the server.'
+              echo '❌ ERROR: .env file is missing.'
               exit 1
             fi
 
@@ -88,7 +83,14 @@ jobs:
             chmod -R 775 bootstrap/cache storage || true
             rm -rf public/storage
             ln -snf ../storage/app/public public/storage
+
+            php artisan config:clear
+            php artisan cache:clear
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
+
+            echo '--- Verifying DB config ---'
+            php artisan tinker --execute=\"echo config('database.default').': '.config('database.connections.mysql.username').'@'.config('database.connections.mysql.host');\"
+
             php artisan migrate --force"
