@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('price', 10, 2);
             $table->integer('quantity');
             $table->decimal('subtotal', 10, 2);
-            $table->jsonb('product_snapshot'); // PostgreSQL specific JSONB type
+            $table->json('product_snapshot');
             $table->timestamps();
 
             $table->index('order_id');

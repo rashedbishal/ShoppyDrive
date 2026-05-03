@@ -25,8 +25,8 @@ return new class extends Migration
             $table->decimal('total', 10, 2);
             $table->foreignId('coupon_id')->nullable()->constrained('coupons')->cascadeOnDelete();
             $table->string('coupon_code')->nullable();
-            $table->jsonb('shipping_address'); // PostgreSQL specific JSONB type
-            $table->jsonb('billing_address'); // PostgreSQL specific JSONB type
+            $table->json('shipping_address');
+            $table->json('billing_address');
             $table->text('notes')->nullable();
             $table->string('tracking_number')->nullable();
             $table->text('cancellation_reason')->nullable();
@@ -34,10 +34,6 @@ return new class extends Migration
             $table->timestamp('delivered_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
-
-            // GIN indexes for JSONB columns
-            $table->index('shipping_address', null, 'gin');
-            $table->index('billing_address', null, 'gin');
 
             $table->index('order_number');
             $table->index('user_id');

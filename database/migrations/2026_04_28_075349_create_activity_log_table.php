@@ -17,12 +17,9 @@ return new class extends Migration
             $table->text('description');
             $table->nullableMorphs('subject', 'subject');
             $table->nullableMorphs('causer', 'causer');
-            $table->jsonb('properties')->nullable();
+            $table->json('properties')->nullable();
             $table->uuid('batch_uuid')->nullable();
             $table->timestamps();
-
-            // GIN index for JSONB column
-            $table->index('properties', null, 'gin');
             $table->index('log_name');
         });
     }

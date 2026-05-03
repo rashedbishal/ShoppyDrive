@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->text('reason');
             $table->enum('status', ['pending', 'approved', 'rejected', 'refunded'])->default('pending');
-            $table->jsonb('items'); // PostgreSQL specific JSONB type
+            $table->json('items');
             $table->text('admin_note')->nullable();
             $table->decimal('refund_amount', 10, 2)->nullable();
             $table->string('refund_method')->nullable();

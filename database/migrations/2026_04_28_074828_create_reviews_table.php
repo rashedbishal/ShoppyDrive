@@ -19,13 +19,10 @@ return new class extends Migration
             $table->smallInteger('rating'); // 1-5
             $table->string('title')->nullable();
             $table->text('body');
-            $table->jsonb('images')->nullable(); // PostgreSQL specific JSONB type
+            $table->json('images')->nullable();
             $table->boolean('is_approved')->default(false);
             $table->timestamps();
             $table->softDeletes();
-
-            // GIN index for JSONB column
-            $table->index('images', null, 'gin');
 
             $table->index('product_id');
             $table->index('user_id');

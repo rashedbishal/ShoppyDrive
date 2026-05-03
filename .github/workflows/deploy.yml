@@ -1,0 +1,82 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. PHP setup ─────────────────────────────────────────────────────────
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, gd, zip, bcmath, opcache
+          coverage: none
+
+      # ── 3. Node.js setup ─────────────────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # ── 4. PHP dependencies ──────────────────────────────────────────────────
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-dev --optimize-autoloader
+
+      # ── 5. JS dependencies & build ───────────────────────────────────────────
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
+      # ── 6. Deploy via SSH / rsync to Hostinger ───────────────────────────────
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add Hostinger host to known_hosts
+        run: ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Sync files to server
+        run: |
+          rsync -azP \
+            --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            --exclude='storage/app' \
+            --exclude='storage/logs' \
+            --exclude='bootstrap/cache' \
+            ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/
+
+      # ── 7. Post-deploy artisan commands ──────────────────────────────────────
+      - name: Run post-deploy tasks on server
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            php artisan storage:link --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan migrate --force
+
+            if command -v supervisorctl &> /dev/null; then
+              supervisorctl restart all
+            fi
+          ENDSSH

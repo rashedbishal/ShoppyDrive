@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('notifiable_type');
             $table->unsignedBigInteger('notifiable_id');
             $table->index(['notifiable_type', 'notifiable_id']);
-            $table->jsonb('data'); // PostgreSQL specific JSONB type
+            $table->json('data');
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
         });

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('settings', function (Blueprint $table) {
             $table->string('key')->primary();
-            $table->jsonb('value')->nullable(); // PostgreSQL specific JSONB type
+            $table->json('value')->nullable();
             $table->string('group');
             $table->timestamps();
         });

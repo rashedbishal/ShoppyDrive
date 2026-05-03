@@ -5,47 +5,29 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: ShoppyDrive
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+
+    # Lint, Pint, and Prettier checks are disabled — enable later as needed.
+    # - lint: run `npm run lint:check`
+    # - pint: run `vendor/bin/pint --test`
+    # - prettier: run `npm run format:check`
 
     steps:
       - uses: actions/checkout@v4
-      - name: Setup PHP
+
+      - name: Setup PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_pgsql, gd
-      - name: Install Dependencies
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, gd, zip, bcmath
+
+      - name: Install Composer dependencies
         run: composer install --prefer-dist --no-progress
+
       - name: Prepare Environment
         run: cp .env.example .env && php artisan key:generate
-      - name: Run Migrations
-        run: php artisan migrate --force
+
+      - name: Run Tests (SQLite in-memory)
+        run: vendor/bin/pest
         env:
-          DB_CONNECTION: pgsql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 5432
-          DB_DATABASE: ShoppyDrive
-          DB_USERNAME: postgres
-          DB_PASSWORD: password
-      - name: Run Tests
-        run: php artisan test
-        env:
-          DB_CONNECTION: pgsql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 5432
-          DB_DATABASE: ShoppyDrive
-          DB_USERNAME: postgres
-          DB_PASSWORD: password
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"

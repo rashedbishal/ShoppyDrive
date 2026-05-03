@@ -17,12 +17,10 @@ return new class extends Migration
             $table->string('sku')->nullable();
             $table->decimal('price', 10, 2)->nullable();
             $table->integer('stock_quantity')->default(0);
-            $table->jsonb('attributes'); // PostgreSQL specific JSONB type
+            $table->json('attributes');
             $table->timestamps();
 
             $table->index('product_id');
-            // GIN index for JSONB column
-            $table->index('attributes', null, 'gin');
         });
     }
 

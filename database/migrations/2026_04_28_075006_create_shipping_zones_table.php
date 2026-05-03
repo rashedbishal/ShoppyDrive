@@ -14,12 +14,9 @@ return new class extends Migration
         Schema::create('shipping_zones', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name');
-            $table->jsonb('countries'); // PostgreSQL specific JSONB type
+            $table->json('countries');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-
-            // GIN index for JSONB column
-            $table->index('countries', null, 'gin');
         });
     }
 
