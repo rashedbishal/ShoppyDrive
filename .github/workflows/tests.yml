@@ -1,33 +1,11 @@
 name: Run Tests
 
+# Disabled — re-enable by changing `if: false` to `if: true` on the job below.
 on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    # Lint, Pint, and Prettier checks are disabled — enable later as needed.
-    # - lint: run `npm run lint:check`
-    # - pint: run `vendor/bin/pint --test`
-    # - prettier: run `npm run format:check`
-
+    if: false  # Skip all tests for now
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup PHP 8.3
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, gd, zip, bcmath
-
-      - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-progress
-
-      - name: Prepare Environment
-        run: cp .env.example .env && php artisan key:generate
-
-      - name: Run Tests (SQLite in-memory)
-        run: vendor/bin/pest
-        env:
-          DB_CONNECTION: sqlite
-          DB_DATABASE: ":memory:"

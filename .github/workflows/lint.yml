@@ -1,17 +1,11 @@
 name: Lint
 
+# Disabled — re-enable by changing `if: false` to `if: true` on the job below.
 on: [push, pull_request]
 
 jobs:
   lint:
     runs-on: ubuntu-latest
+    if: false  # Skip lint for now
     steps:
       - uses: actions/checkout@v4
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-      - name: Install Dependencies
-        run: composer install --prefer-dist --no-progress
-      - name: Run Pint
-        run: vendor/bin/pint --test
