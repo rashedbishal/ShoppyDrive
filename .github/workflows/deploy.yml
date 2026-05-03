@@ -48,9 +48,10 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Sync files to server
+        env:
+          RSYNC_RSH: ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }}
         run: |
           rsync -azP \
-            -e "ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }}" \
             --delete \
             --exclude='.git' \
             --exclude='.github' \
@@ -63,19 +64,16 @@ jobs:
 
       # ── 7. Post-deploy artisan commands ──────────────────────────────────────
       - name: Run post-deploy tasks on server
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
-          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
-            set -e
-            cd ${{ secrets.DEPLOY_PATH }}
-
+          ssh -o StrictHostKeyChecking=no \
+            -p ${{ secrets.SSH_PORT }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "set -e
+            cd '${{ secrets.DEPLOY_PATH }}'
             php artisan storage:link --force
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
-            php artisan migrate --force
-
-            if command -v supervisorctl &> /dev/null; then
-              supervisorctl restart all
-            fi
-          ENDSSH
+            php artisan migrate --force"
