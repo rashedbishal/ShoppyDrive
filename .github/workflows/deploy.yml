@@ -67,14 +67,23 @@ jobs:
 
       # ── 7. Post-deploy artisan commands ──────────────────────────────────────
       - name: Run post-deploy tasks on server
-        env:
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
           ssh -o StrictHostKeyChecking=no \
             -p ${{ secrets.SSH_PORT }} \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "set -e
             cd '${{ secrets.DEPLOY_PATH }}'
+
+            if [ ! -f .env ]; then
+              echo '❌ ERROR: .env file is missing. Create it on the server manually via SSH or hPanel.'
+              exit 1
+            fi
+
+            if grep -q 'DB_CONNECTION=sqlite' .env; then
+              echo '❌ ERROR: DB_CONNECTION is set to sqlite. Change it to mysql in your .env on the server.'
+              exit 1
+            fi
+
             mkdir -p bootstrap/cache storage/framework/{sessions,views,cache/data} storage/logs
             chmod -R 775 bootstrap/cache storage || true
             rm -rf public/storage
