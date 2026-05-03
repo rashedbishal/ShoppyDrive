@@ -47,12 +47,10 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Add Hostinger host to known_hosts
-        run: ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-
       - name: Sync files to server
         run: |
           rsync -azP \
+            -e "ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }}" \
             --delete \
             --exclude='.git' \
             --exclude='.github' \
@@ -66,7 +64,8 @@ jobs:
       # ── 7. Post-deploy artisan commands ──────────────────────────────────────
       - name: Run post-deploy tasks on server
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
 
