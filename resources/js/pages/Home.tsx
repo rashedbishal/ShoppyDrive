@@ -1240,14 +1240,14 @@ function FlashSaleCard({
 
     return (
         <motion.article
-            className="group flex overflow-hidden rounded-xl bg-white shadow-md transition-shadow hover:shadow-lg"
+            className="group flex h-full flex-col sm:flex-row overflow-hidden rounded-xl bg-white shadow-md transition-shadow hover:shadow-lg"
             whileHover={{ y: -2 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
             onHoverStart={() => setIsHovered(true)}
             onHoverEnd={() => setIsHovered(false)}
         >
             {/* Image */}
-            <Link href={productRoutes.show.url(product.slug)} className="relative w-32 shrink-0 overflow-hidden bg-gray-100 sm:w-36">
+            <Link href={productRoutes.show.url(product.slug)} className="relative aspect-square sm:aspect-auto sm:w-36 shrink-0 overflow-hidden bg-gray-100">
                 {primaryUrl ? (
                     <img
                         src={primaryUrl}
@@ -1397,7 +1397,7 @@ function ProductGrid({
 }: ProductGridProps): React.JSX.Element {
     if (loading) {
         return (
-            <div className={cn('grid gap-4 sm:grid-cols-2 xl:grid-cols-4', className)}>
+            <div className={cn('grid grid-cols-2 gap-3 md:gap-4 sm:grid-cols-3 xl:grid-cols-4', className)}>
                 {Array.from({ length: 4 }, (_, index) => (
                     <ProductCardSkeleton key={index} />
                 ))}
@@ -1424,7 +1424,7 @@ function ProductGrid({
     }
 
     return (
-        <div className={cn('grid gap-4 sm:grid-cols-2 xl:grid-cols-4', className)}>
+        <div className={cn('grid grid-cols-2 gap-3 md:gap-4 sm:grid-cols-3 xl:grid-cols-4', className)}>
             {products.map((product) => {
                 const saleProgress = saleProgressMap?.get(product.id);
 
@@ -1464,9 +1464,9 @@ function ProductRail({
 }: ProductRailProps): React.JSX.Element {
     if (loading) {
         return (
-            <div className="grid grid-flow-col auto-cols-[minmax(18rem,1fr)] gap-4 overflow-x-auto pb-2 lg:grid-flow-row lg:grid-cols-4 lg:overflow-visible">
+            <div className="grid grid-flow-col auto-cols-[minmax(11rem,1fr)] gap-3 md:gap-4 overflow-x-auto pb-2 lg:grid-flow-row lg:grid-cols-4 lg:overflow-visible">
                 {Array.from({ length: 4 }, (_, index) => (
-                    <div key={index} className="min-w-[18rem]">
+                    <div key={index} className="min-w-[11rem] lg:min-w-0">
                         <ProductCardSkeleton />
                     </div>
                 ))}
@@ -1499,12 +1499,12 @@ function ProductRail({
                     {title}
                 </h3>
             ) : null}
-            <div className="grid grid-flow-col auto-cols-[minmax(18rem,1fr)] gap-4 overflow-x-auto pb-2 lg:grid-flow-row lg:grid-cols-4 lg:overflow-visible">
+            <div className="grid grid-flow-col auto-cols-[minmax(11rem,1fr)] gap-3 md:gap-4 overflow-x-auto pb-2 lg:grid-flow-row lg:grid-cols-4 lg:overflow-visible">
                 {products.map((product) => {
                     const saleProgress = saleProgressMap?.get(product.id);
 
                     return (
-                        <div key={product.id} className="min-w-[18rem] lg:min-w-0">
+                        <div key={product.id} className="min-w-[11rem] lg:min-w-0">
                             <ProductCard
                                 product={product}
                                 saleProgress={saleProgress?.value}
@@ -1785,7 +1785,7 @@ function Home(): React.JSX.Element {
                             </div>
 
                             {/* Cards grid */}
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                            <div className="grid grid-cols-2 gap-3 md:gap-4 sm:grid-cols-3 xl:grid-cols-4">
                                 {flashSale.items.map((item) => {
                                     const progress = flashSaleProgressMap.get(item.product.id);
                                     return (
