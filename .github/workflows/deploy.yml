@@ -57,9 +57,12 @@ jobs:
             --exclude='.github' \
             --exclude='node_modules' \
             --exclude='.env' \
-            --exclude='storage/app' \
-            --exclude='storage/logs' \
-            --exclude='bootstrap/cache' \
+            --exclude='storage/app/public/*' \
+            --exclude='storage/framework/cache/data/*' \
+            --exclude='storage/framework/sessions/*' \
+            --exclude='storage/framework/views/*' \
+            --exclude='storage/logs/*' \
+            --exclude='bootstrap/cache/*.php' \
             ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/
 
       # ── 7. Post-deploy artisan commands ──────────────────────────────────────
@@ -72,6 +75,8 @@ jobs:
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "set -e
             cd '${{ secrets.DEPLOY_PATH }}'
+            mkdir -p bootstrap/cache storage/framework/{sessions,views,cache/data} storage/logs
+            chmod -R 775 bootstrap/cache storage || true
             php artisan storage:link --force
             php artisan config:cache
             php artisan route:cache
