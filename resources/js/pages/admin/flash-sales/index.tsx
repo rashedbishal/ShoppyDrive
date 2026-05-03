@@ -1,0 +1,123 @@
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Edit, Plus, Search, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+
+type FlashSale = {
+    id: number;
+    name: string;
+    starts_at: string;
+    ends_at: string;
+    is_active: boolean;
+    items_count: number;
+};
+
+type Paginated<T> = {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    total: number;
+    links: { url: string | null; label: string; active: boolean }[];
+};
+
+type Props = {
+    flashSales: Paginated<FlashSale>;
+    filters: { search?: string };
+};
+
+export default function FlashSalesIndex({ flashSales, filters }: Props) {
+    const [search, setSearch] = useState(filters.search ?? '');
+    const { props } = usePage<any>();
+    const flash = props.flash as { success?: string } | undefined;
+
+    const applySearch = () => {
+        router.get(route('admin.flash-sales.index'), { search }, { preserveState: true, replace: true });
+    };
+
+    const handleDelete = (id: number, name: string) => {
+        if (!confirm(`Delete flash sale "${name}"?`)) return;
+        router.delete(route('admin.flash-sales.destroy', id));
+    };
+
+    const isLive = (sale: FlashSale) => {
+        const now = Date.now();
+        return sale.is_active && new Date(sale.starts_at).getTime() <= now && new Date(sale.ends_at).getTime() >= now;
+    };
+
+    return (
+        <>
+            <Head title="Flash Sales — Admin" />
+            <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-900">Flash Sales</h1>
+                        <p className="text-sm text-slate-500">{flashSales.total} total</p>
+                    </div>
+                    <Button asChild size="sm" className="bg-[#c8102e] text-white hover:bg-[#a50d25]">
+                        <Link href={route('admin.flash-sales.create')}><Plus className="mr-1.5 size-4" /> Add Flash Sale</Link>
+                    </Button>
+                </div>
+
+                {flash?.success && (
+                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">{flash.success}</div>
+                )}
+
+                <Card className="overflow-hidden p-0 shadow-sm">
+                    <div className="flex gap-2 border-b border-slate-100 p-4">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search flash sales…"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && applySearch()}
+                                className="h-9 w-full rounded-lg border border-slate-200 pl-9 pr-3 text-sm focus:border-[#c8102e] focus:outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="divide-y divide-slate-50">
+                        {flashSales.data.length === 0 ? (
+                            <p className="py-12 text-center text-sm text-slate-400">No flash sales found.</p>
+                        ) : flashSales.data.map((sale) => (
+                            <div key={sale.id} className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60">
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-semibold text-slate-800">{sale.name}</p>
+                                    <p className="text-xs text-slate-400">
+                                        {new Date(sale.starts_at).toLocaleString()} → {new Date(sale.ends_at).toLocaleString()}
+                                    </p>
+                                </div>
+                                <p className="hidden text-xs text-slate-500 sm:block">{sale.items_count} products</p>
+                                {isLive(sale) && <Badge variant="success" size="sm">Live</Badge>}
+                                <Badge variant={sale.is_active ? 'success' : 'error'} size="sm">
+                                    {sale.is_active ? 'Active' : 'Inactive'}
+                                </Badge>
+                                <div className="flex items-center gap-1.5">
+                                    <Link href={route('admin.flash-sales.edit', sale.id)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                                        <Edit className="size-4" />
+                                    </Link>
+                                    <button type="button" onClick={() => handleDelete(sale.id, sale.name)} className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600">
+                                        <Trash2 className="size-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {flashSales.last_page > 1 && (
+                        <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
+                            <p className="text-xs text-slate-500">Page {flashSales.current_page} of {flashSales.last_page}</p>
+                            <div className="flex gap-1">
+                                {flashSales.links[0]?.url && <Link href={flashSales.links[0].url} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50">Prev</Link>}
+                                {flashSales.links[flashSales.links.length - 1]?.url && <Link href={flashSales.links[flashSales.links.length - 1].url!} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50">Next</Link>}
+                            </div>
+                        </div>
+                    )}
+                </Card>
+            </div>
+        </>
+    );
+}

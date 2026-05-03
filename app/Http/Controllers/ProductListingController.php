@@ -1,0 +1,192 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers;
+
+use App\Models\Attribute;
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\Review;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ProductListingController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        return $this->catalogResponse($request, null, '/products');
+    }
+
+    public function category(Category $category, Request $request): Response
+    {
+        return $this->catalogResponse($request, $category, route('category.show', $category->slug));
+    }
+
+    private function catalogResponse(Request $request, ?Category $category, string $listingUrl): Response
+    {
+        $query = Product::query()
+            ->active()
+            ->published()
+            ->with([
+                'category.parent',
+                'brand',
+                'images',
+            ])
+            ->withCount([
+                'reviews as reviews_count' => static fn ($reviewQuery) => $reviewQuery->where('is_approved', true),
+            ])
+            ->withAvg([
+                'reviews as average_rating' => static fn ($reviewQuery) => $reviewQuery->where('is_approved', true),
+            ], 'rating');
+
+        if ($category !== null) {
+            $query->where('category_id', $category->id);
+        }
+
+        $search = trim((string) $request->string('q'));
+        if ($search !== '') {
+            $query->where(static function ($productQuery) use ($search): void {
+                $productQuery
+                    ->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('sku', 'ilike', "%{$search}%")
+                    ->orWhere('short_description', 'ilike', "%{$search}%");
+            });
+        }
+
+        $brandSlugs = collect($request->input('brand', []))
+            ->flatten()
+            ->map(static fn ($brandSlug) => (string) $brandSlug)
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($brandSlugs !== []) {
+            $query->whereHas('brand', static function ($brandQuery) use ($brandSlugs): void {
+                $brandQuery->whereIn('slug', $brandSlugs);
+            });
+        }
+
+        $minPrice = $request->integer('min_price');
+        if ($minPrice !== null) {
+            $query->where('price', '>=', $minPrice);
+        }
+
+        $maxPrice = $request->filled('max_price') ? $request->integer('max_price') : null;
+        if ($maxPrice !== null) {
+            $query->where('price', '<=', $maxPrice);
+        }
+
+        if ($request->boolean('in_stock')) {
+            $query->where('stock_quantity', '>', 0);
+        }
+
+        $minimumRating = $request->integer('rating');
+        if ($minimumRating !== null && $minimumRating > 0) {
+            $query->whereIn(
+                'products.id',
+                Review::query()
+                    ->select('product_id')
+                    ->where('is_approved', true)
+                    ->groupBy('product_id')
+                    ->havingRaw('AVG(rating) >= ?', [$minimumRating]),
+            );
+        }
+
+        $attributes = collect($request->input('attributes', []))
+            ->map(static fn ($values) => collect($values)
+                ->flatten()
+                ->map(static fn ($value) => (int) $value)
+                ->filter(static fn (int $value) => $value > 0)
+                ->values()
+                ->all())
+            ->filter(static fn (array $values) => $values !== [])
+            ->all();
+
+        foreach ($attributes as $attributeId => $attributeValueIds) {
+            $query->whereHas('attributeValues', static function ($attributeQuery) use ($attributeId, $attributeValueIds): void {
+                $attributeQuery
+                    ->where('attribute_values.attribute_id', (int) $attributeId)
+                    ->whereIn('attribute_values.id', $attributeValueIds);
+            });
+        }
+
+        match ($request->string('sort', 'relevance')->toString()) {
+            'price_asc' => $query->orderBy('price'),
+            'price_desc' => $query->orderByDesc('price'),
+            'newest' => $query->orderByDesc('published_at')->orderByDesc('created_at'),
+            'top_rated' => $query->orderByRaw('COALESCE(average_rating, 0) DESC')->orderByDesc('reviews_count'),
+            'most_reviewed' => $query->orderByDesc('reviews_count')->orderByRaw('COALESCE(average_rating, 0) DESC'),
+            default => $query->orderByDesc('is_featured')->orderByDesc('published_at')->orderByDesc('created_at'),
+        };
+
+        $products = $query
+            ->paginate(12)
+            ->withQueryString();
+
+        $categories = Category::query()
+            ->active()
+            ->whereNull('parent_id')
+            ->withCount([
+                'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
+            ])
+            ->with([
+                'children' => static function ($childQuery): void {
+                    $childQuery
+                        ->active()
+                        ->orderBy('sort_order')
+                        ->withCount([
+                            'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
+                        ]);
+                },
+            ])
+            ->orderBy('sort_order')
+            ->get();
+
+        $brands = Brand::query()
+            ->active()
+            ->withCount([
+                'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
+            ])
+            ->orderBy('name')
+            ->get();
+
+        $attributesFilter = Attribute::query()
+            ->with([
+                'values' => static fn ($valueQuery) => $valueQuery->orderBy('sort_order'),
+            ])
+            ->orderBy('name')
+            ->get();
+
+        $catalogMaxPrice = (int) (Product::query()
+            ->active()
+            ->published()
+            ->max('price') ?? 0);
+
+        return Inertia::render('catalog/ProductListing', [
+            'category' => $category,
+            'categories' => $categories,
+            'brands' => $brands,
+            'attributes' => $attributesFilter,
+            'products' => $products,
+            'listingUrl' => $listingUrl,
+            'maxPrice' => $catalogMaxPrice,
+            'filters' => [
+                'q' => $search,
+                'brand' => $brandSlugs,
+                'min_price' => $minPrice,
+                'max_price' => $maxPrice,
+                'rating' => $minimumRating,
+                'in_stock' => $request->boolean('in_stock'),
+                'attributes' => $attributes,
+                'sort' => $request->string('sort', 'relevance')->toString(),
+                'view' => $request->string('view', 'grid')->toString(),
+                'page' => $products->currentPage(),
+            ],
+            'title' => $category?->name ?? 'All Products',
+            'description' => $category?->description ?? 'Explore a premium BDT catalog with filters, sorting, and mobile-friendly browsing.',
+        ]);
+    }
+}

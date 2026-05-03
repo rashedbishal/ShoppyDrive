@@ -1,0 +1,256 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@source '../js';
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─── Light theme is the default ──────────────────────────────── */
+:root {
+    /* Brand */
+    --color-primary:        #c8102e;
+    --color-primary-hover:  #a50d25;
+    --color-primary-light:  #fff0f2;
+    --color-accent:         #f5a623;
+    --color-accent-light:   rgba(245, 166, 35, 0.15);
+
+    /* Surfaces */
+    --color-surface:        #ffffff;
+    --color-surface-alt:    #f8f8fb;
+    --color-surface-elevated: #ffffff;
+
+    /* Text */
+    --color-text-primary:   #1a1a2e;
+    --color-text-secondary: #6b7280;
+    --color-text-muted:     #9ca3af;
+
+    /* Borders */
+    --color-border:         #e8e8f0;
+    --color-border-strong:  #d1d5db;
+
+    /* Semantic */
+    --color-secondary:      #1a1a2e;
+    --color-success:        #16a34a;
+    --color-warning:        #d97706;
+    --color-error:          #dc2626;
+    --color-overlay:        rgba(0, 0, 0, 0.5);
+
+    /* Shadows */
+    --shadow-card:          0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+    --shadow-card-hover:    0 8px 32px rgba(0,0,0,0.12);
+    --shadow-dropdown:      0 4px 24px rgba(0,0,0,0.12);
+    --shadow-modal:         0 20px 60px rgba(0,0,0,0.18);
+    --shadow-glow-red:      0 0 32px rgba(200,16,46,0.15);
+
+    /* UI tokens (used by Radix / shadcn components) */
+    --ui-background:             #ffffff;
+    --ui-foreground:             #1a1a2e;
+    --ui-surface:                #ffffff;
+    --ui-surface-alt:            #f8f8fb;
+    --ui-text-primary:           #1a1a2e;
+    --ui-text-secondary:         #6b7280;
+    --ui-text-muted:             #9ca3af;
+    --ui-primary:                #c8102e;
+    --ui-primary-hover:          #a50d25;
+    --ui-primary-light:          #fff0f2;
+    --ui-primary-foreground:     #ffffff;
+    --ui-accent:                 #f5a623;
+    --ui-accent-light:           rgba(245,166,35,0.15);
+    --ui-accent-foreground:      #1a1a2e;
+    --ui-secondary:              #f3f4f6;
+    --ui-secondary-foreground:   #1a1a2e;
+    --ui-muted:                  #f3f4f6;
+    --ui-muted-foreground:       #6b7280;
+    --ui-card:                   #ffffff;
+    --ui-card-foreground:        #1a1a2e;
+    --ui-popover:                #ffffff;
+    --ui-popover-foreground:     #1a1a2e;
+    --ui-border:                 #e8e8f0;
+    --ui-input:                  #e8e8f0;
+    --ui-ring:                   #c8102e;
+    --ui-radius:                 0.75rem;
+    --ui-success:                #16a34a;
+    --ui-warning:                #d97706;
+    --ui-error:                  #dc2626;
+    --ui-destructive:            #dc2626;
+    --ui-destructive-foreground: #ffffff;
+    --ui-overlay:                rgba(0,0,0,0.5);
+    --ui-shadow-card:            0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+    --ui-shadow-card-hover:      0 8px 32px rgba(0,0,0,0.12);
+    --ui-shadow-dropdown:        0 4px 24px rgba(0,0,0,0.12);
+    --ui-shadow-modal:           0 20px 60px rgba(0,0,0,0.18);
+}
+
+/* ─── Dark theme (opt-in via .dark class) ──────────────────────── */
+.dark {
+    --color-primary:        #e8112a;
+    --color-primary-hover:  #c8102e;
+    --color-primary-light:  rgba(232, 17, 42, 0.14);
+    --color-accent:         #f5a623;
+    --color-accent-light:   rgba(245, 166, 35, 0.18);
+    --color-surface:        #0d0d14;
+    --color-surface-alt:    #12121a;
+    --color-surface-elevated: #181825;
+    --color-text-primary:   #f0f0f8;
+    --color-text-secondary: #8888aa;
+    --color-text-muted:     #55556a;
+    --color-border:         #1e1e2e;
+    --color-border-strong:  #2a2a3e;
+    --color-secondary:      #1a1a2e;
+    --color-success:        #22c55e;
+    --color-warning:        #f59e0b;
+    --color-error:          #ef4444;
+    --color-overlay:        rgba(0, 0, 0, 0.75);
+    --shadow-card:          0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+    --shadow-card-hover:    0 8px 32px rgba(0,0,0,0.5);
+    --shadow-dropdown:      0 8px 32px rgba(0,0,0,0.6);
+    --shadow-modal:         0 24px 64px rgba(0,0,0,0.7);
+
+    --ui-background:             #0d0d14;
+    --ui-foreground:             #f0f0f8;
+    --ui-surface:                #0d0d14;
+    --ui-surface-alt:            #12121a;
+    --ui-text-primary:           #f0f0f8;
+    --ui-text-secondary:         #8888aa;
+    --ui-text-muted:             #55556a;
+    --ui-primary:                #e8112a;
+    --ui-primary-hover:          #c8102e;
+    --ui-primary-light:          rgba(232,17,42,0.14);
+    --ui-primary-foreground:     #ffffff;
+    --ui-accent:                 #f5a623;
+    --ui-accent-light:           rgba(245,166,35,0.18);
+    --ui-accent-foreground:      #0d0d14;
+    --ui-secondary:              #1a1a2e;
+    --ui-secondary-foreground:   #f0f0f8;
+    --ui-muted:                  #12121a;
+    --ui-muted-foreground:       #8888aa;
+    --ui-card:                   #12121a;
+    --ui-card-foreground:        #f0f0f8;
+    --ui-popover:                #181825;
+    --ui-popover-foreground:     #f0f0f8;
+    --ui-border:                 #1e1e2e;
+    --ui-input:                  #1e1e2e;
+    --ui-ring:                   #e8112a;
+    --ui-success:                #22c55e;
+    --ui-warning:                #f59e0b;
+    --ui-error:                  #ef4444;
+    --ui-destructive:            #ef4444;
+    --ui-destructive-foreground: #ffffff;
+    --ui-overlay:                rgba(0,0,0,0.75);
+    --ui-shadow-card:            0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+    --ui-shadow-card-hover:      0 8px 32px rgba(0,0,0,0.5);
+    --ui-shadow-dropdown:        0 8px 32px rgba(0,0,0,0.6);
+    --ui-shadow-modal:           0 24px 64px rgba(0,0,0,0.7);
+}
+
+@theme {
+    --font-sans:
+        'Inter', 'DM Sans', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-display:
+        'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-mono:
+        'DM Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        'Liberation Mono', monospace;
+
+    --color-background:       var(--ui-background);
+    --color-foreground:       var(--ui-foreground);
+    --color-surface:          var(--ui-surface);
+    --color-surface-alt:      var(--ui-surface-alt);
+    --color-text-primary:     var(--ui-text-primary);
+    --color-text-secondary:   var(--ui-text-secondary);
+    --color-text-muted:       var(--ui-text-muted);
+    --color-primary-hover:    var(--ui-primary-hover);
+    --color-primary-light:    var(--ui-primary-light);
+    --color-accent-light:     var(--ui-accent-light);
+    --color-success:          var(--ui-success);
+    --color-warning:          var(--ui-warning);
+    --color-error:            var(--ui-error);
+    --color-overlay:          var(--ui-overlay);
+    --color-card:             var(--ui-card);
+    --color-card-foreground:  var(--ui-card-foreground);
+    --color-popover:          var(--ui-popover);
+    --color-popover-foreground: var(--ui-popover-foreground);
+    --color-primary:          var(--ui-primary);
+    --color-primary-foreground: var(--ui-primary-foreground);
+    --color-secondary:        var(--ui-secondary);
+    --color-secondary-foreground: var(--ui-secondary-foreground);
+    --color-muted:            var(--ui-muted);
+    --color-muted-foreground: var(--ui-muted-foreground);
+    --color-accent:           var(--ui-accent);
+    --color-accent-foreground: var(--ui-accent-foreground);
+    --color-destructive:      var(--ui-destructive);
+    --color-destructive-foreground: var(--ui-destructive-foreground);
+    --color-border:           var(--ui-border);
+    --color-input:            var(--ui-input);
+    --color-ring:             var(--ui-ring);
+    --radius-lg:              var(--ui-radius);
+    --radius-md:              calc(var(--ui-radius) - 0.125rem);
+    --radius-sm:              calc(var(--ui-radius) - 0.25rem);
+}
+
+@layer base {
+    * { @apply border-border; }
+
+    html {
+        scroll-behavior: smooth;
+        background-color: var(--color-surface);
+        color-scheme: light;
+    }
+
+    html.dark {
+        color-scheme: dark;
+    }
+
+    body {
+        @apply bg-background text-foreground font-sans antialiased;
+        min-height: 100vh;
+    }
+
+    ::selection {
+        background-color: rgba(200, 16, 46, 0.2);
+        color: #1a1a2e;
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--color-surface-alt); }
+    ::-webkit-scrollbar-thumb {
+        background: var(--color-border-strong);
+        border-radius: 3px;
+    }
+
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus {
+        -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+        -webkit-text-fill-color: #1a1a2e !important;
+        caret-color: #1a1a2e;
+    }
+
+    .sr-only {
+        position: absolute; width: 1px; height: 1px; padding: 0;
+        margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+        white-space: nowrap; border-width: 0;
+    }
+}
+
+@layer components {
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+    .glass-card {
+        background: rgba(255,255,255,0.8);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .glow-red { box-shadow: var(--shadow-glow-red); }
+}

@@ -1,0 +1,567 @@
+import type { ReactNode } from 'react';
+import type { InertiaLinkProps } from '@inertiajs/react';
+import type { LucideIcon } from 'lucide-react';
+
+export type Id = number;
+
+export type UserRole = 'customer' | 'admin';
+export type OrderStatus =
+    | 'pending'
+    | 'processing'
+    | 'shipped'
+    | 'delivered'
+    | 'cancelled'
+    | 'refunded';
+export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
+export type PaymentMethod = 'cod';
+export type InventoryType = 'in' | 'out' | 'adjustment' | 'reservation' | 'release';
+export type CouponType = 'percent' | 'fixed';
+export type AttributeType = 'select' | 'color' | 'text';
+export type ReturnStatus = 'pending' | 'approved' | 'rejected' | 'refunded';
+export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock';
+export type DrawerSide = 'left' | 'right';
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+export type BadgeVariant =
+    | 'default'
+    | 'success'
+    | 'warning'
+    | 'error'
+    | 'info'
+    | 'amber';
+
+export interface Timestamped {
+    created_at: string;
+    updated_at: string;
+}
+
+export interface SoftDeletable {
+    deleted_at?: string | null;
+}
+
+export interface FlashToast {
+    id?: string;
+    type: 'success' | 'info' | 'warning' | 'error';
+    message: string;
+    title?: string;
+    duration?: number;
+}
+
+export interface User extends Timestamped {
+    id: Id;
+    name: string;
+    email: string;
+    phone?: string | null;
+    avatar?: string | null;
+    role: UserRole;
+    email_verified_at: string | null;
+    two_factor_enabled?: boolean;
+}
+
+export interface Auth {
+    user: User | null;
+    admin: User | null;
+}
+
+export interface TwoFactorSetupData {
+    svg: string;
+    url: string;
+}
+
+export interface TwoFactorSecretKey {
+    secretKey: string;
+}
+
+export interface AppSettings {
+    site_name: string;
+    logo?: string | null;
+    currency_symbol: string;
+    contact_email: string;
+    contact_phone?: string | null;
+    social_links: {
+        facebook?: string;
+        instagram?: string;
+        twitter?: string;
+    };
+    google_analytics_id?: string | null;
+    meta_pixel_id?: string | null;
+}
+
+export interface Category extends Timestamped, SoftDeletable {
+    id: Id;
+    name: string;
+    slug: string;
+    parent_id?: Id | null;
+    image?: string | null;
+    description?: string | null;
+    meta_title?: string | null;
+    meta_description?: string | null;
+    is_active: boolean;
+    sort_order: number;
+    children?: Category[];
+    products_count?: number;
+}
+
+export interface Brand extends Timestamped {
+    id: Id;
+    name: string;
+    slug: string;
+    logo?: string | null;
+    description?: string | null;
+    is_active: boolean;
+}
+
+export interface AttributeValue extends Timestamped {
+    id: Id;
+    attribute_id: Id;
+    value: string;
+    color_hex?: string | null;
+    sort_order: number;
+}
+
+export interface Attribute extends Timestamped {
+    id: Id;
+    name: string;
+    type: AttributeType;
+    values: AttributeValue[];
+}
+
+export interface ProductImage extends Timestamped {
+    id: Id;
+    product_id: Id;
+    path: string;
+    alt?: string | null;
+    sort_order: number;
+    is_primary: boolean;
+}
+
+export interface ProductVariant extends Timestamped {
+    id: Id;
+    product_id: Id;
+    sku?: string | null;
+    price?: number | null;
+    stock_quantity: number;
+    attributes: Record<string, string>;
+    formatted_price?: string;
+}
+
+export interface Product extends Timestamped, SoftDeletable {
+    id: Id;
+    name: string;
+    slug: string;
+    sku?: string | null;
+    short_description?: string | null;
+    description?: string | null;
+    category: Category;
+    brand?: Brand | null;
+    price: number;
+    compare_price?: number | null;
+    cost_price?: number | null;
+    formatted_price: string;
+    formatted_compare_price?: string | null;
+    discount_percentage?: number | null;
+    stock_quantity: number;
+    low_stock_threshold: number;
+    is_active: boolean;
+    is_featured: boolean;
+    is_digital: boolean;
+    weight: number;
+    meta_title?: string | null;
+    meta_description?: string | null;
+    meta_keywords?: string | null;
+    published_at?: string | null;
+    primary_image_url?: string | null;
+    images: ProductImage[];
+    variants: ProductVariant[];
+    attributes: Attribute[];
+    tags: string[];
+    average_rating?: number | null;
+    reviews_count?: number | null;
+    is_wishlisted?: boolean;
+    in_flash_sale?: boolean;
+    flash_sale_price?: number | null;
+}
+
+export interface CartItem {
+    id: Id;
+    item_key: string;
+    product: Product;
+    variant?: ProductVariant | null;
+    quantity: number;
+    price: number;
+    formatted_price: string;
+    subtotal: number;
+    formatted_subtotal: string;
+}
+
+export interface Coupon {
+    id: Id;
+    code: string;
+    type: CouponType;
+    value: number;
+    discount_amount?: number;
+}
+
+export interface Cart {
+    items: CartItem[];
+    subtotal: number;
+    discount: number;
+    shipping_estimate: number;
+    tax: number;
+    total: number;
+    coupon?: Coupon | null;
+    item_count: number;
+    formatted_subtotal: string;
+    formatted_total: string;
+}
+
+export interface Address {
+    id: Id;
+    label?: string | null;
+    name: string;
+    phone: string;
+    address_line1: string;
+    address_line2?: string | null;
+    city: string;
+    state: string;
+    postal_code?: string | null;
+    country: string;
+    is_default: boolean;
+}
+
+export interface StockReservation extends Timestamped {
+    id: Id;
+    product_id: Id;
+    variant_id?: Id | null;
+    quantity: number;
+    session_id?: string | null;
+    user_id?: Id | null;
+    expires_at: string;
+}
+
+export interface OrderItem extends Timestamped {
+    id: Id;
+    order_id: Id;
+    product_id?: Id | null;
+    variant_id?: Id | null;
+    product_name: string;
+    sku?: string | null;
+    price: number;
+    quantity: number;
+    subtotal: number;
+    formatted_price: string;
+    formatted_subtotal: string;
+    product_snapshot: Record<string, unknown>;
+    product?: Product | null;
+    variant?: ProductVariant | null;
+}
+
+export interface OrderStatusHistory extends Timestamped {
+    id: Id;
+    order_id: Id;
+    status: OrderStatus;
+    notes?: string | null;
+    created_by?: Pick<User, 'id' | 'name'> | null;
+}
+
+export interface Order extends Timestamped, SoftDeletable {
+    id: Id;
+    order_number: string;
+    user_id?: Id | null;
+    status: OrderStatus;
+    payment_status: PaymentStatus;
+    payment_method: PaymentMethod;
+    subtotal: number;
+    shipping_cost: number;
+    discount: number;
+    tax: number;
+    total: number;
+    coupon_id?: Id | null;
+    coupon_code?: string | null;
+    shipping_address: Address;
+    billing_address: Address;
+    notes?: string | null;
+    tracking_number?: string | null;
+    cancellation_reason?: string | null;
+    shipped_at?: string | null;
+    delivered_at?: string | null;
+    items: OrderItem[];
+    status_histories: OrderStatusHistory[];
+    formatted_total: string;
+}
+
+export interface Payment extends Timestamped {
+    id: Id;
+    order_id: Id;
+    method: string;
+    amount: number;
+    status: PaymentStatus | 'pending' | 'failed';
+}
+
+export interface ReturnRequest extends Timestamped {
+    id: Id;
+    order_id: Id;
+    user_id: Id;
+    reason: string;
+    status: ReturnStatus;
+    items: Array<{
+        order_item_id: Id;
+        product_id: Id;
+        quantity: number;
+        reason?: string;
+    }>;
+    admin_note?: string | null;
+    refund_amount?: number | null;
+    refund_method?: string | null;
+    resolved_at?: string | null;
+}
+
+export interface InventoryLog extends Timestamped {
+    id: Id;
+    product_id: Id;
+    variant_id?: Id | null;
+    type: InventoryType;
+    quantity: number;
+    reference_type?: string | null;
+    reference_id?: Id | null;
+    note?: string | null;
+    created_by?: Id | null;
+}
+
+export interface CouponUse extends Timestamped {
+    id: Id;
+    coupon_id: Id;
+    user_id: Id;
+    order_id: Id;
+    discount_amount: number;
+}
+
+export interface Banner extends Timestamped {
+    id: Id;
+    title: string;
+    subtitle?: string | null;
+    image: string;
+    link?: string | null;
+    sort_order: number;
+    is_active: boolean;
+    starts_at?: string | null;
+    expires_at?: string | null;
+}
+
+export interface FlashSale extends Timestamped {
+    id: Id;
+    name: string;
+    starts_at: string;
+    ends_at: string;
+    is_active: boolean;
+    items?: FlashSaleItem[];
+}
+
+export interface FlashSaleItem extends Timestamped {
+    id: Id;
+    flash_sale_id: Id;
+    product_id: Id;
+    variant_id?: Id | null;
+    sale_price: number;
+    stock_limit?: number | null;
+    sold_count: number;
+    product?: Product;
+    variant?: ProductVariant | null;
+}
+
+export interface CmsPage extends Timestamped {
+    id: Id;
+    title: string;
+    slug: string;
+    content: string;
+    meta_title?: string | null;
+    meta_description?: string | null;
+    is_published: boolean;
+}
+
+export interface ContactMessage extends Timestamped {
+    id: Id;
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+    is_read: boolean;
+    read_at?: string | null;
+}
+
+export interface NewsletterSubscriber extends Timestamped {
+    id: Id;
+    email: string;
+    name?: string | null;
+    token: string;
+    is_active: boolean;
+    subscribed_at: string;
+    unsubscribed_at?: string | null;
+}
+
+export interface Review extends Timestamped, SoftDeletable {
+    id: Id;
+    product_id: Id;
+    user_id: Id;
+    order_id?: Id | null;
+    rating: number;
+    title?: string | null;
+    body: string;
+    images: string[];
+    is_approved: boolean;
+    is_verified_purchase?: boolean;
+    helpful_count?: number;
+    not_helpful_count?: number;
+    user_voted?: boolean | null;
+    user: Pick<User, 'name' | 'avatar'>;
+}
+
+export interface ReviewVote extends Timestamped {
+    review_id: Id;
+    user_id: Id;
+    is_helpful: boolean;
+}
+
+export interface ProductQuestion extends Timestamped {
+    id: Id;
+    product_id: Id;
+    user_id: Id;
+    question: string;
+    answer?: string | null;
+    answered_by?: Id | null;
+    is_published: boolean;
+}
+
+export interface ShippingZone extends Timestamped {
+    id: Id;
+    name: string;
+    countries: string[];
+    is_active: boolean;
+}
+
+export interface ShippingMethod extends Timestamped {
+    id: Id;
+    zone_id: Id;
+    name: string;
+    type: 'flat' | 'weight_based' | 'free';
+    cost: number;
+    min_order_for_free?: number | null;
+    estimated_days?: string | null;
+    is_active: boolean;
+}
+
+export interface ShippingRate extends Timestamped {
+    id: Id;
+    method_id: Id;
+    min_weight: number;
+    max_weight: number;
+    rate: number;
+}
+
+export interface TaxRate extends Timestamped {
+    id: Id;
+    name: string;
+    rate_percent: number;
+    country?: string | null;
+    is_default: boolean;
+    is_active: boolean;
+}
+
+export interface RecentlyViewedProduct extends Timestamped {
+    id: Id;
+    user_id: Id;
+    product_id: Id;
+    viewed_at: string;
+    product?: Product;
+}
+
+export interface PageLink {
+    url?: string | null;
+    label: string;
+    active: boolean;
+}
+
+export interface PaginatedData<T> {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number;
+    to: number;
+    links: PageLink[];
+}
+
+export interface ProductFilters {
+    category?: string;
+    brand?: string[];
+    min_price?: number;
+    max_price?: number;
+    rating?: number;
+    in_stock?: boolean;
+    attributes?: Record<string, string[]>;
+    sort?: string;
+    page?: number;
+    q?: string;
+}
+
+export interface BreadcrumbItem {
+    title: string;
+    href: NonNullable<InertiaLinkProps['href']>;
+}
+
+export interface NavItem {
+    title: string;
+    href: NonNullable<InertiaLinkProps['href']>;
+    icon?: LucideIcon | null;
+    isActive?: boolean;
+}
+
+export interface AppLayoutProps {
+    children: ReactNode;
+    breadcrumbs?: BreadcrumbItem[];
+}
+
+export type AppVariant = 'header' | 'sidebar';
+
+export interface AuthLayoutProps {
+    children?: ReactNode;
+    name?: string;
+    title?: string;
+    description?: string;
+}
+
+export interface SharedPageProps {
+    [key: string]: unknown;
+    name: string;
+    appName: string;
+    auth: Auth;
+    flash: {
+        success?: string | null;
+        error?: string | null;
+        info?: string | null;
+        warning?: string | null;
+        toast?: FlashToast | null;
+    };
+    sidebarOpen: boolean;
+    locale: string;
+    currencySymbol: string;
+    settings: AppSettings;
+}
+
+export interface UiStateToast extends FlashToast {
+    id: string;
+}
+
+export interface UiState {
+    cartOpen: boolean;
+    mobileMenuOpen: boolean;
+    searchOpen: boolean;
+    compareItems: Id[];
+    toasts: UiStateToast[];
+}
+
+export interface ProductCardState {
+    product: Product;
+    inCart?: boolean;
+    inWishlist?: boolean;
+}

@@ -1,0 +1,66 @@
+import { Head, Link, useForm } from '@inertiajs/react';
+import { ArrowRight, Eye, EyeOff, Lock, Shield } from 'lucide-react';
+import { useState } from 'react';
+import AppLogoIcon from '@/components/app-logo-icon';
+import InputError from '@/components/input-error';
+
+export default function ConfirmPassword(): React.JSX.Element {
+    const [showPassword, setShowPassword] = useState(false);
+    const { data, setData, post, processing, errors, reset } = useForm({ password: '' });
+
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
+            <Head title="Confirm Password — ShoppyDrive" />
+
+            <div className="w-full max-w-[420px]">
+                <div className="mb-8">
+                    <Link href="/" className="inline-flex items-center gap-2.5">
+                        <span className="flex size-9 items-center justify-center rounded-xl bg-[#c8102e]">
+                            <AppLogoIcon className="size-4 fill-current text-white" />
+                        </span>
+                        <span className="text-lg font-bold text-gray-900">ShoppyDrive</span>
+                    </Link>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+                    <div className="mb-6 flex size-12 items-center justify-center rounded-2xl bg-red-50">
+                        <Shield className="size-6 text-[#c8102e]" />
+                    </div>
+
+                    <div className="mb-5 space-y-1.5">
+                        <h1 className="text-2xl font-bold text-gray-900">Secure area</h1>
+                        <p className="text-sm leading-6 text-gray-500">
+                            Please confirm your password to access this section.
+                        </p>
+                    </div>
+
+                    <div className="mb-5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                        For your security, we verify your identity before sensitive actions.
+                    </div>
+
+                    <form onSubmit={(e) => { e.preventDefault(); post(route('password.confirm'), { onFinish: () => reset('password') }); }} className="space-y-4">
+                        <div className="space-y-1.5">
+                            <label htmlFor="password" className="text-sm font-medium text-gray-700">Current password</label>
+                            <div className="relative">
+                                <Lock className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
+                                <input id="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={data.password} onChange={e => setData('password', e.target.value)} placeholder="••••••••" className="h-11 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-12 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-[#c8102e] focus:outline-none focus:ring-2 focus:ring-[#c8102e]/20" required />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                </button>
+                            </div>
+                            <InputError message={errors.password} />
+                        </div>
+
+                        <button type="submit" disabled={processing} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c8102e] text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:opacity-60">
+                            {processing ? <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <><span>Confirm & Continue</span><ArrowRight className="size-4" /></>}
+                        </button>
+                    </form>
+
+                    <Link href={route('password.request')} className="mt-4 block text-center text-sm text-gray-500 transition hover:text-gray-800">
+                        Forgot your password?
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+}
