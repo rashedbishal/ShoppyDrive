@@ -47,7 +47,10 @@
       "Bash(vendor/bin/pint --dirty --format agent app/Models/User.php)",
       "Bash(vendor/bin/pint --dirty --format agent app/Http/Controllers/Admin/DashboardController.php routes/admin.php)",
       "Bash(vendor/bin/pint --dirty --format agent app/Http/Controllers/Admin/ProductController.php)",
-      "Bash(vendor/bin/pint --dirty --format agent app/Http/Controllers/Admin/ParentCategoryController.php routes/admin.php)"
+      "Bash(vendor/bin/pint --dirty --format agent app/Http/Controllers/Admin/ParentCategoryController.php routes/admin.php)",
+      "Bash(xargs cat *)",
+      "Bash(vendor/bin/pint app/Http/Controllers/ProductListingController.php --format agent)",
+      "Bash(vendor/bin/pint app/Http/Middleware/HandleInertiaRequests.php --format agent)"
     ]
   },
   "enableAllProjectMcpServers": true,

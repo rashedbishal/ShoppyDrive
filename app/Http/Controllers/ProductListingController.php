@@ -9,6 +9,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Review;
+use App\Models\SubCategory;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,21 +18,29 @@ class ProductListingController extends Controller
 {
     public function index(Request $request): Response
     {
-        return $this->catalogResponse($request, null, '/products');
+        return $this->catalogResponse($request, null, null, route('products.index'));
     }
 
-    public function category(Category $category, Request $request): Response
+    public function category(string $slug, Request $request): Response
     {
-        return $this->catalogResponse($request, $category, route('category.show', $category->slug));
+        $category = Category::where('slug', $slug)->first();
+        $subCategory = null;
+
+        if (! $category) {
+            $subCategory = SubCategory::where('slug', $slug)->firstOrFail();
+        }
+
+        return $this->catalogResponse($request, $category, $subCategory, route('category.show', $slug));
     }
 
-    private function catalogResponse(Request $request, ?Category $category, string $listingUrl): Response
+    private function catalogResponse(Request $request, ?Category $category, ?SubCategory $subCategory, string $listingUrl): Response
     {
         $query = Product::query()
             ->active()
             ->published()
             ->with([
-                'category.parent',
+                'category',
+                'subCategory',
                 'brand',
                 'images',
             ])
@@ -44,6 +53,10 @@ class ProductListingController extends Controller
 
         if ($category !== null) {
             $query->where('category_id', $category->id);
+        }
+
+        if ($subCategory !== null) {
+            $query->where('sub_category_id', $subCategory->id);
         }
 
         $search = trim((string) $request->string('q'));
@@ -128,12 +141,11 @@ class ProductListingController extends Controller
 
         $categories = Category::query()
             ->active()
-            ->whereNull('parent_id')
             ->withCount([
                 'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
             ])
             ->with([
-                'children' => static function ($childQuery): void {
+                'subCategories' => static function ($childQuery): void {
                     $childQuery
                         ->active()
                         ->orderBy('sort_order')
@@ -166,7 +178,7 @@ class ProductListingController extends Controller
             ->max('price') ?? 0);
 
         return Inertia::render('catalog/ProductListing', [
-            'category' => $category,
+            'category' => $category ?? $subCategory,
             'categories' => $categories,
             'brands' => $brands,
             'attributes' => $attributesFilter,
@@ -185,8 +197,8 @@ class ProductListingController extends Controller
                 'view' => $request->string('view', 'grid')->toString(),
                 'page' => $products->currentPage(),
             ],
-            'title' => $category?->name ?? 'All Products',
-            'description' => $category?->description ?? 'Explore a premium BDT catalog with filters, sorting, and mobile-friendly browsing.',
+            'title' => $category?->name ?? $subCategory?->name ?? 'All Products',
+            'description' => $category?->description ?? $subCategory?->description ?? 'Explore a premium BDT catalog with filters, sorting, and mobile-friendly browsing.',
         ]);
     }
 }

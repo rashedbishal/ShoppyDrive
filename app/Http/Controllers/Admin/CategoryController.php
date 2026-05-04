@@ -17,10 +17,15 @@ class CategoryController extends Controller
 {
     public function index(Request $request): Response
     {
-        $categories = Category::with('parent:id,name')
+        $categories = Category::withCount([
+            'subCategories',
+            'products as direct_products_count',
+        ])
             ->when($request->search, fn ($q) => $q->where('name', 'ilike', "%{$request->search}%"))
-            ->orderBy('sort_order')->orderBy('name')
-            ->paginate(20)->withQueryString();
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->paginate(20)
+            ->withQueryString();
 
         return Inertia::render('admin/categories/index', [
             'categories' => $categories,
@@ -30,15 +35,16 @@ class CategoryController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('admin/categories/create', [
-            'parents' => Category::whereNull('parent_id')->orderBy('name')->get(['id', 'name']),
-        ]);
+        return Inertia::render('admin/categories/create');
     }
 
     public function store(CategoryRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
+        if ($request->hasFile('image')) {
+            $data['image'] = '/storage/'.$request->file('image')->store('categories', 'public');
+        }
+        $data['slug'] = Str::slug($data['slug'] ?? $data['name']);
         $data['is_active'] = $data['is_active'] ?? true;
         Category::create($data);
 
@@ -48,14 +54,19 @@ class CategoryController extends Controller
     public function edit(Category $category): Response
     {
         return Inertia::render('admin/categories/edit', [
-            'category' => $category,
-            'parents' => Category::whereNull('parent_id')->where('id', '!=', $category->id)->orderBy('name')->get(['id', 'name']),
+            'category' => $category->loadCount(['subCategories', 'products as direct_products_count']),
         ]);
     }
 
     public function update(CategoryRequest $request, Category $category): RedirectResponse
     {
         $data = $request->validated();
+        if ($request->hasFile('image')) {
+            $data['image'] = '/storage/'.$request->file('image')->store('categories', 'public');
+        }
+        if (isset($data['slug'])) {
+            $data['slug'] = Str::slug($data['slug']);
+        }
         $data['is_active'] = $data['is_active'] ?? false;
         $category->update($data);
 

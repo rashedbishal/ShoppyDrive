@@ -35,6 +35,9 @@ class BrandController extends Controller
     public function store(BrandRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        if ($request->hasFile('logo')) {
+            $data['logo'] = '/storage/'.$request->file('logo')->store('brands', 'public');
+        }
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
         $data['is_active'] = $data['is_active'] ?? true;
         Brand::create($data);
@@ -50,6 +53,9 @@ class BrandController extends Controller
     public function update(BrandRequest $request, Brand $brand): RedirectResponse
     {
         $data = $request->validated();
+        if ($request->hasFile('logo')) {
+            $data['logo'] = '/storage/'.$request->file('logo')->store('brands', 'public');
+        }
         $data['is_active'] = $data['is_active'] ?? false;
         $brand->update($data);
 

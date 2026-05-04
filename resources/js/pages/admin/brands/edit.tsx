@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 type Brand = {
     id: number;
@@ -15,17 +16,24 @@ type Brand = {
 type Props = { brand: Brand };
 
 export default function BrandEdit({ brand }: Props) {
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, put, post, processing, errors } = useForm({
         name: brand.name,
         slug: brand.slug,
-        logo: brand.logo ?? '',
+        logo: brand.logo as File | string | null,
         description: brand.description ?? '',
         is_active: brand.is_active,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(route('admin.brands.update', brand.id));
+        if (data.logo instanceof File) {
+            post(route('admin.brands.update', brand.id), {
+                forceFormData: true,
+                _method: 'put',
+            } as any);
+        } else {
+            put(route('admin.brands.update', brand.id));
+        }
     };
 
     const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
@@ -65,8 +73,8 @@ export default function BrandEdit({ brand }: Props) {
                             <Field label="Slug *" error={errors.slug}>
                                 <input className={inputClass(errors.slug)} value={data.slug} onChange={(e) => setData('slug', e.target.value)} />
                             </Field>
-                            <Field label="Logo URL" error={errors.logo}>
-                                <input type="url" className={inputClass(errors.logo)} value={data.logo} onChange={(e) => setData('logo', e.target.value)} />
+                            <Field label="Logo" error={errors.logo}>
+                                <ImageUpload value={data.logo} onChange={(file) => setData('logo', file)} error={errors.logo} previewClassName="h-32 object-contain" />
                             </Field>
                             <Field label="Description" error={errors.description}>
                                 <textarea rows={3} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]" value={data.description} onChange={(e) => setData('description', e.target.value)} />

@@ -2,12 +2,13 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 export default function BannerCreate() {
     const { data, setData, post, processing, errors } = useForm({
         title: '',
         subtitle: '',
-        image: '',
+        image: null as File | string | null,
         link: '',
         sort_order: '0',
         is_active: true,
@@ -54,9 +55,8 @@ export default function BannerCreate() {
                             <Field label="Subtitle" error={errors.subtitle}>
                                 <input className={inputClass(errors.subtitle)} value={data.subtitle} onChange={(e) => setData('subtitle', e.target.value)} />
                             </Field>
-                            <Field label="Image URL *" error={errors.image}>
-                                <input type="url" className={inputClass(errors.image)} value={data.image} onChange={(e) => setData('image', e.target.value)} />
-                                {data.image && <img src={data.image} alt="Preview" className="mt-2 h-24 w-full rounded-lg object-cover border border-slate-100" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
+                            <Field label="Image *" error={errors.image}>
+                                <ImageUpload value={data.image} onChange={(file) => setData('image', file)} error={errors.image} previewClassName="h-32 object-cover" />
                             </Field>
                             <Field label="Link URL" error={errors.link}>
                                 <input className={inputClass(errors.link)} value={data.link} onChange={(e) => setData('link', e.target.value)} placeholder="/shop or https://..." />

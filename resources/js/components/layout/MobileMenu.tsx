@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { useInitials } from '@/hooks/use-initials';
 import type { SharedPageProps } from '@/types';
-import { primaryLinks, storeCategories } from '@/components/layout/navigation';
+import { FolderOpen } from 'lucide-react';
+import { primaryLinks } from '@/components/layout/navigation';
 
 type MobileMenuProps = {
     isOpen: boolean;
@@ -18,6 +19,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.
     const page = usePage<SharedPageProps>();
     const getInitials = useInitials();
     const user = page.props.auth?.user ?? null;
+    const navCategories = page.props.navCategories ?? [];
 
     return (
         <Drawer
@@ -82,19 +84,26 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.
                             title: 'Categories',
                             content: (
                                 <div className="space-y-2">
-                                    {storeCategories.map((category) => (
+                                    {navCategories.length === 0 ? (
+                                        <div className="flex items-center gap-2 px-3 py-3 text-sm text-[var(--color-text-muted)]">
+                                            <FolderOpen className="size-4 opacity-50" />
+                                            No categories yet
+                                        </div>
+                                    ) : navCategories.map((category) => (
                                         <Link
-                                            key={category.label}
-                                            href={category.href}
+                                            key={category.id}
+                                            href={`/category/${category.slug}`}
                                             onClick={onClose}
                                             className="block rounded-xl px-3 py-3 text-sm text-[var(--color-text-primary)] transition hover:bg-[var(--color-primary-light)]"
                                         >
                                             <span className="block font-medium">
-                                                {category.label}
+                                                {category.name}
                                             </span>
-                                            <span className="block text-xs text-[var(--color-text-secondary)]">
-                                                {category.description}
-                                            </span>
+                                            {category.description && (
+                                                <span className="block text-xs text-[var(--color-text-secondary)]">
+                                                    {category.description}
+                                                </span>
+                                            )}
                                         </Link>
                                     ))}
                                 </div>

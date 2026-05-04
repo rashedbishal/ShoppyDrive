@@ -2,12 +2,13 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 export default function BrandCreate() {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         slug: '',
-        logo: '',
+        logo: null as File | string | null,
         description: '',
         is_active: true,
     });
@@ -61,8 +62,8 @@ export default function BrandCreate() {
                             <Field label="Slug *" error={errors.slug}>
                                 <input className={inputClass(errors.slug)} value={data.slug} onChange={(e) => setData('slug', e.target.value)} />
                             </Field>
-                            <Field label="Logo URL" error={errors.logo}>
-                                <input type="url" className={inputClass(errors.logo)} value={data.logo} onChange={(e) => setData('logo', e.target.value)} />
+                            <Field label="Logo" error={errors.logo}>
+                                <ImageUpload value={data.logo} onChange={(file) => setData('logo', file)} error={errors.logo} previewClassName="h-32 object-contain" />
                             </Field>
                             <Field label="Description" error={errors.description}>
                                 <textarea rows={3} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]" value={data.description} onChange={(e) => setData('description', e.target.value)} />

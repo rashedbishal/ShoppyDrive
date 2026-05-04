@@ -34,6 +34,9 @@ class BannerController extends Controller
     public function store(BannerRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        if ($request->hasFile('image')) {
+            $data['image'] = '/storage/'.$request->file('image')->store('banners', 'public');
+        }
         $data['is_active'] = $data['is_active'] ?? true;
         $data['sort_order'] = $data['sort_order'] ?? 0;
         Banner::create($data);
@@ -49,6 +52,9 @@ class BannerController extends Controller
     public function update(BannerRequest $request, Banner $banner): RedirectResponse
     {
         $data = $request->validated();
+        if ($request->hasFile('image')) {
+            $data['image'] = '/storage/'.$request->file('image')->store('banners', 'public');
+        }
         $data['is_active'] = $data['is_active'] ?? false;
         $banner->update($data);
 

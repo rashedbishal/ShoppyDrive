@@ -31,8 +31,8 @@ const navSections = [
         label: 'Catalog',
         items: [
             { label: 'Products', href: '/admin/products', icon: Package, match: 'admin.products.' },
-            { label: 'Parent Categories', href: '/admin/parent-categories', icon: Folder, match: 'admin.parent-categories.' },
-            { label: 'Sub-Categories', href: '/admin/categories', icon: FolderTree, match: 'admin.categories.' },
+            { label: 'Categories', href: '/admin/categories', icon: Folder, match: 'admin.categories.' },
+            { label: 'Sub-categories', href: '/admin/sub-categories', icon: FolderTree, match: 'admin.sub-categories.' },
             { label: 'Brands', href: '/admin/brands', icon: Award, match: 'admin.brands.' },
         ],
     },

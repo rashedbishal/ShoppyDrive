@@ -49,7 +49,7 @@ type ListingAttribute = Attribute & {
 };
 
 type ListingCategory = Category & {
-    children?: ListingCategory[];
+    sub_categories?: SubCategory[];
     products_count?: number;
 };
 
@@ -669,9 +669,9 @@ function ProductListingPage({
                 >
                     Shop {node.name}
                 </button>
-                {node.children && node.children.length > 0 ? (
+                {node.sub_categories && node.sub_categories.length > 0 ? (
                     <div className="space-y-2 pl-3">
-                        {node.children.map((child) => (
+                        {node.sub_categories.map((child) => (
                             <button
                                 key={child.id}
                                 type="button"

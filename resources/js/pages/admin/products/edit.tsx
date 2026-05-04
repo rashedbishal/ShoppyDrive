@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MultiImageUpload } from '@/components/ui/multi-image-upload';
 
 type ProductImage = { id: number; path: string; is_primary: boolean };
 type Product = {
@@ -12,6 +13,7 @@ type Product = {
     short_description: string | null;
     description: string | null;
     category_id: number | null;
+    sub_category_id: number | null;
     brand_id: number | null;
     price: number;
     compare_price: number | null;
@@ -28,17 +30,19 @@ type Product = {
 type Props = {
     product: Product;
     categories: { id: number; name: string }[];
+    subCategories: { id: number; name: string; category_id: number }[];
     brands: { id: number; name: string }[];
 };
 
-export default function ProductEdit({ product, categories, brands }: Props) {
-    const { data, setData, put, processing, errors } = useForm({
+export default function ProductEdit({ product, categories, subCategories, brands }: Props) {
+    const { data, setData, put, post, processing, errors } = useForm({
         name: product.name,
         slug: product.slug,
         sku: product.sku ?? '',
         short_description: product.short_description ?? '',
         description: product.description ?? '',
         category_id: product.category_id ? String(product.category_id) : '',
+        sub_category_id: product.sub_category_id ? String(product.sub_category_id) : '',
         brand_id: product.brand_id ? String(product.brand_id) : '',
         price: String(product.price),
         compare_price: product.compare_price ? String(product.compare_price) : '',
@@ -47,14 +51,22 @@ export default function ProductEdit({ product, categories, brands }: Props) {
         low_stock_threshold: String(product.low_stock_threshold),
         is_active: product.is_active,
         is_featured: product.is_featured,
-        images: product.images.length ? product.images.map((i) => i.path) : [''],
+        images: product.images.length ? product.images.map((i) => i.path) : [] as (File | string)[],
         meta_title: product.meta_title ?? '',
         meta_description: product.meta_description ?? '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(route('admin.products.update', product.id));
+        const hasFile = data.images.some(img => img instanceof File);
+        if (hasFile) {
+            post(route('admin.products.update', product.id), {
+                forceFormData: true,
+                _method: 'put',
+            } as any);
+        } else {
+            put(route('admin.products.update', product.id));
+        }
     };
 
     const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
@@ -132,28 +144,18 @@ export default function ProductEdit({ product, categories, brands }: Props) {
 
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
-                                <CardTitle className="text-sm font-semibold text-slate-700">Images (URLs)</CardTitle>
+                                <CardTitle className="text-sm font-semibold text-slate-700">Images</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-2 pt-4">
-                                {data.images.map((url, i) => (
-                                    <div key={i} className="flex gap-2">
-                                        <input
-                                            type="url"
-                                            placeholder={i === 0 ? 'Primary image URL' : `Image ${i + 1} URL`}
-                                            className={inputClass()}
-                                            value={url}
-                                            onChange={(e) => {
-                                                const imgs = [...data.images];
-                                                imgs[i] = e.target.value;
-                                                setData('images', imgs);
-                                            }}
-                                        />
-                                        {i > 0 && (
-                                            <button type="button" onClick={() => setData('images', data.images.filter((_, j) => j !== i))} className="shrink-0 rounded-lg border border-slate-200 px-2 text-slate-400 hover:border-red-200 hover:text-red-500">×</button>
-                                        )}
-                                    </div>
+                            <CardContent className="pt-4">
+                                <MultiImageUpload
+                                    value={data.images}
+                                    onChange={(files) => setData('images', files)}
+                                    error={errors.images}
+                                />
+                                {errors.images && typeof errors.images === 'string' && <p className="mt-1 text-xs text-red-500">{errors.images}</p>}
+                                {Object.keys(errors).filter(k => k.startsWith('images.')).map(k => (
+                                    <p key={k} className="mt-1 text-xs text-red-500">{errors[k as keyof typeof errors]}</p>
                                 ))}
-                                <button type="button" onClick={() => setData('images', [...data.images, ''])} className="text-xs font-medium text-[#c8102e] hover:underline">+ Add image</button>
                             </CardContent>
                         </Card>
 
@@ -178,12 +180,34 @@ export default function ProductEdit({ product, categories, brands }: Props) {
                                 <CardTitle className="text-sm font-semibold text-slate-700">Organisation</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4 pt-4">
-                                <Field label="Category" error={errors.category_id}>
-                                    <select className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]" value={data.category_id} onChange={(e) => setData('category_id', e.target.value)}>
-                                        <option value="">— Select —</option>
+                                <Field label="Category *" error={errors.category_id}>
+                                    <select
+                                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]"
+                                        value={data.category_id}
+                                        onChange={(e) => {
+                                            setData((prev) => ({ ...prev, category_id: e.target.value, sub_category_id: '' }));
+                                        }}
+                                    >
+                                        <option value="">— Select Category —</option>
                                         {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
                                 </Field>
+
+                                <Field label="Sub-category *" error={errors.sub_category_id}>
+                                    <select
+                                        className={`h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${errors.sub_category_id ? 'border-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
+                                        value={data.sub_category_id}
+                                        onChange={(e) => setData('sub_category_id', e.target.value)}
+                                        disabled={!data.category_id}
+                                    >
+                                        <option value="">— Select Sub-category —</option>
+                                        {subCategories
+                                            .filter(sc => sc.category_id === Number(data.category_id))
+                                            .map((sc) => <option key={sc.id} value={sc.id}>{sc.name}</option>)
+                                        }
+                                    </select>
+                                </Field>
+
                                 <Field label="Brand" error={errors.brand_id}>
                                     <select className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]" value={data.brand_id} onChange={(e) => setData('brand_id', e.target.value)}>
                                         <option value="">— None —</option>

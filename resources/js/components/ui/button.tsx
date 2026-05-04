@@ -82,7 +82,7 @@ function Button({
             aria-busy={loading || undefined}
             {...props}
         >
-            {loading ? (
+            {asChild ? children : loading ? (
                 <>
                     <Spinner size="sm" className="size-4 shrink-0" />
                     <span>{loadingText}</span>

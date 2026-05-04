@@ -90,14 +90,27 @@ export interface Category extends Timestamped, SoftDeletable {
     id: Id;
     name: string;
     slug: string;
-    parent_id?: Id | null;
     image?: string | null;
     description?: string | null;
     meta_title?: string | null;
     meta_description?: string | null;
     is_active: boolean;
     sort_order: number;
-    children?: Category[];
+    sub_categories?: SubCategory[];
+    products_count?: number;
+}
+
+export interface SubCategory extends Timestamped, SoftDeletable {
+    id: Id;
+    category_id: Id;
+    name: string;
+    slug: string;
+    image?: string | null;
+    description?: string | null;
+    meta_title?: string | null;
+    meta_description?: string | null;
+    is_active: boolean;
+    sort_order: number;
     products_count?: number;
 }
 
@@ -530,6 +543,22 @@ export interface AuthLayoutProps {
     description?: string;
 }
 
+export interface NavSubCategory {
+    id: Id;
+    name: string;
+    slug: string;
+    description?: string | null;
+    category_id: Id;
+}
+
+export interface NavCategory {
+    id: Id;
+    name: string;
+    slug: string;
+    description?: string | null;
+    sub_categories: NavSubCategory[];
+}
+
 export interface SharedPageProps {
     [key: string]: unknown;
     name: string;
@@ -546,6 +575,7 @@ export interface SharedPageProps {
     locale: string;
     currencySymbol: string;
     settings: AppSettings;
+    navCategories: NavCategory[];
 }
 
 export interface UiStateToast extends FlashToast {

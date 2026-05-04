@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 type Banner = {
     id: number;
@@ -23,10 +24,10 @@ const toDatetimeLocal = (str: string | null) => {
 };
 
 export default function BannerEdit({ banner }: Props) {
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, put, post, processing, errors } = useForm({
         title: banner.title,
         subtitle: banner.subtitle ?? '',
-        image: banner.image,
+        image: banner.image as File | string | null,
         link: banner.link ?? '',
         sort_order: String(banner.sort_order),
         is_active: banner.is_active,
@@ -36,7 +37,17 @@ export default function BannerEdit({ banner }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(route('admin.banners.update', banner.id));
+        if (data.image instanceof File) {
+            // Inertia will automatically use FormData if there is a File object, but we must use post or put with _method since HTML forms don't support PUT with files correctly in Laravel.
+            // Wait, Laravel supports PUT/PATCH with files if spoofed, Inertia handles this automatically starting v1? 
+            // Better to use post with _method: 'put' to be safe.
+            post(route('admin.banners.update', banner.id), {
+                forceFormData: true,
+                _method: 'put',
+            } as any);
+        } else {
+            put(route('admin.banners.update', banner.id));
+        }
     };
 
     const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
@@ -76,9 +87,8 @@ export default function BannerEdit({ banner }: Props) {
                             <Field label="Subtitle" error={errors.subtitle}>
                                 <input className={inputClass(errors.subtitle)} value={data.subtitle} onChange={(e) => setData('subtitle', e.target.value)} />
                             </Field>
-                            <Field label="Image URL *" error={errors.image}>
-                                <input type="url" className={inputClass(errors.image)} value={data.image} onChange={(e) => setData('image', e.target.value)} />
-                                {data.image && <img src={data.image} alt="Preview" className="mt-2 h-24 w-full rounded-lg object-cover border border-slate-100" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
+                            <Field label="Image *" error={errors.image}>
+                                <ImageUpload value={data.image} onChange={(file) => setData('image', file)} error={errors.image} previewClassName="h-32 object-cover" />
                             </Field>
                             <Field label="Link URL" error={errors.link}>
                                 <input className={inputClass(errors.link)} value={data.link} onChange={(e) => setData('link', e.target.value)} placeholder="/shop or https://..." />

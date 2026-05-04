@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\UploadedFile;
 
 class CategoryRequest extends FormRequest
 {
@@ -20,9 +21,12 @@ class CategoryRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', 'unique:categories,slug,'.($categoryId ?? 'NULL').',id'],
-            'parent_id' => ['nullable', 'integer', 'exists:categories,id'],
             'description' => ['nullable', 'string'],
-            'image' => ['nullable', 'string'],
+            'image' => ['nullable', function ($attribute, $value, $fail) {
+                if (! is_string($value) && ! ($value instanceof UploadedFile)) {
+                    $fail('The '.$attribute.' must be an image file or a valid URL.');
+                }
+            }],
             'is_active' => ['boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ];

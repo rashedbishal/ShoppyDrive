@@ -10,8 +10,10 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Models\SubCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,20 +22,22 @@ class ProductController extends Controller
 {
     public function index(Request $request): Response
     {
-        $products = Product::with(['category:id,name', 'brand:id,name'])
+        $products = Product::with(['category:id,name', 'subCategory:id,name', 'brand:id,name'])
             ->when($request->search, fn ($q) => $q->where('name', 'ilike', "%{$request->search}%")
                 ->orWhere('sku', 'ilike', "%{$request->search}%"))
             ->when($request->status === 'active', fn ($q) => $q->where('is_active', true))
             ->when($request->status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->when($request->category_id, fn ($q) => $q->where('category_id', $request->category_id))
+            ->when($request->sub_category_id, fn ($q) => $q->where('sub_category_id', $request->sub_category_id))
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
         return Inertia::render('admin/products/index', [
             'products' => $products,
-            'filters' => $request->only(['search', 'status', 'category_id']),
-            'categories' => Category::active()->get(['id', 'name']),
+            'filters' => $request->only(['search', 'status', 'category_id', 'sub_category_id']),
+            'categories' => Category::active()->orderBy('name')->get(['id', 'name']),
+            'subCategories' => SubCategory::active()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -41,6 +45,7 @@ class ProductController extends Controller
     {
         return Inertia::render('admin/products/create', [
             'categories' => Category::active()->orderBy('name')->get(['id', 'name']),
+            'subCategories' => SubCategory::active()->orderBy('name')->get(['id', 'name', 'category_id']),
             'brands' => Brand::active()->orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -61,7 +66,12 @@ class ProductController extends Controller
 
         $product = Product::create($data);
 
-        foreach ($images as $i => $url) {
+        foreach ($images as $i => $fileOrUrl) {
+            if ($fileOrUrl instanceof UploadedFile) {
+                $url = '/storage/'.$fileOrUrl->store('products', 'public');
+            } else {
+                $url = $fileOrUrl;
+            }
             if ($url) {
                 ProductImage::create([
                     'product_id' => $product->id,
@@ -78,8 +88,9 @@ class ProductController extends Controller
     public function edit(Product $product): Response
     {
         return Inertia::render('admin/products/edit', [
-            'product' => $product->load(['images', 'category:id,name', 'brand:id,name']),
+            'product' => $product->load(['images', 'category:id,name', 'subCategory:id,name', 'brand:id,name']),
             'categories' => Category::active()->orderBy('name')->get(['id', 'name']),
+            'subCategories' => SubCategory::active()->orderBy('name')->get(['id', 'name', 'category_id']),
             'brands' => Brand::active()->orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -105,7 +116,12 @@ class ProductController extends Controller
 
         if ($images !== null) {
             $product->images()->delete();
-            foreach ($images as $i => $url) {
+            foreach ($images as $i => $fileOrUrl) {
+                if ($fileOrUrl instanceof UploadedFile) {
+                    $url = '/storage/'.$fileOrUrl->store('products', 'public');
+                } else {
+                    $url = $fileOrUrl;
+                }
                 if ($url) {
                     ProductImage::create([
                         'product_id' => $product->id,
