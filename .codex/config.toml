@@ -2,3 +2,6 @@
 command = "php"
 args = ["artisan", "boost:mcp"]
 cwd = "/media/rashed/HDD Drive 1/ShoppyDrive"
+
+[mcp_servers.laravel-boost.tools.search-docs]
+approval_mode = "approve"

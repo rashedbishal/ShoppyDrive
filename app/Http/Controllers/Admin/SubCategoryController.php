@@ -41,6 +41,8 @@ class SubCategoryController extends Controller
         $data = $request->validated();
         if ($request->hasFile('image')) {
             $data['image'] = '/storage/'.$request->file('image')->store('sub-categories', 'public');
+        } else {
+            $data['image'] = '/placeholder.svg';
         }
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
         $data['is_active'] = $data['is_active'] ?? true;
@@ -62,6 +64,8 @@ class SubCategoryController extends Controller
         $data = $request->validated();
         if ($request->hasFile('image')) {
             $data['image'] = '/storage/'.$request->file('image')->store('sub-categories', 'public');
+        } else {
+            unset($data['image']);
         }
         $data['is_active'] = $data['is_active'] ?? false;
         $subCategory->update($data);

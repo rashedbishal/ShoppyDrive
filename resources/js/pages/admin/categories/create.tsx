@@ -60,8 +60,11 @@ export default function CategoryCreate() {
                                     value={data.name}
                                     placeholder="e.g. Electronics & Gadgets"
                                     onChange={(e) => {
-                                        setData('name', e.target.value);
-                                        if (!data.slug) setData('slug', slugify(e.target.value));
+                                        setData((prev) => ({
+                                            ...prev,
+                                            name: e.target.value,
+                                            slug: slugify(e.target.value)
+                                        }));
                                     }}
                                 />
                             </Field>

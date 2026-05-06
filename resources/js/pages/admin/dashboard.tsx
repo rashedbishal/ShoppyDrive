@@ -194,7 +194,7 @@ export default function Dashboard({ stats, chartData, recentOrders, lowStockProd
     const quickActions = [
         { label: 'Add Product',    icon: Box,         href: route('admin.products.create'),      color: 'bg-blue-500'    },
         { label: 'New Coupon',     icon: Tag,         href: route('admin.coupons.create'),       color: 'bg-amber-500'   },
-        { label: 'New Banner',     icon: Image,       href: route('admin.banners.create'),       color: 'bg-indigo-500'  },
+        { label: 'New Banner',     icon: Image,       href: route('admin.promotional-banners.create'), color: 'bg-indigo-500'  },
         { label: 'Flash Sale',     icon: Zap,         href: route('admin.flash-sales.create'),   color: 'bg-rose-500'    },
         { label: 'View Orders',    icon: ShoppingCart,href: route('admin.orders.index'),         color: 'bg-violet-500'  },
         { label: 'Customers',      icon: Users,       href: route('admin.customers.index'),      color: 'bg-teal-500'    },

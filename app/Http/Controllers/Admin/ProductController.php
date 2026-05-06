@@ -9,7 +9,7 @@ use App\Http\Requests\Admin\ProductRequest;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductImage;
+use App\Models\ProductMedia;
 use App\Models\SubCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -66,19 +66,34 @@ class ProductController extends Controller
 
         $product = Product::create($data);
 
-        foreach ($images as $i => $fileOrUrl) {
-            if ($fileOrUrl instanceof UploadedFile) {
-                $url = '/storage/'.$fileOrUrl->store('products', 'public');
-            } else {
-                $url = $fileOrUrl;
-            }
-            if ($url) {
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'path' => $url,
-                    'is_primary' => $i === 0,
-                    'sort_order' => $i,
-                ]);
+        if (empty($images)) {
+            ProductMedia::create([
+                'product_id' => $product->id,
+                'path' => '/placeholder.svg',
+                'type' => 'image',
+                'alt' => $product->name,
+                'is_primary' => true,
+                'sort_order' => 0,
+            ]);
+        } else {
+            foreach ($images as $i => $fileOrUrl) {
+                $type = 'image';
+                if ($fileOrUrl instanceof UploadedFile) {
+                    $mime = $fileOrUrl->getMimeType();
+                    $type = str_starts_with($mime, 'video/') ? 'video' : 'image';
+                    $url = '/storage/'.$fileOrUrl->store('products', 'public');
+                } else {
+                    $url = $fileOrUrl;
+                }
+                if ($url) {
+                    ProductMedia::create([
+                        'product_id' => $product->id,
+                        'path' => $url,
+                        'type' => $type,
+                        'is_primary' => $i === 0,
+                        'sort_order' => $i,
+                    ]);
+                }
             }
         }
 
@@ -88,7 +103,7 @@ class ProductController extends Controller
     public function edit(Product $product): Response
     {
         return Inertia::render('admin/products/edit', [
-            'product' => $product->load(['images', 'category:id,name', 'subCategory:id,name', 'brand:id,name']),
+            'product' => $product->load(['media', 'category:id,name', 'subCategory:id,name', 'brand:id,name']),
             'categories' => Category::active()->orderBy('name')->get(['id', 'name']),
             'subCategories' => SubCategory::active()->orderBy('name')->get(['id', 'name', 'category_id']),
             'brands' => Brand::active()->orderBy('name')->get(['id', 'name']),
@@ -115,17 +130,21 @@ class ProductController extends Controller
         $product->update($data);
 
         if ($images !== null) {
-            $product->images()->delete();
+            $product->media()->delete();
             foreach ($images as $i => $fileOrUrl) {
+                $type = 'image';
                 if ($fileOrUrl instanceof UploadedFile) {
+                    $mime = $fileOrUrl->getMimeType();
+                    $type = str_starts_with($mime, 'video/') ? 'video' : 'image';
                     $url = '/storage/'.$fileOrUrl->store('products', 'public');
                 } else {
                     $url = $fileOrUrl;
                 }
                 if ($url) {
-                    ProductImage::create([
+                    ProductMedia::create([
                         'product_id' => $product->id,
                         'path' => $url,
+                        'type' => $type,
                         'is_primary' => $i === 0,
                         'sort_order' => $i,
                     ]);

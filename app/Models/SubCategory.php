@@ -47,4 +47,15 @@ class SubCategory extends Model
     {
         return $query->where('is_active', true);
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (SubCategory $subCategory) {
+            if ($subCategory->isForceDeleting()) {
+                $subCategory->products()->forceDelete();
+            } else {
+                $subCategory->products()->each(fn ($product) => $product->delete());
+            }
+        });
+    }
 }

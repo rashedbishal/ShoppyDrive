@@ -1,8 +1,6 @@
-import { Head, useForm } from '@inertiajs/react';
-import { 
-    Search, 
-    Truck, 
-    ArrowRight, 
+import { Head, Link, useForm } from '@inertiajs/react';
+import {
+    Truck,
     Package,
     Mail,
     AlertCircle,
@@ -22,14 +20,16 @@ import type { Order } from '@/types';
 interface TrackOrderProps {
     order?: Order | null;
     error?: string;
+    prefill_order_number?: string;
 }
 
 export default function TrackOrder({
     order: initialOrder,
     error: initialError,
+    prefill_order_number = '',
 }: TrackOrderProps): React.JSX.Element {
     const form = useForm({
-        order_number: '',
+        order_number: prefill_order_number,
         email: '',
     });
 

@@ -2,12 +2,20 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Address;
 use App\Models\Category;
+use App\Models\HeroSlide;
+use App\Models\HomepageSetting;
+use App\Models\PromotionalBanner;
+use App\Models\Wishlist;
+use App\Support\CartManager;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
+    public function __construct(private readonly CartManager $cartManager) {}
+
     /**
      * The root template that's loaded on the first page visit.
      *
@@ -43,6 +51,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
                 'admin' => $request->user('admin'),
             ],
+            'cart' => fn () => $this->cartManager->serializeForRequest($request),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'navCategories' => fn () => Category::active()
                 ->with(['subCategories' => fn ($q) => $q->active()->orderBy('sort_order')->orderBy('name')->select(['id', 'name', 'slug', 'category_id', 'description'])])
@@ -63,6 +72,37 @@ class HandleInertiaRequests extends Middleware
                 'google_analytics_id' => null,
                 'meta_pixel_id' => null,
             ],
+            'flash' => fn () => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+            ],
+            'homepage_settings' => fn () => HomepageSetting::orderBy('sort_order')->get()->keyBy('section_key'),
+            'hero_slides' => fn () => HeroSlide::where('is_active', true)->orderBy('sort_order')->get(),
+            'promotional_banners' => fn () => PromotionalBanner::where('is_active', true)->orderBy('sort_order')->get(),
+            'wishlist_ids' => fn () => $request->user()
+                ? Wishlist::where('user_id', $request->user()->id)->pluck('product_id')->toArray()
+                : [],
+            'cart_shipping_cost' => fn () => $this->resolveCartShippingCost($request),
         ];
+    }
+
+    private function resolveCartShippingCost(Request $request): ?int
+    {
+        $user = $request->user();
+        if (! $user) {
+            return null;
+        }
+
+        $default = Address::where('user_id', $user->id)
+            ->where('is_default', true)
+            ->first(['state', 'city']);
+
+        if (! $default) {
+            return null;
+        }
+
+        return $default->state === 'Dhaka' && $default->city === 'Inside Dhaka City Corporation'
+            ? 60
+            : 120;
     }
 }

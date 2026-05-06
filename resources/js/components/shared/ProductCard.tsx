@@ -34,8 +34,9 @@ export function ProductCard({
     const removeCompareItem = useUiStore((state) => state.removeCompareItem);
     const isComparing = useUiStore((state) => state.hasCompareItem(product.id));
 
-    const primaryImage = product.images.find((img) => img.is_primary) ?? product.images[0];
-    const secondaryImage = product.images.length > 1 ? product.images.find((img) => !img.is_primary) : null;
+    const images = Array.isArray(product.images) ? product.images : [];
+    const primaryImage = images.find((img) => img.is_primary) ?? images[0];
+    const secondaryImage = images.length > 1 ? images.find((img) => !img.is_primary) : null;
     
     const currentPrice = product.in_flash_sale && product.flash_sale_price 
         ? product.flash_sale_price 

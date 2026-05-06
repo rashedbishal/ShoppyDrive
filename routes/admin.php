@@ -3,15 +3,17 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AdminAuthController;
-use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FlashSaleController;
+use App\Http\Controllers\Admin\HeroSlideController;
+use App\Http\Controllers\Admin\HomepageController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\PromotionalBannerController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SubCategoryController;
@@ -29,7 +31,6 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
     Route::resource('sub-categories', SubCategoryController::class);
     Route::resource('brands', BrandController::class);
     Route::resource('coupons', CouponController::class);
-    Route::resource('banners', BannerController::class);
     Route::resource('flash-sales', FlashSaleController::class)->parameters(['flash-sales' => 'flashSale']);
 
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
@@ -46,4 +47,14 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
 
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+
+    // Homepage Management
+    Route::get('homepage', [HomepageController::class, 'index'])->name('homepage.index');
+    Route::get('homepage/products/search', [HomepageController::class, 'searchProducts'])->name('homepage.products.search');
+    Route::get('homepage/brands/search', [HomepageController::class, 'searchBrands'])->name('homepage.brands.search');
+    Route::get('homepage/{setting}/edit', [HomepageController::class, 'edit'])->name('homepage.edit');
+    Route::put('homepage/{setting}', [HomepageController::class, 'update'])->name('homepage.update');
+
+    Route::resource('hero-slides', HeroSlideController::class)->except(['show']);
+    Route::resource('promotional-banners', PromotionalBannerController::class)->except(['show']);
 });

@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePage } from '@inertiajs/react';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import Footer from '@/components/layout/Footer';
 import Header from '@/components/layout/Header';
 import CartDrawer from '@/components/layout/CartDrawer';
@@ -8,6 +8,7 @@ import CookieConsent from '@/components/layout/CookieConsent';
 import NProgress from '@/components/layout/NProgress';
 import { CompareBar } from '@/components/shared/CompareBar';
 import { useUiStore } from '@/stores/uiStore';
+import { useWishlistStore } from '@/stores/wishlistStore';
 import { MOTION } from '@/lib/constants';
 import type { SharedPageProps } from '@/types';
 
@@ -18,6 +19,15 @@ type AppLayoutProps = {
 export default function AppLayout({ children }: AppLayoutProps): React.JSX.Element {
     const page = usePage<SharedPageProps>();
     const compareItems = useUiStore((state) => state.compareItems);
+    const setWishlist = useWishlistStore((state) => state.setWishlist);
+
+    // Sync wishlist from server on every navigation
+    useEffect(() => {
+        const ids = page.props.wishlist_ids;
+        if (Array.isArray(ids)) {
+            setWishlist(ids);
+        }
+    }, [page.props.wishlist_ids]);
 
     return (
         <div className="flex min-h-screen flex-col bg-[var(--color-surface)] text-[var(--color-text-primary)]">

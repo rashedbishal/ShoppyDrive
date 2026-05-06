@@ -1,11 +1,9 @@
 <?php
 
+use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
-use Laravel\Fortify\Features;
 
-Route::inertia('/', 'welcome', [
-    'canRegister' => Features::enabled(Features::registration()),
-])->name('home');
+Route::get('/', HomeController::class)->name('home');
 
 Route::get('/about', fn () => inertia('static/About'))->name('about');
 Route::get('/contact', fn () => inertia('static/Contact'))->name('contact');

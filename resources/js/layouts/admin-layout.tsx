@@ -3,8 +3,8 @@ import {
     Award,
     Folder,
     FolderTree,
-    Image,
     LayoutDashboard,
+    LayoutTemplate,
     LogOut,
     Menu,
     Package,
@@ -24,43 +24,43 @@ const navSections = [
     {
         label: 'Overview',
         items: [
-            { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, match: 'admin.dashboard' },
+            { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, extraMatches: [] as string[] },
         ],
     },
     {
         label: 'Catalog',
         items: [
-            { label: 'Products', href: '/admin/products', icon: Package, match: 'admin.products.' },
-            { label: 'Categories', href: '/admin/categories', icon: Folder, match: 'admin.categories.' },
-            { label: 'Sub-categories', href: '/admin/sub-categories', icon: FolderTree, match: 'admin.sub-categories.' },
-            { label: 'Brands', href: '/admin/brands', icon: Award, match: 'admin.brands.' },
+            { label: 'Products', href: '/admin/products', icon: Package, extraMatches: [] as string[] },
+            { label: 'Categories', href: '/admin/categories', icon: Folder, extraMatches: [] as string[] },
+            { label: 'Sub-categories', href: '/admin/sub-categories', icon: FolderTree, extraMatches: [] as string[] },
+            { label: 'Brands', href: '/admin/brands', icon: Award, extraMatches: [] as string[] },
         ],
     },
     {
         label: 'Sales',
         items: [
-            { label: 'Orders', href: '/admin/orders', icon: ShoppingCart, match: 'admin.orders.' },
-            { label: 'Coupons', href: '/admin/coupons', icon: Tag, match: 'admin.coupons.' },
-            { label: 'Flash Sales', href: '/admin/flash-sales', icon: Zap, match: 'admin.flash-sales.' },
+            { label: 'Orders', href: '/admin/orders', icon: ShoppingCart, extraMatches: [] as string[] },
+            { label: 'Coupons', href: '/admin/coupons', icon: Tag, extraMatches: [] as string[] },
+            { label: 'Flash Sales', href: '/admin/flash-sales', icon: Zap, extraMatches: [] as string[] },
         ],
     },
     {
         label: 'Content',
         items: [
-            { label: 'Banners', href: '/admin/banners', icon: Image, match: 'admin.banners.' },
+            { label: 'Homepage', href: '/admin/homepage', icon: LayoutTemplate, extraMatches: ['/admin/hero-slides', '/admin/promotional-banners'] },
         ],
     },
     {
         label: 'Users',
         items: [
-            { label: 'Customers', href: '/admin/customers', icon: Users, match: 'admin.customers.' },
-            { label: 'Reviews', href: '/admin/reviews', icon: Star, match: 'admin.reviews.' },
+            { label: 'Customers', href: '/admin/customers', icon: Users, extraMatches: [] as string[] },
+            { label: 'Reviews', href: '/admin/reviews', icon: Star, extraMatches: [] as string[] },
         ],
     },
     {
         label: 'System',
         items: [
-            { label: 'Settings', href: '/admin/settings', icon: Settings, match: 'admin.settings.' },
+            { label: 'Settings', href: '/admin/settings', icon: Settings, extraMatches: [] as string[] },
         ],
     },
 ];
@@ -94,7 +94,7 @@ function SidebarContent({ currentUrl, onClose }: { currentUrl: string; onClose?:
                             {section.label}
                         </p>
                         {section.items.map((item) => {
-                            const isActive = currentUrl.startsWith(item.href);
+                            const isActive = currentUrl.startsWith(item.href) || item.extraMatches.some(m => currentUrl.startsWith(m));
                             const Icon = item.icon;
                             return (
                                 <Link

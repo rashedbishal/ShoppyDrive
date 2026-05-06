@@ -1,24 +1,33 @@
-import { ImagePlus, X } from 'lucide-react';
+import { Film, ImagePlus, X } from 'lucide-react';
 import React, { useRef, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
-interface MultiImageUploadProps {
+interface MultiMediaUploadProps {
     value: (string | File)[];
     onChange: (files: (string | File)[]) => void;
     error?: string;
     className?: string;
 }
 
-export function MultiImageUpload({ value, onChange, error, className }: MultiImageUploadProps): React.JSX.Element {
+export function MultiMediaUpload({ value, onChange, error, className }: MultiMediaUploadProps): React.JSX.Element {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [previews, setPreviews] = useState<{ id: string; url: string; item: string | File }[]>([]);
+    const [previews, setPreviews] = useState<{ id: string; url: string; item: string | File; type: 'image' | 'video' }[]>([]);
 
     useEffect(() => {
         const nextPreviews = value.map((item, index) => {
+            let url: string;
+            let type: 'image' | 'video' = 'image';
+
             if (typeof item === 'string') {
-                return { id: `string-${index}-${item}`, url: item, item };
+                url = item;
+                // Basic check for video extension if it's a URL
+                const isVideo = /\.(mp4|webm|ogg|mov)$/i.test(item);
+                type = isVideo ? 'video' : 'image';
+                return { id: `string-${index}-${item}`, url, item, type };
             } else {
-                return { id: `file-${index}-${item.name}`, url: URL.createObjectURL(item), item };
+                url = URL.createObjectURL(item);
+                type = item.type.startsWith('video/') ? 'video' : 'image';
+                return { id: `file-${index}-${item.name}`, url, item, type };
             }
         });
 
@@ -56,14 +65,28 @@ export function MultiImageUpload({ value, onChange, error, className }: MultiIma
                         key={preview.id}
                         className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
                     >
-                        <img
-                            src={preview.url}
-                            alt={`Preview ${index}`}
-                            className="h-full w-full object-cover"
-                            onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                        />
+                        {preview.type === 'video' ? (
+                            <video
+                                src={preview.url}
+                                className="h-full w-full object-cover"
+                                muted
+                                onMouseOver={(e) => (e.target as HTMLVideoElement).play()}
+                                onMouseOut={(e) => {
+                                    const v = e.target as HTMLVideoElement;
+                                    v.pause();
+                                    v.currentTime = 0;
+                                }}
+                            />
+                        ) : (
+                            <img
+                                src={preview.url}
+                                alt={`Preview ${index}`}
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                            />
+                        )}
                         <button
                             type="button"
                             onClick={() => handleRemove(index)}
@@ -75,6 +98,11 @@ export function MultiImageUpload({ value, onChange, error, className }: MultiIma
                             <span className="absolute bottom-0 left-0 right-0 bg-black/60 py-1 text-center text-[10px] font-bold text-white backdrop-blur-sm">
                                 PRIMARY
                             </span>
+                        )}
+                        {preview.type === 'video' && (
+                            <div className="absolute left-2 top-2 rounded-md bg-black/60 p-1 text-white backdrop-blur-sm">
+                                <Film className="size-3" />
+                            </div>
                         )}
                     </div>
                 ))}
@@ -89,7 +117,8 @@ export function MultiImageUpload({ value, onChange, error, className }: MultiIma
                     <div className="rounded-full bg-slate-100 p-2.5">
                         <ImagePlus className="size-5 text-slate-400" />
                     </div>
-                    <p className="mt-2 text-xs font-medium text-slate-500">Add Image</p>
+                    <p className="mt-2 text-xs font-medium text-slate-500">Add Media</p>
+                    <p className="text-[10px] text-slate-400">Images or Videos</p>
                 </div>
             </div>
 
@@ -97,7 +126,7 @@ export function MultiImageUpload({ value, onChange, error, className }: MultiIma
                 type="file"
                 ref={fileInputRef}
                 className="hidden"
-                accept="image/*"
+                accept="image/*,video/*"
                 multiple
                 onChange={handleFileChange}
             />

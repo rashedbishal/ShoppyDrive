@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { 
     ChevronLeft, 
@@ -18,7 +18,9 @@ import {
     Plus,
     Facebook,
     Twitter,
-    Link as LinkIcon
+    Link as LinkIcon,
+    Film,
+    Play
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
@@ -41,7 +43,8 @@ import type {
     Product,
     ProductVariant,
     Review,
-    AttributeValue
+    AttributeValue,
+    SharedPageProps,
 } from '@/types';
 
 interface ProductDetailProps {
@@ -59,6 +62,30 @@ export default function ProductDetail({
     ratingBreakdown,
     shippingMethods = [],
 }: ProductDetailProps): React.JSX.Element {
+    const { auth } = usePage<SharedPageProps>().props;
+
+    // Review form
+    const reviewForm = useForm({ title: '', body: '' });
+    const [reviewRating, setReviewRating] = useState(0);
+    const [reviewSubmitting, setReviewSubmitting] = useState(false);
+    const hasReviewed = reviews.some((r) => r.user?.id === auth.user?.id);
+
+    const submitReview = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (reviewRating === 0 || reviewSubmitting) return;
+        setReviewSubmitting(true);
+        router.post(
+            route('product.reviews.store', product.slug),
+            { rating: reviewRating, title: reviewForm.data.title, body: reviewForm.data.body },
+            {
+                preserveScroll: true,
+                onSuccess: () => { reviewForm.reset(); setReviewRating(0); },
+                onError: (errors) => reviewForm.setError(errors as any),
+                onFinish: () => setReviewSubmitting(false),
+            },
+        );
+    };
+
     // Stores
     const addItem = useCartStore((state) => state.addItem);
     const openCart = useUiStore((state) => state.openCart);
@@ -74,12 +101,12 @@ export default function ProductDetail({
     const [recentlyViewed, setRecentlyViewed] = useLocalStorage<Product[]>('recently_viewed', []);
 
     // Derived State
-    const images = product.images ?? [];
+    const media = product.media ?? [];
     const attributes = product.attributes ?? [];
     const variants = product.variants ?? [];
 
-    const primaryImage = images.find(img => img.is_primary) ?? images[0] ?? null;
-    const currentImage = images[currentImageIndex] ?? primaryImage ?? null;
+    const primaryMedia = media.find(m => m.is_primary) ?? media[0] ?? null;
+    const currentMedia = media[currentImageIndex] ?? primaryMedia ?? null;
 
     const selectedVariant = useMemo(() => {
         if (variants.length === 0) return null;
@@ -176,14 +203,14 @@ export default function ProductDetail({
                 <Breadcrumb items={breadcrumbItems} className="mb-8" />
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-12">
-                    {/* Left Column: Image Gallery */}
+                    {/* Left Column: Media Gallery */}
                     <div className="lg:col-span-7 xl:col-span-8">
                         <div className="flex flex-col md:flex-row gap-4">
                             {/* Thumbnails - Left on desktop */}
                             <div className="order-2 md:order-1 flex md:flex-col gap-3 overflow-x-auto md:overflow-y-auto max-h-[600px] scrollbar-hide py-1">
-                                {images.map((image, idx) => (
+                                {media.map((item, idx) => (
                                     <button
-                                        key={image.id}
+                                        key={item.id}
                                         onClick={() => setCurrentImageIndex(idx)}
                                         className={`relative shrink-0 w-20 aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all ${
                                             currentImageIndex === idx 
@@ -191,30 +218,51 @@ export default function ProductDetail({
                                                 : 'border-transparent hover:border-[var(--color-border)]'
                                         }`}
                                     >
-                                        <img src={image.path} alt={image.alt || product.name} className="w-full h-full object-cover" />
+                                        {item.type === 'video' ? (
+                                            <div className="w-full h-full bg-slate-900 flex items-center justify-center relative">
+                                                <video src={item.path} className="w-full h-full object-cover opacity-50" />
+                                                <Film className="size-6 text-white absolute z-10" />
+                                            </div>
+                                        ) : (
+                                            <img src={item.path} alt={item.alt || product.name} className="w-full h-full object-cover" />
+                                        )}
                                     </button>
                                 ))}
                             </div>
 
-                            {/* Main Image */}
+                            {/* Main Media */}
                             <div className="order-1 md:order-2 flex-1 relative aspect-[4/3] rounded-3xl overflow-hidden bg-white shadow-sm group">
                                 <AnimatePresence mode="wait">
-                                    {currentImage ? (
-                                        <motion.img
-                                            key={currentImage.id}
-                                            src={currentImage.path}
-                                            alt={currentImage.alt || product.name}
-                                            className="w-full h-full object-cover cursor-zoom-in"
+                                    {currentMedia ? (
+                                        <motion.div
+                                            key={currentMedia.id}
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
                                             transition={{ duration: 0.3 }}
-                                            onClick={() => setIsLightboxOpen(true)}
-                                        />
+                                            className="w-full h-full"
+                                        >
+                                            {currentMedia.type === 'video' ? (
+                                                <video
+                                                    src={currentMedia.path}
+                                                    className="w-full h-full object-cover"
+                                                    controls
+                                                    autoPlay
+                                                    muted
+                                                />
+                                            ) : (
+                                                <img
+                                                    src={currentMedia.path}
+                                                    alt={currentMedia.alt || product.name}
+                                                    className="w-full h-full object-cover cursor-zoom-in"
+                                                    onClick={() => setIsLightboxOpen(true)}
+                                                />
+                                            )}
+                                        </motion.div>
                                     ) : (
                                         <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-slate-50">
                                             <svg className="size-20 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                            <span className="text-sm text-slate-400">No image available</span>
+                                            <span className="text-sm text-slate-400">No media available</span>
                                         </div>
                                     )}
                                 </AnimatePresence>
@@ -234,7 +282,7 @@ export default function ProductDetail({
                                     </div>
                                 )}
 
-                                {images.length > 0 && (
+                                {media.length > 0 && currentMedia?.type === 'image' && (
                                     <button
                                         onClick={() => setIsLightboxOpen(true)}
                                         className="absolute bottom-6 right-6 p-3 rounded-full bg-white/90 text-[var(--color-text-primary)] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
@@ -473,13 +521,88 @@ export default function ProductDetail({
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                                 <div className="lg:col-span-4">
                                     <RatingBreakdown breakdown={ratingBreakdown} />
-                                    <div className="mt-8 p-6 rounded-2xl bg-[var(--color-primary-light)] border border-[var(--color-primary)]/10">
-                                        <h4 className="font-bold text-[var(--color-text-primary)] mb-2">Write a review?</h4>
-                                        <p className="text-sm text-[var(--color-text-secondary)] mb-4">Share your experience with this product to help others make better choices.</p>
-                                        <Button variant="outline" className="w-full bg-white border-[var(--color-primary)] text-[var(--color-primary)] font-bold">
-                                            <MessageSquare size={16} className="mr-2" />
-                                            Write Review
-                                        </Button>
+                                    <div className="mt-8 rounded-2xl border border-[var(--color-border)] bg-white p-6">
+                                        <h4 className="font-bold text-[var(--color-text-primary)] mb-1 flex items-center gap-2">
+                                            <MessageSquare size={16} className="text-[var(--color-primary)]" />
+                                            Write a Review
+                                        </h4>
+
+                                        {!auth.user ? (
+                                            <div className="mt-3">
+                                                <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+                                                    Please log in to share your experience.
+                                                </p>
+                                                <Link
+                                                    href={route('login')}
+                                                    className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-white hover:bg-[var(--color-primary-hover)] transition-colors"
+                                                >
+                                                    Log in to review
+                                                </Link>
+                                            </div>
+                                        ) : hasReviewed ? (
+                                            <p className="mt-3 text-sm text-[var(--color-success)] flex items-center gap-1.5">
+                                                <Check size={14} />
+                                                You have already reviewed this product.
+                                            </p>
+                                        ) : (
+                                            <form onSubmit={submitReview} className="mt-4 space-y-4">
+                                                {/* Star picker */}
+                                                <div className="space-y-1">
+                                                    <span className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">Your Rating *</span>
+                                                    <StarRating
+                                                        rating={reviewRating}
+                                                        interactive
+                                                        size="lg"
+                                                        onChange={setReviewRating}
+                                                    />
+                                                    {reviewForm.errors.rating && (
+                                                        <p className="text-xs text-red-500">{reviewForm.errors.rating}</p>
+                                                    )}
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <label className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
+                                                        Title <span className="normal-case font-normal">(optional)</span>
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={reviewForm.data.title}
+                                                        onChange={(e) => reviewForm.setData('title', e.target.value)}
+                                                        placeholder="Summarise your experience"
+                                                        maxLength={255}
+                                                        className="h-10 w-full rounded-xl border border-[var(--color-border)] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <label className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
+                                                        Review *
+                                                    </label>
+                                                    <textarea
+                                                        value={reviewForm.data.body}
+                                                        onChange={(e) => reviewForm.setData('body', e.target.value)}
+                                                        placeholder="Tell others what you think about this product…"
+                                                        rows={4}
+                                                        maxLength={2000}
+                                                        className="w-full rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 resize-none"
+                                                    />
+                                                    {reviewForm.errors.body && (
+                                                        <p className="text-xs text-red-500">{reviewForm.errors.body}</p>
+                                                    )}
+                                                    {reviewForm.errors.review && (
+                                                        <p className="text-xs text-red-500">{reviewForm.errors.review}</p>
+                                                    )}
+                                                </div>
+
+                                                <Button
+                                                    type="submit"
+                                                    disabled={reviewSubmitting || reviewRating === 0}
+                                                    className="w-full rounded-xl font-bold"
+                                                >
+                                                    {reviewSubmitting ? 'Submitting…' : 'Submit Review'}
+                                                </Button>
+                                            </form>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="lg:col-span-8">
@@ -618,7 +741,7 @@ export default function ProductDetail({
                         onClick={() => setIsLightboxOpen(false)}
                     >
                         <div className="flex items-center justify-between p-6 text-white" onClick={e => e.stopPropagation()}>
-                            <span className="font-bold">{currentImageIndex + 1} / {images.length}</span>
+                            <span className="font-bold">{currentImageIndex + 1} / {media.length}</span>
                             <button onClick={() => setIsLightboxOpen(false)} className="p-2 rounded-full hover:bg-white/10 transition-colors">
                                 <X size={28} />
                             </button>
@@ -626,22 +749,31 @@ export default function ProductDetail({
 
                         <div className="flex flex-1 items-center justify-center relative px-4 sm:px-16" onClick={e => e.stopPropagation()}>
                             <button
-                                onClick={() => setCurrentImageIndex(prev => (prev > 0 ? prev - 1 : images.length - 1))}
+                                onClick={() => setCurrentImageIndex(prev => (prev > 0 ? prev - 1 : media.length - 1))}
                                 className="absolute left-4 sm:left-6 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
                             >
                                 <ChevronLeft size={32} />
                             </button>
-                            <motion.img
-                                key={currentImage?.id}
-                                src={currentImage?.path}
-                                alt={currentImage?.alt || product.name}
-                                className="max-w-full max-h-[80vh] object-contain"
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            />
+                            {currentMedia?.type === 'video' ? (
+                                <video
+                                    src={currentMedia.path}
+                                    className="max-w-full max-h-[80vh] object-contain"
+                                    controls
+                                    autoPlay
+                                />
+                            ) : (
+                                <motion.img
+                                    key={currentMedia?.id}
+                                    src={currentMedia?.path}
+                                    alt={currentMedia?.alt || product.name}
+                                    className="max-w-full max-h-[80vh] object-contain"
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                                />
+                            )}
                             <button
-                                onClick={() => setCurrentImageIndex(prev => (prev < images.length - 1 ? prev + 1 : 0))}
+                                onClick={() => setCurrentImageIndex(prev => (prev < media.length - 1 ? prev + 1 : 0))}
                                 className="absolute right-4 sm:right-6 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
                             >
                                 <ChevronRight size={32} />
@@ -649,13 +781,20 @@ export default function ProductDetail({
                         </div>
 
                         <div className="flex justify-center gap-2 p-6 overflow-x-auto" onClick={e => e.stopPropagation()}>
-                            {images.map((image, idx) => (
+                            {media.map((item, idx) => (
                                 <button
-                                    key={image.id}
+                                    key={item.id}
                                     onClick={() => setCurrentImageIndex(idx)}
-                                    className={`w-14 h-14 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${currentImageIndex === idx ? 'border-[var(--color-primary)]' : 'border-white/20'}`}
+                                    className={`relative w-14 h-14 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${currentImageIndex === idx ? 'border-[var(--color-primary)]' : 'border-white/20'}`}
                                 >
-                                    <img src={image.path} alt={image.alt || product.name} className="w-full h-full object-cover" />
+                                    {item.type === 'video' ? (
+                                        <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                                            <video src={item.path} className="w-full h-full object-cover opacity-50" />
+                                            <Film size={16} className="text-white absolute z-10" />
+                                        </div>
+                                    ) : (
+                                        <img src={item.path} alt={item.alt || product.name} className="w-full h-full object-cover" />
+                                    )}
                                 </button>
                             ))}
                         </div>

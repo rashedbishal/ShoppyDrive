@@ -9,7 +9,6 @@ import {
     BadgeCheck,
     ChevronLeft,
     ChevronRight,
-    Clock3,
     Flame,
     Heart,
     Pause,
@@ -20,7 +19,7 @@ import {
     Truck,
     Zap,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,23 +29,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StarRating } from '@/components/ui/star-rating';
 import categoryRoutes from '@/routes/category';
 import productRoutes from '@/routes/product';
-import { STORAGE_KEYS, MOTION } from '@/lib/constants';
+import { MOTION } from '@/lib/constants';
 import {
     formatCurrency,
     getDiscountPercent,
     getInitials,
     cn,
 } from '@/lib/utils';
-import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import type {
-    AppSettings,
     Brand,
     Category,
+    FlashSale as FlashSaleData,
     Product,
-    ProductImage,
     SharedPageProps,
 } from '@/types';
 
@@ -81,15 +78,6 @@ type HeroSlide = {
     stats: HeroStat[];
 };
 
-type PromotionalBanner = {
-    title: string;
-    description: string;
-    href: string;
-    image: string;
-    accent: string;
-    badge: string;
-};
-
 type BrandCard = {
     id: number;
     name: string;
@@ -98,568 +86,42 @@ type BrandCard = {
     description: string;
 };
 
-type ProductSeed = {
-    id: number;
-    name: string;
-    slug: string;
-    categorySlug: string;
-    brand: string;
-    price: number;
-    comparePrice: number;
-    stockQuantity: number;
-    lowStockThreshold: number;
-    weight: number;
-    image: string;
-    secondaryImage: string;
-    description: string;
-    tags: string[];
-    rating: number;
-    reviewsCount: number;
-    isFeatured?: boolean;
-    inFlashSale?: boolean;
-    flashSalePrice?: number;
-};
-
 type FlashSaleItem = {
     product: Product;
-    soldCount: number;
-    stockLimit: number;
+    sold_count: number;
+    stock_limit: number | null;
 };
 
-const DEMO_TIMESTAMP = '2026-04-29T12:00:00+06:00';
 const HERO_AUTOPLAY_MS = 5000;
-const FLASH_SALE_ENDS_AT = '2026-05-03T23:59:59+06:00';
 
-const categoryCards: HomeCategoryCard[] = [
-    {
-        name: "Men's Clothing",
-        slug: 'mens-clothing',
-        description: 'T-shirts, shirts, jeans, hoodies and traditional wear.',
-        image:
-            'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=1200&q=80',
-        productsCount: 45,
-        accent: 'from-sky-500/90 to-indigo-600/90',
-    },
-    {
-        name: "Women's Clothing",
-        slug: 'womens-clothing',
-        description: 'Dresses, tops, sarees, kurtis and festive fashion.',
-        image:
-            'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=80',
-        productsCount: 52,
-        accent: 'from-rose-500/90 to-amber-500/90',
-    },
-    {
-        name: 'Electronics & Gadgets',
-        slug: 'electronics',
-        description: 'Earbuds, phone accessories, power banks and smart tech.',
-        image:
-            'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80',
-        productsCount: 38,
-        accent: 'from-cyan-500/90 to-blue-600/90',
-    },
-    {
-        name: 'Home & Living',
-        slug: 'home-living',
-        description: 'Kitchen appliances, decor, bedding and smart storage.',
-        image:
-            'https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1200&q=80',
-        productsCount: 34,
-        accent: 'from-emerald-500/90 to-teal-600/90',
-    },
-    {
-        name: 'Beauty & Health',
-        slug: 'beauty-health',
-        description: 'Skincare, makeup, grooming and self-care essentials.',
-        image:
-            'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1200&q=80',
-        productsCount: 28,
-        accent: 'from-fuchsia-500/90 to-pink-600/90',
-    },
-    {
-        name: 'Sports & Outdoors',
-        slug: 'sports-outdoors',
-        description: 'Activewear, sports shoes, gym gear and outdoor accessories.',
-        image:
-            'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1200&q=80',
-        productsCount: 22,
-        accent: 'from-violet-500/90 to-purple-600/90',
-    },
+const CATEGORY_ACCENTS = [
+    'from-sky-500/90 to-indigo-600/90',
+    'from-rose-500/90 to-amber-500/90',
+    'from-cyan-500/90 to-blue-600/90',
+    'from-emerald-500/90 to-teal-600/90',
+    'from-fuchsia-500/90 to-pink-600/90',
+    'from-violet-500/90 to-purple-600/90',
 ];
 
-const heroSlides: HeroSlide[] = [
-    {
-        id: 'fashion',
-        eyebrow: 'ShoppyDrive — Bangladesh-ready shopping',
-        title: 'Style for every occasion — from casual to festive',
-        description:
-            "Explore men's and women's fashion with premium fabrics, clear pricing, and fast nationwide delivery.",
-        primaryCta: {
-            label: "Shop Men's Clothing",
-            href: '/category/mens-clothing',
-        },
-        secondaryCta: {
-            label: "Women's Collection",
-            href: '/category/womens-clothing',
-        },
-        image:
-            'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1800&q=80',
-        stats: [
-            { label: 'Style drops', value: 'Weekly' },
-            { label: 'Returns', value: 'Easy exchange' },
-            { label: 'Delivery', value: '24–48h' },
-        ],
-    },
-    {
-        id: 'tech',
-        eyebrow: 'Gadgets & Electronics',
-        title: 'Smart tech and audio gear at honest prices',
-        description:
-            'Premium earbuds, power banks, and accessories curated for buyers who want confidence before checkout.',
-        primaryCta: {
-            label: 'Shop Electronics',
-            href: '/category/electronics',
-        },
-        secondaryCta: {
-            label: 'View Flash Sale',
-            href: '/flash-sales',
-        },
-        image:
-            'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1800&q=80',
-        stats: [
-            { label: 'Payment', value: 'Cash on Delivery' },
-            { label: 'Support', value: 'Bangla + English' },
-            { label: 'Coverage', value: 'Nationwide' },
-        ],
-    },
-    {
-        id: 'home',
-        eyebrow: 'Home & Living',
-        title: 'Kitchen, decor, and daily essentials for every home',
-        description:
-            'Practical home goods chosen for utility, longevity, and a polished look that elevates any space.',
-        primaryCta: {
-            label: 'Shop Home & Living',
-            href: '/category/home-living',
-        },
-        secondaryCta: {
-            label: 'Best Sellers',
-            href: '/products?sort=popular',
-        },
-        image:
-            'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1800&q=80',
-        stats: [
-            { label: 'Quality', value: 'Built to last' },
-            { label: 'Categories', value: 'Kitchen + Decor' },
-            { label: 'Shipping', value: 'Nationwide' },
-        ],
-    },
+const BRAND_ACCENTS = [
+    'bg-sky-50 text-sky-700',
+    'bg-amber-50 text-amber-700',
+    'bg-emerald-50 text-emerald-700',
+    'bg-rose-50 text-rose-700',
+    'bg-indigo-50 text-indigo-700',
+    'bg-fuchsia-50 text-fuchsia-700',
+    'bg-blue-50 text-blue-700',
+    'bg-orange-50 text-orange-700',
 ];
 
-const promotionalBanners: PromotionalBanner[] = [
-    {
-        title: 'Refresh your daily essentials',
-        description:
-            'Smart restocks, curated home items, and low-friction buying for repeat shoppers.',
-        href: '/products?sort=newest',
-        image:
-            'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1400&q=80',
-        accent: 'from-secondary/90 via-secondary/70 to-secondary/20',
-        badge: 'New arrivals',
-    },
-    {
-        title: 'Upgrade your festival cart',
-        description:
-            'Premium gifts, standout fashion, and bundle-friendly picks for the season.',
-        href: '/products?sort=popular',
-        image:
-            'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1400&q=80',
-        accent: 'from-primary/90 via-primary/70 to-primary/20',
-        badge: 'Seasonal edit',
-    },
-];
-
-const brandCards: BrandCard[] = [
-    {
-        id: 1,
-        name: 'Samsung',
-        slug: 'samsung',
-        accent: 'bg-sky-50 text-sky-700',
-        description: 'Flagship phones & displays',
-    },
-    {
-        id: 2,
-        name: 'Aarong',
-        slug: 'aarong',
-        accent: 'bg-amber-50 text-amber-700',
-        description: 'Bangladesh-first fashion',
-    },
-    {
-        id: 3,
-        name: 'Anker',
-        slug: 'anker',
-        accent: 'bg-emerald-50 text-emerald-700',
-        description: 'Power and audio accessories',
-    },
-    {
-        id: 4,
-        name: 'Walton',
-        slug: 'walton',
-        accent: 'bg-rose-50 text-rose-700',
-        description: 'Home appliances & devices',
-    },
-    {
-        id: 5,
-        name: 'Nike',
-        slug: 'nike',
-        accent: 'bg-indigo-50 text-indigo-700',
-        description: 'Performance sports & style',
-    },
-    {
-        id: 6,
-        name: 'CeraVe',
-        slug: 'cerave',
-        accent: 'bg-fuchsia-50 text-fuchsia-700',
-        description: 'Skincare essentials',
-    },
-    {
-        id: 7,
-        name: 'Levi\'s',
-        slug: 'levis',
-        accent: 'bg-blue-50 text-blue-700',
-        description: 'Iconic denim & casual wear',
-    },
-    {
-        id: 8,
-        name: 'Fossil',
-        slug: 'fossil',
-        accent: 'bg-orange-50 text-orange-700',
-        description: 'Classic watches & accessories',
-    },
-];
-
-const productSeeds: ProductSeed[] = [
-    {
-        id: 101,
-        name: 'Samsung Galaxy S24 Ultra 5G',
-        slug: 'samsung-galaxy-s24-ultra-5g',
-        categorySlug: 'electronics',
-        brand: 'Samsung',
-        price: 134999,
-        comparePrice: 149999,
-        stockQuantity: 16,
-        lowStockThreshold: 5,
-        weight: 0.23,
-        image:
-            'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1200&q=80',
-        secondaryImage:
-            'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&w=1200&q=80',
-        description:
-            'Flagship 200MP camera phone with S Pen, titanium frame and all-day battery.',
-        tags: ['smartphone', 'flagship', 'android'],
-        rating: 4.8,
-        reviewsCount: 124,
-        isFeatured: true,
-        inFlashSale: true,
-        flashSalePrice: 129999,
-    },
-    {
-        id: 102,
-        name: 'AirGo Pro ANC Wireless Earbuds',
-        slug: 'airgo-pro-anc-wireless-earbuds',
-        categorySlug: 'electronics',
-        brand: 'Anker',
-        price: 8990,
-        comparePrice: 11990,
-        stockQuantity: 42,
-        lowStockThreshold: 8,
-        weight: 0.08,
-        image:
-            'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=1200&q=80',
-        secondaryImage:
-            'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80',
-        description:
-            'Compact ANC earbuds with 30h battery, punchy bass and USB-C fast charging.',
-        tags: ['audio', 'wireless', 'travel'],
-        rating: 4.6,
-        reviewsCount: 86,
-        isFeatured: true,
-    },
-    {
-        id: 103,
-        name: 'Premium Linen Panjabi Cream',
-        slug: 'premium-linen-panjabi-cream',
-        categorySlug: 'mens-clothing',
-        brand: 'Aarong',
-        price: 3290,
-        comparePrice: 3890,
-        stockQuantity: 58,
-        lowStockThreshold: 10,
-        weight: 0.42,
-        image:
-            'https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=1200&q=80',
-        secondaryImage:
-            'https://images.unsplash.com/photo-1583846712148-b61ecca50c50?auto=format&fit=crop&w=1200&q=80',
-        description:
-            'Breathable linen panjabi with embroidered collar. Perfect for Eid and weddings.',
-        tags: ['fashion', 'menswear', 'traditional'],
-        rating: 4.7,
-        reviewsCount: 73,
-        isFeatured: true,
-    },
-    {
-        id: 104,
-        name: 'Heritage Banarasi Silk Saree',
-        slug: 'heritage-banarasi-silk-saree',
-        categorySlug: 'womens-clothing',
-        brand: 'Aarong',
-        price: 7990,
-        comparePrice: 9990,
-        stockQuantity: 24,
-        lowStockThreshold: 5,
-        weight: 0.58,
-        image:
-            'https://images.unsplash.com/photo-1614252369475-531eba1372f3?auto=format&fit=crop&w=1200&q=80',
-        secondaryImage:
-            'https://images.unsplash.com/photo-1611042553365-9b101441c135?auto=format&fit=crop&w=1200&q=80',
-        description:
-            'Exquisite Banarasi silk saree with zari work for ceremonies and gifting.',
-        tags: ['fashion', 'women', 'festive'],
-        rating: 4.9,
-        reviewsCount: 41,
-        isFeatured: true,
-    },
-    {
-        id: 105,
-        name: 'Compact Air Fryer 4L',
-        slug: 'compact-air-fryer-4l',
-        categorySlug: 'home-living',
-        brand: 'Walton',
-        price: 7990,
-        comparePrice: 9990,
-        stockQuantity: 19,
-        lowStockThreshold: 4,
-        weight: 3.2,
-        image:
-            'https://images.unsplash.com/photo-1556909172-5f7b3f2e6b1c?auto=format&fit=crop&w=1200&q=80',
-        secondaryImage:
-            'https://images.unsplash.com/photo-1644093549994-3dc2a7a44f5b?auto=format&fit=crop&w=1200&q=80',
-        description:
-            'Countertop air fryer with 7 presets, rapid air circulation and non-stick basket.',
-        tags: ['home', 'kitchen', 'appliance'],
-        rating: 4.5,
-        reviewsCount: 57,
-        isFeatured: true,
-        inFlashSale: true,
-        flashSalePrice: 7490,
-    },
-    {
-        id: 106,
-        name: 'Smart Rice Cooker 1.8L',
-        slug: 'smart-rice-cooker-1-8l',
-        categorySlug: 'home-living',
-        brand: 'Walton',
-        price: 5290,
-        comparePrice: 6790,
-        stockQuantity: 33,
-        lowStockThreshold: 6,
-        weight: 2.7,
-        image:
-            'https://images.unsplash.com/photo-1491203659242-5355db3a50e4?auto=format&fit=crop&w=1200&q=80',
-        secondaryImage:
-            'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=80',
-        description:
-            'Multi-function rice cooker with warm-hold and steam basket for busy kitchens.',
-        tags: ['home', 'kitchen', 'daily-use'],
-        rating: 4.4,
-        reviewsCount: 65,
-        isFeatured: false,
-    },
-    {
-        id: 107,
-        name: 'CeraVe Hydrating Skincare Duo',
-        slug: 'cerave-hydrating-skincare-duo',
-        categorySlug: 'beauty-health',
-        brand: 'CeraVe',
-        price: 2890,
-        comparePrice: 3590,
-        stockQuantity: 70,
-        lowStockThreshold: 6,
-        weight: 0.31,
-        image:
-            'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=1200&q=80',
-        secondaryImage:
-            'https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=1200&q=80',
-        description:
-            'Gentle hydrating cleanser and moisturizer duo with ceramides and hyaluronic acid.',
-        tags: ['beauty', 'skincare', 'self-care'],
-        rating: 4.7,
-        reviewsCount: 92,
-        isFeatured: true,
-        inFlashSale: true,
-        flashSalePrice: 2490,
-    },
-    {
-        id: 108,
-        name: 'Urban Laptop Backpack 30L',
-        slug: 'urban-laptop-backpack-30l',
-        categorySlug: 'bags-luggage',
-        brand: 'Nike',
-        price: 4290,
-        comparePrice: 5490,
-        stockQuantity: 62,
-        lowStockThreshold: 8,
-        weight: 0.75,
-        image:
-            'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=80',
-        secondaryImage:
-            'https://images.unsplash.com/photo-1622560480654-d96214fdc887?auto=format&fit=crop&w=1200&q=80',
-        description:
-            'Durable 30L backpack with padded 15" laptop sleeve and organizer pockets.',
-        tags: ['bags', 'travel', 'laptop'],
-        rating: 4.5,
-        reviewsCount: 38,
-    },
-];
-
-function createCategoryEntity(seed: HomeCategoryCard): Category {
-    return {
-        id: seed.slug.length,
-        name: seed.name,
-        slug: seed.slug,
-        image: seed.image,
-        description: seed.description,
-        meta_title: `${seed.name} | ShoppyDrive`,
-        meta_description: seed.description,
-        is_active: true,
-        sort_order: 0,
-        sub_categories: [],
-        products_count: seed.productsCount,
-        created_at: DEMO_TIMESTAMP,
-        updated_at: DEMO_TIMESTAMP,
-        deleted_at: null,
-    };
-}
-
-function createBrandEntity(name: string, id: number): Brand {
-    return {
-        id,
-        name,
-        slug: name.toLowerCase().replace(/\s+/g, '-'),
-        logo: null,
-        description: `${name} storefront selection`,
-        is_active: true,
-        created_at: DEMO_TIMESTAMP,
-        updated_at: DEMO_TIMESTAMP,
-    };
-}
-
-function createProductEntity(seed: ProductSeed): Product {
-    const catSlug = seed.categorySlug;
-    const matchedCard = categoryCards.find((item) => item.slug === catSlug) ??
-        categoryCards.find((item) => catSlug.startsWith(item.slug.split('-')[0])) ??
-        categoryCards[0];
-    const category = createCategoryEntity(matchedCard);
-    const brand = createBrandEntity(seed.brand, seed.id + 1000);
-
-    const images: ProductImage[] = [
-        {
-            id: seed.id * 10,
-            product_id: seed.id,
-            path: seed.image,
-            alt: seed.name,
-            sort_order: 1,
-            is_primary: true,
-            created_at: DEMO_TIMESTAMP,
-            updated_at: DEMO_TIMESTAMP,
-        },
-        {
-            id: seed.id * 10 + 1,
-            product_id: seed.id,
-            path: seed.secondaryImage,
-            alt: `${seed.name} alternate view`,
-            sort_order: 2,
-            is_primary: false,
-            created_at: DEMO_TIMESTAMP,
-            updated_at: DEMO_TIMESTAMP,
-        },
-    ];
-
-    return {
-        id: seed.id,
-        name: seed.name,
-        slug: seed.slug,
-        sku: `${seed.slug.slice(0, 3).toUpperCase()}-${seed.id}`,
-        short_description: seed.description,
-        description: seed.description,
-        category,
-        brand,
-        price: seed.price,
-        compare_price: seed.comparePrice,
-        cost_price: null,
-        formatted_price: formatCurrency(seed.price),
-        formatted_compare_price: formatCurrency(seed.comparePrice),
-        discount_percentage: getDiscountPercent(seed.price, seed.comparePrice),
-        stock_quantity: seed.stockQuantity,
-        low_stock_threshold: seed.lowStockThreshold,
-        is_active: true,
-        is_featured: seed.isFeatured ?? false,
-        is_digital: false,
-        weight: seed.weight,
-        meta_title: `${seed.name} | ShoppyDrive`,
-        meta_description: seed.description,
-        meta_keywords: seed.tags.join(', '),
-        published_at: DEMO_TIMESTAMP,
-        primary_image_url: seed.image,
-        images,
-        variants: [],
-        attributes: [],
-        tags: seed.tags,
-        average_rating: seed.rating,
-        reviews_count: seed.reviewsCount,
-        is_wishlisted: false,
-        in_flash_sale: seed.inFlashSale ?? false,
-        flash_sale_price: seed.flashSalePrice ?? null,
-        created_at: DEMO_TIMESTAMP,
-        updated_at: DEMO_TIMESTAMP,
-        deleted_at: null,
-    };
-}
-
-const catalogProducts: Product[] = productSeeds.map((seed) => createProductEntity(seed));
-
-const flashSaleItems: FlashSaleItem[] = [
-    {
-        product: catalogProducts[0],
-        soldCount: 86,
-        stockLimit: 100,
-    },
-    {
-        product: catalogProducts[4],
-        soldCount: 54,
-        stockLimit: 90,
-    },
-    {
-        product: catalogProducts[6],
-        soldCount: 72,
-        stockLimit: 120,
-    },
-    {
-        product: catalogProducts[1],
-        soldCount: 31,
-        stockLimit: 64,
-    },
-];
-
-const flashSale = {
-    name: 'Weekend flash sale',
-    ends_at: FLASH_SALE_ENDS_AT,
-    items: flashSaleItems,
+type HomePageProps = SharedPageProps & {
+    activeFlashSale: FlashSaleData | null;
+    featuredProducts: Product[];
+    newArrivals: Product[];
+    bestSellers: Product[];
+    brands: Brand[];
+    categories: Category[];
 };
-
-const featuredProducts = catalogProducts.filter((product) => product.is_featured);
-const newArrivals = [catalogProducts[5], catalogProducts[7], catalogProducts[2], catalogProducts[3]];
-const bestSellers = [catalogProducts[0], catalogProducts[6], catalogProducts[4], catalogProducts[1]];
 
 type SectionHeadingProps = {
     eyebrow?: string;
@@ -993,7 +455,7 @@ function ProductCard({
     const wishlisted = useWishlistStore((state) => state.isWishlisted(product.id));
     const [isHovered, setIsHovered] = useState(false);
 
-    const imageSet = product.images.length > 0 ? product.images : [];
+    const imageSet = product.images ?? [];
     const primaryImage = imageSet.find((image) => image.is_primary) ?? imageSet[0];
     const secondaryImage = imageSet.find((image) => !image.is_primary);
     const primaryUrl = primaryImage?.path ?? product.primary_image_url ?? '';
@@ -1205,7 +667,7 @@ function FlashSaleCard({
     const wishlisted = useWishlistStore((state) => state.isWishlisted(product.id));
     const [isHovered, setIsHovered] = useState(false);
 
-    const imageSet = product.images.length > 0 ? product.images : [];
+    const imageSet = product.images ?? [];
     const primaryImage = imageSet.find((img) => img.is_primary) ?? imageSet[0];
     const secondaryImage = imageSet.find((img) => !img.is_primary);
     const primaryUrl = primaryImage?.path ?? product.primary_image_url ?? '';
@@ -1370,6 +832,90 @@ function FlashSaleCard({
                 </button>
             </div>
         </motion.article>
+    );
+}
+
+type FlashSaleSliderProps = {
+    items: FlashSaleItem[];
+    saleProgressMap: Map<number, { label: string; value: number }>;
+};
+
+function FlashSaleSlider({ items, saleProgressMap }: FlashSaleSliderProps): React.JSX.Element {
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+
+    const syncButtons = () => {
+        const el = scrollRef.current;
+        if (!el) return;
+        setCanScrollLeft(el.scrollLeft > 4);
+        setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+    };
+
+    useEffect(() => {
+        syncButtons();
+        const el = scrollRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(syncButtons);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [items]);
+
+    const scroll = (dir: 'left' | 'right') => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const card = el.querySelector<HTMLElement>('[data-flash-card]');
+        const step = card ? (card.offsetWidth + 12) * 2 : 480;
+        el.scrollBy({ left: dir === 'right' ? step : -step, behavior: 'smooth' });
+    };
+
+    return (
+        <div className="relative">
+            <div
+                ref={scrollRef}
+                onScroll={syncButtons}
+                className="flex gap-3 overflow-x-auto scroll-smooth md:gap-4"
+                style={{ scrollbarWidth: 'none' }}
+            >
+                {items.map((item) => {
+                    const progress = saleProgressMap.get(item.product.id);
+                    return (
+                        <div
+                            key={item.product.id}
+                            data-flash-card
+                            className="shrink-0 w-[calc(50%-6px)] sm:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)] xl:w-[calc(20%-10px)]"
+                        >
+                            <FlashSaleCard
+                                product={item.product}
+                                saleProgress={progress?.value}
+                                saleProgressLabel={progress?.label}
+                            />
+                        </div>
+                    );
+                })}
+            </div>
+
+            {canScrollLeft && (
+                <button
+                    type="button"
+                    onClick={() => scroll('left')}
+                    aria-label="Scroll left"
+                    className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 hidden lg:flex size-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/25 shadow-lg"
+                >
+                    <ChevronLeft className="size-5" />
+                </button>
+            )}
+            {canScrollRight && (
+                <button
+                    type="button"
+                    onClick={() => scroll('right')}
+                    aria-label="Scroll right"
+                    className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 hidden lg:flex size-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/25 shadow-lg"
+                >
+                    <ChevronRight className="size-5" />
+                </button>
+            )}
+        </div>
     );
 }
 
@@ -1715,235 +1261,246 @@ function NewsletterForm(): React.JSX.Element {
 }
 
 function Home(): React.JSX.Element {
-    const page = usePage<SharedPageProps>();
-    const settings: AppSettings = page.props.settings;
-    const [recentlyViewedSlugs] = useLocalStorage<string[]>(
-        STORAGE_KEYS.recentlyViewed,
-        [],
-    );
+    const {
+        settings,
+        homepage_settings,
+        hero_slides,
+        promotional_banners,
+        activeFlashSale,
+        featuredProducts,
+        newArrivals,
+        bestSellers,
+        brands,
+        categories,
+    } = usePage<HomePageProps>().props;
 
-    const recentlyViewedProducts = useMemo(() => {
-        if (recentlyViewedSlugs.length === 0) {
-            return [];
-        }
+    const categoryCards: HomeCategoryCard[] = (categories ?? []).map((cat, index) => ({
+        name: cat.name,
+        slug: cat.slug,
+        description: cat.description ?? '',
+        image: cat.image ?? '',
+        productsCount: cat.products_count ?? 0,
+        accent: CATEGORY_ACCENTS[index % CATEGORY_ACCENTS.length],
+    }));
 
-        const lookup = new Map(catalogProducts.map((product) => [product.slug, product]));
+    const brandCards: BrandCard[] = (brands ?? []).map((brand, index) => ({
+        id: brand.id,
+        name: brand.name,
+        slug: brand.slug,
+        accent: BRAND_ACCENTS[index % BRAND_ACCENTS.length],
+        description: brand.description ?? '',
+    }));
 
-        return recentlyViewedSlugs
-            .map((slug) => lookup.get(slug))
-            .filter((product): product is Product => product !== undefined);
-    }, [recentlyViewedSlugs]);
+    const flashSale = activeFlashSale
+        ? {
+              name: activeFlashSale.name,
+              ends_at: activeFlashSale.ends_at,
+              items: (activeFlashSale.items ?? []) as FlashSaleItem[],
+          }
+        : null;
 
     const flashSaleProgressMap = useMemo(() => {
+        if (!flashSale) {
+            return new Map<number, { label: string; value: number }>();
+        }
+
         return new Map(
             flashSale.items.map((item) => [
                 item.product.id,
                 {
-                    label: `${item.soldCount} sold`,
-                    value: Math.round((item.soldCount / item.stockLimit) * 100),
+                    label: `${item.sold_count} sold`,
+                    value: typeof item.stock_limit === 'number' && item.stock_limit > 0
+                        ? Math.round((item.sold_count / item.stock_limit) * 100)
+                        : 0,
                 },
             ]),
         );
-    }, []);
+    }, [activeFlashSale]);
+
+    // Helper to get section data safely
+    const getSection = (key: string) => homepage_settings?.[key];
+
+    // Helper to render section heading
+    const renderHeading = (key: string, defaultTitle: string) => {
+        const s = getSection(key);
+        if (!s) return null;
+        return (
+            <SectionHeading
+                eyebrow={s.eyebrow ?? undefined}
+                title={s.title || defaultTitle}
+                description={s.description ?? undefined}
+                actionLabel={s.action_label ?? undefined}
+                actionHref={s.action_href ?? undefined}
+            />
+        );
+    };
 
     return (
         <>
             <Head title="Premium BDT shopping" />
 
             <div className="space-y-16 py-8 lg:py-12">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <HeroSlider slides={heroSlides} />
-                </div>
+                {/* Hero Section */}
+                {getSection('hero_slider')?.is_visible && hero_slides?.length > 0 && (
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <HeroSlider slides={hero_slides.map(s => ({
+                            id: String(s.id),
+                            eyebrow: s.eyebrow || '',
+                            title: s.title,
+                            description: s.description || '',
+                            primaryCta: { label: s.primary_cta_label || 'Shop Now', href: s.primary_cta_href || '#' },
+                            secondaryCta: { label: s.secondary_cta_label || 'Learn More', href: s.secondary_cta_href || '#' },
+                            image: s.image,
+                            stats: s.stats || []
+                        }))} />
+                    </div>
+                )}
 
-                {flashSale.items.length > 0 ? (
+                {/* Flash Sale Section */}
+                {getSection('flash_sale')?.is_visible && flashSale && flashSale.items.length > 0 && (
                     <section className="bg-[var(--color-secondary)] py-12 text-white lg:py-16">
                         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                            {/* Header row */}
                             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <Badge className="w-fit bg-[var(--color-accent)] text-[var(--color-secondary)]">
                                             <Zap className="size-3.5 fill-current" />
-                                            Flash sale
+                                            {getSection('flash_sale')?.eyebrow || 'Flash sale'}
                                         </Badge>
                                     </div>
-                                    <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{flashSale.name}</h2>
+                                    <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                                        {getSection('flash_sale')?.title || flashSale.name}
+                                    </h2>
                                     <FlashSaleCountdown endsAt={flashSale.ends_at} />
                                 </div>
                                 <div className="flex shrink-0 flex-wrap gap-2">
                                     <Button asChild size="sm" className="bg-white text-[var(--color-secondary)] hover:bg-white/90">
-                                        <Link href="/flash-sales">
-                                            Shop all
+                                        <Link href={getSection('flash_sale')?.action_href || '/flash-sales'}>
+                                            {getSection('flash_sale')?.action_label || 'Shop all'}
                                             <ArrowRight className="size-3.5" />
                                         </Link>
                                     </Button>
-                                    <Button asChild size="sm" variant="outline" className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white">
-                                        <Link href="/products?sort=popular">Best sellers</Link>
-                                    </Button>
                                 </div>
                             </div>
 
-                            {/* Cards grid */}
-                            <div className="grid grid-cols-2 gap-3 md:gap-4 sm:grid-cols-3 xl:grid-cols-4">
-                                {flashSale.items.map((item) => {
-                                    const progress = flashSaleProgressMap.get(item.product.id);
-                                    return (
-                                        <FlashSaleCard
-                                            key={item.product.id}
-                                            product={item.product}
-                                            saleProgress={progress?.value}
-                                            saleProgressLabel={progress?.label}
-                                        />
-                                    );
-                                })}
-                            </div>
+                            <FlashSaleSlider
+                                items={flashSale.items}
+                                saleProgressMap={flashSaleProgressMap}
+                            />
                         </div>
                     </section>
-                ) : null}
+                )}
 
-                <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
-                    <SectionHeading
-                        eyebrow="Categories"
-                        title="Shop by category"
-                        description="Curated entry points to the Bangladesh shopping experience, organized around the categories shoppers reach for most."
-                        actionLabel="View all categories"
-                        actionHref="/products"
-                    />
-
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        {categoryCards.map((category) => (
-                            <CategoryCard key={category.slug} category={category} />
-                        ))}
-                    </div>
-                </section>
-
-                <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
-                    <SectionHeading
-                        eyebrow="Featured"
-                        title="Featured products"
-                        description="Balanced merchandising that keeps the page premium, readable, and focused on conversion."
-                        actionLabel="View all products"
-                        actionHref="/products"
-                    />
-
-                    <ProductGrid
-                        products={featuredProducts}
-                        emptyTitle="No featured products"
-                        emptyDescription="Feature products in the admin panel to surface them here."
-                        emptyHref="/products"
-                        emptyActionLabel="Browse products"
-                    />
-                </section>
-
-                <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="grid gap-4 lg:grid-cols-2">
-                        {promotionalBanners.map((banner) => (
-                            <Link
-                                key={banner.title}
-                                href={banner.href}
-                                className="group relative overflow-hidden rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-secondary)] shadow-[var(--shadow-card)]"
-                            >
-                                <img
-                                    src={banner.image}
-                                    alt={banner.title}
-                                    loading="lazy"
-                                    decoding="async"
-                                    className="h-full min-h-[18rem] w-full object-cover transition duration-500 group-hover:scale-105"
-                                />
-                                <div className={cn('absolute inset-0 bg-gradient-to-r', banner.accent)} />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-                                <div className="absolute inset-0 flex flex-col justify-end p-6 text-white sm:p-8">
-                                    <Badge className="mb-4 w-fit bg-white/10 text-white backdrop-blur-md">
-                                        {banner.badge}
-                                    </Badge>
-                                    <h3 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-                                        {banner.title}
-                                    </h3>
-                                    <p className="mt-2 max-w-lg text-sm leading-7 text-white/80 sm:text-base">
-                                        {banner.description}
-                                    </p>
-                                    <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-white">
-                                        Explore now
-                                        <ArrowRight className="size-4 transition group-hover:translate-x-1" />
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                </section>
-
-                <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
-                    <SectionHeading
-                        eyebrow="Arrivals"
-                        title="New arrivals"
-                        description="Fresh inventory, updated merchandising, and products that feel new the moment they land."
-                        actionLabel="See newest"
-                        actionHref="/products?sort=newest"
-                    />
-
-                    <ProductRail
-                        title="Recently added"
-                        products={newArrivals}
-                        emptyTitle="No new arrivals yet"
-                        emptyDescription="Use the admin inventory flow to publish the latest assortment."
-                        emptyHref="/products"
-                        emptyActionLabel="Browse products"
-                    />
-                </section>
-
-                <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
-                    <SectionHeading
-                        eyebrow="Brands"
-                        title="Our brands"
-                        description="A quieter section with grayscale brand treatment, letting shoppers scan premium labels without visual noise."
-                        actionLabel="Explore brands"
-                        actionHref="/brands"
-                    />
-
-                    <div className="flex gap-4 overflow-x-auto pb-2">
-                        {brandCards.map((brand) => (
-                            <BrandTile key={brand.id} brand={brand} />
-                        ))}
-                    </div>
-                </section>
-
-                <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
-                    <SectionHeading
-                        eyebrow="Best sellers"
-                        title="Best sellers"
-                        description="Products with proven demand, strong ratings, and enough detail to justify the purchase quickly."
-                        actionLabel="Shop best sellers"
-                        actionHref="/products?sort=popular"
-                    />
-
-                    <ProductRail
-                        products={bestSellers}
-                        emptyTitle="No best sellers yet"
-                        emptyDescription="The best sellers rail will populate once product data is connected."
-                        emptyHref="/products"
-                        emptyActionLabel="Browse products"
-                    />
-                </section>
-
-                {recentlyViewedProducts.length > 0 ? (
+                {/* Categories Section */}
+                {getSection('categories')?.is_visible && (
                     <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
-                        <SectionHeading
-                            eyebrow="History"
-                            title="Recently viewed"
-                            description="Saved locally on the shopper's device so they can return to products they checked earlier."
-                            actionLabel="Clear local history"
-                            actionHref="/products"
-                        />
+                        {renderHeading('categories', 'Shop by category')}
+                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            {categoryCards.map((category) => (
+                                <CategoryCard key={category.slug} category={category} />
+                            ))}
+                        </div>
+                    </section>
+                )}
 
-                        <ProductRail
-                            products={recentlyViewedProducts}
-                            emptyTitle="No recently viewed products"
-                            emptyDescription="Viewed products will appear here after the shopper visits product detail pages."
+                {/* Featured Products Section */}
+                {getSection('featured_products')?.is_visible && (
+                    <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
+                        {renderHeading('featured_products', 'Featured products')}
+                        <ProductGrid
+                            products={featuredProducts}
+                            emptyTitle="No featured products"
+                            emptyDescription="Feature products in the admin panel to surface them here."
                             emptyHref="/products"
                             emptyActionLabel="Browse products"
                         />
                     </section>
-                ) : null}
+                )}
+
+                {/* Promotional Banners */}
+                {getSection('promotional_banners')?.is_visible && promotional_banners?.length > 0 && (
+                    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            {promotional_banners.map((banner) => (
+                                <Link
+                                    key={banner.id}
+                                    href={banner.href || '#'}
+                                    className="group relative overflow-hidden rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-secondary)] shadow-[var(--shadow-card)]"
+                                >
+                                    <img
+                                        src={banner.image}
+                                        alt={banner.title}
+                                        loading="lazy"
+                                        decoding="async"
+                                        className="h-full min-h-[18rem] w-full object-cover transition duration-500 group-hover:scale-105"
+                                    />
+                                    <div className={cn('absolute inset-0 bg-gradient-to-r', banner.accent || 'from-secondary/90 via-secondary/70 to-secondary/20')} />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+                                    <div className="absolute inset-0 flex flex-col justify-end p-6 text-white sm:p-8">
+                                        {banner.badge && (
+                                            <Badge className="mb-4 w-fit bg-white/10 text-white backdrop-blur-md">
+                                                {banner.badge}
+                                            </Badge>
+                                        )}
+                                        <h3 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                                            {banner.title}
+                                        </h3>
+                                        {banner.description && (
+                                            <p className="mt-2 max-w-lg text-sm leading-7 text-white/80 sm:text-base">
+                                                {banner.description}
+                                            </p>
+                                        )}
+                                        <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-white">
+                                            Explore now
+                                            <ArrowRight className="size-4 transition group-hover:translate-x-1" />
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* New Arrivals Section */}
+                {getSection('new_arrivals')?.is_visible && (
+                    <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
+                        {renderHeading('new_arrivals', 'New arrivals')}
+                        <ProductRail
+                            title="Recently added"
+                            products={newArrivals}
+                            emptyTitle="No new arrivals yet"
+                            emptyDescription="Use the admin inventory flow to publish the latest assortment."
+                            emptyHref="/products"
+                            emptyActionLabel="Browse products"
+                        />
+                    </section>
+                )}
+
+                {/* Brands Section */}
+                {getSection('brands')?.is_visible && (
+                    <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
+                        {renderHeading('brands', 'Our brands')}
+                        <div className="flex gap-4 overflow-x-auto pb-2">
+                            {brandCards.map((brand) => (
+                                <BrandTile key={brand.id} brand={brand} />
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* Best Sellers Section */}
+                {getSection('best_sellers')?.is_visible && (
+                    <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
+                        {renderHeading('best_sellers', 'Best sellers')}
+                        <ProductRail
+                            products={bestSellers}
+                            emptyTitle="No best sellers yet"
+                            emptyDescription="The best sellers rail will populate once product data is connected."
+                            emptyHref="/products"
+                            emptyActionLabel="Browse products"
+                        />
+                    </section>
+                )}
 
                 <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <NewsletterForm />

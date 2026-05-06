@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BrandRequest;
 use App\Models\Brand;
+use App\Models\HomepageSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -40,7 +41,9 @@ class BrandController extends Controller
         }
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
         $data['is_active'] = $data['is_active'] ?? true;
-        Brand::create($data);
+        $brand = Brand::create($data);
+
+        $this->syncHomepageSetting($brand);
 
         return redirect()->route('admin.brands.index')->with('success', 'Brand created.');
     }
@@ -59,13 +62,37 @@ class BrandController extends Controller
         $data['is_active'] = $data['is_active'] ?? false;
         $brand->update($data);
 
+        $this->syncHomepageSetting($brand);
+
         return redirect()->route('admin.brands.index')->with('success', 'Brand updated.');
     }
 
     public function destroy(Brand $brand): RedirectResponse
     {
+        $brand->is_active = false;
+        $this->syncHomepageSetting($brand);
         $brand->delete();
 
         return redirect()->route('admin.brands.index')->with('success', 'Brand deleted.');
+    }
+
+    private function syncHomepageSetting(Brand $brand): void
+    {
+        $setting = HomepageSetting::where('section_key', 'brands')->first();
+        if ($setting) {
+            $metadata = $setting->metadata ?? [];
+            $brandIds = $metadata['brand_ids'] ?? [];
+
+            if ($brand->is_active) {
+                if (! in_array($brand->id, $brandIds)) {
+                    $brandIds[] = $brand->id;
+                }
+            } else {
+                $brandIds = array_values(array_filter($brandIds, fn ($id) => $id !== $brand->id));
+            }
+
+            $metadata['brand_ids'] = $brandIds;
+            $setting->update(['metadata' => $metadata]);
+        }
     }
 }

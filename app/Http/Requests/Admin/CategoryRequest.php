@@ -20,7 +20,12 @@ class CategoryRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'unique:categories,slug,'.($categoryId ?? 'NULL').',id'],
+            'slug' => [
+                'required',
+                'string',
+                'max:255',
+                'unique:categories,slug,'.($categoryId ?? 'NULL').',id,deleted_at,NULL',
+            ],
             'description' => ['nullable', 'string'],
             'image' => ['nullable', function ($attribute, $value, $fail) {
                 if (! is_string($value) && ! ($value instanceof UploadedFile)) {

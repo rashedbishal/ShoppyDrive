@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { ArrowRight, ShoppingCart, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { formatCurrency } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
+import type { SharedPageProps } from '@/types';
 import cartRoutes from '@/routes/cart';
 
 function calculateCouponDiscount(
@@ -32,10 +33,13 @@ export default function CartDrawer(): React.JSX.Element {
     const closeCart = useUiStore((state) => state.closeCart);
     const items = useCartStore((state) => state.items);
     const coupon = useCartStore((state) => state.coupon);
-    const shippingEstimate = useCartStore((state) => state.shippingEstimate);
     const tax = useCartStore((state) => state.tax);
     const updateQuantity = useCartStore((state) => state.updateQuantity);
     const removeItem = useCartStore((state) => state.removeItem);
+
+    // Shipping cost from server: based on the user's default address
+    const { cart_shipping_cost: cartShippingCost } = usePage<SharedPageProps>().props;
+    const isEmpty = items.length === 0;
 
     const summary = useMemo(() => {
         const subtotal = items.reduce((total, item) => total + item.subtotal, 0);
@@ -44,15 +48,18 @@ export default function CartDrawer(): React.JSX.Element {
             coupon?.type ?? null,
             coupon?.discount_amount ?? coupon?.value ?? 0,
         );
-        const total = Math.max(0, subtotal - discount + shippingEstimate + tax);
+        // Use server-resolved shipping cost; fall back to 0 when cart is empty
+        const shipping = isEmpty ? 0 : (cartShippingCost ?? 0);
+        const total = Math.max(0, subtotal - discount + shipping + tax);
 
         return {
             subtotal,
             discount,
+            shipping,
             total,
             itemCount: items.reduce((count, item) => count + item.quantity, 0),
         };
-    }, [coupon, items, shippingEstimate, tax]);
+    }, [coupon, items, cartShippingCost, isEmpty, tax]);
 
     return (
         <Drawer
@@ -80,7 +87,12 @@ export default function CartDrawer(): React.JSX.Element {
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-[var(--color-text-secondary)]">Shipping</span>
                             <span className="font-semibold text-[var(--color-text-primary)]">
-                                {formatCurrency(shippingEstimate)}
+                                {isEmpty
+                                    ? '—'
+                                    : cartShippingCost !== null
+                                        ? formatCurrency(cartShippingCost)
+                                        : <span className="text-xs font-normal text-[var(--color-text-muted)]">At checkout</span>
+                                }
                             </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
@@ -100,25 +112,47 @@ export default function CartDrawer(): React.JSX.Element {
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2 mt-2">
-                        <Link href={cartRoutes.index.url()} onClick={closeCart} className="block w-full">
-                            <Button 
-                                variant="outline" 
+                        {isEmpty ? (
+                            <Button
+                                variant="outline"
                                 fullWidth
-                                className="h-12 rounded-xl border border-[var(--color-border)] bg-white font-semibold text-[var(--color-text-primary)] shadow-sm transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+                                disabled
+                                className="h-12 rounded-xl font-semibold opacity-40 cursor-not-allowed"
                             >
                                 View cart
                             </Button>
-                        </Link>
-                        <Link href="/checkout" onClick={closeCart} className="block w-full">
-                            <Button 
-                                fullWidth 
+                        ) : (
+                            <Link href={cartRoutes.index.url()} onClick={closeCart} className="block w-full">
+                                <Button
+                                    variant="outline"
+                                    fullWidth
+                                    className="h-12 rounded-xl border border-[var(--color-border)] bg-white font-semibold text-[var(--color-text-primary)] shadow-sm transition-all hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+                                >
+                                    View cart
+                                </Button>
+                            </Link>
+                        )}
+                        {isEmpty ? (
+                            <Button
+                                fullWidth
                                 variant="primary"
-                                rightIcon={<ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />}
-                                className="group h-12 rounded-xl font-bold transition-all hover:-translate-y-0.5"
+                                disabled
+                                className="h-12 rounded-xl font-bold opacity-40 cursor-not-allowed"
                             >
                                 Checkout
                             </Button>
-                        </Link>
+                        ) : (
+                            <Link href="/checkout" onClick={closeCart} className="block w-full">
+                                <Button
+                                    fullWidth
+                                    variant="primary"
+                                    rightIcon={<ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />}
+                                    className="group h-12 rounded-xl font-bold transition-all hover:-translate-y-0.5"
+                                >
+                                    Checkout
+                                </Button>
+                            </Link>
+                        )}
                     </div>
                 </div>
             }

@@ -183,8 +183,9 @@ function ProductCard({
     const isWishlisted = useWishlistStore((state) => state.isWishlisted(product.id));
     const [isHovered, setIsHovered] = useState(false);
 
-    const primaryImage = product.images.find((image) => image.is_primary) ?? product.images[0];
-    const secondaryImage = product.images.find((image) => !image.is_primary);
+    const imageSet = product.images ?? [];
+    const primaryImage = imageSet.find((image) => image.is_primary) ?? imageSet[0];
+    const secondaryImage = imageSet.find((image) => !image.is_primary);
     const currentPrice =
         product.in_flash_sale && typeof product.flash_sale_price === 'number'
             ? product.flash_sale_price
@@ -596,7 +597,7 @@ function ProductListingPage({
     };
 
     const handleCategoryNavigate = (categorySlug: string): void => {
-        const nextUrl = route('category.show', { category: categorySlug });
+        const nextUrl = route('category.show', { slug: categorySlug });
         const next = {
             ...draftFilters,
             page: 1,

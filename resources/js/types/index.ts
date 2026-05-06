@@ -138,10 +138,11 @@ export interface Attribute extends Timestamped {
     values: AttributeValue[];
 }
 
-export interface ProductImage extends Timestamped {
+export interface ProductMedia extends Timestamped {
     id: Id;
     product_id: Id;
     path: string;
+    type: 'image' | 'video';
     alt?: string | null;
     sort_order: number;
     is_primary: boolean;
@@ -183,7 +184,9 @@ export interface Product extends Timestamped, SoftDeletable {
     meta_keywords?: string | null;
     published_at?: string | null;
     primary_image_url?: string | null;
-    images: ProductImage[];
+    media: ProductMedia[];
+    images: ProductMedia[];
+    videos: ProductMedia[];
     variants: ProductVariant[];
     attributes: Attribute[];
     tags: string[];
@@ -559,11 +562,53 @@ export interface NavCategory {
     sub_categories: NavSubCategory[];
 }
 
+export interface HomepageSetting {
+    id: Id;
+    section_key: string;
+    section_name: string;
+    title?: string | null;
+    description?: string | null;
+    eyebrow?: string | null;
+    action_label?: string | null;
+    action_href?: string | null;
+    is_visible: boolean;
+    sort_order: number;
+    metadata?: Record<string, any> | null;
+}
+
+export interface HeroSlide {
+    id: Id;
+    eyebrow?: string | null;
+    title: string;
+    description?: string | null;
+    image: string;
+    primary_cta_label?: string | null;
+    primary_cta_href?: string | null;
+    secondary_cta_label?: string | null;
+    secondary_cta_href?: string | null;
+    stats?: { label: string; value: string }[] | null;
+    is_active: boolean;
+    sort_order: number;
+}
+
+export interface PromotionalBanner {
+    id: Id;
+    title: string;
+    description?: string | null;
+    image: string;
+    href?: string | null;
+    badge?: string | null;
+    accent?: string | null;
+    is_active: boolean;
+    sort_order: number;
+}
+
 export interface SharedPageProps {
     [key: string]: unknown;
     name: string;
     appName: string;
     auth: Auth;
+    cart: Cart | null;
     flash: {
         success?: string | null;
         error?: string | null;
@@ -576,6 +621,11 @@ export interface SharedPageProps {
     currencySymbol: string;
     settings: AppSettings;
     navCategories: NavCategory[];
+    homepage_settings: Record<string, HomepageSetting>;
+    hero_slides: HeroSlide[];
+    promotional_banners: PromotionalBanner[];
+    wishlist_ids: number[];
+    cart_shipping_cost: number | null;
 }
 
 export interface UiStateToast extends FlashToast {

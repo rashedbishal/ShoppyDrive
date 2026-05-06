@@ -1,4 +1,4 @@
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { Toaster } from '@/components/ui/sonner';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -8,8 +8,187 @@ import AppLayout from '@/layouts/app-layout';
 import AdminLayout from '@/layouts/admin-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { useCartStore } from '@/stores/cartStore';
+import { useWishlistStore } from '@/stores/wishlistStore';
+import { STORAGE_KEYS } from '@/lib/constants';
+import type { Cart, SharedPageProps } from '@/types';
 
 const appName = APP_NAME;
+
+const LAST_USER_KEY = `${STORAGE_KEYS.cart}.last_user`;
+
+function readInitialUserId(): number | null {
+    try {
+        const raw = document.getElementById('app')?.dataset.page;
+        if (raw) return JSON.parse(raw)?.props?.auth?.user?.id ?? null;
+    } catch {}
+    return null;
+}
+
+function readInitialCart(): Cart | null {
+    try {
+        const raw = document.getElementById('app')?.dataset.page;
+        if (raw) return JSON.parse(raw)?.props?.cart ?? null;
+    } catch {}
+    return null;
+}
+
+let prevAuthUserId: number | null = null;
+let activeAuthUserId: number | null = null;
+let isHydratingCart = false;
+let cartSyncInFlight = false;
+let pendingSync: boolean | null = null;
+let lastSyncedSignature = '';
+
+function applyLogout(): void {
+    localStorage.removeItem(LAST_USER_KEY);
+    localStorage.removeItem(STORAGE_KEYS.cart);
+    useCartStore.getState().clearCart();
+    useWishlistStore.getState().clearWishlist();
+    prevAuthUserId = null;
+    activeAuthUserId = null;
+    lastSyncedSignature = '';
+}
+
+function cartSignature(cart: Cart | null): string {
+    if (cart === null) {
+        return '';
+    }
+
+    return cart.items
+        .map((item) => `${item.item_key}:${item.quantity}`)
+        .sort()
+        .join('|');
+}
+
+function getCookie(name: string): string | null {
+    const value = document.cookie
+        .split('; ')
+        .find((cookie) => cookie.startsWith(`${name}=`));
+
+    return value ? decodeURIComponent(value.split('=').slice(1).join('=')) : null;
+}
+
+function hydrateCart(cart: Cart | null): void {
+    isHydratingCart = true;
+
+    if (cart === null) {
+        useCartStore.getState().clearCart();
+        lastSyncedSignature = '';
+    } else {
+        useCartStore.getState().hydrateCart(cart);
+        lastSyncedSignature = cartSignature(cart);
+    }
+
+    isHydratingCart = false;
+}
+
+async function syncAuthenticatedCart(merge: boolean): Promise<void> {
+    if (activeAuthUserId === null || cartSyncInFlight) {
+        pendingSync = pendingSync === null ? merge : pendingSync || merge;
+        return;
+    }
+
+    cartSyncInFlight = true;
+
+    try {
+        const state = useCartStore.getState();
+        const response = await fetch(route('cart.sync'), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') ?? '',
+            },
+            body: JSON.stringify({
+                merge,
+                items: state.items.map((item) => ({
+                    product_id: item.product.id,
+                    variant_id: item.variant?.id ?? null,
+                    quantity: item.quantity,
+                })),
+            }),
+        });
+
+        if (! response.ok) {
+            throw new Error(`Cart sync failed with status ${response.status}`);
+        }
+
+        const payload = (await response.json()) as { cart: Cart | null };
+        hydrateCart(payload.cart);
+        localStorage.setItem(LAST_USER_KEY, String(activeAuthUserId));
+    } finally {
+        cartSyncInFlight = false;
+
+        if (pendingSync !== null) {
+            const nextMerge = pendingSync;
+            pendingSync = null;
+            void syncAuthenticatedCart(nextMerge);
+        }
+    }
+}
+
+function applyLogin(userId: number, cart: Cart | null, mergeGuestCart: boolean): void {
+    activeAuthUserId = userId;
+    localStorage.setItem(LAST_USER_KEY, String(userId));
+
+    if (mergeGuestCart && useCartStore.getState().items.length > 0) {
+        void syncAuthenticatedCart(true);
+    } else {
+        hydrateCart(cart);
+    }
+
+    prevAuthUserId = userId;
+}
+
+const initialUserId = readInitialUserId();
+const initialCart = readInitialCart();
+const storedLastUser = localStorage.getItem(LAST_USER_KEY);
+
+if (storedLastUser !== null && initialUserId === null) {
+    applyLogout();
+} else if (initialUserId !== null) {
+    applyLogin(initialUserId, initialCart, false);
+}
+
+useCartStore.subscribe((state) => {
+    if (activeAuthUserId === null || isHydratingCart) {
+        return;
+    }
+
+    const signature = state.items
+        .map((item) => `${item.item_key}:${item.quantity}`)
+        .sort()
+        .join('|');
+
+    if (signature === lastSyncedSignature) {
+        return;
+    }
+
+    lastSyncedSignature = signature;
+    void syncAuthenticatedCart(false);
+});
+
+router.on('navigate', (event) => {
+    const props = event.detail.page.props as SharedPageProps;
+    const currentUserId = props.auth?.user?.id ?? null;
+    const stored = localStorage.getItem(LAST_USER_KEY);
+    const currentCart = props.cart ?? null;
+
+    if (stored !== null && currentUserId === null) {
+        applyLogout();
+    } else if (currentUserId !== null && currentUserId !== prevAuthUserId) {
+        applyLogin(currentUserId, currentCart, prevAuthUserId === null);
+    } else if (currentUserId !== null) {
+        activeAuthUserId = currentUserId;
+        hydrateCart(currentCart);
+        prevAuthUserId = currentUserId;
+    } else {
+        prevAuthUserId = null;
+    }
+});
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

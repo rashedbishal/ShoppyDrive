@@ -68,9 +68,19 @@ class Product extends Model
         return $this->belongsTo(Brand::class);
     }
 
+    public function media(): HasMany
+    {
+        return $this->hasMany(ProductMedia::class);
+    }
+
     public function images(): HasMany
     {
-        return $this->hasMany(ProductImage::class);
+        return $this->hasMany(ProductMedia::class)->where('type', 'image');
+    }
+
+    public function videos(): HasMany
+    {
+        return $this->hasMany(ProductMedia::class)->where('type', 'video');
     }
 
     public function variants(): HasMany

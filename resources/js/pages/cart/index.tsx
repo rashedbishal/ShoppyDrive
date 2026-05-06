@@ -9,28 +9,10 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { useCartStore } from '@/stores/cartStore';
 
-interface CartItemProduct {
-    name: string;
-}
-
-interface CartItem {
-    id: number;
-    quantity: number;
-    price: number;
-    product: CartItemProduct;
-}
-
-interface Cart {
-    items?: CartItem[];
-}
-
-interface CartIndexProps {
-    cart: Cart | null;
-}
-
-export default function CartIndex({ cart }: CartIndexProps) {
-    const items = cart?.items ?? [];
+export default function CartIndex() {
+    const items = useCartStore((state) => state.items);
     const formatCurrency = new Intl.NumberFormat('en-BD', {
         style: 'currency',
         currency: 'BDT',

@@ -43,6 +43,8 @@ class CategoryController extends Controller
         $data = $request->validated();
         if ($request->hasFile('image')) {
             $data['image'] = '/storage/'.$request->file('image')->store('categories', 'public');
+        } else {
+            $data['image'] = '/placeholder.svg';
         }
         $data['slug'] = Str::slug($data['slug'] ?? $data['name']);
         $data['is_active'] = $data['is_active'] ?? true;
@@ -63,6 +65,8 @@ class CategoryController extends Controller
         $data = $request->validated();
         if ($request->hasFile('image')) {
             $data['image'] = '/storage/'.$request->file('image')->store('categories', 'public');
+        } else {
+            unset($data['image']);
         }
         if (isset($data['slug'])) {
             $data['slug'] = Str::slug($data['slug']);

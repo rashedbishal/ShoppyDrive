@@ -4,12 +4,16 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\FlashSaleController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductListingController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/products', [ProductListingController::class, 'index'])->name('products.index');
 Route::get('/category/{slug}', [ProductListingController::class, 'category'])->name('category.show');
 Route::get('/product/{product:slug}', [ProductController::class, 'show'])->name('product.show');
+Route::post('/product/{product:slug}/reviews', [ReviewController::class, 'store'])
+    ->middleware('auth')
+    ->name('product.reviews.store');
 
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 

@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { ArrowRight, BadgeCheck, ChevronRight, FolderOpen, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { featuredStorePicks } from '@/components/layout/navigation';
@@ -13,17 +14,38 @@ type MegaMenuProps = {
 
 export default function MegaMenu({ isOpen, onClose }: MegaMenuProps): React.JSX.Element {
     const { navCategories } = usePage<SharedPageProps>().props;
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                // Check if the click was on the trigger button (handled by Header)
+                const target = event.target as HTMLElement;
+                if (!target.closest('button')?.textContent?.includes('All Categories')) {
+                    onClose();
+                }
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen, onClose]);
 
     return (
         <AnimatePresence>
             {isOpen ? (
                 <motion.div
+                    ref={menuRef}
                     className="absolute inset-x-0 top-full z-40 hidden border-b border-[var(--color-border)] bg-surface/95 shadow-[var(--shadow-dropdown)] backdrop-blur-xl lg:block"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.22 }}
-                    onMouseLeave={onClose}
                 >
                     <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[1.25fr_0.75fr] lg:px-8">
                         <div>
@@ -35,13 +57,16 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps): React.JSX.
                             ) : (
                                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                                     {navCategories.map((category) => (
-                                        <Link
+                                        <div
                                             key={category.id}
-                                            href={`/category/${category.slug}`}
-                                            onClick={onClose}
                                             className="group rounded-2xl border border-[var(--color-border)] bg-surface p-4 shadow-[var(--shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]"
                                         >
-                                            <div className="flex items-start justify-between gap-3">
+                                            {/* Category link — wraps name + description only */}
+                                            <Link
+                                                href={`/category/${category.slug}`}
+                                                onClick={onClose}
+                                                className="flex items-start justify-between gap-3"
+                                            >
                                                 <div className="min-w-0 space-y-1.5">
                                                     <div className="inline-flex items-center gap-2">
                                                         <span className="size-2 shrink-0 rounded-full bg-[var(--color-primary)]" />
@@ -54,30 +79,32 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps): React.JSX.
                                                             {category.description}
                                                         </p>
                                                     )}
-                                                    {category.sub_categories.length > 0 && (
-                                                        <div className="flex flex-wrap gap-1 pt-1">
-                                                            {category.sub_categories.slice(0, 3).map((sub) => (
-                                                                <Link
-                                                                    key={sub.id}
-                                                                    href={`/category/${sub.slug}`}
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    className="inline-flex items-center gap-0.5 rounded-full bg-[var(--color-surface-alt)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
-                                                                >
-                                                                    <ChevronRight className="size-2.5" />
-                                                                    {sub.name}
-                                                                </Link>
-                                                            ))}
-                                                            {category.sub_categories.length > 3 && (
-                                                                <span className="inline-flex items-center rounded-full bg-[var(--color-surface-alt)] px-2 py-0.5 text-[11px] text-[var(--color-text-muted)]">
-                                                                    +{category.sub_categories.length - 3} more
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
                                                 </div>
                                                 <ArrowRight className="mt-1 size-4 shrink-0 text-[var(--color-text-muted)] transition group-hover:translate-x-0.5 group-hover:text-[var(--color-primary)]" />
-                                            </div>
-                                        </Link>
+                                            </Link>
+
+                                            {/* Subcategory pills — sibling of the category link, not nested */}
+                                            {category.sub_categories.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 pt-2">
+                                                    {category.sub_categories.slice(0, 3).map((sub) => (
+                                                        <Link
+                                                            key={sub.id}
+                                                            href={`/category/${sub.slug}`}
+                                                            onClick={onClose}
+                                                            className="inline-flex items-center gap-0.5 rounded-full bg-[var(--color-surface-alt)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+                                                        >
+                                                            <ChevronRight className="size-2.5" />
+                                                            {sub.name}
+                                                        </Link>
+                                                    ))}
+                                                    {category.sub_categories.length > 3 && (
+                                                        <span className="inline-flex items-center rounded-full bg-[var(--color-surface-alt)] px-2 py-0.5 text-[11px] text-[var(--color-text-muted)]">
+                                                            +{category.sub_categories.length - 3} more
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     ))}
                                 </div>
                             )}

@@ -2,7 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MultiImageUpload } from '@/components/ui/multi-image-upload';
+import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
 
 type Props = {
     categories: { id: number; name: string }[];
@@ -77,8 +77,11 @@ export default function ProductCreate({ categories, subCategories, brands }: Pro
                                         className={inputClass(errors.name)}
                                         value={data.name}
                                         onChange={(e) => {
-                                            setData('name', e.target.value);
-                                            if (!data.slug) setData('slug', slugify(e.target.value));
+                                            setData((prev) => ({
+                                                ...prev,
+                                                name: e.target.value,
+                                                slug: slugify(e.target.value)
+                                            }));
                                         }}
                                     />
                                 </Field>
@@ -132,10 +135,10 @@ export default function ProductCreate({ categories, subCategories, brands }: Pro
 
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
-                                <CardTitle className="text-sm font-semibold text-slate-700">Images</CardTitle>
+                                <CardTitle className="text-sm font-semibold text-slate-700">Media</CardTitle>
                             </CardHeader>
                             <CardContent className="pt-4">
-                                <MultiImageUpload
+                                <MultiMediaUpload
                                     value={data.images}
                                     onChange={(files) => setData('images', files)}
                                     error={errors.images}

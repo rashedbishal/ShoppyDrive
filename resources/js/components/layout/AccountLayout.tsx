@@ -24,8 +24,9 @@ const navItems = [
 ];
 
 export default function AccountLayout({ children }: { children: React.ReactNode }): React.JSX.Element {
-    const { auth } = usePage<SharedPageProps>().props;
-    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+    const page = usePage<SharedPageProps>();
+    const { auth } = page.props;
+    const currentPath = page.url.split('?')[0];
 
     return (
         <div className="min-h-screen bg-[var(--color-surface)] py-8 lg:py-12">
@@ -75,7 +76,9 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                         <nav className="mt-3 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)]">
                             <div className="space-y-0.5 p-2">
                                 {navItems.map(({ label, href, icon: Icon }) => {
-                                    const isActive = currentPath === href || currentPath.startsWith(href + '/');
+                                    const isActive = href === '/account'
+                                        ? currentPath === '/account'
+                                        : currentPath === href || currentPath.startsWith(href + '/');
                                     return (
                                         <Link
                                             key={href}

@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { 
+import {
     Plus,
     MapPin,
     AlertCircle
@@ -11,17 +11,41 @@ import { AddressCard } from '@/components/shared/AddressCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Modal } from '@/components/ui/modal';
 import type { Address } from '@/types';
+
+const BANGLADESH_DISTRICTS = [
+    'Bagerhat', 'Bandarban', 'Barguna', 'Barishal', 'Bhola', 'Bogura',
+    'Brahmanbaria', 'Chandpur', 'Chapai Nawabganj', 'Chattogram', 'Chuadanga',
+    "Cox's Bazar", 'Cumilla', 'Dhaka', 'Dinajpur', 'Faridpur', 'Feni',
+    'Gaibandha', 'Gazipur', 'Gopalganj', 'Habiganj', 'Jamalpur', 'Jashore',
+    'Jhalokati', 'Jhenaidah', 'Joypurhat', 'Khagrachhari', 'Khulna',
+    'Kishoreganj', 'Kurigram', 'Kushtia', 'Lakshmipur', 'Lalmonirhat',
+    'Madaripur', 'Magura', 'Manikganj', 'Meherpur', 'Moulvibazar',
+    'Munshiganj', 'Mymensingh', 'Naogaon', 'Narail', 'Narayanganj',
+    'Narsingdi', 'Natore', 'Netrokona', 'Nilphamari', 'Noakhali', 'Pabna',
+    'Panchagarh', 'Patuakhali', 'Pirojpur', 'Rajbari', 'Rajshahi',
+    'Rangamati', 'Rangpur', 'Satkhira', 'Shariatpur', 'Sherpur', 'Sirajganj',
+    'Sunamganj', 'Sylhet', 'Tangail', 'Thakurgaon',
+];
+
+const DHAKA_CITY_OPTIONS = [
+    'Inside Dhaka City Corporation',
+    'Outside Dhaka City Corporation',
+];
+
+const DISTRICT_OPTIONS = [
+    { label: 'Select district…', value: '', disabled: true },
+    ...BANGLADESH_DISTRICTS.map((d) => ({ label: d, value: d })),
+];
 
 interface AddressesProps {
     addresses: Address[];
 }
 
-export default function Addresses({
-    addresses = [],
-}: AddressesProps): React.JSX.Element {
+export default function Addresses({ addresses = [] }: AddressesProps): React.JSX.Element {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
@@ -38,6 +62,8 @@ export default function Addresses({
         country: 'Bangladesh',
         is_default: false,
     });
+
+    const isDhaka = form.data.state === 'Dhaka';
 
     const openModal = (address: Address | null = null) => {
         if (address) {
@@ -60,6 +86,14 @@ export default function Addresses({
             form.reset();
         }
         setIsModalOpen(true);
+    };
+
+    const handleDistrictChange = (value: string) => {
+        form.setData({
+            ...form.data,
+            state: value,
+            city: '',
+        });
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -88,7 +122,7 @@ export default function Addresses({
     return (
         <AccountLayout>
             <Head title="Saved Addresses" />
-            
+
             <div className="space-y-8">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -105,9 +139,9 @@ export default function Addresses({
                 {addresses.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {addresses.map((address) => (
-                            <AddressCard 
-                                key={address.id} 
-                                address={address} 
+                            <AddressCard
+                                key={address.id}
+                                address={address}
                                 onEdit={openModal}
                                 onDelete={handleDelete}
                                 onSetDefault={handleSetDefault}
@@ -149,20 +183,20 @@ export default function Addresses({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="label">Address Label (e.g. Home, Office)</Label>
-                            <Input 
-                                id="label" 
-                                value={form.data.label} 
-                                onChange={e => form.setData('label', e.target.value)} 
+                            <Input
+                                id="label"
+                                value={form.data.label}
+                                onChange={e => form.setData('label', e.target.value)}
                                 placeholder="Home"
                                 className="h-12 rounded-xl"
                             />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="name">Receiver's Name</Label>
-                            <Input 
-                                id="name" 
-                                value={form.data.name} 
-                                onChange={e => form.setData('name', e.target.value)} 
+                            <Input
+                                id="name"
+                                value={form.data.name}
+                                onChange={e => form.setData('name', e.target.value)}
                                 placeholder="Full Name"
                                 className="h-12 rounded-xl"
                                 required
@@ -174,69 +208,94 @@ export default function Addresses({
                         <Label htmlFor="phone">Phone Number</Label>
                         <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--color-text-muted)]">+880</span>
-                            <Input 
-                                id="phone" 
-                                value={form.data.phone} 
-                                onChange={e => form.setData('phone', e.target.value)} 
+                            <Input
+                                id="phone"
+                                value={form.data.phone}
+                                onChange={e => form.setData('phone', e.target.value)}
                                 placeholder="1XXXXXXXXX"
                                 className="h-12 pl-16 rounded-xl"
                                 required
                             />
                         </div>
+                        {form.errors.phone && <p className="text-xs text-red-500">{form.errors.phone}</p>}
                     </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="address">Address Line 1</Label>
-                        <Input 
-                            id="address" 
-                            value={form.data.address_line1} 
-                            onChange={e => form.setData('address_line1', e.target.value)} 
+                        <Input
+                            id="address"
+                            value={form.data.address_line1}
+                            onChange={e => form.setData('address_line1', e.target.value)}
                             placeholder="Street address, P.O. box, house number"
                             className="h-12 rounded-xl"
                             required
                         />
+                        {form.errors.address_line1 && <p className="text-xs text-red-500">{form.errors.address_line1}</p>}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* District dropdown */}
                         <div className="space-y-2">
-                            <Label htmlFor="city">City / District</Label>
-                            <Input 
-                                id="city" 
-                                value={form.data.city} 
-                                onChange={e => form.setData('city', e.target.value)} 
-                                placeholder="e.g. Dhaka"
+                            <Label htmlFor="state">District *</Label>
+                            <Select
+                                id="state"
+                                value={form.data.state}
+                                onChange={e => handleDistrictChange(e.target.value)}
+                                options={DISTRICT_OPTIONS}
                                 className="h-12 rounded-xl"
                                 required
+                                error={form.errors.state}
                             />
                         </div>
+
+                        {/* City — text input normally, dropdown for Dhaka */}
                         <div className="space-y-2">
-                            <Label htmlFor="state">Division / State</Label>
-                            <Input 
-                                id="state" 
-                                value={form.data.state} 
-                                onChange={e => form.setData('state', e.target.value)} 
-                                placeholder="e.g. Dhaka Division"
-                                className="h-12 rounded-xl"
-                            />
+                            <Label htmlFor="city">City *</Label>
+                            {isDhaka ? (
+                                <Select
+                                    id="city"
+                                    value={form.data.city}
+                                    onChange={e => form.setData('city', e.target.value)}
+                                    className="h-12 rounded-xl"
+                                    required
+                                    error={form.errors.city}
+                                >
+                                    <option value="" disabled>Select area…</option>
+                                    {DHAKA_CITY_OPTIONS.map((opt) => (
+                                        <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                </Select>
+                            ) : (
+                                <Input
+                                    id="city"
+                                    value={form.data.city}
+                                    onChange={e => form.setData('city', e.target.value)}
+                                    placeholder="e.g. Sylhet"
+                                    className="h-12 rounded-xl"
+                                    required
+                                    disabled={!form.data.state}
+                                />
+                            )}
+                            {form.errors.city && <p className="text-xs text-red-500">{form.errors.city}</p>}
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="postal">Postal Code</Label>
-                            <Input 
-                                id="postal" 
-                                value={form.data.postal_code} 
-                                onChange={e => form.setData('postal_code', e.target.value)} 
+                            <Input
+                                id="postal"
+                                value={form.data.postal_code}
+                                onChange={e => form.setData('postal_code', e.target.value)}
                                 placeholder="e.g. 1212"
                                 className="h-12 rounded-xl"
                             />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="country">Country</Label>
-                            <Input 
-                                id="country" 
-                                value={form.data.country} 
+                            <Input
+                                id="country"
+                                value={form.data.country}
                                 readOnly
                                 className="h-12 rounded-xl bg-[var(--color-surface-alt)]"
                             />
@@ -244,8 +303,8 @@ export default function Addresses({
                     </div>
 
                     <div className="flex items-center space-x-2">
-                        <Checkbox 
-                            id="is_default" 
+                        <Checkbox
+                            id="is_default"
                             checked={form.data.is_default}
                             onCheckedChange={(checked) => form.setData('is_default', !!checked)}
                         />
@@ -259,7 +318,7 @@ export default function Addresses({
                             Cancel
                         </Button>
                         <Button type="submit" disabled={form.processing} className="rounded-xl px-8 font-bold h-12">
-                            {form.processing ? 'Saving...' : editingAddress ? 'Update Address' : 'Save Address'}
+                            {form.processing ? 'Saving…' : editingAddress ? 'Update Address' : 'Save Address'}
                         </Button>
                     </div>
                 </form>

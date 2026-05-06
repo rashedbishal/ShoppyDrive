@@ -1,13 +1,11 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { 
-    User, 
-    Mail, 
-    Phone, 
+import {
+    User,
+    Mail,
+    Phone,
     Camera,
     Save,
     ShieldCheck,
-    Facebook,
-    Chrome
 } from 'lucide-react';
 import React, { useRef, useState } from 'react';
 
@@ -172,67 +170,19 @@ export default function Profile(): React.JSX.Element {
                         </form>
                     </div>
 
-                    {/* Right: Social & Verification */}
-                    <div className="lg:col-span-4 space-y-8">
-                        {/* Email Verification */}
+                    {/* Right: Verification */}
+                    <div className="lg:col-span-4">
                         <div className="bg-white rounded-3xl p-8 shadow-sm border border-[var(--color-border)]">
                             <h3 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-6 flex items-center gap-2">
                                 <ShieldCheck size={18} className="text-[var(--color-success)]" />
                                 Trust & Safety
                             </h3>
-                            <div className="p-4 rounded-2xl bg-green-50 border border-green-100 mb-4">
+                            <div className="p-4 rounded-2xl bg-green-50 border border-green-100">
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="text-xs font-bold text-green-800">Email Verified</span>
                                     <ShieldCheck size={16} className="text-green-600" />
                                 </div>
                                 <p className="text-[10px] text-green-700 leading-relaxed">Your email address is verified. This helps us ensure your account's security.</p>
-                            </div>
-                            {user.phone ? (
-                                <div className="p-4 rounded-2xl bg-green-50 border border-green-100">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-xs font-bold text-green-800">Phone Linked</span>
-                                        <ShieldCheck size={16} className="text-green-600" />
-                                    </div>
-                                    <p className="text-[10px] text-green-700 leading-relaxed">Mobile number +880 {user.phone} is linked to your account.</p>
-                                </div>
-                            ) : (
-                                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100">
-                                    <p className="text-xs font-bold text-amber-800 mb-2">Link Phone Number</p>
-                                    <p className="text-[10px] text-amber-700 leading-relaxed mb-4">Link your phone number to receive order updates via SMS.</p>
-                                    <Button variant="outline" size="sm" className="w-full rounded-lg border-amber-200 text-amber-800 hover:bg-amber-100 font-bold h-9">Link Now</Button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Social Accounts */}
-                        <div className="bg-white rounded-3xl p-8 shadow-sm border border-[var(--color-border)]">
-                            <h3 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest mb-6">Connected Accounts</h3>
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between p-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)]">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-white border border-[var(--color-border)] flex items-center justify-center text-blue-600">
-                                            <Chrome size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-[var(--color-text-primary)]">Google</p>
-                                            <p className="text-[10px] text-[var(--color-text-muted)] font-medium">Connected</p>
-                                        </div>
-                                    </div>
-                                    <Button variant="ghost" size="sm" className="h-8 px-3 rounded-lg font-bold text-[var(--color-error)]">Disconnect</Button>
-                                </div>
-                                
-                                <div className="flex items-center justify-between p-4 rounded-2xl border border-dashed border-[var(--color-border)]">
-                                    <div className="flex items-center gap-3 opacity-60">
-                                        <div className="w-10 h-10 rounded-xl bg-white border border-[var(--color-border)] flex items-center justify-center text-blue-800">
-                                            <Facebook size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-[var(--color-text-primary)]">Facebook</p>
-                                            <p className="text-[10px] text-[var(--color-text-muted)] font-medium">Not Connected</p>
-                                        </div>
-                                    </div>
-                                    <Button variant="outline" size="sm" className="h-8 px-3 rounded-lg font-bold border-[var(--color-border)]">Connect</Button>
-                                </div>
                             </div>
                         </div>
                     </div>

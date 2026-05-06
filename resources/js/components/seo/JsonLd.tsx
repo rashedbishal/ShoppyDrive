@@ -19,7 +19,7 @@ export function generateProductSchema(product: Product) {
         '@context': 'https://schema.org/',
         '@type': 'Product',
         name: product.name,
-        image: product.images.map((img) => img.path),
+        image: (product.images || []).map((img) => img.path),
         description: product.short_description || product.description,
         sku: product.sku,
         brand: {

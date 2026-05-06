@@ -42,6 +42,10 @@ function normalizeProductIds(productIds: number[]): number[] {
     return Array.from(new Set(productIds));
 }
 
+function getCsrfToken(): string {
+    return (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
+}
+
 export const useWishlistStore = create<WishlistStoreState>()(
     persist<WishlistStoreState, [], [], WishlistPersistedState>(
         (set, get) => ({
@@ -49,11 +53,37 @@ export const useWishlistStore = create<WishlistStoreState>()(
             toggleWishlist: (productId) => {
                 const isSelected = get().productIds.includes(productId);
 
+                // Optimistic update
                 set((state) => ({
                     productIds: isSelected
                         ? state.productIds.filter((id) => id !== productId)
                         : normalizeProductIds([...state.productIds, productId]),
                 }));
+
+                // Sync with server (silently fails for guests / network errors)
+                fetch(route('wishlist.toggle'), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': getCsrfToken(),
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ product_id: productId }),
+                })
+                    .then((res) => {
+                        if (res.ok) {
+                            return res.json();
+                        }
+                    })
+                    .then((data) => {
+                        if (data?.wishlist_ids) {
+                            set({ productIds: normalizeProductIds(data.wishlist_ids) });
+                        }
+                    })
+                    .catch(() => {
+                        // Guest or network error — local state stays
+                    });
             },
             addWishlist: (productId) => {
                 set((state) => ({

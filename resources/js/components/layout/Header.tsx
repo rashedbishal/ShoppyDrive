@@ -73,6 +73,7 @@ export default function Header(): React.JSX.Element {
     }, []);
 
     const siteName = settings?.site_name ?? 'ShoppyDrive';
+    const announcementBar = page.props.homepage_settings?.['announcement_bar'];
 
     return (
         <>
@@ -83,19 +84,22 @@ export default function Header(): React.JSX.Element {
                 )}
             >
                 {/* Top utility bar */}
+                {announcementBar?.is_visible !== false && (
                 <div className="hidden bg-[var(--color-secondary)] text-white lg:block">
                     <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 text-xs sm:px-6 lg:px-8">
                         <div className="flex items-center gap-5">
-                            <span className="flex items-center gap-1.5 text-white/70">
-                                <Package className="size-3.5" />
-                                Free delivery on orders over ৳999
-                            </span>
-                            {settings?.contact_phone ? (
+                            {announcementBar?.title ? (
+                                <span className="flex items-center gap-1.5 text-white/70">
+                                    <Package className="size-3.5" />
+                                    {announcementBar.title}
+                                </span>
+                            ) : null}
+                            {announcementBar?.metadata?.phone ? (
                                 <a
-                                    href={`tel:${settings.contact_phone}`}
+                                    href={`tel:${announcementBar.metadata.phone}`}
                                     className="text-white/70 transition hover:text-[var(--color-accent)]"
                                 >
-                                    {settings.contact_phone}
+                                    {announcementBar.metadata.phone}
                                 </a>
                             ) : null}
                         </div>
@@ -109,17 +113,18 @@ export default function Header(): React.JSX.Element {
                                     {item.label}
                                 </Link>
                             ))}
-                            {settings?.contact_email ? (
+                            {announcementBar?.metadata?.email ? (
                                 <a
-                                    href={`mailto:${settings.contact_email}`}
+                                    href={`mailto:${announcementBar.metadata.email}`}
                                     className="text-white/70 transition hover:text-white"
                                 >
-                                    {settings.contact_email}
+                                    {announcementBar.metadata.email}
                                 </a>
                             ) : null}
                         </div>
                     </div>
                 </div>
+                )}
 
                 {/* Main header bar */}
                 <div className="relative z-20 border-b border-[var(--color-border)] bg-white/95 backdrop-blur-xl">
@@ -279,9 +284,13 @@ export default function Header(): React.JSX.Element {
                     <div className="mx-auto flex max-w-7xl items-center gap-0.5 px-4 sm:px-6 lg:px-8">
                         <button
                             type="button"
-                            onMouseEnter={() => setIsMegaMenuOpen(true)}
-                            onFocus={() => setIsMegaMenuOpen(true)}
-                            className="flex h-11 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+                            onClick={() => setIsMegaMenuOpen((prev) => !prev)}
+                            className={cn(
+                                "flex h-11 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition",
+                                isMegaMenuOpen 
+                                    ? "bg-[var(--color-primary-light)] text-[var(--color-primary)]" 
+                                    : "text-[var(--color-text-primary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+                            )}
                         >
                             <Menu className="size-4" />
                             All Categories

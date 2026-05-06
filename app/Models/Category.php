@@ -45,4 +45,17 @@ class Category extends Model
     {
         return $query->where('is_active', true);
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Category $category) {
+            if ($category->isForceDeleting()) {
+                $category->subCategories()->forceDelete();
+                $category->products()->forceDelete();
+            } else {
+                $category->subCategories()->each(fn ($subCategory) => $subCategory->delete());
+                $category->products()->each(fn ($product) => $product->delete());
+            }
+        });
+    }
 }

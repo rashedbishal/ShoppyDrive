@@ -20,7 +20,12 @@ class SubCategoryRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'unique:sub_categories,slug,'.($subCategoryId ?? 'NULL').',id'],
+            'slug' => [
+                'required',
+                'string',
+                'max:255',
+                'unique:sub_categories,slug,'.($subCategoryId ?? 'NULL').',id,deleted_at,NULL',
+            ],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'description' => ['nullable', 'string'],
             'image' => ['nullable', function ($attribute, $value, $fail) {

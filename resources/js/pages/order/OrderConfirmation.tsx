@@ -135,7 +135,7 @@ export default function OrderConfirmation({ order }: OrderConfirmationProps): Re
                     className="flex flex-col sm:flex-row gap-4 justify-center"
                 >
                     <Button asChild size="lg" className="rounded-2xl px-10 font-bold h-14 shadow-lg shadow-[var(--color-primary)]/20">
-                        <Link href={route('order.track', { order: order.order_number })}>
+                        <Link href={route('order.track') + `?order_number=${order.order_number}`}>
                             Track Your Order
                             <ArrowRight size={18} className="ml-2" />
                         </Link>

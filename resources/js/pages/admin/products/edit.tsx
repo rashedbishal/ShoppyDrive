@@ -2,9 +2,9 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MultiImageUpload } from '@/components/ui/multi-image-upload';
+import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
 
-type ProductImage = { id: number; path: string; is_primary: boolean };
+type ProductMedia = { id: number; path: string; type: 'image' | 'video'; is_primary: boolean };
 type Product = {
     id: number;
     name: string;
@@ -24,7 +24,7 @@ type Product = {
     is_featured: boolean;
     meta_title: string | null;
     meta_description: string | null;
-    images: ProductImage[];
+    media: ProductMedia[];
 };
 
 type Props = {
@@ -51,7 +51,7 @@ export default function ProductEdit({ product, categories, subCategories, brands
         low_stock_threshold: String(product.low_stock_threshold),
         is_active: product.is_active,
         is_featured: product.is_featured,
-        images: product.images.length ? product.images.map((i) => i.path) : [] as (File | string)[],
+        images: product.media.length ? product.media.map((m) => m.path) : [] as (File | string)[],
         meta_title: product.meta_title ?? '',
         meta_description: product.meta_description ?? '',
     });
@@ -144,10 +144,10 @@ export default function ProductEdit({ product, categories, subCategories, brands
 
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
-                                <CardTitle className="text-sm font-semibold text-slate-700">Images</CardTitle>
+                                <CardTitle className="text-sm font-semibold text-slate-700">Media</CardTitle>
                             </CardHeader>
                             <CardContent className="pt-4">
-                                <MultiImageUpload
+                                <MultiMediaUpload
                                     value={data.images}
                                     onChange={(files) => setData('images', files)}
                                     error={errors.images}

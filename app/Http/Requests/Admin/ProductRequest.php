@@ -20,7 +20,12 @@ class ProductRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'unique:products,slug,'.($productId ?? 'NULL').',id'],
+            'slug' => [
+                'required',
+                'string',
+                'max:255',
+                'unique:products,slug,'.($productId ?? 'NULL').',id,deleted_at,NULL',
+            ],
             'sku' => ['nullable', 'string', 'max:100'],
             'short_description' => ['nullable', 'string', 'max:500'],
             'description' => ['nullable', 'string'],
@@ -37,7 +42,13 @@ class ProductRequest extends FormRequest
             'images' => ['nullable', 'array'],
             'images.*' => ['nullable', function ($attribute, $value, $fail) {
                 if (! is_string($value) && ! ($value instanceof UploadedFile)) {
-                    $fail('The '.$attribute.' must be a valid string or an image file.');
+                    $fail('The '.$attribute.' must be a valid string, image, or video file.');
+                }
+                if ($value instanceof UploadedFile) {
+                    $mime = $value->getMimeType();
+                    if (! str_starts_with($mime, 'image/') && ! str_starts_with($mime, 'video/')) {
+                        $fail('The '.$attribute.' must be an image or a video.');
+                    }
                 }
             }],
             'meta_title' => ['nullable', 'string', 'max:255'],

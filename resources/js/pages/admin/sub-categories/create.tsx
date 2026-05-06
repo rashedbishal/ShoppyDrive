@@ -60,8 +60,11 @@ export default function SubCategoryCreate({ categories }: Props) {
                                     className={inputClass(errors.name)}
                                     value={data.name}
                                     onChange={(e) => {
-                                        setData('name', e.target.value);
-                                        if (!data.slug) setData('slug', slugify(e.target.value));
+                                        setData((prev) => ({
+                                            ...prev,
+                                            name: e.target.value,
+                                            slug: slugify(e.target.value)
+                                        }));
                                     }}
                                 />
                             </Field>

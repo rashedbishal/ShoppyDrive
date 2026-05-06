@@ -13,16 +13,17 @@ class ProductController extends Controller
     public function show(Product $product): Response
     {
         $product->load([
-            'category.parent',
+            'category',
             'brand',
             'images',
+            'media',
             'variants',
             'tags',
-            'reviews' => fn ($q) => $q->where('is_approved', true)->with('user')->latest()->limit(10),
+            'reviews' => fn ($q) => $q->where('is_approved', true)->with('user:id,name,avatar')->latest()->limit(50),
         ]);
 
         // Build attributes array from product_attribute_values → attribute
-        $attributeValues = $product->attributeValues()->with('attribute')->orderBy('sort_order')->get();
+        $attributeValues = $product->attributeValues()->with('attribute')->orderBy('attribute_values.sort_order')->get();
         $attributes = $attributeValues
             ->groupBy('attribute_id')
             ->map(function ($values) {
@@ -64,7 +65,7 @@ class ProductController extends Controller
             ->get();
 
         return Inertia::render('catalog/ProductDetail', [
-            'product' => array_merge($product->toArray(), ['attributes' => $attributes]),
+            'product' => array_merge($product->toArray(), ['attributes' => $attributes, 'images' => ($product->images ?? collect())->map(fn ($img) => array_merge($img->toArray(), ['is_primary' => $img->is_primary]))->values()->toArray()]),
             'relatedProducts' => $relatedProducts,
             'reviews' => $product->reviews,
             'ratingBreakdown' => $ratingBreakdown,
