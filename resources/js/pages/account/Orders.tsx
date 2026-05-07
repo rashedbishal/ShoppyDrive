@@ -1,11 +1,11 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { 
-    ShoppingBag, 
-    Search, 
-    ChevronRight,
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import {
+    ShoppingBag,
+    Search,
     Package,
     Calendar,
-    ArrowRight
+    ArrowRight,
+    XCircle
 } from 'lucide-react';
 import React, { useState } from 'react';
 
@@ -14,7 +14,7 @@ import { OrderStatusBadge, PaymentStatusBadge } from '@/components/shared/OrderS
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import type { Order, PaginatedData } from '@/types';
+import type { Order, PaginatedData, SharedPageProps } from '@/types';
 
 interface OrdersProps {
     orders: PaginatedData<Order>;
@@ -28,6 +28,8 @@ export default function Orders({
     orders,
     filters,
 }: OrdersProps): React.JSX.Element {
+    const { props } = usePage<SharedPageProps>();
+    const { flash } = props;
     const [search, setSearch] = useState(filters.search || '');
 
     const handleSearch = (e: React.FormEvent) => {
@@ -35,11 +37,27 @@ export default function Orders({
         router.get(route('account.orders'), { search }, { preserveState: true });
     };
 
+    const handleCancel = (orderNumber: string) => {
+        if (!confirm('Are you sure you want to cancel this order? This cannot be undone.')) return;
+        router.patch(route('account.orders.cancel', orderNumber), {}, { preserveScroll: true });
+    };
+
     return (
         <AccountLayout>
             <Head title="My Orders" />
             
             <div className="space-y-8">
+                {flash?.success && (
+                    <div className="rounded-2xl bg-green-50 border border-green-200 px-5 py-4 text-sm font-medium text-green-700">
+                        {flash.success}
+                    </div>
+                )}
+                {flash?.error && (
+                    <div className="rounded-2xl bg-red-50 border border-red-200 px-5 py-4 text-sm font-medium text-red-700">
+                        {flash.error}
+                    </div>
+                )}
+
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -126,12 +144,14 @@ export default function Orders({
 
                                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-[var(--color-border)]">
                                         <p className="text-sm text-[var(--color-text-secondary)] font-medium italic">
-                                            {order.status === 'delivered' 
-                                                ? `Delivered on ${formatDate(order.delivered_at || '')}` 
-                                                : `Estimated Delivery: 3-5 business days`}
+                                            {order.status === 'delivered'
+                                                ? order.delivered_at
+                                                    ? `Delivered on ${formatDate(order.delivered_at)}`
+                                                    : 'Delivered'
+                                                : 'Estimated Delivery: 3-5 business days'}
                                         </p>
                                         
-                                        <div className="flex gap-3 w-full sm:w-auto">
+                                        <div className="flex flex-wrap gap-3 w-full sm:w-auto">
                                             <Button asChild variant="outline" className="flex-1 sm:flex-none rounded-xl font-bold border-[var(--color-border)] hover:bg-[var(--color-surface-alt)]">
                                                 <Link href={route('account.orders.show', order.order_number)}>
                                                     View Details
@@ -143,6 +163,16 @@ export default function Orders({
                                                     <ArrowRight size={16} className="ml-2" />
                                                 </Link>
                                             </Button>
+                                            {order.status === 'pending' && (
+                                                <Button
+                                                    variant="outline"
+                                                    className="flex-1 sm:flex-none rounded-xl font-bold border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+                                                    onClick={() => handleCancel(order.order_number)}
+                                                >
+                                                    <XCircle size={16} className="mr-2" />
+                                                    Cancel Order
+                                                </Button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

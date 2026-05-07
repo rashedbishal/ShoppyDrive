@@ -1,15 +1,16 @@
-import { Head, Link } from '@inertiajs/react';
-import { 
-    ShoppingBag, 
-    ArrowLeft, 
-    Package, 
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import {
+    ShoppingBag,
+    ArrowLeft,
+    Package,
     Calendar,
     MapPin,
     CreditCard,
     Download,
     Truck,
     Undo2,
-    MessageSquare
+    MessageSquare,
+    XCircle
 } from 'lucide-react';
 import React from 'react';
 
@@ -18,7 +19,7 @@ import { OrderStatusBadge, PaymentStatusBadge } from '@/components/shared/OrderS
 import { OrderTimeline } from '@/components/shared/OrderTimeline';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import type { Order } from '@/types';
+import type { Order, SharedPageProps } from '@/types';
 
 interface OrderDetailProps {
     order: Order;
@@ -27,11 +28,30 @@ interface OrderDetailProps {
 export default function OrderDetail({
     order,
 }: OrderDetailProps): React.JSX.Element {
+    const { props } = usePage<SharedPageProps>();
+    const { flash } = props;
+
+    const handleCancel = () => {
+        if (!confirm('Are you sure you want to cancel this order? This cannot be undone.')) return;
+        router.patch(route('account.orders.cancel', order.order_number), {}, { preserveScroll: true });
+    };
+
     return (
         <AccountLayout>
             <Head title={`Order #${order.order_number}`} />
-            
+
             <div className="space-y-8">
+                {flash?.success && (
+                    <div className="rounded-2xl bg-green-50 border border-green-200 px-5 py-4 text-sm font-medium text-green-700">
+                        {flash.success}
+                    </div>
+                )}
+                {flash?.error && (
+                    <div className="rounded-2xl bg-red-50 border border-red-200 px-5 py-4 text-sm font-medium text-red-700">
+                        {flash.error}
+                    </div>
+                )}
+
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
@@ -53,7 +73,7 @@ export default function OrderDetail({
                         </div>
                     </div>
                     
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-3">
                         <Button variant="outline" className="rounded-xl font-bold border-[var(--color-border)] hover:bg-[var(--color-surface-alt)]">
                             <Download size={16} className="mr-2" />
                             Invoice
@@ -62,6 +82,16 @@ export default function OrderDetail({
                             <Button className="rounded-xl font-bold bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]">
                                 <Undo2 size={16} className="mr-2" />
                                 Return Items
+                            </Button>
+                        )}
+                        {order.status === 'pending' && (
+                            <Button
+                                variant="outline"
+                                className="rounded-xl font-bold border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+                                onClick={handleCancel}
+                            >
+                                <XCircle size={16} className="mr-2" />
+                                Cancel Order
                             </Button>
                         )}
                     </div>

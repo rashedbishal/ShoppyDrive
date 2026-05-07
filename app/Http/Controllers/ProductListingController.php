@@ -63,9 +63,9 @@ class ProductListingController extends Controller
         if ($search !== '') {
             $query->where(static function ($productQuery) use ($search): void {
                 $productQuery
-                    ->where('name', 'ilike', "%{$search}%")
-                    ->orWhere('sku', 'ilike', "%{$search}%")
-                    ->orWhere('short_description', 'ilike', "%{$search}%");
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('short_description', 'like', "%{$search}%");
             });
         }
 

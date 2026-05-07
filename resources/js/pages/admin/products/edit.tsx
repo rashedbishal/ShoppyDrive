@@ -35,7 +35,8 @@ type Props = {
 };
 
 export default function ProductEdit({ product, categories, subCategories, brands }: Props) {
-    const { data, setData, put, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
+        _method: 'PUT',
         name: product.name,
         slug: product.slug,
         sku: product.sku ?? '',
@@ -58,15 +59,9 @@ export default function ProductEdit({ product, categories, subCategories, brands
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const hasFile = data.images.some(img => img instanceof File);
-        if (hasFile) {
-            post(route('admin.products.update', product.id), {
-                forceFormData: true,
-                _method: 'put',
-            } as any);
-        } else {
-            put(route('admin.products.update', product.id));
-        }
+        post(route('admin.products.update', product.id), {
+            forceFormData: true,
+        });
     };
 
     const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (

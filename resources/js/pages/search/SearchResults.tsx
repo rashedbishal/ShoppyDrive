@@ -1,291 +1,575 @@
 import { Head, router } from '@inertiajs/react';
-import { motion } from 'framer-motion';
-import { Filter, Grid, List, Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react';
-import React, { useState } from 'react';
+import { Filter, LayoutGrid, List, Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { route } from 'ziggy-js';
 
 import { ProductCard } from '@/components/shared/ProductCard';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Drawer } from '@/components/ui/drawer';
 import { EmptyState } from '@/components/ui/empty-state';
-import { RangeSlider } from '@/components/ui/range-slider';
+import { Pagination } from '@/components/ui/pagination';
+import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
-import type { Category, PaginatedData, Product, ProductFilters } from '@/types';
+import type { Brand, Category, PaginatedData, Product } from '@/types';
 
-interface SearchResultsProps {
+type SearchFilters = {
+    q: string;
+    sort: string;
+    view: 'grid' | 'list';
+    brand: string[];
+    min_price: number | null;
+    max_price: number | null;
+    rating: number | null;
+    in_stock: boolean;
+    category: string | null;
+    page: number;
+};
+
+type SearchResultsProps = {
     query: string;
     products: PaginatedData<Product>;
-    filters: ProductFilters;
+    filters: SearchFilters;
     categories: Category[];
+    brands: (Brand & { products_count?: number })[];
     maxPrice: number;
+};
+
+type QueryValue = string | number | boolean | string[];
+
+const SORT_OPTIONS = [
+    { label: 'Relevance', value: 'relevance' },
+    { label: 'Price: Low to High', value: 'price_asc' },
+    { label: 'Price: High to Low', value: 'price_desc' },
+    { label: 'Newest Arrivals', value: 'newest' },
+    { label: 'Top Rated', value: 'rating' },
+] as const;
+
+// ── Price Range Filter ─────────────────────────────────────────────────────────
+function PriceRangeFilter({
+    lo, hi, cap,
+    onChange,
+}: {
+    lo: number;
+    hi: number;
+    cap: number;
+    onChange: (lo: number, hi: number) => void;
+}): React.JSX.Element {
+    const [inputLo, setInputLo] = useState(String(lo));
+    const [inputHi, setInputHi] = useState(String(hi));
+
+    useEffect(() => setInputLo(String(lo)), [lo]);
+    useEffect(() => setInputHi(String(hi)), [hi]);
+
+    const loPercent = cap > 0 ? (lo / cap) * 100 : 0;
+    const hiPercent = cap > 0 ? (hi / cap) * 100 : 100;
+    const minOnTop = loPercent > 95;
+
+    const commitLo = (raw: string) => {
+        const v = Math.max(0, Math.min(Math.round(Number(raw) / 10) * 10, hi - 10));
+        onChange(isNaN(v) ? 0 : v, hi);
+    };
+    const commitHi = (raw: string) => {
+        const v = Math.max(lo + 10, Math.min(Math.round(Number(raw) / 10) * 10, cap));
+        onChange(lo, isNaN(v) ? cap : v);
+    };
+
+    return (
+        <div className="space-y-5">
+            <div className="flex items-stretch gap-2">
+                <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 py-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Min</span>
+                    <span className="text-sm font-bold text-[var(--color-primary)]">৳{lo.toLocaleString('en-BD')}</span>
+                </div>
+                <div className="flex items-center text-sm text-[var(--color-text-muted)]">—</div>
+                <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 py-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Max</span>
+                    <span className="text-sm font-bold text-[var(--color-primary)]">৳{hi.toLocaleString('en-BD')}</span>
+                </div>
+            </div>
+
+            <div className="relative mx-1.5 py-3">
+                <div className="absolute top-1/2 left-0 right-0 h-2 -translate-y-1/2 rounded-full bg-[var(--color-surface-alt)] shadow-inner" />
+                <div
+                    className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-[var(--color-primary)] transition-[left,width] duration-75"
+                    style={{ left: `${loPercent}%`, width: `${Math.max(0, hiPercent - loPercent)}%` }}
+                />
+                <div
+                    className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--color-primary)] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-[left] duration-75"
+                    style={{ left: `${loPercent}%` }}
+                />
+                <div
+                    className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--color-primary)] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-[left] duration-75"
+                    style={{ left: `${hiPercent}%` }}
+                />
+                <input
+                    type="range" min={0} max={cap} step={10} value={lo}
+                    onChange={(e) => onChange(Math.min(Number(e.target.value), hi - 10), hi)}
+                    className={cn(
+                        'absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent opacity-0',
+                        minOnTop ? 'z-30' : 'z-20',
+                    )}
+                />
+                <input
+                    type="range" min={10} max={cap} step={10} value={hi}
+                    onChange={(e) => onChange(lo, Math.max(Number(e.target.value), lo + 10))}
+                    className={cn(
+                        'absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent opacity-0',
+                        minOnTop ? 'z-20' : 'z-30',
+                    )}
+                />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Min price</label>
+                    <div className="relative">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--color-text-muted)]">৳</span>
+                        <input
+                            type="number" min={0} step={10}
+                            value={inputLo}
+                            onChange={(e) => setInputLo(e.target.value)}
+                            onBlur={() => commitLo(inputLo)}
+                            onKeyDown={(e) => e.key === 'Enter' && commitLo(inputLo)}
+                            className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-white pl-7 pr-2 text-sm font-medium transition focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                        />
+                    </div>
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Max price</label>
+                    <div className="relative">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--color-text-muted)]">৳</span>
+                        <input
+                            type="number" min={10} step={10}
+                            value={inputHi}
+                            onChange={(e) => setInputHi(e.target.value)}
+                            onBlur={() => commitHi(inputHi)}
+                            onKeyDown={(e) => e.key === 'Enter' && commitHi(inputHi)}
+                            className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-white pl-7 pr-2 text-sm font-medium transition focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
 
+// ── Filter Group ───────────────────────────────────────────────────────────────
+function FilterGroup({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }): React.JSX.Element {
+    return (
+        <div className="space-y-4 border-b border-[var(--color-border)] pb-6 last:border-b-0 last:pb-0">
+            <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--color-text-primary)]">{title}</h3>
+                {action}
+            </div>
+            {children}
+        </div>
+    );
+}
+
+// ── Skeleton ───────────────────────────────────────────────────────────────────
+function SearchProductSkeleton({ view }: { view: 'grid' | 'list' }): React.JSX.Element {
+    if (view === 'list') {
+        return (
+            <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm">
+                <div className="grid gap-4 sm:grid-cols-[220px_minmax(0,1fr)]">
+                    <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
+                    <div className="space-y-3">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-5 w-4/5" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-5/6" />
+                        <Skeleton className="h-7 w-28" />
+                        <Skeleton className="h-10 w-36 rounded-xl" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    return (
+        <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm">
+            <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
+            <div className="mt-4 space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-4/5" />
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-10 w-full rounded-xl" />
+            </div>
+        </div>
+    );
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function buildQuery(f: SearchFilters): Record<string, QueryValue> {
+    const q: Record<string, QueryValue> = {
+        q: f.q,
+        sort: f.sort,
+        view: f.view,
+        page: f.page,
+    };
+    if (f.category) q.category = f.category;
+    if (f.brand.length > 0) q.brand = f.brand;
+    if (f.min_price !== null) q.min_price = f.min_price;
+    if (f.max_price !== null) q.max_price = f.max_price;
+    if (f.rating !== null) q.rating = f.rating;
+    if (f.in_stock) q.in_stock = true;
+    return q;
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
 export default function SearchResults({
     query,
     products,
     filters,
     categories = [],
+    brands = [],
     maxPrice = 50000,
 }: SearchResultsProps): React.JSX.Element {
     const isDesktop = useMediaQuery('(min-width: 1024px)');
-    const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    
-    // Filter states
-    const [priceRange, setPriceRange] = useState<[number, number]>([
-        filters.min_price || 0,
-        filters.max_price || maxPrice
-    ]);
+    const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [draft, setDraft] = useState<SearchFilters>(filters);
 
-    const handleFilterChange = (newFilters: Partial<ProductFilters>) => {
-        router.get(route('search'), { 
-            ...filters, 
-            ...newFilters, 
-            q: query 
-        }, {
+    useEffect(() => {
+        setDraft(filters);
+        setIsLoading(false);
+    }, [filters]);
+
+    const submitFilters = (next: SearchFilters): void => {
+        setIsLoading(true);
+        router.get(route('search'), buildQuery(next) as never, {
             preserveState: true,
             preserveScroll: true,
-            only: ['products', 'filters'],
+            replace: true,
+            onFinish: () => {
+                setIsLoading(false);
+                setIsFiltersOpen(false);
+            },
         });
     };
 
-    const clearFilters = () => {
-        router.get(route('search'), { q: query });
+    const applyChange = (updater: (c: SearchFilters) => SearchFilters): void => {
+        setDraft((c) => {
+            const next = updater(c);
+            if (isDesktop) submitFilters(next);
+            return next;
+        });
     };
 
-    const activeFilterCount = Object.keys(filters).filter(k => k !== 'q' && k !== 'page' && k !== 'sort').length;
+    const handleClearAll = (): void => {
+        const next: SearchFilters = {
+            q: query,
+            sort: 'relevance',
+            view: draft.view,
+            brand: [],
+            min_price: null,
+            max_price: null,
+            rating: null,
+            in_stock: false,
+            category: null,
+            page: 1,
+        };
+        setDraft(next);
+        submitFilters(next);
+    };
 
-    const FilterContent = () => (
-        <div className="space-y-8">
-            {/* Category Filter */}
-            <div className="space-y-4">
-                <h3 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest">
-                    Categories
-                </h3>
-                <div className="space-y-2">
-                    {categories.map((cat) => (
-                        <div key={cat.id} className="flex items-center gap-3">
+    const handlePageChange = (pageNumber: number): void => {
+        const next = { ...draft, page: pageNumber };
+        setDraft(next);
+        submitFilters(next);
+    };
+
+    // Active filter chips
+    type Chip = { key: string; label: string; onRemove: () => void };
+    const chips: Chip[] = [];
+
+    if (draft.category) {
+        const cat = categories.find((c) => c.slug === draft.category);
+        chips.push({
+            key: 'category',
+            label: `Category: ${cat?.name ?? draft.category}`,
+            onRemove: () => applyChange((c) => ({ ...c, category: null, page: 1 })),
+        });
+    }
+    draft.brand.forEach((slug) => {
+        const b = brands.find((x) => x.slug === slug);
+        chips.push({
+            key: `brand-${slug}`,
+            label: `Brand: ${b?.name ?? slug}`,
+            onRemove: () => applyChange((c) => ({ ...c, brand: c.brand.filter((s) => s !== slug), page: 1 })),
+        });
+    });
+    if (draft.min_price !== null || draft.max_price !== null) {
+        chips.push({
+            key: 'price',
+            label: `Price: ৳${(draft.min_price ?? 0).toLocaleString('en-BD')} – ৳${(draft.max_price ?? maxPrice).toLocaleString('en-BD')}`,
+            onRemove: () => applyChange((c) => ({ ...c, min_price: null, max_price: null, page: 1 })),
+        });
+    }
+    if (draft.rating !== null) {
+        chips.push({
+            key: 'rating',
+            label: `${draft.rating}★ & up`,
+            onRemove: () => applyChange((c) => ({ ...c, rating: null, page: 1 })),
+        });
+    }
+    if (draft.in_stock) {
+        chips.push({
+            key: 'stock',
+            label: 'In stock only',
+            onRemove: () => applyChange((c) => ({ ...c, in_stock: false, page: 1 })),
+        });
+    }
+
+    const sidebarControls = (
+        <div className="space-y-6">
+            {categories.length > 0 && (
+                <FilterGroup title="Categories">
+                    <div className="space-y-2.5">
+                        {categories.map((cat) => (
                             <Checkbox
-                                id={`cat-${cat.id}`}
-                                checked={filters.category === cat.slug}
-                                onCheckedChange={(checked) => {
-                                    handleFilterChange({ category: checked ? cat.slug : undefined });
-                                }}
+                                key={cat.id}
+                                label={cat.name}
+                                checked={draft.category === cat.slug}
+                                onChange={() =>
+                                    applyChange((c) => ({
+                                        ...c,
+                                        category: c.category === cat.slug ? null : cat.slug,
+                                        page: 1,
+                                    }))
+                                }
                             />
-                            <label htmlFor={`cat-${cat.id}`} className="text-sm font-medium text-[var(--color-text-secondary)] cursor-pointer">
-                                {cat.name}
-                            </label>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Price Filter */}
-            <div className="space-y-4">
-                <h3 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest">
-                    Price Range
-                </h3>
-                <div className="px-2">
-                    <RangeSlider
-                        min={0}
-                        max={maxPrice}
-                        step={100}
-                        value={priceRange}
-                        onValueChange={setPriceRange}
-                        onValueCommit={(val) => handleFilterChange({ min_price: val[0], max_price: val[1] })}
-                    />
-                    <div className="flex justify-between mt-4">
-                        <span className="text-xs font-bold font-mono">৳{priceRange[0]}</span>
-                        <span className="text-xs font-bold font-mono">৳{priceRange[1]}</span>
+                        ))}
                     </div>
-                </div>
-            </div>
+                </FilterGroup>
+            )}
 
-            {/* Availability */}
-            <div className="space-y-4">
-                <h3 className="text-sm font-bold text-[var(--color-text-primary)] uppercase tracking-widest">
-                    Availability
-                </h3>
-                <div className="flex items-center gap-3">
-                    <Checkbox
-                        id="in-stock"
-                        checked={filters.in_stock}
-                        onCheckedChange={(checked) => handleFilterChange({ in_stock: !!checked })}
-                    />
-                    <label htmlFor="in-stock" className="text-sm font-medium text-[var(--color-text-secondary)] cursor-pointer">
-                        In Stock Only
-                    </label>
-                </div>
-            </div>
+            <FilterGroup title="Price Range">
+                <PriceRangeFilter
+                    lo={draft.min_price ?? 0}
+                    hi={draft.max_price ?? Math.max(1000, maxPrice)}
+                    cap={Math.max(1000, maxPrice)}
+                    onChange={(lo, hi) =>
+                        applyChange((c) => ({ ...c, min_price: lo, max_price: hi, page: 1 }))
+                    }
+                />
+            </FilterGroup>
+
+            {brands.length > 0 && (
+                <FilterGroup title="Brands">
+                    <div className="max-h-48 space-y-2.5 overflow-y-auto pr-1">
+                        {brands.map((brand) => (
+                            <Checkbox
+                                key={brand.id}
+                                label={`${brand.name}${typeof brand.products_count === 'number' ? ` (${brand.products_count})` : ''}`}
+                                checked={draft.brand.includes(brand.slug)}
+                                onChange={() =>
+                                    applyChange((c) => ({
+                                        ...c,
+                                        brand: c.brand.includes(brand.slug)
+                                            ? c.brand.filter((s) => s !== brand.slug)
+                                            : [...c.brand, brand.slug],
+                                        page: 1,
+                                    }))
+                                }
+                            />
+                        ))}
+                    </div>
+                </FilterGroup>
+            )}
+
+            <FilterGroup title="Availability">
+                <Checkbox
+                    label="In stock only"
+                    checked={draft.in_stock}
+                    onChange={() => applyChange((c) => ({ ...c, in_stock: !c.in_stock, page: 1 }))}
+                />
+            </FilterGroup>
+        </div>
+    );
+
+    const drawerFooter = (
+        <div className="flex items-center gap-3">
+            <Button variant="outline" fullWidth onClick={handleClearAll}>
+                Clear All
+            </Button>
+            <Button fullWidth onClick={() => submitFilters(draft)}>
+                Apply Filters
+            </Button>
         </div>
     );
 
     return (
-        <div className="bg-[var(--color-surface-alt)] min-h-screen">
-            <Head title={`Search results for "${query}"`} />
+        <>
+            <Head title={query ? `Search: "${query}"` : 'Search'} />
 
-            <div className="container mx-auto px-4 py-8">
+            <div className="space-y-8 py-8 lg:py-12">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-serif font-bold text-[var(--color-text-primary)] mb-2">
-                            Search Results
+                <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm lg:p-8">
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+                            Search results
+                        </p>
+                        <h1 className="font-display mt-1 text-3xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-4xl">
+                            {query ? `"${query}"` : 'All Products'}
                         </h1>
-                        <p className="text-[var(--color-text-muted)]">
-                            Showing {products.total} products for <span className="text-[var(--color-text-primary)] font-bold">"{query}"</span>
+                        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                            {products.total} {products.total === 1 ? 'product' : 'products'} found
                         </p>
                     </div>
+                </section>
 
-                    <div className="flex items-center gap-3">
-                        <div className="flex bg-white rounded-xl border border-[var(--color-border)] p-1">
-                            <button 
-                                onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'}`}
-                            >
-                                <Grid size={18} />
-                            </button>
-                            <button 
-                                onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'}`}
-                            >
-                                <List size={18} />
-                            </button>
-                        </div>
-
-                        <select 
-                            className="bg-white border-[var(--color-border)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--color-text-primary)] focus:ring-2 focus:ring-[var(--color-primary)]"
-                            value={filters.sort || 'relevance'}
-                            onChange={(e) => handleFilterChange({ sort: e.target.value })}
-                        >
-                            <option value="relevance">Relevance</option>
-                            <option value="price_asc">Price: Low to High</option>
-                            <option value="price_desc">Price: High to Low</option>
-                            <option value="newest">Newest Arrivals</option>
-                            <option value="rating">Top Rated</option>
-                        </select>
-
-                        {!isDesktop && (
-                            <Button 
-                                variant="outline" 
-                                className="rounded-xl font-bold flex gap-2 relative"
-                                onClick={() => setIsFilterDrawerOpen(true)}
-                            >
-                                <SlidersHorizontal size={18} />
-                                Filters
-                                {activeFilterCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[var(--color-primary)] text-white text-[10px] flex items-center justify-center border-2 border-[var(--color-surface-alt)]">
-                                        {activeFilterCount}
-                                    </span>
-                                )}
-                            </Button>
-                        )}
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    {/* Sidebar Filters */}
-                    {isDesktop && (
-                        <aside className="lg:col-span-3 bg-white p-8 rounded-3xl border border-[var(--color-border)] shadow-sm sticky top-24">
-                            <div className="flex items-center justify-between mb-8">
-                                <div className="flex items-center gap-2">
-                                    <Filter size={18} className="text-[var(--color-primary)]" />
-                                    <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Filters</h2>
-                                </div>
-                                {activeFilterCount > 0 && (
-                                    <button 
-                                        onClick={clearFilters}
-                                        className="text-xs font-bold text-[var(--color-primary)] hover:underline"
-                                    >
+                {/* Sidebar + Grid */}
+                <section className="mx-auto grid max-w-7xl gap-8 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
+                    {/* Desktop Sidebar */}
+                    <aside className="hidden lg:block">
+                        <div className="sticky top-28 space-y-6 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Filters</h2>
+                                {chips.length > 0 && (
+                                    <Button variant="ghost" className="px-0 text-[var(--color-primary)]" onClick={handleClearAll}>
                                         Clear All
-                                    </button>
+                                    </Button>
                                 )}
                             </div>
-
-                            <FilterContent />
-                        </aside>
-                    )}
+                            {sidebarControls}
+                        </div>
+                    </aside>
 
                     {/* Main Content */}
-                    <div className="lg:col-span-9">
-                        {/* Filter Chips */}
-                        {activeFilterCount > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-6">
-                                {filters.category && (
-                                    <Badge variant="secondary" className="pl-3 pr-1 py-1 flex items-center gap-1 bg-white border-[var(--color-border)] text-[var(--color-text-primary)] rounded-full">
-                                        Category: {filters.category}
-                                        <button onClick={() => handleFilterChange({ category: undefined })} className="p-1 hover:bg-[var(--color-surface-alt)] rounded-full">
-                                            <X size={12} />
-                                        </button>
-                                    </Badge>
-                                )}
-                                {(filters.min_price || filters.max_price) && (
-                                    <Badge variant="secondary" className="pl-3 pr-1 py-1 flex items-center gap-1 bg-white border-[var(--color-border)] text-[var(--color-text-primary)] rounded-full">
-                                        Price: ৳{filters.min_price || 0} - ৳{filters.max_price || maxPrice}
-                                        <button onClick={() => handleFilterChange({ min_price: undefined, max_price: undefined })} className="p-1 hover:bg-[var(--color-surface-alt)] rounded-full">
-                                            <X size={12} />
-                                        </button>
-                                    </Badge>
-                                )}
-                                {filters.in_stock && (
-                                    <Badge variant="secondary" className="pl-3 pr-1 py-1 flex items-center gap-1 bg-white border-[var(--color-border)] text-[var(--color-text-primary)] rounded-full">
-                                        In Stock
-                                        <button onClick={() => handleFilterChange({ in_stock: undefined })} className="p-1 hover:bg-[var(--color-surface-alt)] rounded-full">
-                                            <X size={12} />
-                                        </button>
-                                    </Badge>
-                                )}
+                    <div className="space-y-6">
+                        {/* Toolbar */}
+                        <div className="rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <Button
+                                        variant="outline"
+                                        className="lg:hidden"
+                                        onClick={() => setIsFiltersOpen(true)}
+                                    >
+                                        <Filter className="size-4" />
+                                        Filters
+                                        {chips.length > 0 && (
+                                            <span className="ml-1 flex size-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] text-white">
+                                                {chips.length}
+                                            </span>
+                                        )}
+                                    </Button>
+
+                                    <Select
+                                        value={draft.sort}
+                                        onChange={(e) => {
+                                            const next = { ...draft, sort: e.target.value, page: 1 };
+                                            setDraft(next);
+                                            submitFilters(next);
+                                        }}
+                                        options={SORT_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+                                        selectClassName="min-w-48"
+                                    />
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <p className="hidden text-sm text-[var(--color-text-secondary)] sm:block">
+                                        {products.from ?? 0}–{products.to ?? 0} of {products.total}
+                                    </p>
+                                    <div className="inline-flex overflow-hidden rounded-xl border border-[var(--color-border)]">
+                                        {(['grid', 'list'] as const).map((v) => (
+                                            <button
+                                                key={v}
+                                                type="button"
+                                                onClick={() => {
+                                                    const next = { ...draft, view: v, page: 1 };
+                                                    setDraft(next);
+                                                    submitFilters(next);
+                                                }}
+                                                aria-label={`${v} view`}
+                                                className={cn(
+                                                    'inline-flex size-11 items-center justify-center transition',
+                                                    draft.view === v
+                                                        ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]'
+                                                        : 'bg-white text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]',
+                                                )}
+                                            >
+                                                {v === 'grid' ? <LayoutGrid className="size-4" /> : <List className="size-4" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Active filter chips */}
+                        {chips.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {chips.map((chip) => (
+                                    <button
+                                        key={chip.key}
+                                        type="button"
+                                        onClick={chip.onRemove}
+                                        className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-secondary)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+                                    >
+                                        {chip.label}
+                                        <X className="size-3.5" />
+                                    </button>
+                                ))}
                             </div>
                         )}
 
-                        {products.data.length > 0 ? (
-                            <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 gap-6' : 'space-y-6'}>
+                        {/* Product Grid / Skeletons / Empty */}
+                        {isLoading ? (
+                            <div className={cn(
+                                'grid gap-3 md:gap-4',
+                                draft.view === 'list' ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3',
+                            )}>
+                                {Array.from({ length: 12 }, (_, i) => (
+                                    <SearchProductSkeleton key={i} view={draft.view} />
+                                ))}
+                            </div>
+                        ) : products.data.length > 0 ? (
+                            <div className={cn(
+                                'grid gap-3 md:gap-4',
+                                draft.view === 'list' ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3',
+                            )}>
                                 {products.data.map((product) => (
-                                    <ProductCard 
-                                        key={product.id} 
-                                        product={product} 
-                                        view={viewMode}
-                                    />
+                                    <ProductCard key={product.id} product={product} view={draft.view} />
                                 ))}
                             </div>
                         ) : (
-                            <div className="bg-white rounded-3xl p-20 border border-[var(--color-border)]">
-                                <EmptyState
-                                    icon={SearchIcon}
-                                    title="No results found"
-                                    description={`We couldn't find anything matching "${query}". Try adjusting your search or browse all products.`}
-                                    action={{
-                                        label: "Browse all products",
-                                        href: route('products.index'),
-                                    }}
-                                />
-                            </div>
+                            <EmptyState
+                                icon={SearchIcon}
+                                title="No results found"
+                                description={
+                                    chips.length > 0
+                                        ? 'Try removing some filters to see more results.'
+                                        : `We couldn't find anything matching "${query}". Try a different search term.`
+                                }
+                                action={
+                                    chips.length > 0
+                                        ? { label: 'Clear filters', onClick: handleClearAll }
+                                        : { label: 'Browse all products', href: route('products.index') }
+                                }
+                            />
                         )}
 
-                        {/* Pagination would go here */}
+                        <Pagination data={products} onPageChange={handlePageChange} className="pt-2" />
                     </div>
-                </div>
+                </section>
             </div>
 
             {/* Mobile Filter Drawer */}
-            <Drawer 
-                isOpen={isFilterDrawerOpen} 
-                onClose={() => setIsFilterDrawerOpen(false)}
-                title="Filter Products"
-                side="right"
-                size="md"
+            <Drawer
+                isOpen={isFiltersOpen}
+                onClose={() => setIsFiltersOpen(false)}
+                title="Filters"
+                description="Refine your search results."
+                side="left"
+                footer={drawerFooter}
             >
-                <div className="p-6 h-full flex flex-col">
-                    <div className="flex-1 overflow-y-auto">
-                        <FilterContent />
-                    </div>
-                    <div className="pt-6 border-t border-[var(--color-border)] grid grid-cols-2 gap-4">
-                        <Button variant="outline" onClick={clearFilters}>Clear All</Button>
-                        <Button onClick={() => setIsFilterDrawerOpen(false)}>Apply Filters</Button>
-                    </div>
-                </div>
+                <div className="space-y-6">{sidebarControls}</div>
             </Drawer>
-        </div>
+        </>
     );
 }

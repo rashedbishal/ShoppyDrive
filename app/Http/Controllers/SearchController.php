@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Review;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,10 +19,20 @@ class SearchController extends Controller
     {
         $query = trim((string) $request->string('q'));
         $sort = $request->string('sort', 'relevance')->toString();
+        $categorySlug = $request->string('category')->toString() ?: null;
+        $view = $request->string('view', 'grid')->toString();
+
         $minPrice = $request->filled('min_price') ? $request->integer('min_price') : null;
         $maxPrice = $request->filled('max_price') ? $request->integer('max_price') : null;
-        $categorySlug = $request->string('category')->toString() ?: null;
-        $inStock = $request->boolean('in_stock');
+
+        $brandSlugs = collect($request->input('brand', []))
+            ->flatten()
+            ->map(static fn ($slug) => (string) $slug)
+            ->filter()
+            ->values()
+            ->all();
+
+        $minimumRating = $request->filled('rating') ? $request->integer('rating') : null;
 
         $products = Product::query()
             ->active()
@@ -29,20 +41,29 @@ class SearchController extends Controller
             ->withCount(['reviews as reviews_count' => fn ($q) => $q->where('is_approved', true)])
             ->withAvg(['reviews as average_rating' => fn ($q) => $q->where('is_approved', true)], 'rating')
             ->when($query !== '', fn ($q) => $q->where(fn ($sub) => $sub
-                ->where('name', 'ilike', "%{$query}%")
-                ->orWhere('sku', 'ilike', "%{$query}%")
-                ->orWhere('short_description', 'ilike', "%{$query}%")
+                ->where('name', 'like', "%{$query}%")
+                ->orWhere('sku', 'like', "%{$query}%")
+                ->orWhere('short_description', 'like', "%{$query}%")
             ))
             ->when($categorySlug, fn ($q) => $q->whereHas('category', fn ($c) => $c->where('slug', $categorySlug)))
+            ->when($brandSlugs !== [], fn ($q) => $q->whereHas('brand', fn ($b) => $b->whereIn('slug', $brandSlugs)))
             ->when($minPrice !== null, fn ($q) => $q->where('price', '>=', $minPrice))
             ->when($maxPrice !== null, fn ($q) => $q->where('price', '<=', $maxPrice))
-            ->when($inStock, fn ($q) => $q->where('stock_quantity', '>', 0))
+            ->when($request->boolean('in_stock'), fn ($q) => $q->where('stock_quantity', '>', 0))
+            ->when($minimumRating !== null && $minimumRating > 0, fn ($q) => $q->whereIn(
+                'products.id',
+                Review::query()
+                    ->select('product_id')
+                    ->where('is_approved', true)
+                    ->groupBy('product_id')
+                    ->havingRaw('AVG(rating) >= ?', [$minimumRating])
+            ))
             ->tap(function ($q) use ($sort) {
                 match ($sort) {
                     'price_asc' => $q->orderBy('price'),
                     'price_desc' => $q->orderByDesc('price'),
-                    'newest' => $q->orderByDesc('published_at'),
-                    'rating' => $q->orderByRaw('COALESCE(average_rating, 0) DESC'),
+                    'newest' => $q->orderByDesc('published_at')->orderByDesc('created_at'),
+                    'rating' => $q->orderByRaw('COALESCE(average_rating, 0) DESC')->orderByDesc('reviews_count'),
                     default => $q->orderByDesc('is_featured')->orderByDesc('published_at'),
                 };
             })
@@ -51,9 +72,16 @@ class SearchController extends Controller
 
         $categories = Category::query()
             ->active()
-            ->whereNull('parent_id')
             ->orderBy('sort_order')
             ->get(['id', 'name', 'slug']);
+
+        $brands = Brand::query()
+            ->active()
+            ->withCount([
+                'products as products_count' => static fn ($q) => $q->active()->published(),
+            ])
+            ->orderBy('name')
+            ->get();
 
         $catalogMaxPrice = (int) (Product::query()->active()->published()->max('price') ?? 50000);
 
@@ -61,14 +89,19 @@ class SearchController extends Controller
             'query' => $query,
             'products' => $products,
             'categories' => $categories,
+            'brands' => $brands,
             'maxPrice' => $catalogMaxPrice,
             'filters' => [
                 'q' => $query,
                 'category' => $categorySlug,
+                'brand' => $brandSlugs,
                 'min_price' => $minPrice,
                 'max_price' => $maxPrice,
-                'in_stock' => $inStock,
+                'rating' => $minimumRating,
+                'in_stock' => $request->boolean('in_stock'),
                 'sort' => $sort,
+                'view' => $view,
+                'page' => $products->currentPage(),
             ],
         ]);
     }
@@ -86,8 +119,8 @@ class SearchController extends Controller
             ->published()
             ->with(['images'])
             ->where(fn ($q) => $q
-                ->where('name', 'ilike', "%{$query}%")
-                ->orWhere('sku', 'ilike', "%{$query}%")
+                ->where('name', 'like', "%{$query}%")
+                ->orWhere('sku', 'like', "%{$query}%")
             )
             ->orderByDesc('is_featured')
             ->limit(6)

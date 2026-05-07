@@ -19,6 +19,7 @@ import type { Order, Product } from '@/types';
 
 interface DashboardProps {
     recentOrders: Order[];
+    totalOrders: number;
     wishlistCount: number;
     addressCount: number;
     totalSpent: number;
@@ -26,14 +27,15 @@ interface DashboardProps {
 
 export default function Dashboard({
     recentOrders = [],
+    totalOrders = 0,
     wishlistCount = 0,
     addressCount = 0,
     totalSpent = 0,
 }: DashboardProps): React.JSX.Element {
     const stats = [
-        { 
-            label: 'Total Orders', 
-            value: recentOrders.length, 
+        {
+            label: 'Total Orders',
+            value: totalOrders,
             icon: ShoppingBag, 
             color: 'text-blue-600', 
             bg: 'bg-blue-50',

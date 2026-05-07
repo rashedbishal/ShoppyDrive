@@ -19,7 +19,8 @@ type Category = {
 type Props = { category: Category };
 
 export default function CategoryEdit({ category }: Props) {
-    const { data, setData, put, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
+        _method: 'PUT',
         name: category.name,
         slug: category.slug,
         description: category.description ?? '',
@@ -30,14 +31,9 @@ export default function CategoryEdit({ category }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (data.image instanceof File) {
-            post(route('admin.categories.update', category.id), {
-                forceFormData: true,
-                _method: 'put',
-            } as any);
-        } else {
-            put(route('admin.categories.update', category.id));
-        }
+        post(route('admin.categories.update', category.id), {
+            forceFormData: true,
+        });
     };
 
     const Field = ({ label, hint, error, children }: { label: string; hint?: string; error?: string; children: React.ReactNode }) => (

@@ -16,7 +16,7 @@ class CustomerController extends Controller
     public function index(Request $request): Response
     {
         $customers = User::withCount('orders')
-            ->when($request->search, fn ($q) => $q->where('name', 'ilike', "%{$request->search}%")->orWhere('email', 'ilike', "%{$request->search}%"))
+            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%")->orWhere('email', 'like', "%{$request->search}%"))
             ->latest()->paginate(20)->withQueryString();
 
         return Inertia::render('admin/customers/index', [

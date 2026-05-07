@@ -8,7 +8,6 @@ import {
     Search,
     ShieldCheck,
     SlidersHorizontal,
-    Star,
     Truck,
     X,
 } from 'lucide-react';
@@ -22,7 +21,6 @@ import { Drawer } from '@/components/ui/drawer';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
-import { RangeSlider } from '@/components/ui/range-slider';
 import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StarRating } from '@/components/ui/star-rating';
@@ -103,6 +101,127 @@ const SORT_OPTIONS = [
 ] as const;
 
 const DEFAULT_GRID_COUNT = 12;
+
+// ── Price Range Filter ────────────────────────────────────────────────────────
+function PriceRangeFilter({
+    lo, hi, cap,
+    onChange,
+}: {
+    lo: number;
+    hi: number;
+    cap: number;
+    onChange: (lo: number, hi: number) => void;
+}): React.JSX.Element {
+    const [inputLo, setInputLo] = useState(String(lo));
+    const [inputHi, setInputHi] = useState(String(hi));
+
+    useEffect(() => setInputLo(String(lo)), [lo]);
+    useEffect(() => setInputHi(String(hi)), [hi]);
+
+    const loPercent = cap > 0 ? (lo / cap) * 100 : 0;
+    const hiPercent = cap > 0 ? (hi / cap) * 100 : 100;
+    // When min handle is pushed far right, give it priority so it stays grabbable
+    const minOnTop = loPercent > 95;
+
+    const commitLo = (raw: string) => {
+        const v = Math.max(0, Math.min(Math.round(Number(raw) / 10) * 10, hi - 10));
+        onChange(isNaN(v) ? 0 : v, hi);
+    };
+    const commitHi = (raw: string) => {
+        const v = Math.max(lo + 10, Math.min(Math.round(Number(raw) / 10) * 10, cap));
+        onChange(lo, isNaN(v) ? cap : v);
+    };
+
+    return (
+        <div className="space-y-5">
+            {/* Value display */}
+            <div className="flex items-stretch gap-2">
+                <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 py-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Min</span>
+                    <span className="text-sm font-bold text-[var(--color-primary)]">৳{lo.toLocaleString('en-BD')}</span>
+                </div>
+                <div className="flex items-center text-sm text-[var(--color-text-muted)]">—</div>
+                <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 py-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Max</span>
+                    <span className="text-sm font-bold text-[var(--color-primary)]">৳{hi.toLocaleString('en-BD')}</span>
+                </div>
+            </div>
+
+            {/* Dual-handle track */}
+            <div className="relative mx-1.5 py-3">
+                {/* Background track */}
+                <div className="absolute top-1/2 left-0 right-0 h-2 -translate-y-1/2 rounded-full bg-[var(--color-surface-alt)] shadow-inner" />
+                {/* Active fill */}
+                <div
+                    className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-[var(--color-primary)] transition-[left,width] duration-75"
+                    style={{ left: `${loPercent}%`, width: `${Math.max(0, hiPercent - loPercent)}%` }}
+                />
+                {/* Visual thumbs (pointer-events-none — interaction via hidden inputs) */}
+                <div
+                    className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--color-primary)] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-[left] duration-75"
+                    style={{ left: `${loPercent}%` }}
+                />
+                <div
+                    className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--color-primary)] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-[left] duration-75"
+                    style={{ left: `${hiPercent}%` }}
+                />
+                {/* Hidden interactive inputs */}
+                <input
+                    type="range" min={0} max={cap} step={10} value={lo}
+                    onChange={(e) => onChange(Math.min(Number(e.target.value), hi - 10), hi)}
+                    className={cn(
+                        'absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent opacity-0',
+                        minOnTop ? 'z-30' : 'z-20',
+                    )}
+                />
+                <input
+                    type="range" min={10} max={cap} step={10} value={hi}
+                    onChange={(e) => onChange(lo, Math.max(Number(e.target.value), lo + 10))}
+                    className={cn(
+                        'absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent opacity-0',
+                        minOnTop ? 'z-20' : 'z-30',
+                    )}
+                />
+            </div>
+
+            {/* Editable inputs — apply on blur or Enter */}
+            <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+                        Min price
+                    </label>
+                    <div className="relative">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--color-text-muted)]">৳</span>
+                        <input
+                            type="number" min={0} step={10}
+                            value={inputLo}
+                            onChange={(e) => setInputLo(e.target.value)}
+                            onBlur={() => commitLo(inputLo)}
+                            onKeyDown={(e) => e.key === 'Enter' && commitLo(inputLo)}
+                            className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-white pl-7 pr-2 text-sm font-medium transition focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                        />
+                    </div>
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+                        Max price
+                    </label>
+                    <div className="relative">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--color-text-muted)]">৳</span>
+                        <input
+                            type="number" min={10} step={10}
+                            value={inputHi}
+                            onChange={(e) => setInputHi(e.target.value)}
+                            onBlur={() => commitHi(inputHi)}
+                            onKeyDown={(e) => e.key === 'Enter' && commitHi(inputHi)}
+                            className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-white pl-7 pr-2 text-sm font-medium transition focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 function FilterGroup({ title, children, action }: FilterGroupProps): React.JSX.Element {
     return (
@@ -700,24 +819,14 @@ function ProductListingPage({
                 <Accordion items={categoryItems} defaultOpenIds={categoryItems.length > 0 ? [categoryItems[0].id] : []} />
             </FilterGroup>
 
-            <FilterGroup title="Price range">
-                <RangeSlider
-                    min={0}
-                    max={Math.max(1000, maxPrice)}
-                    value={[
-                        draftFilters.min_price ?? 0,
-                        draftFilters.max_price ?? Math.max(1000, maxPrice),
-                    ]}
-                    onChange={([min, maxValue]) => {
-                        applyImmediateChange((current) => ({
-                            ...current,
-                            min_price: min,
-                            max_price: maxValue,
-                            page: 1,
-                        }));
-                    }}
-                    label="Budget"
-                    hint="Shown in Bangladeshi taka (৳)."
+            <FilterGroup title="Price Range">
+                <PriceRangeFilter
+                    lo={draftFilters.min_price ?? 0}
+                    hi={draftFilters.max_price ?? Math.max(1000, maxPrice)}
+                    cap={Math.max(1000, maxPrice)}
+                    onChange={(lo, hi) =>
+                        applyImmediateChange((c) => ({ ...c, min_price: lo, max_price: hi, page: 1 }))
+                    }
                 />
             </FilterGroup>
 
@@ -746,39 +855,6 @@ function ProductListingPage({
                 </div>
             </FilterGroup>
 
-            <FilterGroup title="Ratings">
-                <div className="space-y-2">
-                    {[4, 3, 2].map((rating) => {
-                        const checked = draftFilters.rating === rating;
-
-                        return (
-                            <button
-                                key={rating}
-                                type="button"
-                                onClick={() => {
-                                    applyImmediateChange((current) => ({
-                                        ...current,
-                                        rating: checked ? null : rating,
-                                        page: 1,
-                                    }));
-                                }}
-                                className={cn(
-                                    'flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]',
-                                    checked
-                                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]'
-                                        : 'border-[var(--color-border)] bg-white text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]',
-                                )}
-                            >
-                                <span className="inline-flex items-center gap-2">
-                                    <Star className="size-4 fill-[var(--color-accent)] text-[var(--color-accent)]" />
-                                    {rating}★ & up
-                                </span>
-                                <span className="text-xs">Filter</span>
-                            </button>
-                        );
-                    })}
-                </div>
-            </FilterGroup>
 
             <FilterGroup title="Availability">
                 <Checkbox

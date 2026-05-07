@@ -16,7 +16,7 @@ class CouponController extends Controller
 {
     public function index(Request $request): Response
     {
-        $coupons = Coupon::when($request->search, fn ($q) => $q->where('code', 'ilike', "%{$request->search}%")->orWhere('name', 'ilike', "%{$request->search}%"))
+        $coupons = Coupon::when($request->search, fn ($q) => $q->where('code', 'like', "%{$request->search}%")->orWhere('name', 'like', "%{$request->search}%"))
             ->latest()->paginate(20)->withQueryString();
 
         return Inertia::render('admin/coupons/index', [

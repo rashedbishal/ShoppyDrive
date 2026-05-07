@@ -21,7 +21,8 @@ type Props = {
 };
 
 export default function SubCategoryEdit({ subCategory: category, categories }: Props) {
-    const { data, setData, put, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
+        _method: 'PUT',
         name: category.name,
         slug: category.slug,
         category_id: category.category_id ? String(category.category_id) : '',
@@ -33,14 +34,9 @@ export default function SubCategoryEdit({ subCategory: category, categories }: P
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (data.image instanceof File) {
-            post(route('admin.sub-categories.update', category.id), {
-                forceFormData: true,
-                _method: 'put',
-            } as any);
-        } else {
-            put(route('admin.sub-categories.update', category.id));
-        }
+        post(route('admin.sub-categories.update', category.id), {
+            forceFormData: true,
+        });
     };
 
     const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (

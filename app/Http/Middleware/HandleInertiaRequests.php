@@ -14,6 +14,18 @@ use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
+    /**
+     * Routes that should not use SSR — these are authenticated or browser-heavy pages.
+     *
+     * @var array<int, string>
+     */
+    protected $withoutSsr = [
+        'admin/*',
+        'auth/*',
+        'account/*',
+        'settings/*',
+    ];
+
     public function __construct(private readonly CartManager $cartManager) {}
 
     /**

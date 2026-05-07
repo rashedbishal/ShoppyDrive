@@ -42,13 +42,16 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps): React.JSX.
                 <motion.div
                     ref={menuRef}
                     className="absolute inset-x-0 top-full z-40 hidden border-b border-[var(--color-border)] bg-surface/95 shadow-[var(--shadow-dropdown)] backdrop-blur-xl lg:block"
+                    style={{ maxHeight: 'calc(100vh - 5rem)' }}
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.22 }}
                 >
-                    <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[1.25fr_0.75fr] lg:px-8">
-                        <div>
+                    <div className="mx-auto flex max-w-7xl gap-6 overflow-hidden px-4 py-6 sm:px-6 lg:px-8" style={{ maxHeight: 'calc(100vh - 5rem)' }}>
+                        {/* Categories column — scrollable */}
+                        <div className="flex-[1.25] overflow-y-auto scrollbar-thin scrollbar-thumb-[var(--color-border)] scrollbar-track-transparent pr-1"
+                             style={{ WebkitOverflowScrolling: 'touch' }}>
                             {navCategories.length === 0 ? (
                                 <div className="flex flex-col items-center gap-2 py-10 text-[var(--color-text-muted)]">
                                     <FolderOpen className="size-8 opacity-40" />
@@ -110,6 +113,8 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps): React.JSX.
                             )}
                         </div>
 
+                        {/* Featured picks column — scrollable */}
+                        <div className="flex-[0.75] overflow-y-auto scrollbar-thin scrollbar-thumb-[var(--color-border)] scrollbar-track-transparent">
                         <div className="space-y-4 rounded-3xl bg-[linear-gradient(180deg,_rgba(26,26,46,0.98),_rgba(26,26,46,0.92))] p-5 text-white shadow-[var(--shadow-modal)]">
                             <div className="flex items-center justify-between gap-3">
                                 <div className="space-y-1">
@@ -172,6 +177,7 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps): React.JSX.
                                 <Link href="/products" onClick={onClose}>Browse all products</Link>
                             </Button>
                         </div>
+                        </div>{/* end flex-[0.75] */}
                     </div>
                 </motion.div>
             ) : null}

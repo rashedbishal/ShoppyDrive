@@ -16,7 +16,8 @@ type Brand = {
 type Props = { brand: Brand };
 
 export default function BrandEdit({ brand }: Props) {
-    const { data, setData, put, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
+        _method: 'PUT',
         name: brand.name,
         slug: brand.slug,
         logo: brand.logo as File | string | null,
@@ -26,14 +27,9 @@ export default function BrandEdit({ brand }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (data.logo instanceof File) {
-            post(route('admin.brands.update', brand.id), {
-                forceFormData: true,
-                _method: 'put',
-            } as any);
-        } else {
-            put(route('admin.brands.update', brand.id));
-        }
+        post(route('admin.brands.update', brand.id), {
+            forceFormData: true,
+        });
     };
 
     const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (

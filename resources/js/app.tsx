@@ -143,14 +143,16 @@ function applyLogin(userId: number, cart: Cart | null, mergeGuestCart: boolean):
     prevAuthUserId = userId;
 }
 
-const initialUserId = readInitialUserId();
-const initialCart = readInitialCart();
-const storedLastUser = localStorage.getItem(LAST_USER_KEY);
+if (typeof window !== 'undefined') {
+    const initialUserId = readInitialUserId();
+    const initialCart = readInitialCart();
+    const storedLastUser = localStorage.getItem(LAST_USER_KEY);
 
-if (storedLastUser !== null && initialUserId === null) {
-    applyLogout();
-} else if (initialUserId !== null) {
-    applyLogin(initialUserId, initialCart, false);
+    if (storedLastUser !== null && initialUserId === null) {
+        applyLogout();
+    } else if (initialUserId !== null) {
+        applyLogin(initialUserId, initialCart, false);
+    }
 }
 
 useCartStore.subscribe((state) => {

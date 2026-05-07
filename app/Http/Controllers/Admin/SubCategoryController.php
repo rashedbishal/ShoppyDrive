@@ -19,7 +19,7 @@ class SubCategoryController extends Controller
     public function index(Request $request): Response
     {
         $subCategories = SubCategory::with('category:id,name')
-            ->when($request->search, fn ($q) => $q->where('name', 'ilike', "%{$request->search}%"))
+            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
             ->orderBy('sort_order')->orderBy('name')
             ->paginate(20)->withQueryString();
 

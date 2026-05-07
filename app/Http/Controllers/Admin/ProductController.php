@@ -23,8 +23,8 @@ class ProductController extends Controller
     public function index(Request $request): Response
     {
         $products = Product::with(['category:id,name', 'subCategory:id,name', 'brand:id,name'])
-            ->when($request->search, fn ($q) => $q->where('name', 'ilike', "%{$request->search}%")
-                ->orWhere('sku', 'ilike', "%{$request->search}%"))
+            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%")
+                ->orWhere('sku', 'like', "%{$request->search}%"))
             ->when($request->status === 'active', fn ($q) => $q->where('is_active', true))
             ->when($request->status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->when($request->category_id, fn ($q) => $q->where('category_id', $request->category_id))

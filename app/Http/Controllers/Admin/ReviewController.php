@@ -16,8 +16,8 @@ class ReviewController extends Controller
     public function index(Request $request): Response
     {
         $reviews = Review::with(['user:id,name,email', 'product:id,name,slug'])
-            ->when($request->search, fn ($q) => $q->whereHas('product', fn ($pq) => $pq->where('name', 'ilike', "%{$request->search}%"))
-                ->orWhereHas('user', fn ($uq) => $uq->where('name', 'ilike', "%{$request->search}%")))
+            ->when($request->search, fn ($q) => $q->whereHas('product', fn ($pq) => $pq->where('name', 'like', "%{$request->search}%"))
+                ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$request->search}%")))
             ->when($request->status === 'approved', fn ($q) => $q->where('is_approved', true))
             ->when($request->status === 'pending', fn ($q) => $q->where('is_approved', false))
             ->latest()->paginate(20)->withQueryString();

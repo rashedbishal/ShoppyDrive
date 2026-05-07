@@ -19,7 +19,7 @@ class FlashSaleController extends Controller
     public function index(Request $request): Response
     {
         $flashSales = FlashSale::withCount('items')
-            ->when($request->search, fn ($q) => $q->where('name', 'ilike', "%{$request->search}%"))
+            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
             ->latest()->paginate(20)->withQueryString();
 
         return Inertia::render('admin/flash-sales/index', [
