@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Product;
 use App\Models\PromotionalBanner;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -58,6 +60,7 @@ class PromotionalBannerController extends Controller
     {
         return Inertia::render('admin/homepage/promotional-banners/edit', [
             'banner' => $promotionalBanner,
+            'bannerProducts' => $promotionalBanner->products()->get(['products.id', 'products.name', 'products.price']),
         ]);
     }
 
@@ -76,7 +79,19 @@ class PromotionalBannerController extends Controller
             'accent' => ['nullable', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
             'sort_order' => ['required', 'integer'],
+            'products' => ['nullable', 'array'],
+            'products.*' => ['integer', 'exists:products,id'],
         ]);
+
+        $productIds = collect($request->input('products', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->values()
+            ->all();
+
+        if (! empty($productIds)) {
+            $validated['href'] = "/products?banner_id={$promotionalBanner->id}";
+        }
 
         if ($request->hasFile('image')) {
             $validated['image'] = '/storage/'.$request->file('image')->store('promotional-banners', 'public');
@@ -85,6 +100,7 @@ class PromotionalBannerController extends Controller
         }
 
         $promotionalBanner->update($validated);
+        $promotionalBanner->products()->sync($productIds);
 
         return redirect()->route('admin.promotional-banners.index')->with('success', 'Promotional banner updated.');
     }
@@ -94,5 +110,19 @@ class PromotionalBannerController extends Controller
         $promotionalBanner->delete();
 
         return redirect()->route('admin.promotional-banners.index')->with('success', 'Promotional banner deleted.');
+    }
+
+    public function searchProducts(Request $request): JsonResponse
+    {
+        $query = $request->string('q')->toString();
+
+        $products = Product::active()
+            ->published()
+            ->when($query !== '', fn ($q) => $q->where('name', 'like', "%{$query}%"))
+            ->orderBy('name')
+            ->limit(50)
+            ->get(['id', 'name', 'price']);
+
+        return response()->json($products);
     }
 }

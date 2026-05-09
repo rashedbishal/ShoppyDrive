@@ -57,5 +57,6 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
     Route::put('homepage/{setting}', [HomepageController::class, 'update'])->name('homepage.update');
 
     Route::resource('hero-slides', HeroSlideController::class)->except(['show']);
+    Route::get('promotional-banners/products/search', [PromotionalBannerController::class, 'searchProducts'])->name('promotional-banners.products.search');
     Route::resource('promotional-banners', PromotionalBannerController::class)->except(['show']);
 });

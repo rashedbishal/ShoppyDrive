@@ -8,6 +8,7 @@ use App\Models\Attribute;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\PromotionalBanner;
 use App\Models\Review;
 use App\Models\SubCategory;
 use Illuminate\Http\Request;
@@ -57,6 +58,15 @@ class ProductListingController extends Controller
 
         if ($subCategory !== null) {
             $query->where('sub_category_id', $subCategory->id);
+        }
+
+        $bannerId = $request->integer('banner_id') ?: null;
+        $banner = null;
+        if ($bannerId !== null) {
+            $banner = PromotionalBanner::find($bannerId);
+            if ($banner !== null) {
+                $query->whereHas('promotionalBanners', fn ($q) => $q->where('promotional_banners.id', $bannerId));
+            }
         }
 
         $search = trim((string) $request->string('q'));
@@ -196,9 +206,10 @@ class ProductListingController extends Controller
                 'sort' => $request->string('sort', 'relevance')->toString(),
                 'view' => $request->string('view', 'grid')->toString(),
                 'page' => $products->currentPage(),
+                'banner_id' => $bannerId,
             ],
-            'title' => $category?->name ?? $subCategory?->name ?? 'All Products',
-            'description' => $category?->description ?? $subCategory?->description ?? 'Explore a premium BDT catalog with filters, sorting, and mobile-friendly browsing.',
+            'title' => $banner?->title ?? $category?->name ?? $subCategory?->name ?? 'All Products',
+            'description' => $banner?->description ?? $category?->description ?? $subCategory?->description ?? 'Explore a premium BDT catalog with filters, sorting, and mobile-friendly browsing.',
         ]);
     }
 }

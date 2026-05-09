@@ -66,6 +66,7 @@ type ProductListingFilters = {
     rating: number | null;
     in_stock: boolean;
     page: number;
+    banner_id: number | null;
 };
 
 type ProductListingPageProps = {
@@ -1037,7 +1038,7 @@ function ProductListingPage({
                             </Badge>
                             <div className="space-y-2">
                                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
-                                    {category ? 'Category browse' : 'All products'}
+                                    {filters.banner_id ? 'Collection' : category ? 'Category browse' : 'All products'}
                                 </p>
                                 <h1 className="font-display text-3xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-4xl">
                                     {title}
@@ -1299,6 +1300,10 @@ function buildQuery(filters: ProductListingFilters): Record<string, QueryValue> 
 
     if (Object.keys(filters.attributes).length > 0) {
         query.attributes = filters.attributes;
+    }
+
+    if (filters.banner_id !== null) {
+        query.banner_id = filters.banner_id;
     }
 
     return query;

@@ -103,6 +103,11 @@ class Product extends Model
         return $this->hasMany(Review::class);
     }
 
+    public function promotionalBanners(): BelongsToMany
+    {
+        return $this->belongsToMany(PromotionalBanner::class, 'promotional_banner_product');
+    }
+
     public function getFormattedPriceAttribute(): string
     {
         return number_format($this->price, 2);
