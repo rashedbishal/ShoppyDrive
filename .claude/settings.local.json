@@ -72,7 +72,8 @@
       "Bash(vendor/bin/pint app/Http/Controllers/ReviewController.php routes/catalog.php app/Http/Controllers/ProductController.php --format agent)",
       "Bash(xargs sed -i \"s/'ilike'/'like'/g\")",
       "Bash(vendor/bin/pint app/Http/Controllers/SearchController.php --format agent)",
-      "mcp__laravel-boost__search-docs"
+      "mcp__laravel-boost__search-docs",
+      "Bash(vendor/bin/pint --dirty --format agent app/Http/Middleware/HandleInertiaRequests.php)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -626,6 +626,11 @@ export interface SharedPageProps {
     promotional_banners: PromotionalBanner[];
     wishlist_ids: number[];
     cart_shipping_cost: number | null;
+    account_stats: {
+        orders_count: number;
+        wishlist_count: number;
+        addresses_count: number;
+    } | null;
 }
 
 export interface UiStateToast extends FlashToast {

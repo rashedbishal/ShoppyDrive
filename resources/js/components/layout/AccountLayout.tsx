@@ -25,7 +25,7 @@ const navItems = [
 
 export default function AccountLayout({ children }: { children: React.ReactNode }): React.JSX.Element {
     const page = usePage<SharedPageProps>();
-    const { auth } = page.props;
+    const { auth, account_stats } = page.props;
     const currentPath = page.url.split('?')[0];
 
     return (
@@ -57,15 +57,15 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
 
                                 <div className="mt-1 flex w-full divide-x divide-[var(--color-border)] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
                                     <div className="flex-1 py-2 text-center">
-                                        <p className="text-sm font-bold text-[var(--color-text-primary)]">12</p>
+                                        <p className="text-sm font-bold text-[var(--color-text-primary)]">{account_stats?.orders_count ?? 0}</p>
                                         <p className="text-[11px] text-[var(--color-text-muted)]">Orders</p>
                                     </div>
                                     <div className="flex-1 py-2 text-center">
-                                        <p className="text-sm font-bold text-[var(--color-text-primary)]">4</p>
+                                        <p className="text-sm font-bold text-[var(--color-text-primary)]">{account_stats?.wishlist_count ?? 0}</p>
                                         <p className="text-[11px] text-[var(--color-text-muted)]">Wishlist</p>
                                     </div>
                                     <div className="flex-1 py-2 text-center">
-                                        <p className="text-sm font-bold text-[var(--color-text-primary)]">2</p>
+                                        <p className="text-sm font-bold text-[var(--color-text-primary)]">{account_stats?.addresses_count ?? 0}</p>
                                         <p className="text-[11px] text-[var(--color-text-muted)]">Addresses</p>
                                     </div>
                                 </div>

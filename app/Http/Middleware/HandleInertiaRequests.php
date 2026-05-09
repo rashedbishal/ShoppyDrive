@@ -6,6 +6,7 @@ use App\Models\Address;
 use App\Models\Category;
 use App\Models\HeroSlide;
 use App\Models\HomepageSetting;
+use App\Models\Order;
 use App\Models\PromotionalBanner;
 use App\Models\Wishlist;
 use App\Support\CartManager;
@@ -94,6 +95,11 @@ class HandleInertiaRequests extends Middleware
             'wishlist_ids' => fn () => $request->user()
                 ? Wishlist::where('user_id', $request->user()->id)->pluck('product_id')->toArray()
                 : [],
+            'account_stats' => fn () => $request->user() ? [
+                'orders_count' => Order::where('user_id', $request->user()->id)->count(),
+                'wishlist_count' => Wishlist::where('user_id', $request->user()->id)->count(),
+                'addresses_count' => Address::where('user_id', $request->user()->id)->count(),
+            ] : null,
             'cart_shipping_cost' => fn () => $this->resolveCartShippingCost($request),
         ];
     }
