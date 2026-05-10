@@ -84,4 +84,11 @@ class WishlistController extends Controller
             'wishlist_ids' => $wishlistIds,
         ]);
     }
+
+    public function clear(Request $request): \Illuminate\Http\RedirectResponse
+    {
+        Wishlist::where('user_id', $request->user()->id)->delete();
+        
+        return back();
+    }
 }

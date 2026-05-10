@@ -43,10 +43,16 @@ class OrderController extends Controller
         $request->validate(['status' => ['required', 'in:'.implode(',', array_column(OrderStatus::cases(), 'value'))]]);
 
         $old = $order->status->value;
-        $order->update([
+        $updateData = [
             'status' => $request->status,
             'delivered_at' => $request->status === OrderStatus::DELIVERED->value ? now() : $order->delivered_at,
-        ]);
+        ];
+
+        if ($request->status === OrderStatus::DELIVERED->value) {
+            $updateData['payment_status'] = \App\Enums\PaymentStatus::PAID->value;
+        }
+
+        $order->update($updateData);
 
         OrderStatusHistory::create([
             'order_id' => $order->id,

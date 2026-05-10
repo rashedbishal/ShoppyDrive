@@ -162,7 +162,6 @@ export default function ProductDetail({
             quantity, 
             variant: selectedVariant 
         });
-        openCart();
         addToast({
             type: 'success',
             title: 'Added to cart',

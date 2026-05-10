@@ -99,7 +99,6 @@ function FlashProductCard({ item }: { item: FlashSaleItem }): React.JSX.Element 
 
     const handleAddToCart = (): void => {
         addItem({ product, quantity: 1 });
-        openCart();
         addToast({ type: 'success', title: 'Added to cart', message: `${product.name} added.` });
     };
 
@@ -250,7 +249,7 @@ function FeaturedProductCard({ product }: { product: Product }): React.JSX.Eleme
                         <p className="pb-0.5 text-sm text-[var(--color-text-muted)] line-through">{formatCurrency(product.compare_price)}</p>
                     ) : null}
                 </div>
-                <Button fullWidth disabled={isOutOfStock} onClick={() => { addItem({ product, quantity: 1 }); openCart(); addToast({ type: 'success', title: 'Added to cart', message: `${product.name} added.` }); }}>
+                <Button fullWidth disabled={isOutOfStock} onClick={() => { addItem({ product, quantity: 1 }); addToast({ type: 'success', title: 'Added to cart', message: `${product.name} added.` }); }}>
                     {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
                 </Button>
             </div>

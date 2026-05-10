@@ -62,7 +62,7 @@ function createItemKey(product: Product, variant?: ProductVariant | null): strin
 }
 
 function createItemId(): number {
-    return Date.now();
+    return Date.now() + Math.floor(Math.random() * 1000000);
 }
 
 function getItemPrice(product: Product, variant?: ProductVariant | null, fallback?: number): number {

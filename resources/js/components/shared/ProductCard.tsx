@@ -56,7 +56,6 @@ export function ProductCard({
         if (isOutOfStock) return;
 
         addItem({ product, quantity: 1 });
-        openCart();
         addToast({
             type: 'success',
             title: 'Added to cart',

@@ -65,8 +65,25 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
             'order' => $order,
         ]);
     })->name('account.orders.show');
+
+    Route::get('/orders/{order:order_number}/invoice', function (Order $order) {
+        if ($order->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($order->status->value !== OrderStatus::DELIVERED->value) {
+            abort(403, 'Invoice is only available for delivered orders.');
+        }
+
+        $order->load(['items.product', 'user']);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.order', ['order' => $order]);
+
+        return $pdf->download("invoice-{$order->order_number}.pdf");
+    })->name('account.orders.invoice');
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('account.wishlist');
     Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+    Route::post('/wishlist/clear', [WishlistController::class, 'clear'])->name('wishlist.clear');
     Route::get('/addresses', [AddressController::class, 'index'])->name('account.addresses');
     Route::post('/addresses', [AddressController::class, 'store'])->name('account.addresses.store');
     Route::put('/addresses/{address}', [AddressController::class, 'update'])->name('account.addresses.update');

@@ -53,7 +53,6 @@ function ProductCard({ product }: { product: Product }): React.JSX.Element {
 
     const handleAddToCart = (): void => {
         addItem({ product, quantity: 1 });
-        openCart();
         addToast({ type: 'success', title: 'Added to cart', message: `${product.name} added.` });
     };
 

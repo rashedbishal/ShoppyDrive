@@ -50,6 +50,14 @@ const DISTRICT_OPTIONS = [
     ...BANGLADESH_DISTRICTS.map((d) => ({ label: d, value: d })),
 ];
 
+// ── Sub-components ─────────────────────────────────────────────────────────────
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div className="rounded-2xl border border-[var(--color-border)] bg-white p-6 space-y-4">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">{title}</h3>
+        {children}
+    </div>
+);
+
 // ── Component ─────────────────────────────────────────────────────────────────
 interface CheckoutProps {
     savedAddresses: Address[];
@@ -191,13 +199,7 @@ export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.
 
     const total = Math.max(0, subtotal - discount - couponDiscount + (shippingCost ?? 0));
 
-    // ── Section wrapper ───────────────────────────────────────────────────────
-    const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-6 space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">{title}</h3>
-            {children}
-        </div>
-    );
+
 
     return (
         <CheckoutLayout>

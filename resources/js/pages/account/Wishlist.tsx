@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { ArrowRight, Heart, Search, ShoppingCart, Sparkles, Trash2 } from 'lucide-react';
 import React from 'react';
 
@@ -17,13 +17,13 @@ interface WishlistProps {
 
 export default function Wishlist({ wishlist = [] }: WishlistProps): React.JSX.Element {
     const toggleWishlist = useWishlistStore((state) => state.toggleWishlist);
+    const clearWishlist = useWishlistStore((state) => state.clearWishlist);
     const addItem = useCartStore((state) => state.addItem);
     const openCart = useUiStore((state) => state.openCart);
     const addToast = useUiStore((state) => state.addToast);
 
     const handleAddToCart = (product: Product) => {
         addItem({ product, quantity: 1 });
-        openCart();
         addToast({ type: 'success', message: `${product.name} added to cart` });
     };
 
@@ -70,7 +70,16 @@ export default function Wishlist({ wishlist = [] }: WishlistProps): React.JSX.El
                                 variant="outline"
                                 className="shrink-0 rounded-xl text-xs"
                                 onClick={() => {
-                                    wishlist.forEach((p) => handleAddToCart(p));
+                                    wishlist.forEach((p) => {
+                                        addItem({ product: p, quantity: 1 });
+                                    });
+                                    clearWishlist();
+                                    router.post(route('wishlist.clear'), {}, {
+                                        preserveScroll: true,
+                                        onSuccess: () => {
+                                            addToast({ type: 'success', message: 'All items added to cart' });
+                                        }
+                                    });
                                 }}
                             >
                                 <ShoppingCart className="mr-1.5 size-3.5" />

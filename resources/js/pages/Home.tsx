@@ -479,7 +479,6 @@ function ProductCard({
         }
 
         addItem({ product, quantity: 1 });
-        openCart();
         addToast({
             type: 'success',
             title: 'Added to cart',
@@ -686,8 +685,7 @@ function FlashSaleCard({
             return;
         }
         addItem({ product, quantity: 1 });
-        openCart();
-        addToast({ type: 'success', title: 'Added to cart', message: `${product.name} was added to your cart.` });
+        addToast({ type: 'success', title: 'Added to cart', message: `${product.name} added.` });
     };
 
     const handleWishlist = (): void => {

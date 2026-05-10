@@ -19,7 +19,7 @@ class SyncCartRequest extends FormRequest
     {
         return [
             'merge' => ['sometimes', 'boolean'],
-            'items' => ['required', 'array'],
+            'items' => ['present', 'array'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.variant_id' => [
                 'nullable',

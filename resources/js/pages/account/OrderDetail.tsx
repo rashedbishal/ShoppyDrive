@@ -74,10 +74,14 @@ export default function OrderDetail({
                     </div>
                     
                     <div className="flex flex-wrap gap-3">
-                        <Button variant="outline" className="rounded-xl font-bold border-[var(--color-border)] hover:bg-[var(--color-surface-alt)]">
-                            <Download size={16} className="mr-2" />
-                            Invoice
-                        </Button>
+                        {order.status === 'delivered' && (
+                            <a href={route('account.orders.invoice', order.order_number)}>
+                                <Button variant="outline" className="rounded-xl font-bold border-[var(--color-border)] hover:bg-[var(--color-surface-alt)]">
+                                    <Download size={16} className="mr-2" />
+                                    Invoice
+                                </Button>
+                            </a>
+                        )}
                         {order.status === 'delivered' && (
                             <Button className="rounded-xl font-bold bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]">
                                 <Undo2 size={16} className="mr-2" />
@@ -114,52 +118,50 @@ export default function OrderDetail({
                             <div className="p-6 md:p-8 border-b border-[var(--color-border)]">
                                 <h2 className="text-xl font-bold text-[var(--color-text-primary)]">Order Items</h2>
                             </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="bg-[var(--color-surface-alt)] text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">
-                                            <th className="px-8 py-4">Product</th>
-                                            <th className="px-8 py-4 text-center">Price</th>
-                                            <th className="px-8 py-4 text-center">Qty</th>
-                                            <th className="px-8 py-4 text-right">Subtotal</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-[var(--color-border)]">
-                                        {order.items.map((item) => (
-                                            <tr key={item.id} className="hover:bg-[var(--color-surface-alt)]/50 transition-colors">
-                                                <td className="px-8 py-6">
-                                                    <div className="flex gap-4">
-                                                        <div className="w-16 h-16 rounded-xl bg-[var(--color-surface-alt)] overflow-hidden border border-[var(--color-border)] shrink-0">
-                                                            <img 
-                                                                src={item.product?.primary_image_url || '/placeholder.webp'} 
-                                                                alt={item.product_name} 
-                                                                className="w-full h-full object-cover" 
-                                                            />
-                                                        </div>
-                                                        <div className="flex flex-col justify-center min-w-0">
-                                                            <p className="text-sm font-bold text-[var(--color-text-primary)] truncate">{item.product_name}</p>
-                                                            {item.variant && (
-                                                                <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest mt-0.5">
-                                                                    {Object.entries(item.variant.attributes).map(([k, v]) => `${k}: ${v}`).join(' | ')}
-                                                                </p>
-                                                            )}
-                                                            <p className="text-xs text-[var(--color-text-muted)] mt-1 font-mono">SKU: {item.sku || 'N/A'}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-6 text-sm font-bold text-[var(--color-text-primary)] text-center">
+                            <div className="flex flex-col">
+                                {order.items.map((item, index) => (
+                                    <div key={item.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 md:p-8 hover:bg-[var(--color-surface-alt)]/50 transition-colors ${index !== order.items.length - 1 ? 'border-b border-[var(--color-border)]' : ''}`}>
+                                        <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+                                            <div className="w-20 h-20 sm:w-16 sm:h-16 rounded-xl bg-[var(--color-surface-alt)] overflow-hidden border border-[var(--color-border)] shrink-0">
+                                                <img 
+                                                    src={item.product?.primary_image_url || '/placeholder.webp'} 
+                                                    alt={item.product_name} 
+                                                    className="w-full h-full object-cover" 
+                                                />
+                                            </div>
+                                            <div className="flex flex-col justify-center min-w-0">
+                                                <p className="text-sm font-bold text-[var(--color-text-primary)] line-clamp-2">{item.product_name}</p>
+                                                {item.variant && (
+                                                    <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest mt-1">
+                                                        {Object.entries(item.variant.attributes).map(([k, v]) => `${k}: ${v}`).join(' | ')}
+                                                    </p>
+                                                )}
+                                                <p className="text-xs text-[var(--color-text-muted)] mt-1.5 font-mono">SKU: {item.sku || 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8 bg-[var(--color-surface-alt)] sm:bg-transparent p-4 sm:p-0 rounded-xl sm:rounded-none mt-2 sm:mt-0">
+                                            <div className="text-left sm:text-right">
+                                                <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest sm:hidden mb-1">Price</p>
+                                                <p className="text-sm font-bold text-[var(--color-text-primary)]">
                                                     {formatCurrency(item.price)}
-                                                </td>
-                                                <td className="px-8 py-6 text-sm font-bold text-[var(--color-text-secondary)] text-center">
-                                                    {item.quantity}
-                                                </td>
-                                                <td className="px-8 py-6 text-sm font-bold text-[var(--color-primary)] text-right">
+                                                </p>
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest sm:hidden mb-1">Qty</p>
+                                                <p className="text-sm font-bold text-[var(--color-text-secondary)]">
+                                                    x{item.quantity}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest sm:hidden mb-1">Subtotal</p>
+                                                <p className="text-sm font-bold text-[var(--color-primary)]">
                                                     {formatCurrency(item.subtotal)}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                             
                             {/* Detailed Totals */}
