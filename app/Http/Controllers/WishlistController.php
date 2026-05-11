@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Wishlist;
+use App\Support\CartManager;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class WishlistController extends Controller
 {
+    public function __construct(private readonly CartManager $cartManager) {}
+
     public function index(Request $request): Response
     {
         $items = Wishlist::where('user_id', $request->user()->id)
@@ -85,10 +89,37 @@ class WishlistController extends Controller
         ]);
     }
 
-    public function clear(Request $request): \Illuminate\Http\RedirectResponse
+    public function addAllToCart(Request $request): RedirectResponse|JsonResponse
+    {
+        $user = $request->user();
+        $items = Wishlist::where('user_id', $user->id)->get();
+
+        if ($items->isNotEmpty()) {
+            $cartItems = $items->map(fn ($item) => [
+                'product_id' => $item->product_id,
+                'variant_id' => null,
+                'quantity' => 1,
+            ])->toArray();
+
+            $cart = $this->cartManager->syncUserCart($user, $cartItems, merge: true);
+
+            Wishlist::where('user_id', $user->id)->delete();
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'message' => 'All items added to cart',
+                    'cart' => $this->cartManager->serialize($cart),
+                ]);
+            }
+        }
+
+        return back()->with('success', 'All items added to cart');
+    }
+
+    public function clear(Request $request): RedirectResponse
     {
         Wishlist::where('user_id', $request->user()->id)->delete();
-        
+
         return back();
     }
 }

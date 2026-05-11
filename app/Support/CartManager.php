@@ -26,14 +26,26 @@ class CartManager
             return $query->where('user_id', $request->user()->id)->first();
         }
 
-        return $query->where('session_id', $request->session()->getId())->first();
+        try {
+            return $query->where('session_id', $request->session()->getId())->first();
+        } catch (\RuntimeException) {
+            return null;
+        }
     }
 
     public function getOrCreateUserCart(User $user): Cart
     {
+        $sessionId = null;
+
+        try {
+            $sessionId = request()->session()->getId();
+        } catch (\RuntimeException) {
+            // Session not set, likely in a test or console command
+        }
+
         return Cart::firstOrCreate(
             ['user_id' => $user->id],
-            ['session_id' => request()->session()->getId()],
+            ['session_id' => $sessionId],
         );
     }
 

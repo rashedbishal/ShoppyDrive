@@ -27,6 +27,8 @@ export default function Wishlist({ wishlist = [] }: WishlistProps): React.JSX.El
         addToast({ type: 'success', message: `${product.name} added to cart` });
     };
 
+    const hydrateCart = useCartStore((state) => state.hydrateCart);
+
     return (
         <AccountLayout>
             <Head title="My Wishlist" />
@@ -70,13 +72,13 @@ export default function Wishlist({ wishlist = [] }: WishlistProps): React.JSX.El
                                 variant="outline"
                                 className="shrink-0 rounded-xl text-xs"
                                 onClick={() => {
-                                    wishlist.forEach((p) => {
-                                        addItem({ product: p, quantity: 1 });
-                                    });
-                                    clearWishlist();
-                                    router.post(route('wishlist.clear'), {}, {
+                                    router.post(route('wishlist.add-all-to-cart'), {}, {
                                         preserveScroll: true,
-                                        onSuccess: () => {
+                                        onSuccess: (page) => {
+                                            const props = page.props as unknown as SharedPageProps;
+                                            if (props.cart) {
+                                                hydrateCart(props.cart);
+                                            }
                                             addToast({ type: 'success', message: 'All items added to cart' });
                                         }
                                     });

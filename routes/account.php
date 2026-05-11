@@ -7,6 +7,7 @@ use App\Models\Address;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\Wishlist;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -77,13 +78,14 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
 
         $order->load(['items.product', 'user']);
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.order', ['order' => $order]);
+        $pdf = Pdf::loadView('invoices.order', ['order' => $order]);
 
         return $pdf->download("invoice-{$order->order_number}.pdf");
     })->name('account.orders.invoice');
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('account.wishlist');
     Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
     Route::post('/wishlist/clear', [WishlistController::class, 'clear'])->name('wishlist.clear');
+    Route::post('/wishlist/add-all-to-cart', [WishlistController::class, 'addAllToCart'])->name('wishlist.add-all-to-cart');
     Route::get('/addresses', [AddressController::class, 'index'])->name('account.addresses');
     Route::post('/addresses', [AddressController::class, 'store'])->name('account.addresses.store');
     Route::put('/addresses/{address}', [AddressController::class, 'update'])->name('account.addresses.update');
