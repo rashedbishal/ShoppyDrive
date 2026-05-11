@@ -145,7 +145,7 @@ export default function Header(): React.JSX.Element {
                         </button>
 
                         {/* Logo */}
-                        <Link href={route('home')} className="flex shrink-0 items-center gap-3">
+                        <Link href="/" className="flex shrink-0 items-center gap-3">
                             <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-secondary)] text-white shadow-sm">
                                 <AppLogoIcon className="size-5 fill-current text-white" />
                             </span>
@@ -260,14 +260,14 @@ export default function Header(): React.JSX.Element {
                             ) : (
                                 <div className="ml-1 hidden items-center gap-2 md:flex">
                                     <Link
-                                        href={route('login')}
+                                        href="/login"
                                         className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--color-border)] px-4 text-sm font-medium text-[var(--color-text-primary)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
                                     >
                                         <LogIn className="size-4" />
                                         Log in
                                     </Link>
                                     <Link
-                                        href={route('register')}
+                                        href="/register"
                                         className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--color-primary)]/90"
                                     >
                                         <User className="size-4" />

@@ -8,6 +8,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Review;
+use App\Models\SubCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -110,8 +111,10 @@ class SearchController extends Controller
     {
         $query = trim((string) $request->string('q'));
 
+        $empty = ['products' => [], 'brands' => [], 'categories' => [], 'subcategories' => []];
+
         if (strlen($query) < 2) {
-            return response()->json(['products' => []]);
+            return response()->json($empty);
         }
 
         $products = Product::query()
@@ -123,7 +126,7 @@ class SearchController extends Controller
                 ->orWhere('sku', 'like', "%{$query}%")
             )
             ->orderByDesc('is_featured')
-            ->limit(6)
+            ->limit(4)
             ->get()
             ->map(fn ($p) => [
                 'id' => $p->id,
@@ -135,6 +138,36 @@ class SearchController extends Controller
                 'images' => $p->images->map(fn ($i) => ['path' => $i->path])->values(),
             ]);
 
-        return response()->json(['products' => $products]);
+        $brands = Brand::query()
+            ->active()
+            ->where('name', 'like', "%{$query}%")
+            ->limit(3)
+            ->get(['id', 'name', 'slug']);
+
+        $categories = Category::query()
+            ->active()
+            ->where('name', 'like', "%{$query}%")
+            ->limit(3)
+            ->get(['id', 'name', 'slug']);
+
+        $subcategories = SubCategory::query()
+            ->active()
+            ->where('name', 'like', "%{$query}%")
+            ->with(['category:id,name,slug'])
+            ->limit(3)
+            ->get(['id', 'name', 'slug', 'category_id'])
+            ->map(fn ($s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'slug' => $s->slug,
+                'category_name' => $s->category?->name,
+            ]);
+
+        return response()->json([
+            'products' => $products,
+            'brands' => $brands,
+            'categories' => $categories,
+            'subcategories' => $subcategories,
+        ]);
     }
 }
