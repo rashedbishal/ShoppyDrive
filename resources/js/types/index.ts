@@ -86,6 +86,7 @@ export interface AppSettings {
     meta_pixel_id?: string | null;
     whatsapp_number?: string | null;
     messenger_link?: string | null;
+    free_delivery_threshold?: number | null;
 }
 
 export interface Category extends Timestamped, SoftDeletable {
@@ -180,6 +181,8 @@ export interface Product extends Timestamped, SoftDeletable {
     is_active: boolean;
     is_featured: boolean;
     is_digital: boolean;
+    free_delivery: boolean;
+    free_delivery_min_qty?: number | null;
     weight: number;
     meta_title?: string | null;
     meta_description?: string | null;

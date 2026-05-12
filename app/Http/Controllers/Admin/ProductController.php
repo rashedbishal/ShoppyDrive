@@ -122,6 +122,7 @@ class ProductController extends Controller
 
         $data['is_active'] = $data['is_active'] ?? false;
         $data['is_featured'] = $data['is_featured'] ?? false;
+        $data['free_delivery'] = $data['free_delivery'] ?? false;
 
         if ($data['is_active'] && $product->published_at === null) {
             $data['published_at'] = now();

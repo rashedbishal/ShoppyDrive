@@ -273,6 +273,14 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
                                                 error={(errors as Record<string, string>)['metadata.email']}
                                             />
                                         </div>
+                                        <Input
+                                            label="Free Delivery Minimum Amount (৳)"
+                                            type="number"
+                                            value={String(data.metadata.free_delivery_amount ?? '')}
+                                            onChange={e => setData('metadata', { ...data.metadata, free_delivery_amount: e.target.value ? Number(e.target.value) : '' })}
+                                            placeholder="e.g. 999"
+                                            error={(errors as Record<string, string>)['metadata.free_delivery_amount']}
+                                        />
                                     </CardContent>
                                 </Card>
                             ) : (

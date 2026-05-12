@@ -4,156 +4,95 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\PaymentStatus;
-use App\Models\Order;
-use App\Models\Payment;
+use App\Models\PendingCheckout;
+use App\Services\OrderService;
 use App\Services\ZiniPayService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PaymentController extends Controller
 {
-    public function __construct(private readonly ZiniPayService $ziniPay) {}
+    public function __construct(
+        private readonly ZiniPayService $ziniPay,
+        private readonly OrderService $orderService,
+    ) {}
 
     /**
-     * ZiniPay redirects the customer here after the payment attempt.
-     * Route: GET /payment/callback/{order:order_number}
+     * ZiniPay redirects here after payment attempt.
+     * Route: GET /payment/callback/{token}
      */
-    public function callback(Order $order): RedirectResponse|Response
+    public function callback(string $token): RedirectResponse|Response
     {
-        // Ensure this order belongs to the authenticated user
-        abort_if(auth()->id() !== $order->user_id, 403);
+        $pending = PendingCheckout::where('token', $token)->first();
 
-        Log::info('[ZiniPay] Callback received', ['order_number' => $order->order_number]);
+        if (! $pending || $pending->isExpired()) {
+            Log::warning('[ZiniPay] Callback: pending checkout not found or expired', ['token' => $token]);
 
-        $payment = Payment::where('order_id', $order->id)
-            ->where('val_id', $order->order_number)
-            ->first();
-
-        // If no payment record exists something went very wrong
-        if (! $payment) {
-            Log::error('[ZiniPay] No payment record found on callback', ['order_number' => $order->order_number]);
-
-            return redirect()->route('payment.failed', $order->order_number)
-                ->with('error', 'Payment record not found. Please contact support.');
+            return redirect()->route('checkout.index')
+                ->with('error', 'Payment session expired. Please try again.');
         }
 
-        // Idempotent: already confirmed by webhook — just send to confirmation
-        if ($payment->status === PaymentStatus::PAID) {
-            return redirect()->route('order.confirmation', $order->order_number);
+        // Ensure only the owner can access
+        abort_if(auth()->id() !== $pending->user_id, 403);
+
+        Log::info('[ZiniPay] Callback received', ['token' => $token]);
+
+        // Webhook may have already created the order
+        if ($pending->order_number !== null) {
+            $orderNumber = $pending->order_number;
+            $pending->delete();
+
+            return redirect()->route('order.confirmation', $orderNumber);
         }
 
-        // Verify with ZiniPay backend (never trust the redirect alone)
         try {
-            $verified = $this->ziniPay->verifyPayment($order->order_number);
+            $verified = $this->ziniPay->verifyPayment($token);
         } catch (\Throwable $e) {
-            Log::error('[ZiniPay] Verification exception on callback', [
-                'order_number' => $order->order_number,
-                'error' => $e->getMessage(),
-            ]);
+            Log::error('[ZiniPay] Verification exception on callback', ['token' => $token, 'error' => $e->getMessage()]);
 
-            return redirect()->route('payment.failed', $order->order_number)
-                ->with('error', 'Payment verification failed. If money was deducted, please contact support with your order number.');
+            return redirect()->route('checkout.index')
+                ->with('error', 'Payment verification failed. If money was deducted, contact support with reference: '.$token);
         }
 
         $status = strtoupper($verified['status'] ?? '');
 
         if ($status === 'COMPLETED') {
-            $this->markPaid($order, $payment, $verified);
+            $order = $this->orderService->createFromPending($pending, $verified);
+            $pending->delete();
 
             return redirect()->route('order.confirmation', $order->order_number);
         }
 
         if ($status === 'PENDING') {
-            // Payment is still processing — show the confirmation but with a
-            // "pending" note. Webhook will update when it settles.
             return Inertia::render('checkout/PaymentPending', [
-                'order_number' => $order->order_number,
+                'reference' => $token,
             ]);
         }
 
-        // FAILED or anything else
-        $this->markFailed($order, $payment, $verified);
+        // FAILED or unknown
+        Log::warning('[ZiniPay] Payment not completed on callback', ['token' => $token, 'status' => $status]);
+        $pending->delete();
 
-        return redirect()->route('payment.failed', $order->order_number);
+        return redirect()->route('checkout.index')
+            ->with('error', 'Payment was not completed. Your cart has been restored — please try again.');
     }
 
     /**
-     * ZiniPay redirects here when the customer cancels on the payment page.
-     * Route: GET /payment/cancel/{order:order_number}
+     * User cancels on ZiniPay's page.
+     * Route: GET /payment/cancel/{token}
      */
-    public function cancel(Order $order): RedirectResponse
+    public function cancel(string $token): RedirectResponse
     {
-        abort_if(auth()->id() !== $order->user_id, 403);
+        $pending = PendingCheckout::where('token', $token)->first();
 
-        Log::info('[ZiniPay] Payment cancelled by user', ['order_number' => $order->order_number]);
+        if ($pending && auth()->id() === $pending->user_id) {
+            Log::info('[ZiniPay] Payment cancelled by user', ['token' => $token]);
+            $pending->delete();
+        }
 
-        Payment::where('order_id', $order->id)
-            ->where('val_id', $order->order_number)
-            ->where('status', PaymentStatus::PENDING)
-            ->update(['status' => PaymentStatus::FAILED]);
-
-        return redirect()->route('payment.failed', $order->order_number)
-            ->with('info', 'You cancelled the payment. Your order is saved — you can retry payment from your order page.');
-    }
-
-    /**
-     * Show the payment-failed page.
-     * Route: GET /payment/failed/{order:order_number}
-     */
-    public function failed(Order $order): Response
-    {
-        abort_if(auth()->id() !== $order->user_id, 403);
-
-        return Inertia::render('checkout/PaymentFailed', [
-            'order' => $order->only(['order_number', 'total', 'payment_method']),
-        ]);
-    }
-
-    // ── Internal helpers ─────────────────────────────────────────────────────
-
-    /** @param array<string, mixed> $verified */
-    private function markPaid(Order $order, Payment $payment, array $verified): void
-    {
-        DB::transaction(function () use ($order, $payment, $verified): void {
-            // Guard against a race with the webhook
-            $fresh = $payment->lockForUpdate()->find($payment->id);
-
-            if ($fresh && $fresh->status === PaymentStatus::PAID) {
-                return; // Already handled
-            }
-
-            $payment->update([
-                'status' => PaymentStatus::PAID,
-                'transaction_id' => $verified['transaction_id'] ?? null,
-                'gateway_response' => $verified,
-            ]);
-
-            $order->update(['payment_status' => PaymentStatus::PAID, 'status' => 'processing']);
-
-            $order->statusHistories()->create([
-                'status' => 'processing',
-                'notes' => 'Payment confirmed via ZiniPay. Transaction: '.($verified['transaction_id'] ?? 'N/A'),
-            ]);
-        });
-
-        Log::info('[ZiniPay] Payment marked PAID', [
-            'order_number' => $order->order_number,
-            'transaction_id' => $verified['transaction_id'] ?? null,
-        ]);
-    }
-
-    /** @param array<string, mixed> $verified */
-    private function markFailed(Order $order, Payment $payment, array $verified): void
-    {
-        $payment->update([
-            'status' => PaymentStatus::FAILED,
-            'gateway_response' => $verified,
-        ]);
-
-        Log::warning('[ZiniPay] Payment marked FAILED', ['order_number' => $order->order_number]);
+        return redirect()->route('checkout.index')
+            ->with('info', 'Payment cancelled. Your cart is intact — you can try again anytime.');
     }
 }

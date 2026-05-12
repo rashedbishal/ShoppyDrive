@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\PaymentMethod;
-use App\Enums\PaymentStatus;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\Address;
+use App\Models\Cart;
 use App\Models\Coupon;
+use App\Models\HomepageSetting;
 use App\Models\Order;
-use App\Models\Payment;
+use App\Models\PendingCheckout;
 use App\Services\ZiniPayService;
 use App\Support\CartManager;
 use Illuminate\Http\RedirectResponse;
@@ -59,142 +60,216 @@ class CheckoutController extends Controller
 
         abort_if(! $cart || $cart->items->isEmpty(), 422, 'Your cart is empty.');
 
-        // ── Create the order (same transaction for both COD and ZiniPay) ──────
-        $order = DB::transaction(function () use ($request, $cart) {
-            $shippingAddress = $this->resolveShippingAddress($request);
+        // Eager-load products so free_delivery checks don't N+1
+        $cart->load('items.product');
 
-            $this->maybeAutoSaveAddress($request, $shippingAddress);
+        $shippingAddress = $this->resolveShippingAddress($request);
 
-            $subtotal = $cart->items->sum(fn ($item) => $item->price * $item->quantity);
-            $shippingCost = $this->calculateShippingCost($shippingAddress);
-            [$couponId, $couponCode, $discount] = $this->resolveCoupon($request, $subtotal);
-            $total = max(0, $subtotal - $discount + $shippingCost);
+        $subtotal = $cart->items->sum(fn ($item) => $item->price * $item->quantity);
+        $shippingCost = $this->calculateShippingCost($shippingAddress, $cart, $subtotal);
+        [$couponId, $couponCode, $discount] = $this->resolveCoupon($request, $subtotal);
+        $total = max(0, $subtotal - $discount + $shippingCost);
 
-            $order = Order::create([
-                'order_number' => $this->generateOrderNumber(),
-                'user_id' => auth()->id(),
-                'status' => 'pending',
-                'payment_status' => 'unpaid',
-                'payment_method' => $request->payment_method,
-                'subtotal' => $subtotal,
-                'shipping_cost' => $shippingCost,
-                'discount' => $discount,
-                'coupon_id' => $couponId,
-                'coupon_code' => $couponCode,
-                'tax' => 0,
-                'total' => $total,
-                'shipping_address' => $shippingAddress,
-                'billing_address' => $shippingAddress,
-            ]);
+        // ── COD ─────────────────────────────────────────────────────────────
+        if ($request->payment_method === PaymentMethod::COD->value) {
+            $order = DB::transaction(function () use ($request, $cart, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $discount, $total) {
+                $this->maybeAutoSaveAddress($request, $shippingAddress);
 
-            $order->statusHistories()->create([
-                'status' => 'pending',
-                'notes' => 'Order placed successfully.',
-            ]);
-
-            foreach ($cart->items as $item) {
-                $product = $item->product;
-
-                $order->items()->create([
-                    'product_id' => $item->product_id,
-                    'variant_id' => $item->variant_id,
-                    'product_name' => $product->name,
-                    'sku' => $item->variant?->sku ?? $product->sku,
-                    'price' => $item->price,
-                    'quantity' => $item->quantity,
-                    'subtotal' => $item->price * $item->quantity,
-                    'product_snapshot' => [
-                        'id' => $product->id,
-                        'name' => $product->name,
-                        'sku' => $product->sku,
-                        'price' => $item->price,
-                        'image' => $product->images->first()?->path,
-                    ],
+                $order = Order::create([
+                    'order_number' => $this->generateOrderNumber(),
+                    'user_id' => auth()->id(),
+                    'status' => 'pending',
+                    'payment_status' => 'unpaid',
+                    'payment_method' => PaymentMethod::COD->value,
+                    'subtotal' => $subtotal,
+                    'shipping_cost' => $shippingCost,
+                    'discount' => $discount,
+                    'coupon_id' => $couponId,
+                    'coupon_code' => $couponCode,
+                    'tax' => 0,
+                    'total' => $total,
+                    'shipping_address' => $shippingAddress,
+                    'billing_address' => $shippingAddress,
                 ]);
-            }
 
-            // COD: clear cart inside transaction (atomic)
-            if ($request->payment_method === PaymentMethod::COD->value) {
+                $order->statusHistories()->create(['status' => 'pending', 'notes' => 'Order placed successfully.']);
+
+                foreach ($cart->items as $item) {
+                    $product = $item->product;
+                    $order->items()->create([
+                        'product_id' => $item->product_id,
+                        'variant_id' => $item->variant_id,
+                        'product_name' => $product->name,
+                        'sku' => $item->variant?->sku ?? $product->sku,
+                        'price' => $item->price,
+                        'quantity' => $item->quantity,
+                        'subtotal' => $item->price * $item->quantity,
+                        'product_snapshot' => [
+                            'id' => $product->id,
+                            'name' => $product->name,
+                            'sku' => $product->sku,
+                            'price' => $item->price,
+                            'image' => $product->images->first()?->path,
+                        ],
+                    ]);
+                }
+
                 $cart->items()->delete();
                 $cart->delete();
-            }
 
-            return $order;
-        });
+                return $order;
+            });
 
-        // ── COD: nothing more to do ──────────────────────────────────────────
-        if ($order->payment_method === PaymentMethod::COD) {
             return redirect()->route('order.confirmation', $order->order_number);
         }
 
-        // ── ZiniPay: create invoice then redirect to payment gateway ─────────
-        return $this->initiateZiniPay($order, $cart, $request);
+        // ── ZiniPay ──────────────────────────────────────────────────────────
+        return $this->initiateZiniPay($request, $cart, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $discount, $total);
     }
 
-    private function initiateZiniPay(Order $order, mixed $cart, PlaceOrderRequest $request): RedirectResponse|\Symfony\Component\HttpFoundation\Response
-    {
-        try {
-            $invoicePayload = [
-                'cus_name' => $order->shipping_address['name'],
-                'cus_email' => $order->shipping_address['email'],
-                'amount' => (int) round($order->total),   // amount from backend — never trusted from frontend
-                'val_id' => $order->order_number,          // our reference; ZiniPay echoes it back
-                'redirect_url' => route('payment.callback', $order->order_number),
-                'cancel_url' => route('payment.cancel', $order->order_number),
-                'webhook_url' => url('/api/zinipay/webhook'),
-                'metadata' => ['order_id' => $order->order_number],
+    private function initiateZiniPay(
+        PlaceOrderRequest $request,
+        Cart $cart,
+        array $shippingAddress,
+        float $subtotal,
+        float $shippingCost,
+        ?int $couponId,
+        ?string $couponCode,
+        float $discount,
+        float $total,
+    ): RedirectResponse|\Symfony\Component\HttpFoundation\Response {
+        // Snapshot cart items so order can be created after payment verification
+        $itemsSnapshot = $cart->items->map(function ($item) {
+            $product = $item->product;
+
+            return [
+                'product_id' => $item->product_id,
+                'variant_id' => $item->variant_id,
+                'product_name' => $product->name,
+                'sku' => $item->variant?->sku ?? $product->sku,
+                'price' => $item->price,
+                'quantity' => $item->quantity,
+                'subtotal' => $item->price * $item->quantity,
+                'product_snapshot' => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'price' => $item->price,
+                    'image' => $product->images->first()?->path,
+                ],
             ];
+        })->all();
 
-            $result = $this->ziniPay->createInvoice($invoicePayload);
+        $token = (string) Str::uuid();
+        $orderNumber = $this->generateOrderNumber();
 
-            // Record a pending payment entry so the callback/webhook can update it
-            Payment::create([
-                'order_id' => $order->id,
-                'method' => PaymentMethod::ZINIPAY->value,
-                'amount' => $order->total,
-                'status' => PaymentStatus::PENDING,
-                'val_id' => $order->order_number,
+        try {
+            // Create invoice FIRST — if ZiniPay is down, nothing is created
+            $result = $this->ziniPay->createInvoice([
+                'cus_name' => $shippingAddress['name'],
+                'cus_email' => $shippingAddress['email'],
+                'amount' => (int) round($total),
+                'val_id' => $token,
+                'redirect_url' => route('payment.callback', $token),
+                'cancel_url' => route('payment.cancel', $token),
+                'webhook_url' => url('/api/zinipay/webhook'),
+                'metadata' => ['order_number' => $orderNumber],
             ]);
 
-            // Clear the cart only after successful invoice creation
-            $cart->items()->delete();
-            $cart->delete();
+            // Store all checkout data — order is created only after confirmed payment
+            $this->maybeAutoSaveAddress($request, $shippingAddress);
 
-            // Inertia::location() sends a 409 + Location header so the client
-            // performs a hard redirect to the external ZiniPay payment page.
+            PendingCheckout::create([
+                'token' => $token,
+                'user_id' => auth()->id(),
+                'cart_id' => $cart->id,
+                'checkout_data' => [
+                    'order_number' => $orderNumber,
+                    'shipping_address' => $shippingAddress,
+                    'items' => $itemsSnapshot,
+                    'subtotal' => $subtotal,
+                    'shipping_cost' => $shippingCost,
+                    'discount' => $discount,
+                    'coupon_id' => $couponId,
+                    'coupon_code' => $couponCode,
+                    'tax' => 0,
+                    'total' => $total,
+                ],
+                'expires_at' => now()->addHours(2),
+            ]);
+
             return Inertia::location($result['payment_url']);
 
         } catch (\Throwable $e) {
-            Log::error('[ZiniPay] Checkout initiation failed', [
-                'order_number' => $order->order_number,
-                'error' => $e->getMessage(),
-            ]);
+            Log::error('[ZiniPay] Checkout initiation failed', ['error' => $e->getMessage()]);
 
-            // Mark the order as cancelled so it doesn't linger as unpaid
-            $order->update(['status' => 'cancelled', 'cancellation_reason' => 'Payment gateway unavailable.']);
-            $order->statusHistories()->create([
-                'status' => 'cancelled',
-                'notes' => 'Cancelled automatically: ZiniPay invoice creation failed.',
-            ]);
-
-            // Restore cart items so the customer can try again
-            // (items were NOT yet deleted for ZiniPay path)
+            // Nothing was created — cart is intact — just show the error
             return redirect()->route('checkout.index')
                 ->with('error', 'Payment gateway is temporarily unavailable. Please try Cash on Delivery or try again later.');
         }
     }
 
+    // ── Shipping calculation ─────────────────────────────────────────────────
+
+    private function calculateShippingCost(array $shippingAddress, Cart $cart, float $subtotal): float
+    {
+        // 1. Free delivery threshold (set in announcement bar CMS)
+        $threshold = $this->getFreeDeliveryThreshold();
+        if ($threshold > 0 && $subtotal >= $threshold) {
+            return 0.0;
+        }
+
+        // 2. Per-product free delivery:
+        //    If EVERY item in cart qualifies for free delivery → no charge
+        if ($cart->items->isNotEmpty()) {
+            $allFree = $cart->items->every(function ($item) {
+                $product = $item->product;
+                if (! $product->free_delivery) {
+                    return false;
+                }
+                // min qty set? customer must order at least that many
+                if ($product->free_delivery_min_qty !== null) {
+                    return $item->quantity >= $product->free_delivery_min_qty;
+                }
+
+                return true;
+            });
+
+            if ($allFree) {
+                return 0.0;
+            }
+        }
+
+        // 3. Standard location-based rate
+        $district = $shippingAddress['state'] ?? '';
+        $city = $shippingAddress['city'] ?? '';
+
+        return ($district === 'Dhaka' && $city === 'Inside Dhaka City Corporation') ? 60.0 : 120.0;
+    }
+
+    private function getFreeDeliveryThreshold(): float
+    {
+        static $threshold = null;
+
+        if ($threshold === null) {
+            $bar = HomepageSetting::where('section_key', 'announcement_bar')->first();
+            $threshold = (float) ($bar?->metadata['free_delivery_amount'] ?? 0);
+        }
+
+        return $threshold;
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
     /** @return array{0: int|null, 1: string|null, 2: float} */
     private function resolveCoupon(PlaceOrderRequest $request, float $subtotal): array
     {
         $code = $request->coupon_code ? strtoupper(trim($request->coupon_code)) : null;
-
         if (! $code) {
             return [null, null, 0.0];
         }
 
         $coupon = Coupon::where('code', $code)->where('is_active', true)->first();
-
         if (! $coupon) {
             return [null, null, 0.0];
         }
@@ -206,18 +281,6 @@ class CheckoutController extends Controller
         $coupon->increment('used_count');
 
         return [$coupon->id, $coupon->code, round($discount, 2)];
-    }
-
-    private function calculateShippingCost(array $shippingAddress): float
-    {
-        $district = $shippingAddress['state'] ?? '';
-        $city = $shippingAddress['city'] ?? '';
-
-        if ($district === 'Dhaka' && $city === 'Inside Dhaka City Corporation') {
-            return 60.0;
-        }
-
-        return 120.0;
     }
 
     private function generateOrderNumber(): string
@@ -267,7 +330,6 @@ class CheckoutController extends Controller
 
         if ($request->boolean('save_address') || $hasNoAddresses) {
             $isDefault = $hasNoAddresses;
-
             if ($isDefault) {
                 Address::where('user_id', auth()->id())->update(['is_default' => false]);
             }

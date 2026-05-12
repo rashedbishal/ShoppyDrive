@@ -16,9 +16,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
     // ZiniPay payment return routes
-    Route::get('/payment/callback/{order:order_number}', [PaymentController::class, 'callback'])->name('payment.callback');
-    Route::get('/payment/cancel/{order:order_number}', [PaymentController::class, 'cancel'])->name('payment.cancel');
-    Route::get('/payment/failed/{order:order_number}', [PaymentController::class, 'failed'])->name('payment.failed');
+    Route::get('/payment/callback/{token}', [PaymentController::class, 'callback'])->name('payment.callback');
+    Route::get('/payment/cancel/{token}', [PaymentController::class, 'cancel'])->name('payment.cancel');
 });
 Route::get('/order/track', function (Request $request) {
     $order = null;

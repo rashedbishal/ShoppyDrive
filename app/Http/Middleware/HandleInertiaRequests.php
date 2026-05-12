@@ -91,11 +91,17 @@ class HandleInertiaRequests extends Middleware
                     'meta_pixel_id' => $db->get('meta_pixel_id'),
                     'whatsapp_number' => $db->get('whatsapp_number'),
                     'messenger_link' => $db->get('messenger_link'),
+                    'free_delivery_threshold' => (function () {
+                        $bar = HomepageSetting::where('section_key', 'announcement_bar')->first();
+
+                        return (float) ($bar?->metadata['free_delivery_amount'] ?? 0);
+                    })(),
                 ];
             },
             'flash' => fn () => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
+                'info' => $request->session()->get('info'),
             ],
             'homepage_settings' => fn () => HomepageSetting::orderBy('sort_order')->get()->keyBy('section_key'),
             'hero_slides' => fn () => HeroSlide::where('is_active', true)->orderBy('sort_order')->get(),
@@ -125,6 +131,40 @@ class HandleInertiaRequests extends Middleware
 
         if (! $default) {
             return null;
+        }
+
+        // Check free delivery threshold
+        $bar = HomepageSetting::where('section_key', 'announcement_bar')->first();
+        $threshold = (float) ($bar?->metadata['free_delivery_amount'] ?? 0);
+
+        if ($threshold > 0) {
+            $cart = $this->cartManager->getCurrentCart($request);
+            if ($cart) {
+                $subtotal = $cart->items->sum(fn ($item) => (float) $item->price * $item->quantity);
+                if ($subtotal >= $threshold) {
+                    return 0;
+                }
+
+                // Per-product free delivery check
+                $cart->load('items.product');
+                if ($cart->items->isNotEmpty()) {
+                    $allFree = $cart->items->every(function ($item) {
+                        $product = $item->product;
+                        if (! $product->free_delivery) {
+                            return false;
+                        }
+                        if ($product->free_delivery_min_qty !== null) {
+                            return $item->quantity >= $product->free_delivery_min_qty;
+                        }
+
+                        return true;
+                    });
+
+                    if ($allFree) {
+                        return 0;
+                    }
+                }
+            }
         }
 
         return $default->state === 'Dhaka' && $default->city === 'Inside Dhaka City Corporation'

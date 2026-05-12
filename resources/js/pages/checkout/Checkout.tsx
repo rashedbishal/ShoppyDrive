@@ -67,7 +67,7 @@ interface CheckoutProps {
 type AddressMode = 'default' | 'select' | 'new';
 
 export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.JSX.Element {
-    const { auth, flash } = usePage<SharedPageProps>().props;
+    const { auth, flash, settings } = usePage<SharedPageProps>().props;
     const { items, getSubtotal, getDiscount } = useCartStore();
 
     const defaultAddress = savedAddresses.find((a) => a.is_default) ?? null;
@@ -97,10 +97,28 @@ export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.
 
     const isDhaka = form.data.state === 'Dhaka';
 
+    const subtotal = getSubtotal();
+    const discount = getDiscount();
+
     // ── Shipping cost calculation ─────────────────────────────────────────────
-    // Dhaka district + Inside Dhaka City Corporation → ৳60, everything else → ৳120
     function calcShipping(district: string, city: string): number | null {
         if (!district || !city) return null; // address incomplete
+
+        // Free delivery threshold
+        const threshold = settings.free_delivery_threshold ?? 0;
+        if (threshold > 0 && subtotal >= threshold) return 0;
+
+        // Per-product free delivery: if ALL items qualify → free
+        if (items.length > 0) {
+            const allFree = items.every(item => {
+                const p = item.product;
+                if (!p.free_delivery) return false;
+                if (p.free_delivery_min_qty != null) return item.quantity >= p.free_delivery_min_qty;
+                return true;
+            });
+            if (allFree) return 0;
+        }
+
         return district === 'Dhaka' && city === 'Inside Dhaka City Corporation' ? 60 : 120;
     }
 
@@ -189,9 +207,6 @@ export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.
         );
     };
 
-    const subtotal = getSubtotal();
-    const discount = getDiscount();
-
     const couponDiscount = (() => {
         if (!appliedCoupon) return 0;
         if (appliedCoupon.type === 'percent') return Math.min(subtotal * appliedCoupon.value / 100, subtotal);
@@ -210,6 +225,13 @@ export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.
                 <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                     <AlertCircle size={16} className="shrink-0" />
                     {flash.error}
+                </div>
+            )}
+
+            {flash?.info && (
+                <div className="mb-4 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                    <AlertCircle size={16} className="shrink-0" />
+                    {flash.info}
                 </div>
             )}
 

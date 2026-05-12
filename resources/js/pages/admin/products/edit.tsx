@@ -22,6 +22,8 @@ type Product = {
     low_stock_threshold: number;
     is_active: boolean;
     is_featured: boolean;
+    free_delivery: boolean;
+    free_delivery_min_qty: number | null;
     meta_title: string | null;
     meta_description: string | null;
     media: ProductMedia[];
@@ -52,6 +54,8 @@ export default function ProductEdit({ product, categories, subCategories, brands
         low_stock_threshold: String(product.low_stock_threshold),
         is_active: product.is_active,
         is_featured: product.is_featured,
+        free_delivery: product.free_delivery,
+        free_delivery_min_qty: product.free_delivery_min_qty ? String(product.free_delivery_min_qty) : '',
         images: product.media.length ? product.media.map((m) => m.path) : [] as (File | string)[],
         meta_title: product.meta_title ?? '',
         meta_description: product.meta_description ?? '',
@@ -225,6 +229,36 @@ export default function ProductEdit({ product, categories, subCategories, brands
                                     <input type="checkbox" checked={data.is_featured} onChange={(e) => setData('is_featured', e.target.checked)} className="size-4 rounded border-slate-300 accent-[#c8102e]" />
                                     Featured
                                 </label>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm">
+                            <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardTitle className="text-sm font-semibold text-slate-700">Delivery</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3 pt-4">
+                                <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.free_delivery}
+                                        onChange={(e) => setData('free_delivery', e.target.checked)}
+                                        className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                    />
+                                    Free Delivery
+                                </label>
+                                {data.free_delivery && (
+                                    <Field label="Min Qty for Free Delivery" error={errors.free_delivery_min_qty}>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            className={inputClass(errors.free_delivery_min_qty)}
+                                            value={data.free_delivery_min_qty}
+                                            onChange={(e) => setData('free_delivery_min_qty', e.target.value)}
+                                            placeholder="Leave blank = any qty"
+                                        />
+                                        <p className="mt-1 text-xs text-slate-400">Leave blank = free delivery for any quantity</p>
+                                    </Field>
+                                )}
                             </CardContent>
                         </Card>
 

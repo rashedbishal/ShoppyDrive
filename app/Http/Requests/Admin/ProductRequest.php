@@ -39,6 +39,8 @@ class ProductRequest extends FormRequest
             'low_stock_threshold' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['boolean'],
             'is_featured' => ['boolean'],
+            'free_delivery' => ['boolean'],
+            'free_delivery_min_qty' => ['nullable', 'integer', 'min:1'],
             'images' => ['nullable', 'array'],
             'images.*' => ['nullable', function ($attribute, $value, $fail) {
                 if (! is_string($value) && ! ($value instanceof UploadedFile)) {
