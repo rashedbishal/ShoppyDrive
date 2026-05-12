@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\PromotionalBannerController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SubCategoryController;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
@@ -59,4 +60,58 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
     Route::resource('hero-slides', HeroSlideController::class)->except(['show']);
     Route::get('promotional-banners/products/search', [PromotionalBannerController::class, 'searchProducts'])->name('promotional-banners.products.search');
     Route::resource('promotional-banners', PromotionalBannerController::class)->except(['show']);
+
+    // TEMPORARY: ZiniPay diagnostics — remove after confirming payment works
+    Route::get('zinipay-diagnostic', function () {
+        $apiKey = config('zinipay.api_key', '');
+        $baseUrl = config('zinipay.base_url', '');
+
+        $masked = $apiKey === ''
+            ? '❌ EMPTY — not loaded from .env'
+            : '✅ '.substr($apiKey, 0, 6).'…'.substr($apiKey, -4).' ('.strlen($apiKey).' chars)';
+
+        // Probe TCP connectivity to ZiniPay
+        $canConnect = false;
+        $connectError = '';
+        try {
+            $fp = @fsockopen('ssl://api.zinipay.com', 443, $errno, $errstr, 5);
+            if ($fp) {
+                $canConnect = true;
+                fclose($fp);
+            } else {
+                $connectError = "errno={$errno} {$errstr}";
+            }
+        } catch (Throwable $e) {
+            $connectError = $e->getMessage();
+        }
+
+        // Test actual API call with a minimal payload
+        $apiTestResult = 'not attempted';
+        if ($apiKey !== '') {
+            try {
+                $resp = Http::withHeaders([
+                    'Content-Type' => 'application/json',
+                    'zini-api-key' => $apiKey,
+                ])->timeout(10)->post("{$baseUrl}/v1/payment/create", [
+                    'amount' => 1,
+                    'redirect_url' => url('/'),
+                    'val_id' => 'DIAG-TEST-'.time(),
+                ]);
+                $apiTestResult = 'HTTP '.$resp->status().' → '.$resp->body();
+            } catch (Throwable $e) {
+                $apiTestResult = '❌ Exception: '.$e->getMessage();
+            }
+        }
+
+        return response()->json([
+            'api_key' => $masked,
+            'base_url' => $baseUrl ?: '❌ EMPTY',
+            'app_url' => config('app.url'),
+            'app_env' => config('app.env'),
+            'redirect_url_sample' => url('/payment/callback/ORD-TEST'),
+            'webhook_url_sample' => url('/api/zinipay/webhook'),
+            'tcp_to_zinipay' => $canConnect ? '✅ reachable' : '❌ blocked — '.$connectError,
+            'api_call_result' => $apiTestResult,
+        ], 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    })->name('admin.zinipay.diagnostic');
 });
