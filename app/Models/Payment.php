@@ -18,6 +18,9 @@ class Payment extends Model
         'method',
         'amount',
         'status',
+        'transaction_id',
+        'val_id',
+        'gateway_response',
     ];
 
     protected function casts(): array
@@ -25,6 +28,7 @@ class Payment extends Model
         return [
             'status' => PaymentStatus::class,
             'amount' => 'float',
+            'gateway_response' => 'array',
         ];
     }
 

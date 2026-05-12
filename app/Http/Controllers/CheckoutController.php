@@ -4,20 +4,28 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\Address;
 use App\Models\Coupon;
 use App\Models\Order;
+use App\Models\Payment;
+use App\Services\ZiniPayService;
 use App\Support\CartManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class CheckoutController extends Controller
 {
-    public function __construct(private readonly CartManager $cartManager) {}
+    public function __construct(
+        private readonly CartManager $cartManager,
+        private readonly ZiniPayService $ziniPay,
+    ) {}
 
     public function index(): Response
     {
@@ -37,19 +45,13 @@ class CheckoutController extends Controller
         ]);
     }
 
-    public function store(PlaceOrderRequest $request): RedirectResponse
+    public function store(PlaceOrderRequest $request): RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
         if ($request->filled('items')) {
             if ($request->user() !== null) {
-                $this->cartManager->syncUserCart(
-                    $request->user(),
-                    $request->validated('items'),
-                );
+                $this->cartManager->syncUserCart($request->user(), $request->validated('items'));
             } else {
-                $this->cartManager->syncSessionCart(
-                    $request->session()->getId(),
-                    $request->validated('items'),
-                );
+                $this->cartManager->syncSessionCart($request->session()->getId(), $request->validated('items'));
             }
         }
 
@@ -57,6 +59,7 @@ class CheckoutController extends Controller
 
         abort_if(! $cart || $cart->items->isEmpty(), 422, 'Your cart is empty.');
 
+        // ── Create the order (same transaction for both COD and ZiniPay) ──────
         $order = DB::transaction(function () use ($request, $cart) {
             $shippingAddress = $this->resolveShippingAddress($request);
 
@@ -110,13 +113,75 @@ class CheckoutController extends Controller
                 ]);
             }
 
-            $cart->items()->delete();
-            $cart->delete();
+            // COD: clear cart inside transaction (atomic)
+            if ($request->payment_method === PaymentMethod::COD->value) {
+                $cart->items()->delete();
+                $cart->delete();
+            }
 
             return $order;
         });
 
-        return redirect()->route('order.confirmation', $order->order_number);
+        // ── COD: nothing more to do ──────────────────────────────────────────
+        if ($order->payment_method === PaymentMethod::COD) {
+            return redirect()->route('order.confirmation', $order->order_number);
+        }
+
+        // ── ZiniPay: create invoice then redirect to payment gateway ─────────
+        return $this->initiateZiniPay($order, $cart, $request);
+    }
+
+    private function initiateZiniPay(Order $order, mixed $cart, PlaceOrderRequest $request): RedirectResponse|\Symfony\Component\HttpFoundation\Response
+    {
+        try {
+            $invoicePayload = [
+                'cus_name' => $order->shipping_address['name'],
+                'cus_email' => $order->shipping_address['email'],
+                'amount' => (int) round($order->total),   // amount from backend — never trusted from frontend
+                'val_id' => $order->order_number,          // our reference; ZiniPay echoes it back
+                'redirect_url' => route('payment.callback', $order->order_number),
+                'cancel_url' => route('payment.cancel', $order->order_number),
+                'webhook_url' => url('/api/zinipay/webhook'),
+                'metadata' => ['order_id' => $order->order_number],
+            ];
+
+            $result = $this->ziniPay->createInvoice($invoicePayload);
+
+            // Record a pending payment entry so the callback/webhook can update it
+            Payment::create([
+                'order_id' => $order->id,
+                'method' => PaymentMethod::ZINIPAY->value,
+                'amount' => $order->total,
+                'status' => PaymentStatus::PENDING,
+                'val_id' => $order->order_number,
+            ]);
+
+            // Clear the cart only after successful invoice creation
+            $cart->items()->delete();
+            $cart->delete();
+
+            // Inertia::location() sends a 409 + Location header so the client
+            // performs a hard redirect to the external ZiniPay payment page.
+            return Inertia::location($result['payment_url']);
+
+        } catch (\Throwable $e) {
+            Log::error('[ZiniPay] Checkout initiation failed', [
+                'order_number' => $order->order_number,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Mark the order as cancelled so it doesn't linger as unpaid
+            $order->update(['status' => 'cancelled', 'cancellation_reason' => 'Payment gateway unavailable.']);
+            $order->statusHistories()->create([
+                'status' => 'cancelled',
+                'notes' => 'Cancelled automatically: ZiniPay invoice creation failed.',
+            ]);
+
+            // Restore cart items so the customer can try again
+            // (items were NOT yet deleted for ZiniPay path)
+            return redirect()->route('checkout.index')
+                ->with('error', 'Payment gateway is temporarily unavailable. Please try Cash on Delivery or try again later.');
+        }
     }
 
     /** @return array{0: int|null, 1: string|null, 2: float} */

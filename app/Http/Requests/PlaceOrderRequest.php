@@ -30,7 +30,7 @@ class PlaceOrderRequest extends FormRequest
             'country' => ['nullable', 'string', 'max:100'],
             'save_address' => ['boolean'],
             'coupon_code' => ['nullable', 'string', 'max:50'],
-            'payment_method' => ['required', 'in:cod'],
+            'payment_method' => ['required', 'in:cod,zinipay'],
             'items' => ['nullable', 'array'],
             'items.*.product_id' => ['required_with:items', 'integer', 'exists:products,id'],
             'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],

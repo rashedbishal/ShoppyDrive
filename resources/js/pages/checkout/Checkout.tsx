@@ -11,6 +11,7 @@ import {
     Plus,
     Tag,
     X,
+    CreditCard,
 } from 'lucide-react';
 
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
@@ -66,7 +67,7 @@ interface CheckoutProps {
 type AddressMode = 'default' | 'select' | 'new';
 
 export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.JSX.Element {
-    const { auth } = usePage<SharedPageProps>().props;
+    const { auth, flash } = usePage<SharedPageProps>().props;
     const { items, getSubtotal, getDiscount } = useCartStore();
 
     const defaultAddress = savedAddresses.find((a) => a.is_default) ?? null;
@@ -91,7 +92,7 @@ export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.
         country:       'Bangladesh',
         save_address:  !hasAddresses,
         // payment
-        payment_method: 'cod' as const,
+        payment_method: 'cod' as 'cod' | 'zinipay',
     });
 
     const isDhaka = form.data.state === 'Dhaka';
@@ -204,6 +205,13 @@ export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.
     return (
         <CheckoutLayout>
             <Head title="Checkout" />
+
+            {flash?.error && (
+                <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <AlertCircle size={16} className="shrink-0" />
+                    {flash.error}
+                </div>
+            )}
 
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -494,26 +502,78 @@ export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.
 
                         {/* ── Payment ── */}
                         <Section title="Payment Method">
-                            <div className="flex items-center gap-4 rounded-xl border-2 border-[var(--color-primary)] bg-[var(--color-primary-light)] p-4">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white border border-[var(--color-border)] text-[var(--color-primary)] shadow-sm shrink-0">
-                                    <ShoppingBag size={20} />
-                                </div>
-                                <div>
-                                    <p className="font-bold text-sm text-[var(--color-text-primary)]">Cash on Delivery</p>
-                                    <p className="text-xs text-[var(--color-text-muted)]">Pay with cash when your order arrives</p>
-                                </div>
-                                <div className="ml-auto">
-                                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)]">
-                                        <Check size={11} className="text-white" />
+                            <div className="space-y-3">
+                                {/* COD */}
+                                <button
+                                    type="button"
+                                    onClick={() => form.setData('payment_method', 'cod')}
+                                    className={`flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${
+                                        form.data.payment_method === 'cod'
+                                            ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]'
+                                            : 'border-[var(--color-border)] bg-white hover:border-slate-300'
+                                    }`}
+                                >
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-primary)] shadow-sm">
+                                        <ShoppingBag size={20} />
                                     </div>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-bold text-[var(--color-text-primary)]">Cash on Delivery</p>
+                                        <p className="text-xs text-[var(--color-text-muted)]">Pay with cash when your order arrives</p>
+                                    </div>
+                                    <div className={`flex h-5 w-5 items-center justify-center rounded-full transition-colors ${
+                                        form.data.payment_method === 'cod' ? 'bg-[var(--color-primary)]' : 'border-2 border-slate-300'
+                                    }`}>
+                                        {form.data.payment_method === 'cod' && <Check size={11} className="text-white" />}
+                                    </div>
+                                </button>
+
+                                {/* ZiniPay */}
+                                <button
+                                    type="button"
+                                    onClick={() => form.setData('payment_method', 'zinipay')}
+                                    className={`flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${
+                                        form.data.payment_method === 'zinipay'
+                                            ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]'
+                                            : 'border-[var(--color-border)] bg-white hover:border-slate-300'
+                                    }`}
+                                >
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white shadow-sm">
+                                        <CreditCard size={20} className="text-blue-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-bold text-[var(--color-text-primary)]">
+                                            ZiniPay
+                                            <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                                                bKash · Nagad · Card
+                                            </span>
+                                        </p>
+                                        <p className="text-xs text-[var(--color-text-muted)]">Pay securely online — instant confirmation</p>
+                                    </div>
+                                    <div className={`flex h-5 w-5 items-center justify-center rounded-full transition-colors ${
+                                        form.data.payment_method === 'zinipay' ? 'bg-[var(--color-primary)]' : 'border-2 border-slate-300'
+                                    }`}>
+                                        {form.data.payment_method === 'zinipay' && <Check size={11} className="text-white" />}
+                                    </div>
+                                </button>
+                            </div>
+
+                            {form.data.payment_method === 'cod' && (
+                                <div className="flex gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-3">
+                                    <AlertCircle size={15} className="mt-0.5 shrink-0 text-[var(--color-text-muted)]" />
+                                    <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">
+                                        Please keep the exact change ready. Delivery time may vary by location.
+                                    </p>
                                 </div>
-                            </div>
-                            <div className="flex gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-3">
-                                <AlertCircle size={15} className="mt-0.5 shrink-0 text-[var(--color-text-muted)]" />
-                                <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">
-                                    Please keep the exact change ready. Delivery time may vary by location.
-                                </p>
-                            </div>
+                            )}
+
+                            {form.data.payment_method === 'zinipay' && (
+                                <div className="flex gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3">
+                                    <ShieldCheck size={15} className="mt-0.5 shrink-0 text-blue-600" />
+                                    <p className="text-xs leading-relaxed text-blue-700">
+                                        You'll be redirected to ZiniPay's secure payment page. Your order will be confirmed instantly after payment.
+                                    </p>
+                                </div>
+                            )}
                         </Section>
                     </div>
 
@@ -588,7 +648,12 @@ export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.
                                 className="w-full h-13 rounded-xl font-bold text-base shadow-lg shadow-[var(--color-primary)]/20"
                             >
                                 {submitting ? (
-                                    'Processing…'
+                                    form.data.payment_method === 'zinipay' ? 'Redirecting to ZiniPay…' : 'Processing…'
+                                ) : form.data.payment_method === 'zinipay' ? (
+                                    <>
+                                        <CreditCard size={16} className="mr-2" />
+                                        Pay with ZiniPay
+                                    </>
                                 ) : (
                                     <>
                                         <Lock size={16} className="mr-2" />

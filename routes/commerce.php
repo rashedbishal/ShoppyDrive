@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\PaymentController;
 use App\Models\Coupon;
 use App\Models\Order;
 use Illuminate\Http\Request;
@@ -13,6 +14,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/cart/sync', [CartController::class, 'sync'])->name('cart.sync');
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+
+    // ZiniPay payment return routes
+    Route::get('/payment/callback/{order:order_number}', [PaymentController::class, 'callback'])->name('payment.callback');
+    Route::get('/payment/cancel/{order:order_number}', [PaymentController::class, 'cancel'])->name('payment.cancel');
+    Route::get('/payment/failed/{order:order_number}', [PaymentController::class, 'failed'])->name('payment.failed');
 });
 Route::get('/order/track', function (Request $request) {
     $order = null;

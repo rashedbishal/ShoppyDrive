@@ -7,4 +7,5 @@ namespace App\Enums;
 enum PaymentMethod: string
 {
     case COD = 'cod';
+    case ZINIPAY = 'zinipay';
 }
