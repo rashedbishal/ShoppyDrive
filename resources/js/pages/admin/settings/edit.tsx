@@ -25,6 +25,8 @@ export default function SettingsEdit({ settings }: Props) {
         },
         google_analytics_id: (settings.google_analytics_id as string) ?? '',
         meta_pixel_id: (settings.meta_pixel_id as string) ?? '',
+        whatsapp_number: (settings.whatsapp_number as string) ?? '',
+        messenger_link: (settings.messenger_link as string) ?? '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -112,6 +114,31 @@ export default function SettingsEdit({ settings }: Props) {
                             </Field>
                             <Field label="Meta Pixel ID" hint="Facebook Pixel tracking ID">
                                 <input className={inputClass} value={data.meta_pixel_id} onChange={(e) => setData('meta_pixel_id', e.target.value)} placeholder="123456789" />
+                            </Field>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardTitle className="text-sm font-semibold text-slate-700">Chat Widgets</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-4">
+                            <Field label="WhatsApp Number" hint="Phone number with country code, e.g. +8801700000000">
+                                <input
+                                    type="tel"
+                                    className={inputClass}
+                                    value={data.whatsapp_number}
+                                    onChange={(e) => setData('whatsapp_number', e.target.value)}
+                                    placeholder="+8801700000000"
+                                />
+                            </Field>
+                            <Field label="Facebook Messenger" hint="Your Facebook page username or full m.me URL, e.g. shoppydrive">
+                                <input
+                                    className={inputClass}
+                                    value={data.messenger_link}
+                                    onChange={(e) => setData('messenger_link', e.target.value)}
+                                    placeholder="shoppydrive or https://m.me/shoppydrive"
+                                />
                             </Field>
                         </CardContent>
                     </Card>

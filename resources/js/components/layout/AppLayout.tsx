@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import CartDrawer from '@/components/layout/CartDrawer';
 import CookieConsent from '@/components/layout/CookieConsent';
 import NProgress from '@/components/layout/NProgress';
+import SocialChatWidget from '@/components/layout/SocialChatWidget';
 import { CompareBar } from '@/components/shared/CompareBar';
 import { useUiStore } from '@/stores/uiStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
@@ -51,6 +52,7 @@ export default function AppLayout({ children }: AppLayoutProps): React.JSX.Eleme
             <CartDrawer />
             <CompareBar products={compareItems} />
             <CookieConsent />
+            <SocialChatWidget />
         </div>
     );
 }

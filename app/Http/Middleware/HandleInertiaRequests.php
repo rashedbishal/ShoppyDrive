@@ -8,6 +8,7 @@ use App\Models\HeroSlide;
 use App\Models\HomepageSetting;
 use App\Models\Order;
 use App\Models\PromotionalBanner;
+use App\Models\Setting;
 use App\Models\Wishlist;
 use App\Support\CartManager;
 use Illuminate\Http\Request;
@@ -71,20 +72,27 @@ class HandleInertiaRequests extends Middleware
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get(['id', 'name', 'slug', 'description']),
-            'settings' => [
-                'site_name' => config('app.name', 'ShoppyDrive'),
-                'logo' => null,
-                'currency_symbol' => '৳',
-                'contact_email' => 'support@shoppydrive.com',
-                'contact_phone' => '+880 1XXX XXXXXX',
-                'social_links' => [
-                    'facebook' => 'https://facebook.com',
-                    'instagram' => 'https://instagram.com',
-                    'twitter' => 'https://twitter.com',
-                ],
-                'google_analytics_id' => null,
-                'meta_pixel_id' => null,
-            ],
+            'settings' => function () {
+                $db = Setting::all()->keyBy('key')->map(fn ($s) => $s->value);
+                $socialLinks = $db->get('social_links', []);
+
+                return [
+                    'site_name' => $db->get('site_name', config('app.name', 'ShoppyDrive')),
+                    'logo' => $db->get('logo'),
+                    'currency_symbol' => $db->get('currency_symbol', '৳'),
+                    'contact_email' => $db->get('contact_email', 'support@shoppydrive.com'),
+                    'contact_phone' => $db->get('contact_phone', '+880 1XXX XXXXXX'),
+                    'social_links' => [
+                        'facebook' => $socialLinks['facebook'] ?? null,
+                        'instagram' => $socialLinks['instagram'] ?? null,
+                        'twitter' => $socialLinks['twitter'] ?? null,
+                    ],
+                    'google_analytics_id' => $db->get('google_analytics_id'),
+                    'meta_pixel_id' => $db->get('meta_pixel_id'),
+                    'whatsapp_number' => $db->get('whatsapp_number'),
+                    'messenger_link' => $db->get('messenger_link'),
+                ];
+            },
             'flash' => fn () => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

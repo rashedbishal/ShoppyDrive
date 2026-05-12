@@ -84,6 +84,8 @@ export interface AppSettings {
     };
     google_analytics_id?: string | null;
     meta_pixel_id?: string | null;
+    whatsapp_number?: string | null;
+    messenger_link?: string | null;
 }
 
 export interface Category extends Timestamped, SoftDeletable {
