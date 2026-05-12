@@ -18,11 +18,12 @@ class ZiniPayWebhookController extends Controller
     public function __construct(private readonly ZiniPayService $ziniPay) {}
 
     /**
-     * Handle webhook POST from ZiniPay.
+     * Handle webhook from ZiniPay (GET with query params or POST with JSON body).
      *
-     * Payload: { "invoice_id": "...", "status": "true", "val_id": "ORD-..." }
+     * ZiniPay sends: ?invoiceId=UUID&invoice_id=UUID&val_id=ORD-...
+     * We only need val_id to look up the order, then we verify independently.
      *
-     * Route: POST /api/zinipay/webhook  (CSRF-exempt via api middleware group)
+     * Route: GET|POST /api/zinipay/webhook  (CSRF-exempt via api middleware group)
      */
     public function handle(Request $request): JsonResponse
     {

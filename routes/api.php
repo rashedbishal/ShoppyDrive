@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/search/suggestions', [SearchController::class, 'suggestions']);
 
-// ZiniPay webhook — no CSRF (api middleware group is CSRF-free)
-Route::post('/zinipay/webhook', [ZiniPayWebhookController::class, 'handle'])->name('zinipay.webhook');
+// ZiniPay webhook — accepts GET and POST (ZiniPay uses GET with query params in practice)
+Route::match(['GET', 'POST'], '/zinipay/webhook', [ZiniPayWebhookController::class, 'handle'])->name('zinipay.webhook');
 
 Route::prefix('v1')->group(function () {
     Route::get('/products', [ProductController::class, 'index']);
