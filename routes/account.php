@@ -72,8 +72,15 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
             abort(403);
         }
 
-        if ($order->status->value !== OrderStatus::DELIVERED->value) {
-            abort(403, 'Invoice is only available for delivered orders.');
+        $status = $order->status->value;
+        $isCod = $order->payment_method->value === 'cod';
+
+        if (in_array($status, ['cancelled', 'refunded'])) {
+            abort(403, 'Invoice is not available for cancelled or refunded orders.');
+        }
+
+        if ($isCod && $status !== OrderStatus::DELIVERED->value) {
+            abort(403, 'Invoice is only available after delivery for Cash on Delivery orders.');
         }
 
         $order->load(['items.product', 'user']);

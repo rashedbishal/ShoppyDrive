@@ -27,6 +27,8 @@ export default function SettingsEdit({ settings }: Props) {
         meta_pixel_id: (settings.meta_pixel_id as string) ?? '',
         whatsapp_number: (settings.whatsapp_number as string) ?? '',
         messenger_link: (settings.messenger_link as string) ?? '',
+        bkash_number: (settings.bkash_number as string) ?? '',
+        nagad_number: (settings.nagad_number as string) ?? '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -138,6 +140,32 @@ export default function SettingsEdit({ settings }: Props) {
                                     value={data.messenger_link}
                                     onChange={(e) => setData('messenger_link', e.target.value)}
                                     placeholder="shoppydrive or https://m.me/shoppydrive"
+                                />
+                            </Field>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardTitle className="text-sm font-semibold text-slate-700">Mobile Banking Payment</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-4">
+                            <Field label="Bkash Number" hint="Owner's Bkash number customers will send money to">
+                                <input
+                                    type="tel"
+                                    className={inputClass}
+                                    value={data.bkash_number}
+                                    onChange={(e) => setData('bkash_number', e.target.value)}
+                                    placeholder="01700000000"
+                                />
+                            </Field>
+                            <Field label="Nagad Number" hint="Owner's Nagad number customers will send money to">
+                                <input
+                                    type="tel"
+                                    className={inputClass}
+                                    value={data.nagad_number}
+                                    onChange={(e) => setData('nagad_number', e.target.value)}
+                                    placeholder="01700000000"
                                 />
                             </Field>
                         </CardContent>

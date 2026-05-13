@@ -14,8 +14,10 @@ use App\Http\Controllers\Admin\HomepageController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\PromotionalBannerController;
+use App\Http\Controllers\Admin\ReceivedSmsController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\SmsPatternController;
 use App\Http\Controllers\Admin\SubCategoryController;
 use Illuminate\Support\Facades\Route;
 
@@ -48,6 +50,14 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
 
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+
+    Route::get('received-sms', [ReceivedSmsController::class, 'index'])->name('received-sms.index');
+    Route::get('sms/poll', [ReceivedSmsController::class, 'poll'])->name('sms.poll');
+
+    Route::get('sms-patterns', [SmsPatternController::class, 'index'])->name('sms-patterns.index');
+    Route::post('sms-patterns', [SmsPatternController::class, 'store'])->name('sms-patterns.store');
+    Route::patch('sms-patterns/{smsPattern}', [SmsPatternController::class, 'update'])->name('sms-patterns.update');
+    Route::delete('sms-patterns/{smsPattern}', [SmsPatternController::class, 'destroy'])->name('sms-patterns.destroy');
 
     // Homepage Management
     Route::get('homepage', [HomepageController::class, 'index'])->name('homepage.index');

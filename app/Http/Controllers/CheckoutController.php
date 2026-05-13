@@ -12,11 +12,9 @@ use App\Models\Coupon;
 use App\Models\HomepageSetting;
 use App\Models\Order;
 use App\Models\PendingCheckout;
-use App\Services\ZiniPayService;
 use App\Support\CartManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,7 +23,6 @@ class CheckoutController extends Controller
 {
     public function __construct(
         private readonly CartManager $cartManager,
-        private readonly ZiniPayService $ziniPay,
     ) {}
 
     public function index(): Response
@@ -123,11 +120,11 @@ class CheckoutController extends Controller
             return redirect()->route('order.confirmation', $order->order_number);
         }
 
-        // ── ZiniPay ──────────────────────────────────────────────────────────
-        return $this->initiateZiniPay($request, $cart, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $discount, $total);
+        // ── Mobile Banking (Bkash / Nagad) ───────────────────────────────────
+        return $this->initiateMobileBanking($request, $cart, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $discount, $total);
     }
 
-    private function initiateZiniPay(
+    private function initiateMobileBanking(
         PlaceOrderRequest $request,
         Cart $cart,
         array $shippingAddress,
@@ -137,8 +134,7 @@ class CheckoutController extends Controller
         ?string $couponCode,
         float $discount,
         float $total,
-    ): RedirectResponse|\Symfony\Component\HttpFoundation\Response {
-        // Snapshot cart items so order can be created after payment verification
+    ): RedirectResponse {
         $itemsSnapshot = $cart->items->map(function ($item) {
             $product = $item->product;
 
@@ -163,50 +159,28 @@ class CheckoutController extends Controller
         $token = (string) Str::uuid();
         $orderNumber = $this->generateOrderNumber();
 
-        try {
-            // Create invoice FIRST — if ZiniPay is down, nothing is created
-            $result = $this->ziniPay->createInvoice([
-                'cus_name' => $shippingAddress['name'],
-                'cus_email' => $shippingAddress['email'],
-                'amount' => (int) round($total),
-                'val_id' => $token,
-                'redirect_url' => route('payment.callback', $token),
-                'cancel_url' => route('payment.cancel', $token),
-                'webhook_url' => url('/api/zinipay/webhook'),
-                'metadata' => ['order_number' => $orderNumber],
-            ]);
+        $this->maybeAutoSaveAddress($request, $shippingAddress);
 
-            // Store all checkout data — order is created only after confirmed payment
-            $this->maybeAutoSaveAddress($request, $shippingAddress);
+        PendingCheckout::create([
+            'token' => $token,
+            'user_id' => auth()->id(),
+            'cart_id' => $cart->id,
+            'checkout_data' => [
+                'order_number' => $orderNumber,
+                'shipping_address' => $shippingAddress,
+                'items' => $itemsSnapshot,
+                'subtotal' => $subtotal,
+                'shipping_cost' => $shippingCost,
+                'discount' => $discount,
+                'coupon_id' => $couponId,
+                'coupon_code' => $couponCode,
+                'tax' => 0,
+                'total' => $total,
+            ],
+            'expires_at' => now()->addHours(2),
+        ]);
 
-            PendingCheckout::create([
-                'token' => $token,
-                'user_id' => auth()->id(),
-                'cart_id' => $cart->id,
-                'checkout_data' => [
-                    'order_number' => $orderNumber,
-                    'shipping_address' => $shippingAddress,
-                    'items' => $itemsSnapshot,
-                    'subtotal' => $subtotal,
-                    'shipping_cost' => $shippingCost,
-                    'discount' => $discount,
-                    'coupon_id' => $couponId,
-                    'coupon_code' => $couponCode,
-                    'tax' => 0,
-                    'total' => $total,
-                ],
-                'expires_at' => now()->addHours(2),
-            ]);
-
-            return Inertia::location($result['payment_url']);
-
-        } catch (\Throwable $e) {
-            Log::error('[ZiniPay] Checkout initiation failed', ['error' => $e->getMessage()]);
-
-            // Nothing was created — cart is intact — just show the error
-            return redirect()->route('checkout.index')
-                ->with('error', 'Payment gateway is temporarily unavailable. Please try Cash on Delivery or try again later.');
-        }
+        return redirect()->route('payment.mobile.show', $token);
     }
 
     // ── Shipping calculation ─────────────────────────────────────────────────

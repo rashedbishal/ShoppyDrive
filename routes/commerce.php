@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\MobilePaymentController;
 use App\Http\Controllers\PaymentController;
 use App\Models\Coupon;
 use App\Models\Order;
@@ -15,9 +16,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
-    // ZiniPay payment return routes
+    // ZiniPay payment return routes (kept for historical pending checkouts)
     Route::get('/payment/callback/{token}', [PaymentController::class, 'callback'])->name('payment.callback');
     Route::get('/payment/cancel/{token}', [PaymentController::class, 'cancel'])->name('payment.cancel');
+
+    // Mobile banking (Bkash / Nagad)
+    Route::get('/payment/mobile/{token}', [MobilePaymentController::class, 'show'])->name('payment.mobile.show');
+    Route::post('/payment/mobile/{token}', [MobilePaymentController::class, 'submit'])->name('payment.mobile.submit');
 });
 Route::get('/order/track', function (Request $request) {
     $order = null;

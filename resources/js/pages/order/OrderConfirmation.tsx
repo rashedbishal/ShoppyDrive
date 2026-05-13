@@ -16,6 +16,12 @@ interface OrderConfirmationProps {
 export default function OrderConfirmation({ order }: OrderConfirmationProps): React.JSX.Element {
     const clearCart = useCartStore((state) => state.clearCart);
 
+    const canDownloadInvoice = (() => {
+        if (order.status === 'cancelled' || order.status === 'refunded') return false;
+        if (order.payment_method === 'cod') return order.status === 'delivered';
+        return true;
+    })();
+
     // Clear local cart on mount if order was successful
     useEffect(() => {
         clearCart();
@@ -146,10 +152,14 @@ export default function OrderConfirmation({ order }: OrderConfirmationProps): Re
                             Return Home
                         </Link>
                     </Button>
-                    <Button variant="ghost" className="rounded-2xl h-14 font-bold text-[var(--color-text-muted)]">
-                        <Download size={18} className="mr-2" />
-                        Download Invoice
-                    </Button>
+                    {canDownloadInvoice && (
+                        <Button variant="ghost" asChild className="rounded-2xl h-14 font-bold text-[var(--color-text-muted)]">
+                            <a href={route('account.orders.invoice', order.order_number)}>
+                                <Download size={18} className="mr-2" />
+                                Download Invoice
+                            </a>
+                        </Button>
+                    )}
                 </motion.div>
 
                 <motion.div 

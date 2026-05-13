@@ -7,6 +7,7 @@ import {
     LayoutTemplate,
     LogOut,
     Menu,
+    MessageSquare,
     Package,
     Settings,
     ShoppingCart,
@@ -16,8 +17,9 @@ import {
     X,
     Zap,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import { useSmsPolling, type SmsToast } from '@/hooks/useSmsPolling';
 import type { SharedPageProps } from '@/types';
 
 const navSections = [
@@ -42,6 +44,8 @@ const navSections = [
             { label: 'Orders', href: '/admin/orders', icon: ShoppingCart, extraMatches: [] as string[] },
             { label: 'Coupons', href: '/admin/coupons', icon: Tag, extraMatches: [] as string[] },
             { label: 'Flash Sales', href: '/admin/flash-sales', icon: Zap, extraMatches: [] as string[] },
+            { label: 'Received SMS', href: '/admin/received-sms', icon: MessageSquare, extraMatches: [] as string[] },
+            { label: 'SMS Patterns', href: '/admin/sms-patterns', icon: Settings, extraMatches: [] as string[] },
         ],
     },
     {
@@ -120,11 +124,49 @@ function SidebarContent({ currentUrl, onClose }: { currentUrl: string; onClose?:
     );
 }
 
+function SmsToastItem({ toast, onDismiss }: { toast: SmsToast; onDismiss: () => void }) {
+    useEffect(() => {
+        const id = setTimeout(onDismiss, 8000);
+        return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // run once on mount — dismiss is stable via useCallback in parent
+
+    return (
+        <div className="flex w-80 items-start gap-3 rounded-xl bg-slate-900 px-4 py-3 shadow-xl ring-1 ring-white/10 animate-in slide-in-from-right-4 fade-in duration-300">
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-pink-600">
+                <MessageSquare className="size-3.5 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-white">New SMS Received</p>
+                <p className="text-xs text-slate-400 truncate">From: {toast.sender}</p>
+                {toast.parsed_transaction_id && (
+                    <p className="text-xs text-pink-400 font-mono font-semibold mt-0.5">
+                        TrxID: {toast.parsed_transaction_id}
+                        {toast.parsed_amount !== null && <span className="text-slate-300 font-sans font-normal"> · ৳{toast.parsed_amount.toLocaleString()}</span>}
+                    </p>
+                )}
+                <p className="mt-1 text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{toast.content}</p>
+                <Link
+                    href="/admin/received-sms"
+                    className="mt-1.5 inline-block text-[11px] font-semibold text-pink-400 hover:text-pink-300"
+                >
+                    View all SMS →
+                </Link>
+            </div>
+            <button type="button" onClick={onDismiss} className="mt-0.5 shrink-0 text-slate-500 hover:text-slate-300 transition-colors">
+                <X className="size-3.5" />
+            </button>
+        </div>
+    );
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const page = usePage<SharedPageProps>();
     const admin = page.props.auth?.admin;
     const currentUrl = page.url;
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const { toasts, dismiss } = useSmsPolling();
+    const handleDismiss = useCallback((key: number) => dismiss(key), [dismiss]);
 
     const handleLogout = () => router.post(route('admin.logout'));
 
@@ -177,6 +219,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {children}
                 </main>
             </div>
+
+            {/* SMS toast notifications */}
+            {toasts.length > 0 && (
+                <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 items-end">
+                    {toasts.map((toast) => (
+                        <SmsToastItem key={toast.key} toast={toast} onDismiss={() => handleDismiss(toast.key)} />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

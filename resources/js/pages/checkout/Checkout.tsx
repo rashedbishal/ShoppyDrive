@@ -92,7 +92,7 @@ export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.
         country:       'Bangladesh',
         save_address:  !hasAddresses,
         // payment
-        payment_method: 'cod' as 'cod' | 'zinipay',
+        payment_method: 'cod' as 'cod' | 'mobile_banking',
     });
 
     const isDhaka = form.data.state === 'Dhaka';
@@ -549,32 +549,32 @@ export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.
                                     </div>
                                 </button>
 
-                                {/* ZiniPay */}
+                                {/* Bkash / Nagad */}
                                 <button
                                     type="button"
-                                    onClick={() => form.setData('payment_method', 'zinipay')}
+                                    onClick={() => form.setData('payment_method', 'mobile_banking')}
                                     className={`flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${
-                                        form.data.payment_method === 'zinipay'
+                                        form.data.payment_method === 'mobile_banking'
                                             ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]'
                                             : 'border-[var(--color-border)] bg-white hover:border-slate-300'
                                     }`}
                                 >
                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white shadow-sm">
-                                        <CreditCard size={20} className="text-blue-600" />
+                                        <CreditCard size={20} className="text-pink-600" />
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-sm font-bold text-[var(--color-text-primary)]">
-                                            ZiniPay
-                                            <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
-                                                bKash · Nagad · Card
+                                            Bkash / Nagad
+                                            <span className="ml-2 inline-flex items-center rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-semibold text-pink-700">
+                                                Send Money
                                             </span>
                                         </p>
-                                        <p className="text-xs text-[var(--color-text-muted)]">Pay securely online — instant confirmation</p>
+                                        <p className="text-xs text-[var(--color-text-muted)]">Send money & enter your Transaction ID</p>
                                     </div>
                                     <div className={`flex h-5 w-5 items-center justify-center rounded-full transition-colors ${
-                                        form.data.payment_method === 'zinipay' ? 'bg-[var(--color-primary)]' : 'border-2 border-slate-300'
+                                        form.data.payment_method === 'mobile_banking' ? 'bg-[var(--color-primary)]' : 'border-2 border-slate-300'
                                     }`}>
-                                        {form.data.payment_method === 'zinipay' && <Check size={11} className="text-white" />}
+                                        {form.data.payment_method === 'mobile_banking' && <Check size={11} className="text-white" />}
                                     </div>
                                 </button>
                             </div>
@@ -588,11 +588,11 @@ export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.
                                 </div>
                             )}
 
-                            {form.data.payment_method === 'zinipay' && (
-                                <div className="flex gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3">
-                                    <ShieldCheck size={15} className="mt-0.5 shrink-0 text-blue-600" />
-                                    <p className="text-xs leading-relaxed text-blue-700">
-                                        You'll be redirected to ZiniPay's secure payment page. Your order will be confirmed instantly after payment.
+                            {form.data.payment_method === 'mobile_banking' && (
+                                <div className="flex gap-3 rounded-xl border border-pink-200 bg-pink-50 p-3">
+                                    <ShieldCheck size={15} className="mt-0.5 shrink-0 text-pink-600" />
+                                    <p className="text-xs leading-relaxed text-pink-700">
+                                        After placing the order you'll see our Bkash/Nagad number and the exact amount to send. Enter your TrxID to confirm.
                                     </p>
                                 </div>
                             )}
@@ -670,11 +670,11 @@ export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.
                                 className="w-full h-13 rounded-xl font-bold text-base shadow-lg shadow-[var(--color-primary)]/20"
                             >
                                 {submitting ? (
-                                    form.data.payment_method === 'zinipay' ? 'Redirecting to ZiniPay…' : 'Processing…'
-                                ) : form.data.payment_method === 'zinipay' ? (
+                                    form.data.payment_method === 'mobile_banking' ? 'Processing…' : 'Processing…'
+                                ) : form.data.payment_method === 'mobile_banking' ? (
                                     <>
                                         <CreditCard size={16} className="mr-2" />
-                                        Pay with ZiniPay
+                                        Continue to Payment
                                     </>
                                 ) : (
                                     <>

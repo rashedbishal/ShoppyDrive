@@ -36,6 +36,12 @@ export default function OrderDetail({
         router.patch(route('account.orders.cancel', order.order_number), {}, { preserveScroll: true });
     };
 
+    const canDownloadInvoice = (() => {
+        if (order.status === 'cancelled' || order.status === 'refunded') return false;
+        if (order.payment_method === 'cod') return order.status === 'delivered';
+        return true;
+    })();
+
     return (
         <AccountLayout>
             <Head title={`Order #${order.order_number}`} />
@@ -74,7 +80,7 @@ export default function OrderDetail({
                     </div>
                     
                     <div className="flex flex-wrap gap-3">
-                        {order.status === 'delivered' && (
+                        {canDownloadInvoice && (
                             <a href={route('account.orders.invoice', order.order_number)}>
                                 <Button variant="outline" className="rounded-xl font-bold border-[var(--color-border)] hover:bg-[var(--color-surface-alt)]">
                                     <Download size={16} className="mr-2" />

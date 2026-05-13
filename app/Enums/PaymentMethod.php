@@ -8,4 +8,5 @@ enum PaymentMethod: string
 {
     case COD = 'cod';
     case ZINIPAY = 'zinipay';
+    case MobileBanking = 'mobile_banking';
 }

@@ -74,7 +74,9 @@
       "Bash(vendor/bin/pint app/Http/Controllers/SearchController.php --format agent)",
       "mcp__laravel-boost__search-docs",
       "Bash(vendor/bin/pint --dirty --format agent app/Http/Middleware/HandleInertiaRequests.php)",
-      "Bash(vendor/bin/pint bootstrap/providers.php --format agent)"
+      "Bash(vendor/bin/pint bootstrap/providers.php --format agent)",
+      "Bash(php -r ' *)",
+      "Bash(php /tmp/test_sms.php)"
     ]
   },
   "enableAllProjectMcpServers": true,

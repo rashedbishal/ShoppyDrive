@@ -38,12 +38,14 @@ class SettingController extends Controller
             'meta_pixel_id' => ['nullable', 'string', 'max:100'],
             'whatsapp_number' => ['nullable', 'string', 'max:20'],
             'messenger_link' => ['nullable', 'string', 'max:500'],
+            'bkash_number' => ['nullable', 'string', 'max:20'],
+            'nagad_number' => ['nullable', 'string', 'max:20'],
         ]);
 
         $fields = [
             'site_name', 'contact_email', 'contact_phone', 'currency_symbol',
             'logo', 'social_links', 'google_analytics_id', 'meta_pixel_id',
-            'whatsapp_number', 'messenger_link',
+            'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number',
         ];
 
         foreach ($fields as $key) {
@@ -62,6 +64,7 @@ class SettingController extends Controller
             in_array($key, ['contact_email', 'contact_phone']) => 'contact',
             in_array($key, ['social_links']) => 'social',
             in_array($key, ['whatsapp_number', 'messenger_link']) => 'chat_widgets',
+            in_array($key, ['bkash_number', 'nagad_number']) => 'payments',
             default => 'integrations',
         };
     }
