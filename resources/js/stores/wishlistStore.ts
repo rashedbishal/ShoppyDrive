@@ -42,8 +42,9 @@ function normalizeProductIds(productIds: number[]): number[] {
     return Array.from(new Set(productIds));
 }
 
-function getCsrfToken(): string {
-    return (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
+function getXsrfToken(): string {
+    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
 }
 
 export const useWishlistStore = create<WishlistStoreState>()(
@@ -63,10 +64,11 @@ export const useWishlistStore = create<WishlistStoreState>()(
                 // Sync with server (silently fails for guests / network errors)
                 fetch(route('wishlist.toggle'), {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': getCsrfToken(),
+                        'X-XSRF-TOKEN': getXsrfToken(),
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                     body: JSON.stringify({ product_id: productId }),

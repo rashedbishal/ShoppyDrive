@@ -182,6 +182,13 @@ router.on('navigate', (event) => {
     if (stored !== null && currentUserId === null) {
         applyLogout();
     } else if (currentUserId !== null && currentUserId !== prevAuthUserId) {
+        // If transitioning from guest → logged-in, snapshot local wishlist for merge
+        if (prevAuthUserId === null) {
+            const guestIds = useWishlistStore.getState().productIds;
+            if (guestIds.length > 0) {
+                localStorage.setItem('shoppydrive.wishlist.pending_merge', JSON.stringify(guestIds));
+            }
+        }
         applyLogin(currentUserId, currentCart, prevAuthUserId === null);
     } else if (currentUserId !== null) {
         activeAuthUserId = currentUserId;
@@ -199,6 +206,8 @@ createInertiaApp({
             case name === 'welcome':
                 return null;
             case name.startsWith('auth/'):
+                return null;
+            case name.startsWith('landing/'):
                 return null;
             case name.startsWith('admin/'):
                 return AdminLayout;

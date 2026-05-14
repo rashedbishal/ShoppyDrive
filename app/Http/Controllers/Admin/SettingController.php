@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -29,7 +30,7 @@ class SettingController extends Controller
             'contact_email' => ['nullable', 'email', 'max:255'],
             'contact_phone' => ['nullable', 'string', 'max:50'],
             'currency_symbol' => ['nullable', 'string', 'max:10'],
-            'logo' => ['nullable', 'string'],
+            'logo' => ['nullable', 'image', 'max:2048'],
             'social_links' => ['nullable', 'array'],
             'social_links.facebook' => ['nullable', 'string', 'max:500'],
             'social_links.instagram' => ['nullable', 'string', 'max:500'],
@@ -42,9 +43,20 @@ class SettingController extends Controller
             'nagad_number' => ['nullable', 'string', 'max:20'],
         ]);
 
+        // Handle logo upload separately
+        if ($request->hasFile('logo')) {
+            $existing = Setting::where('key', 'logo')->first();
+            if ($existing?->value && str_starts_with((string) $existing->value, '/storage/')) {
+                Storage::disk('public')->delete(substr((string) $existing->value, strlen('/storage/')));
+            }
+
+            $path = $request->file('logo')->store('logos', 'public');
+            Setting::updateOrCreate(['key' => 'logo'], ['value' => '/storage/'.$path, 'group' => 'general']);
+        }
+
         $fields = [
             'site_name', 'contact_email', 'contact_phone', 'currency_symbol',
-            'logo', 'social_links', 'google_analytics_id', 'meta_pixel_id',
+            'social_links', 'google_analytics_id', 'meta_pixel_id',
             'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number',
         ];
 

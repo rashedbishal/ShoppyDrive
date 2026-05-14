@@ -1,6 +1,7 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 type Props = {
     settings: Record<string, string | Record<string, string> | null>;
@@ -12,12 +13,13 @@ export default function SettingsEdit({ settings }: Props) {
 
     const socialLinks = (settings.social_links ?? {}) as Record<string, string>;
 
-    const { data, setData, put, processing } = useForm({
+    const { data, setData, post, processing } = useForm({
+        _method: 'PUT',
         site_name: (settings.site_name as string) ?? '',
         contact_email: (settings.contact_email as string) ?? '',
         contact_phone: (settings.contact_phone as string) ?? '',
         currency_symbol: (settings.currency_symbol as string) ?? '৳',
-        logo: (settings.logo as string) ?? '',
+        logo: (settings.logo as string | null) ?? null as File | string | null,
         social_links: {
             facebook: socialLinks.facebook ?? '',
             instagram: socialLinks.instagram ?? '',
@@ -33,7 +35,7 @@ export default function SettingsEdit({ settings }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(route('admin.settings.update'));
+        post(route('admin.settings.update'), { forceFormData: true });
     };
 
     const Field = ({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) => (
@@ -65,9 +67,12 @@ export default function SettingsEdit({ settings }: Props) {
                             <Field label="Site Name">
                                 <input className={inputClass} value={data.site_name} onChange={(e) => setData('site_name', e.target.value)} placeholder="ShoppyDrive" />
                             </Field>
-                            <Field label="Logo URL">
-                                <input type="url" className={inputClass} value={data.logo} onChange={(e) => setData('logo', e.target.value)} />
-                                {data.logo && <img src={data.logo} alt="Logo" className="mt-2 h-12 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
+                            <Field label="Brand Logo" hint="Displayed in the website header and CMS. JPG, PNG, or WEBP — max 2 MB.">
+                                <ImageUpload
+                                    value={data.logo}
+                                    onChange={(file) => setData('logo', file)}
+                                    previewClassName="h-32"
+                                />
                             </Field>
                             <Field label="Currency Symbol">
                                 <input className={`${inputClass} max-w-[120px]`} value={data.currency_symbol} onChange={(e) => setData('currency_symbol', e.target.value)} placeholder="৳" />

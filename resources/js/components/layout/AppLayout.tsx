@@ -22,13 +22,54 @@ export default function AppLayout({ children }: AppLayoutProps): React.JSX.Eleme
     const compareItems = useUiStore((state) => state.compareItems);
     const setWishlist = useWishlistStore((state) => state.setWishlist);
 
-    // Sync wishlist from server on every navigation
+    // Sync wishlist from server; merge guest wishlist into account on login
     useEffect(() => {
-        const ids = page.props.wishlist_ids;
-        if (Array.isArray(ids)) {
-            setWishlist(ids);
+        const user = page.props.auth?.user;
+
+        // Guests: never override localStorage wishlist from server
+        if (!user) return;
+
+        const serverIds: number[] = Array.isArray(page.props.wishlist_ids)
+            ? (page.props.wishlist_ids as number[])
+            : [];
+
+        const pendingRaw = localStorage.getItem('shoppydrive.wishlist.pending_merge');
+        if (pendingRaw) {
+            localStorage.removeItem('shoppydrive.wishlist.pending_merge');
+            try {
+                const guestIds: number[] = JSON.parse(pendingRaw);
+                const toMerge = guestIds.filter((id) => !serverIds.includes(id));
+                if (toMerge.length > 0) {
+                    // Optimistically show merged list while API call is in flight
+                    setWishlist([...new Set([...serverIds, ...guestIds])]);
+                    fetch(route('wishlist.sync'), {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-XSRF-TOKEN': decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? ''),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({ ids: toMerge }),
+                    })
+                        .then((res) => (res.ok ? res.json() : null))
+                        .then((data) => {
+                            if (data?.wishlist_ids) {
+                                useWishlistStore.getState().setWishlist(data.wishlist_ids);
+                            }
+                        })
+                        .catch(() => {});
+                    return;
+                }
+            } catch {
+                // malformed JSON — ignore and fall through to normal sync
+            }
         }
-    }, [page.props.wishlist_ids]);
+
+        setWishlist(serverIds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page.props.wishlist_ids, page.props.auth?.user?.id]);
 
     return (
         <div className="flex min-h-screen flex-col bg-[var(--color-surface)] text-[var(--color-text-primary)]">

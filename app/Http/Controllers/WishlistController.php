@@ -62,6 +62,24 @@ class WishlistController extends Controller
         ]);
     }
 
+    public function sync(Request $request): JsonResponse
+    {
+        $request->validate([
+            'ids' => ['required', 'array', 'max:200'],
+            'ids.*' => ['integer', 'exists:products,id'],
+        ]);
+
+        $userId = $request->user()->id;
+
+        foreach ($request->input('ids', []) as $productId) {
+            Wishlist::firstOrCreate(['user_id' => $userId, 'product_id' => $productId]);
+        }
+
+        $wishlistIds = Wishlist::where('user_id', $userId)->pluck('product_id')->toArray();
+
+        return response()->json(['wishlist_ids' => $wishlistIds]);
+    }
+
     public function toggle(Request $request): JsonResponse
     {
         $request->validate([

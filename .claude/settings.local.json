@@ -76,7 +76,12 @@
       "Bash(vendor/bin/pint --dirty --format agent app/Http/Middleware/HandleInertiaRequests.php)",
       "Bash(vendor/bin/pint bootstrap/providers.php --format agent)",
       "Bash(php -r ' *)",
-      "Bash(php /tmp/test_sms.php)"
+      "Bash(php /tmp/test_sms.php)",
+      "Bash(openssl rand *)",
+      "Bash(echo \"\")",
+      "Bash(echo \"SMS_FORWARDER_TOKEN=d6c7a48d09a1dd117f291aee518488fc39f2cd8030505d750ee056f68312b7b0\")",
+      "Bash(xargs ls)",
+      "Bash(grep *)"
     ]
   },
   "enableAllProjectMcpServers": true,

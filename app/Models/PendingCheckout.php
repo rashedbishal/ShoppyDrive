@@ -13,6 +13,8 @@ class PendingCheckout extends Model
         'token',
         'user_id',
         'cart_id',
+        'landing_page_id',
+        'guest_token',
         'checkout_data',
         'order_number',
         'expires_at',

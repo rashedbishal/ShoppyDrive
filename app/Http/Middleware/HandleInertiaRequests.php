@@ -102,6 +102,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
                 'info' => $request->session()->get('info'),
+                'newToken' => $request->session()->get('newToken'),
             ],
             'homepage_settings' => fn () => HomepageSetting::orderBy('sort_order')->get()->keyBy('section_key'),
             'hero_slides' => fn () => HeroSlide::where('is_active', true)->orderBy('sort_order')->get(),

@@ -1,4 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
+import type { AppSettings } from '@/types';
 import {
     Award,
     Folder,
@@ -8,11 +9,14 @@ import {
     LogOut,
     Menu,
     MessageSquare,
+    MonitorPlay,
     Package,
     Settings,
     ShoppingCart,
+    Smartphone,
     Star,
     Tag,
+    UserCog,
     Users,
     X,
     Zap,
@@ -51,7 +55,8 @@ const navSections = [
     {
         label: 'Content',
         items: [
-            { label: 'Homepage', href: '/admin/homepage', icon: LayoutTemplate, extraMatches: ['/admin/hero-slides', '/admin/promotional-banners'] },
+            { label: 'Homepage', href: '/admin/homepage', icon: LayoutTemplate, exact: false, extraMatches: ['/admin/hero-slides', '/admin/promotional-banners'] },
+            { label: 'Landing Pages', href: '/admin/landing-pages', icon: MonitorPlay, exact: false, extraMatches: [] as string[] },
         ],
     },
     {
@@ -64,20 +69,26 @@ const navSections = [
     {
         label: 'System',
         items: [
-            { label: 'Settings', href: '/admin/settings', icon: Settings, extraMatches: [] as string[] },
+            { label: 'Admins', href: '/admin/admins', icon: UserCog, exact: false, extraMatches: [] as string[] },
+            { label: 'Settings', href: '/admin/settings', icon: Settings, exact: true, extraMatches: [] as string[] },
+            { label: 'SMS Forwarder', href: '/admin/settings/sms-forwarder', icon: Smartphone, exact: false, extraMatches: [] as string[] },
         ],
     },
 ];
 
-function SidebarContent({ currentUrl, onClose }: { currentUrl: string; onClose?: () => void }) {
+function SidebarContent({ currentUrl, logoUrl, onClose }: { currentUrl: string; logoUrl?: string | null; onClose?: () => void }) {
     return (
         <div className="flex h-full flex-col">
             {/* Logo */}
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                 <Link href="/admin/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
-                    <span className="flex size-8 items-center justify-center rounded-xl bg-[#c8102e]">
-                        <AppLogoIcon className="size-4 fill-current text-white" />
-                    </span>
+                    {logoUrl ? (
+                        <img src={logoUrl} alt="Logo" className="size-8 rounded-xl object-contain" />
+                    ) : (
+                        <span className="flex size-8 items-center justify-center rounded-xl bg-[#c8102e]">
+                            <AppLogoIcon className="size-4 fill-current text-white" />
+                        </span>
+                    )}
                     <div className="leading-none">
                         <p className="text-[14px] font-bold text-slate-900">ShoppyDrive</p>
                         <p className="text-[11px] text-slate-400">Admin Panel</p>
@@ -98,7 +109,7 @@ function SidebarContent({ currentUrl, onClose }: { currentUrl: string; onClose?:
                             {section.label}
                         </p>
                         {section.items.map((item) => {
-                            const isActive = currentUrl.startsWith(item.href) || item.extraMatches.some(m => currentUrl.startsWith(m));
+                            const isActive = (item.exact ? currentUrl === item.href : currentUrl.startsWith(item.href)) || item.extraMatches.some(m => currentUrl.startsWith(m));
                             const Icon = item.icon;
                             return (
                                 <Link
@@ -164,6 +175,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const page = usePage<SharedPageProps>();
     const admin = page.props.auth?.admin;
     const currentUrl = page.url;
+    const logoUrl = (page.props.settings as AppSettings)?.logo ?? null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { toasts, dismiss } = useSmsPolling();
     const handleDismiss = useCallback((key: number) => dismiss(key), [dismiss]);
@@ -173,8 +185,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
         <div className="flex min-h-screen bg-slate-50">
             {/* Desktop sidebar */}
-            <aside className="hidden w-56 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
-                <SidebarContent currentUrl={currentUrl} />
+            <aside className="hidden w-56 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex sticky top-0 h-screen">
+                <SidebarContent currentUrl={currentUrl} logoUrl={logoUrl} />
             </aside>
 
             {/* Mobile sidebar overlay */}
@@ -182,7 +194,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="fixed inset-0 z-50 lg:hidden">
                     <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
                     <aside className="absolute left-0 top-0 h-full w-56 bg-white shadow-xl">
-                        <SidebarContent currentUrl={currentUrl} onClose={() => setSidebarOpen(false)} />
+                        <SidebarContent currentUrl={currentUrl} logoUrl={logoUrl} onClose={() => setSidebarOpen(false)} />
                     </aside>
                 </div>
             )}

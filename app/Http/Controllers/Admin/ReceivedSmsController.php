@@ -7,7 +7,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ReceivedSms;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,5 +48,20 @@ class ReceivedSmsController extends Controller
             'sms' => $sms,
             'filters' => $request->only(['search', 'matched']),
         ]);
+    }
+
+    public function destroy(ReceivedSms $receivedSms, Request $request): RedirectResponse
+    {
+        $request->validate(['password' => ['required', 'string']]);
+
+        $currentAdmin = Auth::guard('admin')->user();
+
+        if (! Hash::check($request->password, $currentAdmin->password)) {
+            return back()->withErrors(['password' => 'Incorrect password.']);
+        }
+
+        $receivedSms->delete();
+
+        return back()->with('success', 'SMS deleted successfully.');
     }
 }

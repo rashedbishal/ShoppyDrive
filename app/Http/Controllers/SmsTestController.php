@@ -40,6 +40,12 @@ class SmsTestController extends Controller
 
     public function receive(Request $request): JsonResponse
     {
+        $token = $request->bearerToken();
+
+        if (! $token || ! hash_equals(config('services.sms_forwarder.token'), $token)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         $content = (string) $request->input('content', '');
         $parsed = $this->parser->parse($content);
 

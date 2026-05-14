@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CouponController;
@@ -11,12 +12,14 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FlashSaleController;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\HomepageController;
+use App\Http\Controllers\Admin\LandingPageController as AdminLandingPageController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\PromotionalBannerController;
 use App\Http\Controllers\Admin\ReceivedSmsController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\SmsForwarderSettingsController;
 use App\Http\Controllers\Admin\SmsPatternController;
 use App\Http\Controllers\Admin\SubCategoryController;
 use Illuminate\Support\Facades\Route;
@@ -51,7 +54,14 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
 
+    Route::get('settings/sms-forwarder', [SmsForwarderSettingsController::class, 'index'])->name('settings.sms-forwarder.index');
+    Route::post('settings/sms-forwarder/regenerate', [SmsForwarderSettingsController::class, 'regenerate'])->name('settings.sms-forwarder.regenerate');
+
+    Route::resource('admins', AdminController::class)->except(['show']);
+    Route::resource('landing-pages', AdminLandingPageController::class)->except(['show'])->parameters(['landing-pages' => 'landingPage']);
+
     Route::get('received-sms', [ReceivedSmsController::class, 'index'])->name('received-sms.index');
+    Route::delete('received-sms/{receivedSms}', [ReceivedSmsController::class, 'destroy'])->name('received-sms.destroy');
     Route::get('sms/poll', [ReceivedSmsController::class, 'poll'])->name('sms.poll');
 
     Route::get('sms-patterns', [SmsPatternController::class, 'index'])->name('sms-patterns.index');

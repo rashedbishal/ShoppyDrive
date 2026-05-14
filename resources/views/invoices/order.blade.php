@@ -238,7 +238,7 @@
             <td style="padding-right: 13px;">
                 <div class="col-label">Billed To</div>
                 <div class="info-panel">
-                    <div class="cust-name">{{ $addr['name'] ?? $order->user->name }}</div>
+                    <div class="cust-name">{{ $addr['name'] ?? $order->user?->name ?? '' }}</div>
                     @if(!empty($addr['phone']))
                         <p>{{ $addr['phone'] }}</p>
                     @endif
@@ -249,7 +249,10 @@
                             {{ $addr['country'] ?? '' }}
                         </p>
                     @endif
-                    <p>{{ $order->user->email }}</p>
+                    @php $email = !empty($addr['email']) ? $addr['email'] : $order->user?->email; @endphp
+                    @if($email)
+                        <p>{{ $email }}</p>
+                    @endif
                 </div>
             </td>
             <td style="padding-left: 13px;">

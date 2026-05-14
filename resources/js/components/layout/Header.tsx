@@ -146,9 +146,17 @@ export default function Header(): React.JSX.Element {
 
                         {/* Logo */}
                         <Link href="/" className="flex shrink-0 items-center gap-3">
-                            <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-secondary)] text-white shadow-sm">
-                                <AppLogoIcon className="size-5 fill-current text-white" />
-                            </span>
+                            {settings?.logo ? (
+                                <img
+                                    src={settings.logo}
+                                    alt={siteName}
+                                    className="size-10 rounded-xl object-contain"
+                                />
+                            ) : (
+                                <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-secondary)] text-white shadow-sm">
+                                    <AppLogoIcon className="size-5 fill-current text-white" />
+                                </span>
+                            )}
                             <span className="hidden flex-col leading-none sm:flex">
                                 <span className="text-[17px] font-bold tracking-tight text-[var(--color-text-primary)]">
                                     {siteName}

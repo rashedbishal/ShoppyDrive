@@ -1,7 +1,8 @@
 import { Head, Link, router, usePage, usePoll } from '@inertiajs/react';
-import { MessageSquare, Search } from 'lucide-react';
+import { MessageSquare, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import type { PaginatedData } from '@/types';
@@ -24,10 +25,90 @@ type Props = {
     filters: { search?: string; matched?: string };
 };
 
+function DeleteModal({
+    sms,
+    onClose,
+}: {
+    sms: ReceivedSms;
+    onClose: () => void;
+}) {
+    const { props } = usePage<any>();
+    const errors = (props.errors ?? {}) as Record<string, string>;
+    const [password, setPassword] = useState('');
+    const [processing, setProcessing] = useState(false);
+
+    const handleConfirm = () => {
+        setProcessing(true);
+        router.delete(route('admin.received-sms.destroy', sms.id), {
+            data: { password },
+            preserveScroll: true,
+            onSuccess: () => onClose(),
+            onError: () => setProcessing(false),
+            onFinish: () => setProcessing(false),
+        });
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+            <div className="relative z-10 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+                <div className="mb-4 flex items-start gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
+                        <Trash2 className="size-5 text-red-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-base font-semibold text-slate-900">Delete SMS</h2>
+                        <p className="mt-0.5 text-sm text-slate-500">
+                            This action cannot be undone. Enter your admin password to confirm.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="mb-1 rounded-lg bg-slate-50 px-3 py-2.5 text-xs text-slate-600 line-clamp-2">
+                    {sms.content}
+                </div>
+                <p className="mb-4 text-[11px] text-slate-400">From: {sms.sender}</p>
+
+                <div className="mb-4">
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Your Password</label>
+                    <input
+                        type="password"
+                        autoFocus
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && !processing && handleConfirm()}
+                        placeholder="Enter your admin password"
+                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:border-red-400 focus:outline-none focus:ring-1 focus:ring-red-400"
+                    />
+                    {errors.password && (
+                        <p className="mt-1 text-xs font-medium text-red-600">{errors.password}</p>
+                    )}
+                </div>
+
+                <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={processing}>
+                        Cancel
+                    </Button>
+                    <Button
+                        type="button"
+                        size="sm"
+                        disabled={!password || processing}
+                        onClick={handleConfirm}
+                        className="bg-red-600 text-white hover:bg-red-700"
+                    >
+                        {processing ? 'Deleting…' : 'Delete SMS'}
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function ReceivedSmsIndex({ sms, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const { props } = usePage<any>();
     const flash = props.flash as { success?: string } | undefined;
+    const [deletingItem, setDeletingItem] = useState<ReceivedSms | null>(null);
 
     usePoll(5000, { only: ['sms'], preserveScroll: true });
 
@@ -40,8 +121,12 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
     return (
         <>
             <Head title="Received SMS — Admin" />
-            <div className="space-y-5">
 
+            {deletingItem && (
+                <DeleteModal sms={deletingItem} onClose={() => setDeletingItem(null)} />
+            )}
+
+            <div className="space-y-5">
                 <div className="flex items-center justify-between">
                     <div>
                         <div className="flex items-center gap-2.5">
@@ -127,9 +212,19 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
                                             </Link>
                                         )}
                                     </div>
-                                    <p className="shrink-0 text-xs text-slate-400">
-                                        {new Date(item.received_at).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' })}
-                                    </p>
+                                    <div className="flex shrink-0 items-center gap-3">
+                                        <p className="text-xs text-slate-400">
+                                            {new Date(item.received_at).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' })}
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setDeletingItem(item)}
+                                            title="Delete SMS"
+                                            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                                        >
+                                            <Trash2 className="size-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}

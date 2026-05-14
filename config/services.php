@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'sms_forwarder' => [
+        'token' => env('SMS_FORWARDER_TOKEN', ''),
+    ],
+
 ];

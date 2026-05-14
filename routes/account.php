@@ -90,9 +90,6 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
         return $pdf->download("invoice-{$order->order_number}.pdf");
     })->name('account.orders.invoice');
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('account.wishlist');
-    Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
-    Route::post('/wishlist/clear', [WishlistController::class, 'clear'])->name('wishlist.clear');
-    Route::post('/wishlist/add-all-to-cart', [WishlistController::class, 'addAllToCart'])->name('wishlist.add-all-to-cart');
     Route::get('/addresses', [AddressController::class, 'index'])->name('account.addresses');
     Route::post('/addresses', [AddressController::class, 'store'])->name('account.addresses.store');
     Route::put('/addresses/{address}', [AddressController::class, 'update'])->name('account.addresses.update');
@@ -122,4 +119,12 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
 
         return back()->with('success', 'Your order has been cancelled.');
     })->name('account.orders.cancel');
+});
+
+// Wishlist mutations — only auth required, no email verification needed
+Route::middleware(['auth'])->prefix('account')->group(function () {
+    Route::post('/wishlist/sync', [WishlistController::class, 'sync'])->name('wishlist.sync');
+    Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+    Route::post('/wishlist/clear', [WishlistController::class, 'clear'])->name('wishlist.clear');
+    Route::post('/wishlist/add-all-to-cart', [WishlistController::class, 'addAllToCart'])->name('wishlist.add-all-to-cart');
 });
