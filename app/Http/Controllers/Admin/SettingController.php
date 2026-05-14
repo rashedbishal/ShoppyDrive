@@ -30,7 +30,7 @@ class SettingController extends Controller
             'contact_email' => ['nullable', 'email', 'max:255'],
             'contact_phone' => ['nullable', 'string', 'max:50'],
             'currency_symbol' => ['nullable', 'string', 'max:10'],
-            'logo' => ['nullable', 'image', 'max:2048'],
+            'logo' => $request->hasFile('logo') ? ['image', 'max:2048'] : ['nullable'],
             'social_links' => ['nullable', 'array'],
             'social_links.facebook' => ['nullable', 'string', 'max:500'],
             'social_links.instagram' => ['nullable', 'string', 'max:500'],
