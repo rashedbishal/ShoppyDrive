@@ -72,97 +72,6 @@ export default function SmsPatternsIndex({ patterns }: Props) {
         router.delete(route('admin.sms-patterns.destroy', id));
     };
 
-    const FormCard = () => (
-        <Card className="shadow-sm border-[#c8102e]/20">
-            <CardHeader className="border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-semibold text-slate-700">
-                    {editingId === 'new' ? 'Add New Pattern' : 'Edit Pattern'}
-                </CardTitle>
-                <button type="button" onClick={() => setEditingId(null)} className="text-slate-400 hover:text-slate-700">
-                    <X className="size-4" />
-                </button>
-            </CardHeader>
-            <CardContent className="pt-4">
-                <form onSubmit={handleSubmit} className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label className="mb-1 block text-xs font-medium text-slate-600">Provider *</label>
-                            <select
-                                className={inputClass}
-                                value={data.provider}
-                                onChange={(e) => setData('provider', e.target.value as 'bkash' | 'nagad')}
-                                required
-                            >
-                                <option value="bkash">Bkash</option>
-                                <option value="nagad">Nagad</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="mb-1 block text-xs font-medium text-slate-600">Pattern Name *</label>
-                            <input className={inputClass} value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="e.g. Bkash Money Received" required />
-                            {errors.name && <p className="mt-0.5 text-xs text-red-500">{errors.name}</p>}
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="mb-1 block text-xs font-medium text-slate-600">
-                            Identifier *
-                            <span className="ml-1 font-normal text-slate-400">— unique text that appears in this SMS format</span>
-                        </label>
-                        <input className={inputClass} value={data.identifier} onChange={(e) => setData('identifier', e.target.value)} placeholder='e.g. "TrxID" or "Cash In Received."' required />
-                        {errors.identifier && <p className="mt-0.5 text-xs text-red-500">{errors.identifier}</p>}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label className="mb-1 block text-xs font-medium text-slate-600">
-                                TxnID Regex *
-                                <span className="ml-1 font-normal text-slate-400">— 1 capture group</span>
-                            </label>
-                            <input className={`${inputClass} font-mono text-xs`} value={data.txn_id_regex} onChange={(e) => setData('txn_id_regex', e.target.value)} placeholder="TrxID\s+([A-Z0-9]+)" required />
-                            {errors.txn_id_regex && <p className="mt-0.5 text-xs text-red-500">{errors.txn_id_regex}</p>}
-                        </div>
-                        <div>
-                            <label className="mb-1 block text-xs font-medium text-slate-600">
-                                Amount Regex *
-                                <span className="ml-1 font-normal text-slate-400">— 1 capture group</span>
-                            </label>
-                            <input className={`${inputClass} font-mono text-xs`} value={data.amount_regex} onChange={(e) => setData('amount_regex', e.target.value)} placeholder="received Tk\s+([\d,]+(?:\.\d+)?)" required />
-                            {errors.amount_regex && <p className="mt-0.5 text-xs text-red-500">{errors.amount_regex}</p>}
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="mb-1 block text-xs font-medium text-slate-600">Sort Order</label>
-                            <input type="number" min={0} className={inputClass} value={data.sort_order} onChange={(e) => setData('sort_order', parseInt(e.target.value) || 0)} />
-                        </div>
-                        {editingId !== 'new' && (
-                            <div className="flex items-end gap-2 pb-0.5">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={data.is_active}
-                                        onChange={(e) => setData('is_active', e.target.checked)}
-                                        className="rounded border-slate-300"
-                                    />
-                                    <span className="text-sm text-slate-700">Active</span>
-                                </label>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex justify-end gap-2 pt-1">
-                        <Button type="button" variant="outline" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
-                        <Button type="submit" size="sm" disabled={processing} className="bg-[#c8102e] text-white hover:bg-[#a50d25]">
-                            {processing ? 'Saving…' : editingId === 'new' ? 'Add Pattern' : 'Save Changes'}
-                        </Button>
-                    </div>
-                </form>
-            </CardContent>
-        </Card>
-    );
-
     return (
         <>
             <Head title="SMS Patterns — Admin" />
@@ -184,7 +93,96 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                     <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">{flash.success}</div>
                 )}
 
-                {editingId !== null && <FormCard />}
+                {editingId !== null && (
+                    <Card className="shadow-sm border-[#c8102e]/20">
+                        <CardHeader className="border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
+                                {editingId === 'new' ? 'Add New Pattern' : 'Edit Pattern'}
+                            </CardTitle>
+                            <button type="button" onClick={() => setEditingId(null)} className="text-slate-400 hover:text-slate-700">
+                                <X className="size-4" />
+                            </button>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <form onSubmit={handleSubmit} className="space-y-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1 block text-xs font-medium text-slate-600">Provider *</label>
+                                        <select
+                                            className={inputClass}
+                                            value={data.provider}
+                                            onChange={(e) => setData('provider', e.target.value as 'bkash' | 'nagad')}
+                                            required
+                                        >
+                                            <option value="bkash">Bkash</option>
+                                            <option value="nagad">Nagad</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-xs font-medium text-slate-600">Pattern Name *</label>
+                                        <input className={inputClass} value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="e.g. Bkash Money Received" required />
+                                        {errors.name && <p className="mt-0.5 text-xs text-red-500">{errors.name}</p>}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-xs font-medium text-slate-600">
+                                        Identifier *
+                                        <span className="ml-1 font-normal text-slate-400">— unique text that appears in this SMS format</span>
+                                    </label>
+                                    <input className={inputClass} value={data.identifier} onChange={(e) => setData('identifier', e.target.value)} placeholder='e.g. "TrxID" or "Cash In Received."' required />
+                                    {errors.identifier && <p className="mt-0.5 text-xs text-red-500">{errors.identifier}</p>}
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1 block text-xs font-medium text-slate-600">
+                                            TxnID Regex *
+                                            <span className="ml-1 font-normal text-slate-400">— 1 capture group</span>
+                                        </label>
+                                        <input className={`${inputClass} font-mono text-xs`} value={data.txn_id_regex} onChange={(e) => setData('txn_id_regex', e.target.value)} placeholder="TrxID\s+([A-Z0-9]+)" required />
+                                        {errors.txn_id_regex && <p className="mt-0.5 text-xs text-red-500">{errors.txn_id_regex}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-xs font-medium text-slate-600">
+                                            Amount Regex *
+                                            <span className="ml-1 font-normal text-slate-400">— 1 capture group</span>
+                                        </label>
+                                        <input className={`${inputClass} font-mono text-xs`} value={data.amount_regex} onChange={(e) => setData('amount_regex', e.target.value)} placeholder="received Tk\s+([\d,]+(?:\.\d+)?)" required />
+                                        {errors.amount_regex && <p className="mt-0.5 text-xs text-red-500">{errors.amount_regex}</p>}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1 block text-xs font-medium text-slate-600">Sort Order</label>
+                                        <input type="number" min={0} className={inputClass} value={data.sort_order} onChange={(e) => setData('sort_order', parseInt(e.target.value) || 0)} />
+                                    </div>
+                                    {editingId !== 'new' && (
+                                        <div className="flex items-end gap-2 pb-0.5">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={data.is_active}
+                                                    onChange={(e) => setData('is_active', e.target.checked)}
+                                                    className="rounded border-slate-300"
+                                                />
+                                                <span className="text-sm text-slate-700">Active</span>
+                                            </label>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex justify-end gap-2 pt-1">
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
+                                    <Button type="submit" size="sm" disabled={processing} className="bg-[#c8102e] text-white hover:bg-[#a50d25]">
+                                        {processing ? 'Saving…' : editingId === 'new' ? 'Add Pattern' : 'Save Changes'}
+                                    </Button>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
+                )}
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     {patterns.length === 0 ? (
