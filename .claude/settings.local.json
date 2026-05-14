@@ -81,7 +81,9 @@
       "Bash(echo \"\")",
       "Bash(echo \"SMS_FORWARDER_TOKEN=d6c7a48d09a1dd117f291aee518488fc39f2cd8030505d750ee056f68312b7b0\")",
       "Bash(xargs ls)",
-      "Bash(grep *)"
+      "Bash(grep *)",
+      "Bash(sed -n '1,10p' \"/media/rashed/HDD Drive 1/ShoppyDrive/resources/js/components/shared/SearchOverlay.tsx\")",
+      "Bash(sed -n '45,100p' \"/media/rashed/HDD Drive 1/ShoppyDrive/resources/js/components/shared/SearchOverlay.tsx\")"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -11,6 +11,7 @@ import {
     MessageSquare,
     MonitorPlay,
     Package,
+    Search,
     Settings,
     ShoppingCart,
     Smartphone,
@@ -57,6 +58,7 @@ const navSections = [
         items: [
             { label: 'Homepage', href: '/admin/homepage', icon: LayoutTemplate, exact: false, extraMatches: ['/admin/hero-slides', '/admin/promotional-banners'] },
             { label: 'Landing Pages', href: '/admin/landing-pages', icon: MonitorPlay, exact: false, extraMatches: [] as string[] },
+            { label: 'Search Keywords', href: '/admin/popular-keywords', icon: Search, exact: false, extraMatches: [] as string[] },
         ],
     },
     {

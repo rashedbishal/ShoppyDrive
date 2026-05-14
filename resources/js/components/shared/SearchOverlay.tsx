@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import React from 'react';
@@ -13,6 +14,11 @@ export function SearchOverlay({
     isOpen,
     onClose,
 }: SearchOverlayProps): React.JSX.Element {
+    const popularKeywords = (usePage().props as any).popular_keywords as string[] | undefined;
+    const popular = popularKeywords && popularKeywords.length > 0
+        ? popularKeywords
+        : ['Smartphone', 'Headphones', 'Laptops', 'Watches', 'Speakers', 'Accessories'];
+
     // Prevent scrolling when open
     React.useEffect(() => {
         if (isOpen) {
@@ -56,7 +62,7 @@ export function SearchOverlay({
                                     Popular Searches
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {['Smartphone', 'Headphones', 'Laptops', 'Watches', 'Speakers', 'Accessories'].map((term) => (
+                                    {popular.map((term) => (
                                         <button
                                             key={term}
                                             className="px-4 py-2 rounded-full bg-[var(--color-surface-alt)] text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)] transition-all"

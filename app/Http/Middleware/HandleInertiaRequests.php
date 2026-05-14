@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\HeroSlide;
 use App\Models\HomepageSetting;
 use App\Models\Order;
+use App\Models\PopularKeyword;
 use App\Models\PromotionalBanner;
 use App\Models\Setting;
 use App\Models\Wishlist;
@@ -98,6 +99,11 @@ class HandleInertiaRequests extends Middleware
                     })(),
                 ];
             },
+            'popular_keywords' => fn () => PopularKeyword::where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->pluck('keyword')
+                ->toArray(),
             'flash' => fn () => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, Layers, LayoutGrid, Search as SearchIcon, Tag, TrendingUp, X } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -42,7 +42,7 @@ type FlatItem =
     | { kind: 'subcategory'; slug: string }
     | { kind: 'seeAll' };
 
-const POPULAR = ['Smartphone', 'Headphones', 'Laptop', 'Watch', 'Speaker', 'Accessories'];
+const POPULAR_FALLBACK = ['Smartphone', 'Headphones', 'Laptop', 'Watch', 'Speaker', 'Accessories'];
 
 interface SearchBarProps {
     className?: string;
@@ -51,6 +51,8 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ className, isMobile = false, onSearch }: SearchBarProps): React.JSX.Element {
+    const popularKeywords = (usePage().props as any).popular_keywords as string[] | undefined;
+    const popular = popularKeywords && popularKeywords.length > 0 ? popularKeywords : POPULAR_FALLBACK;
     const [query, setQuery] = useState('');
     const [products, setProducts] = useState<SuggestionProduct[]>([]);
     const [brands, setBrands] = useState<SuggestionBrand[]>([]);
@@ -453,7 +455,7 @@ export function SearchBar({ className, isMobile = false, onSearch }: SearchBarPr
                                     </p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    {POPULAR.map(term => (
+                                    {popular.map(term => (
                                         <button
                                             key={term}
                                             onClick={() => {
