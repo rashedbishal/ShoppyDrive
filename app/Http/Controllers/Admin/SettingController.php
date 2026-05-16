@@ -29,6 +29,7 @@ class SettingController extends Controller
             'site_name' => ['nullable', 'string', 'max:255'],
             'contact_email' => ['nullable', 'email', 'max:255'],
             'contact_phone' => ['nullable', 'string', 'max:50'],
+            'contact_address' => ['nullable', 'string', 'max:500'],
             'currency_symbol' => ['nullable', 'string', 'max:10'],
             'logo' => $request->hasFile('logo') ? ['image', 'max:2048'] : ['nullable'],
             'social_links' => ['nullable', 'array'],
@@ -55,7 +56,7 @@ class SettingController extends Controller
         }
 
         $fields = [
-            'site_name', 'contact_email', 'contact_phone', 'currency_symbol',
+            'site_name', 'contact_email', 'contact_phone', 'contact_address', 'currency_symbol',
             'social_links', 'google_analytics_id', 'meta_pixel_id',
             'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number',
         ];
@@ -73,7 +74,7 @@ class SettingController extends Controller
     {
         return match (true) {
             in_array($key, ['site_name', 'logo', 'currency_symbol']) => 'general',
-            in_array($key, ['contact_email', 'contact_phone']) => 'contact',
+            in_array($key, ['contact_email', 'contact_phone', 'contact_address']) => 'contact',
             in_array($key, ['social_links']) => 'social',
             in_array($key, ['whatsapp_number', 'messenger_link']) => 'chat_widgets',
             in_array($key, ['bkash_number', 'nagad_number']) => 'payments',

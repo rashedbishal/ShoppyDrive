@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, ChevronLeft, Copy, Smartphone } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronLeft, Copy, Lock, Smartphone } from 'lucide-react';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
+import bkashImg from '@/assets/bkash.png';
+import nagadImg from '@/assets/nagad.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,26 +19,41 @@ interface Props {
 
 type Provider = 'bkash' | 'nagad';
 
-const PROVIDERS: { id: Provider; label: string; color: string; bg: string; border: string; numberLabel: string; txnLabel: string; txnPlaceholder: string }[] = [
+const PROVIDERS: {
+    id: Provider;
+    label: string;
+    brandColor: string;
+    color: string;
+    bg: string;
+    border: string;
+    numberLabel: string;
+    txnLabel: string;
+    txnPlaceholder: string;
+    logo: string;
+}[] = [
     {
         id: 'bkash',
-        label: 'Bkash',
-        color: 'text-pink-700',
-        bg: 'bg-pink-50',
-        border: 'border-pink-300',
-        numberLabel: 'Bkash Number',
+        label: 'bKash',
+        brandColor: '#E2136E',
+        color: 'text-[#E2136E]',
+        bg: 'bg-[#fdf0f6]',
+        border: 'border-[#E2136E]',
+        numberLabel: 'bKash Number',
         txnLabel: 'Transaction ID (TrxID)',
         txnPlaceholder: 'e.g. DED66E1DFW',
+        logo: bkashImg,
     },
     {
         id: 'nagad',
         label: 'Nagad',
-        color: 'text-orange-700',
-        bg: 'bg-orange-50',
-        border: 'border-orange-300',
+        brandColor: '#F4821F',
+        color: 'text-[#F4821F]',
+        bg: 'bg-[#fff5ec]',
+        border: 'border-[#F4821F]',
         numberLabel: 'Nagad Number',
         txnLabel: 'Transaction ID (TxnID)',
         txnPlaceholder: 'e.g. 75AIB4WJ',
+        logo: nagadImg,
     },
 ];
 
@@ -72,12 +89,16 @@ export default function MobilePayment({ token, amount, orderNumber, bkashNumber,
     };
 
     return (
-        <CheckoutLayout>
+        <CheckoutLayout hideHeader>
             <Head title="Complete Payment" />
             <div className="mx-auto max-w-lg space-y-5">
 
                 {/* Header */}
                 <div className="text-center">
+                    <div className="mb-4 flex items-center justify-center gap-1.5 text-[var(--color-text-muted)]">
+                        <Lock size={14} />
+                        <span className="text-xs font-bold uppercase tracking-widest">Secure Checkout</span>
+                    </div>
                     <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-100">
                         <Smartphone size={28} className="text-pink-600" />
                     </div>
@@ -109,21 +130,24 @@ export default function MobilePayment({ token, amount, orderNumber, bkashNumber,
                                     type="button"
                                     disabled={!number}
                                     onClick={() => { setProvider(p.id); setTransactionId(''); }}
-                                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-5 transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
-                                        isSelected
-                                            ? `${p.border} ${p.bg}`
-                                            : 'border-[var(--color-border)] bg-white hover:border-slate-300'
-                                    }`}
+                                    style={{ borderColor: p.brandColor }}
+                                    className="group relative flex h-24 items-center justify-center overflow-hidden rounded-xl border-2 bg-white transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                     {isSelected && (
                                         <span className="absolute right-2 top-2">
-                                            <CheckCircle2 size={16} className={p.color} />
+                                            <CheckCircle2 size={16} style={{ color: p.brandColor }} />
                                         </span>
                                     )}
-                                    <span className={`text-lg font-extrabold ${isSelected ? p.color : 'text-[var(--color-text-primary)]'}`}>
-                                        {p.label}
-                                    </span>
-                                    {!number && <span className="text-[10px] text-slate-400">Not configured</span>}
+                                    <img
+                                        src={p.logo}
+                                        alt={p.label}
+                                        className="h-full w-full object-contain p-1 transition-transform duration-300 ease-in-out group-hover:scale-110"
+                                    />
+                                    {!number && (
+                                        <span className="absolute bottom-1.5 text-[10px] text-slate-400">
+                                            Not configured
+                                        </span>
+                                    )}
                                 </button>
                             );
                         })}

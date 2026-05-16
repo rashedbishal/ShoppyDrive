@@ -77,6 +77,7 @@ export interface AppSettings {
     currency_symbol: string;
     contact_email: string;
     contact_phone?: string | null;
+    contact_address?: string | null;
     social_links: {
         facebook?: string;
         instagram?: string;

@@ -96,7 +96,7 @@ export default function LandingPageEdit({ page, sections: initialSections, produ
                             <div>
                                 <label className={labelClass}>URL Slug</label>
                                 <div className="flex items-center rounded-lg border border-slate-200 focus-within:ring-1 focus-within:ring-[#c8102e] overflow-hidden">
-                                    <span className="bg-slate-50 px-2 text-xs text-slate-400 border-r border-slate-200 h-9 flex items-center shrink-0">/lp/</span>
+                                    <span className="bg-slate-50 px-2 text-xs text-slate-400 border-r border-slate-200 h-9 flex items-center shrink-0">/sentinel/</span>
                                     <input className="flex-1 h-9 px-2 text-sm font-mono focus:outline-none" value={data.slug} onChange={(e) => setData('slug', e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, ''))} />
                                 </div>
                                 {errors.slug && <p className="mt-1 text-xs text-red-600">{errors.slug}</p>}
@@ -169,7 +169,7 @@ export default function LandingPageEdit({ page, sections: initialSections, produ
                     <SectionWrap title="Product Description" enabled={sec.description.enabled} onToggle={() => setSec({ description: { ...sec.description, enabled: !sec.description.enabled } })}>
                         <div>
                             <label className={labelClass}>Section Title</label>
-                            <input className={inputClass} value={sec.description.title} onChange={(e) => setSec({ description: { ...sec.description, title: e.target.value } })} />
+                            <textarea rows={6} className={textareaClass} value={sec.description.title} onChange={(e) => setSec({ description: { ...sec.description, title: e.target.value } })} />
                         </div>
                         <div className="flex items-center gap-2">
                             <input type="checkbox" id="use_prod_desc" checked={sec.description.use_product_description} onChange={(e) => setSec({ description: { ...sec.description, use_product_description: e.target.checked } })} className="rounded border-slate-300" />

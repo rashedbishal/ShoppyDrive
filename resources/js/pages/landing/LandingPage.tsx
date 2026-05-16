@@ -1,5 +1,7 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle, ChevronDown, ChevronUp, Play, ShoppingBag, Star, Truck } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ChevronDown, ChevronUp, Mail, MapPin, Phone, Play, ShoppingBag, Star, Truck } from 'lucide-react';
+import SocialChatWidget from '@/components/layout/SocialChatWidget';
+import type { SharedPageProps } from '@/types';
 import { useEffect, useState } from 'react';
 
 type ProductMedia = { id: number; path: string; type: 'image' | 'video'; is_primary: boolean };
@@ -272,6 +274,7 @@ function OrderForm({ product, slug, bkashNumber, nagadNumber }: { product: Props
 
 export default function LandingPageShow({ page, product, bkashNumber, nagadNumber, siteName, siteLogo, pendingPayment }: Props) {
     const sec = page.sections;
+    const { settings } = usePage<SharedPageProps>().props;
 
     // Scroll payment section into view when pending payment is active
     useEffect(() => {
@@ -299,7 +302,7 @@ export default function LandingPageShow({ page, product, bkashNumber, nagadNumbe
                     <div className="mx-auto flex max-w-6xl items-center justify-between">
                         <div className="flex items-center gap-2">
                             {siteLogo ? (
-                                <img src={siteLogo} alt={siteName} className="h-8 w-auto object-contain" />
+                                <img src={siteLogo} alt={siteName} className="h-14 w-auto object-contain" />
                             ) : (
                                 <span className="flex size-8 items-center justify-center rounded-lg bg-[#c8102e]">
                                     <ShoppingBag className="size-4 text-white" />
@@ -424,7 +427,7 @@ export default function LandingPageShow({ page, product, bkashNumber, nagadNumbe
                             {/* Description */}
                             {sec.description?.enabled && (
                                 <div>
-                                    <h2 className="text-xl font-bold text-slate-900 mb-3">{sec.description.title}</h2>
+                                    <h2 className="text-xl font-bold text-slate-900 mb-3 whitespace-pre-line">{sec.description.title}</h2>
                                     {sec.description.use_product_description ? (
                                         <div className="prose prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: product.description ?? '' }} />
                                     ) : (
@@ -507,19 +510,63 @@ export default function LandingPageShow({ page, product, bkashNumber, nagadNumbe
 
                 {/* Footer */}
                 {sec.footer?.enabled && (
-                    <footer className="bg-slate-900 py-8 px-4 text-center">
-                        <div className="flex items-center justify-center gap-2 mb-3">
-                            {siteLogo ? (
-                                <img src={siteLogo} alt={siteName} className="h-6 w-auto object-contain" />
-                            ) : (
-                                <ShoppingBag className="size-5 text-white" />
-                            )}
-                            <span className="text-sm font-bold text-white">{siteName}</span>
+                    <footer className="bg-slate-900 pt-10 pb-6 px-4">
+                        <div className="mx-auto max-w-6xl">
+                            {/* Top row: brand + contact */}
+                            <div className="flex flex-col items-center gap-8 sm:flex-row sm:items-start sm:justify-between">
+                                {/* Brand */}
+                                <div className="flex flex-col items-center gap-3 sm:items-start">
+                                    <div className="flex items-center gap-2">
+                                        {siteLogo ? (
+                                            <img src={siteLogo} alt={siteName} className="h-14 w-auto object-contain" />
+                                        ) : (
+                                            <ShoppingBag className="size-6 text-white" />
+                                        )}
+                                        <span className="text-base font-bold text-white">{siteName}</span>
+                                    </div>
+                                    {sec.footer.text && (
+                                        <p className="text-xs text-slate-400 whitespace-pre-line text-center sm:text-left max-w-xs">
+                                            {sec.footer.text}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Contact info */}
+                                <div className="flex flex-col items-center gap-3 sm:items-end">
+                                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Contact Us</p>
+                                    {settings.contact_phone && (
+                                        <a href={`tel:${settings.contact_phone}`} className="flex items-center gap-2 text-sm text-slate-300 hover:text-white transition-colors">
+                                            <Phone size={14} className="text-slate-500 shrink-0" />
+                                            {settings.contact_phone}
+                                        </a>
+                                    )}
+                                    {settings.contact_email && (
+                                        <a href={`mailto:${settings.contact_email}`} className="flex items-center gap-2 text-sm text-slate-300 hover:text-white transition-colors">
+                                            <Mail size={14} className="text-slate-500 shrink-0" />
+                                            {settings.contact_email}
+                                        </a>
+                                    )}
+                                    {settings.contact_address && (
+                                        <p className="flex items-start gap-2 text-sm text-slate-300 text-right max-w-xs">
+                                            <MapPin size={14} className="text-slate-500 shrink-0 mt-0.5" />
+                                            {settings.contact_address}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Divider + copyright */}
+                            <div className="mt-8 border-t border-slate-800 pt-5 text-center">
+                                <p className="text-xs text-slate-500">
+                                    &copy; {new Date().getFullYear()} {siteName}. All rights reserved.
+                                </p>
+                            </div>
                         </div>
-                        {sec.footer.text && <p className="text-xs text-slate-400 whitespace-pre-line">{sec.footer.text}</p>}
                     </footer>
                 )}
             </div>
+
+            <SocialChatWidget />
         </>
     );
 }

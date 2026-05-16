@@ -25,11 +25,13 @@ use App\Http\Controllers\Admin\SmsPatternController;
 use App\Http\Controllers\Admin\SubCategoryController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
-Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.submit');
-Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+Route::middleware(['redirect-customer-from-admin'])->group(function (): void {
+    Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
+    Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.submit');
+    Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+});
 
-Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function (): void {
+Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::resource('products', ProductController::class);

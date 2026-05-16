@@ -53,7 +53,7 @@ export default function LandingPageCreate({ products }: Props) {
                             <div>
                                 <label className="mb-1 block text-sm font-medium text-slate-700">URL Slug</label>
                                 <div className="flex items-center rounded-lg border border-slate-200 focus-within:ring-1 focus-within:ring-[#c8102e] overflow-hidden">
-                                    <span className="bg-slate-50 px-3 text-sm text-slate-400 border-r border-slate-200 h-9 flex items-center shrink-0">/lp/</span>
+                                    <span className="bg-slate-50 px-3 text-sm text-slate-400 border-r border-slate-200 h-9 flex items-center shrink-0">/sentinel/</span>
                                     <input
                                         className="flex-1 h-9 px-3 text-sm focus:outline-none font-mono"
                                         value={data.slug}

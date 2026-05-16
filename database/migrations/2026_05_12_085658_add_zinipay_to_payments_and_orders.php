@@ -9,8 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Expand the orders.payment_method enum to include 'zinipay'
-        DB::statement("ALTER TABLE orders MODIFY payment_method ENUM('cod','zinipay') NOT NULL DEFAULT 'cod'");
+        // Expand the orders.payment_method enum to include 'zinipay' (MySQL only)
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE orders MODIFY payment_method ENUM('cod','zinipay') NOT NULL DEFAULT 'cod'");
+        }
 
         // Add gateway columns to payments (re-add what SSLCommerz migration removed, now for ZiniPay)
         Schema::table('payments', function (Blueprint $table): void {
@@ -24,7 +26,9 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE orders MODIFY payment_method ENUM('cod') NOT NULL DEFAULT 'cod'");
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE orders MODIFY payment_method ENUM('cod') NOT NULL DEFAULT 'cod'");
+        }
 
         Schema::table('payments', function (Blueprint $table): void {
             $table->dropIndex(['val_id']);

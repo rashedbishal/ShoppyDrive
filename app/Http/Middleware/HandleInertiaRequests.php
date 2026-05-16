@@ -83,6 +83,7 @@ class HandleInertiaRequests extends Middleware
                     'currency_symbol' => $db->get('currency_symbol', '৳'),
                     'contact_email' => $db->get('contact_email', 'support@shoppydrive.com'),
                     'contact_phone' => $db->get('contact_phone', '+880 1XXX XXXXXX'),
+                    'contact_address' => $db->get('contact_address'),
                     'social_links' => [
                         'facebook' => $socialLinks['facebook'] ?? null,
                         'instagram' => $socialLinks['instagram'] ?? null,

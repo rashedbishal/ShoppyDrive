@@ -18,6 +18,7 @@ export default function SettingsEdit({ settings }: Props) {
         site_name: (settings.site_name as string) ?? '',
         contact_email: (settings.contact_email as string) ?? '',
         contact_phone: (settings.contact_phone as string) ?? '',
+        contact_address: (settings.contact_address as string) ?? '',
         currency_symbol: (settings.currency_symbol as string) ?? '৳',
         logo: (settings.logo as string | null) ?? null as File | string | null,
         social_links: {
@@ -90,6 +91,9 @@ export default function SettingsEdit({ settings }: Props) {
                             </Field>
                             <Field label="Contact Phone">
                                 <input type="tel" className={inputClass} value={data.contact_phone} onChange={(e) => setData('contact_phone', e.target.value)} />
+                            </Field>
+                            <Field label="Contact Address">
+                                <textarea rows={3} className={inputClass + ' h-auto py-2 resize-none'} value={data.contact_address} onChange={(e) => setData('contact_address', e.target.value)} placeholder="e.g. 123 Main Street, Dhaka, Bangladesh" />
                             </Field>
                         </CardContent>
                     </Card>
