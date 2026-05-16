@@ -74,9 +74,13 @@ export default function Footer(): React.JSX.Element {
                     {/* Brand column */}
                     <div className="space-y-6">
                         <Link href={route('home')} className="inline-flex items-center gap-3">
-                            <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white">
-                                <AppLogoIcon className="size-5 fill-current text-white" />
-                            </span>
+                            {settings.logo ? (
+                                <img src={settings.logo} alt={settings.site_name} className="h-14 w-auto object-contain" />
+                            ) : (
+                                <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white">
+                                    <AppLogoIcon className="size-5 fill-current text-white" />
+                                </span>
+                            )}
                             <span className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">
                                 {settings.site_name}
                             </span>

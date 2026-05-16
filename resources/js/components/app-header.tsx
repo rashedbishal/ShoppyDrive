@@ -216,12 +216,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                         isAdmin={!!auth.admin}
                                     />
                                 ) : (
-                                    <div className="p-2 space-y-2">
+                                    <div className="p-2">
                                         <Link href={route('login')}>
-                                            <Button className="w-full justify-start font-bold rounded-xl" variant="ghost">Login</Button>
-                                        </Link>
-                                        <Link href={route('register')}>
-                                            <Button className="w-full justify-start font-bold rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]">Register</Button>
+                                            <Button className="w-full justify-start font-bold rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]">Login</Button>
                                         </Link>
                                     </div>
                                 )}

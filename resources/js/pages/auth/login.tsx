@@ -1,8 +1,9 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { ArrowRight, Eye, EyeOff, Lock, Mail, ShoppingBag, Star, Truck, Zap } from 'lucide-react';
 import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
+import type { SharedPageProps } from '@/types';
 
 const features = [
     { icon: ShoppingBag, text: '1,000+ premium products' },
@@ -12,6 +13,7 @@ const features = [
 ];
 
 export default function Login(): React.JSX.Element {
+    const { settings } = usePage<SharedPageProps>().props;
     const [showPassword, setShowPassword] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
@@ -45,10 +47,14 @@ export default function Login(): React.JSX.Element {
                 {/* Logo */}
                 <div className="relative z-10 p-10">
                     <Link href="/" className="inline-flex items-center gap-3">
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                            <AppLogoIcon className="size-5 fill-current text-white" />
-                        </span>
-                        <span className="text-xl font-bold text-white">ShoppyDrive</span>
+                        {settings.logo ? (
+                            <img src={settings.logo} alt={settings.site_name} className="h-10 w-auto object-contain" />
+                        ) : (
+                            <span className="flex size-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                                <AppLogoIcon className="size-5 fill-current text-white" />
+                            </span>
+                        )}
+                        <span className="text-xl font-bold text-white">{settings.site_name}</span>
                     </Link>
                 </div>
 
@@ -95,10 +101,14 @@ export default function Login(): React.JSX.Element {
                 {/* Mobile logo */}
                 <div className="mb-8 lg:hidden">
                     <Link href="/" className="inline-flex items-center gap-3">
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-[#c8102e]">
-                            <AppLogoIcon className="size-5 fill-current text-white" />
-                        </span>
-                        <span className="text-xl font-bold text-gray-900">ShoppyDrive</span>
+                        {settings.logo ? (
+                            <img src={settings.logo} alt={settings.site_name} className="h-10 w-auto object-contain" />
+                        ) : (
+                            <span className="flex size-10 items-center justify-center rounded-xl bg-[#c8102e]">
+                                <AppLogoIcon className="size-5 fill-current text-white" />
+                            </span>
+                        )}
+                        <span className="text-xl font-bold text-gray-900">{settings.site_name}</span>
                     </Link>
                 </div>
 

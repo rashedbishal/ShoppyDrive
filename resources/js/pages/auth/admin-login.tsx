@@ -1,10 +1,12 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
+import type { SharedPageProps } from '@/types';
 
 export default function AdminLogin(): React.JSX.Element {
+    const { settings } = usePage<SharedPageProps>().props;
     const [showPassword, setShowPassword] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
@@ -35,11 +37,15 @@ export default function AdminLogin(): React.JSX.Element {
 
                 <div className="relative z-10 p-10">
                     <div className="flex items-center gap-3">
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-[#c8102e]">
-                            <AppLogoIcon className="size-5 fill-current text-white" />
-                        </span>
+                        {settings.logo ? (
+                            <img src={settings.logo} alt={settings.site_name} className="h-10 w-auto object-contain" />
+                        ) : (
+                            <span className="flex size-10 items-center justify-center rounded-xl bg-[#c8102e]">
+                                <AppLogoIcon className="size-5 fill-current text-white" />
+                            </span>
+                        )}
                         <div>
-                            <p className="text-base font-bold text-white">ShoppyDrive</p>
+                            <p className="text-base font-bold text-white">{settings.site_name}</p>
                             <p className="text-xs text-gray-500">Admin Panel</p>
                         </div>
                     </div>
@@ -80,11 +86,15 @@ export default function AdminLogin(): React.JSX.Element {
                 <div className="w-full max-w-[400px]">
                     {/* Mobile logo */}
                     <div className="mb-8 flex items-center gap-3 lg:hidden">
-                        <span className="flex size-9 items-center justify-center rounded-xl bg-[#c8102e]">
-                            <AppLogoIcon className="size-4 fill-current text-white" />
-                        </span>
+                        {settings.logo ? (
+                            <img src={settings.logo} alt={settings.site_name} className="h-9 w-auto object-contain" />
+                        ) : (
+                            <span className="flex size-9 items-center justify-center rounded-xl bg-[#c8102e]">
+                                <AppLogoIcon className="size-4 fill-current text-white" />
+                            </span>
+                        )}
                         <div>
-                            <p className="text-sm font-bold text-white">ShoppyDrive</p>
+                            <p className="text-sm font-bold text-white">{settings.site_name}</p>
                             <p className="text-xs text-gray-600">Admin Panel</p>
                         </div>
                     </div>

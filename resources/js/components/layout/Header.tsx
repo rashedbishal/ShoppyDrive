@@ -150,7 +150,7 @@ export default function Header(): React.JSX.Element {
                                 <img
                                     src={settings.logo}
                                     alt={siteName}
-                                    className="size-10 rounded-xl object-contain"
+                                    className="h-14 w-auto object-contain"
                                 />
                             ) : (
                                 <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-secondary)] text-white shadow-sm">
@@ -269,17 +269,10 @@ export default function Header(): React.JSX.Element {
                                 <div className="ml-1 hidden items-center gap-2 md:flex">
                                     <Link
                                         href="/login"
-                                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--color-border)] px-4 text-sm font-medium text-[var(--color-text-primary)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+                                        className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--color-primary)]/90"
                                     >
                                         <LogIn className="size-4" />
                                         Log in
-                                    </Link>
-                                    <Link
-                                        href="/register"
-                                        className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--color-primary)]/90"
-                                    >
-                                        <User className="size-4" />
-                                        Register
                                     </Link>
                                 </div>
                             )}

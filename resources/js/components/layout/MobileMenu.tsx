@@ -145,15 +145,10 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.
                             Log out
                         </Button>
                     ) : (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            <Button asChild variant="outline" fullWidth leftIcon={<LogIn className="size-4" />}>
+                        <div>
+                            <Button asChild fullWidth leftIcon={<LogIn className="size-4" />}>
                                 <Link href={route('login')} onClick={onClose}>
                                     Log in
-                                </Link>
-                            </Button>
-                            <Button asChild fullWidth>
-                                <Link href={route('register')} onClick={onClose}>
-                                    Create account
                                 </Link>
                             </Button>
                         </div>
