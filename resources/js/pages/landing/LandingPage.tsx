@@ -295,8 +295,19 @@ export default function LandingPageShow({ page, product, bkashNumber, nagadNumbe
 
     return (
         <>
-            <Head title={page.title} />
-            <div className="min-h-screen bg-white font-sans">
+            <Head title={page.title}>
+                <style>{`
+                    @font-face {
+                        font-family: 'Kalpurush';
+                        src: url('/fonts/Kalpurush.ttf') format('truetype');
+                        font-weight: normal;
+                        font-style: normal;
+                        font-display: swap;
+                        unicode-range: U+0980-U+09FF;
+                    }
+                `}</style>
+            </Head>
+            <div className="min-h-screen bg-white" style={{ fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif, 'Kalpurush'" }}>
                 {/* Minimal header */}
                 <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/95 backdrop-blur px-4 py-3">
                     <div className="mx-auto flex max-w-6xl items-center justify-between">
