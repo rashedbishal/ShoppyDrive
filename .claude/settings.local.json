@@ -84,7 +84,10 @@
       "Bash(grep *)",
       "Bash(sed -n '1,10p' \"/media/rashed/HDD Drive 1/ShoppyDrive/resources/js/components/shared/SearchOverlay.tsx\")",
       "Bash(sed -n '45,100p' \"/media/rashed/HDD Drive 1/ShoppyDrive/resources/js/components/shared/SearchOverlay.tsx\")",
-      "Bash(php -r \"chdir\\('/media/rashed/HDD Drive 1/ShoppyDrive'\\);\")"
+      "Bash(php -r \"chdir\\('/media/rashed/HDD Drive 1/ShoppyDrive'\\);\")",
+      "Bash(vendor/bin/pint routes/web.php database/seeders/PageSeeder.php --format agent)",
+      "Skill(inertia-react-development)",
+      "Bash(vendor/bin/pint routes/web.php --format agent)"
     ]
   },
   "enableAllProjectMcpServers": true,
