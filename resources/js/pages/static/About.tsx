@@ -36,7 +36,7 @@ function AboutContent(): React.JSX.Element {
                         <Star className="size-4" />
                         Our Story
                     </div>
-                    <h1 className="mt-4 text-4xl font-bold text-[var(--color-text-primary)] sm:text-5xl lg:text-6xl">
+                    <h1 className="mt-4 text-2xl font-bold text-[var(--color-text-primary)] sm:text-4xl lg:text-6xl">
                         Bangladesh's Smartest<br />
                         <span className="text-[var(--color-primary)]">Shopping Experience</span>
                     </h1>
@@ -57,7 +57,7 @@ function AboutContent(): React.JSX.Element {
             {/* Stats */}
             <section className="border-y border-[var(--color-border)] bg-[var(--color-surface-alt)]">
                 <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-8">
                         {stats.map(({ value, label }) => (
                             <div key={label} className="text-center">
                                 <p className="text-3xl font-black text-[var(--color-primary)] sm:text-4xl">{value}</p>

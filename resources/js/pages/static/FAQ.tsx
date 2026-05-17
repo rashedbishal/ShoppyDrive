@@ -170,7 +170,7 @@ export default function FAQ({ page }: PageProps): React.JSX.Element {
                         Help Centre
                     </div>
 
-                    <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+                    <h1 className="mt-4 text-2xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
                         Frequently Asked{' '}
                         <span className="text-[var(--color-primary)]">Questions</span>
                     </h1>

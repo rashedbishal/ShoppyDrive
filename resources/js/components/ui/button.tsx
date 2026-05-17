@@ -90,7 +90,7 @@ function Button({
             ) : (
                 <>
                     {leftIcon}
-                    <span>{children}</span>
+                    <span className="inline-flex items-center gap-2">{children}</span>
                     {rightIcon}
                 </>
             )}

@@ -131,7 +131,7 @@ export default function Page({ page }: PageProps): React.JSX.Element {
                         Legal
                     </div>
 
-                    <h1 className="mt-4 max-w-2xl text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+                    <h1 className="mt-4 max-w-2xl text-2xl font-bold tracking-tight text-white sm:text-4xl lg:text-6xl">
                         {page.title}
                     </h1>
 

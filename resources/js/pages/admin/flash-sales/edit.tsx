@@ -116,6 +116,8 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                                 <div className="space-y-3">
                                     {data.items.map((item, i) => {
                                         const selectedProduct = products.find((p) => String(p.id) === item.product_id);
+                                        const usedIds = data.items.map((it) => it.product_id).filter(Boolean);
+                                        const availableProducts = products.filter((p) => !usedIds.includes(String(p.id)) || String(p.id) === item.product_id);
                                         return (
                                             <div key={i} className="flex items-end gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-3">
                                                 <div className="flex-1">
@@ -126,7 +128,7 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                                                         onChange={(e) => updateItem(i, 'product_id', e.target.value)}
                                                     >
                                                         <option value="">— Select product —</option>
-                                                        {products.map((p) => <option key={p.id} value={p.id}>{p.name} (৳{p.price.toLocaleString()})</option>)}
+                                                        {availableProducts.map((p) => <option key={p.id} value={p.id}>{p.name} (৳{p.price.toLocaleString()})</option>)}
                                                     </select>
                                                 </div>
                                                 <div className="w-32">

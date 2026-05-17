@@ -9,7 +9,9 @@ import {
     ShoppingBag,
     User,
     UserCircle2,
+    X,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -59,6 +61,7 @@ export default function Header(): React.JSX.Element {
     const cartItems = useCartStore((state) => state.items);
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
     const itemCount = useMemo(
         () => cartItems.reduce((count, item) => count + item.quantity, 0),
@@ -71,6 +74,17 @@ export default function Header(): React.JSX.Element {
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    useEffect(() => {
+        setMobileSearchOpen(false);
+    }, [page.url]);
+
+    useEffect(() => {
+        if (!mobileSearchOpen) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileSearchOpen(false); };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [mobileSearchOpen]);
 
     const siteName = settings?.site_name ?? 'ShoppyDrive';
     const announcementBar = page.props.homepage_settings?.['announcement_bar'];
@@ -130,10 +144,51 @@ export default function Header(): React.JSX.Element {
                 <div className="relative z-20 border-b border-[var(--color-border)] bg-white/95 backdrop-blur-xl">
                     <div
                         className={cn(
-                            'mx-auto flex max-w-7xl items-center gap-4 px-4 transition-all duration-300 sm:px-6 lg:px-8',
+                            'relative mx-auto flex max-w-7xl items-center gap-4 px-4 transition-all duration-300 sm:px-6 lg:px-8',
                             isScrolled ? 'py-3' : 'py-4',
                         )}
                     >
+                        {/* Mobile search overlay */}
+                        <AnimatePresence>
+                            {mobileSearchOpen && (
+                                <motion.div
+                                    key="mobile-search"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                                    className="absolute inset-0 z-20 flex items-center gap-2 bg-white px-4 sm:px-6 lg:hidden"
+                                >
+                                    {/* Search bar slides in from the right */}
+                                    <motion.div
+                                        className="min-w-0 flex-1"
+                                        initial={{ opacity: 0, x: 32 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 32 }}
+                                        transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.05 }}
+                                    >
+                                        <SearchBar
+                                            autoFocus
+                                            onSearch={() => setMobileSearchOpen(false)}
+                                        />
+                                    </motion.div>
+
+                                    {/* Close button springs in with rotation */}
+                                    <motion.button
+                                        type="button"
+                                        initial={{ scale: 0, opacity: 0, rotate: -90 }}
+                                        animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                                        exit={{ scale: 0, opacity: 0, rotate: 90 }}
+                                        transition={{ type: 'spring', stiffness: 500, damping: 26, delay: 0.1 }}
+                                        onClick={() => setMobileSearchOpen(false)}
+                                        className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)]"
+                                        aria-label="Close search"
+                                    >
+                                        <X className="size-5" />
+                                    </motion.button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                         {/* Mobile menu toggle */}
                         <button
                             type="button"
@@ -177,7 +232,7 @@ export default function Header(): React.JSX.Element {
                                 type="button"
                                 className="inline-flex size-10 items-center justify-center rounded-xl text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)] lg:hidden"
                                 aria-label="Search"
-                                onClick={() => router.get('/search')}
+                                onClick={() => setMobileSearchOpen(true)}
                             >
                                 <Search className="size-5" />
                             </button>

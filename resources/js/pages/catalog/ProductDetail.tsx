@@ -201,7 +201,7 @@ export default function ProductDetail({
             <div className="container mx-auto px-4 py-6">
                 <Breadcrumb items={breadcrumbItems} className="mb-8" />
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-12">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 xl:gap-12">
                     {/* Left Column: Media Gallery */}
                     <div className="lg:col-span-7 xl:col-span-8">
                         <div className="flex flex-col md:flex-row gap-4">

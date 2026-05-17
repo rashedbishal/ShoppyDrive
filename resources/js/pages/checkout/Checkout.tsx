@@ -647,13 +647,24 @@ export default function Checkout({ savedAddresses = [] }: CheckoutProps): React.
                                         <span className="font-semibold text-[var(--color-success)]">−{formatCurrency(couponDiscount)}</span>
                                     </div>
                                 )}
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-[var(--color-text-secondary)]">Shipping</span>
-                                    <span className="font-semibold">
-                                        {shippingCost === null
-                                            ? <span className="text-[var(--color-text-muted)] font-normal text-xs">Enter address</span>
-                                            : formatCurrency(shippingCost)
-                                        }
+                                <div className="flex items-start justify-between gap-2 text-sm">
+                                    <div>
+                                        <span className="text-[var(--color-text-secondary)]">Shipping</span>
+                                        {shippingCost === 0 && (
+                                            <p className="mt-0.5 text-[11px] text-[var(--color-success)]">All items qualify for free delivery</p>
+                                        )}
+                                        {shippingCost !== null && shippingCost > 0 && (
+                                            <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">1+ item requires delivery charge</p>
+                                        )}
+                                    </div>
+                                    <span className="shrink-0 font-semibold">
+                                        {shippingCost === null ? (
+                                            <span className="text-[var(--color-text-muted)] font-normal text-xs">Enter address</span>
+                                        ) : shippingCost === 0 ? (
+                                            <span className="text-[var(--color-success)]">Free</span>
+                                        ) : (
+                                            formatCurrency(shippingCost)
+                                        )}
                                     </span>
                                 </div>
                                 <div className="flex justify-between border-t border-[var(--color-border)] pt-3">

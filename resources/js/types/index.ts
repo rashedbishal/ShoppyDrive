@@ -632,6 +632,7 @@ export interface SharedPageProps {
     promotional_banners: PromotionalBanner[];
     wishlist_ids: number[];
     cart_shipping_cost: number | null;
+    cart_base_shipping_rate: number | null;
     account_stats: {
         orders_count: number;
         wishlist_count: number;

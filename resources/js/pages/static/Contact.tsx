@@ -40,7 +40,7 @@ function ContactContent(): React.JSX.Element {
                         <MessageSquare className="size-4" />
                         Get in touch
                     </div>
-                    <h1 className="mt-4 text-4xl font-bold text-[var(--color-text-primary)] sm:text-5xl">
+                    <h1 className="mt-4 text-2xl font-bold text-[var(--color-text-primary)] sm:text-4xl lg:text-5xl">
                         We're here to <span className="text-[var(--color-primary)]">help</span>
                     </h1>
                     <p className="mx-auto mt-4 max-w-xl text-[var(--color-text-secondary)]">

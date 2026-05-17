@@ -62,13 +62,13 @@ export default function TrackOrder({
                     <div className="w-20 h-20 rounded-3xl bg-[var(--color-primary)] text-white flex items-center justify-center mx-auto mb-6 shadow-xl shadow-red-100 rotate-3">
                         <Truck size={40} />
                     </div>
-                    <h1 className="text-4xl font-serif font-bold text-[var(--color-text-primary)] mb-4">Track Your Order</h1>
+                    <h1 className="text-2xl font-serif font-bold text-[var(--color-text-primary)] sm:text-4xl mb-4">Track Your Order</h1>
                     <p className="text-[var(--color-text-secondary)] max-w-md mx-auto">
                         Enter your order number and email address to check the current status and estimated delivery time.
                     </p>
                 </div>
 
-                <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-[var(--color-border)] mb-8">
+                <div className="bg-white rounded-3xl p-5 md:p-12 shadow-sm border border-[var(--color-border)] mb-8">
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
                         <div className="md:col-span-5 space-y-2">
                             <Label htmlFor="order_number">Order Number</Label>
@@ -148,7 +148,7 @@ export default function TrackOrder({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12">
                                     <div className="lg:col-span-7">
                                         <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-8">Delivery Journey</h3>
                                         <OrderTimeline histories={order.status_histories} />

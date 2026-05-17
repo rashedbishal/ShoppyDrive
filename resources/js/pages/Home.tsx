@@ -232,9 +232,9 @@ function HeroSlider({ slides }: HeroSliderProps): React.JSX.Element {
                         />
                         <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-secondary)] via-[rgba(26,26,46,0.76)] to-[rgba(26,26,46,0.12)]" />
                         <div className="absolute inset-0 bg-gradient-to-t from-[rgba(26,26,46,0.7)] via-transparent to-transparent lg:bg-none" />
-                        <div className="relative z-10 flex h-full flex-col justify-between px-6 py-8 sm:px-10 sm:py-10 lg:px-14 lg:py-14">
+                        <div className="relative z-10 flex h-full flex-col justify-between px-4 py-6 sm:px-10 sm:py-10 lg:px-14 lg:py-14">
                             <motion.div
-                                className="max-w-3xl space-y-5"
+                                className="max-w-3xl space-y-3 sm:space-y-5"
                                 initial="hidden"
                                 animate="visible"
                                 variants={{
@@ -268,7 +268,7 @@ function HeroSlider({ slides }: HeroSliderProps): React.JSX.Element {
                                         hidden: { opacity: 0, y: 12 },
                                         visible: { opacity: 1, y: 0 },
                                     }}
-                                    className="font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl lg:max-w-2xl lg:text-6xl"
+                                    className="font-display text-2xl leading-[1.1] tracking-tight sm:text-4xl sm:leading-[1.05] lg:max-w-2xl lg:text-6xl"
                                 >
                                     {activeSlide.title}
                                 </motion.h1>
@@ -288,47 +288,48 @@ function HeroSlider({ slides }: HeroSliderProps): React.JSX.Element {
                                         hidden: { opacity: 0, y: 12 },
                                         visible: { opacity: 1, y: 0 },
                                     }}
-                                    className="flex flex-col gap-3 sm:flex-row"
+                                    className="flex flex-row items-center gap-4 sm:gap-5"
                                 >
-                                    <Button asChild size="lg" className="bg-white text-[var(--color-secondary)] hover:bg-white/90">
-                                        <Link href={activeSlide.primaryCta.href}>
-                                            {activeSlide.primaryCta.label}
-                                            <ArrowRight className="size-4" />
-                                        </Link>
-                                    </Button>
                                     <Button
                                         asChild
-                                        size="lg"
-                                        variant="outline"
-                                        className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                                        className="h-8 gap-1.5 rounded-full px-4 text-xs font-semibold sm:h-10 sm:px-6 sm:text-sm bg-white text-[var(--color-secondary)] shadow-md hover:bg-white/90"
                                     >
-                                        <Link href={activeSlide.secondaryCta.href}>
-                                            {activeSlide.secondaryCta.label}
+                                        <Link href={activeSlide.primaryCta.href}>
+                                            {activeSlide.primaryCta.label}
+                                            <ArrowRight className="size-3 sm:size-3.5" />
                                         </Link>
                                     </Button>
+                                    <Link
+                                        href={activeSlide.secondaryCta.href}
+                                        className="flex items-center gap-1.5 text-xs font-medium text-white/80 transition hover:text-white sm:text-sm"
+                                    >
+                                        {activeSlide.secondaryCta.label}
+                                        <ArrowRight className="size-3 sm:size-3.5" />
+                                    </Link>
                                 </motion.div>
 
-                                <motion.div
-                                    variants={{
-                                        hidden: { opacity: 0, y: 12 },
-                                        visible: { opacity: 1, y: 0 },
-                                    }}
-                                    className="grid gap-3 sm:grid-cols-3"
-                                >
-                                    {activeSlide.stats.map((stat) => (
-                                        <div
-                                            key={stat.label}
-                                            className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md"
-                                        >
-                                            <p className="text-xs uppercase tracking-[0.2em] text-white/60">
-                                                {stat.label}
-                                            </p>
-                                            <p className="mt-1 text-sm font-semibold text-white">
-                                                {stat.value}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </motion.div>
+                            </motion.div>
+
+                            {/* Stat cards — pinned to bottom above the two absolute pills */}
+                            <motion.div
+                                className="grid grid-cols-3 gap-2 pb-16 sm:gap-3 sm:pb-14 lg:pb-8"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.35, delay: 0.35, ease: 'easeOut' }}
+                            >
+                                {activeSlide.stats.map((stat) => (
+                                    <div
+                                        key={stat.label}
+                                        className="rounded-xl border border-white/10 bg-white/10 px-2.5 py-2 backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3"
+                                    >
+                                        <p className="text-[10px] uppercase tracking-[0.15em] text-white/60 sm:text-xs sm:tracking-[0.2em]">
+                                            {stat.label}
+                                        </p>
+                                        <p className="mt-0.5 text-xs font-semibold text-white sm:mt-1 sm:text-sm">
+                                            {stat.value}
+                                        </p>
+                                    </div>
+                                ))}
                             </motion.div>
                         </div>
                     </motion.div>
@@ -500,7 +501,7 @@ function ProductCard({
     return (
         <motion.article
             className={cn(
-                'group overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-transform duration-200 hover:shadow-[var(--shadow-card-hover)]',
+                'group flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-transform duration-200 hover:shadow-[var(--shadow-card-hover)]',
                 className,
             )}
             whileHover={{ y: -4, scale: 1.01 }}
@@ -510,7 +511,7 @@ function ProductCard({
         >
             <div className="relative">
                 <Link href={productRoutes.show.url(product.slug)} className="block">
-                    <div className="relative aspect-[4/3] overflow-hidden bg-[var(--color-surface-alt)]">
+                    <div className="relative aspect-[3/2] overflow-hidden bg-[var(--color-surface-alt)]">
                         {primaryUrl ? (
                             <img
                                 src={primaryUrl}
@@ -581,70 +582,74 @@ function ProductCard({
                 </Link>
             </div>
 
-            <div className="space-y-4 p-4">
-                <div className="space-y-1">
-                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+            <div className="flex flex-1 flex-col gap-2.5 p-3">
+                <div className="space-y-0.5">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
                         {product.brand?.name ?? 'ShoppyDrive Select'}
                     </p>
                     <Link
                         href={productRoutes.show.url(product.slug)}
-                        className="line-clamp-2 text-sm font-semibold leading-6 text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)]"
+                        className="line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)]"
                     >
                         {product.name}
                     </Link>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                     <StarRating rating={product.average_rating ?? 0} size="sm" className="text-[var(--color-accent)]" />
                     <span className="text-xs text-[var(--color-text-secondary)]">
                         ({product.reviews_count ?? 0})
                     </span>
                 </div>
 
-                <div className="flex items-end gap-2">
-                    <p className="text-lg font-bold tracking-tight text-[var(--color-primary)]">
+                <div className="flex items-baseline gap-1.5">
+                    <p className="text-base font-bold tracking-tight text-[var(--color-primary)]">
                         {formatCurrency(currentPrice)}
                     </p>
                     {product.compare_price && product.compare_price > currentPrice ? (
-                        <p className="pb-0.5 text-sm text-[var(--color-text-muted)] line-through">
+                        <p className="text-xs text-[var(--color-text-muted)] line-through">
                             {formatCurrency(product.compare_price)}
                         </p>
                     ) : null}
                 </div>
 
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
-                        <span>
-                            {isOutOfStock
-                                ? 'Out of stock'
-                                : isLowStock
-                                    ? `Only ${product.stock_quantity} left`
-                                    : 'In stock'}
-                        </span>
-                        {saleProgressLabel ? <span>{saleProgressLabel}</span> : null}
-                    </div>
-                    {typeof saleProgress === 'number' ? (
-                        <div
-                            className="h-2 overflow-hidden rounded-full bg-[var(--color-surface-alt)]"
-                            aria-label={`${saleProgressLabel ?? 'Sale progress'} ${saleProgress}%`}
-                        >
-                            <div
-                                className="h-full rounded-full bg-[var(--color-accent)] transition-all"
-                                style={{ width: `${Math.max(0, Math.min(100, saleProgress))}%` }}
-                            />
+                {(isOutOfStock || isLowStock || typeof saleProgress === 'number') && (
+                    <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
+                            <span>
+                                {isOutOfStock
+                                    ? 'Out of stock'
+                                    : isLowStock
+                                        ? `Only ${product.stock_quantity} left`
+                                        : null}
+                            </span>
+                            {saleProgressLabel ? <span>{saleProgressLabel}</span> : null}
                         </div>
-                    ) : null}
-                </div>
+                        {typeof saleProgress === 'number' ? (
+                            <div
+                                className="h-1.5 overflow-hidden rounded-full bg-[var(--color-surface-alt)]"
+                                aria-label={`${saleProgressLabel ?? 'Sale progress'} ${saleProgress}%`}
+                            >
+                                <div
+                                    className="h-full rounded-full bg-[var(--color-accent)] transition-all"
+                                    style={{ width: `${Math.max(0, Math.min(100, saleProgress))}%` }}
+                                />
+                            </div>
+                        ) : null}
+                    </div>
+                )}
 
-                <Button
-                    type="button"
-                    fullWidth
-                    disabled={isOutOfStock}
-                    onClick={handleAddToCart}
-                    className="translate-y-0 transition-transform duration-200 group-hover:-translate-y-1"
-                >
-                    {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-                </Button>
+                <div className="mt-auto pt-1">
+                    <Button
+                        type="button"
+                        fullWidth
+                        disabled={isOutOfStock}
+                        onClick={handleAddToCart}
+                        className="translate-y-0 transition-transform duration-200 group-hover:-translate-y-1"
+                    >
+                        {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+                    </Button>
+                </div>
             </div>
         </motion.article>
     );
@@ -699,14 +704,14 @@ function FlashSaleCard({
 
     return (
         <motion.article
-            className="group flex h-full flex-col sm:flex-row overflow-hidden rounded-xl bg-white shadow-md transition-shadow hover:shadow-lg"
+            className="group flex h-full flex-col overflow-hidden rounded-xl bg-white shadow-md transition-shadow hover:shadow-lg"
             whileHover={{ y: -2 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
             onHoverStart={() => setIsHovered(true)}
             onHoverEnd={() => setIsHovered(false)}
         >
             {/* Image */}
-            <Link href={productRoutes.show.url(product.slug)} className="relative aspect-square sm:aspect-auto sm:w-36 shrink-0 overflow-hidden bg-gray-100">
+            <Link href={productRoutes.show.url(product.slug)} className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-gray-100">
                 {primaryUrl ? (
                     <img
                         src={primaryUrl}
@@ -898,9 +903,9 @@ function FlashSaleSlider({ items, saleProgressMap }: FlashSaleSliderProps): Reac
                     type="button"
                     onClick={() => scroll('left')}
                     aria-label="Scroll left"
-                    className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 hidden lg:flex size-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/25 shadow-lg"
+                    className="absolute left-1 top-1/2 -translate-y-1/2 z-10 flex size-8 items-center justify-center rounded-full border border-[#c8102e]/40 bg-[#c8102e]/90 text-white backdrop-blur-sm transition hover:bg-[#c8102e] shadow-lg sm:left-0 lg:-left-4 lg:size-10"
                 >
-                    <ChevronLeft className="size-5" />
+                    <ChevronLeft className="size-4 lg:size-5" />
                 </button>
             )}
             {canScrollRight && (
@@ -908,9 +913,9 @@ function FlashSaleSlider({ items, saleProgressMap }: FlashSaleSliderProps): Reac
                     type="button"
                     onClick={() => scroll('right')}
                     aria-label="Scroll right"
-                    className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 hidden lg:flex size-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/25 shadow-lg"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 z-10 flex size-8 items-center justify-center rounded-full border border-[#c8102e]/40 bg-[#c8102e]/90 text-white backdrop-blur-sm transition hover:bg-[#c8102e] shadow-lg sm:right-0 lg:-right-4 lg:size-10"
                 >
-                    <ChevronRight className="size-5" />
+                    <ChevronRight className="size-4 lg:size-5" />
                 </button>
             )}
         </div>
@@ -1393,7 +1398,7 @@ function Home(): React.JSX.Element {
                 {getSection('categories')?.is_visible && (
                     <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
                         {renderHeading('categories', 'Shop by category')}
-                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
                             {categoryCards.map((category) => (
                                 <CategoryCard key={category.slug} category={category} />
                             ))}
@@ -1506,7 +1511,7 @@ function Home(): React.JSX.Element {
 
                 <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <Card className="border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]">
-                        <CardContent className="grid gap-4 px-6 py-6 sm:grid-cols-3 sm:items-center sm:px-8">
+                        <CardContent className="grid gap-4 px-6 py-6 sm:items-center sm:px-8 md:grid-cols-3">
                             <div className="flex items-center gap-3">
                                 <div className="flex size-12 items-center justify-center rounded-2xl bg-[var(--color-primary-light)] text-[var(--color-primary)]">
                                     <BadgeCheck className="size-5" />

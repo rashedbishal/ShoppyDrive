@@ -123,7 +123,28 @@ class HandleInertiaRequests extends Middleware
                 'addresses_count' => Address::where('user_id', $request->user()->id)->count(),
             ] : null,
             'cart_shipping_cost' => fn () => $this->resolveCartShippingCost($request),
+            'cart_base_shipping_rate' => fn () => $this->resolveBaseShippingRate($request),
         ];
+    }
+
+    private function resolveBaseShippingRate(Request $request): ?int
+    {
+        $user = $request->user();
+        if (! $user) {
+            return null;
+        }
+
+        $default = Address::where('user_id', $user->id)
+            ->where('is_default', true)
+            ->first(['state', 'city']);
+
+        if (! $default) {
+            return null;
+        }
+
+        return $default->state === 'Dhaka' && $default->city === 'Inside Dhaka City Corporation'
+            ? 60
+            : 120;
     }
 
     private function resolveCartShippingCost(Request $request): ?int
@@ -141,36 +162,38 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        // Check free delivery threshold
         $bar = HomepageSetting::where('section_key', 'announcement_bar')->first();
         $threshold = (float) ($bar?->metadata['free_delivery_amount'] ?? 0);
 
-        if ($threshold > 0) {
-            $cart = $this->cartManager->getCurrentCart($request);
-            if ($cart) {
+        $cart = $this->cartManager->getCurrentCart($request);
+
+        if ($cart) {
+            $cart->load('items.product');
+
+            // Free delivery threshold: entire cart qualifies if subtotal meets the bar
+            if ($threshold > 0) {
                 $subtotal = $cart->items->sum(fn ($item) => (float) $item->price * $item->quantity);
                 if ($subtotal >= $threshold) {
                     return 0;
                 }
+            }
 
-                // Per-product free delivery check
-                $cart->load('items.product');
-                if ($cart->items->isNotEmpty()) {
-                    $allFree = $cart->items->every(function ($item) {
-                        $product = $item->product;
-                        if (! $product->free_delivery) {
-                            return false;
-                        }
-                        if ($product->free_delivery_min_qty !== null) {
-                            return $item->quantity >= $product->free_delivery_min_qty;
-                        }
-
-                        return true;
-                    });
-
-                    if ($allFree) {
-                        return 0;
+            // Per-product free delivery: all items must individually qualify
+            if ($cart->items->isNotEmpty()) {
+                $allFree = $cart->items->every(function ($item) {
+                    $product = $item->product;
+                    if (! $product->free_delivery) {
+                        return false;
                     }
+                    if ($product->free_delivery_min_qty !== null) {
+                        return $item->quantity >= $product->free_delivery_min_qty;
+                    }
+
+                    return true;
+                });
+
+                if ($allFree) {
+                    return 0;
                 }
             }
         }

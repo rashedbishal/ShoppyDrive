@@ -8,11 +8,11 @@ function NotFoundContent(): React.JSX.Element {
             <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 py-20 text-center">
                 {/* Large 404 */}
                 <div className="relative mb-8 select-none">
-                    <span className="text-[10rem] font-black leading-none text-[var(--color-surface-alt)] lg:text-[14rem]">
+                    <span className="text-[5rem] font-black leading-none text-[var(--color-surface-alt)] sm:text-[8rem] lg:text-[14rem]">
                         404
                     </span>
                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                        <div className="size-32 rounded-full bg-[var(--color-primary)] opacity-10 blur-3xl lg:size-48" />
+                        <div className="size-16 rounded-full bg-[var(--color-primary)] opacity-10 blur-3xl sm:size-32 lg:size-48" />
                     </div>
                 </div>
 

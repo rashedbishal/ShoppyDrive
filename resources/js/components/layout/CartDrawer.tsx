@@ -37,9 +37,36 @@ export default function CartDrawer(): React.JSX.Element {
     const updateQuantity = useCartStore((state) => state.updateQuantity);
     const removeItem = useCartStore((state) => state.removeItem);
 
-    // Shipping cost from server: based on the user's default address
-    const { cart_shipping_cost: cartShippingCost } = usePage<SharedPageProps>().props;
+    // Shared props: shipping cost (applies free-delivery rules) and the raw
+    // location-based rate (ignores free-delivery rules, used as instant fallback).
+    const {
+        cart_shipping_cost: cartShippingCost,
+        cart_base_shipping_rate: cartBaseRate,
+    } = usePage<SharedPageProps>().props;
     const isEmpty = items.length === 0;
+
+    // Client-side free-delivery check.
+    // hydrateCart populates fresh product data on page load, so free_delivery_min_qty
+    // is always a number or null (never undefined) by the time the user interacts.
+    const allItemsFreeDelivery = useMemo(() => {
+        if (isEmpty) return false;
+        return items.every((item) => {
+            const p = item.product;
+            if (!p.free_delivery) return false;
+            const minQty = p.free_delivery_min_qty ?? null;
+            if (minQty !== null) return item.quantity >= minQty;
+            return true;
+        });
+    }, [items, isEmpty]);
+
+    // Fully client-side — no router call needed, no drawer close.
+    // allItemsFreeDelivery handles the "charge → free" direction instantly.
+    // cartBaseRate (location rate, ignores free-delivery) handles "free → charge" instantly.
+    const effectiveShipping = isEmpty
+        ? 0
+        : allItemsFreeDelivery
+            ? 0
+            : (cartBaseRate ?? cartShippingCost ?? 0);
 
     const summary = useMemo(() => {
         const subtotal = items.reduce((total, item) => total + item.subtotal, 0);
@@ -48,18 +75,16 @@ export default function CartDrawer(): React.JSX.Element {
             coupon?.type ?? null,
             coupon?.discount_amount ?? coupon?.value ?? 0,
         );
-        // Use server-resolved shipping cost; fall back to 0 when cart is empty
-        const shipping = isEmpty ? 0 : (cartShippingCost ?? 0);
-        const total = Math.max(0, subtotal - discount + shipping + tax);
+        const total = Math.max(0, subtotal - discount + effectiveShipping + tax);
 
         return {
             subtotal,
             discount,
-            shipping,
+            shipping: effectiveShipping,
             total,
             itemCount: items.reduce((count, item) => count + item.quantity, 0),
         };
-    }, [coupon, items, cartShippingCost, isEmpty, tax]);
+    }, [coupon, items, effectiveShipping, tax]);
 
     return (
         <Drawer
@@ -71,45 +96,55 @@ export default function CartDrawer(): React.JSX.Element {
             size="lg"
             footer={
                 <div className="space-y-4">
-                    <div className="space-y-2 rounded-2xl border border-[var(--color-border)] bg-surface p-4">
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-[var(--color-text-secondary)]">Subtotal</span>
-                            <span className="font-semibold text-[var(--color-text-primary)]">
-                                {formatCurrency(summary.subtotal)}
-                            </span>
+                    {!isEmpty && (
+                        <div className="space-y-2 rounded-2xl border border-[var(--color-border)] bg-surface p-4">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-[var(--color-text-secondary)]">Subtotal</span>
+                                <span className="font-semibold text-[var(--color-text-primary)]">
+                                    {formatCurrency(summary.subtotal)}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-[var(--color-text-secondary)]">Discount</span>
+                                <span className="font-semibold text-[var(--color-success)]">
+                                    -{formatCurrency(summary.discount)}
+                                </span>
+                            </div>
+                            <div className="flex items-start justify-between gap-2 text-sm">
+                                <div>
+                                    <span className="text-[var(--color-text-secondary)]">Shipping</span>
+                                    {effectiveShipping === 0 ? (
+                                        <p className="mt-0.5 text-[11px] text-[var(--color-success)]">All items qualify for free delivery</p>
+                                    ) : effectiveShipping > 0 ? (
+                                        <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">1+ item requires delivery charge</p>
+                                    ) : null}
+                                </div>
+                                <span className="shrink-0 font-semibold">
+                                    {cartShippingCost === null && !allItemsFreeDelivery ? (
+                                        <span className="text-xs font-normal text-[var(--color-text-muted)]">At checkout</span>
+                                    ) : effectiveShipping === 0 ? (
+                                        <span className="text-[var(--color-success)]">Free</span>
+                                    ) : (
+                                        <span className="text-[var(--color-text-primary)]">{formatCurrency(effectiveShipping)}</span>
+                                    )}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-[var(--color-text-secondary)]">Tax</span>
+                                <span className="font-semibold text-[var(--color-text-primary)]">
+                                    {formatCurrency(tax)}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-3">
+                                <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                                    Total
+                                </span>
+                                <span className="font-mono text-lg font-semibold text-[var(--color-secondary)]">
+                                    {formatCurrency(summary.total)}
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-[var(--color-text-secondary)]">Discount</span>
-                            <span className="font-semibold text-[var(--color-success)]">
-                                -{formatCurrency(summary.discount)}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-[var(--color-text-secondary)]">Shipping</span>
-                            <span className="font-semibold text-[var(--color-text-primary)]">
-                                {isEmpty
-                                    ? '—'
-                                    : cartShippingCost !== null
-                                        ? formatCurrency(cartShippingCost)
-                                        : <span className="text-xs font-normal text-[var(--color-text-muted)]">At checkout</span>
-                                }
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-[var(--color-text-secondary)]">Tax</span>
-                            <span className="font-semibold text-[var(--color-text-primary)]">
-                                {formatCurrency(tax)}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-3">
-                            <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                                Total
-                            </span>
-                            <span className="font-mono text-lg font-semibold text-[var(--color-secondary)]">
-                                {formatCurrency(summary.total)}
-                            </span>
-                        </div>
-                    </div>
+                    )}
 
                     <div className="grid gap-3 sm:grid-cols-2 mt-2">
                         {isEmpty ? (

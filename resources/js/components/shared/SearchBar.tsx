@@ -48,9 +48,10 @@ interface SearchBarProps {
     className?: string;
     isMobile?: boolean;
     onSearch?: () => void;
+    autoFocus?: boolean;
 }
 
-export function SearchBar({ className, isMobile = false, onSearch }: SearchBarProps): React.JSX.Element {
+export function SearchBar({ className, isMobile = false, onSearch, autoFocus = false }: SearchBarProps): React.JSX.Element {
     const popularKeywords = (usePage().props as any).popular_keywords as string[] | undefined;
     const popular = popularKeywords && popularKeywords.length > 0 ? popularKeywords : POPULAR_FALLBACK;
     const [query, setQuery] = useState('');
@@ -196,6 +197,7 @@ export function SearchBar({ className, isMobile = false, onSearch }: SearchBarPr
                     ref={inputRef}
                     type="search"
                     value={query}
+                    autoFocus={autoFocus}
                     autoComplete="off"
                     onChange={e => {
                         setQuery(e.target.value);
