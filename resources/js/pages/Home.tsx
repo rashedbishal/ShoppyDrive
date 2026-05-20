@@ -1189,19 +1189,47 @@ function FlashSaleCountdown({ endsAt }: FlashSaleCountdownProps): React.JSX.Elem
 }
 
 function NewsletterForm(): React.JSX.Element {
-    const form = useForm<{ email: string }>({
-        email: '',
-    });
+    const form = useForm<{ email: string }>({ email: '' });
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [statusMessage, setStatusMessage] = useState('');
+    const checkTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const checkStatus = (email: string): void => {
+        if (checkTimeout.current) clearTimeout(checkTimeout.current);
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            setIsSubscribed(false);
+            return;
+        }
+        checkTimeout.current = setTimeout(() => {
+            fetch(`/newsletter/status?email=${encodeURIComponent(email)}`)
+                .then((r) => r.json())
+                .then((data: { is_subscribed: boolean }) => setIsSubscribed(data.is_subscribed))
+                .catch(() => {});
+        }, 500);
+    };
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
         event.preventDefault();
 
-        form.post('/newsletter/subscribe', {
-            preserveScroll: true,
-            onSuccess: () => {
-                form.reset('email');
-            },
-        });
+        if (isSubscribed) {
+            form.post('/newsletter/unsubscribe', {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setIsSubscribed(false);
+                    setStatusMessage('You have been unsubscribed.');
+                    form.reset('email');
+                },
+            });
+        } else {
+            form.post('/newsletter/subscribe', {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setIsSubscribed(true);
+                    setStatusMessage('Thanks! You are now subscribed.');
+                    form.reset('email');
+                },
+            });
+        }
     };
 
     return (
@@ -1229,7 +1257,10 @@ function NewsletterForm(): React.JSX.Element {
                         autoComplete="email"
                         placeholder="you@example.com"
                         value={form.data.email}
-                        onChange={(event) => form.setData('email', event.target.value)}
+                        onChange={(event) => {
+                            form.setData('email', event.target.value);
+                            checkStatus(event.target.value);
+                        }}
                         error={form.errors.email}
                         containerClassName="space-y-2"
                         labelClassName="text-white"
@@ -1240,22 +1271,22 @@ function NewsletterForm(): React.JSX.Element {
                         type="submit"
                         fullWidth
                         loading={form.processing}
-                        loadingText="Subscribing..."
-                        className="bg-white text-[var(--color-secondary)] hover:bg-white/90"
+                        loadingText={isSubscribed ? 'Unsubscribing...' : 'Subscribing...'}
+                        className={isSubscribed
+                            ? 'bg-white/20 text-white hover:bg-white/30 border border-white/30'
+                            : 'bg-white text-[var(--color-secondary)] hover:bg-white/90'}
                     >
-                        Subscribe
+                        {isSubscribed ? 'Unsubscribe' : 'Subscribe'}
                     </Button>
 
                     <p
                         className={cn(
                             'min-h-5 text-sm text-white/75',
-                            form.recentlySuccessful ? 'text-emerald-300' : '',
+                            statusMessage ? 'text-emerald-300' : '',
                         )}
                         aria-live="polite"
                     >
-                        {form.recentlySuccessful
-                            ? 'Thanks. You are subscribed to updates.'
-                            : 'Unsubscribe anytime. No spam, only useful updates.'}
+                        {statusMessage || (isSubscribed ? 'You are subscribed. Click above to unsubscribe.' : 'Unsubscribe anytime. No spam, only useful updates.')}
                     </p>
                 </form>
             </CardContent>

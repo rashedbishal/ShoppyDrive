@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\FlashSaleController;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\HomepageController;
 use App\Http\Controllers\Admin\LandingPageController as AdminLandingPageController;
+use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PopularKeywordController;
 use App\Http\Controllers\Admin\ProductController;
@@ -79,6 +80,12 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::get('homepage/brands/search', [HomepageController::class, 'searchBrands'])->name('homepage.brands.search');
     Route::get('homepage/{setting}/edit', [HomepageController::class, 'edit'])->name('homepage.edit');
     Route::put('homepage/{setting}', [HomepageController::class, 'update'])->name('homepage.update');
+
+    // Newsletter
+    Route::get('newsletter', [AdminNewsletterController::class, 'index'])->name('newsletter.index');
+    Route::delete('newsletter/{subscriber}', [AdminNewsletterController::class, 'destroy'])->name('newsletter.destroy');
+    Route::get('newsletter/compose', [AdminNewsletterController::class, 'compose'])->name('newsletter.compose');
+    Route::post('newsletter/send', [AdminNewsletterController::class, 'send'])->name('newsletter.send');
 
     Route::resource('hero-slides', HeroSlideController::class)->except(['show']);
     Route::get('promotional-banners/products/search', [PromotionalBannerController::class, 'searchProducts'])->name('promotional-banners.products.search');

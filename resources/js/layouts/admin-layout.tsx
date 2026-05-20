@@ -7,6 +7,7 @@ import {
     LayoutDashboard,
     LayoutTemplate,
     LogOut,
+    Mail,
     Menu,
     MessageSquare,
     MonitorPlay,
@@ -66,6 +67,12 @@ const navSections = [
         items: [
             { label: 'Customers', href: '/admin/customers', icon: Users, extraMatches: [] as string[] },
             { label: 'Reviews', href: '/admin/reviews', icon: Star, extraMatches: [] as string[] },
+        ],
+    },
+    {
+        label: 'Marketing',
+        items: [
+            { label: 'Newsletter', href: '/admin/newsletter', icon: Mail, extraMatches: ['/admin/newsletter/compose'] as string[] },
         ],
     },
     {

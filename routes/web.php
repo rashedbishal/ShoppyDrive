@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\NewsletterController;
 use App\Models\Page;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +35,11 @@ Route::get('/faq', function () {
 
     return inertia('static/FAQ', ['page' => $page]);
 })->name('faq');
+
+// Newsletter
+Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');
+Route::post('/newsletter/unsubscribe', [NewsletterController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
+Route::get('/newsletter/status', [NewsletterController::class, 'status'])->name('newsletter.status');
 
 // Landing pages (public, guest-accessible)
 Route::get('/lp/{slug}', [LandingPageController::class, 'show'])->name('lp.show');
