@@ -98,7 +98,7 @@ class HomeController extends Controller
             ->withCount('products')
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->get(['id', 'name', 'slug', 'description', 'image', 'sort_order']);
+            ->get(['id', 'name', 'slug', 'description', 'image', 'icon', 'color', 'sort_order']);
 
         $currencySymbol = config('app.currency_symbol', '৳');
 

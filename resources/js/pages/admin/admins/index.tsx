@@ -1,7 +1,9 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Edit, Plus, Shield, Trash2, User } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 type AdminUser = {
     id: number;
@@ -23,15 +25,26 @@ type Props = {
 };
 
 export default function AdminsIndex({ admins }: Props) {
+    const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+    const [deleting, setDeleting] = useState(false);
     const { props } = usePage<any>();
-    const flash = props.flash as { success?: string; error?: string } | undefined;
+    const flash = props.flash as
+        | { success?: string; error?: string }
+        | undefined;
     const currentAdmin = props.auth.admin as CurrentAdmin;
 
-    const handleDelete = (admin: AdminUser) => {
-        if (!confirm(`Are you sure you want to delete "${admin.name}"? They will be immediately logged out.`)) {
+    const confirmDelete = () => {
+        if (!deleteTarget) {
             return;
         }
-        router.delete(route('admin.admins.destroy', admin.id));
+
+        setDeleting(true);
+        router.delete(route('admin.admins.destroy', deleteTarget.id), {
+            onFinish: () => {
+                setDeleting(false);
+                setDeleteTarget(null);
+            },
+        });
     };
 
     const canEdit = (admin: AdminUser) => {
@@ -51,8 +64,12 @@ export default function AdminsIndex({ admins }: Props) {
             <div className="space-y-5">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl font-bold text-slate-900">Admin Accounts</h1>
-                        <p className="text-sm text-slate-500">{admins.length} total</p>
+                        <h1 className="text-xl font-bold text-slate-900">
+                            Admin Accounts
+                        </h1>
+                        <p className="text-sm text-slate-500">
+                            {admins.length} total
+                        </p>
                     </div>
                     <Link href={route('admin.admins.create')}>
                         <Button className="bg-[#c8102e] text-white hover:bg-[#a50d25]">
@@ -63,28 +80,40 @@ export default function AdminsIndex({ admins }: Props) {
                 </div>
 
                 {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">{flash.success}</div>
+                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
+                        {flash.success}
+                    </div>
                 )}
                 {flash?.error && (
-                    <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">{flash.error}</div>
+                    <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">
+                        {flash.error}
+                    </div>
                 )}
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     <div className="divide-y divide-slate-100">
                         {admins.map((admin) => (
-                            <div key={admin.id} className="flex items-center gap-4 px-4 py-3">
-                                <div className={`flex size-9 shrink-0 items-center justify-center rounded-full ${admin.is_mother ? 'bg-amber-100' : 'bg-slate-100'}`}>
-                                    {admin.is_mother
-                                        ? <Shield className="size-4 text-amber-600" />
-                                        : <User className="size-4 text-slate-500" />
-                                    }
+                            <div
+                                key={admin.id}
+                                className="flex items-center gap-4 px-4 py-3"
+                            >
+                                <div
+                                    className={`flex size-9 shrink-0 items-center justify-center rounded-full ${admin.is_mother ? 'bg-amber-100' : 'bg-slate-100'}`}
+                                >
+                                    {admin.is_mother ? (
+                                        <Shield className="size-4 text-amber-600" />
+                                    ) : (
+                                        <User className="size-4 text-slate-500" />
+                                    )}
                                 </div>
 
-                                <div className="flex-1 min-w-0">
+                                <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-semibold text-slate-800">{admin.name}</span>
+                                        <span className="text-sm font-semibold text-slate-800">
+                                            {admin.name}
+                                        </span>
                                         {admin.is_mother && (
-                                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-700 uppercase">
                                                 Mother Admin
                                             </span>
                                         )}
@@ -94,16 +123,27 @@ export default function AdminsIndex({ admins }: Props) {
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-xs text-slate-400">{admin.email}</p>
+                                    <p className="text-xs text-slate-400">
+                                        {admin.email}
+                                    </p>
                                 </div>
 
                                 <p className="hidden shrink-0 text-xs text-slate-400 sm:block">
-                                    {new Date(admin.created_at).toLocaleDateString('en-BD', { dateStyle: 'medium' })}
+                                    {new Date(
+                                        admin.created_at,
+                                    ).toLocaleDateString('en-BD', {
+                                        dateStyle: 'medium',
+                                    })}
                                 </p>
 
                                 <div className="flex shrink-0 items-center gap-1">
                                     {canEdit(admin) ? (
-                                        <Link href={route('admin.admins.edit', admin.id)}>
+                                        <Link
+                                            href={route(
+                                                'admin.admins.edit',
+                                                admin.id,
+                                            )}
+                                        >
                                             <button
                                                 type="button"
                                                 title="Edit"
@@ -117,7 +157,7 @@ export default function AdminsIndex({ admins }: Props) {
                                             type="button"
                                             disabled
                                             title="Cannot edit mother admin"
-                                            className="rounded-lg p-1.5 text-slate-200 cursor-not-allowed"
+                                            className="cursor-not-allowed rounded-lg p-1.5 text-slate-200"
                                         >
                                             <Edit className="size-4" />
                                         </button>
@@ -126,7 +166,9 @@ export default function AdminsIndex({ admins }: Props) {
                                     {canDelete(admin) ? (
                                         <button
                                             type="button"
-                                            onClick={() => handleDelete(admin)}
+                                            onClick={() =>
+                                                setDeleteTarget(admin)
+                                            }
                                             title="Delete"
                                             className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
                                         >
@@ -136,8 +178,12 @@ export default function AdminsIndex({ admins }: Props) {
                                         <button
                                             type="button"
                                             disabled
-                                            title={admin.is_mother ? 'Cannot delete mother admin' : 'Cannot delete your own account'}
-                                            className="rounded-lg p-1.5 text-slate-200 cursor-not-allowed"
+                                            title={
+                                                admin.is_mother
+                                                    ? 'Cannot delete mother admin'
+                                                    : 'Cannot delete your own account'
+                                            }
+                                            className="cursor-not-allowed rounded-lg p-1.5 text-slate-200"
                                         >
                                             <Trash2 className="size-4" />
                                         </button>
@@ -149,10 +195,24 @@ export default function AdminsIndex({ admins }: Props) {
                 </Card>
 
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
-                    <strong>Mother Admin</strong> is the root account and cannot be deleted or modified by other admins.
-                    Deleted admin accounts are immediately logged out.
+                    <strong>Mother Admin</strong> is the root account and cannot
+                    be deleted or modified by other admins. Deleted admin
+                    accounts are immediately logged out.
                 </div>
             </div>
+
+            <ConfirmDialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => !open && setDeleteTarget(null)}
+                title="Delete admin account?"
+                description={
+                    deleteTarget
+                        ? `This will permanently delete "${deleteTarget.name}"'s account. They will be immediately logged out. This cannot be undone.`
+                        : undefined
+                }
+                onConfirm={confirmDelete}
+                processing={deleting}
+            />
         </>
     );
 }

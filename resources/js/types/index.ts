@@ -14,7 +14,12 @@ export type OrderStatus =
     | 'refunded';
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
 export type PaymentMethod = 'cod';
-export type InventoryType = 'in' | 'out' | 'adjustment' | 'reservation' | 'release';
+export type InventoryType =
+    | 'in'
+    | 'out'
+    | 'adjustment'
+    | 'reservation'
+    | 'release';
 export type CouponType = 'percent' | 'fixed';
 export type AttributeType = 'select' | 'color' | 'text';
 export type ReturnStatus = 'pending' | 'approved' | 'rejected' | 'refunded';
@@ -88,6 +93,8 @@ export interface AppSettings {
     whatsapp_number?: string | null;
     messenger_link?: string | null;
     free_delivery_threshold?: number | null;
+    google_login_enabled?: boolean;
+    facebook_login_enabled?: boolean;
 }
 
 export interface Category extends Timestamped, SoftDeletable {
@@ -95,6 +102,8 @@ export interface Category extends Timestamped, SoftDeletable {
     name: string;
     slug: string;
     image?: string | null;
+    icon?: string | null;
+    color?: string | null;
     description?: string | null;
     meta_title?: string | null;
     meta_description?: string | null;

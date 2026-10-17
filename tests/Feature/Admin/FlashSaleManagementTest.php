@@ -41,7 +41,7 @@ beforeEach(function () {
     ]);
 });
 
-test('admin can see flash sale edit page with flash sale data', function () {
+test('admin can see the flash sale homepage section edit page', function () {
     actingAs($this->admin, 'admin');
 
     $response = get(route('admin.homepage.edit', $this->setting));
@@ -49,8 +49,7 @@ test('admin can see flash sale edit page with flash sale data', function () {
     $response->assertSuccessful();
     $response->assertInertia(fn ($page) => $page
         ->component('admin/homepage/edit')
-        ->has('flashSale')
-        ->has('products')
+        ->where('section.section_key', 'flash_sale')
     );
 });
 

@@ -24,8 +24,7 @@ class CategoryController extends Controller
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->paginate(20)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('admin/categories/index', [
             'categories' => $categories,
@@ -48,6 +47,7 @@ class CategoryController extends Controller
         }
         $data['slug'] = Str::slug($data['slug'] ?? $data['name']);
         $data['is_active'] = $data['is_active'] ?? true;
+        $data['sort_order'] = (Category::max('sort_order') ?? -1) + 1;
         Category::create($data);
 
         return redirect()->route('admin.categories.index')->with('success', 'Category created.');
@@ -82,5 +82,19 @@ class CategoryController extends Controller
         $category->delete();
 
         return redirect()->route('admin.categories.index')->with('success', 'Category deleted.');
+    }
+
+    public function reorder(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'distinct', 'exists:categories,id'],
+        ])['ids'];
+
+        foreach ($ids as $index => $id) {
+            Category::whereKey($id)->update(['sort_order' => $index]);
+        }
+
+        return redirect()->route('admin.categories.index');
     }
 }

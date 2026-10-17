@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\HomepageSectionRequest;
 use App\Models\Brand;
-use App\Models\FlashSale;
 use App\Models\HomepageSetting;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
@@ -55,38 +54,6 @@ class HomepageController extends Controller
                 ->get(['id', 'name', 'logo']);
         }
 
-        if ($setting->section_key === 'flash_sale') {
-            $flashSaleId = $setting->metadata['flash_sale_id'] ?? null;
-            $flashSale = null;
-
-            if ($flashSaleId) {
-                $flashSale = FlashSale::with('items.product')->find($flashSaleId);
-            }
-
-            if (! $flashSale) {
-                $flashSale = FlashSale::where('name', 'Weekend Flash Sale')->first();
-            }
-
-            if (! $flashSale) {
-                $flashSale = FlashSale::create([
-                    'name' => 'Weekend Flash Sale',
-                    'starts_at' => now(),
-                    'ends_at' => now()->addDays(7),
-                    'is_active' => true,
-                ]);
-
-                $metadata = $setting->metadata ?? [];
-                $metadata['flash_sale_id'] = $flashSale->id;
-                $setting->update(['metadata' => $metadata]);
-            } elseif (! isset($setting->metadata['flash_sale_id'])) {
-                $metadata = $setting->metadata ?? [];
-                $metadata['flash_sale_id'] = $flashSale->id;
-                $setting->update(['metadata' => $metadata]);
-            }
-
-            $data['flashSale'] = $flashSale->load('items.product');
-        }
-
         return Inertia::render('admin/homepage/edit', $data);
     }
 
@@ -101,7 +68,6 @@ class HomepageController extends Controller
             'action_label' => $validated['action_label'],
             'action_href' => $validated['action_href'],
             'is_visible' => $validated['is_visible'],
-            'sort_order' => $validated['sort_order'],
             'metadata' => array_merge($setting->metadata ?? [], $validated['metadata'] ?? []),
         ]);
 
@@ -152,46 +118,21 @@ class HomepageController extends Controller
             }
         }
 
-        if ($setting->section_key === 'flash_sale' && isset($validated['flash_sale'])) {
-            $flashSaleId = $setting->metadata['flash_sale_id'] ?? null;
+        return redirect()->route('admin.homepage.index')->with('success', 'Homepage section updated.');
+    }
 
-            if (! $flashSaleId) {
-                $flashSale = FlashSale::where('name', 'Weekend Flash Sale')->first();
-                if (! $flashSale) {
-                    $flashSale = FlashSale::create([
-                        'name' => 'Weekend Flash Sale',
-                        'starts_at' => $validated['flash_sale']['starts_at'],
-                        'ends_at' => $validated['flash_sale']['ends_at'],
-                        'is_active' => $validated['flash_sale']['is_active'],
-                    ]);
-                }
-                $flashSaleId = $flashSale->id;
-                $metadata = $setting->metadata ?? [];
-                $metadata['flash_sale_id'] = $flashSaleId;
-                $setting->update(['metadata' => $metadata]);
-            }
+    public function reorder(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'distinct', 'exists:homepage_settings,id'],
+        ])['ids'];
 
-            $flashSale = FlashSale::findOrFail($flashSaleId);
-
-            $flashSale->update([
-                'starts_at' => $validated['flash_sale']['starts_at'],
-                'ends_at' => $validated['flash_sale']['ends_at'],
-                'is_active' => $validated['flash_sale']['is_active'],
-            ]);
-
-            $flashSale->items()->delete();
-            if (isset($validated['flash_sale']['items'])) {
-                foreach ($validated['flash_sale']['items'] as $item) {
-                    $flashSale->items()->create([
-                        'product_id' => $item['product_id'],
-                        'sale_price' => $item['sale_price'],
-                        'stock_limit' => $item['stock_limit'] ?? 0,
-                    ]);
-                }
-            }
+        foreach ($ids as $index => $id) {
+            HomepageSetting::whereKey($id)->update(['sort_order' => $index]);
         }
 
-        return redirect()->route('admin.homepage.index')->with('success', 'Homepage section updated.');
+        return redirect()->route('admin.homepage.index');
     }
 
     public function searchProducts(Request $request): JsonResponse

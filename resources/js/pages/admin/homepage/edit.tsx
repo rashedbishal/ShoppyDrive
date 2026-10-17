@@ -1,11 +1,22 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Award, Calendar, Check, Package, Plus, Save, Search, ShoppingBag, Star, Trash2, Zap } from 'lucide-react';
+import {
+    ArrowLeft,
+    Award,
+    Check,
+    Package,
+    Plus,
+    Save,
+    Search,
+    ShoppingBag,
+    Star,
+    Trash2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import type { Brand, FlashSale, HomepageSetting, Product } from '@/types';
+import type { HomepageSetting, Product } from '@/types';
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -23,15 +34,22 @@ type SimpleBrand = {
 
 type Props = {
     section: HomepageSetting;
-    flashSale?: FlashSale;
     products?: Product[];
     featuredProducts?: SimpleProduct[];
     sectionProducts?: SimpleProduct[];
     sectionBrands?: SimpleBrand[];
 };
 
-export default function HomepageEdit({ section, flashSale, products: initialProducts, featuredProducts, sectionProducts, sectionBrands }: Props) {
+export default function HomepageEdit({
+    section,
+    products: initialProducts,
+    featuredProducts,
+    sectionProducts,
+    sectionBrands,
+}: Props) {
     const isAnnouncementBar = section.section_key === 'announcement_bar';
+    const isHeroSlider = section.section_key === 'hero_slider';
+    const isPromotionalBanners = section.section_key === 'promotional_banners';
     const isFlashSale = section.section_key === 'flash_sale';
     const isFeaturedProducts = section.section_key === 'featured_products';
     const isNewArrivals = section.section_key === 'new_arrivals';
@@ -46,22 +64,22 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
         action_label: section.action_label ?? '',
         action_href: section.action_href ?? '',
         is_visible: section.is_visible,
-        sort_order: String(section.sort_order),
         metadata: section.metadata ?? {},
-        flash_sale: flashSale ? {
-            starts_at: flashSale.starts_at ? new Date(flashSale.starts_at).toISOString().slice(0, 16) : '',
-            ends_at: flashSale.ends_at ? new Date(flashSale.ends_at).toISOString().slice(0, 16) : '',
-            is_active: flashSale.is_active,
-            items: flashSale.items?.map(item => ({
-                product_id: item.product_id,
-                sale_price: String(item.sale_price),
-                stock_limit: String(item.stock_limit ?? 0),
-                product: item.product,
-            })) ?? [],
-        } : null,
-        featured_products: (featuredProducts ?? []).map(p => ({ id: p.id, name: p.name, price: p.price })),
-        section_products: (sectionProducts ?? []).map(p => ({ id: p.id, name: p.name, price: p.price })),
-        section_brands: (sectionBrands ?? []).map(b => ({ id: b.id, name: b.name, logo: b.logo })),
+        featured_products: (featuredProducts ?? []).map((p) => ({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+        })),
+        section_products: (sectionProducts ?? []).map((p) => ({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+        })),
+        section_brands: (sectionBrands ?? []).map((b) => ({
+            id: b.id,
+            name: b.name,
+            logo: b.logo,
+        })),
     });
 
     const [searchResults, setSearchResults] = useState<Product[]>([]);
@@ -76,22 +94,30 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+            if (
+                searchContainerRef.current &&
+                !searchContainerRef.current.contains(e.target as Node)
+            ) {
                 setSearchResults([]);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        return () =>
+            document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (brandSearchRef.current && !brandSearchRef.current.contains(e.target as Node)) {
+            if (
+                brandSearchRef.current &&
+                !brandSearchRef.current.contains(e.target as Node)
+            ) {
                 setBrandResults([]);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        return () =>
+            document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     useEffect(() => {
@@ -106,7 +132,13 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
             try {
                 const res = await fetch(
                     `/admin/homepage/products/search?q=${encodeURIComponent(searchQuery)}`,
-                    { signal: controller.signal, headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } },
+                    {
+                        signal: controller.signal,
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    },
                 );
                 if (res.ok) setSearchResults(await res.json());
             } catch {
@@ -116,7 +148,10 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
             }
         }, 300);
 
-        return () => { clearTimeout(timeoutId); controller.abort(); };
+        return () => {
+            clearTimeout(timeoutId);
+            controller.abort();
+        };
     }, [searchQuery]);
 
     useEffect(() => {
@@ -130,7 +165,13 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
             try {
                 const res = await fetch(
                     `/admin/homepage/brands/search?q=${encodeURIComponent(brandQuery)}`,
-                    { signal: controller.signal, headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } },
+                    {
+                        signal: controller.signal,
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    },
                 );
                 if (res.ok) setBrandResults(await res.json());
             } catch {
@@ -139,37 +180,14 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
                 setSearchingBrands(false);
             }
         }, 300);
-        return () => { clearTimeout(timeoutId); controller.abort(); };
+        return () => {
+            clearTimeout(timeoutId);
+            controller.abort();
+        };
     }, [brandQuery]);
 
-    const addProduct = (product: Product) => {
-        if (data.flash_sale?.items.some(item => item.product_id === product.id)) return;
-
-        setData('flash_sale', {
-            ...data.flash_sale!,
-            items: [
-                ...data.flash_sale!.items,
-                {
-                    product_id: product.id,
-                    sale_price: String(product.price),
-                    stock_limit: '0',
-                    product,
-                },
-            ],
-        });
-        setSearchQuery('');
-        setSearchResults([]);
-    };
-
-    const removeProduct = (productId: number) => {
-        setData('flash_sale', {
-            ...data.flash_sale!,
-            items: data.flash_sale!.items.filter(item => item.product_id !== productId),
-        });
-    };
-
     const addFeaturedProduct = (product: Product) => {
-        if (data.featured_products.some(p => p.id === product.id)) return;
+        if (data.featured_products.some((p) => p.id === product.id)) return;
         setData('featured_products', [
             ...data.featured_products,
             { id: product.id, name: product.name, price: product.price },
@@ -179,11 +197,14 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
     };
 
     const removeFeaturedProduct = (productId: number) => {
-        setData('featured_products', data.featured_products.filter(p => p.id !== productId));
+        setData(
+            'featured_products',
+            data.featured_products.filter((p) => p.id !== productId),
+        );
     };
 
     const addSectionProduct = (product: Product) => {
-        if (data.section_products.some(p => p.id === product.id)) return;
+        if (data.section_products.some((p) => p.id === product.id)) return;
         setData('section_products', [
             ...data.section_products,
             { id: product.id, name: product.name, price: product.price },
@@ -193,11 +214,14 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
     };
 
     const removeSectionProduct = (productId: number) => {
-        setData('section_products', data.section_products.filter(p => p.id !== productId));
+        setData(
+            'section_products',
+            data.section_products.filter((p) => p.id !== productId),
+        );
     };
 
     const addSectionBrand = (brand: SimpleBrand) => {
-        if (data.section_brands.some(b => b.id === brand.id)) return;
+        if (data.section_brands.some((b) => b.id === brand.id)) return;
         setData('section_brands', [
             ...data.section_brands,
             { id: brand.id, name: brand.name, logo: brand.logo },
@@ -207,16 +231,10 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
     };
 
     const removeSectionBrand = (brandId: number) => {
-        setData('section_brands', data.section_brands.filter(b => b.id !== brandId));
-    };
-
-    const updateItem = (productId: number, field: string, value: string) => {
-        setData('flash_sale', {
-            ...data.flash_sale!,
-            items: data.flash_sale!.items.map(item => 
-                item.product_id === productId ? { ...item, [field]: value } : item
-            ),
-        });
+        setData(
+            'section_brands',
+            data.section_brands.filter((b) => b.id !== brandId),
+        );
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -229,102 +247,274 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
             <Head title={`Edit ${section.section_name} — Admin`} />
             <div className="space-y-6">
                 <div className="flex items-center gap-4">
-                    <Button asChild variant="ghost" size="icon" className="rounded-full">
+                    <Button
+                        asChild
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full"
+                    >
                         <Link href={route('admin.homepage.index')}>
                             <ArrowLeft className="size-5" />
                         </Link>
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Edit Section: {section.section_name}</h1>
-                        <p className="text-sm text-slate-500">Customize the appearance and visibility of this homepage section.</p>
+                        <h1 className="text-2xl font-bold text-slate-900">
+                            Edit Section: {section.section_name}
+                        </h1>
+                        <p className="text-sm text-slate-500">
+                            Customize the appearance and visibility of this
+                            homepage section.
+                        </p>
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="max-w-4xl space-y-6 pb-20">
+                <form
+                    onSubmit={handleSubmit}
+                    className="max-w-4xl space-y-6 pb-20"
+                >
                     <div className="grid gap-6 lg:grid-cols-3">
-                        <div className="lg:col-span-2 space-y-6">
+                        <div className="space-y-6 lg:col-span-2">
                             {isAnnouncementBar ? (
                                 <Card>
                                     <CardHeader className="border-b border-slate-100 pb-4">
-                                        <CardTitle className="text-base font-semibold">Announcement Bar Content</CardTitle>
+                                        <CardTitle className="text-base font-semibold">
+                                            Announcement Bar Content
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4 pt-6">
                                         <Input
                                             label="Announcement Message"
                                             value={data.title}
-                                            onChange={e => setData('title', e.target.value)}
+                                            onChange={(e) =>
+                                                setData('title', e.target.value)
+                                            }
                                             placeholder="e.g. Free delivery on orders over ৳999"
                                             error={errors.title}
                                         />
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Input
                                                 label="Phone Number"
-                                                value={data.metadata.phone ?? ''}
-                                                onChange={e => setData('metadata', { ...data.metadata, phone: e.target.value })}
+                                                value={
+                                                    data.metadata.phone ?? ''
+                                                }
+                                                onChange={(e) =>
+                                                    setData('metadata', {
+                                                        ...data.metadata,
+                                                        phone: e.target.value,
+                                                    })
+                                                }
                                                 placeholder="e.g. +880 1234-567890"
-                                                error={(errors as Record<string, string>)['metadata.phone']}
+                                                error={
+                                                    (
+                                                        errors as Record<
+                                                            string,
+                                                            string
+                                                        >
+                                                    )['metadata.phone']
+                                                }
                                             />
                                             <Input
                                                 label="Email Address"
                                                 type="email"
-                                                value={data.metadata.email ?? ''}
-                                                onChange={e => setData('metadata', { ...data.metadata, email: e.target.value })}
+                                                value={
+                                                    data.metadata.email ?? ''
+                                                }
+                                                onChange={(e) =>
+                                                    setData('metadata', {
+                                                        ...data.metadata,
+                                                        email: e.target.value,
+                                                    })
+                                                }
                                                 placeholder="e.g. support@shoppy.com"
-                                                error={(errors as Record<string, string>)['metadata.email']}
+                                                error={
+                                                    (
+                                                        errors as Record<
+                                                            string,
+                                                            string
+                                                        >
+                                                    )['metadata.email']
+                                                }
                                             />
                                         </div>
                                         <Input
                                             label="Free Delivery Minimum Amount (৳)"
                                             type="number"
-                                            value={String(data.metadata.free_delivery_amount ?? '')}
-                                            onChange={e => setData('metadata', { ...data.metadata, free_delivery_amount: e.target.value ? Number(e.target.value) : '' })}
+                                            value={String(
+                                                data.metadata
+                                                    .free_delivery_amount ?? '',
+                                            )}
+                                            onChange={(e) =>
+                                                setData('metadata', {
+                                                    ...data.metadata,
+                                                    free_delivery_amount: e
+                                                        .target.value
+                                                        ? Number(e.target.value)
+                                                        : '',
+                                                })
+                                            }
                                             placeholder="e.g. 999"
-                                            error={(errors as Record<string, string>)['metadata.free_delivery_amount']}
+                                            error={
+                                                (
+                                                    errors as Record<
+                                                        string,
+                                                        string
+                                                    >
+                                                )[
+                                                    'metadata.free_delivery_amount'
+                                                ]
+                                            }
                                         />
+                                    </CardContent>
+                                </Card>
+                            ) : isHeroSlider ? (
+                                <Card>
+                                    <CardHeader className="border-b border-slate-100 pb-4">
+                                        <CardTitle className="text-base font-semibold">
+                                            Hero Slider Settings
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4 pt-6">
+                                        <p className="text-sm text-slate-500">
+                                            Slide content (images, titles,
+                                            descriptions, CTAs) is managed under{' '}
+                                            <Link
+                                                href={route(
+                                                    'admin.hero-slides.index',
+                                                )}
+                                                className="font-medium text-slate-700 underline underline-offset-2"
+                                            >
+                                                Hero Slides
+                                            </Link>
+                                            . This page only controls whether
+                                            the slider is shown and how fast it
+                                            rotates.
+                                        </p>
+                                        <Input
+                                            label="Autoplay Interval (seconds)"
+                                            type="number"
+                                            min={2}
+                                            max={30}
+                                            value={String(
+                                                data.metadata
+                                                    .autoplay_seconds ?? 6,
+                                            )}
+                                            onChange={(e) =>
+                                                setData('metadata', {
+                                                    ...data.metadata,
+                                                    autoplay_seconds: e.target
+                                                        .value
+                                                        ? Number(e.target.value)
+                                                        : '',
+                                                })
+                                            }
+                                            hint="How long each slide stays on screen before advancing to the next one."
+                                            error={
+                                                (
+                                                    errors as Record<
+                                                        string,
+                                                        string
+                                                    >
+                                                )['metadata.autoplay_seconds']
+                                            }
+                                        />
+                                    </CardContent>
+                                </Card>
+                            ) : isPromotionalBanners ? (
+                                <Card>
+                                    <CardHeader className="border-b border-slate-100 pb-4">
+                                        <CardTitle className="text-base font-semibold">
+                                            Promotional Banners
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="pt-6">
+                                        <p className="text-sm text-slate-500">
+                                            Banner content (images, titles,
+                                            links) is managed under{' '}
+                                            <Link
+                                                href={route(
+                                                    'admin.promotional-banners.index',
+                                                )}
+                                                className="font-medium text-slate-700 underline underline-offset-2"
+                                            >
+                                                Promotional Banners
+                                            </Link>
+                                            . This page only controls whether
+                                            the banners are shown on the
+                                            homepage.
+                                        </p>
                                     </CardContent>
                                 </Card>
                             ) : (
                                 <Card>
                                     <CardHeader className="border-b border-slate-100 pb-4">
-                                        <CardTitle className="text-base font-semibold">Section Content</CardTitle>
+                                        <CardTitle className="text-base font-semibold">
+                                            Section Content
+                                        </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4 pt-6">
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Input
                                                 label="Eyebrow (optional)"
                                                 value={data.eyebrow}
-                                                onChange={e => setData('eyebrow', e.target.value)}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'eyebrow',
+                                                        e.target.value,
+                                                    )
+                                                }
                                                 placeholder="e.g. Featured"
                                                 error={errors.eyebrow}
                                             />
                                             <Input
                                                 label="Title"
                                                 value={data.title}
-                                                onChange={e => setData('title', e.target.value)}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'title',
+                                                        e.target.value,
+                                                    )
+                                                }
                                                 placeholder="e.g. Featured Products"
                                                 error={errors.title}
                                             />
                                         </div>
-                                        <Textarea
-                                            label="Description (optional)"
-                                            value={data.description}
-                                            onChange={e => setData('description', e.target.value)}
-                                            placeholder="Brief text shown below the title"
-                                            error={errors.description}
-                                            rows={4}
-                                        />
+                                        {!isFlashSale && (
+                                            <Textarea
+                                                label="Description (optional)"
+                                                value={data.description}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'description',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="Brief text shown below the title"
+                                                error={errors.description}
+                                                rows={4}
+                                            />
+                                        )}
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Input
                                                 label="Action Button Label"
                                                 value={data.action_label}
-                                                onChange={e => setData('action_label', e.target.value)}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'action_label',
+                                                        e.target.value,
+                                                    )
+                                                }
                                                 placeholder="e.g. View All"
                                                 error={errors.action_label}
                                             />
                                             <Input
                                                 label="Action Button Link"
                                                 value={data.action_href}
-                                                onChange={e => setData('action_href', e.target.value)}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'action_href',
+                                                        e.target.value,
+                                                    )
+                                                }
                                                 placeholder="e.g. /products"
                                                 error={errors.action_href}
                                             />
@@ -335,87 +525,156 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
 
                             {isFeaturedProducts && (
                                 <Card>
-                                    <CardHeader className="border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
-                                        <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                            <Star className="size-4 text-amber-500 fill-amber-500" />
+                                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                                            <Star className="size-4 fill-amber-500 text-amber-500" />
                                             Featured Products
                                         </CardTitle>
-                                        <div ref={searchContainerRef} className="relative w-72">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                        <div
+                                            ref={searchContainerRef}
+                                            className="relative w-72"
+                                        >
+                                            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                             <Input
                                                 placeholder="Search products..."
-                                                className="pl-9 h-9"
+                                                className="h-9 pl-9"
                                                 value={searchQuery}
-                                                onChange={e => setSearchQuery(e.target.value)}
+                                                onChange={(e) =>
+                                                    setSearchQuery(
+                                                        e.target.value,
+                                                    )
+                                                }
                                             />
-                                            {(searching || searchResults.length > 0) && (
-                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
+                                            {(searching ||
+                                                searchResults.length > 0) && (
+                                                <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                                                     {searching && (
-                                                        <p className="px-4 py-3 text-sm text-slate-400">Searching...</p>
+                                                        <p className="px-4 py-3 text-sm text-slate-400">
+                                                            Searching...
+                                                        </p>
                                                     )}
-                                                    {!searching && searchResults.map(product => {
-                                                        const alreadyAdded = data.featured_products.some(p => p.id === product.id);
-                                                        return (
-                                                            <button
-                                                                key={product.id}
-                                                                type="button"
-                                                                disabled={alreadyAdded}
-                                                                className={cn(
-                                                                    'w-full text-left px-4 py-2.5 border-b border-slate-100 last:border-0 flex items-center justify-between gap-3',
-                                                                    alreadyAdded
-                                                                        ? 'opacity-50 cursor-not-allowed bg-slate-50'
-                                                                        : 'hover:bg-slate-50 group cursor-pointer',
-                                                                )}
-                                                                onClick={() => !alreadyAdded && addFeaturedProduct(product)}
-                                                            >
-                                                                <div className="min-w-0 flex-1">
-                                                                    <p className="text-sm font-medium text-slate-900 truncate">{product.name}</p>
-                                                                    <p className="text-xs text-slate-500">৳{product.price}</p>
-                                                                </div>
-                                                                {alreadyAdded
-                                                                    ? <Check className="size-4 shrink-0 text-emerald-500" />
-                                                                    : <Plus className="size-4 shrink-0 text-slate-400 group-hover:text-slate-700" />
-                                                                }
-                                                            </button>
-                                                        );
-                                                    })}
+                                                    {!searching &&
+                                                        searchResults.map(
+                                                            (product) => {
+                                                                const alreadyAdded =
+                                                                    data.featured_products.some(
+                                                                        (p) =>
+                                                                            p.id ===
+                                                                            product.id,
+                                                                    );
+                                                                return (
+                                                                    <button
+                                                                        key={
+                                                                            product.id
+                                                                        }
+                                                                        type="button"
+                                                                        disabled={
+                                                                            alreadyAdded
+                                                                        }
+                                                                        className={cn(
+                                                                            'flex w-full items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5 text-left last:border-0',
+                                                                            alreadyAdded
+                                                                                ? 'cursor-not-allowed bg-slate-50 opacity-50'
+                                                                                : 'group cursor-pointer hover:bg-slate-50',
+                                                                        )}
+                                                                        onClick={() =>
+                                                                            !alreadyAdded &&
+                                                                            addFeaturedProduct(
+                                                                                product,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <p className="truncate text-sm font-medium text-slate-900">
+                                                                                {
+                                                                                    product.name
+                                                                                }
+                                                                            </p>
+                                                                            <p className="text-xs text-slate-500">
+                                                                                ৳
+                                                                                {
+                                                                                    product.price
+                                                                                }
+                                                                            </p>
+                                                                        </div>
+                                                                        {alreadyAdded ? (
+                                                                            <Check className="size-4 shrink-0 text-emerald-500" />
+                                                                        ) : (
+                                                                            <Plus className="size-4 shrink-0 text-slate-400 group-hover:text-slate-700" />
+                                                                        )}
+                                                                    </button>
+                                                                );
+                                                            },
+                                                        )}
                                                 </div>
                                             )}
                                         </div>
                                     </CardHeader>
                                     <CardContent className="pt-6">
                                         {data.featured_products.length === 0 ? (
-                                            <div className="text-center py-10 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                                                <Star className="size-10 text-slate-300 mx-auto mb-3" />
-                                                <p className="text-slate-500">No featured products yet.</p>
-                                                <p className="text-xs text-slate-400">Search and add products to feature them on the homepage.</p>
+                                            <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
+                                                <Star className="mx-auto mb-3 size-10 text-slate-300" />
+                                                <p className="text-slate-500">
+                                                    No featured products yet.
+                                                </p>
+                                                <p className="text-xs text-slate-400">
+                                                    Search and add products to
+                                                    feature them on the
+                                                    homepage.
+                                                </p>
                                             </div>
                                         ) : (
-                                            <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                            <div className="overflow-hidden rounded-lg border border-slate-200">
                                                 <table className="w-full text-sm">
-                                                    <thead className="bg-slate-50 border-b border-slate-200">
+                                                    <thead className="border-b border-slate-200 bg-slate-50">
                                                         <tr>
-                                                            <th className="text-left px-4 py-3 font-semibold text-slate-700">Product</th>
-                                                            <th className="text-right px-4 py-3 font-semibold text-slate-700 w-28">Price</th>
+                                                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                                                                Product
+                                                            </th>
+                                                            <th className="w-28 px-4 py-3 text-right font-semibold text-slate-700">
+                                                                Price
+                                                            </th>
                                                             <th className="w-12" />
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-100">
-                                                        {data.featured_products.map(product => (
-                                                            <tr key={product.id} className="hover:bg-slate-50/50 transition">
-                                                                <td className="px-4 py-3 font-medium text-slate-900">{product.name}</td>
-                                                                <td className="px-4 py-3 text-right text-slate-600">৳{Number(product.price).toFixed(0)}</td>
-                                                                <td className="px-4 py-3 text-right">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => removeFeaturedProduct(product.id)}
-                                                                        className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition"
-                                                                    >
-                                                                        <Trash2 className="size-4" />
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
+                                                        {data.featured_products.map(
+                                                            (product) => (
+                                                                <tr
+                                                                    key={
+                                                                        product.id
+                                                                    }
+                                                                    className="transition hover:bg-slate-50/50"
+                                                                >
+                                                                    <td className="px-4 py-3 font-medium text-slate-900">
+                                                                        {
+                                                                            product.name
+                                                                        }
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-right text-slate-600">
+                                                                        ৳
+                                                                        {Number(
+                                                                            product.price,
+                                                                        ).toFixed(
+                                                                            0,
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-right">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                removeFeaturedProduct(
+                                                                                    product.id,
+                                                                                )
+                                                                            }
+                                                                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                                                                        >
+                                                                            <Trash2 className="size-4" />
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            ),
+                                                        )}
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -426,89 +685,161 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
 
                             {isProductSection && (
                                 <Card>
-                                    <CardHeader className="border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
-                                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                                            {isNewArrivals ? (
+                                                <Package className="size-4 text-emerald-500" />
+                                            ) : (
+                                                <Award className="size-4 text-amber-500" />
+                                            )}
                                             {isNewArrivals
-                                                ? <Package className="size-4 text-emerald-500" />
-                                                : <Award className="size-4 text-amber-500" />}
-                                            {isNewArrivals ? 'New Arrival Products' : 'Best Seller Products'}
+                                                ? 'New Arrival Products'
+                                                : 'Best Seller Products'}
                                         </CardTitle>
-                                        <div ref={searchContainerRef} className="relative w-72">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                        <div
+                                            ref={searchContainerRef}
+                                            className="relative w-72"
+                                        >
+                                            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                             <Input
                                                 placeholder="Search products..."
-                                                className="pl-9 h-9"
+                                                className="h-9 pl-9"
                                                 value={searchQuery}
-                                                onChange={e => setSearchQuery(e.target.value)}
+                                                onChange={(e) =>
+                                                    setSearchQuery(
+                                                        e.target.value,
+                                                    )
+                                                }
                                             />
-                                            {(searching || searchResults.length > 0) && (
-                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
+                                            {(searching ||
+                                                searchResults.length > 0) && (
+                                                <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                                                     {searching && (
-                                                        <p className="px-4 py-3 text-sm text-slate-400">Searching...</p>
+                                                        <p className="px-4 py-3 text-sm text-slate-400">
+                                                            Searching...
+                                                        </p>
                                                     )}
-                                                    {!searching && searchResults.map(product => {
-                                                        const alreadyAdded = data.section_products.some(p => p.id === product.id);
-                                                        return (
-                                                            <button
-                                                                key={product.id}
-                                                                type="button"
-                                                                disabled={alreadyAdded}
-                                                                className={cn(
-                                                                    'w-full text-left px-4 py-2.5 border-b border-slate-100 last:border-0 flex items-center justify-between gap-3',
-                                                                    alreadyAdded
-                                                                        ? 'opacity-50 cursor-not-allowed bg-slate-50'
-                                                                        : 'hover:bg-slate-50 group cursor-pointer',
-                                                                )}
-                                                                onClick={() => !alreadyAdded && addSectionProduct(product)}
-                                                            >
-                                                                <div className="min-w-0 flex-1">
-                                                                    <p className="text-sm font-medium text-slate-900 truncate">{product.name}</p>
-                                                                    <p className="text-xs text-slate-500">৳{product.price}</p>
-                                                                </div>
-                                                                {alreadyAdded
-                                                                    ? <Check className="size-4 shrink-0 text-emerald-500" />
-                                                                    : <Plus className="size-4 shrink-0 text-slate-400 group-hover:text-slate-700" />
-                                                                }
-                                                            </button>
-                                                        );
-                                                    })}
+                                                    {!searching &&
+                                                        searchResults.map(
+                                                            (product) => {
+                                                                const alreadyAdded =
+                                                                    data.section_products.some(
+                                                                        (p) =>
+                                                                            p.id ===
+                                                                            product.id,
+                                                                    );
+                                                                return (
+                                                                    <button
+                                                                        key={
+                                                                            product.id
+                                                                        }
+                                                                        type="button"
+                                                                        disabled={
+                                                                            alreadyAdded
+                                                                        }
+                                                                        className={cn(
+                                                                            'flex w-full items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5 text-left last:border-0',
+                                                                            alreadyAdded
+                                                                                ? 'cursor-not-allowed bg-slate-50 opacity-50'
+                                                                                : 'group cursor-pointer hover:bg-slate-50',
+                                                                        )}
+                                                                        onClick={() =>
+                                                                            !alreadyAdded &&
+                                                                            addSectionProduct(
+                                                                                product,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <p className="truncate text-sm font-medium text-slate-900">
+                                                                                {
+                                                                                    product.name
+                                                                                }
+                                                                            </p>
+                                                                            <p className="text-xs text-slate-500">
+                                                                                ৳
+                                                                                {
+                                                                                    product.price
+                                                                                }
+                                                                            </p>
+                                                                        </div>
+                                                                        {alreadyAdded ? (
+                                                                            <Check className="size-4 shrink-0 text-emerald-500" />
+                                                                        ) : (
+                                                                            <Plus className="size-4 shrink-0 text-slate-400 group-hover:text-slate-700" />
+                                                                        )}
+                                                                    </button>
+                                                                );
+                                                            },
+                                                        )}
                                                 </div>
                                             )}
                                         </div>
                                     </CardHeader>
                                     <CardContent className="pt-6">
                                         {data.section_products.length === 0 ? (
-                                            <div className="text-center py-10 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                                                <ShoppingBag className="size-10 text-slate-300 mx-auto mb-3" />
-                                                <p className="text-slate-500">No products added yet.</p>
-                                                <p className="text-xs text-slate-400">Search and add products to this section.</p>
+                                            <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
+                                                <ShoppingBag className="mx-auto mb-3 size-10 text-slate-300" />
+                                                <p className="text-slate-500">
+                                                    No products added yet.
+                                                </p>
+                                                <p className="text-xs text-slate-400">
+                                                    Search and add products to
+                                                    this section.
+                                                </p>
                                             </div>
                                         ) : (
-                                            <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                            <div className="overflow-hidden rounded-lg border border-slate-200">
                                                 <table className="w-full text-sm">
-                                                    <thead className="bg-slate-50 border-b border-slate-200">
+                                                    <thead className="border-b border-slate-200 bg-slate-50">
                                                         <tr>
-                                                            <th className="text-left px-4 py-3 font-semibold text-slate-700">Product</th>
-                                                            <th className="text-right px-4 py-3 font-semibold text-slate-700 w-28">Price</th>
+                                                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                                                                Product
+                                                            </th>
+                                                            <th className="w-28 px-4 py-3 text-right font-semibold text-slate-700">
+                                                                Price
+                                                            </th>
                                                             <th className="w-12" />
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-100">
-                                                        {data.section_products.map(product => (
-                                                            <tr key={product.id} className="hover:bg-slate-50/50 transition">
-                                                                <td className="px-4 py-3 font-medium text-slate-900">{product.name}</td>
-                                                                <td className="px-4 py-3 text-right text-slate-600">৳{Number(product.price).toFixed(0)}</td>
-                                                                <td className="px-4 py-3 text-right">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => removeSectionProduct(product.id)}
-                                                                        className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition"
-                                                                    >
-                                                                        <Trash2 className="size-4" />
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
+                                                        {data.section_products.map(
+                                                            (product) => (
+                                                                <tr
+                                                                    key={
+                                                                        product.id
+                                                                    }
+                                                                    className="transition hover:bg-slate-50/50"
+                                                                >
+                                                                    <td className="px-4 py-3 font-medium text-slate-900">
+                                                                        {
+                                                                            product.name
+                                                                        }
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-right text-slate-600">
+                                                                        ৳
+                                                                        {Number(
+                                                                            product.price,
+                                                                        ).toFixed(
+                                                                            0,
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-right">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                removeSectionProduct(
+                                                                                    product.id,
+                                                                                )
+                                                                            }
+                                                                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                                                                        >
+                                                                            <Trash2 className="size-4" />
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            ),
+                                                        )}
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -519,82 +850,136 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
 
                             {isBrands && (
                                 <Card>
-                                    <CardHeader className="border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
-                                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                        <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                             <ShoppingBag className="size-4 text-violet-500" />
                                             Featured Brands
                                         </CardTitle>
-                                        <div ref={brandSearchRef} className="relative w-72">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                        <div
+                                            ref={brandSearchRef}
+                                            className="relative w-72"
+                                        >
+                                            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                             <Input
                                                 placeholder="Search brands..."
-                                                className="pl-9 h-9"
+                                                className="h-9 pl-9"
                                                 value={brandQuery}
-                                                onChange={e => setBrandQuery(e.target.value)}
+                                                onChange={(e) =>
+                                                    setBrandQuery(
+                                                        e.target.value,
+                                                    )
+                                                }
                                             />
-                                            {(searchingBrands || brandResults.length > 0) && (
-                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
+                                            {(searchingBrands ||
+                                                brandResults.length > 0) && (
+                                                <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                                                     {searchingBrands && (
-                                                        <p className="px-4 py-3 text-sm text-slate-400">Searching...</p>
+                                                        <p className="px-4 py-3 text-sm text-slate-400">
+                                                            Searching...
+                                                        </p>
                                                     )}
-                                                    {!searchingBrands && brandResults.map(brand => {
-                                                        const alreadyAdded = data.section_brands.some(b => b.id === brand.id);
-                                                        return (
-                                                            <button
-                                                                key={brand.id}
-                                                                type="button"
-                                                                disabled={alreadyAdded}
-                                                                className={cn(
-                                                                    'w-full text-left px-4 py-2.5 border-b border-slate-100 last:border-0 flex items-center justify-between gap-3',
-                                                                    alreadyAdded
-                                                                        ? 'opacity-50 cursor-not-allowed bg-slate-50'
-                                                                        : 'hover:bg-slate-50 group cursor-pointer',
-                                                                )}
-                                                                onClick={() => !alreadyAdded && addSectionBrand(brand)}
-                                                            >
-                                                                <p className="text-sm font-medium text-slate-900 truncate flex-1">{brand.name}</p>
-                                                                {alreadyAdded
-                                                                    ? <Check className="size-4 shrink-0 text-emerald-500" />
-                                                                    : <Plus className="size-4 shrink-0 text-slate-400 group-hover:text-slate-700" />
-                                                                }
-                                                            </button>
-                                                        );
-                                                    })}
+                                                    {!searchingBrands &&
+                                                        brandResults.map(
+                                                            (brand) => {
+                                                                const alreadyAdded =
+                                                                    data.section_brands.some(
+                                                                        (b) =>
+                                                                            b.id ===
+                                                                            brand.id,
+                                                                    );
+                                                                return (
+                                                                    <button
+                                                                        key={
+                                                                            brand.id
+                                                                        }
+                                                                        type="button"
+                                                                        disabled={
+                                                                            alreadyAdded
+                                                                        }
+                                                                        className={cn(
+                                                                            'flex w-full items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5 text-left last:border-0',
+                                                                            alreadyAdded
+                                                                                ? 'cursor-not-allowed bg-slate-50 opacity-50'
+                                                                                : 'group cursor-pointer hover:bg-slate-50',
+                                                                        )}
+                                                                        onClick={() =>
+                                                                            !alreadyAdded &&
+                                                                            addSectionBrand(
+                                                                                brand,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <p className="flex-1 truncate text-sm font-medium text-slate-900">
+                                                                            {
+                                                                                brand.name
+                                                                            }
+                                                                        </p>
+                                                                        {alreadyAdded ? (
+                                                                            <Check className="size-4 shrink-0 text-emerald-500" />
+                                                                        ) : (
+                                                                            <Plus className="size-4 shrink-0 text-slate-400 group-hover:text-slate-700" />
+                                                                        )}
+                                                                    </button>
+                                                                );
+                                                            },
+                                                        )}
                                                 </div>
                                             )}
                                         </div>
                                     </CardHeader>
                                     <CardContent className="pt-6">
                                         {data.section_brands.length === 0 ? (
-                                            <div className="text-center py-10 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                                                <ShoppingBag className="size-10 text-slate-300 mx-auto mb-3" />
-                                                <p className="text-slate-500">No brands added yet.</p>
-                                                <p className="text-xs text-slate-400">Search and add brands to show in this section.</p>
+                                            <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
+                                                <ShoppingBag className="mx-auto mb-3 size-10 text-slate-300" />
+                                                <p className="text-slate-500">
+                                                    No brands added yet.
+                                                </p>
+                                                <p className="text-xs text-slate-400">
+                                                    Search and add brands to
+                                                    show in this section.
+                                                </p>
                                             </div>
                                         ) : (
-                                            <div className="border border-slate-200 rounded-lg overflow-hidden">
+                                            <div className="overflow-hidden rounded-lg border border-slate-200">
                                                 <table className="w-full text-sm">
-                                                    <thead className="bg-slate-50 border-b border-slate-200">
+                                                    <thead className="border-b border-slate-200 bg-slate-50">
                                                         <tr>
-                                                            <th className="text-left px-4 py-3 font-semibold text-slate-700">Brand</th>
+                                                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                                                                Brand
+                                                            </th>
                                                             <th className="w-12" />
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-100">
-                                                        {data.section_brands.map(brand => (
-                                                            <tr key={brand.id} className="hover:bg-slate-50/50 transition">
-                                                                <td className="px-4 py-3 font-medium text-slate-900">{brand.name}</td>
-                                                                <td className="px-4 py-3 text-right">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => removeSectionBrand(brand.id)}
-                                                                        className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition"
-                                                                    >
-                                                                        <Trash2 className="size-4" />
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
+                                                        {data.section_brands.map(
+                                                            (brand) => (
+                                                                <tr
+                                                                    key={
+                                                                        brand.id
+                                                                    }
+                                                                    className="transition hover:bg-slate-50/50"
+                                                                >
+                                                                    <td className="px-4 py-3 font-medium text-slate-900">
+                                                                        {
+                                                                            brand.name
+                                                                        }
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-right">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                removeSectionBrand(
+                                                                                    brand.id,
+                                                                                )
+                                                                            }
+                                                                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                                                                        >
+                                                                            <Trash2 className="size-4" />
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            ),
+                                                        )}
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -603,117 +988,34 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
                                 </Card>
                             )}
 
-                            {isFlashSale && data.flash_sale && (
+                            {isFlashSale && (
                                 <Card>
-                                    <CardHeader className="border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
-                                        <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                            <Zap className="size-4 text-amber-500 fill-amber-500" />
-                                            Flash Sale Products
+                                    <CardHeader className="border-b border-slate-100 pb-4">
+                                        <CardTitle className="text-base font-semibold">
+                                            Flash Sale
                                         </CardTitle>
-                                        <div ref={searchContainerRef} className="relative w-72">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                                            <Input
-                                                placeholder="Search products..."
-                                                className="pl-9 h-9"
-                                                value={searchQuery}
-                                                onChange={e => setSearchQuery(e.target.value)}
-                                            />
-                                            {(searching || searchResults.length > 0) && (
-                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
-                                                    {searching && (
-                                                        <p className="px-4 py-3 text-sm text-slate-400">Searching...</p>
-                                                    )}
-                                                    {!searching && searchResults.map(product => {
-                                                        const alreadyAdded = data.flash_sale?.items.some(i => i.product_id === product.id) ?? false;
-                                                        return (
-                                                            <button
-                                                                key={product.id}
-                                                                type="button"
-                                                                disabled={alreadyAdded}
-                                                                className={cn(
-                                                                    'w-full text-left px-4 py-2.5 border-b border-slate-100 last:border-0 flex items-center justify-between gap-3',
-                                                                    alreadyAdded
-                                                                        ? 'opacity-50 cursor-not-allowed bg-slate-50'
-                                                                        : 'hover:bg-slate-50 group cursor-pointer',
-                                                                )}
-                                                                onClick={() => !alreadyAdded && addProduct(product)}
-                                                            >
-                                                                <div className="min-w-0 flex-1">
-                                                                    <p className="text-sm font-medium text-slate-900 truncate">{product.name}</p>
-                                                                    <p className="text-xs text-slate-500">৳{product.price}</p>
-                                                                </div>
-                                                                {alreadyAdded
-                                                                    ? <Check className="size-4 shrink-0 text-emerald-500" />
-                                                                    : <Plus className="size-4 shrink-0 text-slate-400 group-hover:text-slate-700" />
-                                                                }
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
                                     </CardHeader>
                                     <CardContent className="pt-6">
-                                        <div className="space-y-4">
-                                            {data.flash_sale.items.length === 0 ? (
-                                                <div className="text-center py-10 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
-                                                    <Zap className="size-10 text-slate-300 mx-auto mb-3" />
-                                                    <p className="text-slate-500">No products added to this flash sale.</p>
-                                                    <p className="text-xs text-slate-400">Search and add products from the search bar above.</p>
-                                                </div>
-                                            ) : (
-                                                <div className="border border-slate-200 rounded-lg overflow-hidden">
-                                                    <table className="w-full text-sm">
-                                                        <thead className="bg-slate-50 border-b border-slate-200">
-                                                            <tr>
-                                                                <th className="text-left px-4 py-3 font-semibold text-slate-700">Product</th>
-                                                                <th className="text-left px-4 py-3 font-semibold text-slate-700 w-32">Sale Price</th>
-                                                                <th className="text-left px-4 py-3 font-semibold text-slate-700 w-32">Stock Limit</th>
-                                                                <th className="text-right px-4 py-3 font-semibold text-slate-700 w-16"></th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-slate-100">
-                                                            {data.flash_sale.items.map((item, index) => (
-                                                                <tr key={item.product_id} className="hover:bg-slate-50/50 transition">
-                                                                    <td className="px-4 py-3">
-                                                                        <p className="font-medium text-slate-900">{item.product?.name}</p>
-                                                                        <p className="text-xs text-slate-500">Original: ৳{item.product?.price}</p>
-                                                                    </td>
-                                                                    <td className="px-4 py-3">
-                                                                        <div className="relative">
-                                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">৳</span>
-                                                                            <Input
-                                                                                type="number"
-                                                                                className="pl-7 h-8 text-sm"
-                                                                                value={item.sale_price}
-                                                                                onChange={e => updateItem(item.product_id, 'sale_price', e.target.value)}
-                                                                            />
-                                                                        </div>
-                                                                    </td>
-                                                                    <td className="px-4 py-3">
-                                                                        <Input
-                                                                            type="number"
-                                                                            className="h-8 text-sm"
-                                                                            value={item.stock_limit}
-                                                                            onChange={e => updateItem(item.product_id, 'stock_limit', e.target.value)}
-                                                                        />
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-right">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => removeProduct(item.product_id)}
-                                                                            className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition"
-                                                                        >
-                                                                            <Trash2 className="size-4" />
-                                                                        </button>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            )}
-                                        </div>
+                                        <p className="text-sm text-slate-500">
+                                            The sale's schedule, products, and
+                                            pricing are managed under{' '}
+                                            <Link
+                                                href={route(
+                                                    'admin.flash-sales.index',
+                                                )}
+                                                className="font-medium text-slate-700 underline underline-offset-2"
+                                            >
+                                                Flash Sales
+                                            </Link>
+                                            . This page only controls the
+                                            section heading shown above the sale
+                                            and whether it's visible on the
+                                            homepage. Note: the homepage always
+                                            shows whichever flash sale is
+                                            currently active and within its date
+                                            range — not necessarily the last one
+                                            you edited here.
+                                        </p>
                                     </CardContent>
                                 </Card>
                             )}
@@ -722,75 +1024,48 @@ export default function HomepageEdit({ section, flashSale, products: initialProd
                         <div className="space-y-6">
                             <Card>
                                 <CardHeader className="border-b border-slate-100 pb-4">
-                                    <CardTitle className="text-base font-semibold">Settings</CardTitle>
+                                    <CardTitle className="text-base font-semibold">
+                                        Settings
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-6 pt-6">
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
-                                            <p className="text-sm font-medium text-slate-700">Section Visibility</p>
-                                            <p className="text-xs text-slate-500">Toggle whether this section is shown on the storefront.</p>
+                                            <p className="text-sm font-medium text-slate-700">
+                                                Section Visibility
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                Toggle whether this section is
+                                                shown on the storefront.
+                                            </p>
                                         </div>
                                         <Switch
                                             checked={data.is_visible}
-                                            onCheckedChange={checked => setData('is_visible', checked)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Input
-                                            label="Sort Order"
-                                            type="number"
-                                            value={data.sort_order}
-                                            onChange={e => setData('sort_order', e.target.value)}
-                                            error={errors.sort_order}
+                                            onCheckedChange={(checked) =>
+                                                setData('is_visible', checked)
+                                            }
                                         />
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            {isFlashSale && data.flash_sale && (
-                                <Card>
-                                    <CardHeader className="border-b border-slate-100 pb-4">
-                                        <CardTitle className="text-base font-semibold flex items-center gap-2">
-                                            <Calendar className="size-4" />
-                                            Sale Schedule
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4 pt-6">
-                                        <div className="flex items-center justify-between">
-                                            <div className="space-y-0.5">
-                                                <p className="text-sm font-medium text-slate-700">Sale Active</p>
-                                                <p className="text-xs text-slate-500">Enable/disable the entire flash sale.</p>
-                                            </div>
-                                            <Switch
-                                                checked={data.flash_sale.is_active}
-                                                onCheckedChange={checked => setData('flash_sale', { ...data.flash_sale!, is_active: checked })}
-                                            />
-                                        </div>
-                                        <Input
-                                            label="Starts At"
-                                            type="datetime-local"
-                                            value={data.flash_sale.starts_at}
-                                            onChange={e => setData('flash_sale', { ...data.flash_sale!, starts_at: e.target.value })}
-                                            error={(errors as any)['flash_sale.starts_at']}
-                                        />
-                                        <Input
-                                            label="Ends At"
-                                            type="datetime-local"
-                                            value={data.flash_sale.ends_at}
-                                            onChange={e => setData('flash_sale', { ...data.flash_sale!, ends_at: e.target.value })}
-                                            error={(errors as any)['flash_sale.ends_at']}
-                                        />
-                                    </CardContent>
-                                </Card>
-                            )}
-
                             <div className="flex flex-col gap-3">
-                                <Button type="submit" disabled={processing} className="w-full">
-                                    <Save className="size-4 mr-2" />
+                                <Button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="w-full"
+                                >
+                                    <Save className="mr-2 size-4" />
                                     {processing ? 'Saving...' : 'Save Changes'}
                                 </Button>
-                                <Button asChild variant="ghost" className="w-full text-slate-500">
-                                    <Link href={route('admin.homepage.index')}>Cancel</Link>
+                                <Button
+                                    asChild
+                                    variant="ghost"
+                                    className="w-full text-slate-500"
+                                >
+                                    <Link href={route('admin.homepage.index')}>
+                                        Cancel
+                                    </Link>
                                 </Button>
                             </div>
                         </div>

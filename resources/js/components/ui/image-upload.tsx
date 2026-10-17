@@ -6,11 +6,12 @@ interface ImageUploadProps {
     value: string | File | null;
     onChange: (file: File | null) => void;
     error?: string;
+    hint?: string;
     className?: string;
     previewClassName?: string;
 }
 
-export function ImageUpload({ value, onChange, error, className, previewClassName }: ImageUploadProps): React.JSX.Element {
+export function ImageUpload({ value, onChange, error, hint, className, previewClassName }: ImageUploadProps): React.JSX.Element {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<string | null>(null);
 
@@ -91,6 +92,7 @@ export function ImageUpload({ value, onChange, error, className, previewClassNam
                     onChange={handleFileChange}
                 />
             </div>
+            {hint && <p className="mt-1.5 text-xs text-text-secondary">{hint}</p>}
             {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
         </div>
     );

@@ -42,6 +42,12 @@ class SettingController extends Controller
             'messenger_link' => ['nullable', 'string', 'max:500'],
             'bkash_number' => ['nullable', 'string', 'max:20'],
             'nagad_number' => ['nullable', 'string', 'max:20'],
+            'google_client_id' => ['nullable', 'string', 'max:255'],
+            'google_client_secret' => ['nullable', 'string', 'max:255'],
+            'google_redirect_uri' => ['nullable', 'string', 'max:500'],
+            'facebook_client_id' => ['nullable', 'string', 'max:255'],
+            'facebook_client_secret' => ['nullable', 'string', 'max:255'],
+            'facebook_redirect_uri' => ['nullable', 'string', 'max:500'],
         ]);
 
         // Handle logo upload separately
@@ -59,6 +65,8 @@ class SettingController extends Controller
             'site_name', 'contact_email', 'contact_phone', 'contact_address', 'currency_symbol',
             'social_links', 'google_analytics_id', 'meta_pixel_id',
             'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number',
+            'google_client_id', 'google_client_secret', 'google_redirect_uri',
+            'facebook_client_id', 'facebook_client_secret', 'facebook_redirect_uri',
         ];
 
         foreach ($fields as $key) {
@@ -78,6 +86,7 @@ class SettingController extends Controller
             in_array($key, ['social_links']) => 'social',
             in_array($key, ['whatsapp_number', 'messenger_link']) => 'chat_widgets',
             in_array($key, ['bkash_number', 'nagad_number']) => 'payments',
+            in_array($key, ['google_client_id', 'google_client_secret', 'google_redirect_uri', 'facebook_client_id', 'facebook_client_secret', 'facebook_redirect_uri']) => 'social_login',
             default => 'integrations',
         };
     }

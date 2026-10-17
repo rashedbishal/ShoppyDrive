@@ -36,6 +36,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::resource('products', ProductController::class);
+    Route::post('categories/reorder', [CategoryController::class, 'reorder'])->name('categories.reorder');
     Route::resource('categories', CategoryController::class);
     Route::resource('sub-categories', SubCategoryController::class);
     Route::resource('brands', BrandController::class);
@@ -76,6 +77,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
 
     // Homepage Management
     Route::get('homepage', [HomepageController::class, 'index'])->name('homepage.index');
+    Route::post('homepage/reorder', [HomepageController::class, 'reorder'])->name('homepage.reorder');
     Route::get('homepage/products/search', [HomepageController::class, 'searchProducts'])->name('homepage.products.search');
     Route::get('homepage/brands/search', [HomepageController::class, 'searchBrands'])->name('homepage.brands.search');
     Route::get('homepage/{setting}/edit', [HomepageController::class, 'edit'])->name('homepage.edit');

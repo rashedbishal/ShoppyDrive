@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
@@ -213,3 +217,77 @@ Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `
 - IMPORTANT: Activate `inertia-react-development` when working with Inertia React client-side patterns.
 
 </laravel-boost-guidelines>
+
+## Project Overview
+
+ShoppyDrive is a Bangladesh-focused ecommerce storefront + admin panel built on the Laravel React starter kit (Laravel 13, Inertia v3, React 19, Tailwind v4). It has two front ends sharing one Inertia app: a public storefront and an `/admin` back office, each with its own auth guard.
+
+## Common Commands
+
+Full local dev stack (server, queue listener, log tailer, Vite) in one command:
+```
+composer dev
+```
+
+Individual pieces:
+```
+php artisan serve
+npm run dev              # Vite dev server
+php artisan queue:listen --tries=1 --timeout=0
+php artisan pail         # live log viewer
+```
+
+Build frontend for production:
+```
+npm run build
+npm run build:ssr
+```
+
+Tests:
+```
+php artisan test --compact
+php artisan test --compact --filter=testName
+composer test            # config:clear + pint --test + full test suite
+```
+
+Linting / formatting:
+```
+vendor/bin/pint --dirty --format agent   # PHP, only changed files (run before finishing any PHP change)
+npm run lint              # eslint --fix
+npm run format             # prettier --write resources/
+npm run types:check       # tsc --noEmit
+composer ci:check          # eslint check + prettier check + tsc + full test suite
+```
+
+Wayfinder (regenerates `resources/js/actions` / `resources/js/routes` typed route helpers — runs automatically via the Vite plugin during `npm run dev`/`build`, but can be run manually):
+```
+php artisan wayfinder:generate
+```
+
+## Architecture
+
+**Dual auth guards.** There are two separate user tables/guards configured in `config/auth.php`: `web` (provider `users`, model `App\Models\User`) for customers, and `admin` (provider `admins`, model `App\Models\Admin`) for staff. Admin routes live under `routes/admin.php` behind the `admin` middleware alias (`App\Http\Middleware\EnsureAdmin`) plus `redirect-customer-from-admin`. `RedirectAdminToDashboard` and `RedirectCustomerFromAdmin` middleware (registered globally in `bootstrap/app.php`) keep the two sessions from bleeding into each other's pages.
+
+**Route files are split by domain**, all required from `routes/web.php`: `admin.php` (back office, prefixed `/admin`, named `admin.*`), `auth.php` (Fortify-backed customer auth), `catalog.php` (products/categories/brands browsing), `commerce.php` (cart/checkout/payments), `account.php` (customer dashboard: orders, addresses, wishlist), `settings.php` (profile/password/2FA), `api.php` (JSON API under `Http/Controllers/Api/V1`).
+
+**Inertia pages** live in `resources/js/pages`, mirroring the route domains: `catalog/`, `checkout/`, `account/`, `admin/`, `landing/`, `auth/`, `static/`, `order/`, `cart/`, `compare/`, `search/`. Admin pages are visually and structurally separate from storefront pages — check the matching subfolder for existing conventions before adding new admin UI.
+
+**Payments** go through two paths:
+- `App\Services\ZiniPayService` — hosted payment gateway integration (invoice creation + webhook handling via `ZiniPayWebhookController`).
+- `App\Http\Controllers\MobilePaymentController` + `App\Services\SmsParserService` — manual bKash/Nagad-style mobile banking flow where customers submit a transaction ID and an incoming SMS (forwarded via the `sms_forwarder` service token in `config/services.php`) is parsed against configurable `SmsPattern` records to auto-verify payment.
+
+**Landing pages** (`App\Models\LandingPage`, `LandingPageController`, `resources/js/pages/landing/`) are a separate guest-checkout funnel (`/lp/{slug}`) distinct from the main storefront cart/checkout — used for single-product ad-driven campaigns with their own order + payment + confirmation flow.
+
+**Order lifecycle** is modeled with the `OrderStatus`/`PaymentStatus`/`PaymentMethod` enums (`app/Enums`), `OrderStatusHistory` for auditing, and `App\Services\OrderService` for placement logic. Transactional emails for each stage live in `app/Mail` (e.g. `OrderPlacedMail`, `ShippedWithTrackingMail`, `OrderDeliveredMail`, `OrderCancelledMail`) and are dispatched around status transitions.
+
+**Response caching**: `spatie/laravel-responsecache` is installed — be aware that public GET storefront pages may be cached at the HTTP layer; cache-busting on content changes (e.g. product/homepage updates in the admin panel) should be handled where those admin actions occur.
+
+**Database**: MySQL locally (`DB_CONNECTION=mysql`), SQLite in-memory for tests (`phpunit.xml`). Queue and cache both use the `database` driver locally.
+
+**Shadcn/ui** components (`components.json`, style `new-york`, base color `neutral`) live under `resources/js/components/ui`; prefer these + `resources/js/lib/utils` (`cn()`) over ad hoc styling for shared UI primitives.
+
+**Client-side state**: `zustand` stores in `resources/js/stores` (`cartStore`, `wishlistStore`, `uiStore`) hold cross-page client state that doesn't belong in Inertia props.
+
+**PDF invoices**: `barryvdh/laravel-dompdf` renders the `invoices.order` Blade view (`Pdf::loadView('invoices.order', ...)`) for order invoice downloads, used from both `routes/account.php` (storefront) and `LandingPageController` (landing-page funnel orders).
+
+**Sitemap**: `php artisan sitemap:generate` (`App\Console\Commands\GenerateSitemapCommand`, using `spatie/laravel-sitemap`) rebuilds the public sitemap from active categories/products/pages — run manually or via an external cron, not Laravel's scheduler (`routes/console.php` has no `schedule()` calls).

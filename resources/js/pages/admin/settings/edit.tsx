@@ -32,6 +32,12 @@ export default function SettingsEdit({ settings }: Props) {
         messenger_link: (settings.messenger_link as string) ?? '',
         bkash_number: (settings.bkash_number as string) ?? '',
         nagad_number: (settings.nagad_number as string) ?? '',
+        google_client_id: (settings.google_client_id as string) ?? '',
+        google_client_secret: (settings.google_client_secret as string) ?? '',
+        google_redirect_uri: (settings.google_redirect_uri as string) ?? '',
+        facebook_client_id: (settings.facebook_client_id as string) ?? '',
+        facebook_client_secret: (settings.facebook_client_secret as string) ?? '',
+        facebook_redirect_uri: (settings.facebook_redirect_uri as string) ?? '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -125,6 +131,54 @@ export default function SettingsEdit({ settings }: Props) {
                             </Field>
                             <Field label="Meta Pixel ID" hint="Facebook Pixel tracking ID">
                                 <input className={inputClass} value={data.meta_pixel_id} onChange={(e) => setData('meta_pixel_id', e.target.value)} placeholder="123456789" />
+                            </Field>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardTitle className="text-sm font-semibold text-slate-700">Google Login (OAuth)</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-4">
+                            <p className="text-xs text-slate-400">
+                                Create an OAuth client in the{' '}
+                                <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="underline">
+                                    Google Cloud Console
+                                </a>
+                                . "Continue with Google" is hidden on the login and register pages until a Client ID is set here.
+                            </p>
+                            <Field label="Client ID">
+                                <input className={inputClass} value={data.google_client_id} onChange={(e) => setData('google_client_id', e.target.value)} placeholder="xxxxxxxxxxxx.apps.googleusercontent.com" />
+                            </Field>
+                            <Field label="Client Secret">
+                                <input type="password" autoComplete="off" className={inputClass} value={data.google_client_secret} onChange={(e) => setData('google_client_secret', e.target.value)} placeholder="GOCSPX-..." />
+                            </Field>
+                            <Field label="Redirect URI" hint="Must match an Authorized redirect URI registered in the Google Cloud Console">
+                                <input className={inputClass} value={data.google_redirect_uri} onChange={(e) => setData('google_redirect_uri', e.target.value)} placeholder={`${window.location.origin}/auth/google/callback`} />
+                            </Field>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardTitle className="text-sm font-semibold text-slate-700">Facebook Login (OAuth)</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-4">
+                            <p className="text-xs text-slate-400">
+                                Create an app in{' '}
+                                <a href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer" className="underline">
+                                    Meta for Developers
+                                </a>
+                                . "Continue with Facebook" is hidden on the login and register pages until a Client ID is set here.
+                            </p>
+                            <Field label="App ID">
+                                <input className={inputClass} value={data.facebook_client_id} onChange={(e) => setData('facebook_client_id', e.target.value)} placeholder="1234567890123456" />
+                            </Field>
+                            <Field label="App Secret">
+                                <input type="password" autoComplete="off" className={inputClass} value={data.facebook_client_secret} onChange={(e) => setData('facebook_client_secret', e.target.value)} placeholder="App secret" />
+                            </Field>
+                            <Field label="Redirect URI" hint="Must match a Valid OAuth Redirect URI registered in Facebook Login settings">
+                                <input className={inputClass} value={data.facebook_redirect_uri} onChange={(e) => setData('facebook_redirect_uri', e.target.value)} placeholder={`${window.location.origin}/auth/facebook/callback`} />
                             </Field>
                         </CardContent>
                     </Card>

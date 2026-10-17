@@ -19,7 +19,7 @@ class PageSeeder extends Seeder
                 'meta_description' => 'Learn how ShoppyDrive collects, uses, and protects your personal information.',
                 'content' => <<<'HTML'
 <h2>Introduction</h2>
-<p>Welcome to ShoppyDrive. We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you visit our website or make a purchase.</p>
+<p>Welcome to ShoppyDrive ("ShoppyDrive", "we", "us", or "our"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website, make a purchase, or sign in using a third-party account such as Google or Facebook. This policy applies to all visitors and customers of ShoppyDrive in Bangladesh and elsewhere.</p>
 
 <h2>Information We Collect</h2>
 <p>We collect information you provide directly to us, such as when you create an account, place an order, or contact us for support. This includes:</p>
@@ -30,10 +30,12 @@ class PageSeeder extends Seeder
   <li>Payment information (processed securely; we do not store card details)</li>
   <li>Order history and preferences</li>
 </ul>
+<p>If you choose to create an account or sign in using <strong>Sign in with Google</strong> or <strong>Continue with Facebook</strong>, we receive only the basic profile information those providers release to us with your consent, typically your name, email address, and public profile photo. We never receive or have access to your Google or Facebook password.</p>
 
 <h2>How We Use Your Information</h2>
 <p>We use the information we collect to:</p>
 <ul>
+  <li>Create and authenticate your account, including sign-in via Google or Facebook</li>
   <li>Process and fulfil your orders</li>
   <li>Send order confirmations and shipping updates</li>
   <li>Respond to your comments and questions</li>
@@ -41,23 +43,41 @@ class PageSeeder extends Seeder
   <li>Improve our website and services</li>
 </ul>
 
+<h2>Signing In With Google or Facebook</h2>
+<p>ShoppyDrive offers "Sign in with Google" and "Continue with Facebook" as optional, faster ways to create an account and log in. When you use either option:</p>
+<ul>
+  <li>We request only the minimum data needed to identify you and create your account: your name, email address, and profile picture.</li>
+  <li>This data is used solely to create or match your ShoppyDrive account, authenticate you on future visits, and pre-fill your profile. It is never used to post on your behalf, access your contacts, or sold to advertisers.</li>
+  <li>ShoppyDrive's use of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google API Services User Data Policy</a>, including the Limited Use requirements.</li>
+  <li>ShoppyDrive's use of information received from Facebook Login complies with the <a href="https://developers.facebook.com/policy/" target="_blank" rel="noopener noreferrer">Meta Platform Terms</a> and Facebook's Data Policy.</li>
+  <li>You can unlink your Google or Facebook account from ShoppyDrive, or revoke ShoppyDrive's access entirely from your Google or Facebook account security settings, at any time.</li>
+</ul>
+
 <h2>Information Sharing</h2>
-<p>We do not sell, trade, or rent your personal information to third parties. We may share your information with trusted service providers who assist us in operating our website and conducting our business, provided they agree to keep this information confidential.</p>
+<p>We do not sell, trade, or rent your personal information to third parties. We may share your information with trusted service providers who assist us in operating our website and conducting our business (for example, payment processors, delivery partners, and SMS/email providers), provided they agree to keep this information confidential and use it only to provide services to us.</p>
 
 <h2>Data Security</h2>
-<p>We implement appropriate technical and organisational measures to protect your personal information against unauthorised access, alteration, disclosure, or destruction. All transactions are secured with SSL encryption.</p>
+<p>We implement appropriate technical and organisational measures to protect your personal information against unauthorised access, alteration, disclosure, or destruction. All transactions are secured with SSL encryption, and passwords are stored using one-way hashing.</p>
 
 <h2>Cookies</h2>
-<p>We use cookies to enhance your browsing experience, remember your preferences, and analyse site traffic. You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent.</p>
+<p>We use cookies to enhance your browsing experience, remember your preferences, keep you signed in, and analyse site traffic. You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent.</p>
 
 <h2>Your Rights</h2>
-<p>You have the right to access, correct, or delete your personal data at any time. To exercise these rights, please contact us at the email address listed on our contact page.</p>
+<p>You have the right to access, correct, or delete your personal data at any time. To exercise these rights, please contact us at the email address listed on our <a href="/contact">contact page</a>.</p>
+
+<h2>Data Deletion</h2>
+<p>You are always in control of your data and may request its deletion at any time, including data associated with a Google or Facebook sign-in:</p>
+<ul>
+  <li><strong>Self-service:</strong> While signed in, go to <em>Settings &rarr; Profile &rarr; Delete Account</em> to permanently delete your ShoppyDrive account and all associated personal data.</li>
+  <li><strong>By request:</strong> Email us at <a href="mailto:support@shoppydrive.com">support@shoppydrive.com</a> with the subject "Data Deletion Request" from the email address on your account, or reach us via our <a href="/contact">contact page</a>. We will verify your request and permanently delete your account and personal data within 30 days, except where we are required to retain certain records (such as order and transaction history) to comply with Bangladeshi tax, consumer-protection, or accounting laws.</li>
+</ul>
+<p>Deleting your account also removes any link between your ShoppyDrive profile and your Google or Facebook account.</p>
 
 <h2>Changes to This Policy</h2>
 <p>We may update this Privacy Policy from time to time. We will notify you of any significant changes by posting the new policy on this page with an updated date.</p>
 
 <h2>Contact Us</h2>
-<p>If you have any questions about this Privacy Policy, please contact us through our <a href="/contact">contact page</a>.</p>
+<p>If you have any questions about this Privacy Policy, please contact us through our <a href="/contact">contact page</a> or email <a href="mailto:support@shoppydrive.com">support@shoppydrive.com</a>.</p>
 HTML,
                 'is_published' => true,
             ],
@@ -81,6 +101,9 @@ HTML,
 
 <h2>Account Responsibility</h2>
 <p>You are responsible for maintaining the confidentiality of your account credentials. You agree to notify us immediately of any unauthorised use of your account. We are not liable for any loss resulting from unauthorised use of your account.</p>
+
+<h2>Signing In With Google or Facebook</h2>
+<p>You may create a ShoppyDrive account or log in using "Sign in with Google" or "Continue with Facebook". By doing so, you authorise us to access the basic profile information (name, email address, and profile picture) that provider shares with us, in accordance with our <a href="/privacy-policy">Privacy Policy</a>, and you confirm that you are also complying with that provider's own terms of service. You may disconnect ShoppyDrive from your Google or Facebook account, or delete your ShoppyDrive account entirely, at any time as described in our Privacy Policy.</p>
 
 <h2>Orders and Payments</h2>
 <p>By placing an order, you confirm that the information you provide is accurate and complete. We reserve the right to cancel any order at our discretion, including if items are out of stock or if we suspect fraudulent activity. Payment must be completed before orders are dispatched.</p>

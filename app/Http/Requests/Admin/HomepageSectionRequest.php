@@ -26,21 +26,11 @@ class HomepageSectionRequest extends FormRequest
             'action_label' => ['nullable', 'string', 'max:255'],
             'action_href' => ['nullable', 'string', 'max:255'],
             'is_visible' => ['required', 'boolean'],
-            'sort_order' => ['required', 'integer'],
 
             'metadata' => ['nullable', 'array'],
             'metadata.phone' => ['nullable', 'string', 'max:50'],
             'metadata.email' => ['nullable', 'email', 'max:255'],
-
-            // Flash sale fields
-            'flash_sale' => ['nullable', 'array'],
-            'flash_sale.starts_at' => ['required_with:flash_sale', 'date'],
-            'flash_sale.ends_at' => ['required_with:flash_sale', 'date', 'after:flash_sale.starts_at'],
-            'flash_sale.is_active' => ['required_with:flash_sale', 'boolean'],
-            'flash_sale.items' => ['nullable', 'array'],
-            'flash_sale.items.*.product_id' => ['required', 'exists:products,id'],
-            'flash_sale.items.*.sale_price' => ['required', 'numeric', 'min:0'],
-            'flash_sale.items.*.stock_limit' => ['nullable', 'integer', 'min:0'],
+            'metadata.autoplay_seconds' => ['nullable', 'integer', 'min:2', 'max:30'],
 
             // Featured products fields
             'featured_products' => ['nullable', 'array'],
