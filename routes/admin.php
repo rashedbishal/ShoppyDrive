@@ -47,6 +47,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.updateStatus');
     Route::patch('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::post('orders/{order}/pathao/send', [OrderController::class, 'sendToPathao'])->name('orders.pathao.send');
+    Route::post('orders/{order}/pathao/refresh', [OrderController::class, 'refreshPathaoStatus'])->name('orders.pathao.refresh');
 
     Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::get('customers/{user}', [CustomerController::class, 'show'])->name('customers.show');
@@ -58,6 +60,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
 
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::get('settings/pathao/stores', [SettingController::class, 'pathaoStores'])->name('settings.pathao.stores');
 
     Route::get('settings/sms-forwarder', [SmsForwarderSettingsController::class, 'index'])->name('settings.sms-forwarder.index');
     Route::post('settings/sms-forwarder/regenerate', [SmsForwarderSettingsController::class, 'regenerate'])->name('settings.sms-forwarder.regenerate');

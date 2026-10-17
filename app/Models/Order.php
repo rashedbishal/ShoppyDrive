@@ -39,6 +39,10 @@ class Order extends Model
         'cancellation_reason',
         'shipped_at',
         'delivered_at',
+        'pathao_consignment_id',
+        'pathao_order_status',
+        'pathao_delivery_fee',
+        'pathao_sent_at',
     ];
 
     protected function casts(): array
@@ -53,6 +57,8 @@ class Order extends Model
             'shipping_cost' => 'float',
             'discount' => 'float',
             'tax' => 'float',
+            'pathao_delivery_fee' => 'float',
+            'pathao_sent_at' => 'datetime',
             'total' => 'float',
             'shipped_at' => 'datetime',
             'delivered_at' => 'datetime',

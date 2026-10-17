@@ -1,5 +1,6 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { ArrowLeft, Package, XCircle } from 'lucide-react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { ArrowLeft, Package, RefreshCw, Truck, XCircle } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +36,10 @@ type Order = {
     coupon_code: string | null;
     tracking_number: string | null;
     notes: string | null;
+    pathao_consignment_id: string | null;
+    pathao_order_status: string | null;
+    pathao_delivery_fee: number | null;
+    pathao_sent_at: string | null;
     shipping_address: {
         name: string;
         phone: string;
@@ -56,7 +61,10 @@ type Props = {
     statuses: string[];
 };
 
-const statusVariant: Record<string, 'success' | 'warning' | 'error' | 'info' | 'default'> = {
+const statusVariant: Record<
+    string,
+    'success' | 'warning' | 'error' | 'info' | 'default'
+> = {
     pending: 'warning',
     processing: 'info',
     shipped: 'info',
@@ -74,7 +82,12 @@ export default function OrderShow({ order, statuses }: Props) {
         notes: '',
     });
 
-    const { data: cancelData, setData: setCancelData, patch: cancelPatch, processing: cancelProcessing } = useForm({
+    const {
+        data: cancelData,
+        setData: setCancelData,
+        patch: cancelPatch,
+        processing: cancelProcessing,
+    } = useForm({
         reason: '',
     });
 
@@ -85,8 +98,47 @@ export default function OrderShow({ order, statuses }: Props) {
 
     const handleCancel = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!confirm('Cancel this order? This will set the status to cancelled.')) return;
+
+        if (
+            !confirm(
+                'Cancel this order? This will set the status to cancelled.',
+            )
+        ) {
+            return;
+        }
+
         cancelPatch(route('admin.orders.cancel', order.id));
+    };
+
+    const [pathaoSending, setPathaoSending] = useState(false);
+    const [pathaoRefreshing, setPathaoRefreshing] = useState(false);
+
+    const handleSendToPathao = () => {
+        if (
+            !confirm(`Send order ${order.order_number} to Pathao for pickup?`)
+        ) {
+            return;
+        }
+
+        setPathaoSending(true);
+        router.post(
+            route('admin.orders.pathao.send', order.id),
+            {},
+            {
+                onFinish: () => setPathaoSending(false),
+            },
+        );
+    };
+
+    const handleRefreshPathaoStatus = () => {
+        setPathaoRefreshing(true);
+        router.post(
+            route('admin.orders.pathao.refresh', order.id),
+            {},
+            {
+                onFinish: () => setPathaoRefreshing(false),
+            },
+        );
     };
 
     return (
@@ -94,21 +146,44 @@ export default function OrderShow({ order, statuses }: Props) {
             <Head title={`Order ${order.order_number} — Admin`} />
             <div className="space-y-5">
                 <div className="flex items-center gap-3">
-                    <Link href={route('admin.orders.index')} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                    <Link
+                        href={route('admin.orders.index')}
+                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    >
                         <ArrowLeft className="size-4" />
                     </Link>
                     <div className="flex-1">
                         <div className="flex items-center gap-2">
-                            <h1 className="font-mono text-xl font-bold text-slate-900">{order.order_number}</h1>
-                            <Badge variant={statusVariant[order.status] ?? 'default'}>{order.status}</Badge>
-                            <Badge variant={order.payment_status === 'paid' ? 'success' : 'warning'}>{order.payment_status}</Badge>
+                            <h1 className="font-mono text-xl font-bold text-slate-900">
+                                {order.order_number}
+                            </h1>
+                            <Badge
+                                variant={
+                                    statusVariant[order.status] ?? 'default'
+                                }
+                            >
+                                {order.status}
+                            </Badge>
+                            <Badge
+                                variant={
+                                    order.payment_status === 'paid'
+                                        ? 'success'
+                                        : 'warning'
+                                }
+                            >
+                                {order.payment_status}
+                            </Badge>
                         </div>
-                        <p className="text-sm text-slate-500">{new Date(order.created_at).toLocaleString()}</p>
+                        <p className="text-sm text-slate-500">
+                            {new Date(order.created_at).toLocaleString()}
+                        </p>
                     </div>
                 </div>
 
                 {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">{flash.success}</div>
+                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
+                        {flash.success}
+                    </div>
                 )}
 
                 <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
@@ -116,42 +191,78 @@ export default function OrderShow({ order, statuses }: Props) {
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
-                                    <Package className="mr-1.5 inline size-4" /> Items
+                                    <Package className="mr-1.5 inline size-4" />{' '}
+                                    Items
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="divide-y divide-slate-50">
                                     {order.items.map((item) => (
-                                        <div key={item.id} className="flex items-center gap-4 px-4 py-3">
+                                        <div
+                                            key={item.id}
+                                            className="flex items-center gap-4 px-4 py-3"
+                                        >
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-sm font-medium text-slate-800">{item.product_name}</p>
-                                                {item.sku && <p className="font-mono text-xs text-slate-400">{item.sku}</p>}
+                                                <p className="text-sm font-medium text-slate-800">
+                                                    {item.product_name}
+                                                </p>
+                                                {item.sku && (
+                                                    <p className="font-mono text-xs text-slate-400">
+                                                        {item.sku}
+                                                    </p>
+                                                )}
                                             </div>
-                                            <p className="text-xs text-slate-500">×{item.quantity}</p>
-                                            <p className="text-sm font-semibold text-slate-800">৳{item.subtotal.toLocaleString()}</p>
+                                            <p className="text-xs text-slate-500">
+                                                ×{item.quantity}
+                                            </p>
+                                            <p className="text-sm font-semibold text-slate-800">
+                                                ৳
+                                                {item.subtotal.toLocaleString()}
+                                            </p>
                                         </div>
                                     ))}
                                 </div>
                                 <div className="space-y-1.5 border-t border-slate-100 px-4 py-3">
                                     <div className="flex justify-between text-xs text-slate-500">
-                                        <span>Subtotal</span><span>৳{order.subtotal.toLocaleString()}</span>
+                                        <span>Subtotal</span>
+                                        <span>
+                                            ৳{order.subtotal.toLocaleString()}
+                                        </span>
                                     </div>
                                     {order.discount > 0 && (
                                         <div className="flex justify-between text-xs text-emerald-600">
-                                            <span>Discount{order.coupon_code ? ` (${order.coupon_code})` : ''}</span>
-                                            <span>-৳{order.discount.toLocaleString()}</span>
+                                            <span>
+                                                Discount
+                                                {order.coupon_code
+                                                    ? ` (${order.coupon_code})`
+                                                    : ''}
+                                            </span>
+                                            <span>
+                                                -৳
+                                                {order.discount.toLocaleString()}
+                                            </span>
                                         </div>
                                     )}
                                     <div className="flex justify-between text-xs text-slate-500">
-                                        <span>Shipping</span><span>৳{order.shipping_cost.toLocaleString()}</span>
+                                        <span>Shipping</span>
+                                        <span>
+                                            ৳
+                                            {order.shipping_cost.toLocaleString()}
+                                        </span>
                                     </div>
                                     {order.tax > 0 && (
                                         <div className="flex justify-between text-xs text-slate-500">
-                                            <span>Tax</span><span>৳{order.tax.toLocaleString()}</span>
+                                            <span>Tax</span>
+                                            <span>
+                                                ৳{order.tax.toLocaleString()}
+                                            </span>
                                         </div>
                                     )}
                                     <div className="flex justify-between border-t border-slate-100 pt-1.5 text-sm font-bold text-slate-800">
-                                        <span>Total</span><span>৳{order.total.toLocaleString()}</span>
+                                        <span>Total</span>
+                                        <span>
+                                            ৳{order.total.toLocaleString()}
+                                        </span>
                                     </div>
                                 </div>
                             </CardContent>
@@ -159,21 +270,40 @@ export default function OrderShow({ order, statuses }: Props) {
 
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
-                                <CardTitle className="text-sm font-semibold text-slate-700">Status History</CardTitle>
+                                <CardTitle className="text-sm font-semibold text-slate-700">
+                                    Status History
+                                </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2 pt-4">
                                 {order.status_histories.length === 0 ? (
-                                    <p className="text-sm text-slate-400">No history yet.</p>
-                                ) : order.status_histories.map((h) => (
-                                    <div key={h.id} className="flex items-start gap-3">
-                                        <div className="mt-1 size-2 shrink-0 rounded-full bg-slate-300" />
-                                        <div>
-                                            <p className="text-xs font-medium text-slate-700">{h.status}</p>
-                                            {h.notes && <p className="text-xs text-slate-400">{h.notes}</p>}
-                                            <p className="text-[11px] text-slate-400">{new Date(h.created_at).toLocaleString()}</p>
+                                    <p className="text-sm text-slate-400">
+                                        No history yet.
+                                    </p>
+                                ) : (
+                                    order.status_histories.map((h) => (
+                                        <div
+                                            key={h.id}
+                                            className="flex items-start gap-3"
+                                        >
+                                            <div className="mt-1 size-2 shrink-0 rounded-full bg-slate-300" />
+                                            <div>
+                                                <p className="text-xs font-medium text-slate-700">
+                                                    {h.status}
+                                                </p>
+                                                {h.notes && (
+                                                    <p className="text-xs text-slate-400">
+                                                        {h.notes}
+                                                    </p>
+                                                )}
+                                                <p className="text-[11px] text-slate-400">
+                                                    {new Date(
+                                                        h.created_at,
+                                                    ).toLocaleString()}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </CardContent>
                         </Card>
                     </div>
@@ -181,81 +311,151 @@ export default function OrderShow({ order, statuses }: Props) {
                     <div className="space-y-5">
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
-                                <CardTitle className="text-sm font-semibold text-slate-700">Update Status</CardTitle>
+                                <CardTitle className="text-sm font-semibold text-slate-700">
+                                    Update Status
+                                </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-4">
-                                <form onSubmit={handleStatusUpdate} className="space-y-3">
+                                <form
+                                    onSubmit={handleStatusUpdate}
+                                    className="space-y-3"
+                                >
                                     <select
-                                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]"
+                                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                         value={data.status}
-                                        onChange={(e) => setData('status', e.target.value)}
+                                        onChange={(e) =>
+                                            setData('status', e.target.value)
+                                        }
                                     >
-                                        {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+                                        {statuses.map((s) => (
+                                            <option key={s} value={s}>
+                                                {s}
+                                            </option>
+                                        ))}
                                     </select>
                                     <textarea
                                         rows={2}
                                         placeholder="Notes (optional)"
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]"
+                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                         value={data.notes}
-                                        onChange={(e) => setData('notes', e.target.value)}
+                                        onChange={(e) =>
+                                            setData('notes', e.target.value)
+                                        }
                                     />
-                                    <Button type="submit" disabled={processing} className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25]">
-                                        {processing ? 'Updating…' : 'Update Status'}
+                                    <Button
+                                        type="submit"
+                                        disabled={processing}
+                                        className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                    >
+                                        {processing
+                                            ? 'Updating…'
+                                            : 'Update Status'}
                                     </Button>
                                 </form>
                             </CardContent>
                         </Card>
 
-                        {order.status !== 'cancelled' && order.status !== 'refunded' && order.status !== 'delivered' && (
-                            <Card className="shadow-sm border-red-100">
-                                <CardHeader className="border-b border-red-100 pb-4">
-                                    <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-red-600">
-                                        <XCircle className="size-4" /> Cancel Order
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="pt-4">
-                                    <form onSubmit={handleCancel} className="space-y-3">
-                                        <textarea
-                                            rows={2}
-                                            placeholder="Reason (optional)"
-                                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-400"
-                                            value={cancelData.reason}
-                                            onChange={(e) => setCancelData('reason', e.target.value)}
-                                        />
-                                        <Button type="submit" disabled={cancelProcessing} className="w-full bg-red-600 text-white hover:bg-red-700">
-                                            {cancelProcessing ? 'Cancelling…' : 'Cancel This Order'}
-                                        </Button>
-                                    </form>
-                                </CardContent>
-                            </Card>
-                        )}
+                        {order.status !== 'cancelled' &&
+                            order.status !== 'refunded' &&
+                            order.status !== 'delivered' && (
+                                <Card className="border-red-100 shadow-sm">
+                                    <CardHeader className="border-b border-red-100 pb-4">
+                                        <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-red-600">
+                                            <XCircle className="size-4" />{' '}
+                                            Cancel Order
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="pt-4">
+                                        <form
+                                            onSubmit={handleCancel}
+                                            className="space-y-3"
+                                        >
+                                            <textarea
+                                                rows={2}
+                                                placeholder="Reason (optional)"
+                                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-red-400 focus:outline-none"
+                                                value={cancelData.reason}
+                                                onChange={(e) =>
+                                                    setCancelData(
+                                                        'reason',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                            <Button
+                                                type="submit"
+                                                disabled={cancelProcessing}
+                                                className="w-full bg-red-600 text-white hover:bg-red-700"
+                                            >
+                                                {cancelProcessing
+                                                    ? 'Cancelling…'
+                                                    : 'Cancel This Order'}
+                                            </Button>
+                                        </form>
+                                    </CardContent>
+                                </Card>
+                            )}
 
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
-                                <CardTitle className="text-sm font-semibold text-slate-700">Customer</CardTitle>
+                                <CardTitle className="text-sm font-semibold text-slate-700">
+                                    Customer
+                                </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-1 pt-4 text-sm text-slate-700">
                                 {order.user ? (
                                     <>
-                                        <p className="font-semibold">{order.user.name}</p>
-                                        <p className="text-slate-500">{order.user.email}</p>
-                                        {order.user.phone && <p className="text-slate-500">{order.user.phone}</p>}
-                                        <Link href={route('admin.customers.show', order.user.id)} className="text-xs text-[#c8102e] hover:underline">View customer →</Link>
+                                        <p className="font-semibold">
+                                            {order.user.name}
+                                        </p>
+                                        <p className="text-slate-500">
+                                            {order.user.email}
+                                        </p>
+                                        {order.user.phone && (
+                                            <p className="text-slate-500">
+                                                {order.user.phone}
+                                            </p>
+                                        )}
+                                        <Link
+                                            href={route(
+                                                'admin.customers.show',
+                                                order.user.id,
+                                            )}
+                                            className="text-xs text-[#c8102e] hover:underline"
+                                        >
+                                            View customer →
+                                        </Link>
                                     </>
-                                ) : <p className="text-slate-400">Guest order</p>}
+                                ) : (
+                                    <p className="text-slate-400">
+                                        Guest order
+                                    </p>
+                                )}
                             </CardContent>
                         </Card>
 
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
-                                <CardTitle className="text-sm font-semibold text-slate-700">Shipping Address</CardTitle>
+                                <CardTitle className="text-sm font-semibold text-slate-700">
+                                    Shipping Address
+                                </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-0.5 pt-4 text-sm text-slate-700">
-                                <p className="font-semibold">{order.shipping_address.name}</p>
+                                <p className="font-semibold">
+                                    {order.shipping_address.name}
+                                </p>
                                 <p>{order.shipping_address.phone}</p>
                                 <p>{order.shipping_address.address_line1}</p>
-                                {order.shipping_address.address_line2 && <p>{order.shipping_address.address_line2}</p>}
-                                <p>{order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.postal_code}</p>
+                                {order.shipping_address.address_line2 && (
+                                    <p>
+                                        {order.shipping_address.address_line2}
+                                    </p>
+                                )}
+                                <p>
+                                    {order.shipping_address.city},{' '}
+                                    {order.shipping_address.state}{' '}
+                                    {order.shipping_address.postal_code}
+                                </p>
                                 <p>{order.shipping_address.country}</p>
                             </CardContent>
                         </Card>
@@ -263,11 +463,97 @@ export default function OrderShow({ order, statuses }: Props) {
                         {order.tracking_number && (
                             <Card className="shadow-sm">
                                 <CardContent className="pt-4">
-                                    <p className="text-xs text-slate-500">Tracking</p>
-                                    <p className="font-mono text-sm font-medium text-slate-800">{order.tracking_number}</p>
+                                    <p className="text-xs text-slate-500">
+                                        Tracking
+                                    </p>
+                                    <p className="font-mono text-sm font-medium text-slate-800">
+                                        {order.tracking_number}
+                                    </p>
                                 </CardContent>
                             </Card>
                         )}
+
+                        <Card className="shadow-sm">
+                            <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                                    <Truck className="size-4" /> Pathao Courier
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3 pt-4">
+                                {order.pathao_consignment_id ? (
+                                    <>
+                                        <div className="space-y-1 text-sm text-slate-700">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">
+                                                    Consignment ID
+                                                </span>
+                                                <span className="font-mono font-medium">
+                                                    {
+                                                        order.pathao_consignment_id
+                                                    }
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">
+                                                    Status
+                                                </span>
+                                                <Badge variant="info">
+                                                    {order.pathao_order_status ??
+                                                        'Unknown'}
+                                                </Badge>
+                                            </div>
+                                            {order.pathao_delivery_fee !==
+                                                null && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">
+                                                        Delivery fee
+                                                    </span>
+                                                    <span className="font-medium">
+                                                        ৳
+                                                        {order.pathao_delivery_fee.toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full"
+                                            disabled={pathaoRefreshing}
+                                            onClick={handleRefreshPathaoStatus}
+                                        >
+                                            <RefreshCw
+                                                className={`size-4 ${pathaoRefreshing ? 'animate-spin' : ''}`}
+                                            />
+                                            {pathaoRefreshing
+                                                ? 'Checking…'
+                                                : 'Refresh Status'}
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-xs text-slate-500">
+                                            Not sent to Pathao yet. This books a
+                                            pickup from your configured store
+                                            and uses this order's shipping
+                                            address and total as the COD amount
+                                            to collect.
+                                        </p>
+                                        <Button
+                                            className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                            disabled={
+                                                pathaoSending ||
+                                                order.status === 'cancelled'
+                                            }
+                                            onClick={handleSendToPathao}
+                                        >
+                                            {pathaoSending
+                                                ? 'Sending…'
+                                                : 'Send to Pathao'}
+                                        </Button>
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
             </div>

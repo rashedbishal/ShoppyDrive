@@ -53,9 +53,7 @@ function Drawer({
                         </DialogPrimitive.Overlay>
                         <DialogPrimitive.Content asChild>
                             <motion.aside
-                                role="dialog"
                                 aria-modal="true"
-                                aria-labelledby="drawer-title"
                                 className={cn(
                                     "fixed top-0 z-50 flex h-full flex-col overflow-hidden border-border bg-surface shadow-[0_20px_60px_rgba(0,0,0,0.2)]",
                                     side === "right" ? "right-0 border-l" : "left-0 border-r",
@@ -68,11 +66,15 @@ function Drawer({
                             >
                                 <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-6 py-4">
                                     <div className="space-y-1">
-                                        <h2 id="drawer-title" className="text-lg font-semibold text-text-primary">
-                                            {title}
-                                        </h2>
+                                        <DialogPrimitive.Title asChild>
+                                            <h2 className="text-lg font-semibold text-text-primary">
+                                                {title}
+                                            </h2>
+                                        </DialogPrimitive.Title>
                                         {description ? (
-                                            <p className="text-sm text-text-secondary">{description}</p>
+                                            <DialogPrimitive.Description asChild>
+                                                <p className="text-sm text-text-secondary">{description}</p>
+                                            </DialogPrimitive.Description>
                                         ) : null}
                                     </div>
                                     <button

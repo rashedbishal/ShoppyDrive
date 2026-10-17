@@ -42,7 +42,6 @@ const supportItems = [
 
 const primaryNavLinks = [
     { label: 'Home', href: '/' },
-    { label: 'Shop', href: '/products' },
     { label: 'Flash Sale', href: '/flash-sales' },
     { label: 'Brands', href: '/brands' },
     { label: 'About', href: '/about' },

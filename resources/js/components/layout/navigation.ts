@@ -13,7 +13,6 @@ export type StorefrontFeature = {
 
 export const primaryLinks: StorefrontLink[] = [
     { label: 'Home', href: '/' },
-    { label: 'Shop', href: '/products' },
     { label: 'Flash Sale', href: '/flash-sales' },
     { label: 'Brands', href: '/brands' },
     { label: 'About', href: '/about' },
@@ -22,7 +21,6 @@ export const primaryLinks: StorefrontLink[] = [
 
 export const footerQuickLinks: StorefrontLink[] = [
     { label: 'Home', href: '/' },
-    { label: 'All Products', href: '/products' },
     { label: 'Flash Sale', href: '/flash-sales' },
     { label: 'Track Order', href: '/track-order' },
     { label: 'About', href: '/about' },

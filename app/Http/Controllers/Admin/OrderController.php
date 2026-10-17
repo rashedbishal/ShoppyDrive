@@ -5,16 +5,23 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
+use App\Services\PathaoCourierService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use RuntimeException;
 
 class OrderController extends Controller
 {
+    public function __construct(
+        private readonly PathaoCourierService $pathao,
+    ) {}
+
     public function index(Request $request): Response
     {
         $orders = Order::with('user:id,name,email')
@@ -49,7 +56,7 @@ class OrderController extends Controller
         ];
 
         if ($request->status === OrderStatus::DELIVERED->value) {
-            $updateData['payment_status'] = \App\Enums\PaymentStatus::PAID->value;
+            $updateData['payment_status'] = PaymentStatus::PAID->value;
         }
 
         $order->update($updateData);
@@ -82,5 +89,51 @@ class OrderController extends Controller
         ]);
 
         return back()->with('success', 'Order has been cancelled.');
+    }
+
+    public function sendToPathao(Order $order): RedirectResponse
+    {
+        if ($order->pathao_consignment_id !== null) {
+            return back()->with('error', 'This order has already been sent to Pathao.');
+        }
+
+        try {
+            $result = $this->pathao->createOrder($order);
+        } catch (RuntimeException $e) {
+            return back()->with('error', 'Pathao: '.$e->getMessage());
+        }
+
+        $order->update([
+            'pathao_consignment_id' => $result['consignment_id'],
+            'pathao_order_status' => $result['order_status'],
+            'pathao_delivery_fee' => $result['delivery_fee'],
+            'pathao_sent_at' => now(),
+            'tracking_number' => $order->tracking_number ?? $result['consignment_id'],
+        ]);
+
+        OrderStatusHistory::create([
+            'order_id' => $order->id,
+            'status' => $order->status->value,
+            'notes' => "Sent to Pathao courier. Consignment ID: {$result['consignment_id']}.",
+        ]);
+
+        return back()->with('success', 'Order sent to Pathao for pickup.');
+    }
+
+    public function refreshPathaoStatus(Order $order): RedirectResponse
+    {
+        if ($order->pathao_consignment_id === null) {
+            return back()->with('error', 'This order has not been sent to Pathao yet.');
+        }
+
+        try {
+            $info = $this->pathao->getOrderInfo($order->pathao_consignment_id);
+        } catch (RuntimeException $e) {
+            return back()->with('error', 'Pathao: '.$e->getMessage());
+        }
+
+        $order->update(['pathao_order_status' => $info['order_status']]);
+
+        return back()->with('success', "Pathao status: {$info['order_status']}.");
     }
 }

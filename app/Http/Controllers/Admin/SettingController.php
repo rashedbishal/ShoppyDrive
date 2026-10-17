@@ -6,14 +6,21 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\PathaoCourierService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use RuntimeException;
 
 class SettingController extends Controller
 {
+    public function __construct(
+        private readonly PathaoCourierService $pathao,
+    ) {}
+
     public function edit(): Response
     {
         $settings = Setting::all()->keyBy('key')->map(fn ($s) => $s->value);
@@ -48,6 +55,12 @@ class SettingController extends Controller
             'facebook_client_id' => ['nullable', 'string', 'max:255'],
             'facebook_client_secret' => ['nullable', 'string', 'max:255'],
             'facebook_redirect_uri' => ['nullable', 'string', 'max:500'],
+            'pathao_environment' => ['nullable', 'in:sandbox,production'],
+            'pathao_client_id' => ['nullable', 'string', 'max:255'],
+            'pathao_client_secret' => ['nullable', 'string', 'max:255'],
+            'pathao_username' => ['nullable', 'email', 'max:255'],
+            'pathao_password' => ['nullable', 'string', 'max:255'],
+            'pathao_store_id' => ['nullable', 'string', 'max:50'],
         ]);
 
         // Handle logo upload separately
@@ -67,6 +80,8 @@ class SettingController extends Controller
             'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number',
             'google_client_id', 'google_client_secret', 'google_redirect_uri',
             'facebook_client_id', 'facebook_client_secret', 'facebook_redirect_uri',
+            'pathao_environment', 'pathao_client_id', 'pathao_client_secret',
+            'pathao_username', 'pathao_password', 'pathao_store_id',
         ];
 
         foreach ($fields as $key) {
@@ -78,6 +93,22 @@ class SettingController extends Controller
         return back()->with('success', 'Settings saved.');
     }
 
+    /**
+     * List the merchant's Pathao stores so the admin can pick one instead of
+     * typing a store_id by hand (per Pathao's "Get Merchant Store Info" API).
+     * Requires Client ID/Secret and account email/password to already be saved.
+     */
+    public function pathaoStores(): JsonResponse
+    {
+        try {
+            $stores = $this->pathao->getStores();
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['stores' => $stores]);
+    }
+
     private function getGroup(string $key): string
     {
         return match (true) {
@@ -87,6 +118,7 @@ class SettingController extends Controller
             in_array($key, ['whatsapp_number', 'messenger_link']) => 'chat_widgets',
             in_array($key, ['bkash_number', 'nagad_number']) => 'payments',
             in_array($key, ['google_client_id', 'google_client_secret', 'google_redirect_uri', 'facebook_client_id', 'facebook_client_secret', 'facebook_redirect_uri']) => 'social_login',
+            in_array($key, ['pathao_environment', 'pathao_client_id', 'pathao_client_secret', 'pathao_username', 'pathao_password', 'pathao_store_id']) => 'courier',
             default => 'integrations',
         };
     }
