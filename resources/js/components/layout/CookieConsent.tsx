@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from '@inertiajs/react';
-import { Shield, Sparkles } from 'lucide-react';
+import { BarChart3, Megaphone, ShieldCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Toggle } from '@/components/ui/toggle';
 import { STORAGE_KEYS } from '@/lib/constants';
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
 import { cn } from '@/lib/utils';
@@ -44,93 +43,77 @@ export default function CookieConsent(): React.JSX.Element | null {
         });
     };
 
+    const categories = [
+        { key: 'necessary', label: 'Necessary', icon: ShieldCheck, checked: true, disabled: true, onToggle: undefined },
+        { key: 'analytics', label: 'Analytics', icon: BarChart3, checked: analyticsEnabled, disabled: false, onToggle: () => setAnalyticsEnabled((v) => !v) },
+        { key: 'marketing', label: 'Marketing', icon: Megaphone, checked: marketingEnabled, disabled: false, onToggle: () => setMarketingEnabled((v) => !v) },
+    ] as const;
+
     return (
-        <div className="fixed inset-x-0 bottom-0 z-[65] px-4 pb-4 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-7xl rounded-3xl border border-[var(--color-border)] bg-surface/95 p-5 shadow-[var(--shadow-modal)] backdrop-blur-xl">
-                <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-                    <div className="space-y-3">
-                        <div className="inline-flex items-center gap-2 rounded-full bg-[var(--color-primary-light)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-primary)]">
-                            <Shield className="size-3.5" />
-                            Cookie preferences
-                        </div>
-                        <div className="space-y-2">
-                            <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
-                                We use cookies to improve shopping and personalize offers.
-                            </h3>
-                            <p className="max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
-                                Necessary cookies keep the store working. Analytics and marketing cookies are optional and only load after consent.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-4">
-                        <div className="flex items-center justify-between gap-4">
-                            <div>
-                                <p className="text-sm font-semibold text-[var(--color-text-primary)]">Necessary</p>
-                                <p className="text-xs text-[var(--color-text-secondary)]">Always on</p>
-                            </div>
-                            <Toggle pressed className="pointer-events-none" aria-label="Necessary cookies enabled" />
-                        </div>
-
-                        <div className="flex items-center justify-between gap-4">
-                            <div>
-                                <p className="text-sm font-semibold text-[var(--color-text-primary)]">Analytics</p>
-                                <p className="text-xs text-[var(--color-text-secondary)]">Measure visits and performance</p>
-                            </div>
-                            <Toggle
-                                pressed={analyticsEnabled}
-                                onPressedChange={setAnalyticsEnabled}
-                                aria-label="Toggle analytics cookies"
-                            />
-                        </div>
-
-                        <div className="flex items-center justify-between gap-4">
-                            <div>
-                                <p className="text-sm font-semibold text-[var(--color-text-primary)]">Marketing</p>
-                                <p className="text-xs text-[var(--color-text-secondary)]">Personalized promos and ads</p>
-                            </div>
-                            <Toggle
-                                pressed={marketingEnabled}
-                                onPressedChange={setMarketingEnabled}
-                                aria-label="Toggle marketing cookies"
-                            />
-                        </div>
-                    </div>
+        <div className="fixed bottom-4 left-4 z-[65] w-[320px] max-w-[calc(100vw-2rem)]">
+            <div className="rounded-2xl border border-[var(--color-border)] bg-surface/95 p-4 shadow-[var(--shadow-modal)] backdrop-blur-xl">
+                <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-primary-light)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-primary)]">
+                    <ShieldCheck className="size-3" />
+                    Cookies
                 </div>
+                <p className="mb-3 text-xs leading-5 text-[var(--color-text-secondary)]">
+                    We use cookies to improve shopping and personalize offers.
+                </p>
 
-                <div className="mt-5 flex flex-col gap-3 border-t border-[var(--color-border)] pt-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex flex-wrap items-center gap-3 text-sm">
-                        <Button
-                            onClick={() => persistConsent(true, true)}
-                            className="shadow-sm"
-                        >
-                            Accept all
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            onClick={() => persistConsent(analyticsEnabled, marketingEnabled)}
-                        >
-                            Save preferences
-                        </Button>
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                    {categories.map(({ key, label, icon: Icon, checked, disabled, onToggle }) => (
                         <button
+                            key={key}
                             type="button"
-                            onClick={() => persistConsent(false, false)}
-                            className="text-sm font-semibold text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]"
+                            disabled={disabled}
+                            onClick={onToggle}
+                            aria-pressed={checked}
+                            className={cn(
+                                'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition',
+                                checked
+                                    ? 'bg-[var(--color-primary)] text-white'
+                                    : 'border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]',
+                                disabled && 'cursor-default',
+                            )}
                         >
-                            Reject all
+                            <Icon className="size-3.5" />
+                            {label}
                         </button>
-                    </div>
-
-                    <Link
-                        href="/privacy-policy"
-                        className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]"
-                    >
-                        <Sparkles className="size-4" />
-                        View privacy policy
-                    </Link>
+                    ))}
                 </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                        size="sm"
+                        onClick={() => persistConsent(true, true)}
+                        className="shadow-sm"
+                    >
+                        Accept all
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => persistConsent(analyticsEnabled, marketingEnabled)}
+                    >
+                        Save
+                    </Button>
+                    <button
+                        type="button"
+                        onClick={() => persistConsent(false, false)}
+                        className="text-xs font-semibold text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]"
+                    >
+                        Reject all
+                    </button>
+                </div>
+
+                <Link
+                    href="/privacy-policy"
+                    className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]"
+                >
+                    <Sparkles className="size-3" />
+                    Privacy policy
+                </Link>
             </div>
         </div>
     );
 }
-
