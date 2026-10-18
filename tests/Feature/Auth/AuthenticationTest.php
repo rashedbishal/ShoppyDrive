@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
@@ -56,6 +57,24 @@ test('users can not authenticate with invalid password', function () {
         'password' => 'wrong-password',
     ]);
 
+    $this->assertGuest();
+});
+
+test('a social-only account trying to log in with a password is told to use its provider', function () {
+    $user = User::factory()->withoutPassword()->create();
+    SocialAccount::create([
+        'user_id' => $user->id,
+        'provider' => 'google',
+        'provider_id' => 'google-123',
+    ]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'whatever-they-guess',
+    ]);
+
+    $response->assertSessionHasErrors('email');
+    expect(session('errors')->first('email'))->toContain('Google');
     $this->assertGuest();
 });
 

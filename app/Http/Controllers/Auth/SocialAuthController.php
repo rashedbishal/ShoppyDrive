@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
@@ -26,7 +28,17 @@ class SocialAuthController extends Controller
         try {
             $socialUser = Socialite::driver($provider)->user();
         } catch (\Exception $e) {
-            return redirect()->route('login')->withErrors(['email' => 'Unable to login with '.ucfirst($provider)]);
+            return redirect()->route('login')->withErrors(['email' => 'Unable to login with '.ucfirst($provider).'.']);
+        }
+
+        if (Auth::check()) {
+            return $this->connectToCurrentUser($provider, $socialUser);
+        }
+
+        if (! $socialUser->getEmail()) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'Your '.ucfirst($provider).' account has no email address attached, so we can\'t use it to sign in. Please try a different method.',
+            ]);
         }
 
         $user = DB::transaction(function () use ($socialUser, $provider) {
@@ -45,6 +57,7 @@ class SocialAuthController extends Controller
                     'name' => $socialUser->getName() ?? $socialUser->getNickname(),
                     'email' => $socialUser->getEmail(),
                     'password' => Hash::make(Str::password(24)),
+                    'has_password' => false,
                 ]);
             }
 
@@ -62,5 +75,38 @@ class SocialAuthController extends Controller
         Auth::login($user);
 
         return redirect(config('fortify.home'));
+    }
+
+    /**
+     * Attach a social provider to the currently authenticated user, triggered
+     * from the "Connected accounts" settings page rather than the login page.
+     */
+    private function connectToCurrentUser(string $provider, SocialiteUser $socialUser): RedirectResponse
+    {
+        $user = Auth::user();
+
+        $existing = SocialAccount::where('provider', $provider)
+            ->where('provider_id', $socialUser->getId())
+            ->first();
+
+        if ($existing && $existing->user_id !== $user->id) {
+            return redirect()->route('connections.edit')->withErrors([
+                'connections' => 'This '.ucfirst($provider).' account is already linked to another ShoppyDrive account.',
+            ]);
+        }
+
+        if (! $existing) {
+            $user->socialAccounts()->create([
+                'provider' => $provider,
+                'provider_id' => $socialUser->getId(),
+                'token' => $socialUser->token,
+                'refresh_token' => $socialUser->refreshToken,
+                'token_expires_at' => $socialUser->expiresIn ? now()->addSeconds($socialUser->expiresIn) : null,
+            ]);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => ucfirst($provider).' account connected.']);
+
+        return redirect()->route('connections.edit');
     }
 }

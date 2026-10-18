@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\ConnectionsController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Support\Facades\Route;
@@ -9,6 +10,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    Route::get('settings/connections', [ConnectionsController::class, 'edit'])->name('connections.edit');
+    Route::put('settings/connections/password', [ConnectionsController::class, 'setPassword'])->name('connections.password.update');
+    Route::delete('settings/connections/{socialAccount}', [ConnectionsController::class, 'destroy'])->name('connections.destroy');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

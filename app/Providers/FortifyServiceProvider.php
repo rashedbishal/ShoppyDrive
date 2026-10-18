@@ -11,9 +11,11 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
@@ -47,6 +49,32 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
+
+        Fortify::authenticateUsing(function (Request $request) {
+            $user = User::where('email', $request->email)->first();
+
+            if (! $user) {
+                return null;
+            }
+
+            if (Hash::check($request->password, $user->password)) {
+                return $user;
+            }
+
+            if (! $user->has_password) {
+                $providers = $user->socialAccounts->pluck('provider')
+                    ->map(fn (string $provider): string => ucfirst($provider))
+                    ->implode(' or ');
+
+                if ($providers !== '') {
+                    throw ValidationException::withMessages([
+                        Fortify::username() => ["This account uses {$providers} sign-in. Please continue with {$providers}, or use \"Forgot password\" to set a password for email sign-in."],
+                    ]);
+                }
+            }
+
+            return null;
+        });
     }
 
     /**
