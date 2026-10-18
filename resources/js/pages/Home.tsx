@@ -433,55 +433,103 @@ function HeroSlider({
 
 type CategoryCardProps = {
     category: HomeCategoryCard;
-    index: number;
 };
 
-function CategoryCard({
-    category,
-    index,
-}: CategoryCardProps): React.JSX.Element {
+function CategoryCard({ category }: CategoryCardProps): React.JSX.Element {
+    return (
+        <Link
+            href={categoryRoutes.show.url(category.slug)}
+            className="group flex w-[86px] flex-col items-center gap-2.5 text-center sm:w-[104px]"
+        >
+            <span
+                style={
+                    {
+                        '--category-color': category.color,
+                    } as React.CSSProperties
+                }
+                className={cn(
+                    'flex size-16 items-center justify-center rounded-full ring-1 transition-all duration-300 ease-out sm:size-20',
+                    'bg-[color-mix(in_srgb,var(--category-color)_12%,white)]',
+                    'text-[var(--category-color)]',
+                    'ring-[color-mix(in_srgb,var(--category-color)_18%,white)]',
+                    'group-hover:-translate-y-1 group-hover:shadow-[var(--category-color)]/20 group-hover:shadow-lg',
+                    'group-hover:bg-[var(--category-color)] group-hover:text-white group-hover:ring-[var(--category-color)]',
+                )}
+            >
+                <CategoryIcon
+                    icon={category.icon}
+                    className="size-6 transition-transform duration-300 ease-out group-hover:scale-110 sm:size-7"
+                />
+            </span>
+            <span className="text-xs leading-tight font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-sm">
+                {category.name}
+            </span>
+            <span className="text-[11px] text-[var(--color-text-muted)]">
+                {category.productsCount} products
+            </span>
+        </Link>
+    );
+}
+
+type CategoryShowcaseProps = {
+    categories: HomeCategoryCard[];
+};
+
+/**
+ * Cards start stacked on top of each other at the section's center, then
+ * spread out to their real flex-wrap positions once scrolled into view —
+ * driven by Framer Motion's `layout` animation (FLIP), which measures the
+ * before/after bounding box itself rather than hand-computed offsets that
+ * would drift across responsive breakpoints.
+ */
+function CategoryShowcase({
+    categories,
+}: CategoryShowcaseProps): React.JSX.Element {
+    const prefersReducedMotion = useReducedMotion();
+    const [revealed, setRevealed] = useState(false);
+    const showSpread = revealed || !!prefersReducedMotion;
+    const centerIndex = (categories.length - 1) / 2;
+
     return (
         <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-40px' }}
-            transition={{
-                duration: 0.35,
-                delay: Math.min(index * 0.04, 0.32),
-                ease: 'easeOut',
-            }}
+            layout
+            onViewportEnter={() => setRevealed(true)}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ layout: { duration: 0.5, ease: 'easeOut' } }}
+            className={cn(
+                'flex flex-wrap justify-center gap-x-5 gap-y-8 sm:gap-x-8',
+                !showSpread && 'relative min-h-[158px] sm:min-h-[182px]',
+            )}
         >
-            <Link
-                href={categoryRoutes.show.url(category.slug)}
-                className="group flex w-[86px] flex-col items-center gap-2.5 text-center sm:w-[104px]"
-            >
-                <span
-                    style={
-                        {
-                            '--category-color': category.color,
-                        } as React.CSSProperties
-                    }
+            {categories.map((category, index) => (
+                <motion.div
+                    key={category.slug}
+                    layout
+                    initial={false}
+                    animate={{ opacity: showSpread ? 1 : 0 }}
                     className={cn(
-                        'flex size-16 items-center justify-center rounded-full ring-1 transition-all duration-300 ease-out sm:size-20',
-                        'bg-[color-mix(in_srgb,var(--category-color)_12%,white)]',
-                        'text-[var(--category-color)]',
-                        'ring-[color-mix(in_srgb,var(--category-color)_18%,white)]',
-                        'group-hover:-translate-y-1 group-hover:shadow-[var(--category-color)]/20 group-hover:shadow-lg',
-                        'group-hover:bg-[var(--category-color)] group-hover:text-white group-hover:ring-[var(--category-color)]',
+                        !showSpread &&
+                            'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
                     )}
+                    transition={{
+                        layout: {
+                            type: 'spring',
+                            stiffness: 160,
+                            damping: 20,
+                            mass: 0.7,
+                            delay: showSpread
+                                ? Math.min(
+                                      Math.abs(index - centerIndex) * 0.045,
+                                      0.4,
+                                  )
+                                : 0,
+                        },
+                        opacity: { duration: 0.25 },
+                    }}
                 >
-                    <CategoryIcon
-                        icon={category.icon}
-                        className="size-6 transition-transform duration-300 ease-out group-hover:scale-110 sm:size-7"
-                    />
-                </span>
-                <span className="text-xs leading-tight font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-sm">
-                    {category.name}
-                </span>
-                <span className="text-[11px] text-[var(--color-text-muted)]">
-                    {category.productsCount} products
-                </span>
-            </Link>
+                    <CategoryCard category={category} />
+                </motion.div>
+            ))}
         </motion.div>
     );
 }
@@ -1651,15 +1699,7 @@ function Home(): React.JSX.Element {
             node: getSection('categories')?.is_visible && (
                 <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
                     {renderHeading('categories', 'Shop by category')}
-                    <div className="flex flex-wrap justify-center gap-x-5 gap-y-8 sm:gap-x-8">
-                        {categoryCards.map((category, index) => (
-                            <CategoryCard
-                                key={category.slug}
-                                category={category}
-                                index={index}
-                            />
-                        ))}
-                    </div>
+                    <CategoryShowcase categories={categoryCards} />
                 </section>
             ),
         },
