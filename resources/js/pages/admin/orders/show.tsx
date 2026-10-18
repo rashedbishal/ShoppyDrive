@@ -38,11 +38,13 @@ type Order = {
     notes: string | null;
     pathao_consignment_id: string | null;
     pathao_order_status: string | null;
+    pathao_status_label: string | null;
     pathao_delivery_fee: number | null;
     pathao_sent_at: string | null;
     steadfast_consignment_id: string | null;
     steadfast_tracking_code: string | null;
     steadfast_status: string | null;
+    steadfast_status_label: string | null;
     steadfast_sent_at: string | null;
     shipping_address: {
         name: string;
@@ -62,7 +64,6 @@ type Order = {
 
 type Props = {
     order: Order;
-    statuses: string[];
 };
 
 const statusVariant: Record<
@@ -77,14 +78,9 @@ const statusVariant: Record<
     refunded: 'default',
 };
 
-export default function OrderShow({ order, statuses }: Props) {
+export default function OrderShow({ order }: Props) {
     const { props } = usePage<any>();
     const flash = props.flash as { success?: string } | undefined;
-
-    const { data, setData, patch, processing } = useForm({
-        status: order.status,
-        notes: '',
-    });
 
     const {
         data: cancelData,
@@ -95,9 +91,25 @@ export default function OrderShow({ order, statuses }: Props) {
         reason: '',
     });
 
-    const handleStatusUpdate = (e: React.FormEvent) => {
-        e.preventDefault();
-        patch(route('admin.orders.updateStatus', order.id));
+    const [refundProcessing, setRefundProcessing] = useState(false);
+
+    const handleMarkRefunded = () => {
+        if (
+            !confirm(
+                `Mark order ${order.order_number} as refunded? This cannot be undone.`,
+            )
+        ) {
+            return;
+        }
+
+        setRefundProcessing(true);
+        router.patch(
+            route('admin.orders.markRefunded', order.id),
+            {},
+            {
+                onFinish: () => setRefundProcessing(false),
+            },
+        );
     };
 
     const handleCancel = (e: React.FormEvent) => {
@@ -336,46 +348,29 @@ export default function OrderShow({ order, statuses }: Props) {
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
-                                    Update Status
+                                    Status
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="pt-4">
-                                <form
-                                    onSubmit={handleStatusUpdate}
-                                    className="space-y-3"
-                                >
-                                    <select
-                                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
-                                        value={data.status}
-                                        onChange={(e) =>
-                                            setData('status', e.target.value)
-                                        }
-                                    >
-                                        {statuses.map((s) => (
-                                            <option key={s} value={s}>
-                                                {s}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <textarea
-                                        rows={2}
-                                        placeholder="Notes (optional)"
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
-                                        value={data.notes}
-                                        onChange={(e) =>
-                                            setData('notes', e.target.value)
-                                        }
-                                    />
-                                    <Button
-                                        type="submit"
-                                        disabled={processing}
-                                        className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                                    >
-                                        {processing
-                                            ? 'Updating…'
-                                            : 'Update Status'}
-                                    </Button>
-                                </form>
+                            <CardContent className="space-y-3 pt-4">
+                                <p className="text-xs text-slate-500">
+                                    Status now advances automatically from
+                                    the courier (see the Courier card below)
+                                    and can no longer be set by hand, except
+                                    marking a paid order as refunded.
+                                </p>
+                                {order.payment_status === 'paid' &&
+                                    order.status !== 'refunded' && (
+                                        <Button
+                                            variant="outline"
+                                            className="w-full border-slate-300 text-slate-700 hover:bg-slate-50"
+                                            disabled={refundProcessing}
+                                            onClick={handleMarkRefunded}
+                                        >
+                                            {refundProcessing
+                                                ? 'Updating…'
+                                                : 'Mark as Refunded'}
+                                        </Button>
+                                    )}
                             </CardContent>
                         </Card>
 
@@ -530,7 +525,7 @@ export default function OrderShow({ order, statuses }: Props) {
                                                     Status
                                                 </span>
                                                 <Badge variant="info">
-                                                    {order.pathao_order_status ??
+                                                    {order.pathao_status_label ??
                                                         'Unknown'}
                                                 </Badge>
                                             </div>
@@ -599,7 +594,7 @@ export default function OrderShow({ order, statuses }: Props) {
                                                     Status
                                                 </span>
                                                 <Badge variant="info">
-                                                    {order.steadfast_status ??
+                                                    {order.steadfast_status_label ??
                                                         'Unknown'}
                                                 </Badge>
                                             </div>

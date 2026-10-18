@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Setting;
+use App\Services\CourierOrderStatusMapper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -46,15 +47,8 @@ class SteadfastWebhookController extends Controller
 
         $newStatus = $payload['status'] ?? null;
 
-        if ($newStatus !== null && $newStatus !== $order->steadfast_status) {
-            $order->update(['steadfast_status' => $newStatus]);
-
-            $order->statusHistories()->create([
-                'status' => $order->status->value,
-                'notes' => "Steadfast status updated to \"{$newStatus}\".".(
-                    isset($payload['tracking_message']) ? ' '.$payload['tracking_message'] : ''
-                ),
-            ]);
+        if ($newStatus !== null) {
+            CourierOrderStatusMapper::sync($order, 'steadfast', $newStatus, $payload['tracking_message'] ?? null);
         }
 
         return response()->json(['status' => 'success']);

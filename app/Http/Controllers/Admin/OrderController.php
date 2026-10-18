@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\OrderStatus;
-use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
+use App\Services\CourierOrderStatusMapper;
 use App\Services\PathaoCourierService;
 use App\Services\SteadfastCourierService;
 use Illuminate\Http\RedirectResponse;
@@ -41,35 +41,36 @@ class OrderController extends Controller
 
     public function show(Order $order): Response
     {
+        $order->load(['user:id,name,email,phone', 'items.product:id,name,slug', 'statusHistories']);
+
         return Inertia::render('admin/orders/show', [
-            'order' => $order->load(['user:id,name,email,phone', 'items.product:id,name,slug', 'statusHistories']),
-            'statuses' => array_column(OrderStatus::cases(), 'value'),
+            'order' => array_merge($order->toArray(), [
+                'pathao_status_label' => $order->pathao_order_status
+                    ? CourierOrderStatusMapper::label($order->pathao_order_status)
+                    : null,
+                'steadfast_status_label' => $order->steadfast_status
+                    ? CourierOrderStatusMapper::label($order->steadfast_status)
+                    : null,
+            ]),
         ]);
     }
 
-    public function updateStatus(Request $request, Order $order): RedirectResponse
+    public function markRefunded(Order $order): RedirectResponse
     {
-        $request->validate(['status' => ['required', 'in:'.implode(',', array_column(OrderStatus::cases(), 'value'))]]);
-
-        $old = $order->status->value;
-        $updateData = [
-            'status' => $request->status,
-            'delivered_at' => $request->status === OrderStatus::DELIVERED->value ? now() : $order->delivered_at,
-        ];
-
-        if ($request->status === OrderStatus::DELIVERED->value) {
-            $updateData['payment_status'] = PaymentStatus::PAID->value;
+        if ($order->status === OrderStatus::REFUNDED) {
+            return back()->with('error', 'This order is already marked as refunded.');
         }
 
-        $order->update($updateData);
+        $old = $order->status->value;
+        $order->update(['status' => OrderStatus::REFUNDED]);
 
         OrderStatusHistory::create([
             'order_id' => $order->id,
-            'status' => $request->status,
-            'notes' => $request->notes ?? "Status changed from {$old} to {$request->status}",
+            'status' => OrderStatus::REFUNDED->value,
+            'notes' => "Marked as refunded by admin (was: {$old}).",
         ]);
 
-        return back()->with('success', 'Order status updated.');
+        return back()->with('success', 'Order marked as refunded.');
     }
 
     public function cancel(Request $request, Order $order): RedirectResponse
@@ -107,7 +108,6 @@ class OrderController extends Controller
 
         $order->update([
             'pathao_consignment_id' => $result['consignment_id'],
-            'pathao_order_status' => $result['order_status'],
             'pathao_delivery_fee' => $result['delivery_fee'],
             'pathao_sent_at' => now(),
             'tracking_number' => $order->tracking_number ?? $result['consignment_id'],
@@ -118,6 +118,8 @@ class OrderController extends Controller
             'status' => $order->status->value,
             'notes' => "Sent to Pathao courier. Consignment ID: {$result['consignment_id']}.",
         ]);
+
+        CourierOrderStatusMapper::sync($order, 'pathao', $result['order_status']);
 
         return back()->with('success', 'Order sent to Pathao for pickup.');
     }
@@ -134,9 +136,10 @@ class OrderController extends Controller
             return back()->with('error', 'Pathao: '.$e->getMessage());
         }
 
-        $order->update(['pathao_order_status' => $info['order_status']]);
+        $raw = $info['order_status_slug'] ?? $info['order_status'];
+        CourierOrderStatusMapper::sync($order, 'pathao', $raw);
 
-        return back()->with('success', "Pathao status: {$info['order_status']}.");
+        return back()->with('success', 'Pathao status: '.CourierOrderStatusMapper::label($raw).'.');
     }
 
     public function sendToSteadfast(Order $order): RedirectResponse
@@ -154,7 +157,6 @@ class OrderController extends Controller
         $order->update([
             'steadfast_consignment_id' => $result['consignment_id'],
             'steadfast_tracking_code' => $result['tracking_code'],
-            'steadfast_status' => $result['status'],
             'steadfast_sent_at' => now(),
             'tracking_number' => $order->tracking_number ?? ($result['tracking_code'] ?? $result['consignment_id']),
         ]);
@@ -164,6 +166,8 @@ class OrderController extends Controller
             'status' => $order->status->value,
             'notes' => "Sent to Steadfast courier. Consignment ID: {$result['consignment_id']}.",
         ]);
+
+        CourierOrderStatusMapper::sync($order, 'steadfast', $result['status']);
 
         return back()->with('success', 'Order sent to Steadfast for pickup.');
     }
@@ -180,8 +184,8 @@ class OrderController extends Controller
             return back()->with('error', 'Steadfast: '.$e->getMessage());
         }
 
-        $order->update(['steadfast_status' => $info['status']]);
+        CourierOrderStatusMapper::sync($order, 'steadfast', $info['status']);
 
-        return back()->with('success', "Steadfast status: {$info['status']}.");
+        return back()->with('success', 'Steadfast status: '.CourierOrderStatusMapper::label($info['status']).'.');
     }
 }
