@@ -12,7 +12,7 @@ import {
     X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +61,30 @@ export default function Header(): React.JSX.Element {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const megaMenuCloseTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const openMegaMenu = () => {
+        if (megaMenuCloseTimeout.current) {
+            clearTimeout(megaMenuCloseTimeout.current);
+            megaMenuCloseTimeout.current = null;
+        }
+
+        setIsMegaMenuOpen(true);
+    };
+
+    const scheduleMegaMenuClose = () => {
+        // Small grace period so moving the cursor through the gap between the
+        // button and the dropdown panel below it doesn't close the menu.
+        megaMenuCloseTimeout.current = setTimeout(() => setIsMegaMenuOpen(false), 150);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (megaMenuCloseTimeout.current) {
+                clearTimeout(megaMenuCloseTimeout.current);
+            }
+        };
+    }, []);
 
     const itemCount = useMemo(
         () => cartItems.reduce((count, item) => count + item.quantity, 0),
@@ -337,19 +361,26 @@ export default function Header(): React.JSX.Element {
                 {/* Navigation bar */}
                 <div className="relative z-10 hidden border-b border-[var(--color-border)] bg-white bg-white/95 lg:block">
                     <div className="mx-auto flex max-w-7xl items-center gap-0.5 px-4 sm:px-6 lg:px-8">
-                        <button
-                            type="button"
-                            onClick={() => setIsMegaMenuOpen((prev) => !prev)}
-                            className={cn(
-                                "flex h-11 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition",
-                                isMegaMenuOpen 
-                                    ? "bg-[var(--color-primary-light)] text-[var(--color-primary)]" 
-                                    : "text-[var(--color-text-primary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
-                            )}
+                        <div
+                            className="relative"
+                            onMouseEnter={openMegaMenu}
+                            onMouseLeave={scheduleMegaMenuClose}
                         >
-                            <Menu className="size-4" />
-                            All Categories
-                        </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsMegaMenuOpen((prev) => !prev)}
+                                className={cn(
+                                    "flex h-11 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition",
+                                    isMegaMenuOpen
+                                        ? "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
+                                        : "text-[var(--color-text-primary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+                                )}
+                            >
+                                <Menu className="size-4" />
+                                All Categories
+                            </button>
+                            <MegaMenu isOpen={isMegaMenuOpen} onClose={() => setIsMegaMenuOpen(false)} />
+                        </div>
                         <div className="mx-2 h-5 w-px bg-[var(--color-border)]" />
                         {primaryNavLinks.map((item) => (
                             <Link
@@ -362,8 +393,6 @@ export default function Header(): React.JSX.Element {
                         ))}
                     </div>
                 </div>
-
-                <MegaMenu isOpen={isMegaMenuOpen} onClose={() => setIsMegaMenuOpen(false)} />
             </header>
 
             <MobileMenu isOpen={mobileMenuOpen} onClose={closeMobileMenu} />

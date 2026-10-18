@@ -574,6 +574,8 @@ export interface NavCategory {
     name: string;
     slug: string;
     description?: string | null;
+    icon?: string | null;
+    color?: string | null;
     sub_categories: NavSubCategory[];
 }
 

@@ -72,7 +72,7 @@ class HandleInertiaRequests extends Middleware
                 ->with(['subCategories' => fn ($q) => $q->active()->orderBy('sort_order')->orderBy('name')->select(['id', 'name', 'slug', 'category_id', 'description'])])
                 ->orderBy('sort_order')
                 ->orderBy('name')
-                ->get(['id', 'name', 'slug', 'description']),
+                ->get(['id', 'name', 'slug', 'description', 'icon', 'color']),
             'settings' => function () {
                 $db = Setting::all()->keyBy('key')->map(fn ($s) => $s->value);
                 $socialLinks = $db->get('social_links', []);
