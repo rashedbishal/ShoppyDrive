@@ -11,6 +11,7 @@ use App\Services\SteadfastCourierService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,10 +26,22 @@ class SettingController extends Controller
 
     public function edit(): Response
     {
-        $settings = Setting::all()->keyBy('key')->map(fn ($s) => $s->value);
-
         return Inertia::render('admin/settings/edit', [
-            'settings' => $settings,
+            'settings' => $this->settingsProp(),
+        ]);
+    }
+
+    public function socialConfig(): Response
+    {
+        return Inertia::render('admin/settings/social', [
+            'settings' => $this->settingsProp(),
+        ]);
+    }
+
+    public function courierConfig(): Response
+    {
+        return Inertia::render('admin/settings/courier', [
+            'settings' => $this->settingsProp(),
         ]);
     }
 
@@ -129,6 +142,12 @@ class SettingController extends Controller
         }
 
         return response()->json($balance);
+    }
+
+    /** @return Collection<string, mixed> */
+    private function settingsProp(): Collection
+    {
+        return Setting::all()->keyBy('key')->map(fn ($s) => $s->value);
     }
 
     private function getGroup(string $key): string

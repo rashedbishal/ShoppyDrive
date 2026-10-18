@@ -1,39 +1,15 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import {
+    SettingsField,
+    settingsInputClass,
+} from '@/components/admin/settings-field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 
-type PathaoStore = {
-    store_id: number;
-    store_name: string;
-    store_address: string;
-    is_default_store: boolean;
-};
-
 type Props = {
     settings: Record<string, string | Record<string, string> | null>;
 };
-
-function Field({
-    label,
-    hint,
-    children,
-}: {
-    label: string;
-    hint?: string;
-    children: React.ReactNode;
-}) {
-    return (
-        <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-                {label}
-            </label>
-            {hint && <p className="mb-1.5 text-xs text-slate-400">{hint}</p>}
-            {children}
-        </div>
-    );
-}
 
 export default function SettingsEdit({ settings }: Props) {
     const { props } = usePage<any>();
@@ -61,115 +37,12 @@ export default function SettingsEdit({ settings }: Props) {
         messenger_link: (settings.messenger_link as string) ?? '',
         bkash_number: (settings.bkash_number as string) ?? '',
         nagad_number: (settings.nagad_number as string) ?? '',
-        google_client_id: (settings.google_client_id as string) ?? '',
-        google_client_secret: (settings.google_client_secret as string) ?? '',
-        google_redirect_uri: (settings.google_redirect_uri as string) ?? '',
-        facebook_client_id: (settings.facebook_client_id as string) ?? '',
-        facebook_client_secret:
-            (settings.facebook_client_secret as string) ?? '',
-        facebook_redirect_uri: (settings.facebook_redirect_uri as string) ?? '',
-        pathao_environment:
-            (settings.pathao_environment as string) ?? 'sandbox',
-        pathao_client_id: (settings.pathao_client_id as string) ?? '',
-        pathao_client_secret: (settings.pathao_client_secret as string) ?? '',
-        pathao_username: (settings.pathao_username as string) ?? '',
-        pathao_password: (settings.pathao_password as string) ?? '',
-        pathao_store_id: (settings.pathao_store_id as string) ?? '',
-        steadfast_api_key: (settings.steadfast_api_key as string) ?? '',
-        steadfast_secret_key: (settings.steadfast_secret_key as string) ?? '',
-        steadfast_webhook_secret:
-            (settings.steadfast_webhook_secret as string) ?? '',
-        steadfast_webhook_url: (settings.steadfast_webhook_url as string) ?? '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         post(route('admin.settings.update'), { forceFormData: true });
     };
-
-    const [pathaoStores, setPathaoStores] = useState<PathaoStore[]>([]);
-    const [pathaoStoresLoading, setPathaoStoresLoading] = useState(false);
-    const [pathaoStoresError, setPathaoStoresError] = useState<string | null>(
-        null,
-    );
-
-    const loadPathaoStores = async () => {
-        setPathaoStoresLoading(true);
-        setPathaoStoresError(null);
-
-        try {
-            const res = await fetch(route('admin.settings.pathao.stores'), {
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
-            const json = await res.json();
-
-            if (!res.ok) {
-                setPathaoStoresError(json.message ?? 'Could not load stores.');
-
-                return;
-            }
-
-            setPathaoStores(json.stores ?? []);
-
-            if (!data.pathao_store_id) {
-                const defaultStore = (json.stores ?? []).find(
-                    (s: PathaoStore) => s.is_default_store,
-                );
-
-                if (defaultStore) {
-                    setData('pathao_store_id', String(defaultStore.store_id));
-                }
-            }
-        } catch {
-            setPathaoStoresError('Could not reach the server.');
-        } finally {
-            setPathaoStoresLoading(false);
-        }
-    };
-
-    const [steadfastBalance, setSteadfastBalance] = useState<number | null>(
-        null,
-    );
-    const [steadfastBalanceLoading, setSteadfastBalanceLoading] =
-        useState(false);
-    const [steadfastBalanceError, setSteadfastBalanceError] = useState<
-        string | null
-    >(null);
-
-    const checkSteadfastBalance = async () => {
-        setSteadfastBalanceLoading(true);
-        setSteadfastBalanceError(null);
-
-        try {
-            const res = await fetch(route('admin.settings.steadfast.balance'), {
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
-            const json = await res.json();
-
-            if (!res.ok) {
-                setSteadfastBalanceError(
-                    json.message ?? 'Could not reach Steadfast.',
-                );
-
-                return;
-            }
-
-            setSteadfastBalance(json.current_balance ?? 0);
-        } catch {
-            setSteadfastBalanceError('Could not reach the server.');
-        } finally {
-            setSteadfastBalanceLoading(false);
-        }
-    };
-
-    const inputClass =
-        'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
 
     return (
         <>
@@ -191,17 +64,17 @@ export default function SettingsEdit({ settings }: Props) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-4">
-                            <Field label="Site Name">
+                            <SettingsField label="Site Name">
                                 <input
-                                    className={inputClass}
+                                    className={settingsInputClass}
                                     value={data.site_name}
                                     onChange={(e) =>
                                         setData('site_name', e.target.value)
                                     }
                                     placeholder="ShoppyDrive"
                                 />
-                            </Field>
-                            <Field
+                            </SettingsField>
+                            <SettingsField
                                 label="Brand Logo"
                                 hint="Displayed in the website header and CMS. JPG, PNG, or WEBP — max 2 MB."
                             >
@@ -210,10 +83,10 @@ export default function SettingsEdit({ settings }: Props) {
                                     onChange={(file) => setData('logo', file)}
                                     previewClassName="h-32"
                                 />
-                            </Field>
-                            <Field label="Currency Symbol">
+                            </SettingsField>
+                            <SettingsField label="Currency Symbol">
                                 <input
-                                    className={`${inputClass} max-w-[120px]`}
+                                    className={`${settingsInputClass} max-w-[120px]`}
                                     value={data.currency_symbol}
                                     onChange={(e) =>
                                         setData(
@@ -223,7 +96,7 @@ export default function SettingsEdit({ settings }: Props) {
                                     }
                                     placeholder="৳"
                                 />
-                            </Field>
+                            </SettingsField>
                         </CardContent>
                     </Card>
 
@@ -234,31 +107,32 @@ export default function SettingsEdit({ settings }: Props) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-4">
-                            <Field label="Contact Email">
+                            <SettingsField label="Contact Email">
                                 <input
                                     type="email"
-                                    className={inputClass}
+                                    className={settingsInputClass}
                                     value={data.contact_email}
                                     onChange={(e) =>
                                         setData('contact_email', e.target.value)
                                     }
                                 />
-                            </Field>
-                            <Field label="Contact Phone">
+                            </SettingsField>
+                            <SettingsField label="Contact Phone">
                                 <input
                                     type="tel"
-                                    className={inputClass}
+                                    className={settingsInputClass}
                                     value={data.contact_phone}
                                     onChange={(e) =>
                                         setData('contact_phone', e.target.value)
                                     }
                                 />
-                            </Field>
-                            <Field label="Contact Address">
+                            </SettingsField>
+                            <SettingsField label="Contact Address">
                                 <textarea
                                     rows={3}
                                     className={
-                                        inputClass + ' h-auto resize-none py-2'
+                                        settingsInputClass +
+                                        ' h-auto resize-none py-2'
                                     }
                                     value={data.contact_address}
                                     onChange={(e) =>
@@ -269,7 +143,7 @@ export default function SettingsEdit({ settings }: Props) {
                                     }
                                     placeholder="e.g. 123 Main Street, Dhaka, Bangladesh"
                                 />
-                            </Field>
+                            </SettingsField>
                         </CardContent>
                     </Card>
 
@@ -280,9 +154,9 @@ export default function SettingsEdit({ settings }: Props) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-4">
-                            <Field label="Facebook">
+                            <SettingsField label="Facebook">
                                 <input
-                                    className={inputClass}
+                                    className={settingsInputClass}
                                     value={data.social_links.facebook}
                                     onChange={(e) =>
                                         setData('social_links', {
@@ -292,10 +166,10 @@ export default function SettingsEdit({ settings }: Props) {
                                     }
                                     placeholder="https://facebook.com/..."
                                 />
-                            </Field>
-                            <Field label="Instagram">
+                            </SettingsField>
+                            <SettingsField label="Instagram">
                                 <input
-                                    className={inputClass}
+                                    className={settingsInputClass}
                                     value={data.social_links.instagram}
                                     onChange={(e) =>
                                         setData('social_links', {
@@ -305,10 +179,10 @@ export default function SettingsEdit({ settings }: Props) {
                                     }
                                     placeholder="https://instagram.com/..."
                                 />
-                            </Field>
-                            <Field label="Twitter / X">
+                            </SettingsField>
+                            <SettingsField label="Twitter / X">
                                 <input
-                                    className={inputClass}
+                                    className={settingsInputClass}
                                     value={data.social_links.twitter}
                                     onChange={(e) =>
                                         setData('social_links', {
@@ -318,7 +192,7 @@ export default function SettingsEdit({ settings }: Props) {
                                     }
                                     placeholder="https://twitter.com/..."
                                 />
-                            </Field>
+                            </SettingsField>
                         </CardContent>
                     </Card>
 
@@ -329,12 +203,12 @@ export default function SettingsEdit({ settings }: Props) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-4">
-                            <Field
+                            <SettingsField
                                 label="Google Analytics ID"
                                 hint="e.g. G-XXXXXXXX or UA-XXXXXXXX"
                             >
                                 <input
-                                    className={inputClass}
+                                    className={settingsInputClass}
                                     value={data.google_analytics_id}
                                     onChange={(e) =>
                                         setData(
@@ -344,440 +218,20 @@ export default function SettingsEdit({ settings }: Props) {
                                     }
                                     placeholder="G-XXXXXXXXXX"
                                 />
-                            </Field>
-                            <Field
+                            </SettingsField>
+                            <SettingsField
                                 label="Meta Pixel ID"
                                 hint="Facebook Pixel tracking ID"
                             >
                                 <input
-                                    className={inputClass}
+                                    className={settingsInputClass}
                                     value={data.meta_pixel_id}
                                     onChange={(e) =>
                                         setData('meta_pixel_id', e.target.value)
                                     }
                                     placeholder="123456789"
                                 />
-                            </Field>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Google Login (OAuth)
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
-                            <p className="text-xs text-slate-400">
-                                Create an OAuth client in the{' '}
-                                <a
-                                    href="https://console.cloud.google.com/apis/credentials"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="underline"
-                                >
-                                    Google Cloud Console
-                                </a>
-                                . "Continue with Google" is hidden on the login
-                                and register pages until a Client ID is set
-                                here.
-                            </p>
-                            <Field label="Client ID">
-                                <input
-                                    className={inputClass}
-                                    value={data.google_client_id}
-                                    onChange={(e) =>
-                                        setData(
-                                            'google_client_id',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="xxxxxxxxxxxx.apps.googleusercontent.com"
-                                />
-                            </Field>
-                            <Field label="Client Secret">
-                                <input
-                                    type="password"
-                                    autoComplete="off"
-                                    className={inputClass}
-                                    value={data.google_client_secret}
-                                    onChange={(e) =>
-                                        setData(
-                                            'google_client_secret',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="GOCSPX-..."
-                                />
-                            </Field>
-                            <Field
-                                label="Redirect URI"
-                                hint="Must match an Authorized redirect URI registered in the Google Cloud Console"
-                            >
-                                <input
-                                    className={inputClass}
-                                    value={data.google_redirect_uri}
-                                    onChange={(e) =>
-                                        setData(
-                                            'google_redirect_uri',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder={`${window.location.origin}/auth/google/callback`}
-                                />
-                            </Field>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Facebook Login (OAuth)
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
-                            <p className="text-xs text-slate-400">
-                                Create an app in{' '}
-                                <a
-                                    href="https://developers.facebook.com/apps"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="underline"
-                                >
-                                    Meta for Developers
-                                </a>
-                                . "Continue with Facebook" is hidden on the
-                                login and register pages until a Client ID is
-                                set here.
-                            </p>
-                            <Field label="App ID">
-                                <input
-                                    className={inputClass}
-                                    value={data.facebook_client_id}
-                                    onChange={(e) =>
-                                        setData(
-                                            'facebook_client_id',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="1234567890123456"
-                                />
-                            </Field>
-                            <Field label="App Secret">
-                                <input
-                                    type="password"
-                                    autoComplete="off"
-                                    className={inputClass}
-                                    value={data.facebook_client_secret}
-                                    onChange={(e) =>
-                                        setData(
-                                            'facebook_client_secret',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="App secret"
-                                />
-                            </Field>
-                            <Field
-                                label="Redirect URI"
-                                hint="Must match a Valid OAuth Redirect URI registered in Facebook Login settings"
-                            >
-                                <input
-                                    className={inputClass}
-                                    value={data.facebook_redirect_uri}
-                                    onChange={(e) =>
-                                        setData(
-                                            'facebook_redirect_uri',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder={`${window.location.origin}/auth/facebook/callback`}
-                                />
-                            </Field>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Pathao Courier
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
-                            <p className="text-xs text-slate-400">
-                                Get these from your{' '}
-                                <a
-                                    href="https://merchant.pathao.com"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="underline"
-                                >
-                                    Pathao Merchant
-                                </a>{' '}
-                                account (or the sandbox portal for testing).
-                                Used to send Cash-on-Delivery orders to Pathao
-                                for pickup and delivery from the order detail
-                                page.
-                            </p>
-                            <Field label="Environment">
-                                <select
-                                    className={inputClass}
-                                    value={data.pathao_environment}
-                                    onChange={(e) =>
-                                        setData(
-                                            'pathao_environment',
-                                            e.target.value,
-                                        )
-                                    }
-                                >
-                                    <option value="sandbox">
-                                        Sandbox (testing)
-                                    </option>
-                                    <option value="production">
-                                        Production (live)
-                                    </option>
-                                </select>
-                            </Field>
-                            <Field label="Client ID">
-                                <input
-                                    className={inputClass}
-                                    value={data.pathao_client_id}
-                                    onChange={(e) =>
-                                        setData(
-                                            'pathao_client_id',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="Pathao Client ID"
-                                />
-                            </Field>
-                            <Field label="Client Secret">
-                                <input
-                                    type="password"
-                                    autoComplete="off"
-                                    className={inputClass}
-                                    value={data.pathao_client_secret}
-                                    onChange={(e) =>
-                                        setData(
-                                            'pathao_client_secret',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="Pathao Client Secret"
-                                />
-                            </Field>
-                            <Field
-                                label="Account Email"
-                                hint="Your Pathao Merchant login email"
-                            >
-                                <input
-                                    type="email"
-                                    className={inputClass}
-                                    value={data.pathao_username}
-                                    onChange={(e) =>
-                                        setData(
-                                            'pathao_username',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="merchant@example.com"
-                                />
-                            </Field>
-                            <Field
-                                label="Account Password"
-                                hint="Your Pathao Merchant login password"
-                            >
-                                <input
-                                    type="password"
-                                    autoComplete="off"
-                                    className={inputClass}
-                                    value={data.pathao_password}
-                                    onChange={(e) =>
-                                        setData(
-                                            'pathao_password',
-                                            e.target.value,
-                                        )
-                                    }
-                                />
-                            </Field>
-                            <Field
-                                label="Store"
-                                hint="Sets the pickup location for orders. Fetched from your Pathao account — save your Client ID, Secret, Account Email, and Password above first."
-                            >
-                                <div className="space-y-2">
-                                    {pathaoStores.length > 0 ? (
-                                        <select
-                                            className={inputClass}
-                                            value={data.pathao_store_id}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'pathao_store_id',
-                                                    e.target.value,
-                                                )
-                                            }
-                                        >
-                                            <option value="">
-                                                Select a store…
-                                            </option>
-                                            {pathaoStores.map((store) => (
-                                                <option
-                                                    key={store.store_id}
-                                                    value={store.store_id}
-                                                >
-                                                    {store.store_name} —{' '}
-                                                    {store.store_address}
-                                                    {store.is_default_store
-                                                        ? ' (default)'
-                                                        : ''}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    ) : data.pathao_store_id ? (
-                                        <p className="text-xs text-slate-500">
-                                            Currently set to store ID{' '}
-                                            <span className="font-mono">
-                                                {data.pathao_store_id}
-                                            </span>
-                                            . Click below to load your stores
-                                            and change it.
-                                        </p>
-                                    ) : (
-                                        <p className="text-xs text-slate-400">
-                                            No store selected yet.
-                                        </p>
-                                    )}
-
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        disabled={pathaoStoresLoading}
-                                        onClick={loadPathaoStores}
-                                    >
-                                        {pathaoStoresLoading
-                                            ? 'Loading…'
-                                            : pathaoStores.length > 0
-                                              ? 'Reload Stores'
-                                              : 'Load Stores'}
-                                    </Button>
-
-                                    {pathaoStoresError && (
-                                        <p className="text-xs text-red-600">
-                                            {pathaoStoresError}
-                                        </p>
-                                    )}
-                                </div>
-                            </Field>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Steadfast Courier
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
-                            <p className="text-xs text-slate-400">
-                                Get your Api Key and Secret Key from{' '}
-                                <a
-                                    href="https://portal.packzy.com"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="underline"
-                                >
-                                    Steadfast's merchant portal
-                                </a>
-                                . Used to send Cash-on-Delivery orders to
-                                Steadfast for pickup and delivery from the
-                                order detail page.
-                            </p>
-                            <Field label="Api Key">
-                                <input
-                                    className={inputClass}
-                                    value={data.steadfast_api_key}
-                                    onChange={(e) =>
-                                        setData(
-                                            'steadfast_api_key',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="Steadfast Api Key"
-                                />
-                            </Field>
-                            <Field label="Secret Key">
-                                <input
-                                    type="password"
-                                    autoComplete="off"
-                                    className={inputClass}
-                                    value={data.steadfast_secret_key}
-                                    onChange={(e) =>
-                                        setData(
-                                            'steadfast_secret_key',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="Steadfast Secret Key"
-                                />
-                            </Field>
-                            <Field
-                                label="Webhook Secret (optional)"
-                                hint="Paste the same value into Steadfast's webhook settings so delivery status updates can be verified. Leave blank to accept unverified webhooks."
-                            >
-                                <input
-                                    type="password"
-                                    autoComplete="off"
-                                    className={inputClass}
-                                    value={data.steadfast_webhook_secret}
-                                    onChange={(e) =>
-                                        setData(
-                                            'steadfast_webhook_secret',
-                                            e.target.value,
-                                        )
-                                    }
-                                />
-                            </Field>
-                            <Field
-                                label="Webhook Callback URL"
-                                hint="Set this as the callback URL in Steadfast's webhook settings. Leave blank to use this domain by default — the backend endpoint itself is always /api/steadfast/webhook regardless of what's saved here."
-                            >
-                                <input
-                                    className={inputClass}
-                                    value={data.steadfast_webhook_url}
-                                    onChange={(e) =>
-                                        setData(
-                                            'steadfast_webhook_url',
-                                            e.target.value,
-                                        )
-                                    }
-                                    onFocus={(e) => e.target.select()}
-                                    placeholder={`${window.location.origin}/api/steadfast/webhook`}
-                                />
-                            </Field>
-                            <div className="space-y-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    disabled={steadfastBalanceLoading}
-                                    onClick={checkSteadfastBalance}
-                                >
-                                    {steadfastBalanceLoading
-                                        ? 'Checking…'
-                                        : 'Check Balance'}
-                                </Button>
-
-                                {steadfastBalance !== null && (
-                                    <p className="text-xs text-emerald-600">
-                                        Connected. Current balance: ৳
-                                        {steadfastBalance.toLocaleString()}
-                                    </p>
-                                )}
-
-                                {steadfastBalanceError && (
-                                    <p className="text-xs text-red-600">
-                                        {steadfastBalanceError}
-                                    </p>
-                                )}
-                            </div>
+                            </SettingsField>
                         </CardContent>
                     </Card>
 
@@ -788,13 +242,13 @@ export default function SettingsEdit({ settings }: Props) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-4">
-                            <Field
+                            <SettingsField
                                 label="WhatsApp Number"
                                 hint="Phone number with country code, e.g. +8801700000000"
                             >
                                 <input
                                     type="tel"
-                                    className={inputClass}
+                                    className={settingsInputClass}
                                     value={data.whatsapp_number}
                                     onChange={(e) =>
                                         setData(
@@ -804,13 +258,13 @@ export default function SettingsEdit({ settings }: Props) {
                                     }
                                     placeholder="+8801700000000"
                                 />
-                            </Field>
-                            <Field
+                            </SettingsField>
+                            <SettingsField
                                 label="Facebook Messenger"
                                 hint="Your Facebook page username or full m.me URL, e.g. shoppydrive"
                             >
                                 <input
-                                    className={inputClass}
+                                    className={settingsInputClass}
                                     value={data.messenger_link}
                                     onChange={(e) =>
                                         setData(
@@ -820,7 +274,7 @@ export default function SettingsEdit({ settings }: Props) {
                                     }
                                     placeholder="shoppydrive or https://m.me/shoppydrive"
                                 />
-                            </Field>
+                            </SettingsField>
                         </CardContent>
                     </Card>
 
@@ -831,34 +285,34 @@ export default function SettingsEdit({ settings }: Props) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-4">
-                            <Field
+                            <SettingsField
                                 label="Bkash Number"
                                 hint="Owner's Bkash number customers will send money to"
                             >
                                 <input
                                     type="tel"
-                                    className={inputClass}
+                                    className={settingsInputClass}
                                     value={data.bkash_number}
                                     onChange={(e) =>
                                         setData('bkash_number', e.target.value)
                                     }
                                     placeholder="01700000000"
                                 />
-                            </Field>
-                            <Field
+                            </SettingsField>
+                            <SettingsField
                                 label="Nagad Number"
                                 hint="Owner's Nagad number customers will send money to"
                             >
                                 <input
                                     type="tel"
-                                    className={inputClass}
+                                    className={settingsInputClass}
                                     value={data.nagad_number}
                                     onChange={(e) =>
                                         setData('nagad_number', e.target.value)
                                     }
                                     placeholder="01700000000"
                                 />
-                            </Field>
+                            </SettingsField>
                         </CardContent>
                     </Card>
 

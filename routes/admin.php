@@ -63,6 +63,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
 
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::get('settings/social', [SettingController::class, 'socialConfig'])->name('settings.social');
+    Route::get('settings/courier', [SettingController::class, 'courierConfig'])->name('settings.courier');
     Route::get('settings/pathao/stores', [SettingController::class, 'pathaoStores'])->name('settings.pathao.stores');
     Route::get('settings/steadfast/balance', [SettingController::class, 'steadfastBalance'])->name('settings.steadfast.balance');
 

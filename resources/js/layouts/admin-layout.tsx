@@ -14,21 +14,37 @@ import {
     Package,
     Search,
     Settings,
+    Share2,
     ShoppingCart,
     Smartphone,
     Star,
     Tag,
+    Truck,
     UserCog,
     Users,
     X,
     Zap,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { useSmsPolling, type SmsToast } from '@/hooks/useSmsPolling';
 import type { SharedPageProps } from '@/types';
 
-const navSections = [
+type NavItem = {
+    label: string;
+    href: string;
+    icon: LucideIcon;
+    exact?: boolean;
+    extraMatches: string[];
+};
+
+type NavSection = {
+    label: string;
+    items: NavItem[];
+};
+
+const navSections: NavSection[] = [
     {
         label: 'Overview',
         items: [
@@ -80,6 +96,8 @@ const navSections = [
         items: [
             { label: 'Admins', href: '/admin/admins', icon: UserCog, exact: false, extraMatches: [] as string[] },
             { label: 'Settings', href: '/admin/settings', icon: Settings, exact: true, extraMatches: [] as string[] },
+            { label: 'Social Config', href: '/admin/settings/social', icon: Share2, exact: false, extraMatches: [] as string[] },
+            { label: 'Courier Config', href: '/admin/settings/courier', icon: Truck, exact: false, extraMatches: [] as string[] },
             { label: 'SMS Forwarder', href: '/admin/settings/sms-forwarder', icon: Smartphone, exact: false, extraMatches: [] as string[] },
         ],
     },
