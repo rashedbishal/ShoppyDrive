@@ -94,11 +94,11 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps): React.JSX.
                         <div className="relative z-10">
                             <div
                                 className="flex"
-                                style={{ maxHeight: 'calc(100vh - 5rem - 3.5rem)' }}
+                                style={{ maxHeight: 'calc(100vh - 5rem)' }}
                             >
                                 {/* Category rail */}
-                                <div className="scrollbar-thin scrollbar-thumb-[var(--color-border)] scrollbar-track-transparent w-[260px] shrink-0 overflow-y-auto border-r border-[var(--color-border)]/70 p-3">
-                                    <p className="px-3 pt-1 pb-2 text-[11px] font-semibold tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
+                                <div className="scrollbar-hide w-[260px] shrink-0 overflow-y-auto border-r border-[var(--color-border)]/70 p-2">
+                                    <p className="px-2.5 pt-1 pb-2 text-[11px] font-semibold tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
                                         Browse Categories
                                     </p>
                                     <div className="space-y-0.5">
@@ -119,7 +119,7 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps): React.JSX.
                                                         onMouseEnter={() => setActiveCategoryId(category.id)}
                                                         onFocus={() => setActiveCategoryId(category.id)}
                                                         className={cn(
-                                                            'group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-colors',
+                                                            'group relative flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-sm transition-colors',
                                                             isActive
                                                                 ? 'text-[var(--color-text-primary)]'
                                                                 : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
@@ -128,14 +128,14 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps): React.JSX.
                                                         {isActive && (
                                                             <motion.span
                                                                 layoutId="mega-menu-active-pill"
-                                                                className="absolute inset-0 rounded-2xl bg-[var(--color-primary-light)]"
+                                                                className="absolute inset-0 rounded-xl bg-[var(--color-primary-light)]"
                                                                 transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                                                             />
                                                         )}
                                                         <span
                                                             style={{ '--category-color': color } as React.CSSProperties}
                                                             className={cn(
-                                                                'relative z-10 flex size-9 shrink-0 items-center justify-center rounded-xl ring-1 transition-all duration-300',
+                                                                'relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg ring-1 transition-all duration-300',
                                                                 'bg-[color-mix(in_srgb,var(--category-color)_12%,white)] text-[var(--category-color)] ring-[color-mix(in_srgb,var(--category-color)_18%,white)]',
                                                                 isActive &&
                                                                     'bg-[var(--category-color)] text-white ring-[var(--category-color)]',
@@ -173,7 +173,7 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps): React.JSX.
                                     transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
                                 >
                                     <div
-                                        className="scrollbar-thin scrollbar-thumb-[var(--color-border)] scrollbar-track-transparent h-full overflow-y-auto p-6"
+                                        className="scrollbar-hide h-full overflow-y-auto p-6"
                                         style={{ width: PANE_WIDTH, '--category-color': activeColor ?? 'var(--color-primary)' } as React.CSSProperties}
                                     >
                                         <AnimatePresence mode="wait">
@@ -236,18 +236,6 @@ export default function MegaMenu({ isOpen, onClose }: MegaMenuProps): React.JSX.
                                         </AnimatePresence>
                                     </div>
                                 </motion.div>
-                            </div>
-
-                            {/* Footer */}
-                            <div className="flex items-center justify-end gap-4 border-t border-[var(--color-border)]/70 bg-[var(--color-surface-alt)]/60 px-6 py-3.5">
-                                <Link
-                                    href="/products"
-                                    onClick={onClose}
-                                    className="group inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-primary)]"
-                                >
-                                    View all products
-                                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-                                </Link>
                             </div>
                         </div>
                     )}
