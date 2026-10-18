@@ -4,8 +4,11 @@ namespace App\Providers;
 
 use App\Models\Setting;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Throwable;
@@ -28,6 +31,8 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureGoogleSocialite();
         $this->configureFacebookSocialite();
+
+        Event::listen(Registered::class, SendEmailVerificationNotification::class);
     }
 
     /**

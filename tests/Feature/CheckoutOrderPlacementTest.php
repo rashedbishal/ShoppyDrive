@@ -6,9 +6,7 @@ use App\Models\Product;
 use App\Models\User;
 
 test('authenticated user can place an order from checkout using submitted cart items', function () {
-    $user = User::factory()->create([
-        'email_verified_at' => null,
-    ]);
+    $user = User::factory()->create();
 
     $product = Product::factory()->create([
         'price' => 299,

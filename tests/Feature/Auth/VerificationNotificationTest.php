@@ -1,16 +1,16 @@
 <?php
 
+use App\Mail\VerifyEmailCodeMail;
 use App\Models\User;
-use Illuminate\Auth\Notifications\VerifyEmail;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Mail;
 use Laravel\Fortify\Features;
 
 beforeEach(function () {
     $this->skipUnlessFortifyHas(Features::emailVerification());
 });
 
-test('sends verification notification', function () {
-    Notification::fake();
+test('sends a verification code by email', function () {
+    Mail::fake();
 
     $user = User::factory()->unverified()->create();
 
@@ -18,17 +18,18 @@ test('sends verification notification', function () {
         ->post(route('verification.send'))
         ->assertRedirect(route('home'));
 
-    Notification::assertSentTo($user, VerifyEmail::class);
+    Mail::assertSent(VerifyEmailCodeMail::class, fn ($mail) => $mail->hasTo($user->email));
+    expect($user->fresh()->email_verification_code)->not->toBeNull();
 });
 
-test('does not send verification notification if email is verified', function () {
-    Notification::fake();
+test('does not send a verification code if email is already verified', function () {
+    Mail::fake();
 
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->post(route('verification.send'))
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('home'));
 
-    Notification::assertNothingSent();
+    Mail::assertNothingSent();
 });

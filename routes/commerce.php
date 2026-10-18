@@ -13,8 +13,11 @@ Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
 Route::middleware(['auth'])->group(function () {
     Route::post('/cart/sync', [CartController::class, 'sync'])->name('cart.sync');
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+
+    Route::middleware(['verified'])->group(function () {
+        Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+        Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    });
 
     // ZiniPay payment return routes (kept for historical pending checkouts)
     Route::get('/payment/callback/{token}', [PaymentController::class, 'callback'])->name('payment.callback');
