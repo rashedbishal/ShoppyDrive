@@ -23,7 +23,7 @@ test('new users can register', function () {
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('verification.notice'));
 
     expect(User::where('email', 'test@example.com')->first()->has_password)->toBeTrue();
 });

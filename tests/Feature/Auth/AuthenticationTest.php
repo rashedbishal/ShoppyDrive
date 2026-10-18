@@ -78,6 +78,30 @@ test('a social-only account trying to log in with a password is told to use its 
     $this->assertGuest();
 });
 
+test('logging in while unverified redirects to the verification code screen', function () {
+    $user = User::factory()->unverified()->create();
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect(route('verification.notice'));
+});
+
+test('logging in while verified redirects home as usual', function () {
+    $user = User::factory()->create();
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect(route('home'));
+});
+
 test('users can logout', function () {
     $user = User::factory()->create();
 
