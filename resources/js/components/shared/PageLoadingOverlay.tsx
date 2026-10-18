@@ -2,6 +2,15 @@ import { router } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import type { SharedPageProps } from '@/types';
+
+function readInitialLogo(): string | null {
+    try {
+        const raw = document.getElementById('app')?.dataset.page;
+        if (raw) return JSON.parse(raw)?.props?.settings?.logo ?? null;
+    } catch {}
+    return null;
+}
 
 /**
  * Replaces Inertia's default top progress bar. Visits under ~150ms never
@@ -9,7 +18,15 @@ import AppLogoIcon from '@/components/app-logo-icon';
  */
 export default function PageLoadingOverlay(): React.JSX.Element {
     const [visible, setVisible] = useState(false);
+    const [logo, setLogo] = useState<string | null>(readInitialLogo);
     const showTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return router.on('navigate', (event) => {
+            const props = event.detail.page.props as SharedPageProps;
+            setLogo(props.settings?.logo ?? null);
+        });
+    }, []);
 
     useEffect(() => {
         const clearPendingShow = () => {
@@ -44,15 +61,24 @@ export default function PageLoadingOverlay(): React.JSX.Element {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.15 }}
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/90 backdrop-blur-sm"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/10 backdrop-blur-xl"
                 >
                     <motion.span
-                        className="flex size-16 items-center justify-center rounded-2xl bg-[var(--color-secondary)] text-white shadow-[var(--shadow-modal)]"
                         style={{ perspective: 600 }}
                         animate={{ rotateY: 360 }}
                         transition={{ duration: 1.1, repeat: Infinity, ease: 'linear' }}
                     >
-                        <AppLogoIcon className="size-8 fill-current text-white" />
+                        {logo ? (
+                            <img
+                                src={logo}
+                                alt="Loading"
+                                className="h-14 w-auto object-contain drop-shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
+                            />
+                        ) : (
+                            <span className="flex size-16 items-center justify-center rounded-2xl bg-[var(--color-secondary)] text-white shadow-[var(--shadow-modal)]">
+                                <AppLogoIcon className="size-8 fill-current text-white" />
+                            </span>
+                        )}
                     </motion.span>
                 </motion.div>
             )}
