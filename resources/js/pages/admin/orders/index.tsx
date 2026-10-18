@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Eye, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -104,7 +104,11 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
                         {orders.data.length === 0 ? (
                             <p className="py-12 text-center text-sm text-slate-400">No orders found.</p>
                         ) : orders.data.map((order) => (
-                            <div key={order.id} className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60">
+                            <Link
+                                key={order.id}
+                                href={route('admin.orders.show', order.id)}
+                                className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
+                            >
                                 <div className="min-w-0 flex-1">
                                     <p className="font-mono text-sm font-bold text-slate-800">{order.order_number}</p>
                                     <p className="text-xs text-slate-400">{order.user?.name ?? 'Guest'} · {new Date(order.created_at).toLocaleDateString()}</p>
@@ -112,10 +116,7 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
                                 <p className="hidden text-sm font-bold text-slate-800 sm:block">৳{order.total.toLocaleString()}</p>
                                 <Badge variant={statusVariant[order.status] ?? 'default'} size="sm">{order.status}</Badge>
                                 <Badge variant={paymentVariant[order.payment_status] ?? 'default'} size="sm">{order.payment_status}</Badge>
-                                <Link href={route('admin.orders.show', order.id)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-                                    <Eye className="size-4" />
-                                </Link>
-                            </div>
+                            </Link>
                         ))}
                     </div>
 
