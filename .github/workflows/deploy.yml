@@ -34,6 +34,14 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-progress --no-dev --optimize-autoloader
 
+      # resources/js/ziggy.js is gitignored (build output, like Wayfinder's
+      # resources/js/actions) — it must be regenerated here with the real
+      # production URL, otherwise the frontend build has no route config at
+      # all, or (if a stale local copy ever gets committed again) ships
+      # whatever localhost url was baked in on someone's machine.
+      - name: Generate Ziggy routes file
+        run: php artisan ziggy:generate --url=https://shoppydrive.com
+
       # ── 5. JS dependencies & build ───────────────────────────────────────────
       - name: Install Node dependencies
         run: npm ci

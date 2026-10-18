@@ -26,10 +26,15 @@ declare global {
 // these globals here once covers every existing `route(...)` call — both the bare
 // global form and `import { route } from 'ziggy-js'` (which falls back to reading
 // the global `Ziggy` itself when no config is passed) — in both environments.
-globalThis.Ziggy = ziggyConfig;
+//
+// In the browser, `window.Ziggy` is already set by the @routes Blade directive
+// with the live server's real url/port — it must win over the imported
+// `./ziggy` snapshot, which is a build-time file committed to the repo and can
+// go stale (e.g. still pointing at a local dev url/port) relative to prod.
+globalThis.Ziggy = typeof window !== 'undefined' && window.Ziggy ? window.Ziggy : ziggyConfig;
 globalThis.route = ((name: string | undefined, params?: unknown, absolute?: boolean, config?: typeof ziggyConfig) =>
     // @ts-expect-error — delegating to Ziggy's overloaded signature via a single concrete implementation
-    ziggyRoute(name, params, absolute, config ?? ziggyConfig)) as typeof ziggyRoute;
+    ziggyRoute(name, params, absolute, config ?? globalThis.Ziggy)) as typeof ziggyRoute;
 
 const appName = APP_NAME;
 
