@@ -52,6 +52,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
 
     Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::get('customers/{user}', [CustomerController::class, 'show'])->name('customers.show');
+    Route::delete('customers/{user}', [CustomerController::class, 'destroy'])->name('customers.destroy');
 
     Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
     Route::patch('reviews/{review}/approve', [ReviewController::class, 'approve'])->name('reviews.approve');
