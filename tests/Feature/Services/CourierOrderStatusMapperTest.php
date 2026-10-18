@@ -56,15 +56,22 @@ it('maps pathao slugs to order statuses', function () {
 
 it('maps steadfast statuses to order statuses', function () {
     expect(CourierOrderStatusMapper::forSteadfast('in_review'))->toBe(OrderStatus::PENDING);
-    expect(CourierOrderStatusMapper::forSteadfast('delivered'))->toBe(OrderStatus::DELIVERED);
-    expect(CourierOrderStatusMapper::forSteadfast('cancelled'))->toBe(OrderStatus::CANCELLED);
-    expect(CourierOrderStatusMapper::forSteadfast('exceptional'))->toBe(OrderStatus::PROCESSING);
+    expect(CourierOrderStatusMapper::forSteadfast('pending_parcels'))->toBe(OrderStatus::PENDING);
+    expect(CourierOrderStatusMapper::forSteadfast('waiting_approval'))->toBe(OrderStatus::PROCESSING);
+    expect(CourierOrderStatusMapper::forSteadfast('delivered_parcels'))->toBe(OrderStatus::DELIVERED);
+    expect(CourierOrderStatusMapper::forSteadfast('partial_parcels'))->toBe(OrderStatus::DELIVERED);
+    expect(CourierOrderStatusMapper::forSteadfast('cancelled_parcells'))->toBe(OrderStatus::CANCELLED);
     expect(CourierOrderStatusMapper::forSteadfast('unknown'))->toBeNull();
 });
 
 it('humanizes a raw status into readable text', function () {
     expect(CourierOrderStatusMapper::label('assigned_for_delivery'))->toBe('Assigned For Delivery');
     expect(CourierOrderStatusMapper::label('in_review'))->toBe('In Review');
+});
+
+it('corrects steadfast\'s "parcells" typo in the display label only', function () {
+    expect(CourierOrderStatusMapper::label('cancelled_parcells'))->toBe('Cancelled Parcels');
+    expect(CourierOrderStatusMapper::forSteadfast('cancelled_parcells'))->toBe(OrderStatus::CANCELLED);
 });
 
 it('advances the order status when the mapped status differs', function () {
@@ -80,7 +87,7 @@ it('advances the order status when the mapped status differs', function () {
 it('sets delivered_at and payment_status when mapped to delivered', function () {
     $order = makeMapperTestOrder();
 
-    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered');
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered_parcels');
 
     expect($order->status)->toBe(OrderStatus::DELIVERED);
     expect($order->payment_status)->toBe(PaymentStatus::PAID);

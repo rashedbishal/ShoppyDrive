@@ -43,23 +43,22 @@ class CourierOrderStatusMapper
         'return_to_inventory' => OrderStatus::CANCELLED,
     ];
 
-    /** @var array<string, OrderStatus> */
+    /**
+     * The complete set of statuses Steadfast reports, as confirmed directly
+     * by Steadfast — not the broader generic set in their public docs.
+     *
+     * @var array<string, OrderStatus>
+     */
     private const STEADFAST_MAP = [
-        'pending' => OrderStatus::PENDING,
         'in_review' => OrderStatus::PENDING,
+        'pending_parcels' => OrderStatus::PENDING,
 
-        'hold' => OrderStatus::PROCESSING,
-        'unknown_approval_pending' => OrderStatus::PROCESSING,
-        'exceptional' => OrderStatus::PROCESSING,
+        'waiting_approval' => OrderStatus::PROCESSING,
 
-        'delivered_approval_pending' => OrderStatus::SHIPPED,
-        'partial_delivered_approval_pending' => OrderStatus::SHIPPED,
-        'cancelled_approval_pending' => OrderStatus::SHIPPED,
+        'delivered_parcels' => OrderStatus::DELIVERED,
+        'partial_parcels' => OrderStatus::DELIVERED,
 
-        'delivered' => OrderStatus::DELIVERED,
-        'partial_delivered' => OrderStatus::DELIVERED,
-
-        'cancelled' => OrderStatus::CANCELLED,
+        'cancelled_parcells' => OrderStatus::CANCELLED,
     ];
 
     public static function forPathao(string $rawStatus): ?OrderStatus
@@ -78,7 +77,10 @@ class CourierOrderStatusMapper
      */
     public static function label(string $rawStatus): string
     {
-        return ucwords(str_replace('_', ' ', self::normalize($rawStatus)));
+        $label = ucwords(str_replace('_', ' ', self::normalize($rawStatus)));
+
+        // Steadfast's own "cancelled_parcells" value has a typo; correct it for display only.
+        return str_replace('Parcells', 'Parcels', $label);
     }
 
     /**
