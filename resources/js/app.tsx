@@ -1,4 +1,5 @@
 import { createInertiaApp, router } from '@inertiajs/react';
+import { route as ziggyRoute } from 'ziggy-js';
 import { Toaster } from '@/components/ui/sonner';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -12,6 +13,23 @@ import { useCartStore } from '@/stores/cartStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import { STORAGE_KEYS } from '@/lib/constants';
 import type { Cart, SharedPageProps } from '@/types';
+import { Ziggy as ziggyConfig } from './ziggy';
+
+declare global {
+    var route: typeof ziggyRoute;
+    var Ziggy: typeof ziggyConfig;
+}
+
+// Ziggy's route() needs its route/URL config available to resolve on the server —
+// there's no `window.Ziggy` there like the @routes Blade directive sets up in the
+// browser. This app reuses app.tsx for SSR (no separate ssr.tsx), so initializing
+// these globals here once covers every existing `route(...)` call — both the bare
+// global form and `import { route } from 'ziggy-js'` (which falls back to reading
+// the global `Ziggy` itself when no config is passed) — in both environments.
+globalThis.Ziggy = ziggyConfig;
+globalThis.route = ((name: string | undefined, params?: unknown, absolute?: boolean, config?: typeof ziggyConfig) =>
+    // @ts-expect-error — delegating to Ziggy's overloaded signature via a single concrete implementation
+    ziggyRoute(name, params, absolute, config ?? ziggyConfig)) as typeof ziggyRoute;
 
 const appName = APP_NAME;
 

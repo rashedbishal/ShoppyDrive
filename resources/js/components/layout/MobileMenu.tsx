@@ -1,5 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { LayoutGrid, LogIn, LogOut, ShoppingBag, UserCircle2 } from 'lucide-react';
+import { FolderOpen, LayoutGrid, LogIn, LogOut, ShoppingBag, UserCircle2 } from 'lucide-react';
+import { route } from 'ziggy-js';
+import { primaryLinks } from '@/components/layout/navigation';
 import { Accordion } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -7,8 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { useInitials } from '@/hooks/use-initials';
 import type { SharedPageProps } from '@/types';
-import { FolderOpen } from 'lucide-react';
-import { primaryLinks } from '@/components/layout/navigation';
 
 type MobileMenuProps = {
     isOpen: boolean;
