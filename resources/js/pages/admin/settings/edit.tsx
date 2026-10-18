@@ -79,6 +79,7 @@ export default function SettingsEdit({ settings }: Props) {
         steadfast_secret_key: (settings.steadfast_secret_key as string) ?? '',
         steadfast_webhook_secret:
             (settings.steadfast_webhook_secret as string) ?? '',
+        steadfast_webhook_url: (settings.steadfast_webhook_url as string) ?? '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -737,13 +738,19 @@ export default function SettingsEdit({ settings }: Props) {
                             </Field>
                             <Field
                                 label="Webhook Callback URL"
-                                hint="Set this as the callback URL in Steadfast's webhook settings."
+                                hint="Set this as the callback URL in Steadfast's webhook settings. Leave blank to use this domain by default — the backend endpoint itself is always /api/steadfast/webhook regardless of what's saved here."
                             >
                                 <input
-                                    readOnly
-                                    className={`${inputClass} bg-slate-50 text-slate-500`}
-                                    value={`${window.location.origin}/api/steadfast/webhook`}
+                                    className={inputClass}
+                                    value={data.steadfast_webhook_url}
+                                    onChange={(e) =>
+                                        setData(
+                                            'steadfast_webhook_url',
+                                            e.target.value,
+                                        )
+                                    }
                                     onFocus={(e) => e.target.select()}
+                                    placeholder={`${window.location.origin}/api/steadfast/webhook`}
                                 />
                             </Field>
                             <div className="space-y-2">

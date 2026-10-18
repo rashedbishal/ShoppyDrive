@@ -66,6 +66,7 @@ class SettingController extends Controller
             'steadfast_api_key' => ['nullable', 'string', 'max:255'],
             'steadfast_secret_key' => ['nullable', 'string', 'max:255'],
             'steadfast_webhook_secret' => ['nullable', 'string', 'max:255'],
+            'steadfast_webhook_url' => ['nullable', 'string', 'max:500'],
         ]);
 
         // Handle logo upload separately
@@ -87,7 +88,7 @@ class SettingController extends Controller
             'facebook_client_id', 'facebook_client_secret', 'facebook_redirect_uri',
             'pathao_environment', 'pathao_client_id', 'pathao_client_secret',
             'pathao_username', 'pathao_password', 'pathao_store_id',
-            'steadfast_api_key', 'steadfast_secret_key', 'steadfast_webhook_secret',
+            'steadfast_api_key', 'steadfast_secret_key', 'steadfast_webhook_secret', 'steadfast_webhook_url',
         ];
 
         foreach ($fields as $key) {
@@ -140,7 +141,7 @@ class SettingController extends Controller
             in_array($key, ['bkash_number', 'nagad_number']) => 'payments',
             in_array($key, ['google_client_id', 'google_client_secret', 'google_redirect_uri', 'facebook_client_id', 'facebook_client_secret', 'facebook_redirect_uri']) => 'social_login',
             in_array($key, ['pathao_environment', 'pathao_client_id', 'pathao_client_secret', 'pathao_username', 'pathao_password', 'pathao_store_id']) => 'courier',
-            in_array($key, ['steadfast_api_key', 'steadfast_secret_key', 'steadfast_webhook_secret']) => 'courier',
+            in_array($key, ['steadfast_api_key', 'steadfast_secret_key', 'steadfast_webhook_secret', 'steadfast_webhook_url']) => 'courier',
             default => 'integrations',
         };
     }
