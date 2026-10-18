@@ -114,22 +114,31 @@ export default function OrderShow({ order, statuses }: Props) {
         cancelPatch(route('admin.orders.cancel', order.id));
     };
 
-    const [pathaoSending, setPathaoSending] = useState(false);
+    const [courierProvider, setCourierProvider] = useState<
+        'pathao' | 'steadfast'
+    >('pathao');
+    const [courierSending, setCourierSending] = useState(false);
     const [pathaoRefreshing, setPathaoRefreshing] = useState(false);
+    const [steadfastRefreshing, setSteadfastRefreshing] = useState(false);
 
-    const handleSendToPathao = () => {
-        if (
-            !confirm(`Send order ${order.order_number} to Pathao for pickup?`)
-        ) {
+    const handleSendToCourier = () => {
+        const label = courierProvider === 'pathao' ? 'Pathao' : 'Steadfast';
+
+        if (!confirm(`Send order ${order.order_number} to ${label} for pickup?`)) {
             return;
         }
 
-        setPathaoSending(true);
+        setCourierSending(true);
         router.post(
-            route('admin.orders.pathao.send', order.id),
+            route(
+                courierProvider === 'pathao'
+                    ? 'admin.orders.pathao.send'
+                    : 'admin.orders.steadfast.send',
+                order.id,
+            ),
             {},
             {
-                onFinish: () => setPathaoSending(false),
+                onFinish: () => setCourierSending(false),
             },
         );
     };
@@ -141,28 +150,6 @@ export default function OrderShow({ order, statuses }: Props) {
             {},
             {
                 onFinish: () => setPathaoRefreshing(false),
-            },
-        );
-    };
-
-    const [steadfastSending, setSteadfastSending] = useState(false);
-    const [steadfastRefreshing, setSteadfastRefreshing] = useState(false);
-
-    const handleSendToSteadfast = () => {
-        if (
-            !confirm(
-                `Send order ${order.order_number} to Steadfast for pickup?`,
-            )
-        ) {
-            return;
-        }
-
-        setSteadfastSending(true);
-        router.post(
-            route('admin.orders.steadfast.send', order.id),
-            {},
-            {
-                onFinish: () => setSteadfastSending(false),
             },
         );
     };
@@ -513,13 +500,21 @@ export default function OrderShow({ order, statuses }: Props) {
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
                                 <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                                    <Truck className="size-4" /> Pathao Courier
+                                    <Truck className="size-4" /> Courier
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3 pt-4">
                                 {order.pathao_consignment_id ? (
                                     <>
                                         <div className="space-y-1 text-sm text-slate-700">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">
+                                                    Provider
+                                                </span>
+                                                <span className="font-medium">
+                                                    Pathao
+                                                </span>
+                                            </div>
                                             <div className="flex justify-between">
                                                 <span className="text-slate-500">
                                                     Consignment ID
@@ -566,43 +561,17 @@ export default function OrderShow({ order, statuses }: Props) {
                                                 : 'Refresh Status'}
                                         </Button>
                                     </>
-                                ) : (
-                                    <>
-                                        <p className="text-xs text-slate-500">
-                                            Not sent to Pathao yet. This books a
-                                            pickup from your configured store
-                                            and uses this order's shipping
-                                            address and total as the COD amount
-                                            to collect.
-                                        </p>
-                                        <Button
-                                            className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                                            disabled={
-                                                pathaoSending ||
-                                                order.status === 'cancelled'
-                                            }
-                                            onClick={handleSendToPathao}
-                                        >
-                                            {pathaoSending
-                                                ? 'Sending…'
-                                                : 'Send to Pathao'}
-                                        </Button>
-                                    </>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
-                                <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                                    <Truck className="size-4" /> Steadfast
-                                    Courier
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3 pt-4">
-                                {order.steadfast_consignment_id ? (
+                                ) : order.steadfast_consignment_id ? (
                                     <>
                                         <div className="space-y-1 text-sm text-slate-700">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">
+                                                    Provider
+                                                </span>
+                                                <span className="font-medium">
+                                                    Steadfast
+                                                </span>
+                                            </div>
                                             <div className="flex justify-between">
                                                 <span className="text-slate-500">
                                                     Consignment ID
@@ -654,22 +623,41 @@ export default function OrderShow({ order, statuses }: Props) {
                                 ) : (
                                     <>
                                         <p className="text-xs text-slate-500">
-                                            Not sent to Steadfast yet. This
-                                            books a pickup using this order's
+                                            Not sent to a courier yet. This
+                                            books a pickup from the selected
+                                            provider using this order's
                                             shipping address and total as the
                                             COD amount to collect.
                                         </p>
+                                        <select
+                                            className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                            value={courierProvider}
+                                            onChange={(e) =>
+                                                setCourierProvider(
+                                                    e.target.value as
+                                                        | 'pathao'
+                                                        | 'steadfast',
+                                                )
+                                            }
+                                        >
+                                            <option value="pathao">
+                                                Pathao
+                                            </option>
+                                            <option value="steadfast">
+                                                Steadfast
+                                            </option>
+                                        </select>
                                         <Button
                                             className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25]"
                                             disabled={
-                                                steadfastSending ||
+                                                courierSending ||
                                                 order.status === 'cancelled'
                                             }
-                                            onClick={handleSendToSteadfast}
+                                            onClick={handleSendToCourier}
                                         >
-                                            {steadfastSending
+                                            {courierSending
                                                 ? 'Sending…'
-                                                : 'Send to Steadfast'}
+                                                : `Send to ${courierProvider === 'pathao' ? 'Pathao' : 'Steadfast'}`}
                                         </Button>
                                     </>
                                 )}
