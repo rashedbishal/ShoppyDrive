@@ -3,6 +3,8 @@
 use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
@@ -87,6 +89,39 @@ test('an authenticated user can connect an additional provider from settings', f
 
     expect(User::count())->toBe(1);
     expect($user->socialAccounts()->where('provider', 'facebook')->exists())->toBeTrue();
+});
+
+test('a social account left dangling by a deleted user self-heals instead of crashing', function () {
+    $deletedOwnerId = User::factory()->create()->id;
+
+    SocialAccount::create([
+        'user_id' => $deletedOwnerId,
+        'provider' => 'google',
+        'provider_id' => 'google-stale',
+    ]);
+
+    // Simulate a dangling social account whose user is gone (e.g. removed
+    // outside the normal delete path) without the FK cascade also wiping
+    // this row, which would just prove the cascade works, not the self-heal.
+    Schema::disableForeignKeyConstraints();
+    DB::table('users')->where('id', $deletedOwnerId)->delete();
+    Schema::enableForeignKeyConstraints();
+
+    Socialite::fake('google', fakeSocialiteUser([
+        'id' => 'google-stale',
+        'name' => 'Rehabilitated User',
+        'email' => 'rehabilitated@example.com',
+    ]));
+
+    $response = $this->get('/auth/google/callback');
+
+    $response->assertRedirect();
+    $this->assertAuthenticated();
+
+    $newUser = User::where('email', 'rehabilitated@example.com')->first();
+    expect($newUser)->not->toBeNull();
+    expect($newUser->id)->not->toBe($deletedOwnerId);
+    expect(SocialAccount::where('provider_id', 'google-stale')->first()->user_id)->toBe($newUser->id);
 });
 
 test('an authenticated user cannot connect a provider account already linked to someone else', function () {

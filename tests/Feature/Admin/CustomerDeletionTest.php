@@ -2,6 +2,7 @@
 
 use App\Models\Admin;
 use App\Models\Order;
+use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -46,8 +47,7 @@ test('admin can delete a customer with the correct mother admin password', funct
     ]);
 
     $response->assertRedirect(route('admin.customers.index'));
-    expect(User::find($customer->id))->toBeNull();
-    expect(User::withTrashed()->find($customer->id)->trashed())->toBeTrue();
+    expect(User::withTrashed()->find($customer->id))->toBeNull();
 });
 
 test('deleting a customer also deletes their orders', function () {
@@ -60,8 +60,25 @@ test('deleting a customer also deletes their orders', function () {
         'mother_password' => 'mother-secret',
     ])->assertRedirect(route('admin.customers.index'));
 
-    expect(Order::find($order->id))->toBeNull();
-    expect(Order::withTrashed()->find($order->id)->trashed())->toBeTrue();
+    expect(Order::withTrashed()->find($order->id))->toBeNull();
+});
+
+test('deleting a customer also deletes their social accounts and frees the email', function () {
+    actingAs($this->admin, 'admin');
+
+    $customer = User::factory()->create(['email' => 'reusable@example.com']);
+    $account = SocialAccount::create([
+        'user_id' => $customer->id,
+        'provider' => 'google',
+        'provider_id' => 'google-123',
+    ]);
+
+    $this->delete(route('admin.customers.destroy', $customer), [
+        'mother_password' => 'mother-secret',
+    ])->assertRedirect(route('admin.customers.index'));
+
+    expect(SocialAccount::find($account->id))->toBeNull();
+    expect(User::factory()->create(['email' => 'reusable@example.com']))->not->toBeNull();
 });
 
 test('customer deletion is rejected with an incorrect mother admin password', function () {

@@ -47,7 +47,13 @@ class SocialAuthController extends Controller
                 ->first();
 
             if ($account) {
-                return $account->user;
+                if ($account->user) {
+                    return $account->user;
+                }
+
+                // Stale link left behind by a deleted account — drop it and
+                // fall through to a normal lookup/create below.
+                $account->delete();
             }
 
             $user = User::where('email', $socialUser->getEmail())->first();
@@ -88,6 +94,13 @@ class SocialAuthController extends Controller
         $existing = SocialAccount::where('provider', $provider)
             ->where('provider_id', $socialUser->getId())
             ->first();
+
+        if ($existing && ! $existing->user) {
+            // Stale link left behind by a deleted account — drop it so it
+            // can be freely reconnected below.
+            $existing->delete();
+            $existing = null;
+        }
 
         if ($existing && $existing->user_id !== $user->id) {
             return redirect()->route('connections.edit')->withErrors([
