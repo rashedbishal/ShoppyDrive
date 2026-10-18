@@ -1,9 +1,10 @@
 import { createInertiaApp, router } from '@inertiajs/react';
 import { route as ziggyRoute } from 'ziggy-js';
 import { Toaster } from '@/components/ui/sonner';
+import PageLoadingOverlay from '@/components/shared/PageLoadingOverlay';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { APP_NAME, DESIGN_TOKENS } from '@/lib/constants';
+import { APP_NAME } from '@/lib/constants';
 import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AdminLayout from '@/layouts/admin-layout';
@@ -246,12 +247,11 @@ createInertiaApp({
             <TooltipProvider delayDuration={0}>
                 {app}
                 <Toaster />
+                <PageLoadingOverlay />
             </TooltipProvider>
         );
     },
-    progress: {
-        color: DESIGN_TOKENS.colors.primary,
-    },
+    progress: false,
 });
 
 // This will set light / dark mode on load...

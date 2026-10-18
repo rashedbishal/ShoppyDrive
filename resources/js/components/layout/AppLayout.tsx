@@ -5,7 +5,6 @@ import Footer from '@/components/layout/Footer';
 import Header from '@/components/layout/Header';
 import CartDrawer from '@/components/layout/CartDrawer';
 import CookieConsent from '@/components/layout/CookieConsent';
-import NProgress from '@/components/layout/NProgress';
 import SocialChatWidget from '@/components/layout/SocialChatWidget';
 import { CompareBar } from '@/components/shared/CompareBar';
 import { useUiStore } from '@/stores/uiStore';
@@ -73,7 +72,6 @@ export default function AppLayout({ children }: AppLayoutProps): React.JSX.Eleme
 
     return (
         <div className="flex min-h-screen flex-col bg-[var(--color-surface)] text-[var(--color-text-primary)]">
-            <NProgress />
             <Header />
 
             <AnimatePresence mode="wait" initial={false}>

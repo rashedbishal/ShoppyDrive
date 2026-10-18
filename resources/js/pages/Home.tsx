@@ -302,11 +302,11 @@ function HeroSlider({
                                         hidden: { opacity: 0, y: 12 },
                                         visible: { opacity: 1, y: 0 },
                                     }}
-                                    className="flex flex-row items-center gap-4 sm:gap-5"
+                                    className="flex flex-row flex-wrap items-center gap-x-4 gap-y-2 sm:gap-x-5"
                                 >
                                     <Button
                                         asChild
-                                        className="h-8 gap-1.5 rounded-full bg-white px-4 text-xs font-semibold text-[var(--color-secondary)] shadow-md hover:bg-white/90 sm:h-10 sm:px-6 sm:text-sm"
+                                        className="h-8 shrink-0 gap-1.5 rounded-full bg-white px-4 text-xs font-semibold text-[var(--color-secondary)] shadow-md hover:bg-white/90 sm:h-10 sm:px-6 sm:text-sm"
                                     >
                                         <Link
                                             href={activeSlide.primaryCta.href}
@@ -317,7 +317,7 @@ function HeroSlider({
                                     </Button>
                                     <Link
                                         href={activeSlide.secondaryCta.href}
-                                        className="flex items-center gap-1.5 text-xs font-medium text-white/80 transition hover:text-white sm:text-sm"
+                                        className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs font-medium text-white/80 transition hover:text-white sm:text-sm"
                                     >
                                         {activeSlide.secondaryCta.label}
                                         <ArrowRight className="size-3 sm:size-3.5" />
