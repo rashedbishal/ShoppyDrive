@@ -1,16 +1,41 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { CheckCircle, Mail, RefreshCw } from 'lucide-react';
-import { useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import EmailVerificationCodeController from '@/actions/App/Http/Controllers/Auth/EmailVerificationCodeController';
 import AppLogoIcon from '@/components/app-logo-icon';
 
+type Props = {
+    status?: string;
+    resendAvailableAt?: string | null;
+};
+
 export default function VerifyEmail({
     status,
-}: {
-    status?: string;
-}): React.JSX.Element {
+    resendAvailableAt,
+}: Props): React.JSX.Element {
     const { post: resend, processing: resending } = useForm({});
     const codeInput = useRef<HTMLInputElement>(null);
+
+    const targetMs = useMemo(
+        () =>
+            resendAvailableAt ? new Date(resendAvailableAt).getTime() : null,
+        [resendAvailableAt],
+    );
+    const [now, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+        if (!targetMs) {
+            return;
+        }
+
+        const interval = setInterval(() => setNow(Date.now()), 1000);
+
+        return () => clearInterval(interval);
+    }, [targetMs]);
+
+    const secondsLeft = targetMs
+        ? Math.max(0, Math.ceil((targetMs - now) / 1000))
+        : 0;
 
     const {
         data,
@@ -113,11 +138,13 @@ export default function VerifyEmail({
 
                     <button
                         onClick={() => resend(route('verification.send'))}
-                        disabled={resending}
+                        disabled={resending || secondsLeft > 0}
                         className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-60"
                     >
                         {resending ? (
                             <span className="size-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+                        ) : secondsLeft > 0 ? (
+                            <span>Resend available in {secondsLeft}s</span>
                         ) : (
                             <>
                                 <RefreshCw className="size-4" />

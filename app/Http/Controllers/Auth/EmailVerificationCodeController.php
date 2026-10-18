@@ -28,7 +28,7 @@ class EmailVerificationCodeController extends Controller
             || $user->email_verification_code_expires_at->isPast();
 
         if ($expired || ! $user->email_verification_code || ! Hash::check($request->string('code'), $user->email_verification_code)) {
-            return back()->withErrors([
+            return redirect()->route('verification.notice')->withErrors([
                 'code' => 'That code is incorrect or has expired. Please request a new one.',
             ]);
         }
@@ -37,6 +37,7 @@ class EmailVerificationCodeController extends Controller
         $user->forceFill([
             'email_verification_code' => null,
             'email_verification_code_expires_at' => null,
+            'email_verification_code_sent_at' => null,
         ])->save();
 
         event(new Verified($user));

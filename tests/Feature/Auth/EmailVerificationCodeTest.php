@@ -129,6 +129,37 @@ test('verifying the code is rate limited after too many attempts in a minute', f
     expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
 });
 
+test('a second send within the cooldown is a no-op and does not invalidate the current code', function () {
+    Mail::fake();
+
+    $user = User::factory()->unverified()->create();
+    $user->sendEmailVerificationNotification();
+
+    $codeHash = $user->fresh()->email_verification_code;
+    expect($codeHash)->not->toBeNull();
+
+    // Whatever triggers a second call right away (a retried request, a
+    // double form submit, wrong-code error handling) must not touch it.
+    $user->fresh()->sendEmailVerificationNotification();
+
+    Mail::assertSentCount(1);
+    expect($user->fresh()->email_verification_code)->toBe($codeHash);
+});
+
+test('the verify-email screen exposes a resend countdown while the cooldown is active', function () {
+    Mail::fake();
+
+    $user = User::factory()->unverified()->create();
+    $user->sendEmailVerificationNotification();
+
+    $response = $this->actingAs($user)->get(route('verification.notice'));
+
+    $response->assertInertia(fn ($page) => $page
+        ->component('auth/verify-email')
+        ->where('resendAvailableAt', fn ($value) => $value !== null),
+    );
+});
+
 test('resending the verification code is rate limited', function () {
     Mail::fake();
 

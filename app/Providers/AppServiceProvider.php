@@ -32,7 +32,14 @@ class AppServiceProvider extends ServiceProvider
         $this->configureGoogleSocialite();
         $this->configureFacebookSocialite();
 
-        Event::listen(Registered::class, SendEmailVerificationNotification::class);
+        // Guard against double-registering on persistent-worker setups
+        // (Octane, or a long-lived `artisan serve` process reusing the
+        // event dispatcher across requests) — without this, every extra
+        // boot() call stacks another listener, sending one email per
+        // listener for a single registration.
+        if (! Event::hasListeners(Registered::class)) {
+            Event::listen(Registered::class, SendEmailVerificationNotification::class);
+        }
     }
 
     /**
