@@ -280,7 +280,7 @@ php artisan wayfinder:generate
 - `App\Services\ZiniPayService` — hosted payment gateway integration (invoice creation + webhook handling via `ZiniPayWebhookController`).
 - `App\Http\Controllers\MobilePaymentController` + `App\Services\SmsParserService` — manual bKash/Nagad-style mobile banking flow where customers submit a transaction ID and an incoming SMS (forwarded via the `sms_forwarder` service token in `config/services.php`) is parsed against configurable `SmsPattern` records to auto-verify payment.
 
-**Courier shipping** is handled by `App\Services\PathaoCourierService`, which authenticates against Pathao's API (credentials stored in the `Setting` model, not `.env`, under the `pathao_*` keys) and creates/tracks consignments for placed orders.
+**Courier shipping** supports two couriers: `App\Services\PathaoCourierService` and `App\Services\SteadfastCourierService`, both authenticating against their respective APIs with credentials stored in the `Setting` model (not `.env`). `App\Services\CourierOrderStatusMapper` maps each courier's raw status strings to the app's `OrderStatus` enum (`PATHAO_MAP`/`STEADFAST_MAP` constants) — update this mapper, not scattered conditionals, when a courier's status set changes. Pathao statuses sync via the scheduled `pathao:sync-statuses` Artisan command (`SyncPathaoOrderStatuses`, every 15 minutes, see `routes/console.php`); Steadfast statuses arrive via `SteadfastWebhookController`.
 
 **Static/legal content** (About, Contact, FAQ, Privacy Policy, Terms) is admin-editable and served from the `Page` model keyed by `slug` (`is_published` gate), rendered via `resources/js/pages/static/Page.tsx`, rather than hardcoded Blade/React content.
 
@@ -298,4 +298,4 @@ php artisan wayfinder:generate
 
 **PDF invoices**: `barryvdh/laravel-dompdf` renders the `invoices.order` Blade view (`Pdf::loadView('invoices.order', ...)`) for order invoice downloads, used from both `routes/account.php` (storefront) and `LandingPageController` (landing-page funnel orders).
 
-**Sitemap**: `php artisan sitemap:generate` (`App\Console\Commands\GenerateSitemapCommand`, using `spatie/laravel-sitemap`) rebuilds the public sitemap from active categories/products/pages — run manually or via an external cron, not Laravel's scheduler (`routes/console.php` has no `schedule()` calls).
+**Sitemap**: `php artisan sitemap:generate` (`App\Console\Commands\GenerateSitemapCommand`, using `spatie/laravel-sitemap`) rebuilds the public sitemap from active categories/products/pages — run manually or via an external cron; it is not registered in Laravel's scheduler (`routes/console.php` only schedules the Pathao status sync, see above).
