@@ -122,6 +122,38 @@ class FortifyServiceProvider extends ServiceProvider
 
             return Limit::perMinute(5)->by($throttleKey);
         });
+
+        // Requesting a new verification code (resend button + the unused
+        // link-click route): a short cooldown against double-clicks, plus a
+        // hard cap per code lifetime against inbox-flooding abuse.
+        RateLimiter::for('verification', function (Request $request) {
+            $key = $request->user()?->getAuthIdentifier() ?: $request->ip();
+
+            return [
+                Limit::perMinute(1)->by($key)->response(fn (Request $request) => back()->withErrors([
+                    'code' => 'Please wait a minute before requesting another code.',
+                ])),
+                Limit::perMinutes(15, 5)->by($key)->response(fn (Request $request) => back()->withErrors([
+                    'code' => 'Too many code requests. Please try again in a few minutes.',
+                ])),
+            ];
+        });
+
+        // Entering a verification code: bounded tightly enough that
+        // brute-forcing a 6-digit code within its 15-minute lifetime is
+        // infeasible, without making legitimate typos frustrating.
+        RateLimiter::for('verification-code', function (Request $request) {
+            $key = $request->user()?->getAuthIdentifier() ?: $request->ip();
+
+            return [
+                Limit::perMinute(5)->by($key)->response(fn (Request $request) => back()->withErrors([
+                    'code' => 'Too many attempts. Please wait a minute and try again.',
+                ])),
+                Limit::perMinutes(15, 10)->by($key)->response(fn (Request $request) => back()->withErrors([
+                    'code' => 'Too many attempts. Please request a new code and try again shortly.',
+                ])),
+            ];
+        });
     }
 
     private function configureAuthenticationHooks(): void

@@ -88,3 +88,39 @@ test('a verified customer can reach checkout and account pages', function () {
     $this->actingAs($user)->get(route('checkout.index'))->assertOk();
     $this->actingAs($user)->get(route('account.dashboard'))->assertOk();
 });
+
+test('verifying the code is rate limited after too many attempts in a minute', function () {
+    $user = User::factory()->unverified()->create();
+    $user->forceFill([
+        'email_verification_code' => Hash::make('123456'),
+        'email_verification_code_expires_at' => now()->addMinutes(15),
+    ])->save();
+
+    for ($i = 0; $i < 5; $i++) {
+        $this->actingAs($user)->post(route('verification.verify-code'), ['code' => '000000']);
+    }
+
+    $response = $this->actingAs($user)->post(route('verification.verify-code'), ['code' => '000000']);
+
+    $response->assertSessionHasErrors('code');
+    expect(session('errors')->first('code'))->toContain('Too many attempts');
+
+    // The underlying code is untouched by the throttle — the real code still works
+    // once the caller stops hammering the endpoint.
+    expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+});
+
+test('resending the verification code is rate limited', function () {
+    Mail::fake();
+
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)->post(route('verification.send'))->assertSessionHasNoErrors();
+
+    $response = $this->actingAs($user)->post(route('verification.send'));
+
+    $response->assertSessionHasErrors('code');
+    expect(session('errors')->first('code'))->toContain('wait a minute');
+
+    Mail::assertSentCount(1);
+});
