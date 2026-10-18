@@ -40,6 +40,10 @@ type Order = {
     pathao_order_status: string | null;
     pathao_delivery_fee: number | null;
     pathao_sent_at: string | null;
+    steadfast_consignment_id: string | null;
+    steadfast_tracking_code: string | null;
+    steadfast_status: string | null;
+    steadfast_sent_at: string | null;
     shipping_address: {
         name: string;
         phone: string;
@@ -137,6 +141,39 @@ export default function OrderShow({ order, statuses }: Props) {
             {},
             {
                 onFinish: () => setPathaoRefreshing(false),
+            },
+        );
+    };
+
+    const [steadfastSending, setSteadfastSending] = useState(false);
+    const [steadfastRefreshing, setSteadfastRefreshing] = useState(false);
+
+    const handleSendToSteadfast = () => {
+        if (
+            !confirm(
+                `Send order ${order.order_number} to Steadfast for pickup?`,
+            )
+        ) {
+            return;
+        }
+
+        setSteadfastSending(true);
+        router.post(
+            route('admin.orders.steadfast.send', order.id),
+            {},
+            {
+                onFinish: () => setSteadfastSending(false),
+            },
+        );
+    };
+
+    const handleRefreshSteadfastStatus = () => {
+        setSteadfastRefreshing(true);
+        router.post(
+            route('admin.orders.steadfast.refresh', order.id),
+            {},
+            {
+                onFinish: () => setSteadfastRefreshing(false),
             },
         );
     };
@@ -549,6 +586,90 @@ export default function OrderShow({ order, statuses }: Props) {
                                             {pathaoSending
                                                 ? 'Sending…'
                                                 : 'Send to Pathao'}
+                                        </Button>
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm">
+                            <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                                    <Truck className="size-4" /> Steadfast
+                                    Courier
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3 pt-4">
+                                {order.steadfast_consignment_id ? (
+                                    <>
+                                        <div className="space-y-1 text-sm text-slate-700">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">
+                                                    Consignment ID
+                                                </span>
+                                                <span className="font-mono font-medium">
+                                                    {
+                                                        order.steadfast_consignment_id
+                                                    }
+                                                </span>
+                                            </div>
+                                            {order.steadfast_tracking_code && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">
+                                                        Tracking code
+                                                    </span>
+                                                    <span className="font-mono font-medium">
+                                                        {
+                                                            order.steadfast_tracking_code
+                                                        }
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">
+                                                    Status
+                                                </span>
+                                                <Badge variant="info">
+                                                    {order.steadfast_status ??
+                                                        'Unknown'}
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full"
+                                            disabled={steadfastRefreshing}
+                                            onClick={
+                                                handleRefreshSteadfastStatus
+                                            }
+                                        >
+                                            <RefreshCw
+                                                className={`size-4 ${steadfastRefreshing ? 'animate-spin' : ''}`}
+                                            />
+                                            {steadfastRefreshing
+                                                ? 'Checking…'
+                                                : 'Refresh Status'}
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-xs text-slate-500">
+                                            Not sent to Steadfast yet. This
+                                            books a pickup using this order's
+                                            shipping address and total as the
+                                            COD amount to collect.
+                                        </p>
+                                        <Button
+                                            className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                            disabled={
+                                                steadfastSending ||
+                                                order.status === 'cancelled'
+                                            }
+                                            onClick={handleSendToSteadfast}
+                                        >
+                                            {steadfastSending
+                                                ? 'Sending…'
+                                                : 'Send to Steadfast'}
                                         </Button>
                                     </>
                                 )}

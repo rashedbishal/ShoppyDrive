@@ -43,6 +43,10 @@ class Order extends Model
         'pathao_order_status',
         'pathao_delivery_fee',
         'pathao_sent_at',
+        'steadfast_consignment_id',
+        'steadfast_tracking_code',
+        'steadfast_status',
+        'steadfast_sent_at',
     ];
 
     protected function casts(): array
@@ -59,6 +63,7 @@ class Order extends Model
             'tax' => 'float',
             'pathao_delivery_fee' => 'float',
             'pathao_sent_at' => 'datetime',
+            'steadfast_sent_at' => 'datetime',
             'total' => 'float',
             'shipped_at' => 'datetime',
             'delivered_at' => 'datetime',

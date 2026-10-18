@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\PathaoCourierService;
+use App\Services\SteadfastCourierService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class SettingController extends Controller
 {
     public function __construct(
         private readonly PathaoCourierService $pathao,
+        private readonly SteadfastCourierService $steadfast,
     ) {}
 
     public function edit(): Response
@@ -61,6 +63,9 @@ class SettingController extends Controller
             'pathao_username' => ['nullable', 'email', 'max:255'],
             'pathao_password' => ['nullable', 'string', 'max:255'],
             'pathao_store_id' => ['nullable', 'string', 'max:50'],
+            'steadfast_api_key' => ['nullable', 'string', 'max:255'],
+            'steadfast_secret_key' => ['nullable', 'string', 'max:255'],
+            'steadfast_webhook_secret' => ['nullable', 'string', 'max:255'],
         ]);
 
         // Handle logo upload separately
@@ -82,6 +87,7 @@ class SettingController extends Controller
             'facebook_client_id', 'facebook_client_secret', 'facebook_redirect_uri',
             'pathao_environment', 'pathao_client_id', 'pathao_client_secret',
             'pathao_username', 'pathao_password', 'pathao_store_id',
+            'steadfast_api_key', 'steadfast_secret_key', 'steadfast_webhook_secret',
         ];
 
         foreach ($fields as $key) {
@@ -109,6 +115,21 @@ class SettingController extends Controller
         return response()->json(['stores' => $stores]);
     }
 
+    /**
+     * Confirm the configured Steadfast Api Key/Secret Key work by fetching
+     * the merchant's current balance.
+     */
+    public function steadfastBalance(): JsonResponse
+    {
+        try {
+            $balance = $this->steadfast->getBalance();
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json($balance);
+    }
+
     private function getGroup(string $key): string
     {
         return match (true) {
@@ -119,6 +140,7 @@ class SettingController extends Controller
             in_array($key, ['bkash_number', 'nagad_number']) => 'payments',
             in_array($key, ['google_client_id', 'google_client_secret', 'google_redirect_uri', 'facebook_client_id', 'facebook_client_secret', 'facebook_redirect_uri']) => 'social_login',
             in_array($key, ['pathao_environment', 'pathao_client_id', 'pathao_client_secret', 'pathao_username', 'pathao_password', 'pathao_store_id']) => 'courier',
+            in_array($key, ['steadfast_api_key', 'steadfast_secret_key', 'steadfast_webhook_secret']) => 'courier',
             default => 'integrations',
         };
     }

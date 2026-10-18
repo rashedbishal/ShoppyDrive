@@ -75,6 +75,10 @@ export default function SettingsEdit({ settings }: Props) {
         pathao_username: (settings.pathao_username as string) ?? '',
         pathao_password: (settings.pathao_password as string) ?? '',
         pathao_store_id: (settings.pathao_store_id as string) ?? '',
+        steadfast_api_key: (settings.steadfast_api_key as string) ?? '',
+        steadfast_secret_key: (settings.steadfast_secret_key as string) ?? '',
+        steadfast_webhook_secret:
+            (settings.steadfast_webhook_secret as string) ?? '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -122,6 +126,44 @@ export default function SettingsEdit({ settings }: Props) {
             setPathaoStoresError('Could not reach the server.');
         } finally {
             setPathaoStoresLoading(false);
+        }
+    };
+
+    const [steadfastBalance, setSteadfastBalance] = useState<number | null>(
+        null,
+    );
+    const [steadfastBalanceLoading, setSteadfastBalanceLoading] =
+        useState(false);
+    const [steadfastBalanceError, setSteadfastBalanceError] = useState<
+        string | null
+    >(null);
+
+    const checkSteadfastBalance = async () => {
+        setSteadfastBalanceLoading(true);
+        setSteadfastBalanceError(null);
+
+        try {
+            const res = await fetch(route('admin.settings.steadfast.balance'), {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            const json = await res.json();
+
+            if (!res.ok) {
+                setSteadfastBalanceError(
+                    json.message ?? 'Could not reach Steadfast.',
+                );
+
+                return;
+            }
+
+            setSteadfastBalance(json.current_balance ?? 0);
+        } catch {
+            setSteadfastBalanceError('Could not reach the server.');
+        } finally {
+            setSteadfastBalanceLoading(false);
         }
     };
 
@@ -624,6 +666,111 @@ export default function SettingsEdit({ settings }: Props) {
                                     )}
                                 </div>
                             </Field>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
+                                Steadfast Courier
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-4">
+                            <p className="text-xs text-slate-400">
+                                Get your Api Key and Secret Key from{' '}
+                                <a
+                                    href="https://portal.packzy.com"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="underline"
+                                >
+                                    Steadfast's merchant portal
+                                </a>
+                                . Used to send Cash-on-Delivery orders to
+                                Steadfast for pickup and delivery from the
+                                order detail page.
+                            </p>
+                            <Field label="Api Key">
+                                <input
+                                    className={inputClass}
+                                    value={data.steadfast_api_key}
+                                    onChange={(e) =>
+                                        setData(
+                                            'steadfast_api_key',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="Steadfast Api Key"
+                                />
+                            </Field>
+                            <Field label="Secret Key">
+                                <input
+                                    type="password"
+                                    autoComplete="off"
+                                    className={inputClass}
+                                    value={data.steadfast_secret_key}
+                                    onChange={(e) =>
+                                        setData(
+                                            'steadfast_secret_key',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="Steadfast Secret Key"
+                                />
+                            </Field>
+                            <Field
+                                label="Webhook Secret (optional)"
+                                hint="Paste the same value into Steadfast's webhook settings so delivery status updates can be verified. Leave blank to accept unverified webhooks."
+                            >
+                                <input
+                                    type="password"
+                                    autoComplete="off"
+                                    className={inputClass}
+                                    value={data.steadfast_webhook_secret}
+                                    onChange={(e) =>
+                                        setData(
+                                            'steadfast_webhook_secret',
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                            </Field>
+                            <Field
+                                label="Webhook Callback URL"
+                                hint="Set this as the callback URL in Steadfast's webhook settings."
+                            >
+                                <input
+                                    readOnly
+                                    className={`${inputClass} bg-slate-50 text-slate-500`}
+                                    value={`${window.location.origin}/api/steadfast/webhook`}
+                                    onFocus={(e) => e.target.select()}
+                                />
+                            </Field>
+                            <div className="space-y-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={steadfastBalanceLoading}
+                                    onClick={checkSteadfastBalance}
+                                >
+                                    {steadfastBalanceLoading
+                                        ? 'Checking…'
+                                        : 'Check Balance'}
+                                </Button>
+
+                                {steadfastBalance !== null && (
+                                    <p className="text-xs text-emerald-600">
+                                        Connected. Current balance: ৳
+                                        {steadfastBalance.toLocaleString()}
+                                    </p>
+                                )}
+
+                                {steadfastBalanceError && (
+                                    <p className="text-xs text-red-600">
+                                        {steadfastBalanceError}
+                                    </p>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
 

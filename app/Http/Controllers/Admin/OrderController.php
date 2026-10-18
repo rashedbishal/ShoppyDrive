@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Services\PathaoCourierService;
+use App\Services\SteadfastCourierService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,6 +21,7 @@ class OrderController extends Controller
 {
     public function __construct(
         private readonly PathaoCourierService $pathao,
+        private readonly SteadfastCourierService $steadfast,
     ) {}
 
     public function index(Request $request): Response
@@ -135,5 +137,51 @@ class OrderController extends Controller
         $order->update(['pathao_order_status' => $info['order_status']]);
 
         return back()->with('success', "Pathao status: {$info['order_status']}.");
+    }
+
+    public function sendToSteadfast(Order $order): RedirectResponse
+    {
+        if ($order->steadfast_consignment_id !== null) {
+            return back()->with('error', 'This order has already been sent to Steadfast.');
+        }
+
+        try {
+            $result = $this->steadfast->createOrder($order);
+        } catch (RuntimeException $e) {
+            return back()->with('error', 'Steadfast: '.$e->getMessage());
+        }
+
+        $order->update([
+            'steadfast_consignment_id' => $result['consignment_id'],
+            'steadfast_tracking_code' => $result['tracking_code'],
+            'steadfast_status' => $result['status'],
+            'steadfast_sent_at' => now(),
+            'tracking_number' => $order->tracking_number ?? ($result['tracking_code'] ?? $result['consignment_id']),
+        ]);
+
+        OrderStatusHistory::create([
+            'order_id' => $order->id,
+            'status' => $order->status->value,
+            'notes' => "Sent to Steadfast courier. Consignment ID: {$result['consignment_id']}.",
+        ]);
+
+        return back()->with('success', 'Order sent to Steadfast for pickup.');
+    }
+
+    public function refreshSteadfastStatus(Order $order): RedirectResponse
+    {
+        if ($order->steadfast_consignment_id === null) {
+            return back()->with('error', 'This order has not been sent to Steadfast yet.');
+        }
+
+        try {
+            $info = $this->steadfast->getOrderInfo($order->steadfast_consignment_id);
+        } catch (RuntimeException $e) {
+            return back()->with('error', 'Steadfast: '.$e->getMessage());
+        }
+
+        $order->update(['steadfast_status' => $info['status']]);
+
+        return back()->with('success', "Steadfast status: {$info['status']}.");
     }
 }
