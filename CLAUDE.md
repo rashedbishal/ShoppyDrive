@@ -266,7 +266,9 @@ php artisan wayfinder:generate
 
 ## Architecture
 
-**Dual auth guards.** There are two separate user tables/guards configured in `config/auth.php`: `web` (provider `users`, model `App\Models\User`) for customers, and `admin` (provider `admins`, model `App\Models\Admin`) for staff. Admin routes live under `routes/admin.php` behind the `admin` middleware alias (`App\Http\Middleware\EnsureAdmin`) plus `redirect-customer-from-admin`. `RedirectAdminToDashboard` and `RedirectCustomerFromAdmin` middleware (registered globally in `bootstrap/app.php`) keep the two sessions from bleeding into each other's pages.
+**Dual auth guards.** There are two separate user tables/guards configured in `config/auth.php`: `web` (provider `users`, model `App\Models\User`) for customers, and `admin` (provider `admins`, model `App\Models\Admin`) for staff. Admin routes live under `routes/admin.php` behind the `admin` middleware alias (`App\Http\Middleware\EnsureAdmin`) plus `redirect-customer-from-admin`. `RedirectAdminToDashboard` and `RedirectCustomerFromAdmin` middleware (registered globally in `bootstrap/app.php`) keep the two sessions from bleeding into each other's pages. Exactly one `Admin` can have `is_mother = true` (the super admin); `php artisan admin:create-mother` creates or replaces it.
+
+**Social login** (`App\Http\Controllers\Auth\SocialAuthController`) uses Socialite for customer-facing Google/Facebook OAuth, configured via `GOOGLE_*`/`FACEBOOK_*` env vars in `config/services.php`. This is separate from Fortify's email/password + 2FA flow and only applies to the `web` guard, not admins.
 
 **Route files are split by domain**, all required from `routes/web.php`: `admin.php` (back office, prefixed `/admin`, named `admin.*`), `auth.php` (Fortify-backed customer auth), `catalog.php` (products/categories/brands browsing), `commerce.php` (cart/checkout/payments), `account.php` (customer dashboard: orders, addresses, wishlist), `settings.php` (profile/password/2FA), `api.php` (JSON API under `Http/Controllers/Api/V1`).
 
@@ -275,6 +277,10 @@ php artisan wayfinder:generate
 **Payments** go through two paths:
 - `App\Services\ZiniPayService` — hosted payment gateway integration (invoice creation + webhook handling via `ZiniPayWebhookController`).
 - `App\Http\Controllers\MobilePaymentController` + `App\Services\SmsParserService` — manual bKash/Nagad-style mobile banking flow where customers submit a transaction ID and an incoming SMS (forwarded via the `sms_forwarder` service token in `config/services.php`) is parsed against configurable `SmsPattern` records to auto-verify payment.
+
+**Courier shipping** is handled by `App\Services\PathaoCourierService`, which authenticates against Pathao's API (credentials stored in the `Setting` model, not `.env`, under the `pathao_*` keys) and creates/tracks consignments for placed orders.
+
+**Static/legal content** (About, Contact, FAQ, Privacy Policy, Terms) is admin-editable and served from the `Page` model keyed by `slug` (`is_published` gate), rendered via `resources/js/pages/static/Page.tsx`, rather than hardcoded Blade/React content.
 
 **Landing pages** (`App\Models\LandingPage`, `LandingPageController`, `resources/js/pages/landing/`) are a separate guest-checkout funnel (`/lp/{slug}`) distinct from the main storefront cart/checkout — used for single-product ad-driven campaigns with their own order + payment + confirmation flow.
 
