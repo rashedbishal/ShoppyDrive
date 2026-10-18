@@ -63,7 +63,13 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verification_code_expires_at' => now()->addMinutes(15),
         ])->save();
 
-        Mail::to($this->email)->send(new VerifyEmailCodeMail($code));
+        // A transient mail outage must not crash registration/login — log it
+        // and let the user retry via "Resend" once mail is working again.
+        try {
+            Mail::to($this->email)->send(new VerifyEmailCodeMail($code));
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     public function orders(): HasMany

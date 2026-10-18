@@ -5,6 +5,25 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 
+test('registration succeeds even if the verification email fails to send', function () {
+    Mail::shouldReceive('to')->andReturnSelf();
+    Mail::shouldReceive('send')->andThrow(new RuntimeException('SMTP down'));
+
+    $this->post(route('register.store'), [
+        'name' => 'Test User',
+        'email' => 'mailoutage@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+
+    $user = User::where('email', 'mailoutage@example.com')->first();
+    expect($user)->not->toBeNull();
+    expect($user->hasVerifiedEmail())->toBeFalse();
+    expect($user->email_verification_code)->not->toBeNull();
+});
+
 test('registering sends a 6-digit verification code instead of a link', function () {
     Mail::fake();
 
