@@ -539,6 +539,7 @@ type ProductCardProps = {
     className?: string;
     saleProgress?: number;
     saleProgressLabel?: string;
+    index?: number;
 };
 
 function ProductCard({
@@ -546,7 +547,9 @@ function ProductCard({
     className,
     saleProgress,
     saleProgressLabel,
+    index = 0,
 }: ProductCardProps): React.JSX.Element {
+    const prefersReducedMotion = useReducedMotion();
     const addItem = useCartStore((state) => state.addItem);
     const addToast = useUiStore((state) => state.addToast);
     const openCart = useUiStore((state) => state.openCart);
@@ -608,10 +611,33 @@ function ProductCard({
                 'group flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-transform duration-200 hover:shadow-[var(--shadow-card-hover)]',
                 className,
             )}
-            whileHover={{ y: -4, scale: 1.01 }}
-            transition={{
-                duration: MOTION.cardHover.duration,
-                ease: 'easeOut',
+            initial={
+                prefersReducedMotion
+                    ? false
+                    : { opacity: 0, y: 32, scale: 0.94 }
+            }
+            whileInView={
+                prefersReducedMotion
+                    ? undefined
+                    : {
+                          opacity: 1,
+                          y: 0,
+                          scale: 1,
+                          transition: {
+                              duration: 0.6,
+                              ease: [0.16, 1, 0.3, 1],
+                              delay: Math.min(index * MOTION.stagger, 0.4),
+                          },
+                      }
+            }
+            viewport={{ once: true, amount: 0.2 }}
+            whileHover={{
+                y: -4,
+                scale: 1.01,
+                transition: {
+                    duration: MOTION.cardHover.duration,
+                    ease: 'easeOut',
+                },
             }}
             onHoverStart={() => setIsHovered(true)}
             onHoverEnd={() => setIsHovered(false)}
@@ -1187,13 +1213,14 @@ function ProductGrid({
                 className,
             )}
         >
-            {products.map((product) => {
+            {products.map((product, index) => {
                 const saleProgress = saleProgressMap?.get(product.id);
 
                 return (
                     <ProductCard
                         key={product.id}
                         product={product}
+                        index={index}
                         saleProgress={saleProgress?.value}
                         saleProgressLabel={saleProgress?.label}
                     />
@@ -1262,7 +1289,7 @@ function ProductRail({
                 </h3>
             ) : null}
             <div className="grid auto-cols-[minmax(11rem,1fr)] grid-flow-col gap-3 overflow-x-auto pb-2 md:gap-4 lg:grid-flow-row lg:grid-cols-4 lg:overflow-visible">
-                {products.map((product) => {
+                {products.map((product, index) => {
                     const saleProgress = saleProgressMap?.get(product.id);
 
                     return (
@@ -1272,6 +1299,7 @@ function ProductRail({
                         >
                             <ProductCard
                                 product={product}
+                                index={index}
                                 saleProgress={saleProgress?.value}
                                 saleProgressLabel={saleProgress?.label}
                             />
