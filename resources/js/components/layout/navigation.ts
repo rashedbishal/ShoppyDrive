@@ -64,7 +64,7 @@ export const featuredStorePicks: StorefrontFeature[] = [
         description: 'Fresh drops across all categories.',
     },
     {
-        label: 'Best Sellers',
+        label: 'Best Selling Items',
         href: '/products?sort=popular',
         badge: 'Popular',
         description: 'Most loved items by our shoppers.',

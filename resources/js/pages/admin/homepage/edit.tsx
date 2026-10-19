@@ -694,7 +694,7 @@ export default function HomepageEdit({
                                             )}
                                             {isNewArrivals
                                                 ? 'New Arrival Products'
-                                                : 'Best Seller Products'}
+                                                : 'Best Selling Products'}
                                         </CardTitle>
                                         <div
                                             ref={searchContainerRef}

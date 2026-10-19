@@ -1840,11 +1840,11 @@ function Home(): React.JSX.Element {
             key: 'best_sellers',
             node: getSection('best_sellers')?.is_visible && (
                 <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
-                    {renderHeading('best_sellers', 'Best sellers')}
+                    {renderHeading('best_sellers', 'Best selling items')}
                     <ProductRail
                         products={bestSellers}
-                        emptyTitle="No best sellers yet"
-                        emptyDescription="The best sellers rail will populate once product data is connected."
+                        emptyTitle="No best selling items yet"
+                        emptyDescription="The best selling items rail will populate once product data is connected."
                         emptyHref="/products"
                         emptyActionLabel="Browse products"
                     />
