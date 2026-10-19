@@ -12,6 +12,7 @@ import {
     MessageSquare,
     MonitorPlay,
     Package,
+    Palette,
     Search,
     Settings,
     Share2,
@@ -58,6 +59,7 @@ const navSections: NavSection[] = [
             { label: 'Categories', href: '/admin/categories', icon: Folder, extraMatches: [] as string[] },
             { label: 'Sub-categories', href: '/admin/sub-categories', icon: FolderTree, extraMatches: [] as string[] },
             { label: 'Brands', href: '/admin/brands', icon: Award, extraMatches: [] as string[] },
+            { label: 'Attributes', href: '/admin/attributes', icon: Palette, extraMatches: [] as string[] },
         ],
     },
     {

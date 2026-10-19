@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\AttributeController;
+use App\Http\Controllers\Admin\AttributeValueController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CouponController;
@@ -36,6 +38,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::resource('products', ProductController::class);
+    Route::get('attributes', [AttributeController::class, 'index'])->name('attributes.index');
+    Route::resource('attribute-values', AttributeValueController::class)->only(['store', 'update', 'destroy']);
     Route::post('categories/reorder', [CategoryController::class, 'reorder'])->name('categories.reorder');
     Route::resource('categories', CategoryController::class);
     Route::resource('sub-categories', SubCategoryController::class);
