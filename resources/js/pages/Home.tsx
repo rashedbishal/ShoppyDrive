@@ -1591,7 +1591,11 @@ function Home(): React.JSX.Element {
     const getSection = (key: string) => homepage_settings?.[key];
 
     // Helper to render section heading
-    const renderHeading = (key: string, defaultTitle: string) => {
+    const renderHeading = (
+        key: string,
+        defaultTitle: string,
+        showAction = true,
+    ) => {
         const s = getSection(key);
         if (!s) return null;
         return (
@@ -1599,8 +1603,12 @@ function Home(): React.JSX.Element {
                 eyebrow={s.eyebrow ?? undefined}
                 title={s.title || defaultTitle}
                 description={s.description ?? undefined}
-                actionLabel={s.action_label ?? undefined}
-                actionHref={s.action_href ?? undefined}
+                actionLabel={
+                    showAction ? (s.action_label ?? undefined) : undefined
+                }
+                actionHref={
+                    showAction ? (s.action_href ?? undefined) : undefined
+                }
             />
         );
     };
@@ -1698,7 +1706,7 @@ function Home(): React.JSX.Element {
             key: 'categories',
             node: getSection('categories')?.is_visible && (
                 <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
-                    {renderHeading('categories', 'Shop by category')}
+                    {renderHeading('categories', 'Shop by category', false)}
                     <CategoryShowcase categories={categoryCards} />
                 </section>
             ),
