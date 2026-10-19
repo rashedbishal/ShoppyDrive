@@ -625,12 +625,12 @@ function ProductCard({
                     ? undefined
                     : isInView
                       ? { opacity: 1, y: 0, scale: 1 }
-                      : { opacity: 0, y: 32, scale: 0.94 }
+                      : { opacity: 0, y: 24, scale: 0.96 }
             }
             transition={{
-                duration: 0.6,
-                ease: [0.16, 1, 0.3, 1],
-                delay: Math.min(index * MOTION.stagger, 0.4),
+                duration: 0.7,
+                ease: [0.22, 1, 0.36, 1],
+                delay: Math.min(index * MOTION.stagger, 0.42),
             }}
             whileHover={{
                 y: -4,
