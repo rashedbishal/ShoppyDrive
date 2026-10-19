@@ -33,6 +33,7 @@ import { Badge } from '@/components/ui/badge';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
+import { Select } from '@/components/ui/select';
 import { StarRating } from '@/components/ui/star-rating';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
@@ -616,12 +617,16 @@ export default function ProductDetail({
                                         <h3 className="text-xl font-bold text-[var(--color-text-primary)]">User Reviews</h3>
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm text-[var(--color-text-muted)] font-medium">Sort by:</span>
-                                            <select className="text-sm font-bold bg-transparent border-0 focus:ring-0 cursor-pointer">
+                                            <Select
+                                                aria-label="Sort reviews"
+                                                containerClassName="min-w-36"
+                                                selectClassName="h-9 rounded-full px-3.5 text-sm font-bold"
+                                            >
                                                 <option>Newest First</option>
                                                 <option>Highest Rated</option>
                                                 <option>Lowest Rated</option>
                                                 <option>Most Helpful</option>
-                                            </select>
+                                            </Select>
                                         </div>
                                     </div>
 

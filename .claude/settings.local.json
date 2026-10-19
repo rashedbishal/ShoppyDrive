@@ -100,7 +100,9 @@
       "Bash(python3 -c ' *)",
       "Bash(grep -n 'fillable\\\\|free_delivery\\\\|casts\\\\|is_featured\\\\|protected $hidden\\\\|booted\\\\|ResponseCache' -A0 app/Models/Product.php)",
       "Bash(cp \"/home/saadman/Downloads/Cry Baby 2.gif\" public/images/easter-eggs/cry-baby.gif)",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(node -e \"console.log\\(require\\('@headlessui/react/package.json'\\).version\\)\")",
+      "Bash(grep -rhoE -e \"--\\(anchor-max-height|button-width|anchor-gap|input-width\\)\" node_modules/@headlessui/react/dist)"
     ]
   },
   "enableAllProjectMcpServers": true,

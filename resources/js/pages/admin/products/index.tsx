@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Select } from '@/components/ui/select';
 type Product = {
     id: number;
     name: string;
@@ -177,23 +178,25 @@ export default function ProductsIndex({
                                 className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
                             />
                         </div>
-                        <select
+                        <Select
                             value={filters.status ?? ''}
                             onChange={(e) =>
                                 applyFilters({ status: e.target.value })
                             }
-                            className="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
+                            containerClassName="min-w-40"
+                            selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
                         >
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
-                        </select>
-                        <select
+                        </Select>
+                        <Select
                             value={filters.category_id ?? ''}
                             onChange={(e) =>
                                 applyFilters({ category_id: e.target.value })
                             }
-                            className="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
+                            containerClassName="min-w-40"
+                            selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
                         >
                             <option value="">All Categories</option>
                             {categories.map((c) => (
@@ -201,7 +204,7 @@ export default function ProductsIndex({
                                     {c.name}
                                 </option>
                             ))}
-                        </select>
+                        </Select>
                     </div>
 
                     <div className="divide-y divide-slate-50">

@@ -1,6 +1,7 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { ArrowLeft, CheckCircle, ChevronDown, ChevronUp, Mail, MapPin, Phone, Play, ShoppingBag, Star, Truck } from 'lucide-react';
 import SocialChatWidget from '@/components/layout/SocialChatWidget';
+import { Select } from '@/components/ui/select';
 import type { SharedPageProps } from '@/types';
 import { useEffect, useState } from 'react';
 
@@ -203,19 +204,19 @@ function OrderForm({ product, slug, bkashNumber, nagadNumber }: { product: Props
 
                 <div className="grid grid-cols-2 gap-2">
                     <div>
-                        <select className={inputClass} value={data.state} onChange={(e) => updateState(e.target.value)}>
+                        <Select selectClassName={inputClass} value={data.state} onChange={(e) => updateState(e.target.value)}>
                             <option value="">District *</option>
                             {BD_DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
-                        </select>
+                        </Select>
                         {errors.state && <p className="mt-0.5 text-xs text-red-500">{errors.state}</p>}
                     </div>
                     <div>
                         {data.state === 'Dhaka' ? (
-                            <select className={inputClass} value={data.city} onChange={(e) => updateCity(e.target.value)}>
+                            <Select selectClassName={inputClass} value={data.city} onChange={(e) => updateCity(e.target.value)}>
                                 <option value="">Area *</option>
                                 <option value="Inside Dhaka City Corporation">Inside Dhaka City</option>
                                 <option value="Outside Dhaka City Corporation">Outside Dhaka City</option>
-                            </select>
+                            </Select>
                         ) : (
                             <input className={inputClass} placeholder="City / Upazila *" value={data.city} onChange={(e) => updateCity(e.target.value)} />
                         )}
@@ -240,13 +241,13 @@ function OrderForm({ product, slug, bkashNumber, nagadNumber }: { product: Props
                         <div className="flex gap-2 pl-6">
                             {bkashNumber && (
                                 <label className="flex items-center gap-1 cursor-pointer">
-                                    <input type="radio" name="provider" value="bkash" checked={data.provider === 'bkash'} onChange={() => setData('provider', 'bkash')} className="accent-pink-600" />
+                                    <input type="radio" name="provider" value="bkash" checked={data.provider === 'bkash'} onChange={() => setData('provider', 'bkash')} className="[--control-color:var(--color-pink-600)]" />
                                     <span className="text-sm font-semibold text-pink-700">Bkash</span>
                                 </label>
                             )}
                             {nagadNumber && (
                                 <label className="flex items-center gap-1 cursor-pointer">
-                                    <input type="radio" name="provider" value="nagad" checked={data.provider === 'nagad'} onChange={() => setData('provider', 'nagad')} className="accent-orange-600" />
+                                    <input type="radio" name="provider" value="nagad" checked={data.provider === 'nagad'} onChange={() => setData('provider', 'nagad')} className="[--control-color:var(--color-orange-600)]" />
                                     <span className="text-sm font-semibold text-orange-700">Nagad</span>
                                 </label>
                             )}

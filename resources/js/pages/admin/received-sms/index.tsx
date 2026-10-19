@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
+import { Select } from '@/components/ui/select';
 import type { PaginatedData } from '@/types';
 
 type ReceivedSms = {
@@ -160,15 +161,16 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
                                 className="h-9 w-full rounded-lg border border-slate-200 pl-9 pr-3 text-sm focus:border-[#c8102e] focus:outline-none"
                             />
                         </div>
-                        <select
+                        <Select
                             value={filters.matched ?? ''}
                             onChange={(e) => applyFilters({ matched: e.target.value })}
-                            className="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
+                            containerClassName="min-w-40"
+                            selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
                         >
                             <option value="">All</option>
                             <option value="yes">Matched</option>
                             <option value="no">Unmatched</option>
-                        </select>
+                        </Select>
                     </div>
 
                     <div className="divide-y divide-slate-50">

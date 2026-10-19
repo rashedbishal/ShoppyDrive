@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
+import { Select } from '@/components/ui/select';
 
 type Product = { id: number; name: string; price: number };
 
@@ -215,8 +216,8 @@ export default function LandingPageEdit({
                             </div>
                             <div>
                                 <label className={labelClass}>Product</label>
-                                <select
-                                    className={inputClass}
+                                <Select
+                                    selectClassName={inputClass}
                                     value={data.product_id}
                                     onChange={(e) =>
                                         setData('product_id', e.target.value)
@@ -227,7 +228,7 @@ export default function LandingPageEdit({
                                             {p.name}
                                         </option>
                                     ))}
-                                </select>
+                                </Select>
                             </div>
                             <div className="col-span-2 flex items-center gap-2">
                                 <input
@@ -623,8 +624,8 @@ export default function LandingPageEdit({
                                     }}
                                     placeholder="Customer name"
                                 />
-                                <select
-                                    className={inputClass}
+                                <Select
+                                    selectClassName={inputClass}
                                     value={item.rating}
                                     onChange={(e) => {
                                         const items = [
@@ -647,7 +648,7 @@ export default function LandingPageEdit({
                                             {r} Stars
                                         </option>
                                     ))}
-                                </select>
+                                </Select>
                                 <textarea
                                     rows={2}
                                     className={textareaClass}

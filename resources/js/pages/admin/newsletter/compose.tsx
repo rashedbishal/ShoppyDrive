@@ -3,7 +3,6 @@ import {
     AlertTriangle,
     ArrowLeft,
     Bold,
-    ChevronDown,
     Heading1,
     Heading2,
     Image,
@@ -23,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Card } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 
 type ProductMedia = {
     id: number;
@@ -542,10 +542,10 @@ export default function NewsletterCompose({ products, active_subscribers_count }
                                         Select Product
                                     </label>
                                     <div className="relative">
-                                        <select
+                                        <Select
                                             value={selectedProductId ?? ''}
                                             onChange={(e) => handleProductSelect(Number(e.target.value))}
-                                            className="w-full appearance-none rounded-lg border border-slate-200 px-3 py-2.5 pr-10 text-sm text-slate-800 focus:border-[#c8102e] focus:outline-none focus:ring-1 focus:ring-[#c8102e]"
+                                            selectClassName="w-full appearance-none rounded-lg border border-slate-200 px-3 py-2.5 pr-10 text-sm text-slate-800 focus:border-[#c8102e] focus:outline-none focus:ring-1 focus:ring-[#c8102e]"
                                         >
                                             <option value="">-- Choose a product --</option>
                                             {products.map((p) => (
@@ -553,8 +553,7 @@ export default function NewsletterCompose({ products, active_subscribers_count }
                                                     {p.name} — ৳{p.price.toLocaleString()}
                                                 </option>
                                             ))}
-                                        </select>
-                                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                                        </Select>
                                     </div>
                                 </div>
 

@@ -1,4 +1,3 @@
-import { Check } from "lucide-react";
 import { type InputHTMLAttributes, useId, type ReactNode } from "react";
 
 import { Label } from "@/components/ui/label";
@@ -12,6 +11,8 @@ type CheckboxProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
     containerClassName?: string;
     labelClassName?: string;
     checkboxClassName?: string;
+    /** Called with the new checked state, as an alternative to `onChange`. */
+    onCheckedChange?: (checked: boolean) => void;
 };
 
 function Checkbox({
@@ -24,6 +25,8 @@ function Checkbox({
     containerClassName,
     labelClassName,
     checkboxClassName,
+    onChange,
+    onCheckedChange,
     ...props
 }: CheckboxProps) {
     const generatedId = useId();
@@ -38,11 +41,12 @@ function Checkbox({
             type="checkbox"
             aria-invalid={Boolean(error) || undefined}
             aria-describedby={describedBy}
-            className={cn(
-                "peer size-4 shrink-0 rounded-[4px] border border-border bg-surface text-primary shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60 data-[checked=true]:bg-primary",
-                className,
-                checkboxClassName,
-            )}
+            onChange={(event) => {
+                onChange?.(event);
+                onCheckedChange?.(event.target.checked);
+            }}
+            // Box, tick and states come from the shared themed control styles in app.css.
+            className={cn("shadow-sm", className, checkboxClassName)}
             {...props}
         />
     );
@@ -54,12 +58,7 @@ function Checkbox({
     return (
         <div className={cn("space-y-1.5", containerClassName)}>
             <label htmlFor={checkboxId} className="flex cursor-pointer items-start gap-3">
-                <span className="relative mt-0.5">
-                    {checkbox}
-                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-white opacity-0 peer-checked:opacity-100">
-                        <Check className="size-3.5" />
-                    </span>
-                </span>
+                <span className="mt-0.5 flex">{checkbox}</span>
                 <span className="space-y-1">
                     <span
                         className={cn(

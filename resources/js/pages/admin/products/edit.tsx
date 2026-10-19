@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { Select } from '@/components/ui/select';
 
 type ProductMedia = {
     id: number;
@@ -384,8 +385,8 @@ export default function ProductEdit({
                                     label="Category *"
                                     error={errors.category_id}
                                 >
-                                    <select
-                                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                    <Select
+                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                         value={data.category_id}
                                         onChange={(e) => {
                                             setData((prev) => ({
@@ -403,15 +404,15 @@ export default function ProductEdit({
                                                 {c.name}
                                             </option>
                                         ))}
-                                    </select>
+                                    </Select>
                                 </Field>
 
                                 <Field
                                     label="Sub-category *"
                                     error={errors.sub_category_id}
                                 >
-                                    <select
-                                        className={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${errors.sub_category_id ? 'border-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
+                                    <Select
+                                        selectClassName={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${errors.sub_category_id ? 'border-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
                                         value={data.sub_category_id}
                                         onChange={(e) =>
                                             setData(
@@ -438,12 +439,12 @@ export default function ProductEdit({
                                                     {sc.name}
                                                 </option>
                                             ))}
-                                    </select>
+                                    </Select>
                                 </Field>
 
                                 <Field label="Brand" error={errors.brand_id}>
-                                    <select
-                                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                    <Select
+                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                         value={data.brand_id}
                                         onChange={(e) =>
                                             setData('brand_id', e.target.value)
@@ -455,7 +456,7 @@ export default function ProductEdit({
                                                 {b.name}
                                             </option>
                                         ))}
-                                    </select>
+                                    </Select>
                                 </Field>
                             </CardContent>
                         </Card>
