@@ -129,12 +129,12 @@ function ProductCard({ product }: { product: Product }): React.JSX.Element {
                     <span className="text-xs text-[var(--color-text-secondary)]">({product.reviews_count ?? 0})</span>
                 </div>
 
-                <div className="flex items-end gap-2">
-                    <p className="text-lg font-bold text-[var(--color-primary)]">
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <p className="text-base font-bold whitespace-nowrap text-[var(--color-primary)] sm:text-lg">
                         {formatCurrency(product.price)}
                     </p>
                     {product.compare_price && product.compare_price > product.price ? (
-                        <p className="pb-0.5 text-sm text-[var(--color-text-muted)] line-through">
+                        <p className="text-xs whitespace-nowrap text-[var(--color-text-muted)] line-through sm:text-sm">
                             {formatCurrency(product.compare_price)}
                         </p>
                     ) : null}

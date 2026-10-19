@@ -177,12 +177,12 @@ function FlashProductCard({ item }: { item: FlashSaleItem }): React.JSX.Element 
                     <span className="text-xs text-[var(--color-text-secondary)]">({product.reviews_count ?? 0})</span>
                 </div>
 
-                <div className="flex items-end gap-2">
-                    <p className="text-xl font-bold text-[var(--color-primary)]">
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <p className="text-lg font-bold whitespace-nowrap text-[var(--color-primary)] sm:text-xl">
                         {formatCurrency(salePrice)}
                     </p>
                     {product.price > salePrice ? (
-                        <p className="pb-0.5 text-sm text-[var(--color-text-muted)] line-through">
+                        <p className="text-xs whitespace-nowrap text-[var(--color-text-muted)] line-through sm:text-sm">
                             {formatCurrency(product.price)}
                         </p>
                     ) : null}
@@ -243,10 +243,10 @@ function FeaturedProductCard({ product }: { product: Product }): React.JSX.Eleme
                 <Link href={`/product/${product.slug}`} className="line-clamp-2 text-sm font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-primary)]">
                     {product.name}
                 </Link>
-                <div className="flex items-end gap-2">
-                    <p className="text-lg font-bold text-[var(--color-primary)]">{formatCurrency(product.price)}</p>
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <p className="text-base font-bold whitespace-nowrap text-[var(--color-primary)] sm:text-lg">{formatCurrency(product.price)}</p>
                     {product.compare_price && product.compare_price > product.price ? (
-                        <p className="pb-0.5 text-sm text-[var(--color-text-muted)] line-through">{formatCurrency(product.compare_price)}</p>
+                        <p className="text-xs whitespace-nowrap text-[var(--color-text-muted)] line-through sm:text-sm">{formatCurrency(product.compare_price)}</p>
                     ) : null}
                 </div>
                 <Button fullWidth disabled={isOutOfStock} onClick={() => { addItem({ product, quantity: 1 }); addToast({ type: 'success', title: 'Added to cart', message: `${product.name} added.` }); }}>

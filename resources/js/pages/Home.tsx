@@ -764,13 +764,13 @@ function ProductCard({
                     </span>
                 </div>
 
-                <div className="flex items-baseline gap-1.5">
-                    <p className="text-base font-bold tracking-tight text-[var(--color-primary)]">
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                    <p className="text-base font-bold tracking-tight whitespace-nowrap text-[var(--color-primary)]">
                         {formatCurrency(currentPrice)}
                     </p>
                     {product.compare_price &&
                     product.compare_price > currentPrice ? (
-                        <p className="text-xs text-[var(--color-text-muted)] line-through">
+                        <p className="text-xs whitespace-nowrap text-[var(--color-text-muted)] line-through">
                             {formatCurrency(product.compare_price)}
                         </p>
                     ) : null}
@@ -1003,12 +1003,12 @@ function FlashSaleCard({
 
                 {/* Price */}
                 <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                    <span className="text-[15px] font-black text-[#c8102e]">
+                    <span className="text-[15px] font-black whitespace-nowrap text-[#c8102e]">
                         {formatCurrency(currentPrice)}
                     </span>
                     {product.compare_price &&
                         product.compare_price > currentPrice && (
-                            <span className="text-xs text-slate-400 line-through">
+                            <span className="text-xs whitespace-nowrap text-slate-400 line-through">
                                 {formatCurrency(product.compare_price)}
                             </span>
                         )}

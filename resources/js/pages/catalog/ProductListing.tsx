@@ -654,7 +654,7 @@ function ProductCard({
                 </Link>
             </div>
 
-            <div className="flex flex-1 flex-col gap-4 p-4">
+            <div className="flex flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-4">
                 <div className="space-y-1">
                     <p className="truncate text-xs font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
                         {product.brand?.name ?? 'ShoppyDrive Select'}
@@ -679,13 +679,14 @@ function ProductCard({
                     </span>
                 </div>
 
-                <div className="flex items-end gap-2">
-                    <p className="text-lg font-bold tracking-tight text-[var(--color-primary)]">
+                {/* Wraps the struck-through price under the price on narrow cards instead of overflowing */}
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <p className="text-base font-bold tracking-tight whitespace-nowrap text-[var(--color-primary)] sm:text-lg">
                         {formatCurrency(currentPrice)}
                     </p>
                     {product.compare_price &&
                     product.compare_price > currentPrice ? (
-                        <p className="pb-0.5 text-sm text-[var(--color-text-muted)] line-through">
+                        <p className="text-xs whitespace-nowrap text-[var(--color-text-muted)] line-through sm:text-sm">
                             {formatCurrency(product.compare_price)}
                         </p>
                     ) : null}
