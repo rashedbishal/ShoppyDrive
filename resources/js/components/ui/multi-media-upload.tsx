@@ -7,9 +7,21 @@ interface MultiMediaUploadProps {
     onChange: (files: (string | File)[]) => void;
     error?: string;
     className?: string;
+    /** When provided, renders a small "relates to" select under each tile. */
+    tagOptions?: { value: string; label: string }[];
+    tags?: (string | null)[];
+    onTagChange?: (index: number, tag: string | null) => void;
 }
 
-export function MultiMediaUpload({ value, onChange, error, className }: MultiMediaUploadProps): React.JSX.Element {
+export function MultiMediaUpload({
+    value,
+    onChange,
+    error,
+    className,
+    tagOptions,
+    tags,
+    onTagChange,
+}: MultiMediaUploadProps): React.JSX.Element {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [previews, setPreviews] = useState<{ id: string; url: string; item: string | File; type: 'image' | 'video' }[]>([]);
 
@@ -61,8 +73,8 @@ export function MultiMediaUpload({ value, onChange, error, className }: MultiMed
         <div className={cn('w-full', className)}>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {previews.map((preview, index) => (
+                    <div key={preview.id} className="space-y-1.5">
                     <div
-                        key={preview.id}
                         className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
                     >
                         {preview.type === 'video' ? (
@@ -104,6 +116,23 @@ export function MultiMediaUpload({ value, onChange, error, className }: MultiMed
                                 <Film className="size-3" />
                             </div>
                         )}
+                    </div>
+                    {tagOptions && (
+                        <select
+                            value={tags?.[index] ?? ''}
+                            onChange={(e) =>
+                                onTagChange?.(index, e.target.value || null)
+                            }
+                            className="w-full rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#c8102e]"
+                        >
+                            <option value="">General</option>
+                            {tagOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                    )}
                     </div>
                 ))}
 

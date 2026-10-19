@@ -1,0 +1,232 @@
+<?php
+
+use App\Enums\AttributeType;
+use App\Models\Admin;
+use App\Models\Attribute;
+use App\Models\AttributeValue;
+use App\Models\Cart;
+use App\Models\CartItem;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\SubCategory;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+use function Pest\Laravel\actingAs;
+
+uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    $this->admin = Admin::create([
+        'name' => 'Admin User',
+        'email' => 'admin@example.com',
+        'password' => bcrypt('password'),
+    ]);
+
+    $this->category = Category::factory()->create();
+    $this->subCategory = SubCategory::factory()->create(['category_id' => $this->category->id]);
+
+    $colorAttribute = Attribute::create(['name' => 'Color', 'type' => AttributeType::COLOR]);
+    $this->red = AttributeValue::create(['attribute_id' => $colorAttribute->id, 'value' => 'Red', 'color_hex' => '#ff0000']);
+    $this->blue = AttributeValue::create(['attribute_id' => $colorAttribute->id, 'value' => 'Blue', 'color_hex' => '#0000ff']);
+});
+
+function baseProductPayload(array $overrides = []): array
+{
+    $payload = array_merge([
+        'name' => 'Test Product',
+        'slug' => 'test-product',
+        'category_id' => null,
+        'sub_category_id' => null,
+        'price' => '1000',
+        'stock_quantity' => '10',
+        'is_active' => true,
+    ], $overrides);
+
+    // A null override means "omit this key" (e.g. price/stock_quantity when
+    // variants supply them instead) rather than literally submitting null.
+    return array_filter($payload, fn ($value) => $value !== null);
+}
+
+test('admin can create a flat product without variants (regression)', function () {
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+    ]));
+
+    $response->assertRedirect(route('admin.products.index'));
+
+    $product = Product::where('slug', 'test-product')->first();
+    expect($product)->not->toBeNull();
+    expect((float) $product->price)->toBe(1000.0);
+    expect($product->stock_quantity)->toBe(10);
+    expect($product->has_color_variant)->toBeFalse();
+    expect($product->variants)->toHaveCount(0);
+    expect($product->media)->toHaveCount(1);
+});
+
+test('admin can create a product with color-only variants and price/stock are denormalized', function () {
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            ['color_value_id' => $this->red->id, 'price' => 1200, 'compare_price' => 1500, 'stock_quantity' => 5, 'is_default' => true],
+            ['color_value_id' => $this->blue->id, 'price' => 1100, 'stock_quantity' => 7, 'is_default' => false],
+        ],
+    ]));
+
+    $response->assertRedirect(route('admin.products.index'));
+
+    $product = Product::where('slug', 'test-product')->first();
+    expect((float) $product->price)->toBe(1100.0); // min of variant prices
+    expect((float) $product->compare_price)->toBe(1500.0); // default variant's compare_price
+    expect($product->stock_quantity)->toBe(12); // sum of variant stock
+    expect($product->variants)->toHaveCount(2);
+    expect($product->attributeValues()->pluck('attribute_values.id')->sort()->values()->all())
+        ->toBe(collect([$this->red->id, $this->blue->id])->sort()->values()->all());
+
+    $redVariant = ProductVariant::where('product_id', $product->id)->where('color_value_id', $this->red->id)->first();
+    expect($redVariant->is_default)->toBeTrue();
+    expect($redVariant->attributes)->toBe(['Color' => 'Red']);
+});
+
+test('duplicate color pair in the same submission is rejected', function () {
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            ['color_value_id' => $this->red->id, 'price' => 1200, 'stock_quantity' => 5, 'is_default' => true],
+            ['color_value_id' => $this->red->id, 'price' => 1300, 'stock_quantity' => 3, 'is_default' => false],
+        ],
+    ]));
+
+    $response->assertInvalid();
+    expect(Product::where('slug', 'test-product')->exists())->toBeFalse();
+});
+
+test('exactly one default variant is required', function () {
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            ['color_value_id' => $this->red->id, 'price' => 1200, 'stock_quantity' => 5, 'is_default' => false],
+            ['color_value_id' => $this->blue->id, 'price' => 1100, 'stock_quantity' => 7, 'is_default' => false],
+        ],
+    ]));
+
+    $response->assertInvalid(['variants']);
+});
+
+test('removing a variant combo referenced by a live cart item freezes it instead of deleting', function () {
+    actingAs($this->admin, 'admin');
+
+    $product = Product::create([
+        'name' => 'Frozen Variant Product',
+        'slug' => 'frozen-variant-product',
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'price' => 1000,
+        'stock_quantity' => 10,
+        'has_color_variant' => true,
+    ]);
+
+    $redVariant = ProductVariant::create([
+        'product_id' => $product->id,
+        'color_value_id' => $this->red->id,
+        'price' => 1000,
+        'stock_quantity' => 5,
+        'attributes' => ['Color' => 'Red'],
+        'is_default' => true,
+    ]);
+
+    $blueVariant = ProductVariant::create([
+        'product_id' => $product->id,
+        'color_value_id' => $this->blue->id,
+        'price' => 1000,
+        'stock_quantity' => 5,
+        'attributes' => ['Color' => 'Blue'],
+        'is_default' => false,
+    ]);
+
+    $product->attributeValues()->sync([$this->red->id, $this->blue->id]);
+
+    $cart = Cart::create(['session_id' => 'test-session']);
+    $cartItem = CartItem::create([
+        'cart_id' => $cart->id,
+        'product_id' => $product->id,
+        'variant_id' => $blueVariant->id,
+        'quantity' => 1,
+        'price' => 1000,
+    ]);
+
+    // Admin edits the product, keeping only the Red variant (removing Blue).
+    $response = $this->put(route('admin.products.update', $product), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'slug' => 'frozen-variant-product',
+        'variants' => [
+            ['color_value_id' => $this->red->id, 'price' => 1000, 'stock_quantity' => 5, 'is_default' => true],
+        ],
+    ]));
+
+    $response->assertRedirect(route('admin.products.index'));
+
+    // The cart item and its referenced variant must survive untouched.
+    expect(CartItem::find($cartItem->id))->not->toBeNull();
+    expect(ProductVariant::find($blueVariant->id))->not->toBeNull();
+
+    // But Blue is no longer a selectable attribute for this product.
+    expect($product->attributeValues()->pluck('attribute_values.id')->all())->toBe([$this->red->id]);
+});
+
+test('media can be tagged to a specific color variant', function () {
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            ['color_value_id' => $this->red->id, 'price' => 1000, 'stock_quantity' => 5, 'is_default' => true],
+            ['color_value_id' => $this->blue->id, 'price' => 1000, 'stock_quantity' => 5, 'is_default' => false],
+        ],
+        'images' => ['/storage/products/red.jpg', '/storage/products/blue.jpg', '/storage/products/general.jpg'],
+        'media_tags' => ["color:{$this->red->id}", "color:{$this->blue->id}", null],
+    ]));
+
+    $response->assertRedirect(route('admin.products.index'));
+
+    $product = Product::where('slug', 'test-product')->first();
+    $redVariant = ProductVariant::where('product_id', $product->id)->where('color_value_id', $this->red->id)->first();
+    $blueVariant = ProductVariant::where('product_id', $product->id)->where('color_value_id', $this->blue->id)->first();
+
+    $redMedia = $product->media()->where('path', '/storage/products/red.jpg')->first();
+    $blueMedia = $product->media()->where('path', '/storage/products/blue.jpg')->first();
+    $generalMedia = $product->media()->where('path', '/storage/products/general.jpg')->first();
+
+    expect($redMedia->variant_id)->toBe($redVariant->id);
+    expect($blueMedia->variant_id)->toBe($blueVariant->id);
+    expect($generalMedia->variant_id)->toBeNull();
+});

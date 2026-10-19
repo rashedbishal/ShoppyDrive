@@ -1,19 +1,33 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import type { VariantRow } from '@/components/admin/ProductVariantManager';
+import { ProductVariantManager } from '@/components/admin/ProductVariantManager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { buildMediaTagOptions } from '@/lib/variant-media-tags';
+
+type AttributeValueOption = {
+    id: number;
+    value: string;
+    color_hex: string | null;
+};
 
 type Props = {
     categories: { id: number; name: string }[];
     subCategories: { id: number; name: string; category_id: number }[];
     brands: { id: number; name: string }[];
+    attributeValues: {
+        colors: AttributeValueOption[];
+        sizes: AttributeValueOption[];
+    };
 };
 
 export default function ProductCreate({
     categories,
     subCategories,
     brands,
+    attributeValues,
 }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
@@ -31,10 +45,32 @@ export default function ProductCreate({
         low_stock_threshold: '5',
         is_active: true,
         is_featured: false,
+        has_color_variant: false,
+        has_size_variant: false,
+        variants: [] as VariantRow[],
         images: [] as (File | string)[],
+        media_tags: [] as (string | null)[],
         meta_title: '',
         meta_description: '',
     });
+
+    const hasVariants = data.has_color_variant || data.has_size_variant;
+
+    const setImages = (files: (File | string)[]) => {
+        setData((prev) => ({
+            ...prev,
+            images: files,
+            media_tags: files.map((_, i) => prev.media_tags[i] ?? null),
+        }));
+    };
+
+    const tagOptions = buildMediaTagOptions(
+        data.variants,
+        attributeValues.colors,
+        attributeValues.sizes,
+        data.has_color_variant,
+        data.has_size_variant,
+    );
 
     const slugify = (name: string) =>
         name
@@ -164,97 +200,150 @@ export default function ProductCreate({
                                     Pricing & Stock
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="grid grid-cols-2 gap-4 pt-4 sm:grid-cols-3">
-                                <Field label="Price (৳) *" error={errors.price}>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        className={inputClass(errors.price)}
-                                        value={data.price}
-                                        onChange={(e) =>
-                                            setData('price', e.target.value)
-                                        }
-                                    />
-                                </Field>
-                                <Field
-                                    label="Compare Price (৳)"
-                                    error={errors.compare_price}
-                                >
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        className={inputClass(
-                                            errors.compare_price,
-                                        )}
-                                        value={data.compare_price}
-                                        onChange={(e) =>
+                            <CardContent className="space-y-4 pt-4">
+                                {!hasVariants && (
+                                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                                        <Field
+                                            label="Price (৳) *"
+                                            error={errors.price}
+                                        >
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                className={inputClass(
+                                                    errors.price,
+                                                )}
+                                                value={data.price}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'price',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </Field>
+                                        <Field
+                                            label="Compare Price (৳)"
+                                            error={errors.compare_price}
+                                        >
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                className={inputClass(
+                                                    errors.compare_price,
+                                                )}
+                                                value={data.compare_price}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'compare_price',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </Field>
+                                        <Field
+                                            label="Cost Price (৳)"
+                                            error={errors.cost_price}
+                                        >
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                className={inputClass(
+                                                    errors.cost_price,
+                                                )}
+                                                value={data.cost_price}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'cost_price',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </Field>
+                                        <Field
+                                            label="Stock Qty *"
+                                            error={errors.stock_quantity}
+                                        >
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                className={inputClass(
+                                                    errors.stock_quantity,
+                                                )}
+                                                value={data.stock_quantity}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'stock_quantity',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </Field>
+                                        <Field
+                                            label="Low Stock Alert"
+                                            error={errors.low_stock_threshold}
+                                        >
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                className={inputClass(
+                                                    errors.low_stock_threshold,
+                                                )}
+                                                value={data.low_stock_threshold}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'low_stock_threshold',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                        </Field>
+                                    </div>
+                                )}
+
+                                <div className="border-t border-slate-100 pt-4">
+                                    <ProductVariantManager
+                                        colorValues={attributeValues.colors}
+                                        sizeValues={attributeValues.sizes}
+                                        hasColorVariant={data.has_color_variant}
+                                        hasSizeVariant={data.has_size_variant}
+                                        onToggleColor={(enabled) =>
                                             setData(
-                                                'compare_price',
-                                                e.target.value,
+                                                'has_color_variant',
+                                                enabled,
                                             )
                                         }
-                                    />
-                                </Field>
-                                <Field
-                                    label="Cost Price (৳)"
-                                    error={errors.cost_price}
-                                >
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        className={inputClass(
-                                            errors.cost_price,
-                                        )}
-                                        value={data.cost_price}
-                                        onChange={(e) =>
-                                            setData(
-                                                'cost_price',
-                                                e.target.value,
-                                            )
+                                        onToggleSize={(enabled) =>
+                                            setData('has_size_variant', enabled)
                                         }
-                                    />
-                                </Field>
-                                <Field
-                                    label="Stock Qty *"
-                                    error={errors.stock_quantity}
-                                >
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        className={inputClass(
-                                            errors.stock_quantity,
-                                        )}
-                                        value={data.stock_quantity}
-                                        onChange={(e) =>
-                                            setData(
-                                                'stock_quantity',
-                                                e.target.value,
-                                            )
+                                        variants={data.variants}
+                                        onVariantsChange={(variants) =>
+                                            setData('variants', variants)
                                         }
+                                        errors={errors}
                                     />
-                                </Field>
-                                <Field
-                                    label="Low Stock Alert"
-                                    error={errors.low_stock_threshold}
-                                >
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        className={inputClass(
-                                            errors.low_stock_threshold,
+                                    {hasVariants &&
+                                        data.variants.length > 0 && (
+                                            <p className="mt-3 text-xs text-slate-500">
+                                                Computed from{' '}
+                                                {data.variants.length} variant
+                                                {data.variants.length === 1
+                                                    ? ''
+                                                    : 's'}{' '}
+                                                — from ৳
+                                                {Math.min(
+                                                    ...data.variants.map(
+                                                        (v) =>
+                                                            Number(v.price) ||
+                                                            Infinity,
+                                                    ),
+                                                )}
+                                            </p>
                                         )}
-                                        value={data.low_stock_threshold}
-                                        onChange={(e) =>
-                                            setData(
-                                                'low_stock_threshold',
-                                                e.target.value,
-                                            )
-                                        }
-                                    />
-                                </Field>
+                                </div>
                             </CardContent>
                         </Card>
 
@@ -267,10 +356,21 @@ export default function ProductCreate({
                             <CardContent className="pt-4">
                                 <MultiMediaUpload
                                     value={data.images}
-                                    onChange={(files) =>
-                                        setData('images', files)
-                                    }
+                                    onChange={setImages}
                                     error={errors.images}
+                                    tagOptions={tagOptions}
+                                    tags={data.media_tags}
+                                    onTagChange={(index, tag) =>
+                                        setData((prev) => {
+                                            const next = [...prev.media_tags];
+                                            next[index] = tag;
+
+                                            return {
+                                                ...prev,
+                                                media_tags: next,
+                                            };
+                                        })
+                                    }
                                 />
                                 {errors.images &&
                                     typeof errors.images === 'string' && (
