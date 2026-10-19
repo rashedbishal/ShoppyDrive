@@ -10,6 +10,7 @@ import AppLayout from '@/layouts/app-layout';
 import AdminLayout from '@/layouts/admin-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { initAddToCartFeedback } from '@/lib/add-to-cart-feedback';
 import { useCartStore } from '@/stores/cartStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import { STORAGE_KEYS } from '@/lib/constants';
@@ -258,3 +259,6 @@ createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+// Fly-to-cart animation + cart icon bump whenever an item is added.
+initAddToCartFeedback();

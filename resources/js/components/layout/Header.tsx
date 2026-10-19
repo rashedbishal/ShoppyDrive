@@ -300,11 +300,12 @@ export default function Header(): React.JSX.Element {
                                 type="button"
                                 aria-label="Cart"
                                 onClick={openCart}
+                                data-cart-target
                                 className="relative inline-flex size-10 items-center justify-center rounded-xl text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)]"
                             >
                                 <ShoppingBag className="size-5" />
                                 {itemCount > 0 ? (
-                                    <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold text-white">
+                                    <span data-cart-count className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold text-white">
                                         {itemCount > 9 ? '9+' : itemCount}
                                     </span>
                                 ) : null}
