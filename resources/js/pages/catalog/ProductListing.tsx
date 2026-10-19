@@ -566,9 +566,9 @@ function ProductCard({
         <article
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className="group overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-card-hover)]"
+            className="group flex h-full flex-col overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-card-hover)]"
         >
-            <div className="relative">
+            <div className="relative shrink-0">
                 <Link
                     href={route('product.show', product.slug)}
                     className="block"
@@ -654,14 +654,15 @@ function ProductCard({
                 </Link>
             </div>
 
-            <div className="space-y-4 p-4">
+            <div className="flex flex-1 flex-col gap-4 p-4">
                 <div className="space-y-1">
-                    <p className="text-xs font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
+                    <p className="truncate text-xs font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
                         {product.brand?.name ?? 'ShoppyDrive Select'}
                     </p>
+                    {/* Always reserve two lines so short names don't shift the rest of the card */}
                     <Link
                         href={route('product.show', product.slug)}
-                        className="line-clamp-2 text-sm leading-6 font-semibold text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)]"
+                        className="line-clamp-2 min-h-12 text-sm leading-6 font-semibold text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)]"
                     >
                         {product.name}
                     </Link>
@@ -718,7 +719,7 @@ function ProductCard({
                     fullWidth
                     onClick={handleAddToCart}
                     disabled={isOutOfStock}
-                    className="translate-y-0 transition-transform duration-200 group-hover:-translate-y-1"
+                    className="mt-auto translate-y-0 transition-transform duration-200 group-hover:-translate-y-1"
                 >
                     {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
                 </Button>
