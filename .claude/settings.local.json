@@ -88,7 +88,10 @@
       "Bash(vendor/bin/pint routes/web.php database/seeders/PageSeeder.php --format agent)",
       "Skill(inertia-react-development)",
       "Bash(vendor/bin/pint routes/web.php --format agent)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(npx eslint *)",
+      "Bash(npx prettier *)",
+      "Bash(git stash *)"
     ]
   },
   "enableAllProjectMcpServers": true,
