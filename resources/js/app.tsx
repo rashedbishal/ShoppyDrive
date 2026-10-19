@@ -233,6 +233,8 @@ createInertiaApp({
                 return null;
             case name.startsWith('landing/'):
                 return null;
+            case name.startsWith('errors/'):
+                return null;
             case name.startsWith('admin/'):
                 return AdminLayout;
             case name.startsWith('settings/'):
