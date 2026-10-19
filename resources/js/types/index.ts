@@ -154,6 +154,7 @@ export interface Attribute extends Timestamped {
 export interface ProductMedia extends Timestamped {
     id: Id;
     product_id: Id;
+    variant_id?: Id | null;
     path: string;
     type: 'image' | 'video';
     alt?: string | null;
@@ -166,8 +167,14 @@ export interface ProductVariant extends Timestamped {
     product_id: Id;
     sku?: string | null;
     price?: number | null;
+    compare_price?: number | null;
+    cost_price?: number | null;
     stock_quantity: number;
+    low_stock_threshold?: number | null;
     attributes: Record<string, string>;
+    is_default: boolean;
+    color_value_id?: Id | null;
+    size_value_id?: Id | null;
     formatted_price?: string;
 }
 

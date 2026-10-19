@@ -101,12 +101,9 @@ export default function ProductDetail({
     const [recentlyViewed, setRecentlyViewed] = useLocalStorage<Product[]>('recently_viewed', []);
 
     // Derived State
-    const media = product.media ?? [];
+    const allMedia = product.media ?? [];
     const attributes = product.attributes ?? [];
     const variants = product.variants ?? [];
-
-    const primaryMedia = media.find(m => m.is_primary) ?? media[0] ?? null;
-    const currentMedia = media[currentImageIndex] ?? primaryMedia ?? null;
 
     const selectedVariant = useMemo(() => {
         if (variants.length === 0) return null;
@@ -117,21 +114,39 @@ export default function ProductDetail({
         }) || null;
     }, [variants, selectedAttributes]);
 
-    const currentPrice = product.in_flash_sale && product.flash_sale_price 
-        ? product.flash_sale_price 
+    // Prefer media tagged to the selected variant; fall back to general (untagged) media.
+    const media = useMemo(() => {
+        if (selectedVariant) {
+            const scoped = allMedia.filter(m => m.variant_id === selectedVariant.id);
+            if (scoped.length > 0) return scoped;
+        }
+        return allMedia.filter(m => !m.variant_id);
+    }, [allMedia, selectedVariant]);
+
+    const primaryMedia = media.find(m => m.is_primary) ?? media[0] ?? null;
+    const currentMedia = media[currentImageIndex] ?? primaryMedia ?? null;
+
+    const currentPrice = product.in_flash_sale && product.flash_sale_price
+        ? product.flash_sale_price
         : (selectedVariant?.price || product.price);
-        
-    const comparePrice = selectedVariant?.price ? (product.compare_price ? product.compare_price * (selectedVariant.price / product.price) : undefined) : product.compare_price;
+
+    const comparePrice = selectedVariant ? selectedVariant.compare_price : product.compare_price;
     const hasDiscount = comparePrice && comparePrice > currentPrice;
     const discountPercent = hasDiscount ? getDiscountPercent(currentPrice, comparePrice!) : 0;
-    
+
     const stockQuantity = selectedVariant ? selectedVariant.stock_quantity : product.stock_quantity;
+    const lowStockThreshold = selectedVariant?.low_stock_threshold ?? product.low_stock_threshold;
     const isOutOfStock = stockQuantity <= 0;
 
     // Effects
     useEffect(() => {
-        // Initialize default attributes if only one variant or specific default logic
-        if (attributes.length > 0) {
+        // Default to the variant marked as default; fall back to the first value
+        // per attribute (only reachable for legacy data with no default flagged).
+        const defaultVariant = variants.find(v => v.is_default);
+
+        if (defaultVariant) {
+            setSelectedAttributes(defaultVariant.attributes);
+        } else if (attributes.length > 0) {
             const defaults: Record<string, string> = {};
             attributes.forEach(attr => {
                 if (attr.values.length > 0) {
@@ -148,6 +163,11 @@ export default function ProductDetail({
         ].slice(0, 10);
         setRecentlyViewed(updatedRecentlyViewed);
     }, [product.id]);
+
+    // Reset to the first image whenever the selected variant's media set changes.
+    useEffect(() => {
+        setCurrentImageIndex(0);
+    }, [selectedVariant?.id]);
 
     // Handlers
     const handleAttributeSelect = (name: string, value: string) => {
@@ -397,11 +417,11 @@ export default function ProductDetail({
                             <div className="space-y-4 mb-8">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${isOutOfStock ? 'bg-[var(--color-error)]' : stockQuantity <= product.low_stock_threshold ? 'bg-[var(--color-warning)] animate-pulse' : 'bg-[var(--color-success)]'}`} />
-                                        <span className={`text-sm font-bold ${isOutOfStock ? 'text-[var(--color-error)]' : stockQuantity <= product.low_stock_threshold ? 'text-[var(--color-warning)]' : 'text-[var(--color-success)]'}`}>
+                                        <div className={`w-2.5 h-2.5 rounded-full ${isOutOfStock ? 'bg-[var(--color-error)]' : stockQuantity <= lowStockThreshold ? 'bg-[var(--color-warning)] animate-pulse' : 'bg-[var(--color-success)]'}`} />
+                                        <span className={`text-sm font-bold ${isOutOfStock ? 'text-[var(--color-error)]' : stockQuantity <= lowStockThreshold ? 'text-[var(--color-warning)]' : 'text-[var(--color-success)]'}`}>
                                             {isOutOfStock 
                                                 ? 'Out of Stock' 
-                                                : stockQuantity <= product.low_stock_threshold 
+                                                : stockQuantity <= lowStockThreshold 
                                                     ? `Hurry! Only ${stockQuantity} left` 
                                                     : 'In Stock & Ready to Ship'}
                                         </span>

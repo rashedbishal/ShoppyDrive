@@ -106,7 +106,8 @@ class CheckoutController extends Controller
                             'name' => $product->name,
                             'sku' => $product->sku,
                             'price' => $item->price,
-                            'image' => $product->images->first()?->path,
+                            'image' => $item->variant?->image ?? $product->images->first()?->path,
+                            'variant_attributes' => $item->variant?->attributes,
                         ],
                     ]);
                 }
@@ -151,7 +152,8 @@ class CheckoutController extends Controller
                     'name' => $product->name,
                     'sku' => $product->sku,
                     'price' => $item->price,
-                    'image' => $product->images->first()?->path,
+                    'image' => $item->variant?->image ?? $product->images->first()?->path,
+                    'variant_attributes' => $item->variant?->attributes,
                 ],
             ];
         })->all();

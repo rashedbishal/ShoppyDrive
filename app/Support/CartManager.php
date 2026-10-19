@@ -19,7 +19,7 @@ class CartManager
         $query = Cart::query()->with([
             'coupon',
             'items.product.images',
-            'items.variant',
+            'items.variant.media',
         ]);
 
         if ($request->user() !== null) {
@@ -59,13 +59,13 @@ class CartManager
     public function mergeSessionCartIntoUserCart(User $user, string $sessionId): Cart
     {
         $userCart = $this->getOrCreateUserCart($user);
-        $sessionCart = Cart::with(['items.product.images', 'items.variant'])
+        $sessionCart = Cart::with(['items.product.images', 'items.variant.media'])
             ->where('session_id', $sessionId)
             ->whereNull('user_id')
             ->first();
 
         if ($sessionCart === null || $sessionCart->is($userCart)) {
-            return $userCart->loadMissing(['coupon', 'items.product.images', 'items.variant']);
+            return $userCart->loadMissing(['coupon', 'items.product.images', 'items.variant.media']);
         }
 
         $this->mergeItems($userCart, $sessionCart->items);
@@ -73,7 +73,7 @@ class CartManager
         $sessionCart->items()->delete();
         $sessionCart->delete();
 
-        return $userCart->fresh(['coupon', 'items.product.images', 'items.variant']);
+        return $userCart->fresh(['coupon', 'items.product.images', 'items.variant.media']);
     }
 
     /**
@@ -89,7 +89,7 @@ class CartManager
             $this->replaceItems($cart, $items);
         }
 
-        return $cart->fresh(['coupon', 'items.product.images', 'items.variant']);
+        return $cart->fresh(['coupon', 'items.product.images', 'items.variant.media']);
     }
 
     public function syncSessionCart(string $sessionId, array $items, bool $merge = false): Cart
@@ -102,7 +102,7 @@ class CartManager
             $this->replaceItems($cart, $items);
         }
 
-        return $cart->fresh(['coupon', 'items.product.images', 'items.variant']);
+        return $cart->fresh(['coupon', 'items.product.images', 'items.variant.media']);
     }
 
     public function serialize(?Cart $cart): ?array
