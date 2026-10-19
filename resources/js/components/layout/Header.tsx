@@ -185,10 +185,10 @@ export default function Header(): React.JSX.Element {
                 )}
 
                 {/* Main header bar */}
-                <div className="relative z-20 border-b border-[var(--color-border)] bg-white/95 backdrop-blur-xl">
+                <div className="relative z-20 border-b border-[var(--color-border)] bg-white/95 lg:backdrop-blur-xl">
                     <div
                         className={cn(
-                            'relative mx-auto flex max-w-7xl items-center gap-4 px-4 transition-all duration-300 sm:px-6 lg:px-8',
+                            'relative mx-auto flex max-w-7xl items-center gap-4 px-4 transition-[padding] duration-300 sm:px-6 lg:px-8',
                             isScrolled ? 'py-3' : 'py-4',
                         )}
                     >

@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 
@@ -59,27 +58,26 @@ function Accordion({
                             <span>{item.title}</span>
                             <ChevronDown
                                 className={cn(
-                                    "size-4 shrink-0 transition-transform duration-200",
+                                    "size-4 shrink-0 transition-transform duration-300",
                                     isOpen ? "rotate-180" : "",
                                 )}
                             />
                         </button>
-                        <AnimatePresence initial={false}>
-                            {isOpen ? (
-                                <motion.div
-                                    key={item.id}
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: "auto", opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="overflow-hidden"
-                                >
-                                    <div className="border-t border-border px-5 py-4 text-sm text-text-secondary">
-                                        {item.content}
-                                    </div>
-                                </motion.div>
-                            ) : null}
-                        </AnimatePresence>
+                        {/* Native CSS grid-rows transition (0fr → 1fr) instead of a JS
+                            height:auto animation — no per-frame measuring, smooth on phones. */}
+                        <div
+                            className={cn(
+                                "grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none",
+                                isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                            )}
+                            inert={!isOpen}
+                        >
+                            <div className="min-h-0 overflow-hidden">
+                                <div className="border-t border-border px-5 py-4 text-sm text-text-secondary">
+                                    {item.content}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 );
             })}

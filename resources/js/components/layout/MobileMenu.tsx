@@ -94,13 +94,13 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.
                                             key={category.id}
                                             href={`/category/${category.slug}`}
                                             onClick={onClose}
-                                            className="block rounded-xl px-3 py-3 text-sm text-[var(--color-text-primary)] transition hover:bg-[var(--color-primary-light)]"
+                                            className="block rounded-xl px-3 py-3 text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-primary-light)] active:bg-[var(--color-primary-light)]"
                                         >
                                             <span className="block font-medium">
                                                 {category.name}
                                             </span>
                                             {category.description && (
-                                                <span className="block text-xs text-[var(--color-text-secondary)]">
+                                                <span className="block truncate text-xs text-[var(--color-text-secondary)]">
                                                     {category.description}
                                                 </span>
                                             )}
@@ -119,7 +119,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.
                                             key={link.label}
                                             href={link.href}
                                             onClick={onClose}
-                                            className="block rounded-xl px-3 py-3 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-primary-light)]"
+                                            className="block rounded-xl px-3 py-3 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-primary-light)] active:bg-[var(--color-primary-light)]"
                                         >
                                             {link.label}
                                         </Link>
