@@ -47,6 +47,20 @@ const primaryNavLinks = [
     { label: 'About', href: '/about' },
 ];
 
+/**
+ * Soft rounded highlight behind the hovered nav item. Shares a layoutId so it
+ * glides between items instead of blinking on/off per item.
+ */
+function NavHoverPill(): React.JSX.Element {
+    return (
+        <motion.span
+            layoutId="nav-hover-pill"
+            className="absolute inset-0 rounded-full bg-[var(--color-primary-light)] ring-1 ring-[var(--color-primary)]/10"
+            transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+        />
+    );
+}
+
 export default function Header(): React.JSX.Element {
     const page = usePage<SharedPageProps>();
     const getInitials = useInitials();
@@ -61,6 +75,13 @@ export default function Header(): React.JSX.Element {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    const [hoveredNavKey, setHoveredNavKey] = useState<string | null>(null);
+    // The sliding hover pill follows the cursor; while the mega menu is open it
+    // rests on "All Categories" so the open trigger stays highlighted.
+    const navPillKey = hoveredNavKey ?? (isMegaMenuOpen ? 'categories' : null);
+    const currentPath = page.url.split('?')[0];
+    const isNavLinkActive = (href: string): boolean =>
+        href === '/' ? currentPath === '/' : currentPath === href || currentPath.startsWith(`${href}/`);
     const megaMenuCloseTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const openMegaMenu = () => {
@@ -359,39 +380,72 @@ export default function Header(): React.JSX.Element {
                 </div>
 
                 {/* Navigation bar */}
-                <div className="relative z-10 hidden border-b border-[var(--color-border)] bg-white bg-white/95 lg:block">
-                    <div className="mx-auto flex max-w-7xl items-center gap-0.5 px-4 sm:px-6 lg:px-8">
+                <div className="relative z-10 hidden border-b border-[var(--color-border)] bg-white/95 lg:block">
+                    <nav
+                        className="mx-auto flex h-12 max-w-7xl items-center gap-1 px-4 sm:px-6 lg:px-8"
+                        onMouseLeave={() => setHoveredNavKey(null)}
+                    >
                         <div
                             className="relative"
-                            onMouseEnter={openMegaMenu}
+                            onMouseEnter={() => {
+                                setHoveredNavKey('categories');
+                                openMegaMenu();
+                            }}
                             onMouseLeave={scheduleMegaMenuClose}
                         >
                             <button
                                 type="button"
                                 onClick={() => setIsMegaMenuOpen((prev) => !prev)}
+                                aria-expanded={isMegaMenuOpen}
                                 className={cn(
-                                    "flex h-11 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition",
-                                    isMegaMenuOpen
-                                        ? "bg-[var(--color-primary-light)] text-[var(--color-primary)]"
-                                        : "text-[var(--color-text-primary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+                                    'relative flex h-9 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors duration-200',
+                                    navPillKey === 'categories'
+                                        ? 'text-[var(--color-primary)]'
+                                        : 'text-[var(--color-text-primary)]',
                                 )}
                             >
-                                <Menu className="size-4" />
-                                All Categories
+                                {navPillKey === 'categories' && <NavHoverPill />}
+                                <Menu
+                                    className={cn(
+                                        'relative z-10 size-4 transition-transform duration-300',
+                                        isMegaMenuOpen && 'rotate-90',
+                                    )}
+                                />
+                                <span className="relative z-10">All Categories</span>
                             </button>
                             <MegaMenu isOpen={isMegaMenuOpen} onClose={() => setIsMegaMenuOpen(false)} />
                         </div>
                         <div className="mx-2 h-5 w-px bg-[var(--color-border)]" />
-                        {primaryNavLinks.map((item) => (
-                            <Link
-                                key={item.label}
-                                href={item.href}
-                                className="flex h-11 items-center rounded-lg px-3.5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
-                            >
-                                {item.label}
-                            </Link>
-                        ))}
-                    </div>
+                        {primaryNavLinks.map((item) => {
+                            const isActive = isNavLinkActive(item.href);
+
+                            return (
+                                <Link
+                                    key={item.label}
+                                    href={item.href}
+                                    onMouseEnter={() => setHoveredNavKey(item.href)}
+                                    onFocus={() => setHoveredNavKey(item.href)}
+                                    onBlur={() => setHoveredNavKey(null)}
+                                    className={cn(
+                                        'relative flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors duration-200',
+                                        isActive || navPillKey === item.href
+                                            ? 'text-[var(--color-primary)]'
+                                            : 'text-[var(--color-text-secondary)]',
+                                    )}
+                                >
+                                    {navPillKey === item.href && <NavHoverPill />}
+                                    <span className="relative z-10">{item.label}</span>
+                                    {isActive && (
+                                        <motion.span
+                                            layoutId="nav-active-indicator"
+                                            className="absolute inset-x-4 -bottom-[7px] h-0.5 rounded-full bg-[var(--color-primary)]"
+                                            transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                                        />
+                                    )}
+                                </Link>
+                            );
+                        })}
+                    </nav>
                 </div>
             </header>
 
