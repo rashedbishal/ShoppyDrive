@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
+import { CryBabyEasterEgg } from '@/components/shared/CryBabyEasterEgg';
 import { ProductCarousel } from '@/components/shared/ProductCarousel';
 import { RatingBreakdown } from '@/components/shared/RatingBreakdown';
 import { ReviewCard } from '@/components/shared/ReviewCard';
@@ -418,8 +419,14 @@ export default function ProductDetail({
                             </div>
 
                             {/* Actions */}
-                            <div className="flex flex-col gap-3 mb-8">
-                                <Button 
+                            <div className="relative flex flex-col gap-3 mb-8">
+                                <CryBabyEasterEgg
+                                    key={product.id}
+                                    productId={product.id}
+                                    enabled={Boolean(product.cry_baby_enabled) && !isOutOfStock}
+                                />
+                                <Button
+                                    data-cry-baby-target
                                     onClick={handleAddToCart}
                                     disabled={isOutOfStock}
                                     size="lg" 

@@ -41,6 +41,7 @@ class ProductRequest extends FormRequest
             'is_featured' => ['boolean'],
             'free_delivery' => ['boolean'],
             'free_delivery_min_qty' => ['nullable', 'integer', 'min:1'],
+            'cry_baby_enabled' => ['boolean'],
             'images' => ['nullable', 'array'],
             'images.*' => ['nullable', function ($attribute, $value, $fail) {
                 if (! is_string($value) && ! ($value instanceof UploadedFile)) {

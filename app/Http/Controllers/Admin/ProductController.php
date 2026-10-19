@@ -38,7 +38,26 @@ class ProductController extends Controller
             'filters' => $request->only(['search', 'status', 'category_id', 'sub_category_id']),
             'categories' => Category::active()->orderBy('name')->get(['id', 'name']),
             'subCategories' => SubCategory::active()->orderBy('name')->get(['id', 'name']),
+            'cryBabyEnabledCount' => Product::where('cry_baby_enabled', true)->count(),
         ]);
+    }
+
+    /**
+     * Turn the product-page "cry baby" easter egg on or off for every product at once.
+     */
+    public function updateCryBabyForAll(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'enabled' => ['required', 'boolean'],
+        ]);
+
+        $isEnabled = (bool) $validated['enabled'];
+
+        Product::query()->update(['cry_baby_enabled' => $isEnabled]);
+
+        return back()->with('success', $isEnabled
+            ? 'Cry baby easter egg turned on for all products.'
+            : 'Cry baby easter egg turned off for all products.');
     }
 
     public function create(): Response
@@ -59,6 +78,7 @@ class ProductController extends Controller
         $data['slug'] = Str::slug($data['slug'] ?? $data['name']);
         $data['is_active'] = $data['is_active'] ?? false;
         $data['is_featured'] = $data['is_featured'] ?? false;
+        $data['cry_baby_enabled'] = $data['cry_baby_enabled'] ?? false;
 
         if ($data['is_active'] && empty($data['published_at'])) {
             $data['published_at'] = now();
@@ -123,6 +143,7 @@ class ProductController extends Controller
         $data['is_active'] = $data['is_active'] ?? false;
         $data['is_featured'] = $data['is_featured'] ?? false;
         $data['free_delivery'] = $data['free_delivery'] ?? false;
+        $data['cry_baby_enabled'] = $data['cry_baby_enabled'] ?? false;
 
         if ($data['is_active'] && $product->published_at === null) {
             $data['published_at'] = now();

@@ -31,6 +31,7 @@ export default function ProductCreate({
         low_stock_threshold: '5',
         is_active: true,
         is_featured: false,
+        cry_baby_enabled: false,
         images: [] as (File | string)[],
         meta_title: '',
         meta_description: '',
@@ -458,6 +459,36 @@ export default function ProductCreate({
                                     />
                                     Featured
                                 </label>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm">
+                            <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardTitle className="text-sm font-semibold text-slate-700">
+                                    Easter Egg
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3 pt-4">
+                                <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.cry_baby_enabled}
+                                        onChange={(e) =>
+                                            setData(
+                                                'cry_baby_enabled',
+                                                e.target.checked,
+                                            )
+                                        }
+                                        className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                    />
+                                    Crying baby on Add to Cart
+                                </label>
+                                <p className="text-xs text-slate-400">
+                                    Plays the crying-baby GIF beside the Add
+                                    to Cart button when a shopper lingers for
+                                    a minute without adding the product, or
+                                    removes it from the cart.
+                                </p>
                             </CardContent>
                         </Card>
 

@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Edit, Plus, Search, Trash2 } from 'lucide-react';
+import { Baby, Edit, Plus, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ type Product = {
     stock_quantity: number;
     is_active: boolean;
     is_featured: boolean;
+    cry_baby_enabled: boolean;
     category: { id: number; name: string } | null;
     brand: { id: number; name: string } | null;
 };
@@ -29,12 +30,14 @@ type Props = {
     products: Paginated<Product>;
     filters: { search?: string; status?: string; category_id?: string };
     categories: { id: number; name: string }[];
+    cryBabyEnabledCount: number;
 };
 
 export default function ProductsIndex({
     products,
     filters,
     categories,
+    cryBabyEnabledCount,
 }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [deleteTarget, setDeleteTarget] = useState<{
@@ -42,6 +45,10 @@ export default function ProductsIndex({
         name: string;
     } | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [cryBabyBulkTarget, setCryBabyBulkTarget] = useState<
+        boolean | null
+    >(null);
+    const [updatingCryBaby, setUpdatingCryBaby] = useState(false);
     const { props } = usePage<any>();
     const flash = props.flash as { success?: string } | undefined;
 
@@ -65,6 +72,25 @@ export default function ProductsIndex({
                 setDeleteTarget(null);
             },
         });
+    };
+
+    const confirmCryBabyBulkUpdate = () => {
+        if (cryBabyBulkTarget === null) {
+            return;
+        }
+
+        setUpdatingCryBaby(true);
+        router.patch(
+            route('admin.products.cry-baby.update-all'),
+            { enabled: cryBabyBulkTarget },
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setUpdatingCryBaby(false);
+                    setCryBabyBulkTarget(null);
+                },
+            },
+        );
     };
 
     return (
@@ -97,6 +123,44 @@ export default function ProductsIndex({
                         {flash.success}
                     </div>
                 )}
+
+                <Card className="flex flex-col gap-3 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                            <Baby className="size-4" />
+                        </span>
+                        <div>
+                            <p className="text-sm font-semibold text-slate-800">
+                                Crying baby easter egg
+                            </p>
+                            <p className="text-xs text-slate-500">
+                                On for {cryBabyEnabledCount}{' '}
+                                {cryBabyEnabledCount === 1
+                                    ? 'product'
+                                    : 'products'}
+                                . Toggle per product from its edit page.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCryBabyBulkTarget(true)}
+                        >
+                            Turn on for all
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCryBabyBulkTarget(false)}
+                        >
+                            Turn off for all
+                        </Button>
+                    </div>
+                </Card>
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     <div className="flex flex-wrap gap-2 border-b border-slate-100 p-4">
@@ -169,6 +233,14 @@ export default function ProductsIndex({
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2">
+                                        {p.cry_baby_enabled && (
+                                            <span
+                                                title="Crying baby easter egg is on"
+                                                className="flex size-6 items-center justify-center rounded-full bg-amber-50 text-amber-600"
+                                            >
+                                                <Baby className="size-3.5" />
+                                            </span>
+                                        )}
                                         <Badge
                                             variant={
                                                 p.is_active
@@ -255,6 +327,26 @@ export default function ProductsIndex({
                 }
                 onConfirm={confirmDelete}
                 processing={deleting}
+            />
+
+            <ConfirmDialog
+                open={cryBabyBulkTarget !== null}
+                onOpenChange={(open) => !open && setCryBabyBulkTarget(null)}
+                title={
+                    cryBabyBulkTarget
+                        ? 'Turn on crying baby for all products?'
+                        : 'Turn off crying baby for all products?'
+                }
+                description={
+                    cryBabyBulkTarget
+                        ? 'Every product page will show the crying-baby GIF beside Add to Cart. You can still turn it off per product afterwards.'
+                        : 'The crying-baby GIF will be removed from every product page. You can still turn it on per product afterwards.'
+                }
+                confirmLabel={
+                    cryBabyBulkTarget ? 'Turn on for all' : 'Turn off for all'
+                }
+                onConfirm={confirmCryBabyBulkUpdate}
+                processing={updatingCryBaby}
             />
         </>
     );
