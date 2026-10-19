@@ -113,6 +113,19 @@ const SORT_OPTIONS = [
 
 const DEFAULT_GRID_COUNT = 12;
 
+const PRICE_SLIDER_STEP = 10;
+/**
+ * Invisible native range input stretched over the custom track. Only its thumb
+ * (sized to the visual handle) accepts pointer events, so overlapping inputs
+ * never steal each other's drags.
+ */
+const PRICE_SLIDER_INPUT_CLASS = cn(
+    // Overhang by half a thumb (12px) so the native thumb centre spans exactly 0–100% of the track.
+    'pointer-events-none absolute inset-x-[-12px] top-0 h-full w-[calc(100%+24px)] cursor-pointer appearance-none bg-transparent opacity-0',
+    '[&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:size-6 [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:active:cursor-grabbing',
+    '[&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:size-6 [&::-moz-range-thumb]:cursor-grab [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:active:cursor-grabbing',
+);
+
 // ── Price Range Filter ────────────────────────────────────────────────────────
 function PriceRangeFilter({
     lo,
@@ -140,47 +153,142 @@ function PriceRangeFilter({
         onApply(parsedLo, parsedHi);
     };
 
+    // Slider mirrors the (possibly half-typed) inputs, clamped to a valid range.
+    const sliderLo = Math.max(0, Math.min(Number(inputLo) || 0, cap));
+    const sliderHi = Math.max(
+        sliderLo,
+        Math.min(inputHi === '' ? cap : Number(inputHi) || cap, cap),
+    );
+    const loPercent = cap > 0 ? (sliderLo / cap) * 100 : 0;
+    const hiPercent = cap > 0 ? (sliderHi / cap) * 100 : 100;
+    // When both handles meet, keep the one that can still move on top.
+    const isLoOnTop = loPercent > 50;
+
+    const commitSlider = (): void => onApply(sliderLo, sliderHi);
+    const isCommitKey = (key: string): boolean =>
+        [
+            'ArrowLeft',
+            'ArrowRight',
+            'ArrowUp',
+            'ArrowDown',
+            'Home',
+            'End',
+            'PageUp',
+            'PageDown',
+        ].includes(key);
+
     return (
-        <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-                <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-medium text-[var(--color-text-muted)]">
-                    ৳
+        <div className="space-y-4">
+            <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                    <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-medium text-[var(--color-text-muted)]">
+                        ৳
+                    </span>
+                    <input
+                        type="number"
+                        min={0}
+                        inputMode="numeric"
+                        value={inputLo}
+                        placeholder="Min"
+                        onChange={(e) => setInputLo(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && apply()}
+                        className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white pr-2 pl-7 text-sm transition focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none"
+                    />
+                </div>
+                <span className="text-sm text-[var(--color-text-muted)]">
+                    —
                 </span>
+                <div className="relative flex-1">
+                    <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-medium text-[var(--color-text-muted)]">
+                        ৳
+                    </span>
+                    <input
+                        type="number"
+                        min={0}
+                        inputMode="numeric"
+                        value={inputHi}
+                        placeholder="Max"
+                        onChange={(e) => setInputHi(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && apply()}
+                        className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white pr-2 pl-7 text-sm transition focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none"
+                    />
+                </div>
+                <button
+                    type="button"
+                    onClick={apply}
+                    aria-label="Apply price range"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface-alt)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-primary)] hover:text-white"
+                >
+                    <ChevronRight className="size-4" />
+                </button>
+            </div>
+
+            {/* Dual-handle slider. The native range inputs are invisible and ignore
+                pointer events except on their own thumb, so each handle is only
+                draggable where it is; dragging updates the inputs live and the
+                filter applies on release. */}
+            <div className="relative mx-2.5 h-6">
+                <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-surface-alt)] shadow-inner" />
+                <div
+                    className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-primary)]"
+                    style={{
+                        left: `${loPercent}%`,
+                        width: `${Math.max(0, hiPercent - loPercent)}%`,
+                    }}
+                />
                 <input
-                    type="number"
+                    type="range"
                     min={0}
-                    inputMode="numeric"
-                    value={inputLo}
-                    placeholder="Min"
-                    onChange={(e) => setInputLo(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && apply()}
-                    className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white pr-2 pl-7 text-sm transition focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none"
+                    max={cap}
+                    step={PRICE_SLIDER_STEP}
+                    value={sliderLo}
+                    aria-label="Minimum price"
+                    onChange={(e) =>
+                        setInputLo(
+                            String(Math.min(Number(e.target.value), sliderHi)),
+                        )
+                    }
+                    onPointerUp={commitSlider}
+                    onKeyUp={(e) => isCommitKey(e.key) && commitSlider()}
+                    className={cn(
+                        PRICE_SLIDER_INPUT_CLASS,
+                        'peer/lo',
+                        isLoOnTop ? 'z-30' : 'z-20',
+                    )}
+                />
+                <span
+                    className="pointer-events-none absolute top-1/2 z-10 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--color-primary)] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-shadow peer-focus-visible/lo:ring-4 peer-focus-visible/lo:ring-[var(--color-primary)]/20"
+                    style={{ left: `${loPercent}%` }}
+                />
+                <input
+                    type="range"
+                    min={0}
+                    max={cap}
+                    step={PRICE_SLIDER_STEP}
+                    value={sliderHi}
+                    aria-label="Maximum price"
+                    onChange={(e) =>
+                        setInputHi(
+                            String(Math.max(Number(e.target.value), sliderLo)),
+                        )
+                    }
+                    onPointerUp={commitSlider}
+                    onKeyUp={(e) => isCommitKey(e.key) && commitSlider()}
+                    className={cn(
+                        PRICE_SLIDER_INPUT_CLASS,
+                        'peer/hi',
+                        isLoOnTop ? 'z-20' : 'z-30',
+                    )}
+                />
+                <span
+                    className="pointer-events-none absolute top-1/2 z-10 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--color-primary)] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-shadow peer-focus-visible/hi:ring-4 peer-focus-visible/hi:ring-[var(--color-primary)]/20"
+                    style={{ left: `${hiPercent}%` }}
                 />
             </div>
-            <span className="text-sm text-[var(--color-text-muted)]">—</span>
-            <div className="relative flex-1">
-                <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-medium text-[var(--color-text-muted)]">
-                    ৳
-                </span>
-                <input
-                    type="number"
-                    min={0}
-                    inputMode="numeric"
-                    value={inputHi}
-                    placeholder="Max"
-                    onChange={(e) => setInputHi(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && apply()}
-                    className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white pr-2 pl-7 text-sm transition focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none"
-                />
+            <div className="-mt-1 flex justify-between text-[11px] font-medium text-[var(--color-text-muted)]">
+                <span>৳0</span>
+                <span>৳{cap.toLocaleString('en-BD')}</span>
             </div>
-            <button
-                type="button"
-                onClick={apply}
-                aria-label="Apply price range"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface-alt)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-primary)] hover:text-white"
-            >
-                <ChevronRight className="size-4" />
-            </button>
         </div>
     );
 }
