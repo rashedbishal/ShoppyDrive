@@ -91,7 +91,11 @@
       "Bash(echo \"exit: $?\")",
       "Bash(npx eslint *)",
       "Bash(npx prettier *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(grep -rn -E \"w-screen|100vw|-right-[0-9]|right-\\\\[-|translate-x-full|w-\\\\[[0-9]{3,}px\\\\]|min-w-\\\\[[0-9]{3,}\" resources/js/layouts resources/js/components/layout resources/js/components/shared resources/js/pages/catalog/ProductListing.tsx)",
+      "Bash(git checkout *)",
+      "Bash(python3 -)",
+      "Bash(npx vite *)"
     ]
   },
   "enableAllProjectMcpServers": true,

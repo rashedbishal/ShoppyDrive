@@ -291,7 +291,7 @@ function ListingProductSkeleton({
     if (view === 'list') {
         return (
             <Card className="overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-card)]">
-                <div className="grid gap-4 p-4 sm:grid-cols-[220px_minmax(0,1fr)]">
+                <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-[220px_minmax(0,1fr)]">
                     <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
                     <div className="space-y-4">
                         <div className="space-y-2">
@@ -410,7 +410,7 @@ function ProductCard({
                 onMouseLeave={() => setIsHovered(false)}
                 className="overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]"
             >
-                <div className="grid gap-4 p-4 sm:grid-cols-[220px_minmax(0,1fr)]">
+                <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-[220px_minmax(0,1fr)]">
                     <Link
                         href={route('product.show', product.slug)}
                         className="block"
@@ -1300,7 +1300,7 @@ function ProductListingPage({
 
             <div className="space-y-8 py-8 lg:py-12">
                 <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="grid gap-6 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)] lg:grid-cols-[1.1fr_0.9fr] lg:p-8">
+                    <div className="grid grid-cols-1 gap-6 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)] lg:grid-cols-[1.1fr_0.9fr] lg:p-8">
                         <div className="space-y-4">
                             <Badge variant="amber" className="w-fit">
                                 <SlidersHorizontal className="size-3.5" />
@@ -1360,7 +1360,7 @@ function ProductListingPage({
                     </div>
                 </section>
 
-                <section className="mx-auto grid max-w-7xl gap-8 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
+                <section className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
                     <aside className="hidden lg:block">
                         <div className="sticky top-28 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]">
                             <div className="mb-4 flex items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4">
@@ -1386,14 +1386,14 @@ function ProductListingPage({
                         </div>
                     </aside>
 
-                    <div className="space-y-6">
-                        <div className="rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)]">
-                            <div className="grid gap-4 lg:grid-cols-[1fr_auto_auto] lg:items-center">
+                    <div className="min-w-0 space-y-6">
+                        <div className="rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)] sm:p-4">
+                            <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                                 <form
                                     onSubmit={handleSearchSubmit}
-                                    className="flex gap-3"
+                                    className="flex min-w-0 gap-3"
                                 >
-                                    <div className="relative flex-1">
+                                    <div className="relative min-w-0 flex-1">
                                         <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
                                         <Input
                                             value={searchInput}
@@ -1415,10 +1415,10 @@ function ProductListingPage({
                                     </Button>
                                 </form>
 
-                                <div className="flex items-center gap-3">
+                                <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                                     <Button
                                         variant="outline"
-                                        className="lg:hidden"
+                                        className="shrink-0 lg:hidden"
                                         onClick={() => setIsFiltersOpen(true)}
                                     >
                                         <Filter className="size-4" />
@@ -1440,10 +1440,12 @@ function ProductListingPage({
                                             label: option.label,
                                             value: option.value,
                                         }))}
-                                        selectClassName="min-w-52"
+                                        aria-label="Sort products"
+                                        containerClassName="min-w-0 flex-1 lg:flex-none"
+                                        selectClassName="truncate sm:min-w-52"
                                     />
 
-                                    <div className="inline-flex overflow-hidden rounded-xl border border-[var(--color-border)]">
+                                    <div className="inline-flex shrink-0 overflow-hidden rounded-xl border border-[var(--color-border)]">
                                         <button
                                             type="button"
                                             onClick={() => {
