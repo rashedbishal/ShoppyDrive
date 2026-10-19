@@ -1,5 +1,10 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import {
+    AnimatePresence,
+    motion,
+    useInView,
+    useReducedMotion,
+} from 'framer-motion';
 import {
     ArrowRight,
     BadgeCheck,
@@ -550,6 +555,8 @@ function ProductCard({
     index = 0,
 }: ProductCardProps): React.JSX.Element {
     const prefersReducedMotion = useReducedMotion();
+    const cardRef = useRef<HTMLElement>(null);
+    const isInView = useInView(cardRef, { once: true, amount: 0.2 });
     const addItem = useCartStore((state) => state.addItem);
     const addToast = useUiStore((state) => state.addToast);
     const openCart = useUiStore((state) => state.openCart);
@@ -607,30 +614,24 @@ function ProductCard({
 
     return (
         <motion.article
+            ref={cardRef}
             className={cn(
                 'group flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-transform duration-200 hover:shadow-[var(--shadow-card-hover)]',
                 className,
             )}
-            initial={
-                prefersReducedMotion
-                    ? false
-                    : { opacity: 0, y: 32, scale: 0.94 }
-            }
-            whileInView={
+            initial={false}
+            animate={
                 prefersReducedMotion
                     ? undefined
-                    : {
-                          opacity: 1,
-                          y: 0,
-                          scale: 1,
-                          transition: {
-                              duration: 0.6,
-                              ease: [0.16, 1, 0.3, 1],
-                              delay: Math.min(index * MOTION.stagger, 0.4),
-                          },
-                      }
+                    : isInView
+                      ? { opacity: 1, y: 0, scale: 1 }
+                      : { opacity: 0, y: 32, scale: 0.94 }
             }
-            viewport={{ once: true, amount: 0.2 }}
+            transition={{
+                duration: 0.6,
+                ease: [0.16, 1, 0.3, 1],
+                delay: Math.min(index * MOTION.stagger, 0.4),
+            }}
             whileHover={{
                 y: -4,
                 scale: 1.01,
