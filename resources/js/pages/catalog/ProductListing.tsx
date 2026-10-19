@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
+    Banknote,
     Check,
     ChevronDown,
     ChevronLeft,
@@ -9,6 +10,7 @@ import {
     Heart,
     LayoutGrid,
     List,
+    Package,
     Search,
     ShieldCheck,
     SlidersHorizontal,
@@ -1333,29 +1335,70 @@ function ProductListingPage({
                             </div>
                         </div>
 
-                        <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="grid grid-cols-3 gap-2.5 self-center sm:gap-3">
                             {[
-                                ['Result count', `${products.total} items`],
-                                [
-                                    'Current view',
-                                    draftFilters.view === 'grid'
-                                        ? 'Grid'
-                                        : 'List',
-                                ],
-                                ['Currency', 'Bangladeshi taka'],
-                            ].map(([label, value]) => (
-                                <div
-                                    key={label}
-                                    className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-4"
-                                >
-                                    <p className="text-xs tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
-                                        {label}
-                                    </p>
-                                    <p className="mt-2 text-sm font-semibold text-[var(--color-text-primary)]">
-                                        {value}
-                                    </p>
-                                </div>
-                            ))}
+                                {
+                                    label: 'Result count',
+                                    value: products.total.toLocaleString(),
+                                    detail:
+                                        products.total === 1 ? 'item' : 'items',
+                                    icon: Package,
+                                    color: 'var(--color-primary)',
+                                },
+                                {
+                                    label: 'Current view',
+                                    value:
+                                        draftFilters.view === 'grid'
+                                            ? 'Grid'
+                                            : 'List',
+                                    detail: 'layout',
+                                    icon:
+                                        draftFilters.view === 'grid'
+                                            ? LayoutGrid
+                                            : List,
+                                    color: '#2563eb',
+                                },
+                                {
+                                    label: 'Currency',
+                                    value: '৳ BDT',
+                                    detail: 'Bangladeshi taka',
+                                    icon: Banknote,
+                                    color: 'var(--color-success)',
+                                },
+                            ].map(
+                                ({
+                                    label,
+                                    value,
+                                    detail,
+                                    icon: Icon,
+                                    color,
+                                }) => (
+                                    <div
+                                        key={label}
+                                        style={
+                                            {
+                                                '--stat-color': color,
+                                            } as React.CSSProperties
+                                        }
+                                        className="group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] to-[color-mix(in_srgb,var(--stat-color)_6%,var(--color-surface))] p-3 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--stat-color)_35%,transparent)] hover:shadow-[var(--shadow-card-hover)] sm:p-4"
+                                    >
+                                        {/* Soft corner glow in the stat's accent colour */}
+                                        <span className="pointer-events-none absolute -top-8 -right-8 -z-10 size-24 rounded-full bg-[var(--stat-color)] opacity-[0.08] blur-2xl transition-opacity duration-300 group-hover:opacity-[0.16]" />
+                                        <span className="flex size-8 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--stat-color)_12%,transparent)] text-[var(--stat-color)] ring-1 ring-[color-mix(in_srgb,var(--stat-color)_18%,transparent)] sm:size-10">
+                                            <Icon className="size-4 sm:size-5" />
+                                        </span>
+                                        <p className="mt-3 truncate font-display text-lg leading-none font-bold tracking-tight text-[var(--color-text-primary)] sm:mt-4 sm:text-2xl">
+                                            {value}
+                                        </p>
+                                        <p className="mt-1.5 truncate text-[11px] text-[var(--color-text-secondary)] sm:text-xs">
+                                            {detail}
+                                        </p>
+                                        <p className="mt-3 truncate border-t border-dashed border-[var(--color-border)] pt-2 text-[10px] font-semibold tracking-[0.16em] text-[var(--color-text-muted)] uppercase">
+                                            {label}
+                                        </p>
+                                    </div>
+                                ),
+                            )}
                         </div>
                     </div>
                 </section>

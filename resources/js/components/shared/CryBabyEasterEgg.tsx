@@ -30,8 +30,8 @@ const OVERHANG_PX = 12;
 const LABEL_CLEARANCE_PX = 6;
 const MIN_SCALE = 0.42;
 const MAX_SCALE = 0.62;
-/** Where the hand lands, as a fraction of the button's height from its top. */
-const FINGERTIP_HEIGHT_RATIO = 0.42;
+/** Where the hand lands, as a fraction of the button's height from its top (0 = resting on the top edge). */
+const FINGERTIP_HEIGHT_RATIO = 0;
 
 type Placement = { left: number; top: number; size: number };
 type Playback = { id: number; src: string; isObjectUrl: boolean };
