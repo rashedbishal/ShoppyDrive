@@ -1,5 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { FolderOpen, LayoutGrid, LogIn, LogOut, ShoppingBag, UserCircle2 } from 'lucide-react';
+import { lazy, Suspense } from 'react';
 import { route } from 'ziggy-js';
 import { primaryLinks } from '@/components/layout/navigation';
 import { Accordion } from '@/components/ui/accordion';
@@ -8,7 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { useInitials } from '@/hooks/use-initials';
+import { resolveCategoryColor } from '@/lib/category-colors';
 import type { SharedPageProps } from '@/types';
+
+// Lazy-loaded like in MegaMenu: the dynamic icon registry is large, so it's
+// only fetched once the menu actually renders category rows.
+const CategoryIcon = lazy(() =>
+    import('@/lib/category-icons').then((m) => ({ default: m.CategoryIcon })),
+);
 
 type MobileMenuProps = {
     isOpen: boolean;
@@ -89,21 +97,30 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.
                                             <FolderOpen className="size-4 opacity-50" />
                                             No categories yet
                                         </div>
-                                    ) : navCategories.map((category) => (
+                                    ) : navCategories.map((category, index) => (
                                         <Link
                                             key={category.id}
                                             href={`/category/${category.slug}`}
                                             onClick={onClose}
-                                            className="block rounded-xl px-3 py-3 text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-primary-light)] active:bg-[var(--color-primary-light)]"
+                                            style={{ '--category-color': resolveCategoryColor(category.color, index) } as React.CSSProperties}
+                                            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-primary-light)] active:bg-[var(--color-primary-light)]"
                                         >
-                                            <span className="block font-medium">
-                                                {category.name}
+                                            {/* Same colour-tinted icon tile as the desktop mega menu */}
+                                            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--category-color)_12%,white)] text-[var(--category-color)] ring-1 ring-[color-mix(in_srgb,var(--category-color)_18%,white)]">
+                                                <Suspense fallback={<ShoppingBag className="size-4" strokeWidth={1.75} />}>
+                                                    <CategoryIcon icon={category.icon} className="size-4" />
+                                                </Suspense>
                                             </span>
-                                            {category.description && (
-                                                <span className="block truncate text-xs text-[var(--color-text-secondary)]">
-                                                    {category.description}
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block truncate font-medium">
+                                                    {category.name}
                                                 </span>
-                                            )}
+                                                {category.description && (
+                                                    <span className="block truncate text-xs text-[var(--color-text-secondary)]">
+                                                        {category.description}
+                                                    </span>
+                                                )}
+                                            </span>
                                         </Link>
                                     ))}
                                 </div>
