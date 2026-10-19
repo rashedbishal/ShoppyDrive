@@ -16,6 +16,7 @@ class ProductMedia extends Model
 
     protected $fillable = [
         'product_id',
+        'variant_id',
         'path',
         'type',
         'alt',
@@ -33,5 +34,10 @@ class ProductMedia extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'variant_id');
     }
 }
