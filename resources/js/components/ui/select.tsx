@@ -1,4 +1,4 @@
-import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from "@headlessui/react";
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions, Portal } from "@headlessui/react";
 import { Check, ChevronDown } from "lucide-react";
 import {
     Children,
@@ -129,6 +129,33 @@ function CloseOnScroll({
 }
 
 /**
+ * While the list is open inside a (Radix) dialog, make Escape close only the list,
+ * not the whole dialog. Radix dismisses the dialog from a capture-phase listener on
+ * `document`, which sees the key before Headless UI does — so this window capture
+ * listener runs first, stops the event, and closes the list itself. (Merely
+ * preventing default isn't enough: Headless UI skips default-prevented events.)
+ */
+function CloseOnEscapeInsideDialog({ onClose }: { onClose: () => void }): null {
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent): void => {
+            if (event.key !== "Escape") {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            onClose();
+        };
+
+        window.addEventListener("keydown", handleKeyDown, { capture: true });
+
+        return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
+    }, [onClose]);
+
+    return null;
+}
+
+/**
  * Themed dropdown with the same API as a native `<select>`: pass `options`
  * or `<option>` children, and read `event.target.value` in `onChange`.
  *
@@ -182,9 +209,14 @@ function Select({
     const selectedOption = itemOptions.find((option) => option.value === currentValue);
     const placeholderLabel: ReactNode = placeholder ?? promptOption?.label ?? itemOptions[0]?.label;
 
-    // Inside a (Radix) modal dialog the page outside it is inert, so the list must
-    // render in place there; everywhere else it's portaled so cards can't clip it.
+    // Headless UI always portals an anchored list (its `portal` prop is ignored when
+    // `anchor` is set) — to the end of <body> by default, so cards can't clip it.
+    // Inside a (Radix) modal dialog that would put it behind the dialog and in the
+    // inert page outside it, so there the portal is retargeted to a wrapper around
+    // the button, keeping the list inside the dialog. The wrapper always holds the
+    // button, so Headless UI never removes it as an emptied portal root on close.
     const [isInsideDialog, setIsInsideDialog] = useState(false);
+    const dialogPortalTargetRef = useRef<HTMLDivElement | null>(null);
     const buttonRef = useRef<HTMLButtonElement | null>(null);
     const attachButton = useCallback((element: HTMLButtonElement | null): void => {
         buttonRef.current = element;
@@ -193,8 +225,23 @@ function Select({
             setIsInsideDialog(Boolean(element.closest('[role="dialog"]')));
         }
     }, []);
-    // Clicking the button while open is how Headless UI's Listbox toggles itself closed.
-    const closeList = useCallback((): void => buttonRef.current?.click(), []);
+    // Headless UI has no API to close a Listbox, and a programmatic button click is
+    // ignored after a mouse open (it toggles on pointerdown), so remount it instead.
+    // Its value lives in our props/state, so remounting loses nothing but the open list.
+    const [listboxKey, setListboxKey] = useState(0);
+    const shouldFocusButtonRef = useRef(false);
+    const closeList = useCallback((): void => {
+        shouldFocusButtonRef.current = true;
+        setListboxKey((key) => key + 1);
+    }, []);
+
+    // Return focus to the (remounted) button, as Headless UI does when it closes the list.
+    useEffect(() => {
+        if (shouldFocusButtonRef.current) {
+            shouldFocusButtonRef.current = false;
+            buttonRef.current?.focus({ preventScroll: true });
+        }
+    }, [listboxKey]);
 
     const handleChange = (nextValue: string): void => {
         if (!isControlled) {
@@ -220,10 +267,9 @@ function Select({
                     {required ? <span className="ml-1 text-destructive">*</span> : null}
                 </Label>
             ) : null}
-            <Listbox value={currentValue} onChange={handleChange} name={name} disabled={disabled}>
-                {({ open }) => (
-                <>
-                {open ? <CloseOnScroll buttonRef={buttonRef} onClose={closeList} /> : null}
+            <Listbox key={listboxKey} value={currentValue} onChange={handleChange} name={name} disabled={disabled}>
+                {({ open }) => {
+                const listboxButton = (
                 <ListboxButton
                     ref={attachButton}
                     id={selectId}
@@ -243,10 +289,11 @@ function Select({
                     </span>
                     <ChevronDown className="size-4 shrink-0 text-text-muted transition-transform duration-200 group-data-open:rotate-180 group-data-open:text-primary" />
                 </ListboxButton>
+                );
 
+                const listboxOptions = (
                 <ListboxOptions
                     anchor={{ to: "bottom start", gap: 6, padding: 12 }}
-                    portal={!isInsideDialog}
                     modal={false}
                     transition
                     // z-20: above page content but below every sticky header (landing z-30,
@@ -265,8 +312,26 @@ function Select({
                         </ListboxOption>
                     ))}
                 </ListboxOptions>
-                </>
+                );
+
+                return (
+                <>
+                {open ? <CloseOnScroll buttonRef={buttonRef} onClose={closeList} /> : null}
+                {open && isInsideDialog ? <CloseOnEscapeInsideDialog onClose={closeList} /> : null}
+                {isInsideDialog ? (
+                    <div ref={dialogPortalTargetRef}>
+                        {listboxButton}
+                        <Portal.Group target={dialogPortalTargetRef}>{listboxOptions}</Portal.Group>
+                    </div>
+                ) : (
+                    <>
+                        {listboxButton}
+                        {listboxOptions}
+                    </>
                 )}
+                </>
+                );
+                }}
             </Listbox>
             {hint ? (
                 <p id={hintId} className="text-xs text-text-secondary">

@@ -60,8 +60,9 @@ class HomeController extends Controller
                 ->with($productEagerLoads)
                 ->withCount(['reviews as reviews_count'])
                 ->withAvg('reviews as average_rating', 'rating')
-                ->orderByRaw('FIELD(id, '.implode(',', $newArrivalIds).')')
-                ->get();
+                ->get()
+                ->sortBy(fn (Product $product) => array_search($product->id, $newArrivalIds))
+                ->values();
         } else {
             $newArrivals = collect();
         }
@@ -76,8 +77,9 @@ class HomeController extends Controller
                 ->with($productEagerLoads)
                 ->withCount(['reviews as reviews_count'])
                 ->withAvg('reviews as average_rating', 'rating')
-                ->orderByRaw('FIELD(id, '.implode(',', $bestSellerIds).')')
-                ->get();
+                ->get()
+                ->sortBy(fn (Product $product) => array_search($product->id, $bestSellerIds))
+                ->values();
         } else {
             $bestSellers = collect();
         }
@@ -88,8 +90,9 @@ class HomeController extends Controller
         if (! empty($brandIds)) {
             $brands = Brand::active()
                 ->whereIn('id', $brandIds)
-                ->orderByRaw('FIELD(id, '.implode(',', $brandIds).')')
-                ->get(['id', 'name', 'slug', 'logo', 'description']);
+                ->get(['id', 'name', 'slug', 'logo', 'description'])
+                ->sortBy(fn (Brand $brand) => array_search($brand->id, $brandIds))
+                ->values();
         } else {
             $brands = collect();
         }
