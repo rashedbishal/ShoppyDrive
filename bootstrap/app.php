@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureCheckoutAccess;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RedirectAdminToDashboard;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => EnsureAdmin::class,
             'redirect-customer-from-admin' => RedirectCustomerFromAdmin::class,
+            'checkout.access' => EnsureCheckoutAccess::class,
         ]);
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 

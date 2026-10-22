@@ -27,6 +27,14 @@ function buyNowOrderPayload(array $overrides = []): array
     ], $overrides);
 }
 
+test('a guest clicking buy now is redirected to login instead of the checkout page', function () {
+    $product = Product::factory()->create(['price' => 500]);
+
+    $response = $this->get(route('checkout.index', ['buy_now_product' => $product->id, 'buy_now_qty' => 1]));
+
+    $response->assertRedirect(route('login'));
+});
+
 test('checkout page resolves a buy-now item from the query string without creating a cart', function () {
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 500]);

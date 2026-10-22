@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Http\Middleware\EnsureCheckoutAccess;
 use Illuminate\Foundation\Http\FormRequest;
 
 class PlaceOrderRequest extends FormRequest
@@ -16,12 +17,18 @@ class PlaceOrderRequest extends FormRequest
     public function rules(): array
     {
         $usingSaved = $this->filled('address_id');
+        $isGuest = $this->user() === null;
+
+        // Only a guest checking out while "Allow Guest Checkout" is on
+        // skips the email requirement — phone stays mandatory either way,
+        // and a guest can never have a saved address to look up by id.
+        $guestCheckoutRelaxed = $isGuest && EnsureCheckoutAccess::guestCheckoutEnabled();
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => [$guestCheckoutRelaxed ? 'nullable' : 'required', 'email', 'max:255'],
             'phone' => ['required', 'string', 'max:20'],
-            'address_id' => ['nullable', 'integer'],
+            'address_id' => $isGuest ? ['prohibited'] : ['nullable', 'integer'],
             'address_line1' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:255'],
             'address_line2' => ['nullable', 'string', 'max:255'],
             'city' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:255'],

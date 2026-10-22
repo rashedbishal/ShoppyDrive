@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     Check,
     Lock,
@@ -12,6 +12,7 @@ import {
     Tag,
     X,
     CreditCard,
+    LogIn,
 } from 'lucide-react';
 
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
@@ -133,6 +134,11 @@ export default function Checkout({
 }: CheckoutProps): React.JSX.Element {
     const { auth, flash, settings } = usePage<SharedPageProps>().props;
     const { items: cartItems, getSubtotal, getDiscount } = useCartStore();
+
+    // Reaching this page at all as a guest already means "Allow Guest
+    // Checkout" is on (the server redirects to login otherwise) — email
+    // becomes optional for them, phone stays required either way.
+    const isGuest = !auth.user;
 
     // Buy Now bypasses the real cart entirely — checking out a single item
     // this way must never touch what's actually in the customer's cart.
@@ -323,6 +329,22 @@ export default function Checkout({
                 </div>
             )}
 
+            {isGuest && (
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-4 py-3 text-sm">
+                    <span className="text-[var(--color-text-secondary)]">
+                        Checking out as a guest — only your phone number is
+                        required.
+                    </span>
+                    <Link
+                        href={route('login')}
+                        className="flex items-center gap-1.5 font-semibold text-[var(--color-primary)] hover:underline"
+                    >
+                        <LogIn size={14} />
+                        Log in for faster checkout
+                    </Link>
+                </div>
+            )}
+
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
                     {/* ── LEFT: Info + Address + Payment ─────────────────── */}
@@ -355,7 +377,15 @@ export default function Checkout({
                                         )}
                                     </div>
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="email">Email *</Label>
+                                        <Label htmlFor="email">
+                                            Email {isGuest ? '' : '*'}
+                                            {isGuest && (
+                                                <span className="font-normal text-[var(--color-text-muted)]">
+                                                    {' '}
+                                                    (optional)
+                                                </span>
+                                            )}
+                                        </Label>
                                         <Input
                                             id="email"
                                             type="email"
@@ -368,7 +398,7 @@ export default function Checkout({
                                             }
                                             placeholder="example@mail.com"
                                             className="h-11 rounded-xl"
-                                            required
+                                            required={!isGuest}
                                         />
                                         {form.errors.email && (
                                             <p className="text-xs text-red-500">

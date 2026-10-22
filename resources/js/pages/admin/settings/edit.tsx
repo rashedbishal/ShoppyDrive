@@ -6,6 +6,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
+import { Switch } from '@/components/ui/switch';
 
 type Props = {
     settings: Record<string, string | Record<string, string> | null>;
@@ -21,6 +22,7 @@ export default function SettingsEdit({ settings }: Props) {
         _method: 'PUT',
         site_name: (settings.site_name as string) ?? '',
         currency_symbol: (settings.currency_symbol as string) ?? '৳',
+        guest_checkout_enabled: Boolean(settings.guest_checkout_enabled),
         logo:
             (settings.logo as string | null) ?? (null as File | string | null),
         social_links: {
@@ -109,6 +111,20 @@ export default function SettingsEdit({ settings }: Props) {
                                         )
                                     }
                                     placeholder="৳"
+                                />
+                            </SettingsField>
+                            <SettingsField
+                                label="Allow Guest Checkout"
+                                hint="When on, customers can place an order without creating an account or logging in. Phone number stays required; email becomes optional for guests. They can still log in instead if they prefer."
+                            >
+                                <Switch
+                                    checked={data.guest_checkout_enabled}
+                                    onCheckedChange={(checked) =>
+                                        setData(
+                                            'guest_checkout_enabled',
+                                            checked,
+                                        )
+                                    }
                                 />
                             </SettingsField>
                         </CardContent>

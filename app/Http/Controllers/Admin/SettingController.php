@@ -67,6 +67,7 @@ class SettingController extends Controller
             'contact_phone' => ['nullable', 'string', 'max:50'],
             'contact_address' => ['nullable', 'string', 'max:500'],
             'currency_symbol' => ['nullable', 'string', 'max:10'],
+            'guest_checkout_enabled' => ['nullable', 'boolean'],
             'logo' => $request->hasFile('logo') ? ['image', 'max:2048'] : ['nullable'],
             'social_links' => ['nullable', 'array'],
             'social_links.facebook' => ['nullable', 'string', 'max:500'],
@@ -137,6 +138,17 @@ class SettingController extends Controller
             Setting::updateOrCreate(['key' => 'logo'], ['value' => '/storage/'.$path, 'group' => 'general']);
         }
 
+        // Handled separately (not via the generic loop below): this request
+        // is sent as multipart/form-data (because of the logo upload above),
+        // which stringifies booleans — $request->input() would store the
+        // literal string "1"/"0" instead of a real boolean.
+        if ($request->has('guest_checkout_enabled')) {
+            Setting::updateOrCreate(
+                ['key' => 'guest_checkout_enabled'],
+                ['value' => $request->boolean('guest_checkout_enabled'), 'group' => 'general'],
+            );
+        }
+
         $fields = [
             'site_name', 'contact_email', 'contact_phone', 'contact_address', 'currency_symbol',
             'social_links', 'google_analytics_id', 'meta_pixel_id',
@@ -202,7 +214,7 @@ class SettingController extends Controller
     private function getGroup(string $key): string
     {
         return match (true) {
-            in_array($key, ['site_name', 'logo', 'currency_symbol']) => 'general',
+            in_array($key, ['site_name', 'logo', 'currency_symbol', 'guest_checkout_enabled']) => 'general',
             in_array($key, ['contact_email', 'contact_phone', 'contact_address']) => 'contact',
             in_array($key, ['social_links']) => 'social',
             in_array($key, ['whatsapp_number', 'messenger_link']) => 'chat_widgets',

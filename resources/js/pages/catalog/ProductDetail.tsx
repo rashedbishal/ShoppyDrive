@@ -256,7 +256,11 @@ export default function ProductDetail({
             params.buy_now_variant = selectedVariant.id;
         }
 
-        router.visit(route('checkout.index', params));
+        // A real browser navigation (not an Inertia visit) so the guest
+        // case — checkout redirecting to login — is a plain 302 the browser
+        // follows natively, instead of depending on Inertia's XHR client to
+        // detect and follow a redirect to a page outside the current visit.
+        window.location.href = route('checkout.index', params);
     };
 
     const shareProduct = (platform: 'facebook' | 'twitter' | 'copy') => {
