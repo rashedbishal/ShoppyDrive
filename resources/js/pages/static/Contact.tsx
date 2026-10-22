@@ -1,7 +1,8 @@
 import { Head, useForm } from '@inertiajs/react';
 import { PageHero } from '@/components/shared/PageHero';
-import { ArrowRight, Clock, Facebook, Instagram, Mail, MapPin, MessageSquare, Phone, Send, Twitter } from 'lucide-react';
+import { ArrowRight, Clock, Facebook, Instagram, Mail, MapPin, MessageSquare, Phone, Send, Twitter, Youtube } from 'lucide-react';
 import InputError from '@/components/input-error';
+import { TikTokLogo, XLogo } from '@/components/icons/brand-icons';
 
 type ContactContentProps = {
     hero_eyebrow: string;
@@ -106,30 +107,6 @@ function ContactContent({ content }: Props): React.JSX.Element {
             <Head title="Contact Us | ShoppyDrive" />
 
             {/* Hero */}
-<<<<<<< HEAD
-            <section className="relative overflow-hidden bg-gradient-to-br from-[#0f0f18] to-[var(--color-surface)] py-16 lg:py-20">
-                <div className="pointer-events-none absolute top-0 -right-20 h-72 w-72 rounded-full bg-[var(--color-primary)] opacity-8 blur-3xl" />
-                <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-                    {content.hero_eyebrow && (
-                        <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/10 px-4 py-2 text-sm font-medium text-[var(--color-primary)]">
-                            <MessageSquare className="size-4" />
-                            {content.hero_eyebrow}
-                        </div>
-                    )}
-                    <h1 className="mt-4 text-2xl font-bold text-[var(--color-text-primary)] sm:text-4xl lg:text-5xl">
-                        {content.hero_title}{' '}
-                        {content.hero_title_highlight && (
-                            <span className="text-[var(--color-primary)]">
-                                {content.hero_title_highlight}
-                            </span>
-                        )}
-                    </h1>
-                    <p className="mx-auto mt-4 max-w-xl text-[var(--color-text-secondary)]">
-                        {content.hero_description}
-                    </p>
-                </div>
-            </section>
-=======
             <div className="pt-6 lg:pt-8">
                 <PageHero
                     badge={{ icon: MessageSquare, label: 'Get in touch' }}
@@ -142,7 +119,6 @@ function ContactContent({ content }: Props): React.JSX.Element {
                     description="Have a question, complaint, or just want to say hello? Our team is ready to assist you."
                 />
             </div>
->>>>>>> fc034e7 (ui improve: squeezed down the first sections)
 
             <section className="pt-8 pb-12 lg:pt-10 lg:pb-20">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
