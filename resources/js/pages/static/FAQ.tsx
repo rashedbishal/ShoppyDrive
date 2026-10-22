@@ -1,9 +1,10 @@
 import { Link } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ChevronDown, HelpCircle, MessageCircle, Search } from 'lucide-react';
+import { ChevronDown, HelpCircle, MessageCircle, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { PageMeta } from '@/components/seo/PageMeta';
+import { PageHero } from '@/components/shared/PageHero';
 
 interface FaqItem {
     question: string;
@@ -152,64 +153,53 @@ export default function FAQ({ page }: PageProps): React.JSX.Element {
             <PageMeta title={page.meta_title || page.title} description={page.meta_description} />
 
             {/* Hero */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-[#0f0f18] to-[var(--color-surface)] py-16 lg:py-24">
-                <div className="pointer-events-none absolute -left-40 top-0 h-96 w-96 rounded-full bg-[var(--color-primary)] opacity-[0.07] blur-3xl" />
-                <div className="pointer-events-none absolute -right-20 bottom-0 h-64 w-64 rounded-full bg-[var(--color-primary)] opacity-[0.04] blur-3xl" />
-
-                <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6">
-                    <Link
-                        href="/"
-                        className="mb-6 inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] transition hover:text-[var(--color-primary)]"
-                    >
-                        <ArrowLeft className="size-3.5" />
-                        Back to home
-                    </Link>
-
-                    <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/10 px-4 py-2 text-sm font-medium text-[var(--color-primary)]">
-                        <HelpCircle className="size-4" />
-                        Help Centre
-                    </div>
-
-                    <h1 className="mt-4 text-2xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-                        Frequently Asked{' '}
-                        <span className="text-[var(--color-primary)]">Questions</span>
-                    </h1>
-
-                    <p className="mx-auto mt-4 max-w-xl text-[var(--color-text-secondary)]">
-                        Everything you need to know about shopping, delivery, and returns.
-                        Can't find an answer?{' '}
-                        <Link href="/contact" className="text-[var(--color-primary)] hover:underline">
-                            Contact our team
-                        </Link>
-                        .
-                    </p>
-
-                    {/* Search */}
-                    <div className="mx-auto mt-8 max-w-lg">
+            <div className="pt-6 lg:pt-8">
+                <PageHero
+                    badge={{ icon: HelpCircle, label: 'Help Centre' }}
+                    eyebrow="Support"
+                    title={
+                        <>
+                            Frequently Asked{' '}
+                            <span className="text-[var(--color-primary)]">Questions</span>
+                        </>
+                    }
+                    description={
+                        <>
+                            Everything you need to know about shopping, delivery, and returns. Can't find an answer?{' '}
+                            <Link href="/contact" className="text-[var(--color-primary)] hover:underline">
+                                Contact our team
+                            </Link>
+                            .
+                        </>
+                    }
+                    chips={[{ icon: MessageCircle, label: `${totalQuestions} answered questions` }]}
+                    aside={
                         <div className="relative">
-                            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-white/30" />
+                            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
                             <input
                                 type="text"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 placeholder={`Search ${totalQuestions} questions…`}
-                                className="h-13 w-full rounded-2xl border border-white/10 bg-white/[0.07] pl-11 pr-4 text-sm text-white placeholder:text-white/30 backdrop-blur-sm transition focus:border-[var(--color-primary)]/40 focus:bg-white/10 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]/30"
+                                aria-label="Search questions"
+                                className="h-11 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] pl-11 pr-16 text-sm text-[var(--color-text-primary)] shadow-sm placeholder:text-[var(--color-text-muted)] transition focus:border-[var(--color-primary)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/15"
                             />
                             {query && (
                                 <button
+                                    type="button"
                                     onClick={() => setQuery('')}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-white/40 transition hover:text-white/70"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[var(--color-text-muted)] transition hover:text-[var(--color-text-primary)]"
                                 >
                                     Clear
                                 </button>
                             )}
                         </div>
-                    </div>
-                </div>
-            </section>
+                    }
+                />
+            </div>
 
             {/* Accordions */}
-            <section className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:py-16">
+            <section className="mx-auto max-w-3xl px-4 pt-8 pb-12 sm:px-6 lg:pb-16">
                 {filtered.length === 0 ? (
                     <div className="flex flex-col items-center gap-4 py-20 text-center">
                         <div className="flex size-16 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)]">

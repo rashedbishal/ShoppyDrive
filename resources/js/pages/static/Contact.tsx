@@ -1,16 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
-import {
-    Clock,
-    Facebook,
-    Instagram,
-    Mail,
-    MapPin,
-    MessageSquare,
-    Phone,
-    Send,
-    Youtube,
-} from 'lucide-react';
-import { TikTokLogo, XLogo } from '@/components/icons/brand-icons';
+import { PageHero } from '@/components/shared/PageHero';
+import { ArrowRight, Clock, Facebook, Instagram, Mail, MapPin, MessageSquare, Phone, Send, Twitter } from 'lucide-react';
 import InputError from '@/components/input-error';
 
 type ContactContentProps = {
@@ -116,6 +106,7 @@ function ContactContent({ content }: Props): React.JSX.Element {
             <Head title="Contact Us | ShoppyDrive" />
 
             {/* Hero */}
+<<<<<<< HEAD
             <section className="relative overflow-hidden bg-gradient-to-br from-[#0f0f18] to-[var(--color-surface)] py-16 lg:py-20">
                 <div className="pointer-events-none absolute top-0 -right-20 h-72 w-72 rounded-full bg-[var(--color-primary)] opacity-8 blur-3xl" />
                 <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
@@ -138,8 +129,22 @@ function ContactContent({ content }: Props): React.JSX.Element {
                     </p>
                 </div>
             </section>
+=======
+            <div className="pt-6 lg:pt-8">
+                <PageHero
+                    badge={{ icon: MessageSquare, label: 'Get in touch' }}
+                    eyebrow="Contact"
+                    title={
+                        <>
+                            We're here to <span className="text-[var(--color-primary)]">help</span>
+                        </>
+                    }
+                    description="Have a question, complaint, or just want to say hello? Our team is ready to assist you."
+                />
+            </div>
+>>>>>>> fc034e7 (ui improve: squeezed down the first sections)
 
-            <section className="py-12 lg:py-20">
+            <section className="pt-8 pb-12 lg:pt-10 lg:pb-20">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="grid gap-10 lg:grid-cols-[1fr_1.5fr] lg:items-start">
                         {/* Contact info */}

@@ -8,7 +8,7 @@ import {
     X,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
+import { PageHero } from '@/components/shared/PageHero';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -122,96 +122,57 @@ function BrandListingContent({
         <>
             <Head title="All Brands | ShoppyDrive" />
 
-            <div className="space-y-8 py-6 lg:space-y-10 lg:py-10">
-                {/* Hero */}
-                <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="relative isolate overflow-hidden rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-8 shadow-[var(--shadow-card)] sm:px-8 sm:py-10 lg:px-12">
-                        <div className="pointer-events-none absolute -top-24 -right-16 -z-10 size-72 rounded-full bg-[var(--color-primary)] opacity-10 blur-3xl" />
-                        <div className="pointer-events-none absolute -bottom-28 left-1/4 -z-10 size-72 rounded-full bg-[var(--color-accent)] opacity-15 blur-3xl" />
-                        <div className="pointer-events-none absolute inset-0 -z-10 [background-image:linear-gradient(var(--color-border)_1px,transparent_1px),linear-gradient(90deg,var(--color-border)_1px,transparent_1px)] [mask-image:linear-gradient(to_bottom,black,transparent)] [background-size:32px_32px] opacity-40" />
-
-                        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-                            <div className="max-w-2xl space-y-4">
-                                <Badge variant="amber" className="w-fit">
-                                    <Award className="size-3.5" />
-                                    Brand directory
-                                </Badge>
-                                <div className="space-y-2">
-                                    <h1 className="font-display text-3xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-4xl lg:text-5xl">
-                                        Our Brands
-                                    </h1>
-                                    <p className="text-sm leading-7 text-[var(--color-text-secondary)] sm:text-base">
-                                        Discover top brands across fashion,
-                                        electronics, beauty, home and more — all
-                                        on ShoppyDrive.
-                                    </p>
-                                </div>
-                                <div className="flex flex-wrap gap-3">
-                                    {[
-                                        {
-                                            value: brands.length,
-                                            label:
-                                                brands.length === 1
-                                                    ? 'brand'
-                                                    : 'brands',
-                                        },
-                                        {
-                                            value: totalProducts,
-                                            label:
-                                                totalProducts === 1
-                                                    ? 'product'
-                                                    : 'products',
-                                        },
-                                    ].map((stat) => (
-                                        <div
-                                            key={stat.label}
-                                            className="inline-flex items-baseline gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-4 py-2"
-                                        >
-                                            <span className="font-display text-lg font-bold text-[var(--color-text-primary)]">
-                                                {stat.value.toLocaleString()}
-                                            </span>
-                                            <span className="text-sm text-[var(--color-text-secondary)]">
-                                                {stat.label}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="w-full space-y-2 lg:max-w-sm">
-                                <div className="relative">
-                                    <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
-                                    <Input
-                                        type="search"
-                                        placeholder="Search brands..."
-                                        value={search}
-                                        onChange={(event) =>
-                                            setSearch(event.target.value)
-                                        }
-                                        aria-label="Search brands"
-                                        className="h-12 rounded-full border-[var(--color-border)] bg-[var(--color-surface)] pr-11 pl-11 shadow-sm"
-                                    />
-                                    {search ? (
-                                        <button
-                                            type="button"
-                                            onClick={() => setSearch('')}
-                                            aria-label="Clear search"
-                                            className="absolute top-1/2 right-3 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)]"
-                                        >
-                                            <X className="size-4" />
-                                        </button>
-                                    ) : null}
-                                </div>
+            <div className="space-y-6 py-6 lg:py-8">
+                <PageHero
+                    badge={{ icon: Award, label: 'Brand directory' }}
+                    eyebrow="ShoppyDrive"
+                    title="Our Brands"
+                    description="Discover top brands across fashion, electronics, beauty, home and more — all on ShoppyDrive."
+                    chips={[
+                        {
+                            icon: Award,
+                            label: `${brands.length.toLocaleString()} ${brands.length === 1 ? 'brand' : 'brands'}`,
+                        },
+                        {
+                            icon: Package,
+                            label: `${totalProducts.toLocaleString()} ${totalProducts === 1 ? 'product' : 'products'}`,
+                            iconClassName: 'text-[var(--color-success)]',
+                        },
+                    ]}
+                    aside={
+                        <div className="space-y-2">
+                            <div className="relative">
+                                <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
+                                <Input
+                                    type="search"
+                                    placeholder="Search brands..."
+                                    value={search}
+                                    onChange={(event) =>
+                                        setSearch(event.target.value)
+                                    }
+                                    aria-label="Search brands"
+                                    className="h-11 rounded-full border-[var(--color-border)] bg-[var(--color-surface)] pr-11 pl-11 shadow-sm"
+                                />
                                 {search ? (
-                                    <p className="px-4 text-xs text-[var(--color-text-muted)]">
-                                        Showing {filtered.length} of{' '}
-                                        {brands.length} brands
-                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearch('')}
+                                        aria-label="Clear search"
+                                        className="absolute top-1/2 right-3 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)]"
+                                    >
+                                        <X className="size-4" />
+                                    </button>
                                 ) : null}
                             </div>
+                            {search ? (
+                                <p className="px-4 text-xs text-[var(--color-text-muted)]">
+                                    Showing {filtered.length} of {brands.length}{' '}
+                                    brands
+                                </p>
+                            ) : null}
                         </div>
-                    </div>
-                </section>
+                    }
+                />
 
                 {/* Brand grid */}
                 <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

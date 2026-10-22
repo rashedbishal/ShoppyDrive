@@ -26,7 +26,7 @@ import {
     ProductCard,
     ProductCardSkeleton,
 } from '@/components/shared/ProductCard';
-import { Badge } from '@/components/ui/badge';
+import { PageHero } from '@/components/shared/PageHero';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -967,41 +967,30 @@ function ProductListingPage({
             <Head title={title} />
 
             <div className="space-y-6 py-6 lg:py-8">
-                <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 gap-4 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6 lg:px-6 lg:py-5">
-                        <div className="space-y-3">
-                            <Badge variant="amber" className="w-fit">
-                                <SlidersHorizontal className="size-3.5" />
-                                Catalog filters
-                            </Badge>
-                            <div className="space-y-1.5">
-                                <p className="text-xs font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
-                                    {filters.banner_id
-                                        ? 'Collection'
-                                        : category
-                                          ? 'Category browse'
-                                          : 'All products'}
-                                </p>
-                                <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-3xl">
-                                    {title}
-                                </h1>
-                                <p className="line-clamp-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
-                                    {description}
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] sm:text-sm">
-                                    <ShieldCheck className="size-4 text-[var(--color-success)]" />
-                                    Secure checkout ready
-                                </div>
-                                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] sm:text-sm">
-                                    <Truck className="size-4 text-[var(--color-primary)]" />
-                                    Nationwide delivery
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2.5 self-center sm:gap-3">
+                <PageHero
+                    badge={{
+                        icon: SlidersHorizontal,
+                        label: 'Catalog filters',
+                    }}
+                    eyebrow={
+                        filters.banner_id
+                            ? 'Collection'
+                            : category
+                              ? 'Category browse'
+                              : 'All products'
+                    }
+                    title={title}
+                    description={description}
+                    chips={[
+                        {
+                            icon: ShieldCheck,
+                            label: 'Secure checkout ready',
+                            iconClassName: 'text-[var(--color-success)]',
+                        },
+                        { icon: Truck, label: 'Nationwide delivery' },
+                    ]}
+                    aside={
+                        <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
                             {[
                                 {
                                     label: 'Result count',
@@ -1066,8 +1055,8 @@ function ProductListingPage({
                                 ),
                             )}
                         </div>
-                    </div>
-                </section>
+                    }
+                />
 
                 <section
                     className={cn(

@@ -1,8 +1,9 @@
 import { Link } from '@inertiajs/react';
-import { ArrowLeft, Calendar, FileText, MessageCircle } from 'lucide-react';
+import { Calendar, FileText, MessageCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { PageMeta } from '@/components/seo/PageMeta';
+import { PageHero } from '@/components/shared/PageHero';
 
 interface Section {
     id: string;
@@ -113,40 +114,22 @@ export default function Page({ page }: PageProps): React.JSX.Element {
             <PageMeta title={page.meta_title || page.title} description={page.meta_description} />
 
             {/* Hero */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-[#0f0f18] to-[var(--color-surface)] py-16 lg:py-24">
-                <div className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-[var(--color-primary)] opacity-[0.07] blur-3xl" />
-                <div className="pointer-events-none absolute bottom-0 right-0 h-72 w-72 rounded-full bg-[var(--color-primary)] opacity-[0.04] blur-3xl" />
-
-                <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <Link
-                        href="/"
-                        className="mb-6 inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] transition hover:text-[var(--color-primary)]"
-                    >
-                        <ArrowLeft className="size-3.5" />
-                        Back to home
-                    </Link>
-
-                    <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/10 px-4 py-2 text-sm font-medium text-[var(--color-primary)]">
-                        <FileText className="size-4" />
-                        Legal
-                    </div>
-
-                    <h1 className="mt-4 max-w-2xl text-2xl font-bold tracking-tight text-white sm:text-4xl lg:text-6xl">
-                        {page.title}
-                    </h1>
-
-                    <div className="mt-5 flex items-center gap-2 text-sm text-white/40">
-                        <Calendar className="size-4" />
-                        <span>
-                            Last updated:{' '}
-                            <span className="text-white/60">{formattedDate}</span>
-                        </span>
-                    </div>
-                </div>
-            </section>
+            <div className="pt-6 lg:pt-8">
+                <PageHero
+                    badge={{ icon: FileText, label: 'Legal' }}
+                    eyebrow="ShoppyDrive policies"
+                    title={page.title}
+                    chips={[
+                        {
+                            icon: Calendar,
+                            label: `Last updated: ${formattedDate}`,
+                        },
+                    ]}
+                />
+            </div>
 
             {/* Body */}
-            <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+            <div className="mx-auto max-w-7xl px-4 pt-8 pb-14 sm:px-6 lg:px-8 lg:pt-10 lg:pb-20">
                 <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-14 xl:grid-cols-[300px_1fr]">
 
                     {/* Sticky sidebar */}

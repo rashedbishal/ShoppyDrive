@@ -1,8 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowRight, Clock3, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { PageHero } from '@/components/shared/PageHero';
 import { ProductCard } from '@/components/shared/ProductCard';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -68,9 +68,9 @@ function CountdownTimer({ endsAt }: { endsAt: string }): React.JSX.Element {
             {segments.map((seg) => (
                 <div
                     key={seg.label}
-                    className="flex min-w-[4rem] flex-col items-center rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-center backdrop-blur-md"
+                    className="flex min-w-[3.5rem] flex-col items-center rounded-xl bg-[var(--color-secondary)] px-2.5 py-1.5 text-center shadow-sm"
                 >
-                    <span className="text-2xl font-bold text-white">{String(seg.value).padStart(2, '0')}</span>
+                    <span className="text-xl font-bold text-white">{String(seg.value).padStart(2, '0')}</span>
                     <span className="text-[10px] uppercase tracking-[0.2em] text-white/70">{seg.label}</span>
                 </div>
             ))}
@@ -87,76 +87,67 @@ function FlashSalesContent({ activeSale, upcomingSales, featuredProducts }: Flas
         <>
             <Head title="Flash Sale | ShoppyDrive" />
 
-            <div className="space-y-16 py-8 lg:py-12">
+            <div className="space-y-10 py-6 lg:py-8">
                 {activeSale ? (
-                    <section className="bg-[var(--color-secondary)] py-12 text-white lg:py-16">
-                        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                            <div className="space-y-6">
-                                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                                    <div className="space-y-3">
-                                        <Badge className="w-fit bg-[var(--color-accent)] text-[var(--color-secondary)]">
-                                            <Clock3 className="size-3.5" />
-                                            Live flash sale
-                                        </Badge>
-                                        <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-                                            {activeSale.name}
-                                        </h1>
-                                        <p className="max-w-xl text-sm leading-7 text-white/75 sm:text-base">
-                                            Limited-time prices on top-rated products. Grab yours before they sell out.
-                                        </p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <p className="text-xs uppercase tracking-[0.2em] text-white/60">Ends in</p>
-                                        <CountdownTimer endsAt={activeSale.ends_at} />
-                                    </div>
-                                </div>
-
-                                {activeSale.items.length > 0 ? (
-                                    <div className={PRODUCT_GRID_CLASS}>
-                                        {activeSale.items.map((item, index) => (
-                                            <ProductCard
-                                                key={item.id}
-                                                index={index}
-                                                product={{ ...item.product, in_flash_sale: true, flash_sale_price: item.sale_price }}
-                                                saleProgress={getSoldPercent(item)}
-                                                saleProgressLabel={`${item.sold_count} sold`}
-                                            />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <EmptyState
-                                        icon={Zap}
-                                        title="No items in this sale"
-                                        description="Flash sale items will appear here once added."
-                                    />
-                                )}
-                            </div>
-                        </div>
-                    </section>
-                ) : (
-                    <section className="bg-[var(--color-secondary)] py-16 text-white lg:py-24">
-                        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                            <div className="flex flex-col items-center gap-6 text-center">
-                                <div className="flex size-20 items-center justify-center rounded-full bg-white/10">
-                                    <Zap className="size-10 text-[var(--color-accent)]" />
-                                </div>
-                                <div className="space-y-2">
-                                    <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-                                        No active flash sale right now
-                                    </h1>
-                                    <p className="max-w-xl text-sm leading-7 text-white/75 sm:text-base">
-                                        Stay tuned — our next flash sale will be announced soon. Browse our full catalog in the meantime.
+                    <>
+                        <PageHero
+                            badge={{ icon: Clock3, label: 'Live flash sale' }}
+                            eyebrow="Flash sale"
+                            title={activeSale.name}
+                            description="Limited-time prices on top-rated products. Grab yours before they sell out."
+                            chips={[
+                                {
+                                    icon: Zap,
+                                    label: `${activeSale.items.length} ${activeSale.items.length === 1 ? 'deal' : 'deals'} live`,
+                                    iconClassName: 'text-[var(--color-accent)]',
+                                },
+                            ]}
+                            aside={
+                                <div className="space-y-2 lg:justify-self-end">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                                        Ends in
                                     </p>
+                                    <CountdownTimer endsAt={activeSale.ends_at} />
                                 </div>
-                                <Button asChild className="bg-white text-[var(--color-secondary)] hover:bg-white/90">
-                                    <Link href="/products">
-                                        Browse all products
-                                        <ArrowRight className="size-4" />
-                                    </Link>
-                                </Button>
-                            </div>
-                        </div>
-                    </section>
+                            }
+                        />
+
+                        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                            {activeSale.items.length > 0 ? (
+                                <div className={PRODUCT_GRID_CLASS}>
+                                    {activeSale.items.map((item, index) => (
+                                        <ProductCard
+                                            key={item.id}
+                                            index={index}
+                                            product={{ ...item.product, in_flash_sale: true, flash_sale_price: item.sale_price }}
+                                            saleProgress={getSoldPercent(item)}
+                                            saleProgressLabel={`${item.sold_count} sold`}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <EmptyState
+                                    icon={Zap}
+                                    title="No items in this sale"
+                                    description="Flash sale items will appear here once added."
+                                />
+                            )}
+                        </section>
+                    </>
+                ) : (
+                    <PageHero
+                        badge={{ icon: Zap, label: 'Flash sales' }}
+                        eyebrow="Flash sale"
+                        title="No active flash sale right now"
+                        description="Stay tuned — our next flash sale will be announced soon. Browse our full catalog in the meantime."
+                    >
+                        <Button asChild className="h-10">
+                            <Link href="/products">
+                                Browse all products
+                                <ArrowRight className="size-4" />
+                            </Link>
+                        </Button>
+                    </PageHero>
                 )}
 
                 {upcomingSales.length > 0 ? (

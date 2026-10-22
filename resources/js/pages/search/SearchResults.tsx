@@ -1,8 +1,9 @@
 import { Head, router } from '@inertiajs/react';
-import { Filter, LayoutGrid, List, Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react';
+import { Filter, LayoutGrid, List, Package, Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { route } from 'ziggy-js';
 
+import { PageHero } from '@/components/shared/PageHero';
 import { ProductCard, ProductCardSkeleton } from '@/components/shared/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -373,21 +374,18 @@ export default function SearchResults({
         <>
             <Head title={query ? `Search: "${query}"` : 'Search'} />
 
-            <div className="space-y-8 py-8 lg:py-12">
-                {/* Header */}
-                <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm lg:p-8">
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
-                            Search results
-                        </p>
-                        <h1 className="font-display mt-1 text-3xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-4xl">
-                            {query ? `"${query}"` : 'All Products'}
-                        </h1>
-                        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                            {products.total} {products.total === 1 ? 'product' : 'products'} found
-                        </p>
-                    </div>
-                </section>
+            <div className="space-y-6 py-6 lg:py-8">
+                <PageHero
+                    badge={{ icon: SearchIcon, label: 'Search' }}
+                    eyebrow="Search results"
+                    title={query ? `"${query}"` : 'All Products'}
+                    chips={[
+                        {
+                            icon: Package,
+                            label: `${products.total.toLocaleString()} ${products.total === 1 ? 'product' : 'products'} found`,
+                        },
+                    ]}
+                />
 
                 {/* Sidebar + Grid */}
                 <section className={cn(SIDEBAR_LAYOUT_CLASS, 'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8')}>
