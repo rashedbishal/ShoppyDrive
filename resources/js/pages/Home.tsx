@@ -81,8 +81,8 @@ type BrandCard = {
     id: number;
     name: string;
     slug: string;
+    logo: string | null;
     accent: string;
-    description: string;
 };
 
 type FlashSaleItem = {
@@ -783,6 +783,9 @@ type BrandTileProps = {
 };
 
 function BrandTile({ brand }: BrandTileProps): React.JSX.Element {
+    const [hasLogoError, setHasLogoError] = useState(false);
+    const showLogo = Boolean(brand.logo) && !hasLogoError;
+
     return (
         <Link
             href={`/brands?brand=${brand.slug}`}
@@ -790,19 +793,26 @@ function BrandTile({ brand }: BrandTileProps): React.JSX.Element {
         >
             <div
                 className={cn(
-                    'flex size-14 items-center justify-center rounded-2xl text-lg font-bold transition group-hover:scale-105',
+                    'flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl text-lg font-bold transition group-hover:scale-105',
                     brand.accent,
                 )}
-                aria-hidden="true"
             >
-                {getInitials(brand.name)}
+                {showLogo ? (
+                    <img
+                        src={brand.logo ?? ''}
+                        alt={`${brand.name} logo`}
+                        loading="lazy"
+                        decoding="async"
+                        onError={() => setHasLogoError(true)}
+                        className="h-full w-full object-contain p-1.5"
+                    />
+                ) : (
+                    <span aria-hidden="true">{getInitials(brand.name)}</span>
+                )}
             </div>
             <div className="min-w-0">
                 <p className="truncate text-base font-semibold text-[var(--color-text-primary)]">
                     {brand.name}
-                </p>
-                <p className="truncate text-sm text-[var(--color-text-secondary)]">
-                    {brand.description}
                 </p>
             </div>
         </Link>
@@ -1024,8 +1034,8 @@ function Home(): React.JSX.Element {
         id: brand.id,
         name: brand.name,
         slug: brand.slug,
+        logo: brand.logo ?? null,
         accent: BRAND_ACCENTS[index % BRAND_ACCENTS.length],
-        description: brand.description ?? '',
     }));
 
     const flashSale = activeFlashSale
