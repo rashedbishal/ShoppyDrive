@@ -142,6 +142,15 @@ export function ProductVariantManager({
         useColor: boolean,
         useSize: boolean,
     ) => {
+        // Neither dimension enabled means no variants at all — without this,
+        // both sides would fall back to a single [null] placeholder below and
+        // produce one phantom "general" (null, null) row instead of none.
+        if (!useColor && !useSize) {
+            onVariantsChange([]);
+
+            return;
+        }
+
         const colorKeys: (number | null)[] = useColor ? nextColorIds : [null];
         const sizeKeys: (number | null)[] = useSize ? nextSizeIds : [null];
 
