@@ -176,6 +176,7 @@ export interface ProductVariant extends Timestamped {
     color_value_id?: Id | null;
     size_value_id?: Id | null;
     formatted_price?: string;
+    image?: string | null;
 }
 
 export interface Product extends Timestamped, SoftDeletable {
@@ -200,6 +201,7 @@ export interface Product extends Timestamped, SoftDeletable {
     is_digital: boolean;
     free_delivery: boolean;
     free_delivery_min_qty?: number | null;
+    cry_baby_enabled?: boolean;
     weight: number;
     meta_title?: string | null;
     meta_description?: string | null;

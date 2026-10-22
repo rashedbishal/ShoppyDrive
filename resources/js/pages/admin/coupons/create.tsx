@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
+import { Select } from '@/components/ui/select';
 
 export default function CouponCreate() {
     const { data, setData, post, processing, errors } = useForm({
@@ -87,8 +88,8 @@ export default function CouponCreate() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <Field label="Type *" error={errors.type}>
-                                    <select
-                                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                    <Select
+                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                         value={data.type}
                                         onChange={(e) =>
                                             setData(
@@ -105,7 +106,7 @@ export default function CouponCreate() {
                                         <option value="fixed">
                                             Fixed Amount (৳)
                                         </option>
-                                    </select>
+                                    </Select>
                                 </Field>
                                 <Field
                                     label={

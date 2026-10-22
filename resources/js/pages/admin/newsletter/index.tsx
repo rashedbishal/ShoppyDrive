@@ -2,6 +2,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Mail, Plus, Search, Trash2, Users } from 'lucide-react';
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 
 type Subscriber = {
     id: number;
@@ -116,18 +117,19 @@ export default function NewsletterIndex({ subscribers, filters, total_active }: 
                                 className="h-9 w-full rounded-lg border border-slate-200 pl-9 pr-3 text-sm focus:border-[#c8102e] focus:outline-none"
                             />
                         </div>
-                        <select
+                        <Select
                             value={status}
                             onChange={(e) => {
                                 setStatus(e.target.value);
                                 applyFilters({ status: e.target.value });
                             }}
-                            className="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 focus:border-[#c8102e] focus:outline-none"
+                            containerClassName="min-w-40"
+                            selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 focus:border-[#c8102e] focus:outline-none"
                         >
                             <option value="">All statuses</option>
                             <option value="active">Active</option>
                             <option value="inactive">Unsubscribed</option>
-                        </select>
+                        </Select>
                         <button
                             type="button"
                             onClick={() => applyFilters()}

@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
@@ -20,11 +21,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Truncate all content tables (preserves users, settings, orders)
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        Schema::disableForeignKeyConstraints();
         foreach (['flash_sale_items', 'flash_sales', 'product_media', 'products', 'sub_categories', 'categories', 'brands', 'hero_slides', 'promotional_banners'] as $table) {
-            DB::statement("TRUNCATE TABLE `{$table}`");
+            DB::table($table)->truncate();
         }
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        Schema::enableForeignKeyConstraints();
 
         User::firstOrCreate(
             ['email' => 'test@example.com'],

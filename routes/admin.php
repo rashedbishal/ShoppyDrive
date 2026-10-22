@@ -37,6 +37,7 @@ Route::middleware(['redirect-customer-from-admin'])->group(function (): void {
 Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
+    Route::patch('products/cry-baby', [ProductController::class, 'updateCryBabyForAll'])->name('products.cry-baby.update-all');
     Route::resource('products', ProductController::class);
     Route::get('attributes', [AttributeController::class, 'index'])->name('attributes.index');
     Route::resource('attribute-values', AttributeValueController::class)->only(['store', 'update', 'destroy']);

@@ -190,13 +190,13 @@ export function ProductCard({
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-4 mt-auto pt-4 border-t border-[var(--color-border)]">
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                                <span className="text-2xl font-bold text-[var(--color-primary)]">
+                        <div className="flex min-w-0 flex-col">
+                            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                <span className="text-xl font-bold whitespace-nowrap text-[var(--color-primary)] sm:text-2xl">
                                     {formatCurrency(currentPrice)}
                                 </span>
                                 {hasDiscount && (
-                                    <span className="text-sm text-[var(--color-text-muted)] line-through">
+                                    <span className="text-xs whitespace-nowrap text-[var(--color-text-muted)] line-through sm:text-sm">
                                         {formatCurrency(product.compare_price!)}
                                     </span>
                                 )}
@@ -322,18 +322,18 @@ export function ProductCard({
                 </Link>
 
                 <div className="mt-auto flex items-center justify-between gap-2">
-                    <div className="flex flex-col">
-                        <span className="text-lg font-bold text-[var(--color-primary)] leading-tight">
+                    <div className="flex min-w-0 flex-col">
+                        <span className="text-base font-bold whitespace-nowrap text-[var(--color-primary)] leading-tight sm:text-lg">
                             {formatCurrency(currentPrice)}
                         </span>
                         {hasDiscount && (
-                            <span className="text-xs text-[var(--color-text-muted)] line-through">
+                            <span className="text-xs whitespace-nowrap text-[var(--color-text-muted)] line-through">
                                 {formatCurrency(product.compare_price!)}
                             </span>
                         )}
                     </div>
                     {!isHovered && (
-                        <div className="h-8 w-8 rounded-full border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-muted)]">
+                        <div className="h-8 w-8 shrink-0 rounded-full border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-muted)]">
                            <ShoppingCart size={14} />
                         </div>
                     )}

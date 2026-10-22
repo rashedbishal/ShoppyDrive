@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Inertia\ExceptionResponse;
+use Inertia\Inertia;
 use Throwable;
 
 class AppServiceProvider extends ServiceProvider
@@ -31,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureGoogleSocialite();
         $this->configureFacebookSocialite();
+        $this->configureErrorPages();
 
         // Guard against double-registering on persistent-worker setups
         // (Octane, or a long-lived `artisan serve` process reusing the
@@ -62,6 +65,45 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+    }
+
+    /**
+     * Render HTTP errors as the themed `errors/ErrorPage` Inertia page instead
+     * of Laravel's default screens. Server errors (500/503) skip shared data —
+     * the database or shared props may be exactly what failed — and 500s keep
+     * Laravel's debug screen while APP_DEBUG is on. JSON/API requests are
+     * left untouched.
+     */
+    protected function configureErrorPages(): void
+    {
+        Inertia::handleExceptionsUsing(function (ExceptionResponse $response): ?ExceptionResponse {
+            $status = $response->statusCode();
+            $request = $response->request;
+
+            if (! in_array($status, [403, 404, 419, 429, 500, 503], true)) {
+                return null;
+            }
+
+            if ($request->is('api/*') || ($request->expectsJson() && ! $request->header('X-Inertia'))) {
+                return null;
+            }
+
+            if ($status === 500 && config('app.debug')) {
+                return null;
+            }
+
+            if ($status >= 500) {
+                // Shared props may already be registered (and may be what's failing) — drop them.
+                Inertia::flushShared();
+            }
+
+            $errorPage = $response->render('errors/ErrorPage', [
+                'status' => $status,
+                'isAdminArea' => $request->is('admin', 'admin/*'),
+            ]);
+
+            return $status >= 500 ? $errorPage : $errorPage->withSharedData();
+        });
     }
 
     /**

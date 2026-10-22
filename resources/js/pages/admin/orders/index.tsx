@@ -3,6 +3,7 @@ import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 
 type Order = {
     id: number;
@@ -80,24 +81,26 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
                                 className="h-9 w-full rounded-lg border border-slate-200 pl-9 pr-3 text-sm focus:border-[#c8102e] focus:outline-none"
                             />
                         </div>
-                        <select
+                        <Select
                             value={filters.status ?? ''}
                             onChange={(e) => applyFilters({ status: e.target.value })}
-                            className="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
+                            containerClassName="min-w-40"
+                            selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
                         >
                             <option value="">All Status</option>
                             {statuses.map((s) => <option key={s.value} value={s.value}>{s.name ?? s.value}</option>)}
-                        </select>
-                        <select
+                        </Select>
+                        <Select
                             value={filters.payment_status ?? ''}
                             onChange={(e) => applyFilters({ payment_status: e.target.value })}
-                            className="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
+                            containerClassName="min-w-40"
+                            selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
                         >
                             <option value="">All Payments</option>
                             <option value="paid">Paid</option>
                             <option value="unpaid">Unpaid</option>
                             <option value="refunded">Refunded</option>
-                        </select>
+                        </Select>
                     </div>
 
                     <div className="divide-y divide-slate-50">

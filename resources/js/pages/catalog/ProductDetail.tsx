@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
+import { CryBabyEasterEgg } from '@/components/shared/CryBabyEasterEgg';
 import { ProductCarousel } from '@/components/shared/ProductCarousel';
 import { RatingBreakdown } from '@/components/shared/RatingBreakdown';
 import { ReviewCard } from '@/components/shared/ReviewCard';
@@ -32,6 +33,7 @@ import { Badge } from '@/components/ui/badge';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
+import { Select } from '@/components/ui/select';
 import { StarRating } from '@/components/ui/star-rating';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
@@ -438,8 +440,14 @@ export default function ProductDetail({
                             </div>
 
                             {/* Actions */}
-                            <div className="flex flex-col gap-3 mb-8">
-                                <Button 
+                            <div className="relative flex flex-col gap-3 mb-8">
+                                <CryBabyEasterEgg
+                                    key={product.id}
+                                    productId={product.id}
+                                    enabled={Boolean(product.cry_baby_enabled) && !isOutOfStock}
+                                />
+                                <Button
+                                    data-cry-baby-target
                                     onClick={handleAddToCart}
                                     disabled={isOutOfStock}
                                     size="lg" 
@@ -506,41 +514,49 @@ export default function ProductDetail({
                 </div>
 
                 {/* Tabs Section */}
-                <div className="mt-16 bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-[var(--color-border)]">
+                <div className="mt-10 md:mt-16 bg-white rounded-3xl p-4 sm:p-6 md:p-10 shadow-sm border border-[var(--color-border)]">
                     <Tabs defaultValue="description" className="w-full">
-                        <TabsList className="w-full justify-start border-b border-[var(--color-border)] rounded-none bg-transparent h-auto p-0 mb-8 gap-8 overflow-x-auto scrollbar-hide">
-                            <TabsTrigger 
-                                value="description" 
-                                className="px-0 py-4 rounded-none border-b-2 border-transparent data-[state=active]:border-[var(--color-primary)] data-[state=active]:bg-transparent data-[state=active]:text-[var(--color-primary)] text-lg font-bold transition-all"
+                        {/* Phones: three equal columns with short labels. sm+: full labels, left-aligned.
+                            The active underline comes from TabsTrigger itself. */}
+                        <TabsList className="grid w-full grid-cols-3 border-b border-[var(--color-border)] mb-6 sm:mb-8 sm:flex sm:justify-start sm:gap-8">
+                            <TabsTrigger
+                                value="description"
+                                className="px-1 py-3 text-sm font-bold sm:px-0 sm:py-4 sm:text-lg"
                             >
-                                Product Description
+                                <span className="sm:hidden">Description</span>
+                                <span className="hidden sm:inline">Product Description</span>
                             </TabsTrigger>
-                            <TabsTrigger 
-                                value="reviews" 
-                                className="px-0 py-4 rounded-none border-b-2 border-transparent data-[state=active]:border-[var(--color-primary)] data-[state=active]:bg-transparent data-[state=active]:text-[var(--color-primary)] text-lg font-bold transition-all flex gap-2"
+                            <TabsTrigger
+                                value="reviews"
+                                className="px-1 py-3 text-sm font-bold sm:px-0 sm:py-4 sm:text-lg"
                             >
-                                Reviews ({reviews.length})
+                                Reviews
+                                <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--color-surface-alt)] px-1.5 text-xs font-bold text-[var(--color-text-secondary)] sm:text-sm">
+                                    {reviews.length}
+                                </span>
                             </TabsTrigger>
-                            <TabsTrigger 
-                                value="shipping" 
-                                className="px-0 py-4 rounded-none border-b-2 border-transparent data-[state=active]:border-[var(--color-primary)] data-[state=active]:bg-transparent data-[state=active]:text-[var(--color-primary)] text-lg font-bold transition-all"
+                            <TabsTrigger
+                                value="shipping"
+                                className="px-1 py-3 text-sm font-bold sm:px-0 sm:py-4 sm:text-lg"
                             >
-                                Shipping & Returns
+                                <span className="sm:hidden">Shipping</span>
+                                <span className="hidden sm:inline">Shipping & Returns</span>
                             </TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="description" className="mt-0">
-                            <div 
-                                className="prose prose-sm md:prose-base max-w-none text-[var(--color-text-secondary)] leading-relaxed prose-headings:text-[var(--color-text-primary)] prose-strong:text-[var(--color-text-primary)] prose-a:text-[var(--color-primary)]"
+                            {/* Admin-authored HTML: keep images, tables and code inside the card on small screens */}
+                            <div
+                                className="prose prose-sm md:prose-base max-w-none break-words text-[var(--color-text-secondary)] leading-relaxed prose-headings:text-[var(--color-text-primary)] prose-strong:text-[var(--color-text-primary)] prose-a:text-[var(--color-primary)] [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-xl [&_iframe]:max-w-full [&_video]:max-w-full [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_pre]:overflow-x-auto"
                                 dangerouslySetInnerHTML={{ __html: product.description || '<p>No description available.</p>' }}
                             />
                         </TabsContent>
 
                         <TabsContent value="reviews" className="mt-0">
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                                <div className="lg:col-span-4">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+                                <div className="min-w-0 lg:col-span-4">
                                     <RatingBreakdown breakdown={ratingBreakdown} />
-                                    <div className="mt-8 rounded-2xl border border-[var(--color-border)] bg-white p-6">
+                                    <div className="mt-6 sm:mt-8 rounded-2xl border border-[var(--color-border)] bg-white p-4 sm:p-6">
                                         <h4 className="font-bold text-[var(--color-text-primary)] mb-1 flex items-center gap-2">
                                             <MessageSquare size={16} className="text-[var(--color-primary)]" />
                                             Write a Review
@@ -624,17 +640,21 @@ export default function ProductDetail({
                                         )}
                                     </div>
                                 </div>
-                                <div className="lg:col-span-8">
-                                    <div className="flex items-center justify-between mb-8 pb-4 border-b border-[var(--color-border)]">
-                                        <h3 className="text-xl font-bold text-[var(--color-text-primary)]">User Reviews</h3>
+                                <div className="min-w-0 lg:col-span-8">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 mb-6 sm:mb-8 pb-4 border-b border-[var(--color-border)]">
+                                        <h3 className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)]">User Reviews</h3>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm text-[var(--color-text-muted)] font-medium">Sort by:</span>
-                                            <select className="text-sm font-bold bg-transparent border-0 focus:ring-0 cursor-pointer">
+                                            <span className="hidden sm:inline text-sm text-[var(--color-text-muted)] font-medium">Sort by:</span>
+                                            <Select
+                                                aria-label="Sort reviews"
+                                                containerClassName="min-w-36"
+                                                selectClassName="h-9 rounded-full px-3.5 text-sm font-bold"
+                                            >
                                                 <option>Newest First</option>
                                                 <option>Highest Rated</option>
                                                 <option>Lowest Rated</option>
                                                 <option>Most Helpful</option>
-                                            </select>
+                                            </Select>
                                         </div>
                                     </div>
 
@@ -645,9 +665,9 @@ export default function ProductDetail({
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="text-center py-20 bg-[var(--color-surface-alt)] rounded-3xl">
-                                            <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mx-auto mb-4 text-[var(--color-text-muted)]">
-                                                <MessageSquare size={32} />
+                                        <div className="text-center px-4 py-12 sm:py-20 bg-[var(--color-surface-alt)] rounded-3xl">
+                                            <div className="size-14 sm:size-16 rounded-full bg-white flex items-center justify-center mx-auto mb-4 text-[var(--color-text-muted)]">
+                                                <MessageSquare className="size-7 sm:size-8" />
                                             </div>
                                             <h4 className="font-bold text-[var(--color-text-primary)] mb-1">No reviews yet</h4>
                                             <p className="text-sm text-[var(--color-text-muted)]">Be the first to review this product!</p>
@@ -658,10 +678,10 @@ export default function ProductDetail({
                         </TabsContent>
 
                         <TabsContent value="shipping" className="mt-0">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                                <div>
-                                    <h4 className="text-xl font-bold text-[var(--color-text-primary)] mb-6 flex items-center gap-2">
-                                        <Truck size={24} className="text-[var(--color-primary)]" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+                                <div className="min-w-0">
+                                    <h4 className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)] mb-4 sm:mb-6 flex items-center gap-2">
+                                        <Truck className="size-5 sm:size-6 shrink-0 text-[var(--color-primary)]" />
                                         Delivery Options
                                     </h4>
                                     <div className="space-y-4">
@@ -694,12 +714,12 @@ export default function ProductDetail({
                                         )}
                                     </div>
                                 </div>
-                                <div>
-                                    <h4 className="text-xl font-bold text-[var(--color-text-primary)] mb-6 flex items-center gap-2">
-                                        <Undo2 size={24} className="text-[var(--color-primary)]" />
+                                <div className="min-w-0">
+                                    <h4 className="text-lg sm:text-xl font-bold text-[var(--color-text-primary)] mb-4 sm:mb-6 flex items-center gap-2">
+                                        <Undo2 className="size-5 sm:size-6 shrink-0 text-[var(--color-primary)]" />
                                         Return Policy
                                     </h4>
-                                    <div className="space-y-6 text-[var(--color-text-secondary)] text-sm">
+                                    <div className="space-y-5 sm:space-y-6 text-[var(--color-text-secondary)] text-sm">
                                         <p>You can return the item within <strong>7 days</strong> of delivery if it's in original condition with tags and packaging.</p>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="flex gap-2">

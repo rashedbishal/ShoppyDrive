@@ -88,7 +88,22 @@
       "Bash(vendor/bin/pint routes/web.php database/seeders/PageSeeder.php --format agent)",
       "Skill(inertia-react-development)",
       "Bash(vendor/bin/pint routes/web.php --format agent)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(npx eslint *)",
+      "Bash(npx prettier *)",
+      "Bash(git stash *)",
+      "Bash(grep -rn -E \"w-screen|100vw|-right-[0-9]|right-\\\\[-|translate-x-full|w-\\\\[[0-9]{3,}px\\\\]|min-w-\\\\[[0-9]{3,}\" resources/js/layouts resources/js/components/layout resources/js/components/shared resources/js/pages/catalog/ProductListing.tsx)",
+      "Bash(git checkout *)",
+      "Bash(python3 -)",
+      "Bash(npx vite *)",
+      "Read(//home/saadman/Downloads/**)",
+      "Bash(python3 -c ' *)",
+      "Bash(grep -n 'fillable\\\\|free_delivery\\\\|casts\\\\|is_featured\\\\|protected $hidden\\\\|booted\\\\|ResponseCache' -A0 app/Models/Product.php)",
+      "Bash(cp \"/home/saadman/Downloads/Cry Baby 2.gif\" public/images/easter-eggs/cry-baby.gif)",
+      "Bash(git check-ignore *)",
+      "Bash(node -e \"console.log\\(require\\('@headlessui/react/package.json'\\).version\\)\")",
+      "Bash(grep -rhoE -e \"--\\(anchor-max-height|button-width|anchor-gap|input-width\\)\" node_modules/@headlessui/react/dist)",
+      "Bash(grep -oE '\"result\":\"[a-z]+\"|\"passed\":[0-9]+|\"failed\":[0-9]+|\"message\":\"[^\"]{0,300}')"
     ]
   },
   "enableAllProjectMcpServers": true,

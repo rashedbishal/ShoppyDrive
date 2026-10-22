@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
+    Banknote,
     Check,
     ChevronDown,
     ChevronLeft,
@@ -9,6 +10,7 @@ import {
     Heart,
     LayoutGrid,
     List,
+    Package,
     Search,
     ShieldCheck,
     SlidersHorizontal,
@@ -111,6 +113,19 @@ const SORT_OPTIONS = [
 
 const DEFAULT_GRID_COUNT = 12;
 
+const PRICE_SLIDER_STEP = 10;
+/**
+ * Invisible native range input stretched over the custom track. Only its thumb
+ * (sized to the visual handle) accepts pointer events, so overlapping inputs
+ * never steal each other's drags.
+ */
+const PRICE_SLIDER_INPUT_CLASS = cn(
+    // Overhang by half a thumb (12px) so the native thumb centre spans exactly 0–100% of the track.
+    'pointer-events-none absolute inset-x-[-12px] top-0 h-full w-[calc(100%+24px)] cursor-pointer appearance-none bg-transparent opacity-0',
+    '[&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:size-6 [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:active:cursor-grabbing',
+    '[&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:size-6 [&::-moz-range-thumb]:cursor-grab [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:active:cursor-grabbing',
+);
+
 // ── Price Range Filter ────────────────────────────────────────────────────────
 function PriceRangeFilter({
     lo,
@@ -138,47 +153,142 @@ function PriceRangeFilter({
         onApply(parsedLo, parsedHi);
     };
 
+    // Slider mirrors the (possibly half-typed) inputs, clamped to a valid range.
+    const sliderLo = Math.max(0, Math.min(Number(inputLo) || 0, cap));
+    const sliderHi = Math.max(
+        sliderLo,
+        Math.min(inputHi === '' ? cap : Number(inputHi) || cap, cap),
+    );
+    const loPercent = cap > 0 ? (sliderLo / cap) * 100 : 0;
+    const hiPercent = cap > 0 ? (sliderHi / cap) * 100 : 100;
+    // When both handles meet, keep the one that can still move on top.
+    const isLoOnTop = loPercent > 50;
+
+    const commitSlider = (): void => onApply(sliderLo, sliderHi);
+    const isCommitKey = (key: string): boolean =>
+        [
+            'ArrowLeft',
+            'ArrowRight',
+            'ArrowUp',
+            'ArrowDown',
+            'Home',
+            'End',
+            'PageUp',
+            'PageDown',
+        ].includes(key);
+
     return (
-        <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-                <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-medium text-[var(--color-text-muted)]">
-                    ৳
+        <div className="space-y-4">
+            <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                    <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-medium text-[var(--color-text-muted)]">
+                        ৳
+                    </span>
+                    <input
+                        type="number"
+                        min={0}
+                        inputMode="numeric"
+                        value={inputLo}
+                        placeholder="Min"
+                        onChange={(e) => setInputLo(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && apply()}
+                        className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white pr-2 pl-7 text-sm transition focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none"
+                    />
+                </div>
+                <span className="text-sm text-[var(--color-text-muted)]">
+                    —
                 </span>
+                <div className="relative flex-1">
+                    <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-medium text-[var(--color-text-muted)]">
+                        ৳
+                    </span>
+                    <input
+                        type="number"
+                        min={0}
+                        inputMode="numeric"
+                        value={inputHi}
+                        placeholder="Max"
+                        onChange={(e) => setInputHi(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && apply()}
+                        className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white pr-2 pl-7 text-sm transition focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none"
+                    />
+                </div>
+                <button
+                    type="button"
+                    onClick={apply}
+                    aria-label="Apply price range"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface-alt)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-primary)] hover:text-white"
+                >
+                    <ChevronRight className="size-4" />
+                </button>
+            </div>
+
+            {/* Dual-handle slider. The native range inputs are invisible and ignore
+                pointer events except on their own thumb, so each handle is only
+                draggable where it is; dragging updates the inputs live and the
+                filter applies on release. */}
+            <div className="relative mx-2.5 h-6">
+                <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-surface-alt)] shadow-inner" />
+                <div
+                    className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-primary)]"
+                    style={{
+                        left: `${loPercent}%`,
+                        width: `${Math.max(0, hiPercent - loPercent)}%`,
+                    }}
+                />
                 <input
-                    type="number"
+                    type="range"
                     min={0}
-                    inputMode="numeric"
-                    value={inputLo}
-                    placeholder="Min"
-                    onChange={(e) => setInputLo(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && apply()}
-                    className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white pr-2 pl-7 text-sm transition focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none"
+                    max={cap}
+                    step={PRICE_SLIDER_STEP}
+                    value={sliderLo}
+                    aria-label="Minimum price"
+                    onChange={(e) =>
+                        setInputLo(
+                            String(Math.min(Number(e.target.value), sliderHi)),
+                        )
+                    }
+                    onPointerUp={commitSlider}
+                    onKeyUp={(e) => isCommitKey(e.key) && commitSlider()}
+                    className={cn(
+                        PRICE_SLIDER_INPUT_CLASS,
+                        'peer/lo',
+                        isLoOnTop ? 'z-30' : 'z-20',
+                    )}
+                />
+                <span
+                    className="pointer-events-none absolute top-1/2 z-10 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--color-primary)] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-shadow peer-focus-visible/lo:ring-4 peer-focus-visible/lo:ring-[var(--color-primary)]/20"
+                    style={{ left: `${loPercent}%` }}
+                />
+                <input
+                    type="range"
+                    min={0}
+                    max={cap}
+                    step={PRICE_SLIDER_STEP}
+                    value={sliderHi}
+                    aria-label="Maximum price"
+                    onChange={(e) =>
+                        setInputHi(
+                            String(Math.max(Number(e.target.value), sliderLo)),
+                        )
+                    }
+                    onPointerUp={commitSlider}
+                    onKeyUp={(e) => isCommitKey(e.key) && commitSlider()}
+                    className={cn(
+                        PRICE_SLIDER_INPUT_CLASS,
+                        'peer/hi',
+                        isLoOnTop ? 'z-20' : 'z-30',
+                    )}
+                />
+                <span
+                    className="pointer-events-none absolute top-1/2 z-10 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--color-primary)] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-shadow peer-focus-visible/hi:ring-4 peer-focus-visible/hi:ring-[var(--color-primary)]/20"
+                    style={{ left: `${hiPercent}%` }}
                 />
             </div>
-            <span className="text-sm text-[var(--color-text-muted)]">—</span>
-            <div className="relative flex-1">
-                <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-medium text-[var(--color-text-muted)]">
-                    ৳
-                </span>
-                <input
-                    type="number"
-                    min={0}
-                    inputMode="numeric"
-                    value={inputHi}
-                    placeholder="Max"
-                    onChange={(e) => setInputHi(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && apply()}
-                    className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white pr-2 pl-7 text-sm transition focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none"
-                />
+            <div className="-mt-1 flex justify-between text-[11px] font-medium text-[var(--color-text-muted)]">
+                <span>৳0</span>
+                <span>৳{cap.toLocaleString('en-BD')}</span>
             </div>
-            <button
-                type="button"
-                onClick={apply}
-                aria-label="Apply price range"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface-alt)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-primary)] hover:text-white"
-            >
-                <ChevronRight className="size-4" />
-            </button>
         </div>
     );
 }
@@ -291,7 +401,7 @@ function ListingProductSkeleton({
     if (view === 'list') {
         return (
             <Card className="overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-card)]">
-                <div className="grid gap-4 p-4 sm:grid-cols-[220px_minmax(0,1fr)]">
+                <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-[220px_minmax(0,1fr)]">
                     <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
                     <div className="space-y-4">
                         <div className="space-y-2">
@@ -410,7 +520,7 @@ function ProductCard({
                 onMouseLeave={() => setIsHovered(false)}
                 className="overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]"
             >
-                <div className="grid gap-4 p-4 sm:grid-cols-[220px_minmax(0,1fr)]">
+                <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-[220px_minmax(0,1fr)]">
                     <Link
                         href={route('product.show', product.slug)}
                         className="block"
@@ -564,9 +674,9 @@ function ProductCard({
         <article
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className="group overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-card-hover)]"
+            className="group flex h-full flex-col overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-card-hover)]"
         >
-            <div className="relative">
+            <div className="relative shrink-0">
                 <Link
                     href={route('product.show', product.slug)}
                     className="block"
@@ -652,14 +762,15 @@ function ProductCard({
                 </Link>
             </div>
 
-            <div className="space-y-4 p-4">
+            <div className="flex flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-4">
                 <div className="space-y-1">
-                    <p className="text-xs font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
+                    <p className="truncate text-xs font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
                         {product.brand?.name ?? 'ShoppyDrive Select'}
                     </p>
+                    {/* Always reserve two lines so short names don't shift the rest of the card */}
                     <Link
                         href={route('product.show', product.slug)}
-                        className="line-clamp-2 text-sm leading-6 font-semibold text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)]"
+                        className="line-clamp-2 min-h-12 text-sm leading-6 font-semibold text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)]"
                     >
                         {product.name}
                     </Link>
@@ -676,13 +787,14 @@ function ProductCard({
                     </span>
                 </div>
 
-                <div className="flex items-end gap-2">
-                    <p className="text-lg font-bold tracking-tight text-[var(--color-primary)]">
+                {/* Wraps the struck-through price under the price on narrow cards instead of overflowing */}
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <p className="text-base font-bold tracking-tight whitespace-nowrap text-[var(--color-primary)] sm:text-lg">
                         {formatCurrency(currentPrice)}
                     </p>
                     {product.compare_price &&
                     product.compare_price > currentPrice ? (
-                        <p className="pb-0.5 text-sm text-[var(--color-text-muted)] line-through">
+                        <p className="text-xs whitespace-nowrap text-[var(--color-text-muted)] line-through sm:text-sm">
                             {formatCurrency(product.compare_price)}
                         </p>
                     ) : null}
@@ -716,7 +828,7 @@ function ProductCard({
                     fullWidth
                     onClick={handleAddToCart}
                     disabled={isOutOfStock}
-                    className="translate-y-0 transition-transform duration-200 group-hover:-translate-y-1"
+                    className="mt-auto translate-y-0 transition-transform duration-200 group-hover:-translate-y-1"
                 >
                     {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
                 </Button>
@@ -1300,7 +1412,7 @@ function ProductListingPage({
 
             <div className="space-y-8 py-8 lg:py-12">
                 <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="grid gap-6 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)] lg:grid-cols-[1.1fr_0.9fr] lg:p-8">
+                    <div className="grid grid-cols-1 gap-6 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)] lg:grid-cols-[1.1fr_0.9fr] lg:p-8">
                         <div className="space-y-4">
                             <Badge variant="amber" className="w-fit">
                                 <SlidersHorizontal className="size-3.5" />
@@ -1333,34 +1445,75 @@ function ProductListingPage({
                             </div>
                         </div>
 
-                        <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="grid grid-cols-3 gap-2.5 self-center sm:gap-3">
                             {[
-                                ['Result count', `${products.total} items`],
-                                [
-                                    'Current view',
-                                    draftFilters.view === 'grid'
-                                        ? 'Grid'
-                                        : 'List',
-                                ],
-                                ['Currency', 'Bangladeshi taka'],
-                            ].map(([label, value]) => (
-                                <div
-                                    key={label}
-                                    className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-4"
-                                >
-                                    <p className="text-xs tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
-                                        {label}
-                                    </p>
-                                    <p className="mt-2 text-sm font-semibold text-[var(--color-text-primary)]">
-                                        {value}
-                                    </p>
-                                </div>
-                            ))}
+                                {
+                                    label: 'Result count',
+                                    value: products.total.toLocaleString(),
+                                    detail:
+                                        products.total === 1 ? 'item' : 'items',
+                                    icon: Package,
+                                    color: 'var(--color-primary)',
+                                },
+                                {
+                                    label: 'Current view',
+                                    value:
+                                        draftFilters.view === 'grid'
+                                            ? 'Grid'
+                                            : 'List',
+                                    detail: 'layout',
+                                    icon:
+                                        draftFilters.view === 'grid'
+                                            ? LayoutGrid
+                                            : List,
+                                    color: '#2563eb',
+                                },
+                                {
+                                    label: 'Currency',
+                                    value: '৳ BDT',
+                                    detail: 'Bangladeshi taka',
+                                    icon: Banknote,
+                                    color: 'var(--color-success)',
+                                },
+                            ].map(
+                                ({
+                                    label,
+                                    value,
+                                    detail,
+                                    icon: Icon,
+                                    color,
+                                }) => (
+                                    <div
+                                        key={label}
+                                        style={
+                                            {
+                                                '--stat-color': color,
+                                            } as React.CSSProperties
+                                        }
+                                        className="group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] to-[color-mix(in_srgb,var(--stat-color)_6%,var(--color-surface))] p-3 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--stat-color)_35%,transparent)] hover:shadow-[var(--shadow-card-hover)] sm:p-4"
+                                    >
+                                        {/* Soft corner glow in the stat's accent colour */}
+                                        <span className="pointer-events-none absolute -top-8 -right-8 -z-10 size-24 rounded-full bg-[var(--stat-color)] opacity-[0.08] blur-2xl transition-opacity duration-300 group-hover:opacity-[0.16]" />
+                                        <span className="flex size-8 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--stat-color)_12%,transparent)] text-[var(--stat-color)] ring-1 ring-[color-mix(in_srgb,var(--stat-color)_18%,transparent)] sm:size-10">
+                                            <Icon className="size-4 sm:size-5" />
+                                        </span>
+                                        <p className="mt-3 truncate font-display text-lg leading-none font-bold tracking-tight text-[var(--color-text-primary)] sm:mt-4 sm:text-2xl">
+                                            {value}
+                                        </p>
+                                        <p className="mt-1.5 truncate text-[11px] text-[var(--color-text-secondary)] sm:text-xs">
+                                            {detail}
+                                        </p>
+                                        <p className="mt-3 truncate border-t border-dashed border-[var(--color-border)] pt-2 text-[10px] font-semibold tracking-[0.16em] text-[var(--color-text-muted)] uppercase">
+                                            {label}
+                                        </p>
+                                    </div>
+                                ),
+                            )}
                         </div>
                     </div>
                 </section>
 
-                <section className="mx-auto grid max-w-7xl gap-8 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
+                <section className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
                     <aside className="hidden lg:block">
                         <div className="sticky top-28 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]">
                             <div className="mb-4 flex items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4">
@@ -1386,14 +1539,14 @@ function ProductListingPage({
                         </div>
                     </aside>
 
-                    <div className="space-y-6">
-                        <div className="rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)]">
-                            <div className="grid gap-4 lg:grid-cols-[1fr_auto_auto] lg:items-center">
+                    <div className="min-w-0 space-y-6">
+                        <div className="rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)] sm:p-4">
+                            <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                                 <form
                                     onSubmit={handleSearchSubmit}
-                                    className="flex gap-3"
+                                    className="flex min-w-0 gap-3"
                                 >
-                                    <div className="relative flex-1">
+                                    <div className="relative min-w-0 flex-1">
                                         <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
                                         <Input
                                             value={searchInput}
@@ -1415,10 +1568,10 @@ function ProductListingPage({
                                     </Button>
                                 </form>
 
-                                <div className="flex items-center gap-3">
+                                <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                                     <Button
                                         variant="outline"
-                                        className="lg:hidden"
+                                        className="shrink-0 lg:hidden"
                                         onClick={() => setIsFiltersOpen(true)}
                                     >
                                         <Filter className="size-4" />
@@ -1440,10 +1593,12 @@ function ProductListingPage({
                                             label: option.label,
                                             value: option.value,
                                         }))}
-                                        selectClassName="min-w-52"
+                                        aria-label="Sort products"
+                                        containerClassName="min-w-0 flex-1 lg:flex-none"
+                                        selectClassName="truncate sm:min-w-52"
                                     />
 
-                                    <div className="inline-flex overflow-hidden rounded-xl border border-[var(--color-border)]">
+                                    <div className="inline-flex shrink-0 overflow-hidden rounded-xl border border-[var(--color-border)]">
                                         <button
                                             type="button"
                                             onClick={() => {

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 
 type OrderItem = {
     id: number;
@@ -624,8 +625,8 @@ export default function OrderShow({ order }: Props) {
                                             shipping address and total as the
                                             COD amount to collect.
                                         </p>
-                                        <select
-                                            className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                        <Select
+                                            selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                             value={courierProvider}
                                             onChange={(e) =>
                                                 setCourierProvider(
@@ -641,7 +642,7 @@ export default function OrderShow({ order }: Props) {
                                             <option value="steadfast">
                                                 Steadfast
                                             </option>
-                                        </select>
+                                        </Select>
                                         <Button
                                             className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25]"
                                             disabled={

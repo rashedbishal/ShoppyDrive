@@ -3,6 +3,7 @@ import { usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MessageCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUiStore } from '@/stores/uiStore';
 import type { SharedPageProps } from '@/types';
 
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -63,6 +64,8 @@ export default function SocialChatWidget(): React.JSX.Element | null {
     const { settings } = usePage<SharedPageProps>().props;
     const [open, setOpen] = useState(false);
     const [burstKey, setBurstKey] = useState(0);
+    // Step aside while the mobile menu or cart panel is open — it would sit on top of them.
+    const isPanelOpen = useUiStore((state) => state.cartOpen || state.mobileMenuOpen);
 
     const items: ChatItem[] = [];
 
@@ -101,7 +104,14 @@ export default function SocialChatWidget(): React.JSX.Element | null {
     };
 
     return (
-        <div className="fixed bottom-6 right-5 z-[70] flex flex-col items-end gap-3">
+        <div
+            className={cn(
+                'fixed bottom-6 right-5 z-[70] flex flex-col items-end gap-3 transition-[opacity,transform] duration-200 ease-out',
+                isPanelOpen && 'pointer-events-none translate-y-3 opacity-0',
+            )}
+            aria-hidden={isPanelOpen || undefined}
+            inert={isPanelOpen}
+        >
             {/* Chat option rows */}
             <AnimatePresence>
                 {open &&

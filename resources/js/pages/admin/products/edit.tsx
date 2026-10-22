@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { Select } from '@/components/ui/select';
 import { buildMediaTagOptions } from '@/lib/variant-media-tags';
 
 type ProductMedia = {
@@ -52,6 +53,7 @@ type Product = {
     free_delivery_min_qty: number | null;
     has_color_variant: boolean;
     has_size_variant: boolean;
+    cry_baby_enabled: boolean;
     meta_title: string | null;
     meta_description: string | null;
     media: ProductMedia[];
@@ -147,6 +149,7 @@ export default function ProductEdit({
                 is_default: v.is_default,
             }),
         ),
+        cry_baby_enabled: product.cry_baby_enabled,
         images: product.media.length
             ? product.media.map((m) => m.path)
             : ([] as (File | string)[]),
@@ -542,8 +545,8 @@ export default function ProductEdit({
                                     label="Category *"
                                     error={errors.category_id}
                                 >
-                                    <select
-                                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                    <Select
+                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                         value={data.category_id}
                                         onChange={(e) => {
                                             setData((prev) => ({
@@ -561,15 +564,15 @@ export default function ProductEdit({
                                                 {c.name}
                                             </option>
                                         ))}
-                                    </select>
+                                    </Select>
                                 </Field>
 
                                 <Field
                                     label="Sub-category *"
                                     error={errors.sub_category_id}
                                 >
-                                    <select
-                                        className={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${errors.sub_category_id ? 'border-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
+                                    <Select
+                                        selectClassName={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${errors.sub_category_id ? 'border-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
                                         value={data.sub_category_id}
                                         onChange={(e) =>
                                             setData(
@@ -596,12 +599,12 @@ export default function ProductEdit({
                                                     {sc.name}
                                                 </option>
                                             ))}
-                                    </select>
+                                    </Select>
                                 </Field>
 
                                 <Field label="Brand" error={errors.brand_id}>
-                                    <select
-                                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                    <Select
+                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                         value={data.brand_id}
                                         onChange={(e) =>
                                             setData('brand_id', e.target.value)
@@ -613,7 +616,7 @@ export default function ProductEdit({
                                                 {b.name}
                                             </option>
                                         ))}
-                                    </select>
+                                    </Select>
                                 </Field>
                             </CardContent>
                         </Card>
@@ -703,6 +706,36 @@ export default function ProductEdit({
                                         </p>
                                     </Field>
                                 )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm">
+                            <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardTitle className="text-sm font-semibold text-slate-700">
+                                    Easter Egg
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3 pt-4">
+                                <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.cry_baby_enabled}
+                                        onChange={(e) =>
+                                            setData(
+                                                'cry_baby_enabled',
+                                                e.target.checked,
+                                            )
+                                        }
+                                        className="size-4 rounded border-slate-300 accent-[#c8102e]"
+                                    />
+                                    Crying baby on Add to Cart
+                                </label>
+                                <p className="text-xs text-slate-400">
+                                    Plays the crying-baby GIF beside the Add to
+                                    Cart button when a shopper lingers for a
+                                    minute without adding the product, or
+                                    removes it from the cart.
+                                </p>
                             </CardContent>
                         </Card>
 

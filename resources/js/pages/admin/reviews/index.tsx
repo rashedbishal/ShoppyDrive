@@ -3,6 +3,7 @@ import { Check, Search, Star, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 
 type Review = {
     id: number;
@@ -78,15 +79,16 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
                                 className="h-9 w-full rounded-lg border border-slate-200 pl-9 pr-3 text-sm focus:border-[#c8102e] focus:outline-none"
                             />
                         </div>
-                        <select
+                        <Select
                             value={filters.status ?? ''}
                             onChange={(e) => applyFilters({ status: e.target.value })}
-                            className="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
+                            containerClassName="min-w-40"
+                            selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
                         >
                             <option value="">All Reviews</option>
                             <option value="approved">Approved</option>
                             <option value="pending">Pending</option>
-                        </select>
+                        </Select>
                     </div>
 
                     <div className="divide-y divide-slate-50">

@@ -1,5 +1,7 @@
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { create } from 'zustand';
+import { CART_ITEM_ADDED_EVENT } from '@/lib/add-to-cart-feedback';
+import type { CartItemAddedDetail } from '@/lib/add-to-cart-feedback';
 import { formatCurrency } from '@/lib/utils';
 import { STORAGE_KEYS } from '@/lib/constants';
 import type { Cart, CartItem, Coupon, Product, ProductVariant } from '@/types';
@@ -144,6 +146,15 @@ export const useCartStore = create<CartStoreState>()(
                         items: [...state.items, nextItem],
                     };
                 });
+
+                // Let UI feedback (fly-to-cart animation) react without the store knowing about it.
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(
+                        new CustomEvent<CartItemAddedDetail>(CART_ITEM_ADDED_EVENT, {
+                            detail: { product: payload.product, variant: payload.variant ?? null },
+                        }),
+                    );
+                }
             },
             removeItem: (itemKey) => {
                 set((state) => ({

@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
+import { Select } from '@/components/ui/select';
 
 type Product = { id: number; name: string; price: number };
 type Props = { products: Product[] };
@@ -109,8 +110,8 @@ export default function LandingPageCreate({ products }: Props) {
                                 <label className="mb-1 block text-sm font-medium text-slate-700">
                                     Product
                                 </label>
-                                <select
-                                    className={inputClass}
+                                <Select
+                                    selectClassName={inputClass}
                                     value={data.product_id}
                                     onChange={(e) =>
                                         setData('product_id', e.target.value)
@@ -123,7 +124,7 @@ export default function LandingPageCreate({ products }: Props) {
                                             {p.price.toLocaleString()}
                                         </option>
                                     ))}
-                                </select>
+                                </Select>
                                 {errors.product_id && (
                                     <p className="mt-1 text-xs text-red-600">
                                         {errors.product_id}

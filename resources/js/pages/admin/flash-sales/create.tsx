@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
+import { Select } from '@/components/ui/select';
 
 type Product = { id: number; name: string; price: number; sku: string | null };
 
@@ -178,8 +179,8 @@ export default function FlashSaleCreate({ products }: Props) {
                                                     <label className="mb-1 block text-xs font-medium text-slate-600">
                                                         Product *
                                                     </label>
-                                                    <select
-                                                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                                    <Select
+                                                        selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                                         value={item.product_id}
                                                         onChange={(e) =>
                                                             updateItem(
@@ -204,7 +205,7 @@ export default function FlashSaleCreate({ products }: Props) {
                                                                 </option>
                                                             ),
                                                         )}
-                                                    </select>
+                                                    </Select>
                                                 </div>
                                                 <div className="w-32">
                                                     <label className="mb-1 block text-xs font-medium text-slate-600">

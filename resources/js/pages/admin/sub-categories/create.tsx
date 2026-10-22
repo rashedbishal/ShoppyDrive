@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { Select } from '@/components/ui/select';
 
 type Props = {
     categories: { id: number; name: string }[];
@@ -93,8 +94,8 @@ export default function SubCategoryCreate({ categories }: Props) {
                                 label="Category *"
                                 error={errors.category_id}
                             >
-                                <select
-                                    className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                <Select
+                                    selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                     value={data.category_id}
                                     onChange={(e) =>
                                         setData('category_id', e.target.value)
@@ -108,7 +109,7 @@ export default function SubCategoryCreate({ categories }: Props) {
                                             {p.name}
                                         </option>
                                     ))}
-                                </select>
+                                </Select>
                             </Field>
                             <Field
                                 label="Description"

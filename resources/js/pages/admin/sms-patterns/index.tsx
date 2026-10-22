@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 
 type Pattern = {
     id: number;
@@ -108,15 +109,15 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="mb-1 block text-xs font-medium text-slate-600">Provider *</label>
-                                        <select
-                                            className={inputClass}
+                                        <Select
+                                            selectClassName={inputClass}
                                             value={data.provider}
                                             onChange={(e) => setData('provider', e.target.value as 'bkash' | 'nagad')}
                                             required
                                         >
                                             <option value="bkash">Bkash</option>
                                             <option value="nagad">Nagad</option>
-                                        </select>
+                                        </Select>
                                     </div>
                                     <div>
                                         <label className="mb-1 block text-xs font-medium text-slate-600">Pattern Name *</label>

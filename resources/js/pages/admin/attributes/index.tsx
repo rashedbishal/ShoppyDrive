@@ -148,11 +148,10 @@ function AttributeSection({
     const handleAdd = (e: React.FormEvent) => {
         e.preventDefault();
         post(route('admin.attribute-values.store'), {
-            onSuccess: () =>
-                reset('value', 'color_hex').setData(
-                    'sort_order',
-                    attribute.values.length + 1,
-                ),
+            onSuccess: () => {
+                reset('value', 'color_hex');
+                setData('sort_order', attribute.values.length + 1);
+            },
         });
     };
 
@@ -198,18 +197,14 @@ function AttributeSection({
                     className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                     value={data.value}
                     onChange={(e) => setData('value', e.target.value)}
-                    placeholder={
-                        isColor ? 'e.g. Red' : 'e.g. M'
-                    }
+                    placeholder={isColor ? 'e.g. Red' : 'e.g. M'}
                 />
                 {isColor && (
                     <input
                         type="color"
                         className="h-9 w-10 shrink-0 cursor-pointer rounded-lg border border-slate-200"
                         value={data.color_hex}
-                        onChange={(e) =>
-                            setData('color_hex', e.target.value)
-                        }
+                        onChange={(e) => setData('color_hex', e.target.value)}
                         title="Swatch color"
                     />
                 )}
@@ -224,9 +219,7 @@ function AttributeSection({
                 </Button>
             </form>
             {errors.value && (
-                <p className="px-4 pb-3 text-xs text-red-500">
-                    {errors.value}
-                </p>
+                <p className="px-4 pb-3 text-xs text-red-500">{errors.value}</p>
             )}
         </Card>
     );
@@ -246,16 +239,13 @@ export default function AttributesIndex({ attributes }: Props) {
         }
 
         setDeleting(true);
-        router.delete(
-            route('admin.attribute-values.destroy', deleteTargetId),
-            {
-                preserveScroll: true,
-                onFinish: () => {
-                    setDeleting(false);
-                    setDeleteTargetId(null);
-                },
+        router.delete(route('admin.attribute-values.destroy', deleteTargetId), {
+            preserveScroll: true,
+            onFinish: () => {
+                setDeleting(false);
+                setDeleteTargetId(null);
             },
-        );
+        });
     };
 
     return (

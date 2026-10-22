@@ -6,6 +6,7 @@ import {
 } from '@/components/admin/settings-field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 
 type Props = {
     settings: Record<string, string | Record<string, string> | null>;
@@ -101,8 +102,8 @@ function PathaoCourierCard({ settings }: Props) {
                         delivery from the order detail page.
                     </p>
                     <SettingsField label="Environment">
-                        <select
-                            className={settingsInputClass}
+                        <Select
+                            selectClassName={settingsInputClass}
                             value={data.pathao_environment}
                             onChange={(e) =>
                                 setData('pathao_environment', e.target.value)
@@ -112,7 +113,7 @@ function PathaoCourierCard({ settings }: Props) {
                             <option value="production">
                                 Production (live)
                             </option>
-                        </select>
+                        </Select>
                     </SettingsField>
                     <SettingsField label="Client ID">
                         <input
@@ -173,8 +174,8 @@ function PathaoCourierCard({ settings }: Props) {
                     >
                         <div className="space-y-2">
                             {pathaoStores.length > 0 ? (
-                                <select
-                                    className={settingsInputClass}
+                                <Select
+                                    selectClassName={settingsInputClass}
                                     value={data.pathao_store_id}
                                     onChange={(e) =>
                                         setData(
@@ -196,7 +197,7 @@ function PathaoCourierCard({ settings }: Props) {
                                                 : ''}
                                         </option>
                                     ))}
-                                </select>
+                                </Select>
                             ) : data.pathao_store_id ? (
                                 <p className="text-xs text-slate-500">
                                     Currently set to store ID{' '}

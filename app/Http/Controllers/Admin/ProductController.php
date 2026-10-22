@@ -42,7 +42,26 @@ class ProductController extends Controller
             'filters' => $request->only(['search', 'status', 'category_id', 'sub_category_id']),
             'categories' => Category::active()->orderBy('name')->get(['id', 'name']),
             'subCategories' => SubCategory::active()->orderBy('name')->get(['id', 'name']),
+            'cryBabyEnabledCount' => Product::where('cry_baby_enabled', true)->count(),
         ]);
+    }
+
+    /**
+     * Turn the product-page "cry baby" easter egg on or off for every product at once.
+     */
+    public function updateCryBabyForAll(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'enabled' => ['required', 'boolean'],
+        ]);
+
+        $isEnabled = (bool) $validated['enabled'];
+
+        Product::query()->update(['cry_baby_enabled' => $isEnabled]);
+
+        return back()->with('success', $isEnabled
+            ? 'Cry baby easter egg turned on for all products.'
+            : 'Cry baby easter egg turned off for all products.');
     }
 
     public function create(): Response
@@ -68,6 +87,7 @@ class ProductController extends Controller
         $data['is_featured'] = $data['is_featured'] ?? false;
         $data['has_color_variant'] = $data['has_color_variant'] ?? false;
         $data['has_size_variant'] = $data['has_size_variant'] ?? false;
+        $data['cry_baby_enabled'] = $data['cry_baby_enabled'] ?? false;
 
         if ($data['has_color_variant'] || $data['has_size_variant']) {
             $data = array_merge($data, $this->computeDenormalizedFields($variants));
@@ -114,6 +134,7 @@ class ProductController extends Controller
         $data['free_delivery'] = $data['free_delivery'] ?? false;
         $data['has_color_variant'] = $data['has_color_variant'] ?? false;
         $data['has_size_variant'] = $data['has_size_variant'] ?? false;
+        $data['cry_baby_enabled'] = $data['cry_baby_enabled'] ?? false;
 
         if ($data['has_color_variant'] || $data['has_size_variant']) {
             $data = array_merge($data, $this->computeDenormalizedFields($variants));

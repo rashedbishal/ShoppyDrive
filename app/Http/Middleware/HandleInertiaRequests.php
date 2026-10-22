@@ -107,11 +107,17 @@ class HandleInertiaRequests extends Middleware
                 ->orderBy('id')
                 ->pluck('keyword')
                 ->toArray(),
-            'flash' => fn () => [
+            // No session exists on error pages for unmatched URLs (rendered before the web middleware runs).
+            'flash' => fn () => $request->hasSession() ? [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
                 'info' => $request->session()->get('info'),
                 'newToken' => $request->session()->get('newToken'),
+            ] : [
+                'success' => null,
+                'error' => null,
+                'info' => null,
+                'newToken' => null,
             ],
             'homepage_settings' => fn () => HomepageSetting::orderBy('sort_order')->get()->keyBy('section_key'),
             'hero_slides' => fn () => HeroSlide::where('is_active', true)->orderBy('sort_order')->get(),

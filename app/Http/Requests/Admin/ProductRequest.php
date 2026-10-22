@@ -56,6 +56,7 @@ class ProductRequest extends FormRequest
             'variants.*.stock_quantity' => ['required_with:variants', 'integer', 'min:0'],
             'variants.*.low_stock_threshold' => ['nullable', 'integer', 'min:0'],
             'variants.*.is_default' => ['boolean'],
+            'cry_baby_enabled' => ['boolean'],
             'images' => ['nullable', 'array'],
             'images.*' => ['nullable', function ($attribute, $value, $fail) {
                 if (! is_string($value) && ! ($value instanceof UploadedFile)) {
