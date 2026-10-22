@@ -1410,15 +1410,15 @@ function ProductListingPage({
         <>
             <Head title={title} />
 
-            <div className="space-y-8 py-8 lg:py-12">
+            <div className="space-y-6 py-6 lg:py-8">
                 <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 gap-6 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)] lg:grid-cols-[1.1fr_0.9fr] lg:p-8">
-                        <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6 lg:px-6 lg:py-5">
+                        <div className="space-y-3">
                             <Badge variant="amber" className="w-fit">
                                 <SlidersHorizontal className="size-3.5" />
                                 Catalog filters
                             </Badge>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                                 <p className="text-xs font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
                                     {filters.banner_id
                                         ? 'Collection'
@@ -1426,19 +1426,19 @@ function ProductListingPage({
                                           ? 'Category browse'
                                           : 'All products'}
                                 </p>
-                                <h1 className="font-display text-3xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-4xl">
+                                <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-3xl">
                                     {title}
                                 </h1>
-                                <p className="max-w-2xl text-sm leading-7 text-[var(--color-text-secondary)] sm:text-base">
+                                <p className="line-clamp-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
                                     {description}
                                 </p>
                             </div>
-                            <div className="flex flex-wrap gap-3">
-                                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-4 py-2 text-sm text-[var(--color-text-secondary)]">
+                            <div className="flex flex-wrap gap-2">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] sm:text-sm">
                                     <ShieldCheck className="size-4 text-[var(--color-success)]" />
                                     Secure checkout ready
                                 </div>
-                                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-4 py-2 text-sm text-[var(--color-text-secondary)]">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] sm:text-sm">
                                     <Truck className="size-4 text-[var(--color-primary)]" />
                                     Nationwide delivery
                                 </div>
@@ -1490,20 +1490,20 @@ function ProductListingPage({
                                                 '--stat-color': color,
                                             } as React.CSSProperties
                                         }
-                                        className="group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] to-[color-mix(in_srgb,var(--stat-color)_6%,var(--color-surface))] p-3 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--stat-color)_35%,transparent)] hover:shadow-[var(--shadow-card-hover)] sm:p-4"
+                                        className="group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] to-[color-mix(in_srgb,var(--stat-color)_6%,var(--color-surface))] p-3 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--stat-color)_35%,transparent)] hover:shadow-[var(--shadow-card-hover)]"
                                     >
                                         {/* Soft corner glow in the stat's accent colour */}
                                         <span className="pointer-events-none absolute -top-8 -right-8 -z-10 size-24 rounded-full bg-[var(--stat-color)] opacity-[0.08] blur-2xl transition-opacity duration-300 group-hover:opacity-[0.16]" />
-                                        <span className="flex size-8 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--stat-color)_12%,transparent)] text-[var(--stat-color)] ring-1 ring-[color-mix(in_srgb,var(--stat-color)_18%,transparent)] sm:size-10">
+                                        <span className="flex size-8 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--stat-color)_12%,transparent)] text-[var(--stat-color)] ring-1 ring-[color-mix(in_srgb,var(--stat-color)_18%,transparent)] sm:size-9">
                                             <Icon className="size-4 sm:size-5" />
                                         </span>
-                                        <p className="mt-3 truncate font-display text-lg leading-none font-bold tracking-tight text-[var(--color-text-primary)] sm:mt-4 sm:text-2xl">
+                                        <p className="mt-2.5 truncate font-display text-lg leading-none font-bold tracking-tight text-[var(--color-text-primary)] sm:text-xl">
                                             {value}
                                         </p>
-                                        <p className="mt-1.5 truncate text-[11px] text-[var(--color-text-secondary)] sm:text-xs">
+                                        <p className="mt-1 truncate text-[11px] text-[var(--color-text-secondary)] sm:text-xs">
                                             {detail}
                                         </p>
-                                        <p className="mt-3 truncate border-t border-dashed border-[var(--color-border)] pt-2 text-[10px] font-semibold tracking-[0.16em] text-[var(--color-text-muted)] uppercase">
+                                        <p className="mt-2 truncate border-t border-dashed border-[var(--color-border)] pt-1.5 text-[10px] font-semibold tracking-[0.16em] text-[var(--color-text-muted)] uppercase">
                                             {label}
                                         </p>
                                     </div>
@@ -1515,8 +1515,9 @@ function ProductListingPage({
 
                 <section className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
                     <aside className="hidden lg:block">
-                        <div className="sticky top-28 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]">
-                            <div className="mb-4 flex items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4">
+                        {/* Sticks below the header and scrolls on its own, independent of the page. */}
+                        <div className="sticky top-28 flex max-h-[calc(100dvh-8.5rem)] flex-col rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] py-5 pr-2 pl-5 shadow-[var(--shadow-card)]">
+                            <div className="mr-3 mb-4 flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4">
                                 <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                                     Filters
                                     {activeFilterCount > 0 ? (
@@ -1535,16 +1536,18 @@ function ProductListingPage({
                                     </button>
                                 ) : null}
                             </div>
-                            {sidebarControls}
+                            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-3 [scrollbar-width:thin]">
+                                {sidebarControls}
+                            </div>
                         </div>
                     </aside>
 
                     <div className="min-w-0 space-y-6">
-                        <div className="rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)] sm:p-4">
-                            <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                        <div className="rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-card)] sm:p-2.5">
+                            <div className="grid grid-cols-1 gap-2 sm:gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                                 <form
                                     onSubmit={handleSearchSubmit}
-                                    className="flex min-w-0 gap-3"
+                                    className="flex min-w-0 gap-2"
                                 >
                                     <div className="relative min-w-0 flex-1">
                                         <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
@@ -1556,13 +1559,13 @@ function ProductListingPage({
                                                 )
                                             }
                                             placeholder="Search products, brands, or SKUs"
-                                            className="h-12 rounded-full border-[var(--color-border)] pl-11"
+                                            className="h-10 rounded-full border-[var(--color-border)] pl-11"
                                         />
                                     </div>
                                     <Button
                                         type="submit"
                                         variant="outline"
-                                        className="hidden sm:inline-flex"
+                                        className="hidden h-10 sm:inline-flex"
                                     >
                                         Search
                                     </Button>
@@ -1571,7 +1574,7 @@ function ProductListingPage({
                                 <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                                     <Button
                                         variant="outline"
-                                        className="shrink-0 lg:hidden"
+                                        className="h-10 shrink-0 lg:hidden"
                                         onClick={() => setIsFiltersOpen(true)}
                                     >
                                         <Filter className="size-4" />
@@ -1595,7 +1598,7 @@ function ProductListingPage({
                                         }))}
                                         aria-label="Sort products"
                                         containerClassName="min-w-0 flex-1 lg:flex-none"
-                                        selectClassName="truncate sm:min-w-52"
+                                        selectClassName="h-10 truncate sm:min-w-52"
                                     />
 
                                     <div className="inline-flex shrink-0 overflow-hidden rounded-xl border border-[var(--color-border)]">
@@ -1613,7 +1616,7 @@ function ProductListingPage({
                                             }}
                                             aria-label="Grid view"
                                             className={cn(
-                                                'inline-flex size-11 items-center justify-center transition',
+                                                'inline-flex size-10 items-center justify-center transition',
                                                 draftFilters.view === 'grid'
                                                     ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]'
                                                     : 'bg-white text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]',
@@ -1635,7 +1638,7 @@ function ProductListingPage({
                                             }}
                                             aria-label="List view"
                                             className={cn(
-                                                'inline-flex size-11 items-center justify-center transition',
+                                                'inline-flex size-10 items-center justify-center transition',
                                                 draftFilters.view === 'list'
                                                     ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]'
                                                     : 'bg-white text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]',

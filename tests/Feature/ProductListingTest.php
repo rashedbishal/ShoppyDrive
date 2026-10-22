@@ -15,7 +15,7 @@ it('renders the product listing page', function (): void {
             ->component('catalog/ProductListing')
             ->where('title', 'All Products')
             ->where('category', null)
-            ->where('listingUrl', '/products')
+            ->where('listingUrl', route('products.index'))
         );
 });
 
@@ -27,7 +27,7 @@ it('renders a category listing page', function (): void {
         'sort_order' => 0,
     ]);
 
-    $this->get(route('category.show', $category))
+    $this->get(route('category.show', $category->slug))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('catalog/ProductListing')
