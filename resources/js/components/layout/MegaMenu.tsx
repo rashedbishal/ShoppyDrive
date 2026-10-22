@@ -287,10 +287,17 @@ export default function MegaMenu({
                                                         opacity: 1,
                                                         x: 0,
                                                     }}
-                                                    exit={{ opacity: 0, x: -8 }}
+                                                    exit={{
+                                                        opacity: 0,
+                                                        x: -8,
+                                                        transition: {
+                                                            duration: 0.12,
+                                                            ease: 'easeIn',
+                                                        },
+                                                    }}
                                                     transition={{
-                                                        duration: 0.3,
-                                                        delay: 0.08,
+                                                        duration: 0.25,
+                                                        delay: 0.03,
                                                         ease: 'easeOut',
                                                     }}
                                                 >
