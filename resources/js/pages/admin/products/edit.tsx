@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import type { VariantRow } from '@/components/admin/ProductVariantManager';
 import { ProductVariantManager } from '@/components/admin/ProductVariantManager';
+import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
@@ -287,15 +288,10 @@ export default function ProductEdit({
                                     label="Description"
                                     error={errors.description}
                                 >
-                                    <textarea
-                                        rows={5}
-                                        className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none`}
+                                    <RichTextEditor
                                         value={data.description}
-                                        onChange={(e) =>
-                                            setData(
-                                                'description',
-                                                e.target.value,
-                                            )
+                                        onChange={(html) =>
+                                            setData('description', html)
                                         }
                                     />
                                 </Field>
