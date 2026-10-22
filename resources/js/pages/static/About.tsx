@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowRight, Star } from 'lucide-react';
+import { PageHero } from '@/components/shared/PageHero';
+import { ArrowRight, Award, Globe, Heart, Package, ShieldCheck, Star, Truck, Users, Zap } from 'lucide-react';
 import { CategoryIcon } from '@/lib/category-icons';
 
 type AboutStat = { value: string; label: string };
@@ -33,46 +34,28 @@ function AboutPage({ content }: Props): React.JSX.Element {
             <Head title="About Us | ShoppyDrive" />
 
             {/* Hero */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-[#0f0f18] to-[var(--color-surface)] py-20 lg:py-28">
-                <div className="pointer-events-none absolute top-0 -left-40 h-96 w-96 rounded-full bg-[var(--color-primary)] opacity-8 blur-3xl" />
-                <div className="pointer-events-none absolute right-0 bottom-0 h-64 w-64 rounded-full bg-[var(--color-accent)] opacity-5 blur-3xl" />
-                <div className="relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-                    {content.hero_eyebrow && (
-                        <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/10 px-4 py-2 text-sm font-medium text-[var(--color-primary)]">
-                            <Star className="size-4" />
-                            {content.hero_eyebrow}
-                        </div>
-                    )}
-                    <h1 className="mt-4 text-2xl font-bold text-[var(--color-text-primary)] sm:text-4xl lg:text-6xl">
-                        {content.hero_title}
-                        {content.hero_title_highlight && (
-                            <>
-                                <br />
-                                <span className="text-[var(--color-primary)]">
-                                    {content.hero_title_highlight}
-                                </span>
-                            </>
-                        )}
-                    </h1>
-                    <p className="mx-auto mt-6 max-w-2xl text-lg text-[var(--color-text-secondary)]">
-                        {content.hero_description}
-                    </p>
-                    <div className="mt-8 flex items-center justify-center gap-4">
-                        <Link
-                            href="/products"
-                            className="flex h-12 items-center gap-2 rounded-xl bg-[var(--color-primary)] px-6 font-semibold text-white transition hover:bg-[var(--color-primary-hover)]"
-                        >
+            <div className="py-6 lg:py-8">
+                <PageHero
+                    badge={{ icon: Star, label: 'Our Story' }}
+                    eyebrow="About ShoppyDrive"
+                    title={
+                        <>
+                            Bangladesh's Smartest{' '}
+                            <span className="text-[var(--color-primary)]">Shopping Experience</span>
+                        </>
+                    }
+                    description="ShoppyDrive was built to make premium shopping accessible to every Bangladeshi — with honest prices, genuine products, and world-class delivery."
+                >
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Link href="/products" className="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)]">
                             Shop Now <ArrowRight className="size-4" />
                         </Link>
-                        <Link
-                            href="/contact"
-                            className="flex h-12 items-center gap-2 rounded-xl border border-[var(--color-border)] px-6 text-sm font-medium text-[var(--color-text-secondary)] transition hover:text-[var(--color-text-primary)]"
-                        >
+                        <Link href="/contact" className="flex h-10 items-center gap-2 rounded-xl border border-[var(--color-border)] px-5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:text-[var(--color-text-primary)]">
                             Contact Us
                         </Link>
                     </div>
-                </div>
-            </section>
+                </PageHero>
+            </div>
 
             {/* Stats */}
             {content.stats.length > 0 && (

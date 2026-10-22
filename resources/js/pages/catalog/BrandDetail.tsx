@@ -1,8 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Award, Package, ShoppingBag } from 'lucide-react';
 import { ProductCard } from '@/components/shared/ProductCard';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { PageHero } from '@/components/shared/PageHero';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Pagination } from '@/components/ui/pagination';
 import { PRODUCT_GRID_CLASS } from '@/lib/constants';
@@ -32,43 +31,57 @@ type BrandDetailPageProps = {
     products: PaginatedData<Product>;
 };
 
-function BrandDetailContent({ brand, products }: BrandDetailPageProps): React.JSX.Element {
+function BrandDetailContent({
+    brand,
+    products,
+}: BrandDetailPageProps): React.JSX.Element {
     const accent = BRAND_ACCENTS[brand.slug] ?? 'bg-gray-50 text-gray-700';
 
     return (
         <>
             <Head title={`${brand.name} | ShoppyDrive`} />
 
-            <div className="space-y-10 py-8 lg:py-12">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <Button asChild variant="ghost" className="mb-4 -ml-2 gap-2 text-[var(--color-text-secondary)]">
-                        <Link href="/brands">
-                            <ArrowLeft className="size-4" />
-                            All Brands
+            <div className="space-y-6 py-6 lg:py-8">
+                <PageHero
+                    badge={{ icon: Award, label: 'Brand' }}
+                    eyebrow={
+                        <Link
+                            href="/brands"
+                            className="inline-flex items-center gap-1.5 transition hover:text-[var(--color-primary)]"
+                        >
+                            <ArrowLeft className="size-3.5" />
+                            All brands
                         </Link>
-                    </Button>
-
-                    <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-                        <div className={cn('flex size-20 shrink-0 items-center justify-center rounded-2xl text-2xl font-bold', accent)}>
-                            {brand.logo ? (
-                                <img src={brand.logo} alt={brand.name} className="size-12 object-contain" />
-                            ) : (
-                                getInitials(brand.name)
-                            )}
+                    }
+                    title={brand.name}
+                    description={brand.description}
+                    chips={[
+                        {
+                            icon: Package,
+                            label: `${(brand.products_count ?? products.total).toLocaleString()} ${(brand.products_count ?? products.total) === 1 ? 'product' : 'products'}`,
+                        },
+                    ]}
+                    aside={
+                        <div className="flex lg:justify-end">
+                            <div
+                                className={cn(
+                                    'flex size-20 items-center justify-center rounded-2xl text-2xl font-bold shadow-sm ring-1 ring-black/5 lg:size-24',
+                                    accent,
+                                )}
+                            >
+                                {brand.logo ? (
+                                    <img
+                                        src={brand.logo}
+                                        alt={`${brand.name} logo`}
+                                        className="size-12 object-contain lg:size-14"
+                                    />
+                                ) : (
+                                    getInitials(brand.name)
+                                )}
+                            </div>
                         </div>
-                        <div className="space-y-1">
-                            <h1 className="font-display text-3xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-4xl">
-                                {brand.name}
-                            </h1>
-                            {brand.description ? (
-                                <p className="text-sm leading-7 text-[var(--color-text-secondary)] sm:text-base">
-                                    {brand.description}
-                                </p>
-                            ) : null}
-                            <Badge variant="info">{brand.products_count ?? products.total} products</Badge>
-                        </div>
-                    </div>
-                </div>
+                    }
+                />
 
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     {products.data.length === 0 ? (
@@ -76,13 +89,20 @@ function BrandDetailContent({ brand, products }: BrandDetailPageProps): React.JS
                             icon={ShoppingBag}
                             title="No products yet"
                             description={`${brand.name} products will appear here once they are added.`}
-                            action={{ label: 'Browse all products', href: '/products' }}
+                            action={{
+                                label: 'Browse all products',
+                                href: '/products',
+                            }}
                         />
                     ) : (
                         <div className="space-y-8">
                             <div className={PRODUCT_GRID_CLASS}>
                                 {products.data.map((product, index) => (
-                                    <ProductCard key={product.id} product={product} index={index} />
+                                    <ProductCard
+                                        key={product.id}
+                                        product={product}
+                                        index={index}
+                                    />
                                 ))}
                             </div>
                             {products.last_page > 1 ? (
@@ -102,8 +122,8 @@ function BrandDetailContent({ brand, products }: BrandDetailPageProps): React.JS
     );
 }
 
-export default function BrandDetail(props: BrandDetailPageProps): React.JSX.Element {
-    return (
-        <BrandDetailContent {...props} />
-    );
+export default function BrandDetail(
+    props: BrandDetailPageProps,
+): React.JSX.Element {
+    return <BrandDetailContent {...props} />;
 }

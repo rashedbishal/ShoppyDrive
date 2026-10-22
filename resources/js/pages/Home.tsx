@@ -81,8 +81,9 @@ type BrandCard = {
     id: number;
     name: string;
     slug: string;
+    logo: string | null;
+    productsCount: number;
     accent: string;
-    description: string;
 };
 
 type FlashSaleItem = {
@@ -783,27 +784,47 @@ type BrandTileProps = {
 };
 
 function BrandTile({ brand }: BrandTileProps): React.JSX.Element {
+    const [hasLogoError, setHasLogoError] = useState(false);
+    const showLogo = Boolean(brand.logo) && !hasLogoError;
+
     return (
         <Link
             href={`/brands?brand=${brand.slug}`}
-            className="group flex min-w-[13rem] items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 shadow-[var(--shadow-card)] transition hover:-translate-y-1 hover:shadow-[var(--shadow-card-hover)]"
+            className="group min-w-[11rem] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-1 hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card-hover)]"
         >
             <div
                 className={cn(
-                    'flex size-14 items-center justify-center rounded-2xl text-lg font-bold transition group-hover:scale-105',
+                    'relative flex h-24 items-center justify-center overflow-hidden sm:h-28',
                     brand.accent,
                 )}
-                aria-hidden="true"
             >
-                {getInitials(brand.name)}
+                <div className="pointer-events-none absolute inset-0 [background-image:radial-gradient(rgba(255,255,255,0.45)_1px,transparent_1px)] [background-size:12px_12px] opacity-60" />
+                <div className="pointer-events-none absolute -right-6 -bottom-8 size-24 rounded-full bg-white/40 blur-2xl transition-opacity duration-300 group-hover:opacity-80" />
+                <div className="relative flex size-14 items-center justify-center overflow-hidden rounded-xl bg-white p-2 shadow-[0_10px_24px_-12px_rgba(0,0,0,0.45)] ring-1 ring-black/5 transition duration-300 group-hover:scale-105 sm:size-16">
+                    {showLogo ? (
+                        <img
+                            src={brand.logo ?? ''}
+                            alt={`${brand.name} logo`}
+                            loading="lazy"
+                            decoding="async"
+                            onError={() => setHasLogoError(true)}
+                            className="h-full w-full object-contain"
+                        />
+                    ) : (
+                        <span className="text-lg font-bold" aria-hidden="true">
+                            {getInitials(brand.name)}
+                        </span>
+                    )}
+                </div>
             </div>
-            <div className="min-w-0">
-                <p className="truncate text-base font-semibold text-[var(--color-text-primary)]">
+            <div className="flex items-center justify-between gap-2 p-3">
+                <p className="min-w-0 truncate text-sm font-semibold text-[var(--color-text-primary)] transition group-hover:text-[var(--color-primary)]">
                     {brand.name}
                 </p>
-                <p className="truncate text-sm text-[var(--color-text-secondary)]">
-                    {brand.description}
-                </p>
+                <span className="shrink-0 rounded-full bg-[var(--color-surface-alt)] px-2 py-1 text-[11px] font-medium text-[var(--color-text-secondary)]">
+                    {brand.productsCount}{' '}
+                    {brand.productsCount === 1 ? 'item' : 'items'}
+                </span>
             </div>
         </Link>
     );
@@ -1024,8 +1045,9 @@ function Home(): React.JSX.Element {
         id: brand.id,
         name: brand.name,
         slug: brand.slug,
+        logo: brand.logo ?? null,
+        productsCount: brand.products_count ?? 0,
         accent: BRAND_ACCENTS[index % BRAND_ACCENTS.length],
-        description: brand.description ?? '',
     }));
 
     const flashSale = activeFlashSale
