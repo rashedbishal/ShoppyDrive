@@ -1,7 +1,13 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useEffect, useRef } from 'react';
+import {
+    ProductFormField as Field,
+    productInputClass as inputClass,
+} from '@/components/admin/product-form-field';
 import type { VariantRow } from '@/components/admin/ProductVariantManager';
 import { ProductVariantManager } from '@/components/admin/ProductVariantManager';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
@@ -181,33 +187,25 @@ export default function ProductEdit({
     );
     const minVariantPrice = computeMinVariantPrice(data.variants);
 
+    const errorSummaryRef = useRef<HTMLDivElement>(null);
+    const errorMessages = Object.values(errors).filter(Boolean);
+
+    useEffect(() => {
+        if (errorMessages.length > 0) {
+            errorSummaryRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [errors]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         post(route('admin.products.update', product.id), {
             forceFormData: true,
         });
     };
-
-    const Field = ({
-        label,
-        error,
-        children,
-    }: {
-        label: string;
-        error?: string;
-        children: React.ReactNode;
-    }) => (
-        <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-                {label}
-            </label>
-            {children}
-            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-        </div>
-    );
-
-    const inputClass = (err?: string) =>
-        `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;
 
     return (
         <>
@@ -222,6 +220,24 @@ export default function ProductEdit({
                     onSubmit={handleSubmit}
                     className="grid gap-5 lg:grid-cols-[1fr_320px]"
                 >
+                    {errorMessages.length > 0 && (
+                        <div ref={errorSummaryRef} className="lg:col-span-2">
+                            <Alert variant="error">
+                                <AlertTitle>
+                                    Couldn't save product — please fix the
+                                    highlighted field
+                                    {errorMessages.length > 1 ? 's' : ''}
+                                </AlertTitle>
+                                <AlertDescription>
+                                    <ul className="list-disc space-y-0.5 pl-4">
+                                        {errorMessages.map((message, i) => (
+                                            <li key={i}>{message}</li>
+                                        ))}
+                                    </ul>
+                                </AlertDescription>
+                            </Alert>
+                        </div>
+                    )}
                     <div className="space-y-5">
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">

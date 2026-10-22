@@ -70,3 +70,51 @@ test('admin can update a hero slide and upload a new image in the same request',
         ['label' => 'Delivery', 'value' => '24–48h'],
     ]);
 });
+
+test('admin can create a hero slide with a video upload', function () {
+    Storage::fake('public');
+
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.hero-slides.store'), [
+        'title' => 'Video Slide',
+        'eyebrow' => '',
+        'description' => '',
+        'image' => UploadedFile::fake()->create('clip.mp4', 10 * 1024, 'video/mp4'),
+        'primary_cta_label' => '',
+        'primary_cta_href' => '',
+        'secondary_cta_label' => '',
+        'secondary_cta_href' => '',
+        'is_active' => '1',
+        'sort_order' => '1',
+    ]);
+
+    $response->assertRedirect(route('admin.hero-slides.index'));
+    $response->assertSessionDoesntHaveErrors();
+
+    $slide = HeroSlide::where('title', 'Video Slide')->first();
+    expect($slide)->not->toBeNull();
+    expect($slide->image)->toEndWith('.mp4');
+});
+
+test('uploading a hero slide file larger than 15MB is rejected', function () {
+    Storage::fake('public');
+
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.hero-slides.store'), [
+        'title' => 'Too Big Slide',
+        'eyebrow' => '',
+        'description' => '',
+        'image' => UploadedFile::fake()->create('too-big.mp4', 16 * 1024, 'video/mp4'),
+        'primary_cta_label' => '',
+        'primary_cta_href' => '',
+        'secondary_cta_label' => '',
+        'secondary_cta_href' => '',
+        'is_active' => '1',
+        'sort_order' => '1',
+    ]);
+
+    $response->assertInvalid(['image']);
+    expect(HeroSlide::where('title', 'Too Big Slide')->exists())->toBeFalse();
+});

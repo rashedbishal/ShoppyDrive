@@ -225,8 +225,8 @@ class ProductController extends Controller
         $variantsByKey = [];
 
         foreach ($variants as $variant) {
-            $colorId = $variant['color_value_id'] ?? null;
-            $sizeId = $variant['size_value_id'] ?? null;
+            $colorId = isset($variant['color_value_id']) ? (int) $variant['color_value_id'] : null;
+            $sizeId = isset($variant['size_value_id']) ? (int) $variant['size_value_id'] : null;
             $key = $this->variantKey($colorId, $sizeId);
             $submittedKeys[] = $key;
 

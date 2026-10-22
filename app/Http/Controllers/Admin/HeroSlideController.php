@@ -13,6 +13,11 @@ use Inertia\Response;
 
 class HeroSlideController extends Controller
 {
+    /** Extensions accepted for the slide's media file — still images or a short video. */
+    private const MEDIA_EXTENSIONS = 'jpg,jpeg,png,webp,gif,mp4,webm,mov';
+
+    private const MEDIA_MAX_KILOBYTES = 15360; // 15MB
+
     public function index(): Response
     {
         return Inertia::render('admin/homepage/hero-slides/index', [
@@ -31,7 +36,7 @@ class HeroSlideController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'eyebrow' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'image' => ['required', 'image', 'max:5120'],
+            'image' => ['required', 'file', 'mimes:'.self::MEDIA_EXTENSIONS, 'max:'.self::MEDIA_MAX_KILOBYTES],
             'primary_cta_label' => ['nullable', 'string', 'max:100'],
             'primary_cta_href' => ['nullable', 'string', 'max:255'],
             'secondary_cta_label' => ['nullable', 'string', 'max:100'],
@@ -61,7 +66,9 @@ class HeroSlideController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'eyebrow' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'image' => $request->hasFile('image') ? ['required', 'image', 'max:5120'] : ['nullable'],
+            'image' => $request->hasFile('image')
+                ? ['required', 'file', 'mimes:'.self::MEDIA_EXTENSIONS, 'max:'.self::MEDIA_MAX_KILOBYTES]
+                : ['nullable'],
             'primary_cta_label' => ['nullable', 'string', 'max:100'],
             'primary_cta_href' => ['nullable', 'string', 'max:255'],
             'secondary_cta_label' => ['nullable', 'string', 'max:100'],

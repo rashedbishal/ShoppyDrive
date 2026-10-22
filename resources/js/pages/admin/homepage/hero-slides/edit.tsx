@@ -3,9 +3,9 @@ import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { MediaUpload } from '@/components/ui/media-upload';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { ImageUpload } from '@/components/ui/image-upload';
 import type { HeroSlide } from '@/types';
 
 type Props = {
@@ -132,13 +132,14 @@ export default function HeroSlideEdit({ slide }: Props) {
                                 />
                                 <div className="space-y-2">
                                     <p className="text-sm font-medium text-text-primary">
-                                        Slide Image
+                                        Slide Image or Video
                                     </p>
                                     <p className="text-xs text-slate-400">
-                                        Leave as-is to keep the current image.
-                                        Upload a new one to replace it.
+                                        Leave as-is to keep the current media.
+                                        Upload a new image or video to replace
+                                        it.
                                     </p>
-                                    <ImageUpload
+                                    <MediaUpload
                                         value={data.image}
                                         onChange={(file) => {
                                             setData(
@@ -148,7 +149,7 @@ export default function HeroSlideEdit({ slide }: Props) {
                                             clearErrors('image');
                                         }}
                                         error={errors.image}
-                                        hint="Best resolution: 1920×1080px (16:9) landscape, minimum 1600×800px. The image fills the full-width hero and crops to this ratio on smaller screens."
+                                        hint="Image: 1920×1080px (16:9) landscape, minimum 1600×800px. Video: same 16:9 ratio at 1920×1080px (1280×720px minimum), MP4 (H.264) or WebM, muted/no audio needed since it autoplays on loop — keep clips short (5–15s) so the loop isn't obvious. Max file size 15MB either way. The media fills the full-width hero and crops to this ratio on smaller screens."
                                         previewClassName="h-56"
                                     />
                                 </div>

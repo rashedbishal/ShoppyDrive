@@ -2,7 +2,11 @@ import type { InertiaLinkProps } from '@inertiajs/react';
 import { clsx } from 'clsx';
 import type { ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { CURRENCY_CODE, CURRENCY_LOCALE, CURRENCY_SYMBOL } from '@/lib/constants';
+import {
+    CURRENCY_CODE,
+    CURRENCY_LOCALE,
+    CURRENCY_SYMBOL,
+} from '@/lib/constants';
 import type { Product, ProductVariant, StockStatus } from '@/types';
 
 export function cn(...inputs: ClassValue[]) {
@@ -18,7 +22,10 @@ export function formatCurrency(amount: number): string {
         style: 'currency',
     });
 
-    return formatter.format(amount).replace('BDT', CURRENCY_SYMBOL).replace(/\u00a0/g, '');
+    return formatter
+        .format(amount)
+        .replace('BDT', CURRENCY_SYMBOL)
+        .replace(/\u00a0/g, '');
 }
 
 export function formatDate(
@@ -32,10 +39,17 @@ export function formatDate(
         short: { day: 'numeric', month: 'short', year: '2-digit' },
         medium: { day: 'numeric', month: 'short', year: 'numeric' },
         long: { day: 'numeric', month: 'long', year: 'numeric' },
-        full: { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
+        full: {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        },
     };
 
-    return new Intl.DateTimeFormat('en-GB', options[format]).format(new Date(date));
+    return new Intl.DateTimeFormat('en-GB', options[format]).format(
+        new Date(date),
+    );
 }
 
 export function truncate(value: string, length: number): string {
@@ -74,7 +88,9 @@ export function getInitials(name: string): string {
     return `${parts[0].slice(0, 1)}${parts[parts.length - 1].slice(0, 1)}`.toUpperCase();
 }
 
-export type DebouncedFunction<T extends (...args: unknown[]) => void> = ((...args: Parameters<T>) => void) & {
+export type DebouncedFunction<T extends (...args: unknown[]) => void> = ((
+    ...args: Parameters<T>
+) => void) & {
     cancel: () => void;
     flush: () => void;
 };
@@ -124,7 +140,14 @@ export function debounce<T extends (...args: unknown[]) => void>(
     return debounced;
 }
 
-export function getDiscountPercent(price: number, comparePrice: number): number {
+export function isVideoUrl(url: string): boolean {
+    return /\.(mp4|webm|mov|ogg)$/i.test(url);
+}
+
+export function getDiscountPercent(
+    price: number,
+    comparePrice: number,
+): number {
     if (comparePrice <= 0 || comparePrice <= price) {
         return 0;
     }
@@ -136,7 +159,10 @@ export function isInStock(product: Pick<Product, 'stock_quantity'>): boolean {
     return product.stock_quantity > 0;
 }
 
-export function getStockStatus(quantity: number, threshold: number): StockStatus {
+export function getStockStatus(
+    quantity: number,
+    threshold: number,
+): StockStatus {
     if (quantity <= 0) {
         return 'out_of_stock';
     }

@@ -71,6 +71,77 @@ test('admin can create a flat product without variants (regression)', function (
     expect($product->media)->toHaveCount(1);
 });
 
+test('creating a product with a name/slug already in use returns a slug validation error', function () {
+    actingAs($this->admin, 'admin');
+
+    Product::create([
+        'name' => 'Existing Product',
+        'slug' => 'existing-product',
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'price' => 1000,
+        'stock_quantity' => 10,
+    ]);
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'name' => 'Existing Product',
+        'slug' => 'existing-product',
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+    ]));
+
+    $response->assertInvalid(['slug']);
+    expect(Product::where('slug', 'existing-product')->count())->toBe(1);
+});
+
+test('creating a variant product with empty price/stock_quantity strings does not fail validation (regression)', function () {
+    // The create-product form hides the flat price/stock inputs once
+    // variants are enabled, but still submits them as empty strings rather
+    // than omitting the keys — Laravel's ConvertEmptyStringsToNull
+    // middleware turns those into null before validation runs.
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => '',
+        'stock_quantity' => '',
+        'variants' => [
+            ['color_value_id' => $this->red->id, 'price' => 1200, 'stock_quantity' => 5, 'is_default' => true],
+        ],
+    ]));
+
+    $response->assertRedirect(route('admin.products.index'));
+    expect(Product::where('slug', 'test-product')->exists())->toBeTrue();
+});
+
+test('creating a variant product with string-typed variant ids does not throw (regression)', function () {
+    // The browser sends multipart/form-data instead of JSON whenever a product
+    // image is attached, which stringifies every field — including
+    // variants.*.color_value_id/size_value_id. The "integer" validation rule
+    // only checks that the string looks numeric, it doesn't cast it, so the
+    // controller must not assume these values arrive as PHP ints.
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            ['color_value_id' => (string) $this->red->id, 'price' => '1200', 'stock_quantity' => '5', 'is_default' => true],
+        ],
+    ]));
+
+    $response->assertRedirect(route('admin.products.index'));
+
+    $product = Product::where('slug', 'test-product')->first();
+    expect($product->variants)->toHaveCount(1);
+    expect($product->variants->first()->color_value_id)->toBe($this->red->id);
+});
+
 test('admin can create a product with color-only variants and price/stock are denormalized', function () {
     actingAs($this->admin, 'admin');
 

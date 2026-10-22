@@ -42,6 +42,7 @@ import {
     formatCurrency,
     getDiscountPercent,
     getInitials,
+    isVideoUrl,
     cn,
 } from '@/lib/utils';
 import categoryRoutes from '@/routes/category';
@@ -240,14 +241,26 @@ function HeroSlider({
                             ease: 'easeOut',
                         }}
                     >
-                        <img
-                            src={activeSlide.image}
-                            alt=""
-                            aria-hidden="true"
-                            className="absolute inset-0 h-full w-full object-cover"
-                            loading="eager"
-                            decoding="async"
-                        />
+                        {isVideoUrl(activeSlide.image) ? (
+                            <video
+                                src={activeSlide.image}
+                                aria-hidden="true"
+                                className="absolute inset-0 h-full w-full object-cover"
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
+                            />
+                        ) : (
+                            <img
+                                src={activeSlide.image}
+                                alt=""
+                                aria-hidden="true"
+                                className="absolute inset-0 h-full w-full object-cover"
+                                loading="eager"
+                                decoding="async"
+                            />
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-secondary)] via-[rgba(26,26,46,0.76)] to-[rgba(26,26,46,0.12)]" />
                         <div className="absolute inset-0 bg-gradient-to-t from-[rgba(26,26,46,0.7)] via-transparent to-transparent lg:bg-none" />
                         <div className="relative z-10 flex h-full flex-col justify-between px-4 py-6 sm:px-10 sm:py-10 lg:px-14 lg:py-14">
@@ -322,7 +335,7 @@ function HeroSlider({
                                     </Button>
                                     <Link
                                         href={activeSlide.secondaryCta.href}
-                                        className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs font-medium text-white/80 transition hover:text-white sm:text-sm"
+                                        className="flex shrink-0 items-center gap-1.5 text-xs font-medium whitespace-nowrap text-white/80 transition hover:text-white sm:text-sm"
                                     >
                                         {activeSlide.secondaryCta.label}
                                         <ArrowRight className="size-3 sm:size-3.5" />

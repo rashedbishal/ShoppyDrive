@@ -3,9 +3,9 @@ import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { MediaUpload } from '@/components/ui/media-upload';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { ImageUpload } from '@/components/ui/image-upload';
 
 export default function HeroSlideCreate() {
     const { data, setData, post, processing, errors, clearErrors } = useForm({
@@ -123,16 +123,16 @@ export default function HeroSlideCreate() {
                                 />
                                 <div className="space-y-2">
                                     <p className="text-sm font-medium text-text-primary">
-                                        Slide Image *
+                                        Slide Image or Video *
                                     </p>
-                                    <ImageUpload
+                                    <MediaUpload
                                         value={data.image}
                                         onChange={(file) => {
                                             setData('image', file);
                                             clearErrors('image');
                                         }}
                                         error={errors.image}
-                                        hint="Best resolution: 1920×1080px (16:9) landscape, minimum 1600×800px. The image fills the full-width hero and crops to this ratio on smaller screens."
+                                        hint="Image: 1920×1080px (16:9) landscape, minimum 1600×800px. Video: same 16:9 ratio at 1920×1080px (1280×720px minimum), MP4 (H.264) or WebM, muted/no audio needed since it autoplays on loop — keep clips short (5–15s) so the loop isn't obvious. Max file size 15MB either way. The media fills the full-width hero and crops to this ratio on smaller screens."
                                         previewClassName="h-56"
                                     />
                                 </div>
