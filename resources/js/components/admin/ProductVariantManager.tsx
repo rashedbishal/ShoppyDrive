@@ -32,6 +32,23 @@ type Props = {
     errors?: Record<string, string>;
 };
 
+function VariantField({
+    label,
+    children,
+}: {
+    label: string;
+    children: React.ReactNode;
+}): React.JSX.Element {
+    return (
+        <label className="block">
+            <span className="mb-1 block text-xs font-medium text-slate-500">
+                {label}
+            </span>
+            {children}
+        </label>
+    );
+}
+
 function blankVariant(
     colorId: number | null,
     sizeId: number | null,
@@ -217,8 +234,11 @@ export function ProductVariantManager({
     const valueLabel = (id: number | null, options: AttributeValueOption[]) =>
         options.find((opt) => opt.id === id)?.value ?? '—';
 
-    const inputClass =
-        'h-8 w-full rounded-lg border border-slate-200 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
+    const colorSwatch = (id: number | null) =>
+        colorValues.find((opt) => opt.id === id)?.color_hex;
+
+    const fieldInputClass =
+        'h-9 w-full rounded-lg border border-slate-200 px-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
 
     return (
         <div className="space-y-4">
@@ -321,61 +341,79 @@ export function ProductVariantManager({
             )}
 
             {variants.length > 0 && (
-                <div className="overflow-x-auto rounded-xl border border-slate-200">
-                    <table className="w-full text-xs">
-                        <thead className="bg-slate-50 text-slate-500">
-                            <tr>
-                                <th className="px-2 py-2 text-left font-medium">
-                                    Variant
-                                </th>
-                                <th className="px-2 py-2 text-left font-medium">
-                                    SKU
-                                </th>
-                                <th className="px-2 py-2 text-left font-medium">
-                                    Price
-                                </th>
-                                <th className="px-2 py-2 text-left font-medium">
-                                    Compare
-                                </th>
-                                <th className="px-2 py-2 text-left font-medium">
-                                    Cost
-                                </th>
-                                <th className="px-2 py-2 text-left font-medium">
-                                    Stock
-                                </th>
-                                <th className="px-2 py-2 text-left font-medium">
-                                    Low stock
-                                </th>
-                                <th className="px-2 py-2 text-center font-medium">
-                                    Default
-                                </th>
-                                <th className="px-2 py-2" />
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {variants.map((row, index) => (
-                                <tr
-                                    key={`${row.color_value_id}-${row.size_value_id}`}
-                                >
-                                    <td className="px-2 py-1.5 font-medium whitespace-nowrap text-slate-700">
-                                        {[
-                                            hasColorVariant &&
-                                                valueLabel(
-                                                    row.color_value_id,
-                                                    colorValues,
-                                                ),
-                                            hasSizeVariant &&
-                                                valueLabel(
-                                                    row.size_value_id,
-                                                    sizeValues,
-                                                ),
-                                        ]
-                                            .filter(Boolean)
-                                            .join(' / ')}
-                                    </td>
-                                    <td className="px-2 py-1.5">
+                <div className="space-y-3">
+                    {variants.map((row, index) => {
+                        const label = [
+                            hasColorVariant &&
+                                valueLabel(row.color_value_id, colorValues),
+                            hasSizeVariant &&
+                                valueLabel(row.size_value_id, sizeValues),
+                        ]
+                            .filter(Boolean)
+                            .join(' / ');
+                        const swatch = colorSwatch(row.color_value_id);
+
+                        return (
+                            <div
+                                key={`${row.color_value_id}-${row.size_value_id}`}
+                                className={cn(
+                                    'rounded-xl border p-4 transition',
+                                    row.is_default
+                                        ? 'border-[#c8102e]/40 bg-[#c8102e]/[0.03]'
+                                        : 'border-slate-200',
+                                )}
+                            >
+                                <div className="mb-3 flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                        {swatch && (
+                                            <span
+                                                className="size-3.5 shrink-0 rounded-full border border-black/10"
+                                                style={{
+                                                    backgroundColor: swatch,
+                                                }}
+                                            />
+                                        )}
+                                        <span className="text-sm font-semibold text-slate-800">
+                                            {label}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setDefault(index)}
+                                            className={cn(
+                                                'flex items-center gap-1 text-xs font-medium',
+                                                row.is_default
+                                                    ? 'text-amber-600'
+                                                    : 'text-slate-400 hover:text-slate-600',
+                                            )}
+                                        >
+                                            <Star
+                                                className={cn(
+                                                    'size-3.5',
+                                                    row.is_default &&
+                                                        'fill-amber-400 text-amber-400',
+                                                )}
+                                            />
+                                            {row.is_default
+                                                ? 'Default'
+                                                : 'Set default'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeRow(index)}
+                                            title="Remove variant"
+                                            className="text-slate-400 hover:text-red-500"
+                                        >
+                                            <Trash2 className="size-4" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                    <VariantField label="SKU">
                                         <input
-                                            className={inputClass}
+                                            className={fieldInputClass}
                                             value={row.sku}
                                             onChange={(e) =>
                                                 updateRow(index, {
@@ -383,13 +421,13 @@ export function ProductVariantManager({
                                                 })
                                             }
                                         />
-                                    </td>
-                                    <td className="px-2 py-1.5">
+                                    </VariantField>
+                                    <VariantField label="Price (৳)">
                                         <input
                                             type="number"
                                             min="0"
                                             step="0.01"
-                                            className={inputClass}
+                                            className={fieldInputClass}
                                             value={row.price}
                                             onChange={(e) =>
                                                 updateRow(index, {
@@ -397,13 +435,13 @@ export function ProductVariantManager({
                                                 })
                                             }
                                         />
-                                    </td>
-                                    <td className="px-2 py-1.5">
+                                    </VariantField>
+                                    <VariantField label="Compare price (৳)">
                                         <input
                                             type="number"
                                             min="0"
                                             step="0.01"
-                                            className={inputClass}
+                                            className={fieldInputClass}
                                             value={row.compare_price}
                                             onChange={(e) =>
                                                 updateRow(index, {
@@ -412,13 +450,13 @@ export function ProductVariantManager({
                                                 })
                                             }
                                         />
-                                    </td>
-                                    <td className="px-2 py-1.5">
+                                    </VariantField>
+                                    <VariantField label="Cost price (৳)">
                                         <input
                                             type="number"
                                             min="0"
                                             step="0.01"
-                                            className={inputClass}
+                                            className={fieldInputClass}
                                             value={row.cost_price}
                                             onChange={(e) =>
                                                 updateRow(index, {
@@ -426,12 +464,12 @@ export function ProductVariantManager({
                                                 })
                                             }
                                         />
-                                    </td>
-                                    <td className="px-2 py-1.5">
+                                    </VariantField>
+                                    <VariantField label="Stock qty">
                                         <input
                                             type="number"
                                             min="0"
-                                            className={inputClass}
+                                            className={fieldInputClass}
                                             value={row.stock_quantity}
                                             onChange={(e) =>
                                                 updateRow(index, {
@@ -440,12 +478,12 @@ export function ProductVariantManager({
                                                 })
                                             }
                                         />
-                                    </td>
-                                    <td className="px-2 py-1.5">
+                                    </VariantField>
+                                    <VariantField label="Low stock alert">
                                         <input
                                             type="number"
                                             min="0"
-                                            className={inputClass}
+                                            className={fieldInputClass}
                                             value={row.low_stock_threshold}
                                             onChange={(e) =>
                                                 updateRow(index, {
@@ -454,36 +492,11 @@ export function ProductVariantManager({
                                                 })
                                             }
                                         />
-                                    </td>
-                                    <td className="px-2 py-1.5 text-center">
-                                        <button
-                                            type="button"
-                                            onClick={() => setDefault(index)}
-                                            title="Set as default"
-                                        >
-                                            <Star
-                                                className={cn(
-                                                    'size-4',
-                                                    row.is_default
-                                                        ? 'fill-amber-400 text-amber-400'
-                                                        : 'text-slate-300',
-                                                )}
-                                            />
-                                        </button>
-                                    </td>
-                                    <td className="px-2 py-1.5">
-                                        <button
-                                            type="button"
-                                            onClick={() => removeRow(index)}
-                                            className="text-slate-400 hover:text-red-500"
-                                        >
-                                            <Trash2 className="size-3.5" />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                    </VariantField>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
 

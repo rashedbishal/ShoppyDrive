@@ -7,6 +7,7 @@ import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
 import { buildMediaTagOptions } from '@/lib/variant-media-tags';
+import { computeMinVariantPrice } from '@/lib/variant-pricing';
 
 type ProductMedia = {
     id: number;
@@ -177,6 +178,7 @@ export default function ProductEdit({
         data.has_color_variant,
         data.has_size_variant,
     );
+    const minVariantPrice = computeMinVariantPrice(data.variants);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -248,15 +250,23 @@ export default function ProductEdit({
                                         }
                                     />
                                 </Field>
-                                <Field label="SKU" error={errors.sku}>
-                                    <input
-                                        className={inputClass(errors.sku)}
-                                        value={data.sku}
-                                        onChange={(e) =>
-                                            setData('sku', e.target.value)
-                                        }
-                                    />
-                                </Field>
+                                {hasVariants ? (
+                                    <p className="text-xs text-slate-400">
+                                        SKU is set per color/size variant below
+                                        instead, since each variant needs its
+                                        own.
+                                    </p>
+                                ) : (
+                                    <Field label="SKU" error={errors.sku}>
+                                        <input
+                                            className={inputClass(errors.sku)}
+                                            value={data.sku}
+                                            onChange={(e) =>
+                                                setData('sku', e.target.value)
+                                            }
+                                        />
+                                    </Field>
+                                )}
                                 <Field
                                     label="Short Description"
                                     error={errors.short_description}
@@ -430,15 +440,10 @@ export default function ProductEdit({
                                                 {data.variants.length} variant
                                                 {data.variants.length === 1
                                                     ? ''
-                                                    : 's'}{' '}
-                                                — from ৳
-                                                {Math.min(
-                                                    ...data.variants.map(
-                                                        (v) =>
-                                                            Number(v.price) ||
-                                                            Infinity,
-                                                    ),
-                                                )}
+                                                    : 's'}
+                                                {minVariantPrice !== null
+                                                    ? ` — from ৳${minVariantPrice}`
+                                                    : ' — enter a price for each variant'}
                                             </p>
                                         )}
                                 </div>
