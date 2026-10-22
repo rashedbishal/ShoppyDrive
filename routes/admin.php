@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\AttributeValueController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -66,10 +67,16 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::patch('reviews/{review}/reject', [ReviewController::class, 'reject'])->name('reviews.reject');
     Route::delete('reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
 
+    Route::get('contact-messages', [ContactMessageController::class, 'index'])->name('contact-messages.index');
+    Route::delete('contact-messages/clear', [ContactMessageController::class, 'clear'])->name('contact-messages.clear');
+    Route::delete('contact-messages/{contactMessage}', [ContactMessageController::class, 'destroy'])->name('contact-messages.destroy');
+
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
     Route::get('settings/social', [SettingController::class, 'socialConfig'])->name('settings.social');
     Route::get('settings/courier', [SettingController::class, 'courierConfig'])->name('settings.courier');
+    Route::get('settings/about-page', [SettingController::class, 'aboutPageConfig'])->name('settings.about-page');
+    Route::get('settings/contact-page', [SettingController::class, 'contactPageConfig'])->name('settings.contact-page');
     Route::get('settings/pathao/stores', [SettingController::class, 'pathaoStores'])->name('settings.pathao.stores');
     Route::get('settings/steadfast/balance', [SettingController::class, 'steadfastBalance'])->name('settings.steadfast.balance');
 

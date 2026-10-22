@@ -87,6 +87,8 @@ export interface AppSettings {
         facebook?: string;
         instagram?: string;
         twitter?: string;
+        youtube?: string;
+        tiktok?: string;
     };
     google_analytics_id?: string | null;
     meta_pixel_id?: string | null;

@@ -36,6 +36,53 @@ test('admin can view the courier config page', function () {
     $response->assertInertia(fn ($page) => $page->component('admin/settings/courier'));
 });
 
+test('admin can save youtube and tiktok social links', function () {
+    actingAs($this->admin, 'admin');
+
+    $response = $this->put(route('admin.settings.update'), [
+        'social_links' => [
+            'facebook' => 'https://facebook.com/shoppydrive',
+            'youtube' => 'https://youtube.com/@shoppydrive',
+            'tiktok' => 'https://tiktok.com/@shoppydrive',
+        ],
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionDoesntHaveErrors();
+
+    expect(Setting::where('key', 'social_links')->first()->value)->toBe([
+        'facebook' => 'https://facebook.com/shoppydrive',
+        'youtube' => 'https://youtube.com/@shoppydrive',
+        'tiktok' => 'https://tiktok.com/@shoppydrive',
+    ]);
+});
+
+test('admin can view the contact page config page', function () {
+    actingAs($this->admin, 'admin');
+
+    $response = $this->get(route('admin.settings.contact-page'));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page->component('admin/settings/contact-page'));
+});
+
+test('admin can save contact page content, including shared contact details', function () {
+    actingAs($this->admin, 'admin');
+
+    $response = $this->put(route('admin.settings.update'), [
+        'contact_page_hero_title' => 'Need help?',
+        'contact_phone' => '+880 1800-123456',
+        'contact_email' => 'help@shoppydrive.com',
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionDoesntHaveErrors();
+
+    expect(Setting::where('key', 'contact_page_hero_title')->first()->value)->toBe('Need help?');
+    expect(Setting::where('key', 'contact_phone')->first()->value)->toBe('+880 1800-123456');
+    expect(Setting::where('key', 'contact_email')->first()->value)->toBe('help@shoppydrive.com');
+});
+
 test('saving the google card does not clobber facebook or courier settings', function () {
     actingAs($this->admin, 'admin');
 

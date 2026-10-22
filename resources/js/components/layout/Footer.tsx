@@ -10,13 +10,17 @@ import {
     ShoppingBag,
     Star,
     Truck,
-    Twitter,
     Youtube,
     Zap,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
-import { footerCustomerLinks, footerQuickLinks, storeCategories } from '@/components/layout/navigation';
+import { TikTokLogo, XLogo } from '@/components/icons/brand-icons';
+import {
+    footerCustomerLinks,
+    footerQuickLinks,
+    storeCategories,
+} from '@/components/layout/navigation';
 import type { SharedPageProps } from '@/types';
 
 type NewsletterFormData = { email: string };
@@ -36,10 +40,27 @@ export default function Footer(): React.JSX.Element {
     const checkTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const socialLinks = [
-        { label: 'Facebook', href: settings.social_links?.facebook, Icon: Facebook },
-        { label: 'Instagram', href: settings.social_links?.instagram, Icon: Instagram },
-        { label: 'Twitter', href: settings.social_links?.twitter, Icon: Twitter },
-        { label: 'YouTube', href: settings.social_links?.youtube, Icon: Youtube },
+        {
+            label: 'Facebook',
+            href: settings.social_links?.facebook,
+            Icon: Facebook,
+        },
+        {
+            label: 'Instagram',
+            href: settings.social_links?.instagram,
+            Icon: Instagram,
+        },
+        { label: 'X', href: settings.social_links?.twitter, Icon: XLogo },
+        {
+            label: 'YouTube',
+            href: settings.social_links?.youtube,
+            Icon: Youtube,
+        },
+        {
+            label: 'TikTok',
+            href: settings.social_links?.tiktok,
+            Icon: TikTokLogo,
+        },
     ].filter((s) => typeof s.href === 'string' && s.href.length > 0);
 
     const checkStatus = (email: string): void => {
@@ -51,7 +72,9 @@ export default function Footer(): React.JSX.Element {
         checkTimeout.current = setTimeout(() => {
             fetch(`/newsletter/status?email=${encodeURIComponent(email)}`)
                 .then((r) => r.json())
-                .then((data: { is_subscribed: boolean }) => setIsSubscribed(data.is_subscribed))
+                .then((data: { is_subscribed: boolean }) =>
+                    setIsSubscribed(data.is_subscribed),
+                )
                 .catch(() => {});
         }, 500);
     };
@@ -86,13 +109,20 @@ export default function Footer(): React.JSX.Element {
                 <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                         {trustBadges.map(({ icon: Icon, label, sub }) => (
-                            <div key={label} className="flex items-center gap-3">
+                            <div
+                                key={label}
+                                className="flex items-center gap-3"
+                            >
                                 <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-light)]">
                                     <Icon className="size-5 text-[var(--color-primary)]" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">{label}</p>
-                                    <p className="truncate text-xs text-[var(--color-text-muted)]">{sub}</p>
+                                    <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
+                                        {label}
+                                    </p>
+                                    <p className="truncate text-xs text-[var(--color-text-muted)]">
+                                        {sub}
+                                    </p>
                                 </div>
                             </div>
                         ))}
@@ -103,12 +133,18 @@ export default function Footer(): React.JSX.Element {
             {/* Main footer */}
             <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
                 <div className="grid gap-10 lg:grid-cols-[1.4fr_0.9fr_0.9fr_1.1fr]">
-
                     {/* Brand column */}
                     <div className="space-y-6">
-                        <Link href={route('home')} className="inline-flex items-center gap-3">
+                        <Link
+                            href={route('home')}
+                            className="inline-flex items-center gap-3"
+                        >
                             {settings.logo ? (
-                                <img src={settings.logo} alt={settings.site_name} className="h-14 w-auto object-contain" />
+                                <img
+                                    src={settings.logo}
+                                    alt={settings.site_name}
+                                    className="h-14 w-auto object-contain"
+                                />
                             ) : (
                                 <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white">
                                     <AppLogoIcon className="size-5 fill-current text-white" />
@@ -120,18 +156,26 @@ export default function Footer(): React.JSX.Element {
                         </Link>
 
                         <p className="max-w-xs text-sm leading-7 text-[var(--color-text-secondary)]">
-                            Bangladesh's premier online shopping destination. Premium products, unbeatable prices, and fast nationwide delivery.
+                            Bangladesh's premier online shopping destination.
+                            Premium products, unbeatable prices, and fast
+                            nationwide delivery.
                         </p>
 
                         <div className="space-y-2.5 text-sm">
                             {settings.contact_phone ? (
-                                <a href={`tel:${settings.contact_phone}`} className="flex items-center gap-2.5 text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]">
+                                <a
+                                    href={`tel:${settings.contact_phone}`}
+                                    className="flex items-center gap-2.5 text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]"
+                                >
                                     <Phone className="size-4 shrink-0" />
                                     {settings.contact_phone}
                                 </a>
                             ) : null}
                             {settings.contact_email ? (
-                                <a href={`mailto:${settings.contact_email}`} className="flex items-center gap-2.5 text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]">
+                                <a
+                                    href={`mailto:${settings.contact_email}`}
+                                    className="flex items-center gap-2.5 text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]"
+                                >
                                     <Mail className="size-4 shrink-0" />
                                     {settings.contact_email}
                                 </a>
@@ -163,7 +207,7 @@ export default function Footer(): React.JSX.Element {
 
                     {/* Quick links */}
                     <div className="space-y-4">
-                        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                        <h3 className="text-xs font-bold tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
                             Quick Links
                         </h3>
                         <nav className="space-y-2.5">
@@ -182,7 +226,7 @@ export default function Footer(): React.JSX.Element {
 
                     {/* Customer care */}
                     <div className="space-y-4">
-                        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                        <h3 className="text-xs font-bold tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
                             Customer Care
                         </h3>
                         <nav className="space-y-2.5">
@@ -205,7 +249,8 @@ export default function Footer(): React.JSX.Element {
                                 Stay in the loop
                             </h3>
                             <p className="text-sm text-[var(--color-text-secondary)]">
-                                Get deals, new arrivals and sale alerts straight to your inbox.
+                                Get deals, new arrivals and sale alerts straight
+                                to your inbox.
                             </p>
                         </div>
 
@@ -229,8 +274,12 @@ export default function Footer(): React.JSX.Element {
                                     className="flex items-center gap-1.5 bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)] disabled:opacity-60"
                                 >
                                     {form.processing
-                                        ? (isSubscribed ? 'Removing…' : 'Subscribing…')
-                                        : (isSubscribed ? 'Unsubscribe' : 'Subscribe')}
+                                        ? isSubscribed
+                                            ? 'Removing…'
+                                            : 'Subscribing…'
+                                        : isSubscribed
+                                          ? 'Unsubscribe'
+                                          : 'Subscribe'}
                                 </button>
                             </div>
                             {statusMsg ? (
@@ -239,14 +288,16 @@ export default function Footer(): React.JSX.Element {
                                 </p>
                             ) : (
                                 <p className="text-xs text-[var(--color-text-muted)]">
-                                    {isSubscribed ? 'You are subscribed.' : 'No spam. Unsubscribe any time.'}
+                                    {isSubscribed
+                                        ? 'You are subscribed.'
+                                        : 'No spam. Unsubscribe any time.'}
                                 </p>
                             )}
                         </form>
 
                         {/* Payment methods */}
                         <div className="space-y-2">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                            <p className="text-[11px] font-semibold tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
                                 We Accept
                             </p>
                             <div className="flex flex-wrap gap-2">
@@ -266,12 +317,31 @@ export default function Footer(): React.JSX.Element {
                 {/* Bottom bar */}
                 <div className="mt-12 flex flex-col gap-4 border-t border-[var(--color-border)] pt-6 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-[var(--color-text-muted)]">
-                        &copy; {new Date().getFullYear()} <span className="text-[var(--color-text-secondary)]">{settings.site_name}</span>. All rights reserved.
+                        &copy; {new Date().getFullYear()}{' '}
+                        <span className="text-[var(--color-text-secondary)]">
+                            {settings.site_name}
+                        </span>
+                        . All rights reserved.
                     </p>
                     <div className="flex flex-wrap gap-5 text-sm text-[var(--color-text-muted)]">
-                        <Link href="/privacy-policy" className="transition hover:text-[var(--color-primary)]">Privacy Policy</Link>
-                        <Link href="/terms" className="transition hover:text-[var(--color-primary)]">Terms of Service</Link>
-                        <Link href="/faq" className="transition hover:text-[var(--color-primary)]">FAQ</Link>
+                        <Link
+                            href="/privacy-policy"
+                            className="transition hover:text-[var(--color-primary)]"
+                        >
+                            Privacy Policy
+                        </Link>
+                        <Link
+                            href="/terms"
+                            className="transition hover:text-[var(--color-primary)]"
+                        >
+                            Terms of Service
+                        </Link>
+                        <Link
+                            href="/faq"
+                            className="transition hover:text-[var(--color-primary)]"
+                        >
+                            FAQ
+                        </Link>
                     </div>
                 </div>
             </div>

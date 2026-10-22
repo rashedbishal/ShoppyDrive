@@ -244,7 +244,7 @@ class CartManager
         return array_values($normalized);
     }
 
-    private function resolvePrice(int $productId, ?int $variantId): float
+    public function resolvePrice(int $productId, ?int $variantId): float
     {
         if ($variantId !== null) {
             $variant = ProductVariant::query()->findOrFail($variantId);
@@ -264,7 +264,7 @@ class CartManager
         return $variantId !== null ? "variant:{$variantId}" : "product:{$productId}";
     }
 
-    private function formatMoney(float $amount): string
+    public function formatMoney(float $amount): string
     {
         return number_format($amount, 2);
     }

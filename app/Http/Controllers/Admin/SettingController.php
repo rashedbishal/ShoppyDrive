@@ -45,6 +45,20 @@ class SettingController extends Controller
         ]);
     }
 
+    public function aboutPageConfig(): Response
+    {
+        return Inertia::render('admin/settings/about-page', [
+            'settings' => $this->settingsProp(),
+        ]);
+    }
+
+    public function contactPageConfig(): Response
+    {
+        return Inertia::render('admin/settings/contact-page', [
+            'settings' => $this->settingsProp(),
+        ]);
+    }
+
     public function update(Request $request): RedirectResponse
     {
         $request->validate([
@@ -58,6 +72,8 @@ class SettingController extends Controller
             'social_links.facebook' => ['nullable', 'string', 'max:500'],
             'social_links.instagram' => ['nullable', 'string', 'max:500'],
             'social_links.twitter' => ['nullable', 'string', 'max:500'],
+            'social_links.youtube' => ['nullable', 'string', 'max:500'],
+            'social_links.tiktok' => ['nullable', 'string', 'max:500'],
             'google_analytics_id' => ['nullable', 'string', 'max:100'],
             'meta_pixel_id' => ['nullable', 'string', 'max:100'],
             'whatsapp_number' => ['nullable', 'string', 'max:20'],
@@ -80,6 +96,34 @@ class SettingController extends Controller
             'steadfast_secret_key' => ['nullable', 'string', 'max:255'],
             'steadfast_webhook_secret' => ['nullable', 'string', 'max:255'],
             'steadfast_webhook_url' => ['nullable', 'string', 'max:500'],
+            'about_hero_eyebrow' => ['nullable', 'string', 'max:100'],
+            'about_hero_title' => ['nullable', 'string', 'max:255'],
+            'about_hero_title_highlight' => ['nullable', 'string', 'max:255'],
+            'about_hero_description' => ['nullable', 'string', 'max:1000'],
+            'about_stats' => ['nullable', 'array', 'max:8'],
+            'about_stats.*.value' => ['nullable', 'string', 'max:50'],
+            'about_stats.*.label' => ['nullable', 'string', 'max:100'],
+            'about_mission_eyebrow' => ['nullable', 'string', 'max:100'],
+            'about_mission_title' => ['nullable', 'string', 'max:255'],
+            'about_mission_body' => ['nullable', 'string', 'max:20000'],
+            'about_mission_features' => ['nullable', 'array', 'max:8'],
+            'about_mission_features.*.icon' => ['nullable', 'string', 'max:100'],
+            'about_mission_features.*.label' => ['nullable', 'string', 'max:100'],
+            'about_values' => ['nullable', 'array', 'max:12'],
+            'about_values.*.icon' => ['nullable', 'string', 'max:100'],
+            'about_values.*.title' => ['nullable', 'string', 'max:100'],
+            'about_values.*.description' => ['nullable', 'string', 'max:500'],
+            'about_team' => ['nullable', 'array', 'max:24'],
+            'about_team.*.name' => ['nullable', 'string', 'max:100'],
+            'about_team.*.role' => ['nullable', 'string', 'max:100'],
+            'about_team.*.initials' => ['nullable', 'string', 'max:4'],
+            'about_cta_title' => ['nullable', 'string', 'max:255'],
+            'about_cta_description' => ['nullable', 'string', 'max:500'],
+            'contact_page_hero_eyebrow' => ['nullable', 'string', 'max:100'],
+            'contact_page_hero_title' => ['nullable', 'string', 'max:255'],
+            'contact_page_hero_title_highlight' => ['nullable', 'string', 'max:100'],
+            'contact_page_hero_description' => ['nullable', 'string', 'max:500'],
+            'contact_page_support_hours' => ['nullable', 'string', 'max:100'],
         ]);
 
         // Handle logo upload separately
@@ -102,6 +146,11 @@ class SettingController extends Controller
             'pathao_environment', 'pathao_client_id', 'pathao_client_secret',
             'pathao_username', 'pathao_password', 'pathao_store_id',
             'steadfast_api_key', 'steadfast_secret_key', 'steadfast_webhook_secret', 'steadfast_webhook_url',
+            'about_hero_eyebrow', 'about_hero_title', 'about_hero_title_highlight', 'about_hero_description',
+            'about_stats', 'about_mission_eyebrow', 'about_mission_title', 'about_mission_body',
+            'about_mission_features', 'about_values', 'about_team', 'about_cta_title', 'about_cta_description',
+            'contact_page_hero_eyebrow', 'contact_page_hero_title', 'contact_page_hero_title_highlight',
+            'contact_page_hero_description', 'contact_page_support_hours',
         ];
 
         foreach ($fields as $key) {
@@ -161,6 +210,8 @@ class SettingController extends Controller
             in_array($key, ['google_client_id', 'google_client_secret', 'google_redirect_uri', 'facebook_client_id', 'facebook_client_secret', 'facebook_redirect_uri']) => 'social_login',
             in_array($key, ['pathao_environment', 'pathao_client_id', 'pathao_client_secret', 'pathao_username', 'pathao_password', 'pathao_store_id']) => 'courier',
             in_array($key, ['steadfast_api_key', 'steadfast_secret_key', 'steadfast_webhook_secret', 'steadfast_webhook_url']) => 'courier',
+            str_starts_with($key, 'about_') => 'about_page',
+            str_starts_with($key, 'contact_page_') => 'contact_page',
             default => 'integrations',
         };
     }

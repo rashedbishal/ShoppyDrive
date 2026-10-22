@@ -8,12 +8,16 @@ use App\Enums\PaymentMethod;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\Address;
 use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Coupon;
 use App\Models\HomepageSetting;
 use App\Models\Order;
 use App\Models\PendingCheckout;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Support\CartManager;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -25,7 +29,7 @@ class CheckoutController extends Controller
         private readonly CartManager $cartManager,
     ) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $savedAddresses = [];
 
@@ -38,27 +42,77 @@ class CheckoutController extends Controller
         }
 
         return Inertia::render('checkout/Checkout', [
-            'cart' => $this->cartManager->serializeForRequest(request()),
+            'cart' => $this->cartManager->serializeForRequest($request),
             'savedAddresses' => $savedAddresses,
+            'buyNowItem' => $this->resolveBuyNowItem($request),
         ]);
+    }
+
+    /**
+     * "Buy Now" on the product page links here with the product/variant/
+     * quantity in the query string instead of going through the cart, so the
+     * checkout page can show just this one item without ever touching the
+     * customer's real cart.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function resolveBuyNowItem(Request $request): ?array
+    {
+        $productId = $request->integer('buy_now_product');
+
+        if ($productId <= 0) {
+            return null;
+        }
+
+        $product = Product::with('images')->find($productId);
+
+        if (! $product) {
+            return null;
+        }
+
+        $variantId = $request->filled('buy_now_variant') ? $request->integer('buy_now_variant') : null;
+        $variant = $variantId ? ProductVariant::with('media')->find($variantId) : null;
+        $quantity = max(1, $request->integer('buy_now_qty', 1));
+        $price = $this->cartManager->resolvePrice($product->id, $variant?->id);
+
+        return [
+            'id' => 0,
+            'item_key' => $variant ? "variant:{$variant->id}" : "product:{$product->id}",
+            'product' => $product->toArray(),
+            'variant' => $variant?->toArray(),
+            'quantity' => $quantity,
+            'price' => $price,
+            'formatted_price' => $this->cartManager->formatMoney($price),
+            'subtotal' => $price * $quantity,
+            'formatted_subtotal' => $this->cartManager->formatMoney($price * $quantity),
+        ];
     }
 
     public function store(PlaceOrderRequest $request): RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
-        if ($request->filled('items')) {
-            if ($request->user() !== null) {
-                $this->cartManager->syncUserCart($request->user(), $request->validated('items'));
-            } else {
-                $this->cartManager->syncSessionCart($request->session()->getId(), $request->validated('items'));
+        $isBuyNow = $request->boolean('is_buy_now');
+
+        if ($isBuyNow) {
+            // Never touches carts/cart_items — Buy Now must not disturb the
+            // customer's real cart (which, for a logged-in user, the client
+            // re-hydrates from the server cart on every page navigation).
+            $cart = $this->buildBuyNowCart($request->validated('items', []));
+        } else {
+            if ($request->filled('items')) {
+                if ($request->user() !== null) {
+                    $this->cartManager->syncUserCart($request->user(), $request->validated('items'));
+                } else {
+                    $this->cartManager->syncSessionCart($request->session()->getId(), $request->validated('items'));
+                }
             }
+
+            $cart = $this->cartManager->getCurrentCart($request);
+
+            abort_if(! $cart || $cart->items->isEmpty(), 422, 'Your cart is empty.');
+
+            // Eager-load products so free_delivery checks don't N+1
+            $cart->load('items.product');
         }
-
-        $cart = $this->cartManager->getCurrentCart($request);
-
-        abort_if(! $cart || $cart->items->isEmpty(), 422, 'Your cart is empty.');
-
-        // Eager-load products so free_delivery checks don't N+1
-        $cart->load('items.product');
 
         $shippingAddress = $this->resolveShippingAddress($request);
 
@@ -69,7 +123,7 @@ class CheckoutController extends Controller
 
         // ── COD ─────────────────────────────────────────────────────────────
         if ($request->payment_method === PaymentMethod::COD->value) {
-            $order = DB::transaction(function () use ($request, $cart, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $discount, $total) {
+            $order = DB::transaction(function () use ($request, $cart, $isBuyNow, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $discount, $total) {
                 $this->maybeAutoSaveAddress($request, $shippingAddress);
 
                 $order = Order::create([
@@ -112,8 +166,10 @@ class CheckoutController extends Controller
                     ]);
                 }
 
-                $cart->items()->delete();
-                $cart->delete();
+                if (! $isBuyNow) {
+                    $cart->items()->delete();
+                    $cart->delete();
+                }
 
                 return $order;
             });
@@ -236,6 +292,42 @@ class CheckoutController extends Controller
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * Builds an in-memory, never-persisted Cart/CartItem pair for "Buy Now"
+     * so the rest of this method (shipping calc, order-item creation, mobile
+     * banking) can treat it exactly like a real cart — without ever writing
+     * to the carts/cart_items tables, so the customer's actual cart is left
+     * completely untouched.
+     *
+     * @param  array<int, array{product_id:int, variant_id:int|null, quantity:int}>  $items
+     */
+    private function buildBuyNowCart(array $items): Cart
+    {
+        abort_if(count($items) !== 1, 422, 'Buy Now requires exactly one item.');
+
+        $payload = $items[0];
+        $product = Product::with('images')->findOrFail($payload['product_id']);
+        $variant = ! empty($payload['variant_id'])
+            ? ProductVariant::with('media')->findOrFail($payload['variant_id'])
+            : null;
+        $quantity = max(1, (int) $payload['quantity']);
+        $price = $this->cartManager->resolvePrice($product->id, $variant?->id);
+
+        $cartItem = new CartItem([
+            'product_id' => $product->id,
+            'variant_id' => $variant?->id,
+            'quantity' => $quantity,
+            'price' => $price,
+        ]);
+        $cartItem->setRelation('product', $product);
+        $cartItem->setRelation('variant', $variant);
+
+        $cart = new Cart;
+        $cart->setRelation('items', collect([$cartItem]));
+
+        return $cart;
+    }
 
     /** @return array{0: int|null, 1: string|null, 2: float} */
     private function resolveCoupon(PlaceOrderRequest $request, float $subtotal): array

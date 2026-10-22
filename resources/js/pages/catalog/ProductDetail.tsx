@@ -243,8 +243,20 @@ export default function ProductDetail({
     };
 
     const handleBuyNow = () => {
-        handleAddToCart();
-        // redirect to checkout logic would go here
+        if (isOutOfStock) {
+            return;
+        }
+
+        const params: Record<string, number> = {
+            buy_now_product: product.id,
+            buy_now_qty: quantity,
+        };
+
+        if (selectedVariant) {
+            params.buy_now_variant = selectedVariant.id;
+        }
+
+        router.visit(route('checkout.index', params));
     };
 
     const shareProduct = (platform: 'facebook' | 'twitter' | 'copy') => {

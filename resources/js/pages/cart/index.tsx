@@ -24,12 +24,12 @@ export default function CartIndex() {
     );
 
     return (
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
             <Head title="Shopping Cart" />
 
             <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="space-y-2">
-                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                    <p className="text-sm font-medium tracking-[0.22em] text-slate-500 uppercase">
                         Cart review
                     </p>
                     <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
@@ -71,6 +71,18 @@ export default function CartIndex() {
                                             <p className="font-medium text-slate-950">
                                                 {item.product.name}
                                             </p>
+                                            {item.variant && (
+                                                <p className="text-xs font-medium tracking-wide text-slate-600 uppercase">
+                                                    {Object.entries(
+                                                        item.variant.attributes,
+                                                    )
+                                                        .map(
+                                                            ([key, value]) =>
+                                                                `${key}: ${value}`,
+                                                        )
+                                                        .join(' | ')}
+                                                </p>
+                                            )}
                                             <p className="text-sm text-slate-500">
                                                 Quantity {item.quantity}
                                             </p>
@@ -100,7 +112,9 @@ export default function CartIndex() {
                             <div className="space-y-3 text-sm">
                                 <div className="flex items-center justify-between text-slate-300">
                                     <span>Subtotal</span>
-                                    <span>{formatCurrency.format(subtotal)}</span>
+                                    <span>
+                                        {formatCurrency.format(subtotal)}
+                                    </span>
                                 </div>
                                 <div className="flex items-center justify-between text-slate-300">
                                     <span>Shipping</span>
@@ -153,7 +167,9 @@ export default function CartIndex() {
                             </div>
                             <div className="flex flex-col gap-3 sm:flex-row">
                                 <Button asChild>
-                                    <Link href={route('home')}>Continue shopping</Link>
+                                    <Link href={route('home')}>
+                                        Continue shopping
+                                    </Link>
                                 </Button>
                                 <Button variant="outline" asChild>
                                     <Link href={route('login')}>Log in</Link>

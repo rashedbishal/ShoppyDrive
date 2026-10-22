@@ -65,17 +65,23 @@ export default function CartDrawer(): React.JSX.Element {
     const effectiveShipping = isEmpty
         ? 0
         : allItemsFreeDelivery
-            ? 0
-            : (cartBaseRate ?? cartShippingCost ?? 0);
+          ? 0
+          : (cartBaseRate ?? cartShippingCost ?? 0);
 
     const summary = useMemo(() => {
-        const subtotal = items.reduce((total, item) => total + item.subtotal, 0);
+        const subtotal = items.reduce(
+            (total, item) => total + item.subtotal,
+            0,
+        );
         const discount = calculateCouponDiscount(
             subtotal,
             coupon?.type ?? null,
             coupon?.discount_amount ?? coupon?.value ?? 0,
         );
-        const total = Math.max(0, subtotal - discount + effectiveShipping + tax);
+        const total = Math.max(
+            0,
+            subtotal - discount + effectiveShipping + tax,
+        );
 
         return {
             subtotal,
@@ -99,38 +105,57 @@ export default function CartDrawer(): React.JSX.Element {
                     {!isEmpty && (
                         <div className="space-y-2 rounded-2xl border border-[var(--color-border)] bg-surface p-4">
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-[var(--color-text-secondary)]">Subtotal</span>
+                                <span className="text-[var(--color-text-secondary)]">
+                                    Subtotal
+                                </span>
                                 <span className="font-semibold text-[var(--color-text-primary)]">
                                     {formatCurrency(summary.subtotal)}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-[var(--color-text-secondary)]">Discount</span>
+                                <span className="text-[var(--color-text-secondary)]">
+                                    Discount
+                                </span>
                                 <span className="font-semibold text-[var(--color-success)]">
                                     -{formatCurrency(summary.discount)}
                                 </span>
                             </div>
                             <div className="flex items-start justify-between gap-2 text-sm">
                                 <div>
-                                    <span className="text-[var(--color-text-secondary)]">Shipping</span>
+                                    <span className="text-[var(--color-text-secondary)]">
+                                        Shipping
+                                    </span>
                                     {effectiveShipping === 0 ? (
-                                        <p className="mt-0.5 text-[11px] text-[var(--color-success)]">All items qualify for free delivery</p>
+                                        <p className="mt-0.5 text-[11px] text-[var(--color-success)]">
+                                            All items qualify for free delivery
+                                        </p>
                                     ) : effectiveShipping > 0 ? (
-                                        <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">1+ item requires delivery charge</p>
+                                        <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
+                                            1+ item requires delivery charge
+                                        </p>
                                     ) : null}
                                 </div>
                                 <span className="shrink-0 font-semibold">
-                                    {cartShippingCost === null && !allItemsFreeDelivery ? (
-                                        <span className="text-xs font-normal text-[var(--color-text-muted)]">At checkout</span>
+                                    {cartShippingCost === null &&
+                                    !allItemsFreeDelivery ? (
+                                        <span className="text-xs font-normal text-[var(--color-text-muted)]">
+                                            At checkout
+                                        </span>
                                     ) : effectiveShipping === 0 ? (
-                                        <span className="text-[var(--color-success)]">Free</span>
+                                        <span className="text-[var(--color-success)]">
+                                            Free
+                                        </span>
                                     ) : (
-                                        <span className="text-[var(--color-text-primary)]">{formatCurrency(effectiveShipping)}</span>
+                                        <span className="text-[var(--color-text-primary)]">
+                                            {formatCurrency(effectiveShipping)}
+                                        </span>
                                     )}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-[var(--color-text-secondary)]">Tax</span>
+                                <span className="text-[var(--color-text-secondary)]">
+                                    Tax
+                                </span>
                                 <span className="font-semibold text-[var(--color-text-primary)]">
                                     {formatCurrency(tax)}
                                 </span>
@@ -146,18 +171,22 @@ export default function CartDrawer(): React.JSX.Element {
                         </div>
                     )}
 
-                    <div className="grid gap-3 sm:grid-cols-2 mt-2">
+                    <div className="mt-2 grid gap-3 sm:grid-cols-2">
                         {isEmpty ? (
                             <Button
                                 variant="outline"
                                 fullWidth
                                 disabled
-                                className="h-12 rounded-xl font-semibold opacity-40 cursor-not-allowed"
+                                className="h-12 cursor-not-allowed rounded-xl font-semibold opacity-40"
                             >
                                 View cart
                             </Button>
                         ) : (
-                            <Link href={cartRoutes.index.url()} onClick={closeCart} className="block w-full">
+                            <Link
+                                href={cartRoutes.index.url()}
+                                onClick={closeCart}
+                                className="block w-full"
+                            >
                                 <Button
                                     variant="outline"
                                     fullWidth
@@ -172,16 +201,22 @@ export default function CartDrawer(): React.JSX.Element {
                                 fullWidth
                                 variant="primary"
                                 disabled
-                                className="h-12 rounded-xl font-bold opacity-40 cursor-not-allowed"
+                                className="h-12 cursor-not-allowed rounded-xl font-bold opacity-40"
                             >
                                 Checkout
                             </Button>
                         ) : (
-                            <Link href="/checkout" onClick={closeCart} className="block w-full">
+                            <Link
+                                href="/checkout"
+                                onClick={closeCart}
+                                className="block w-full"
+                            >
                                 <Button
                                     fullWidth
                                     variant="primary"
-                                    rightIcon={<ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />}
+                                    rightIcon={
+                                        <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                                    }
                                     className="group h-12 rounded-xl font-bold transition-all hover:-translate-y-0.5"
                                 >
                                     Checkout
@@ -227,22 +262,39 @@ export default function CartDrawer(): React.JSX.Element {
                                     <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
                                         {item.product.name}
                                     </p>
-                                    <p className="text-xs text-[var(--color-text-secondary)]">
-                                        {item.variant ? `Variant #${item.variant.id}` : 'Standard item'}
-                                    </p>
+                                    {item.variant && (
+                                        <p className="text-xs font-medium tracking-wide text-[var(--color-text-secondary)] uppercase">
+                                            {Object.entries(
+                                                item.variant.attributes,
+                                            )
+                                                .map(
+                                                    ([key, value]) =>
+                                                        `${key}: ${value}`,
+                                                )
+                                                .join(' | ')}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
                                     <QuantityStepper
                                         value={item.quantity}
                                         min={1}
-                                        max={item.product.stock_quantity > 0 ? item.product.stock_quantity : 99}
-                                        onChange={(value) => updateQuantity(item.item_key, value)}
+                                        max={
+                                            item.product.stock_quantity > 0
+                                                ? item.product.stock_quantity
+                                                : 99
+                                        }
+                                        onChange={(value) =>
+                                            updateQuantity(item.item_key, value)
+                                        }
                                     />
 
                                     <button
                                         type="button"
-                                        onClick={() => removeItem(item.item_key)}
+                                        onClick={() =>
+                                            removeItem(item.item_key)
+                                        }
                                         aria-label={`Remove ${item.product.name} from cart`}
                                         className="inline-flex size-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
                                     >

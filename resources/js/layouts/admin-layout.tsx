@@ -4,6 +4,8 @@ import {
     Award,
     Folder,
     FolderTree,
+    Inbox,
+    Info,
     LayoutDashboard,
     LayoutTemplate,
     LogOut,
@@ -49,82 +51,247 @@ const navSections: NavSection[] = [
     {
         label: 'Overview',
         items: [
-            { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, extraMatches: [] as string[] },
+            {
+                label: 'Dashboard',
+                href: '/admin/dashboard',
+                icon: LayoutDashboard,
+                extraMatches: [] as string[],
+            },
         ],
     },
     {
         label: 'Catalog',
         items: [
-            { label: 'Products', href: '/admin/products', icon: Package, extraMatches: [] as string[] },
-            { label: 'Categories', href: '/admin/categories', icon: Folder, extraMatches: [] as string[] },
-            { label: 'Sub-categories', href: '/admin/sub-categories', icon: FolderTree, extraMatches: [] as string[] },
-            { label: 'Brands', href: '/admin/brands', icon: Award, extraMatches: [] as string[] },
-            { label: 'Attributes', href: '/admin/attributes', icon: Palette, extraMatches: [] as string[] },
+            {
+                label: 'Products',
+                href: '/admin/products',
+                icon: Package,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Categories',
+                href: '/admin/categories',
+                icon: Folder,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Sub-categories',
+                href: '/admin/sub-categories',
+                icon: FolderTree,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Brands',
+                href: '/admin/brands',
+                icon: Award,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Attributes',
+                href: '/admin/attributes',
+                icon: Palette,
+                extraMatches: [] as string[],
+            },
         ],
     },
     {
         label: 'Sales',
         items: [
-            { label: 'Orders', href: '/admin/orders', icon: ShoppingCart, extraMatches: [] as string[] },
-            { label: 'Coupons', href: '/admin/coupons', icon: Tag, extraMatches: [] as string[] },
-            { label: 'Flash Sales', href: '/admin/flash-sales', icon: Zap, extraMatches: [] as string[] },
-            { label: 'Received SMS', href: '/admin/received-sms', icon: MessageSquare, extraMatches: [] as string[] },
-            { label: 'SMS Patterns', href: '/admin/sms-patterns', icon: Settings, extraMatches: [] as string[] },
+            {
+                label: 'Orders',
+                href: '/admin/orders',
+                icon: ShoppingCart,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Coupons',
+                href: '/admin/coupons',
+                icon: Tag,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Flash Sales',
+                href: '/admin/flash-sales',
+                icon: Zap,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Received SMS',
+                href: '/admin/received-sms',
+                icon: MessageSquare,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'SMS Patterns',
+                href: '/admin/sms-patterns',
+                icon: Settings,
+                extraMatches: [] as string[],
+            },
         ],
     },
     {
         label: 'Content',
         items: [
-            { label: 'Homepage', href: '/admin/homepage', icon: LayoutTemplate, exact: false, extraMatches: ['/admin/hero-slides', '/admin/promotional-banners'] },
-            { label: 'Landing Pages', href: '/admin/landing-pages', icon: MonitorPlay, exact: false, extraMatches: [] as string[] },
-            { label: 'Search Keywords', href: '/admin/popular-keywords', icon: Search, exact: false, extraMatches: [] as string[] },
+            {
+                label: 'Homepage',
+                href: '/admin/homepage',
+                icon: LayoutTemplate,
+                exact: false,
+                extraMatches: [
+                    '/admin/hero-slides',
+                    '/admin/promotional-banners',
+                ],
+            },
+            {
+                label: 'About Page',
+                href: '/admin/settings/about-page',
+                icon: Info,
+                exact: false,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Contact Page',
+                href: '/admin/settings/contact-page',
+                icon: MessageSquare,
+                exact: false,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Landing Pages',
+                href: '/admin/landing-pages',
+                icon: MonitorPlay,
+                exact: false,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Search Keywords',
+                href: '/admin/popular-keywords',
+                icon: Search,
+                exact: false,
+                extraMatches: [] as string[],
+            },
         ],
     },
     {
         label: 'Users',
         items: [
-            { label: 'Customers', href: '/admin/customers', icon: Users, extraMatches: [] as string[] },
-            { label: 'Reviews', href: '/admin/reviews', icon: Star, extraMatches: [] as string[] },
+            {
+                label: 'Customers',
+                href: '/admin/customers',
+                icon: Users,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Reviews',
+                href: '/admin/reviews',
+                icon: Star,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Contact Messages',
+                href: '/admin/contact-messages',
+                icon: Inbox,
+                extraMatches: [] as string[],
+            },
         ],
     },
     {
         label: 'Marketing',
         items: [
-            { label: 'Newsletter', href: '/admin/newsletter', icon: Mail, extraMatches: ['/admin/newsletter/compose'] as string[] },
+            {
+                label: 'Newsletter',
+                href: '/admin/newsletter',
+                icon: Mail,
+                extraMatches: ['/admin/newsletter/compose'] as string[],
+            },
         ],
     },
     {
         label: 'System',
         items: [
-            { label: 'Admins', href: '/admin/admins', icon: UserCog, exact: false, extraMatches: [] as string[] },
-            { label: 'Settings', href: '/admin/settings', icon: Settings, exact: true, extraMatches: [] as string[] },
-            { label: 'Social Config', href: '/admin/settings/social', icon: Share2, exact: false, extraMatches: [] as string[] },
-            { label: 'Courier Config', href: '/admin/settings/courier', icon: Truck, exact: false, extraMatches: [] as string[] },
-            { label: 'SMS Forwarder', href: '/admin/settings/sms-forwarder', icon: Smartphone, exact: false, extraMatches: [] as string[] },
+            {
+                label: 'Admins',
+                href: '/admin/admins',
+                icon: UserCog,
+                exact: false,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Settings',
+                href: '/admin/settings',
+                icon: Settings,
+                exact: true,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Social Config',
+                href: '/admin/settings/social',
+                icon: Share2,
+                exact: false,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Courier Config',
+                href: '/admin/settings/courier',
+                icon: Truck,
+                exact: false,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'SMS Forwarder',
+                href: '/admin/settings/sms-forwarder',
+                icon: Smartphone,
+                exact: false,
+                extraMatches: [] as string[],
+            },
         ],
     },
 ];
 
-function SidebarContent({ currentUrl, logoUrl, onClose }: { currentUrl: string; logoUrl?: string | null; onClose?: () => void }) {
+function SidebarContent({
+    currentUrl,
+    logoUrl,
+    onClose,
+}: {
+    currentUrl: string;
+    logoUrl?: string | null;
+    onClose?: () => void;
+}) {
     return (
         <div className="flex h-full flex-col">
             {/* Logo */}
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-                <Link href="/admin/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
+                <Link
+                    href="/admin/dashboard"
+                    className="flex items-center gap-2.5"
+                    onClick={onClose}
+                >
                     {logoUrl ? (
-                        <img src={logoUrl} alt="Logo" className="size-8 rounded-xl object-contain" />
+                        <img
+                            src={logoUrl}
+                            alt="Logo"
+                            className="size-8 rounded-xl object-contain"
+                        />
                     ) : (
                         <span className="flex size-8 items-center justify-center rounded-xl bg-[#c8102e]">
                             <AppLogoIcon className="size-4 fill-current text-white" />
                         </span>
                     )}
                     <div className="leading-none">
-                        <p className="text-[14px] font-bold text-slate-900">ShoppyDrive</p>
-                        <p className="text-[11px] text-slate-400">Admin Panel</p>
+                        <p className="text-[14px] font-bold text-slate-900">
+                            ShoppyDrive
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                            Admin Panel
+                        </p>
                     </div>
                 </Link>
                 {onClose && (
-                    <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    >
                         <X className="size-4" />
                     </button>
                 )}
@@ -134,11 +301,17 @@ function SidebarContent({ currentUrl, logoUrl, onClose }: { currentUrl: string; 
             <nav className="flex-1 overflow-y-auto px-3 py-4">
                 {navSections.map((section) => (
                     <div key={section.label} className="mb-5">
-                        <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                        <p className="mb-1.5 px-2 text-[10px] font-semibold tracking-widest text-slate-400 uppercase">
                             {section.label}
                         </p>
                         {section.items.map((item) => {
-                            const isActive = (item.exact ? currentUrl === item.href : currentUrl.startsWith(item.href)) || item.extraMatches.some(m => currentUrl.startsWith(m));
+                            const isActive =
+                                (item.exact
+                                    ? currentUrl === item.href
+                                    : currentUrl.startsWith(item.href)) ||
+                                item.extraMatches.some((m) =>
+                                    currentUrl.startsWith(m),
+                                );
                             const Icon = item.icon;
                             return (
                                 <Link
@@ -153,7 +326,9 @@ function SidebarContent({ currentUrl, logoUrl, onClose }: { currentUrl: string; 
                                 >
                                     <Icon className="size-4 shrink-0" />
                                     {item.label}
-                                    {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#c8102e]" />}
+                                    {isActive && (
+                                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#c8102e]" />
+                                    )}
                                 </Link>
                             );
                         })}
@@ -164,28 +339,43 @@ function SidebarContent({ currentUrl, logoUrl, onClose }: { currentUrl: string; 
     );
 }
 
-function SmsToastItem({ toast, onDismiss }: { toast: SmsToast; onDismiss: () => void }) {
+function SmsToastItem({
+    toast,
+    onDismiss,
+}: {
+    toast: SmsToast;
+    onDismiss: () => void;
+}) {
     useEffect(() => {
         const id = setTimeout(onDismiss, 8000);
         return () => clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // run once on mount — dismiss is stable via useCallback in parent
 
     return (
-        <div className="flex w-80 items-start gap-3 rounded-xl bg-slate-900 px-4 py-3 shadow-xl ring-1 ring-white/10 animate-in slide-in-from-right-4 fade-in duration-300">
+        <div className="flex w-80 animate-in items-start gap-3 rounded-xl bg-slate-900 px-4 py-3 shadow-xl ring-1 ring-white/10 duration-300 fade-in slide-in-from-right-4">
             <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-pink-600">
                 <MessageSquare className="size-3.5 text-white" />
             </div>
             <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold text-white">New SMS Received</p>
-                <p className="text-xs text-slate-400 truncate">From: {toast.sender}</p>
+                <p className="truncate text-xs text-slate-400">
+                    From: {toast.sender}
+                </p>
                 {toast.parsed_transaction_id && (
-                    <p className="text-xs text-pink-400 font-mono font-semibold mt-0.5">
+                    <p className="mt-0.5 font-mono text-xs font-semibold text-pink-400">
                         TrxID: {toast.parsed_transaction_id}
-                        {toast.parsed_amount !== null && <span className="text-slate-300 font-sans font-normal"> · ৳{toast.parsed_amount.toLocaleString()}</span>}
+                        {toast.parsed_amount !== null && (
+                            <span className="font-sans font-normal text-slate-300">
+                                {' '}
+                                · ৳{toast.parsed_amount.toLocaleString()}
+                            </span>
+                        )}
                     </p>
                 )}
-                <p className="mt-1 text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{toast.content}</p>
+                <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-slate-400">
+                    {toast.content}
+                </p>
                 <Link
                     href="/admin/received-sms"
                     className="mt-1.5 inline-block text-[11px] font-semibold text-pink-400 hover:text-pink-300"
@@ -193,14 +383,22 @@ function SmsToastItem({ toast, onDismiss }: { toast: SmsToast; onDismiss: () => 
                     View all SMS →
                 </Link>
             </div>
-            <button type="button" onClick={onDismiss} className="mt-0.5 shrink-0 text-slate-500 hover:text-slate-300 transition-colors">
+            <button
+                type="button"
+                onClick={onDismiss}
+                className="mt-0.5 shrink-0 text-slate-500 transition-colors hover:text-slate-300"
+            >
                 <X className="size-3.5" />
             </button>
         </div>
     );
 }
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
     const page = usePage<SharedPageProps>();
     const admin = page.props.auth?.admin;
     const currentUrl = page.url;
@@ -214,16 +412,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
         <div className="flex min-h-screen bg-slate-50">
             {/* Desktop sidebar */}
-            <aside className="hidden w-56 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex sticky top-0 h-screen">
+            <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
                 <SidebarContent currentUrl={currentUrl} logoUrl={logoUrl} />
             </aside>
 
             {/* Mobile sidebar overlay */}
             {sidebarOpen && (
                 <div className="fixed inset-0 z-50 lg:hidden">
-                    <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
-                    <aside className="absolute left-0 top-0 h-full w-56 bg-white shadow-xl">
-                        <SidebarContent currentUrl={currentUrl} logoUrl={logoUrl} onClose={() => setSidebarOpen(false)} />
+                    <div
+                        className="absolute inset-0 bg-black/40"
+                        onClick={() => setSidebarOpen(false)}
+                    />
+                    <aside className="absolute top-0 left-0 h-full w-56 bg-white shadow-xl">
+                        <SidebarContent
+                            currentUrl={currentUrl}
+                            logoUrl={logoUrl}
+                            onClose={() => setSidebarOpen(false)}
+                        />
                     </aside>
                 </div>
             )}
@@ -231,7 +436,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Main area */}
             <div className="flex min-w-0 flex-1 flex-col">
                 {/* Top bar */}
-                <header className="sticky top-0 z-40 flex h-14 items-center border-b border-slate-200 bg-white px-4 gap-3">
+                <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4">
                     <button
                         type="button"
                         className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
@@ -243,7 +448,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <div className="flex-1" />
 
                     {admin && (
-                        <span className="hidden text-sm font-medium text-slate-700 sm:block">{admin.name}</span>
+                        <span className="hidden text-sm font-medium text-slate-700 sm:block">
+                            {admin.name}
+                        </span>
                     )}
                     <button
                         type="button"
@@ -256,16 +463,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </header>
 
                 {/* Page content */}
-                <main className="flex-1 p-6">
-                    {children}
-                </main>
+                <main className="flex-1 p-6">{children}</main>
             </div>
 
             {/* SMS toast notifications */}
             {toasts.length > 0 && (
-                <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 items-end">
+                <div className="fixed right-5 bottom-5 z-50 flex flex-col items-end gap-2.5">
                     {toasts.map((toast) => (
-                        <SmsToastItem key={toast.key} toast={toast} onDismiss={() => handleDismiss(toast.key)} />
+                        <SmsToastItem
+                            key={toast.key}
+                            toast={toast}
+                            onDismiss={() => handleDismiss(toast.key)}
+                        />
                     ))}
                 </div>
             )}

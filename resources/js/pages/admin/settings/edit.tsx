@@ -1,4 +1,4 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import {
     SettingsField,
     settingsInputClass,
@@ -20,9 +20,6 @@ export default function SettingsEdit({ settings }: Props) {
     const { data, setData, post, processing } = useForm({
         _method: 'PUT',
         site_name: (settings.site_name as string) ?? '',
-        contact_email: (settings.contact_email as string) ?? '',
-        contact_phone: (settings.contact_phone as string) ?? '',
-        contact_address: (settings.contact_address as string) ?? '',
         currency_symbol: (settings.currency_symbol as string) ?? '৳',
         logo:
             (settings.logo as string | null) ?? (null as File | string | null),
@@ -30,6 +27,8 @@ export default function SettingsEdit({ settings }: Props) {
             facebook: socialLinks.facebook ?? '',
             instagram: socialLinks.instagram ?? '',
             twitter: socialLinks.twitter ?? '',
+            youtube: socialLinks.youtube ?? '',
+            tiktok: socialLinks.tiktok ?? '',
         },
         google_analytics_id: (settings.google_analytics_id as string) ?? '',
         meta_pixel_id: (settings.meta_pixel_id as string) ?? '',
@@ -48,7 +47,22 @@ export default function SettingsEdit({ settings }: Props) {
         <>
             <Head title="Settings — Admin" />
             <div className="space-y-5">
-                <h1 className="text-xl font-bold text-slate-900">Settings</h1>
+                <div>
+                    <h1 className="text-xl font-bold text-slate-900">
+                        Settings
+                    </h1>
+                    <p className="text-sm text-slate-500">
+                        Contact email, phone, and address (shared with the
+                        footer) are now edited from{' '}
+                        <Link
+                            href={route('admin.settings.contact-page')}
+                            className="underline"
+                        >
+                            Contact Page
+                        </Link>
+                        .
+                    </p>
+                </div>
 
                 {flash?.success && (
                     <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
@@ -103,53 +117,6 @@ export default function SettingsEdit({ settings }: Props) {
                     <Card className="shadow-sm">
                         <CardHeader className="border-b border-slate-100 pb-4">
                             <CardTitle className="text-sm font-semibold text-slate-700">
-                                Contact
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
-                            <SettingsField label="Contact Email">
-                                <input
-                                    type="email"
-                                    className={settingsInputClass}
-                                    value={data.contact_email}
-                                    onChange={(e) =>
-                                        setData('contact_email', e.target.value)
-                                    }
-                                />
-                            </SettingsField>
-                            <SettingsField label="Contact Phone">
-                                <input
-                                    type="tel"
-                                    className={settingsInputClass}
-                                    value={data.contact_phone}
-                                    onChange={(e) =>
-                                        setData('contact_phone', e.target.value)
-                                    }
-                                />
-                            </SettingsField>
-                            <SettingsField label="Contact Address">
-                                <textarea
-                                    rows={3}
-                                    className={
-                                        settingsInputClass +
-                                        ' h-auto resize-none py-2'
-                                    }
-                                    value={data.contact_address}
-                                    onChange={(e) =>
-                                        setData(
-                                            'contact_address',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="e.g. 123 Main Street, Dhaka, Bangladesh"
-                                />
-                            </SettingsField>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
                                 Social Links
                             </CardTitle>
                         </CardHeader>
@@ -190,7 +157,33 @@ export default function SettingsEdit({ settings }: Props) {
                                             twitter: e.target.value,
                                         })
                                     }
-                                    placeholder="https://twitter.com/..."
+                                    placeholder="https://x.com/..."
+                                />
+                            </SettingsField>
+                            <SettingsField label="YouTube">
+                                <input
+                                    className={settingsInputClass}
+                                    value={data.social_links.youtube}
+                                    onChange={(e) =>
+                                        setData('social_links', {
+                                            ...data.social_links,
+                                            youtube: e.target.value,
+                                        })
+                                    }
+                                    placeholder="https://youtube.com/@..."
+                                />
+                            </SettingsField>
+                            <SettingsField label="TikTok">
+                                <input
+                                    className={settingsInputClass}
+                                    value={data.social_links.tiktok}
+                                    onChange={(e) =>
+                                        setData('social_links', {
+                                            ...data.social_links,
+                                            tiktok: e.target.value,
+                                        })
+                                    }
+                                    placeholder="https://tiktok.com/@..."
                                 />
                             </SettingsField>
                         </CardContent>

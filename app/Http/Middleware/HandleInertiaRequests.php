@@ -88,6 +88,8 @@ class HandleInertiaRequests extends Middleware
                         'facebook' => $socialLinks['facebook'] ?? null,
                         'instagram' => $socialLinks['instagram'] ?? null,
                         'twitter' => $socialLinks['twitter'] ?? null,
+                        'youtube' => $socialLinks['youtube'] ?? null,
+                        'tiktok' => $socialLinks['tiktok'] ?? null,
                     ],
                     'google_analytics_id' => $db->get('google_analytics_id'),
                     'meta_pixel_id' => $db->get('meta_pixel_id'),
