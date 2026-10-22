@@ -1,5 +1,4 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import type { AppSettings } from '@/types';
 import {
     Award,
     Folder,
@@ -31,8 +30,10 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
-import { useSmsPolling, type SmsToast } from '@/hooks/useSmsPolling';
-import type { SharedPageProps } from '@/types';
+import { useSmsPolling } from '@/hooks/useSmsPolling';
+import type { SmsToast } from '@/hooks/useSmsPolling';
+import { dashboard as adminDashboard } from '@/routes/admin';
+import type { AppSettings, SharedPageProps } from '@/types';
 
 type NavItem = {
     label: string;
@@ -313,6 +314,7 @@ function SidebarContent({
                                     currentUrl.startsWith(m),
                                 );
                             const Icon = item.icon;
+
                             return (
                                 <Link
                                     key={item.href}
@@ -348,6 +350,7 @@ function SmsToastItem({
 }) {
     useEffect(() => {
         const id = setTimeout(onDismiss, 8000);
+
         return () => clearTimeout(id);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // run once on mount — dismiss is stable via useCallback in parent
@@ -404,6 +407,7 @@ export default function AdminLayout({
     const currentUrl = page.url;
     const logoUrl = (page.props.settings as AppSettings)?.logo ?? null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [hasMobileLogoError, setHasMobileLogoError] = useState(false);
     const { toasts, dismiss } = useSmsPolling();
     const handleDismiss = useCallback((key: number) => dismiss(key), [dismiss]);
 
@@ -444,6 +448,23 @@ export default function AdminLayout({
                     >
                         <Menu className="size-5" />
                     </button>
+
+                    <Link
+                        href={adminDashboard()}
+                        aria-label="Admin dashboard home"
+                        className="absolute left-1/2 flex size-9 -translate-x-1/2 items-center justify-center overflow-hidden rounded-xl bg-[#c8102e] shadow-sm lg:hidden"
+                    >
+                        {logoUrl && !hasMobileLogoError ? (
+                            <img
+                                src={logoUrl}
+                                alt="ShoppyDrive"
+                                onError={() => setHasMobileLogoError(true)}
+                                className="h-full w-full object-contain bg-white p-1"
+                            />
+                        ) : (
+                            <AppLogoIcon className="size-5 fill-current text-white" />
+                        )}
+                    </Link>
 
                     <div className="flex-1" />
 
