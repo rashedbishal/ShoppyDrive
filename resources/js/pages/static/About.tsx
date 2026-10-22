@@ -1,6 +1,17 @@
 import { Head, Link } from '@inertiajs/react';
 import { PageHero } from '@/components/shared/PageHero';
-import { ArrowRight, Award, Globe, Heart, Package, ShieldCheck, Star, Truck, Users, Zap } from 'lucide-react';
+import {
+    ArrowRight,
+    Award,
+    Globe,
+    Heart,
+    Package,
+    ShieldCheck,
+    Star,
+    Truck,
+    Users,
+    Zap,
+} from 'lucide-react';
 import { CategoryIcon } from '@/lib/category-icons';
 
 type AboutStat = { value: string; label: string };
@@ -36,21 +47,32 @@ function AboutPage({ content }: Props): React.JSX.Element {
             {/* Hero */}
             <div className="py-6 lg:py-8">
                 <PageHero
-                    badge={{ icon: Star, label: 'Our Story' }}
-                    eyebrow="About ShoppyDrive"
+                    badge={{ icon: Star, label: content.hero_eyebrow }}
                     title={
-                        <>
-                            Bangladesh's Smartest{' '}
-                            <span className="text-[var(--color-primary)]">Shopping Experience</span>
-                        </>
+                        content.hero_title_highlight ? (
+                            <>
+                                {content.hero_title}{' '}
+                                <span className="text-[var(--color-primary)]">
+                                    {content.hero_title_highlight}
+                                </span>
+                            </>
+                        ) : (
+                            content.hero_title
+                        )
                     }
-                    description="ShoppyDrive was built to make premium shopping accessible to every Bangladeshi — with honest prices, genuine products, and world-class delivery."
+                    description={content.hero_description}
                 >
                     <div className="flex flex-wrap items-center gap-2">
-                        <Link href="/products" className="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)]">
+                        <Link
+                            href="/products"
+                            className="flex h-10 items-center gap-2 rounded-xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)]"
+                        >
                             Shop Now <ArrowRight className="size-4" />
                         </Link>
-                        <Link href="/contact" className="flex h-10 items-center gap-2 rounded-xl border border-[var(--color-border)] px-5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:text-[var(--color-text-primary)]">
+                        <Link
+                            href="/contact"
+                            className="flex h-10 items-center gap-2 rounded-xl border border-[var(--color-border)] px-5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:text-[var(--color-text-primary)]"
+                        >
                             Contact Us
                         </Link>
                     </div>

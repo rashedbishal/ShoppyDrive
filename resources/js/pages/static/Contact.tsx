@@ -1,6 +1,18 @@
 import { Head, useForm } from '@inertiajs/react';
 import { PageHero } from '@/components/shared/PageHero';
-import { ArrowRight, Clock, Facebook, Instagram, Mail, MapPin, MessageSquare, Phone, Send, Twitter, Youtube } from 'lucide-react';
+import {
+    ArrowRight,
+    Clock,
+    Facebook,
+    Instagram,
+    Mail,
+    MapPin,
+    MessageSquare,
+    Phone,
+    Send,
+    Twitter,
+    Youtube,
+} from 'lucide-react';
 import InputError from '@/components/input-error';
 import { TikTokLogo, XLogo } from '@/components/icons/brand-icons';
 
@@ -109,14 +121,20 @@ function ContactContent({ content }: Props): React.JSX.Element {
             {/* Hero */}
             <div className="pt-6 lg:pt-8">
                 <PageHero
-                    badge={{ icon: MessageSquare, label: 'Get in touch' }}
-                    eyebrow="Contact"
+                    badge={{ icon: MessageSquare, label: content.hero_eyebrow }}
                     title={
-                        <>
-                            We're here to <span className="text-[var(--color-primary)]">help</span>
-                        </>
+                        content.hero_title_highlight ? (
+                            <>
+                                {content.hero_title}{' '}
+                                <span className="text-[var(--color-primary)]">
+                                    {content.hero_title_highlight}
+                                </span>
+                            </>
+                        ) : (
+                            content.hero_title
+                        )
                     }
-                    description="Have a question, complaint, or just want to say hello? Our team is ready to assist you."
+                    description={content.hero_description}
                 />
             </div>
 
