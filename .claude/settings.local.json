@@ -114,7 +114,8 @@
       "Bash(awk -F: '$1>1600 || /Skeleton/')",
       "Bash(awk '/^export \\(type|interface\\) Product\\\\b/,/^}/' resources/js/types/index.ts)",
       "Bash(grep -n \"FlashSaleSlider$\\\\|<FlashSaleSlider\" -B4 resources/js/pages/Home.tsx)",
-      "Bash(awk 'NR>=394 && /<\\\\/aside>/{print NR; exit}' resources/js/pages/search/SearchResults.tsx)"
+      "Bash(awk 'NR>=394 && /<\\\\/aside>/{print NR; exit}' resources/js/pages/search/SearchResults.tsx)",
+      "Bash(awk '/^export interface Brand /,/^}/' resources/js/types/index.ts)"
     ]
   },
   "enableAllProjectMcpServers": true,

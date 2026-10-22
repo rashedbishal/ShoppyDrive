@@ -113,7 +113,28 @@ export default function Header(): React.JSX.Element {
     );
 
     useEffect(() => {
-        const handleScroll = (): void => setIsScrolled(window.scrollY > 60);
+        // Shrinking the header changes its height, which shifts the scroll position.
+        // A single threshold therefore flip-flops (the header shakes) right at that
+        // point, so compact and expanded use separate thresholds whose gap is far
+        // larger than the header's height change: between them the current state holds.
+        const COMPACT_AFTER_PX = 80;
+        const EXPAND_BEFORE_PX = 16;
+
+        const handleScroll = (): void => {
+            const scrollY = window.scrollY;
+
+            setIsScrolled((wasScrolled) => {
+                if (scrollY > COMPACT_AFTER_PX) {
+                    return true;
+                }
+
+                if (scrollY < EXPAND_BEFORE_PX) {
+                    return false;
+                }
+
+                return wasScrolled;
+            });
+        };
         handleScroll();
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
