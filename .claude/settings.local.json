@@ -105,7 +105,16 @@
       "Bash(grep -rhoE -e \"--\\(anchor-max-height|button-width|anchor-gap|input-width\\)\" node_modules/@headlessui/react/dist)",
       "Bash(grep -oE '\"result\":\"[a-z]+\"|\"passed\":[0-9]+|\"failed\":[0-9]+|\"message\":\"[^\"]{0,300}')",
       "Bash(awk -F: '{print $1}')",
-      "Bash(git log *)"
+      "Bash(git log *)",
+      "Bash(curl -s -o /dev/null -D - http://192.168.0.113:8000/)",
+      "Bash(curl -s http://192.168.0.113:8000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://192.168.0.113:5173/@vite/client)",
+      "Bash(curl -s http://192.168.0.113:5173/resources/js/lib/constants.ts)",
+      "Bash(grep -v \"^--$\")",
+      "Bash(awk -F: '$1>1600 || /Skeleton/')",
+      "Bash(awk '/^export \\(type|interface\\) Product\\\\b/,/^}/' resources/js/types/index.ts)",
+      "Bash(grep -n \"FlashSaleSlider$\\\\|<FlashSaleSlider\" -B4 resources/js/pages/Home.tsx)",
+      "Bash(awk 'NR>=394 && /<\\\\/aside>/{print NR; exit}' resources/js/pages/search/SearchResults.tsx)"
     ]
   },
   "enableAllProjectMcpServers": true,

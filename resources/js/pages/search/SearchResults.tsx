@@ -3,14 +3,14 @@ import { Filter, LayoutGrid, List, Search as SearchIcon, SlidersHorizontal, X } 
 import { useEffect, useState, type ReactNode } from 'react';
 import { route } from 'ziggy-js';
 
-import { ProductCard } from '@/components/shared/ProductCard';
+import { ProductCard, ProductCardSkeleton } from '@/components/shared/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Drawer } from '@/components/ui/drawer';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { SIDEBAR_LAYOUT_CLASS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import type { Brand, Category, PaginatedData, Product } from '@/types';
@@ -165,39 +165,6 @@ function FilterGroup({ title, children, action }: { title: string; children: Rea
                 {action}
             </div>
             {children}
-        </div>
-    );
-}
-
-// ── Skeleton ───────────────────────────────────────────────────────────────────
-function SearchProductSkeleton({ view }: { view: 'grid' | 'list' }): React.JSX.Element {
-    if (view === 'list') {
-        return (
-            <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm">
-                <div className="grid gap-4 sm:grid-cols-[220px_minmax(0,1fr)]">
-                    <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
-                    <div className="space-y-3">
-                        <Skeleton className="h-3 w-24" />
-                        <Skeleton className="h-5 w-4/5" />
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-5/6" />
-                        <Skeleton className="h-7 w-28" />
-                        <Skeleton className="h-10 w-36 rounded-xl" />
-                    </div>
-                </div>
-            </div>
-        );
-    }
-    return (
-        <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm">
-            <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
-            <div className="mt-4 space-y-2">
-                <Skeleton className="h-3 w-24" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-4/5" />
-                <Skeleton className="h-6 w-24" />
-                <Skeleton className="h-10 w-full rounded-xl" />
-            </div>
         </div>
     );
 }
@@ -423,7 +390,7 @@ export default function SearchResults({
                 </section>
 
                 {/* Sidebar + Grid */}
-                <section className="mx-auto grid max-w-7xl gap-8 px-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
+                <section className={cn(SIDEBAR_LAYOUT_CLASS, 'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8')}>
                     {/* Desktop Sidebar */}
                     <aside className="hidden lg:block">
                         <div className="sticky top-28 space-y-6 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-sm">
@@ -440,7 +407,7 @@ export default function SearchResults({
                     </aside>
 
                     {/* Main Content */}
-                    <div className="space-y-6">
+                    <div className="min-w-0 space-y-6 lg:col-span-3">
                         {/* Toolbar */}
                         <div className="rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm">
                             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -525,7 +492,7 @@ export default function SearchResults({
                                 draft.view === 'list' ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3',
                             )}>
                                 {Array.from({ length: 12 }, (_, i) => (
-                                    <SearchProductSkeleton key={i} view={draft.view} />
+                                    <ProductCardSkeleton key={i} view={draft.view} />
                                 ))}
                             </div>
                         ) : products.data.length > 0 ? (
@@ -533,8 +500,8 @@ export default function SearchResults({
                                 'grid gap-3 md:gap-4',
                                 draft.view === 'list' ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3',
                             )}>
-                                {products.data.map((product) => (
-                                    <ProductCard key={product.id} product={product} view={draft.view} />
+                                {products.data.map((product, index) => (
+                                    <ProductCard key={product.id} product={product} index={index} view={draft.view} />
                                 ))}
                             </div>
                         ) : (

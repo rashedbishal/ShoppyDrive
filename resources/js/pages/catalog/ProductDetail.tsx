@@ -736,8 +736,10 @@ export default function ProductDetail({
                         </TabsContent>
                     </Tabs>
                 </div>
+            </div>
 
-                {/* Carousels */}
+            {/* Carousels — in the standard page container so cards match product cards elsewhere */}
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <ProductCarousel title="You May Also Like" products={relatedProducts} className="mt-16" />
                 
                 {recentlyViewed.length > 1 && (

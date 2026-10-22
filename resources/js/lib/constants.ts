@@ -48,7 +48,31 @@ export const MOTION = {
  * Fixed storefront product card heights per device tier (mobile / tablet / desktop).
  * Cards never grow or shrink with their content; the image area absorbs the slack.
  */
-export const PRODUCT_CARD_HEIGHT = 'h-[22rem] sm:h-[24rem] lg:h-[26rem]';
+export const PRODUCT_CARD_HEIGHT = 'h-[20rem] sm:h-[22rem] lg:h-[24rem]';
+
+/**
+ * Site-wide column system. Every page's content area (max-w-7xl) is split into
+ * 2 columns on mobile, 3 on tablet and 4 on desktop, all with the same gaps, so
+ * a product card is the same width on every page. Pages with a sidebar give the
+ * sidebar exactly one desktop column and put products in the other three.
+ */
+export const PRODUCT_GRID_CLASS =
+    'grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4';
+
+/** Page layout with a sidebar: sidebar = 1 desktop column, main = `lg:col-span-3`. */
+export const SIDEBAR_LAYOUT_CLASS =
+    'grid grid-cols-1 gap-6 lg:grid-cols-4 lg:gap-4';
+
+/** Product grid inside the 3-column main area of a SIDEBAR_LAYOUT_CLASS page. */
+export const PRODUCT_GRID_BESIDE_SIDEBAR_CLASS =
+    'grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4';
+
+/**
+ * Horizontally scrolling product row: exactly 2 cards per view on mobile and
+ * 3 on tablet (so short lists never overflow), becoming a 4-column grid on lg.
+ */
+export const PRODUCT_RAIL_CLASS =
+    'grid grid-flow-col auto-cols-[calc((100%-0.75rem)/2)] gap-3 overflow-x-auto pb-2 sm:auto-cols-[calc((100%-1.5rem)/3)] md:auto-cols-[calc((100%-2rem)/3)] md:gap-4 lg:grid-flow-row lg:grid-cols-4 lg:overflow-visible';
 
 export const SHADOWS = {
     card: '0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.06)',

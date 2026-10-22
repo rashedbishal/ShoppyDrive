@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
+import { PRODUCT_GRID_BESIDE_SIDEBAR_CLASS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/utils';
 import type { Product } from '@/types';
 
@@ -90,10 +91,10 @@ export default function Wishlist({ wishlist = [] }: WishlistProps): React.JSX.El
                         </div>
 
                         {/* Product grid with per-item remove */}
-                        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-                            {wishlist.map((product) => (
+                        <div className={PRODUCT_GRID_BESIDE_SIDEBAR_CLASS}>
+                            {wishlist.map((product, index) => (
                                 <div key={product.id} className="group relative">
-                                    <ProductCard product={product} />
+                                    <ProductCard product={product} index={index} />
                                     <button
                                         className="absolute left-3 top-3 z-20 flex size-8 items-center justify-center rounded-full bg-white/95 text-rose-500 opacity-0 shadow-md transition-all hover:bg-rose-500 hover:text-white group-hover:opacity-100"
                                         onClick={() => toggleWishlist(product.id)}
