@@ -26,6 +26,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useInitials } from '@/hooks/use-initials';
+import { usePendingCartArrivals } from '@/lib/add-to-cart-feedback';
 import { cn } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -107,9 +108,11 @@ export default function Header(): React.JSX.Element {
         };
     }, []);
 
+    // Items still flying into the cart aren't counted until they land.
+    const pendingCartArrivals = usePendingCartArrivals();
     const itemCount = useMemo(
-        () => cartItems.reduce((count, item) => count + item.quantity, 0),
-        [cartItems],
+        () => Math.max(0, cartItems.reduce((count, item) => count + item.quantity, 0) - pendingCartArrivals),
+        [cartItems, pendingCartArrivals],
     );
 
     useEffect(() => {

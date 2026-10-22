@@ -151,7 +151,7 @@ export const useCartStore = create<CartStoreState>()(
                 if (typeof window !== 'undefined') {
                     window.dispatchEvent(
                         new CustomEvent<CartItemAddedDetail>(CART_ITEM_ADDED_EVENT, {
-                            detail: { product: payload.product, variant: payload.variant ?? null },
+                            detail: { product: payload.product, variant: payload.variant ?? null, quantity },
                         }),
                     );
                 }
