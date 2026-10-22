@@ -1,5 +1,5 @@
 import { Star, Trash2 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 export type VariantRow = {
@@ -66,35 +66,27 @@ function blankVariant(
     };
 }
 
-/** Rebuilds the variant row set for a target list of (color, size) keys, reusing
- *  already-typed values for keys that still exist and dropping the rest. */
-function reconcile(
-    previous: VariantRow[],
-    colorIds: (number | null)[],
-    sizeIds: (number | null)[],
-): VariantRow[] {
-    const keys: [number | null, number | null][] = [];
+function uniqueIds(
+    variants: VariantRow[],
+    key: 'color_value_id' | 'size_value_id',
+): number[] {
+    return Array.from(
+        new Set(
+            variants
+                .map((v) => v[key])
+                .filter((id): id is number => id !== null),
+        ),
+    );
+}
 
-    for (const colorId of colorIds) {
-        for (const sizeId of sizeIds) {
-            keys.push([colorId, sizeId]);
-        }
+/** Ensures exactly one row is marked default whenever the set is non-empty,
+ *  defaulting to the first row if the previous default got removed. */
+function ensureDefault(rows: VariantRow[]): VariantRow[] {
+    if (rows.length === 0 || rows.some((row) => row.is_default)) {
+        return rows;
     }
 
-    const next = keys.map(([colorId, sizeId]) => {
-        const existing = previous.find(
-            (row) =>
-                row.color_value_id === colorId && row.size_value_id === sizeId,
-        );
-
-        return existing ?? blankVariant(colorId, sizeId);
-    });
-
-    if (next.length > 0 && !next.some((row) => row.is_default)) {
-        next[0].is_default = true;
-    }
-
-    return next;
+    return rows.map((row, i) => (i === 0 ? { ...row, is_default: true } : row));
 }
 
 export function ProductVariantManager({
@@ -108,96 +100,143 @@ export function ProductVariantManager({
     onVariantsChange,
     errors,
 }: Props): React.JSX.Element {
-    const selectedColorIds = useMemo(
-        () =>
-            Array.from(
-                new Set(
-                    variants
-                        .map((v) => v.color_value_id)
-                        .filter((id): id is number => id !== null),
-                ),
-            ),
-        [variants],
+    // Candidate colors/sizes are which values are "in play" for building
+    // combinations — tracked independently of `variants` (rather than derived
+    // from it) so that, in dual mode, picking a color and a size doesn't
+    // force-generate every pairing. Initialized from any variants already
+    // present (e.g. loading the edit page) so pills/matrix start in sync.
+    const [candidateColorIds, setCandidateColorIds] = useState<number[]>(() =>
+        uniqueIds(variants, 'color_value_id'),
     );
-    const selectedSizeIds = useMemo(
-        () =>
-            Array.from(
-                new Set(
-                    variants
-                        .map((v) => v.size_value_id)
-                        .filter((id): id is number => id !== null),
-                ),
-            ),
-        [variants],
+    const [candidateSizeIds, setCandidateSizeIds] = useState<number[]>(() =>
+        uniqueIds(variants, 'size_value_id'),
     );
 
-    // useColor/useSize are explicit rather than read from the hasColorVariant/
-    // hasSizeVariant props, because the toggle handlers call this in the same
-    // tick as flipping those props — the props are still stale (pre-toggle)
-    // until the next render, so relying on them here would silently ignore
-    // the dimension that was just turned on/off.
-    const rebuild = (
-        nextColorIds: number[],
-        nextSizeIds: number[],
-        useColor: boolean,
-        useSize: boolean,
-    ) => {
-        // Neither dimension enabled means no variants at all — without this,
-        // both sides would fall back to a single [null] placeholder below and
-        // produce one phantom "general" (null, null) row instead of none.
-        if (!useColor && !useSize) {
-            onVariantsChange([]);
-
-            return;
-        }
-
-        const colorKeys: (number | null)[] = useColor ? nextColorIds : [null];
-        const sizeKeys: (number | null)[] = useSize ? nextSizeIds : [null];
-
-        if (colorKeys.length === 0 || sizeKeys.length === 0) {
-            onVariantsChange([]);
-
-            return;
-        }
-
-        onVariantsChange(reconcile(variants, colorKeys, sizeKeys));
-    };
+    const dualMode = hasColorVariant && hasSizeVariant;
 
     const toggleColorValue = (id: number) => {
-        const next = selectedColorIds.includes(id)
-            ? selectedColorIds.filter((existingId) => existingId !== id)
-            : [...selectedColorIds, id];
-        rebuild(
-            next,
-            hasSizeVariant ? selectedSizeIds : [],
-            hasColorVariant,
-            hasSizeVariant,
+        const isActive = candidateColorIds.includes(id);
+        setCandidateColorIds(
+            isActive
+                ? candidateColorIds.filter((existingId) => existingId !== id)
+                : [...candidateColorIds, id],
         );
+
+        if (!dualMode) {
+            // Single-dimension: the pill directly is the variant.
+            if (isActive) {
+                if (variants.length <= 1) {
+                    return; // can't deselect the only remaining variant this way
+                }
+
+                onVariantsChange(
+                    ensureDefault(
+                        variants.filter((v) => v.color_value_id !== id),
+                    ),
+                );
+            } else {
+                onVariantsChange(
+                    ensureDefault([...variants, blankVariant(id, null)]),
+                );
+            }
+        } else if (isActive) {
+            // Dropping a candidate color drops whatever pairs used it.
+            const remaining = variants.filter((v) => v.color_value_id !== id);
+
+            if (remaining.length === 0 && variants.length > 0) {
+                return; // would empty the last variant(s) — block
+            }
+
+            onVariantsChange(ensureDefault(remaining));
+        }
+        // Adding a candidate color in dual mode creates no variant by
+        // itself — the admin checks specific pairs in the matrix below.
     };
 
     const toggleSizeValue = (id: number) => {
-        const next = selectedSizeIds.includes(id)
-            ? selectedSizeIds.filter((existingId) => existingId !== id)
-            : [...selectedSizeIds, id];
-        rebuild(
-            hasColorVariant ? selectedColorIds : [],
-            next,
-            hasColorVariant,
-            hasSizeVariant,
+        const isActive = candidateSizeIds.includes(id);
+        setCandidateSizeIds(
+            isActive
+                ? candidateSizeIds.filter((existingId) => existingId !== id)
+                : [...candidateSizeIds, id],
         );
+
+        if (!dualMode) {
+            if (isActive) {
+                if (variants.length <= 1) {
+                    return;
+                }
+
+                onVariantsChange(
+                    ensureDefault(
+                        variants.filter((v) => v.size_value_id !== id),
+                    ),
+                );
+            } else {
+                onVariantsChange(
+                    ensureDefault([...variants, blankVariant(null, id)]),
+                );
+            }
+        } else if (isActive) {
+            const remaining = variants.filter((v) => v.size_value_id !== id);
+
+            if (remaining.length === 0 && variants.length > 0) {
+                return;
+            }
+
+            onVariantsChange(ensureDefault(remaining));
+        }
+    };
+
+    const togglePair = (colorId: number, sizeId: number) => {
+        const exists = variants.some(
+            (v) => v.color_value_id === colorId && v.size_value_id === sizeId,
+        );
+
+        if (exists) {
+            if (variants.length <= 1) {
+                return; // can't uncheck the only remaining pair this way
+            }
+
+            onVariantsChange(
+                ensureDefault(
+                    variants.filter(
+                        (v) =>
+                            !(
+                                v.color_value_id === colorId &&
+                                v.size_value_id === sizeId
+                            ),
+                    ),
+                ),
+            );
+        } else {
+            onVariantsChange(
+                ensureDefault([...variants, blankVariant(colorId, sizeId)]),
+            );
+        }
     };
 
     const handleToggleColor = (enabled: boolean) => {
         onToggleColor(enabled);
 
         if (!enabled) {
-            rebuild([], selectedSizeIds, false, hasSizeVariant);
-        } else if (selectedColorIds.length === 0 && colorValues.length > 0) {
-            rebuild(
-                [colorValues[0].id],
-                hasSizeVariant ? selectedSizeIds : [],
-                true,
-                hasSizeVariant,
+            setCandidateColorIds([]);
+            onVariantsChange(
+                ensureDefault(
+                    candidateSizeIds.map((id) => blankVariant(null, id)),
+                ),
+            );
+
+            return;
+        }
+
+        if (candidateColorIds.length === 0 && colorValues.length > 0) {
+            const firstId = colorValues[0].id;
+            setCandidateColorIds([firstId]);
+            onVariantsChange(
+                hasSizeVariant
+                    ? [] // entering dual mode — admin picks pairs in the matrix
+                    : ensureDefault([blankVariant(firstId, null)]),
             );
         }
     };
@@ -206,13 +245,23 @@ export function ProductVariantManager({
         onToggleSize(enabled);
 
         if (!enabled) {
-            rebuild(selectedColorIds, [], hasColorVariant, false);
-        } else if (selectedSizeIds.length === 0 && sizeValues.length > 0) {
-            rebuild(
-                hasColorVariant ? selectedColorIds : [],
-                [sizeValues[0].id],
-                hasColorVariant,
-                true,
+            setCandidateSizeIds([]);
+            onVariantsChange(
+                ensureDefault(
+                    candidateColorIds.map((id) => blankVariant(id, null)),
+                ),
+            );
+
+            return;
+        }
+
+        if (candidateSizeIds.length === 0 && sizeValues.length > 0) {
+            const firstId = sizeValues[0].id;
+            setCandidateSizeIds([firstId]);
+            onVariantsChange(
+                hasColorVariant
+                    ? []
+                    : ensureDefault([blankVariant(null, firstId)]),
             );
         }
     };
@@ -231,13 +280,7 @@ export function ProductVariantManager({
     };
 
     const removeRow = (index: number) => {
-        const next = variants.filter((_, i) => i !== index);
-
-        if (next.length > 0 && !next.some((row) => row.is_default)) {
-            next[0].is_default = true;
-        }
-
-        onVariantsChange(next);
+        onVariantsChange(ensureDefault(variants.filter((_, i) => i !== index)));
     };
 
     const valueLabel = (id: number | null, options: AttributeValueOption[]) =>
@@ -279,7 +322,7 @@ export function ProductVariantManager({
                     </p>
                     <div className="flex flex-wrap gap-2">
                         {colorValues.map((color) => {
-                            const active = selectedColorIds.includes(color.id);
+                            const active = candidateColorIds.includes(color.id);
 
                             return (
                                 <button
@@ -321,7 +364,7 @@ export function ProductVariantManager({
                     </p>
                     <div className="flex flex-wrap gap-2">
                         {sizeValues.map((size) => {
-                            const active = selectedSizeIds.includes(size.id);
+                            const active = candidateSizeIds.includes(size.id);
 
                             return (
                                 <button
@@ -348,6 +391,96 @@ export function ProductVariantManager({
                     </div>
                 </div>
             )}
+
+            {dualMode &&
+                candidateColorIds.length > 0 &&
+                candidateSizeIds.length > 0 && (
+                    <div>
+                        <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                            Combinations
+                        </p>
+                        <p className="mb-2 text-xs text-slate-400">
+                            Check the color/size pairs you actually stock.
+                        </p>
+                        <div className="overflow-x-auto rounded-xl border border-slate-200">
+                            <table className="w-full text-xs">
+                                <thead className="bg-slate-50 text-slate-500">
+                                    <tr>
+                                        <th className="px-3 py-2 text-left font-medium">
+                                            Color \ Size
+                                        </th>
+                                        {candidateSizeIds.map((sizeId) => (
+                                            <th
+                                                key={sizeId}
+                                                className="px-3 py-2 text-center font-medium"
+                                            >
+                                                {valueLabel(sizeId, sizeValues)}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {candidateColorIds.map((colorId) => (
+                                        <tr key={colorId}>
+                                            <td className="flex items-center gap-1.5 px-3 py-2 font-medium whitespace-nowrap text-slate-700">
+                                                <span
+                                                    className="size-3 shrink-0 rounded-full border border-black/10"
+                                                    style={{
+                                                        backgroundColor:
+                                                            colorSwatch(
+                                                                colorId,
+                                                            ) || '#ccc',
+                                                    }}
+                                                />
+                                                {valueLabel(
+                                                    colorId,
+                                                    colorValues,
+                                                )}
+                                            </td>
+                                            {candidateSizeIds.map((sizeId) => {
+                                                const checked = variants.some(
+                                                    (v) =>
+                                                        v.color_value_id ===
+                                                            colorId &&
+                                                        v.size_value_id ===
+                                                            sizeId,
+                                                );
+                                                const locked =
+                                                    checked &&
+                                                    variants.length <= 1;
+
+                                                return (
+                                                    <td
+                                                        key={sizeId}
+                                                        className="px-3 py-2 text-center"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={checked}
+                                                            disabled={locked}
+                                                            onChange={() =>
+                                                                togglePair(
+                                                                    colorId,
+                                                                    sizeId,
+                                                                )
+                                                            }
+                                                            title={
+                                                                locked
+                                                                    ? "Can't remove the only remaining pair here"
+                                                                    : undefined
+                                                            }
+                                                            className="size-4 rounded border-slate-300 text-[#c8102e] focus:ring-[#c8102e] disabled:opacity-40"
+                                                        />
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
 
             {variants.length > 0 && (
                 <div className="space-y-3">

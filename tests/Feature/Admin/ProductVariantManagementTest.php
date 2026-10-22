@@ -29,6 +29,10 @@ beforeEach(function () {
     $colorAttribute = Attribute::create(['name' => 'Color', 'type' => AttributeType::COLOR]);
     $this->red = AttributeValue::create(['attribute_id' => $colorAttribute->id, 'value' => 'Red', 'color_hex' => '#ff0000']);
     $this->blue = AttributeValue::create(['attribute_id' => $colorAttribute->id, 'value' => 'Blue', 'color_hex' => '#0000ff']);
+
+    $sizeAttribute = Attribute::create(['name' => 'Size', 'type' => AttributeType::SELECT]);
+    $this->sizeM = AttributeValue::create(['attribute_id' => $sizeAttribute->id, 'value' => 'M']);
+    $this->sizeXl = AttributeValue::create(['attribute_id' => $sizeAttribute->id, 'value' => 'XL']);
 });
 
 function baseProductPayload(array $overrides = []): array
@@ -229,4 +233,34 @@ test('media can be tagged to a specific color variant', function () {
     expect($redMedia->variant_id)->toBe($redVariant->id);
     expect($blueMedia->variant_id)->toBe($blueVariant->id);
     expect($generalMedia->variant_id)->toBeNull();
+});
+
+test('admin can submit a partial set of color/size pairs, skipping unwanted combinations', function () {
+    actingAs($this->admin, 'admin');
+
+    // Blue/M, Blue/XL, Red/M are wanted — Red/XL is deliberately not submitted.
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'has_size_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            ['color_value_id' => $this->blue->id, 'size_value_id' => $this->sizeM->id, 'price' => 500, 'stock_quantity' => 5, 'is_default' => true],
+            ['color_value_id' => $this->blue->id, 'size_value_id' => $this->sizeXl->id, 'price' => 500, 'stock_quantity' => 5, 'is_default' => false],
+            ['color_value_id' => $this->red->id, 'size_value_id' => $this->sizeM->id, 'price' => 500, 'stock_quantity' => 5, 'is_default' => false],
+        ],
+    ]));
+
+    $response->assertRedirect(route('admin.products.index'));
+
+    $product = Product::where('slug', 'test-product')->first();
+    expect($product->variants)->toHaveCount(3);
+
+    $pairs = $product->variants->map(fn (ProductVariant $v) => [$v->color_value_id, $v->size_value_id])->all();
+    expect($pairs)->toContain([$this->blue->id, $this->sizeM->id]);
+    expect($pairs)->toContain([$this->blue->id, $this->sizeXl->id]);
+    expect($pairs)->toContain([$this->red->id, $this->sizeM->id]);
+    expect($pairs)->not->toContain([$this->red->id, $this->sizeXl->id]);
 });
