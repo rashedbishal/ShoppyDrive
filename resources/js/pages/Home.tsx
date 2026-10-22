@@ -37,7 +37,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StarRating } from '@/components/ui/star-rating';
 import { resolveCategoryColor } from '@/lib/category-colors';
 import { CategoryIcon } from '@/lib/category-icons';
-import { MOTION } from '@/lib/constants';
+import { MOTION, PRODUCT_CARD_HEIGHT } from '@/lib/constants';
 import {
     formatCurrency,
     getDiscountPercent,
@@ -322,7 +322,7 @@ function HeroSlider({
                                     </Button>
                                     <Link
                                         href={activeSlide.secondaryCta.href}
-                                        className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs font-medium text-white/80 transition hover:text-white sm:text-sm"
+                                        className="flex shrink-0 items-center gap-1.5 text-xs font-medium whitespace-nowrap text-white/80 transition hover:text-white sm:text-sm"
                                     >
                                         {activeSlide.secondaryCta.label}
                                         <ArrowRight className="size-3 sm:size-3.5" />
@@ -616,7 +616,8 @@ function ProductCard({
         <motion.article
             ref={cardRef}
             className={cn(
-                'group flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-transform duration-200 hover:shadow-[var(--shadow-card-hover)]',
+                'group flex w-full flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-transform duration-200 hover:shadow-[var(--shadow-card-hover)]',
+                PRODUCT_CARD_HEIGHT,
                 className,
             )}
             initial={false}
@@ -643,12 +644,12 @@ function ProductCard({
             onHoverStart={() => setIsHovered(true)}
             onHoverEnd={() => setIsHovered(false)}
         >
-            <div className="relative">
+            <div className="relative min-h-0 flex-1">
                 <Link
                     href={productRoutes.show.url(product.slug)}
-                    className="block"
+                    className="block h-full"
                 >
-                    <div className="relative aspect-[3/2] overflow-hidden bg-[var(--color-surface-alt)]">
+                    <div className="relative h-full overflow-hidden bg-[var(--color-surface-alt)]">
                         {primaryUrl ? (
                             <img
                                 src={primaryUrl}
@@ -736,69 +737,14 @@ function ProductCard({
                                 </Badge>
                             </div>
                         ) : null}
-                    </div>
-                </Link>
-            </div>
 
-            <div className="flex flex-1 flex-col gap-2.5 p-3">
-                <div className="space-y-0.5">
-                    <p className="text-[11px] font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
-                        {product.brand?.name ?? 'ShoppyDrive Select'}
-                    </p>
-                    <Link
-                        href={productRoutes.show.url(product.slug)}
-                        className="line-clamp-2 min-h-[2.5rem] text-sm leading-snug font-semibold text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)]"
-                    >
-                        {product.name}
-                    </Link>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                    <StarRating
-                        rating={product.average_rating ?? 0}
-                        size="sm"
-                        className="text-[var(--color-accent)]"
-                    />
-                    <span className="text-xs text-[var(--color-text-secondary)]">
-                        ({product.reviews_count ?? 0})
-                    </span>
-                </div>
-
-                <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                    <p className="text-base font-bold tracking-tight whitespace-nowrap text-[var(--color-primary)]">
-                        {formatCurrency(currentPrice)}
-                    </p>
-                    {product.compare_price &&
-                    product.compare_price > currentPrice ? (
-                        <p className="text-xs whitespace-nowrap text-[var(--color-text-muted)] line-through">
-                            {formatCurrency(product.compare_price)}
-                        </p>
-                    ) : null}
-                </div>
-
-                {(isOutOfStock ||
-                    isLowStock ||
-                    typeof saleProgress === 'number') && (
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
-                            <span>
-                                {isOutOfStock
-                                    ? 'Out of stock'
-                                    : isLowStock
-                                      ? `Only ${product.stock_quantity} left`
-                                      : null}
-                            </span>
-                            {saleProgressLabel ? (
-                                <span>{saleProgressLabel}</span>
-                            ) : null}
-                        </div>
                         {typeof saleProgress === 'number' ? (
                             <div
-                                className="h-1.5 overflow-hidden rounded-full bg-[var(--color-surface-alt)]"
+                                className="absolute inset-x-0 bottom-0 h-1.5 bg-black/20"
                                 aria-label={`${saleProgressLabel ?? 'Sale progress'} ${saleProgress}%`}
                             >
                                 <div
-                                    className="h-full rounded-full bg-[var(--color-accent)] transition-all"
+                                    className="h-full bg-[var(--color-accent)] transition-all"
                                     style={{
                                         width: `${Math.max(0, Math.min(100, saleProgress))}%`,
                                     }}
@@ -806,19 +752,79 @@ function ProductCard({
                             </div>
                         ) : null}
                     </div>
-                )}
+                </Link>
+            </div>
 
-                <div className="mt-auto pt-1">
-                    <Button
-                        type="button"
-                        fullWidth
-                        disabled={isOutOfStock}
-                        onClick={handleAddToCart}
-                        className="translate-y-0 transition-transform duration-200 group-hover:-translate-y-1"
+            {/* Every row below has a fixed height so the card never changes size. */}
+            <div className="flex shrink-0 flex-col gap-2 p-3">
+                <div className="space-y-0.5">
+                    <p className="truncate text-[11px] leading-4 font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
+                        {product.brand?.name ?? 'ShoppyDrive Select'}
+                    </p>
+                    <Link
+                        href={productRoutes.show.url(product.slug)}
+                        className="line-clamp-2 h-10 text-sm leading-5 font-semibold text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)]"
                     >
-                        {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-                    </Button>
+                        {product.name}
+                    </Link>
                 </div>
+
+                <div className="flex h-4 items-center gap-1.5 overflow-hidden whitespace-nowrap">
+                    <StarRating
+                        rating={product.average_rating ?? 0}
+                        size="sm"
+                        className="shrink-0 text-[var(--color-accent)]"
+                    />
+                    <span className="text-xs text-[var(--color-text-secondary)]">
+                        ({product.reviews_count ?? 0})
+                    </span>
+                </div>
+
+                <div className="flex h-10 min-w-0 flex-col justify-center overflow-hidden sm:h-6 sm:flex-row sm:items-baseline sm:justify-start sm:gap-1.5">
+                    <p className="shrink-0 text-base leading-6 font-bold tracking-tight whitespace-nowrap text-[var(--color-primary)]">
+                        {formatCurrency(currentPrice)}
+                    </p>
+                    {product.compare_price &&
+                    product.compare_price > currentPrice ? (
+                        <p className="min-w-0 truncate text-xs leading-4 text-[var(--color-text-muted)] line-through">
+                            {formatCurrency(product.compare_price)}
+                        </p>
+                    ) : null}
+                </div>
+
+                <div className="flex h-4 items-center justify-between gap-2 text-xs leading-4 whitespace-nowrap">
+                    <span
+                        className={cn(
+                            'min-w-0 truncate',
+                            isOutOfStock
+                                ? 'text-[var(--color-error)]'
+                                : isLowStock
+                                  ? 'font-medium text-[var(--color-warning)]'
+                                  : 'text-[var(--color-text-secondary)]',
+                        )}
+                    >
+                        {isOutOfStock
+                            ? 'Out of stock'
+                            : isLowStock
+                              ? `Only ${product.stock_quantity} left`
+                              : null}
+                    </span>
+                    {saleProgressLabel ? (
+                        <span className="shrink-0 text-[var(--color-text-secondary)]">
+                            {saleProgressLabel}
+                        </span>
+                    ) : null}
+                </div>
+
+                <Button
+                    type="button"
+                    fullWidth
+                    disabled={isOutOfStock}
+                    onClick={handleAddToCart}
+                    className="h-10 sm:h-11"
+                >
+                    {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+                </Button>
             </div>
         </motion.article>
     );
@@ -1314,23 +1320,22 @@ function ProductRail({
 
 function ProductCardSkeleton(): React.JSX.Element {
     return (
-        <Card className="overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-card)]">
-            <div className="space-y-4 p-4">
-                <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
-                <div className="space-y-2">
-                    <Skeleton className="h-3 w-24" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-4/5" />
+        <Card
+            className={cn(
+                'flex w-full flex-col gap-0 overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-card)]',
+                PRODUCT_CARD_HEIGHT,
+            )}
+        >
+            <Skeleton className="min-h-0 w-full flex-1 rounded-none" />
+            <div className="flex shrink-0 flex-col gap-2 p-3">
+                <div className="space-y-0.5">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-10 w-full" />
                 </div>
-                <div className="flex items-center gap-2">
-                    <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-3 w-12" />
-                </div>
-                <div className="flex items-end gap-2">
-                    <Skeleton className="h-6 w-24" />
-                    <Skeleton className="h-4 w-16" />
-                </div>
-                <Skeleton className="h-11 w-full rounded-xl" />
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-10 w-24 sm:h-6" />
+                <div className="h-4" />
+                <Skeleton className="h-10 w-full rounded-xl sm:h-11" />
             </div>
         </Card>
     );

@@ -103,7 +103,8 @@
       "Bash(git check-ignore *)",
       "Bash(node -e \"console.log\\(require\\('@headlessui/react/package.json'\\).version\\)\")",
       "Bash(grep -rhoE -e \"--\\(anchor-max-height|button-width|anchor-gap|input-width\\)\" node_modules/@headlessui/react/dist)",
-      "Bash(grep -oE '\"result\":\"[a-z]+\"|\"passed\":[0-9]+|\"failed\":[0-9]+|\"message\":\"[^\"]{0,300}')"
+      "Bash(grep -oE '\"result\":\"[a-z]+\"|\"passed\":[0-9]+|\"failed\":[0-9]+|\"message\":\"[^\"]{0,300}')",
+      "Bash(awk -F: '{print $1}')"
     ]
   },
   "enableAllProjectMcpServers": true,

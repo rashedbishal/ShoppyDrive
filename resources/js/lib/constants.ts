@@ -44,6 +44,12 @@ export const MOTION = {
     stagger: 0.06,
 } as const;
 
+/**
+ * Fixed storefront product card heights per device tier (mobile / tablet / desktop).
+ * Cards never grow or shrink with their content; the image area absorbs the slack.
+ */
+export const PRODUCT_CARD_HEIGHT = 'h-[22rem] sm:h-[24rem] lg:h-[26rem]';
+
 export const SHADOWS = {
     card: '0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.06)',
     cardHover: '0 8px 32px rgba(0, 0, 0, 0.12)',
@@ -77,4 +83,3 @@ export const DESIGN_TOKENS = {
         pill: '9999px',
     },
 } as const;
-
