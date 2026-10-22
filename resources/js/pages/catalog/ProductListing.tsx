@@ -1,13 +1,11 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
-    ArrowRight,
     Banknote,
     Check,
     ChevronDown,
     ChevronLeft,
     ChevronRight,
     Filter,
-    Heart,
     LayoutGrid,
     List,
     Package,
@@ -24,21 +22,23 @@ import {
     type FormEvent,
     type ReactNode,
 } from 'react';
+import {
+    ProductCard,
+    ProductCardSkeleton,
+} from '@/components/shared/ProductCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Drawer } from '@/components/ui/drawer';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { StarRating } from '@/components/ui/star-rating';
-import { cn, formatCurrency, getDiscountPercent, truncate } from '@/lib/utils';
+import {
+    PRODUCT_GRID_BESIDE_SIDEBAR_CLASS,
+    SIDEBAR_LAYOUT_CLASS,
+} from '@/lib/constants';
+import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
-import { useCartStore } from '@/stores/cartStore';
-import { useUiStore } from '@/stores/uiStore';
-import { useWishlistStore } from '@/stores/wishlistStore';
 import type {
     Attribute,
     AttributeValue,
@@ -390,450 +390,6 @@ function CategoryRow({
                 </span>
             ) : null}
         </button>
-    );
-}
-
-function ListingProductSkeleton({
-    view,
-}: {
-    view: 'grid' | 'list';
-}): React.JSX.Element {
-    if (view === 'list') {
-        return (
-            <Card className="overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-card)]">
-                <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-[220px_minmax(0,1fr)]">
-                    <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Skeleton className="h-3 w-24" />
-                            <Skeleton className="h-5 w-4/5" />
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-5/6" />
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Skeleton className="h-4 w-20" />
-                            <Skeleton className="h-4 w-12" />
-                        </div>
-                        <div className="flex items-end gap-2">
-                            <Skeleton className="h-7 w-28" />
-                            <Skeleton className="h-4 w-16" />
-                        </div>
-                        <Skeleton className="h-11 w-40 rounded-xl" />
-                    </div>
-                </div>
-            </Card>
-        );
-    }
-
-    return (
-        <Card className="overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-card)]">
-            <div className="space-y-4 p-4">
-                <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
-                <div className="space-y-2">
-                    <Skeleton className="h-3 w-24" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-4/5" />
-                </div>
-                <div className="flex items-center gap-2">
-                    <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-3 w-12" />
-                </div>
-                <div className="flex items-end gap-2">
-                    <Skeleton className="h-6 w-24" />
-                    <Skeleton className="h-4 w-16" />
-                </div>
-                <Skeleton className="h-11 w-full rounded-xl" />
-            </div>
-        </Card>
-    );
-}
-
-function ProductCard({
-    product,
-    view,
-}: {
-    product: Product;
-    view: 'grid' | 'list';
-}): React.JSX.Element {
-    const addItem = useCartStore((state) => state.addItem);
-    const openCart = useUiStore((state) => state.openCart);
-    const addToast = useUiStore((state) => state.addToast);
-    const toggleWishlist = useWishlistStore((state) => state.toggleWishlist);
-    const isWishlisted = useWishlistStore((state) =>
-        state.isWishlisted(product.id),
-    );
-    const [isHovered, setIsHovered] = useState(false);
-
-    const imageSet = product.images ?? [];
-    const primaryImage =
-        imageSet.find((image) => image.is_primary) ?? imageSet[0];
-    const secondaryImage = imageSet.find((image) => !image.is_primary);
-    const currentPrice =
-        product.in_flash_sale && typeof product.flash_sale_price === 'number'
-            ? product.flash_sale_price
-            : product.price;
-    const discountPercent = product.compare_price
-        ? getDiscountPercent(currentPrice, product.compare_price)
-        : 0;
-    const isOutOfStock = product.stock_quantity <= 0;
-    const stockLabel = isOutOfStock
-        ? 'Out of stock'
-        : product.stock_quantity <= product.low_stock_threshold
-          ? `Only ${product.stock_quantity} left`
-          : 'In stock';
-
-    const handleAddToCart = (): void => {
-        if (isOutOfStock) {
-            addToast({
-                type: 'warning',
-                title: 'Out of stock',
-                message: `${product.name} is not currently available.`,
-            });
-
-            return;
-        }
-
-        addItem({ product, quantity: 1 });
-        openCart();
-        addToast({
-            type: 'success',
-            title: 'Added to cart',
-            message: `${product.name} was added to your cart.`,
-        });
-    };
-
-    const handleWishlist = (): void => {
-        toggleWishlist(product.id);
-        addToast({
-            type: isWishlisted ? 'info' : 'success',
-            title: isWishlisted ? 'Removed from wishlist' : 'Saved to wishlist',
-            message: isWishlisted
-                ? `${product.name} was removed from your wishlist.`
-                : `${product.name} was added to your wishlist.`,
-        });
-    };
-
-    if (view === 'list') {
-        return (
-            <article
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-                className="overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]"
-            >
-                <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-[220px_minmax(0,1fr)]">
-                    <Link
-                        href={route('product.show', product.slug)}
-                        className="block"
-                    >
-                        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-[var(--color-surface-alt)]">
-                            {primaryImage?.path ? (
-                                <>
-                                    <img
-                                        src={primaryImage.path}
-                                        alt={primaryImage.alt ?? product.name}
-                                        loading="lazy"
-                                        decoding="async"
-                                        className={cn(
-                                            'h-full w-full object-cover transition duration-500',
-                                            isHovered && secondaryImage?.path
-                                                ? 'scale-105 opacity-0'
-                                                : 'opacity-100',
-                                        )}
-                                    />
-                                    {secondaryImage?.path ? (
-                                        <img
-                                            src={secondaryImage.path}
-                                            alt=""
-                                            aria-hidden="true"
-                                            loading="lazy"
-                                            decoding="async"
-                                            className={cn(
-                                                'absolute inset-0 h-full w-full object-cover transition duration-500',
-                                                isHovered
-                                                    ? 'scale-105 opacity-100'
-                                                    : 'opacity-0',
-                                            )}
-                                        />
-                                    ) : null}
-                                </>
-                            ) : (
-                                <div className="flex h-full items-center justify-center text-[var(--color-text-muted)]">
-                                    <Search className="size-10" />
-                                </div>
-                            )}
-                            {discountPercent > 0 ? (
-                                <Badge className="absolute top-3 left-3 bg-[var(--color-accent)] text-[var(--color-secondary)]">
-                                    SALE {discountPercent}%
-                                </Badge>
-                            ) : null}
-                            <button
-                                type="button"
-                                onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    handleWishlist();
-                                }}
-                                aria-label={
-                                    isWishlisted
-                                        ? `Remove ${product.name} from wishlist`
-                                        : `Add ${product.name} to wishlist`
-                                }
-                                className="absolute top-3 right-3 inline-flex size-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-white/95 text-[var(--color-text-secondary)] shadow-sm transition hover:scale-105"
-                            >
-                                <Heart
-                                    className={cn(
-                                        'size-4',
-                                        isWishlisted
-                                            ? 'fill-current text-[var(--color-primary)]'
-                                            : '',
-                                    )}
-                                />
-                            </button>
-                        </div>
-                    </Link>
-
-                    <div className="flex min-w-0 flex-col gap-4">
-                        <div className="space-y-2">
-                            <p className="text-xs font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
-                                {product.brand?.name ?? 'ShoppyDrive Select'}
-                            </p>
-                            <Link
-                                href={route('product.show', product.slug)}
-                                className="line-clamp-2 text-lg font-semibold text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)]"
-                            >
-                                {product.name}
-                            </Link>
-                            <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
-                                {truncate(
-                                    product.short_description ??
-                                        product.description ??
-                                        '',
-                                    150,
-                                )}
-                            </p>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                            <StarRating
-                                rating={product.average_rating ?? 0}
-                                size="sm"
-                                className="text-[var(--color-accent)]"
-                            />
-                            <span className="text-xs text-[var(--color-text-secondary)]">
-                                ({product.reviews_count ?? 0})
-                            </span>
-                            <Badge
-                                variant={isOutOfStock ? 'error' : 'success'}
-                                size="sm"
-                            >
-                                {stockLabel}
-                            </Badge>
-                        </div>
-
-                        <div className="flex flex-wrap items-end gap-2">
-                            <p className="text-2xl font-bold tracking-tight text-[var(--color-primary)]">
-                                {formatCurrency(currentPrice)}
-                            </p>
-                            {product.compare_price &&
-                            product.compare_price > currentPrice ? (
-                                <p className="pb-0.5 text-sm text-[var(--color-text-muted)] line-through">
-                                    {formatCurrency(product.compare_price)}
-                                </p>
-                            ) : null}
-                        </div>
-
-                        <div className="flex flex-wrap gap-3">
-                            <Button
-                                type="button"
-                                onClick={handleAddToCart}
-                                disabled={isOutOfStock}
-                                className="flex-1 sm:flex-none"
-                            >
-                                {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-                            </Button>
-                            <Button
-                                asChild
-                                variant="outline"
-                                className="flex-1 sm:flex-none"
-                            >
-                                <Link
-                                    href={route('product.show', product.slug)}
-                                >
-                                    View Details
-                                    <ArrowRight className="size-4" />
-                                </Link>
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </article>
-        );
-    }
-
-    return (
-        <article
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            className="group flex h-full flex-col overflow-hidden border-[var(--color-border)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-card-hover)]"
-        >
-            <div className="relative shrink-0">
-                <Link
-                    href={route('product.show', product.slug)}
-                    className="block"
-                >
-                    <div className="relative aspect-[4/3] overflow-hidden bg-[var(--color-surface-alt)]">
-                        {primaryImage?.path ? (
-                            <>
-                                <img
-                                    src={primaryImage.path}
-                                    alt={primaryImage.alt ?? product.name}
-                                    loading="lazy"
-                                    decoding="async"
-                                    className={cn(
-                                        'h-full w-full object-cover transition duration-500',
-                                        isHovered && secondaryImage?.path
-                                            ? 'scale-105 opacity-0'
-                                            : 'opacity-100',
-                                    )}
-                                />
-                                {secondaryImage?.path ? (
-                                    <img
-                                        src={secondaryImage.path}
-                                        alt=""
-                                        aria-hidden="true"
-                                        loading="lazy"
-                                        decoding="async"
-                                        className={cn(
-                                            'absolute inset-0 h-full w-full object-cover transition duration-500',
-                                            isHovered
-                                                ? 'scale-105 opacity-100'
-                                                : 'opacity-0',
-                                        )}
-                                    />
-                                ) : null}
-                            </>
-                        ) : (
-                            <div className="flex h-full items-center justify-center text-[var(--color-text-muted)]">
-                                <Search className="size-10" />
-                            </div>
-                        )}
-
-                        {discountPercent > 0 ? (
-                            <Badge className="absolute top-4 left-4 bg-[var(--color-accent)] text-[var(--color-secondary)]">
-                                SALE {discountPercent}%
-                            </Badge>
-                        ) : null}
-
-                        <button
-                            type="button"
-                            onClick={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                handleWishlist();
-                            }}
-                            aria-label={
-                                isWishlisted
-                                    ? `Remove ${product.name} from wishlist`
-                                    : `Add ${product.name} to wishlist`
-                            }
-                            className="absolute top-4 right-4 inline-flex size-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-white/95 text-[var(--color-text-secondary)] shadow-sm transition hover:scale-105"
-                        >
-                            <Heart
-                                className={cn(
-                                    'size-4',
-                                    isWishlisted
-                                        ? 'fill-current text-[var(--color-primary)]'
-                                        : '',
-                                )}
-                            />
-                        </button>
-
-                        {isOutOfStock ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-[rgba(26,26,46,0.62)]">
-                                <Badge
-                                    variant="error"
-                                    className="bg-[rgba(220,38,38,0.96)] text-white"
-                                >
-                                    Out of stock
-                                </Badge>
-                            </div>
-                        ) : null}
-                    </div>
-                </Link>
-            </div>
-
-            <div className="flex flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-4">
-                <div className="space-y-1">
-                    <p className="truncate text-xs font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
-                        {product.brand?.name ?? 'ShoppyDrive Select'}
-                    </p>
-                    {/* Always reserve two lines so short names don't shift the rest of the card */}
-                    <Link
-                        href={route('product.show', product.slug)}
-                        className="line-clamp-2 min-h-12 text-sm leading-6 font-semibold text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)]"
-                    >
-                        {product.name}
-                    </Link>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <StarRating
-                        rating={product.average_rating ?? 0}
-                        size="sm"
-                        className="text-[var(--color-accent)]"
-                    />
-                    <span className="text-xs text-[var(--color-text-secondary)]">
-                        ({product.reviews_count ?? 0})
-                    </span>
-                </div>
-
-                {/* Wraps the struck-through price under the price on narrow cards instead of overflowing */}
-                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <p className="text-base font-bold tracking-tight whitespace-nowrap text-[var(--color-primary)] sm:text-lg">
-                        {formatCurrency(currentPrice)}
-                    </p>
-                    {product.compare_price &&
-                    product.compare_price > currentPrice ? (
-                        <p className="text-xs whitespace-nowrap text-[var(--color-text-muted)] line-through sm:text-sm">
-                            {formatCurrency(product.compare_price)}
-                        </p>
-                    ) : null}
-                </div>
-
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
-                        <span>{stockLabel}</span>
-                        {product.stock_quantity <=
-                            product.low_stock_threshold && !isOutOfStock ? (
-                            <span className="text-[var(--color-accent)]">
-                                Selling fast
-                            </span>
-                        ) : null}
-                    </div>
-                    {product.in_flash_sale &&
-                    typeof product.flash_sale_price === 'number' ? (
-                        <div className="h-2 overflow-hidden rounded-full bg-[var(--color-surface-alt)]">
-                            <div
-                                className="h-full rounded-full bg-[var(--color-accent)]"
-                                style={{
-                                    width: `${Math.min(100, Math.max(15, discountPercent * 2))}%`,
-                                }}
-                            />
-                        </div>
-                    ) : null}
-                </div>
-
-                <Button
-                    type="button"
-                    fullWidth
-                    onClick={handleAddToCart}
-                    disabled={isOutOfStock}
-                    className="mt-auto translate-y-0 transition-transform duration-200 group-hover:-translate-y-1"
-                >
-                    {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-                </Button>
-            </div>
-        </article>
     );
 }
 
@@ -1410,15 +966,15 @@ function ProductListingPage({
         <>
             <Head title={title} />
 
-            <div className="space-y-8 py-8 lg:py-12">
+            <div className="space-y-6 py-6 lg:py-8">
                 <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 gap-6 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-card)] lg:grid-cols-[1.1fr_0.9fr] lg:p-8">
-                        <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6 lg:px-6 lg:py-5">
+                        <div className="space-y-3">
                             <Badge variant="amber" className="w-fit">
                                 <SlidersHorizontal className="size-3.5" />
                                 Catalog filters
                             </Badge>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                                 <p className="text-xs font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
                                     {filters.banner_id
                                         ? 'Collection'
@@ -1426,19 +982,19 @@ function ProductListingPage({
                                           ? 'Category browse'
                                           : 'All products'}
                                 </p>
-                                <h1 className="font-display text-3xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-4xl">
+                                <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-3xl">
                                     {title}
                                 </h1>
-                                <p className="max-w-2xl text-sm leading-7 text-[var(--color-text-secondary)] sm:text-base">
+                                <p className="line-clamp-2 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
                                     {description}
                                 </p>
                             </div>
-                            <div className="flex flex-wrap gap-3">
-                                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-4 py-2 text-sm text-[var(--color-text-secondary)]">
+                            <div className="flex flex-wrap gap-2">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] sm:text-sm">
                                     <ShieldCheck className="size-4 text-[var(--color-success)]" />
                                     Secure checkout ready
                                 </div>
-                                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-4 py-2 text-sm text-[var(--color-text-secondary)]">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] sm:text-sm">
                                     <Truck className="size-4 text-[var(--color-primary)]" />
                                     Nationwide delivery
                                 </div>
@@ -1490,20 +1046,20 @@ function ProductListingPage({
                                                 '--stat-color': color,
                                             } as React.CSSProperties
                                         }
-                                        className="group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] to-[color-mix(in_srgb,var(--stat-color)_6%,var(--color-surface))] p-3 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--stat-color)_35%,transparent)] hover:shadow-[var(--shadow-card-hover)] sm:p-4"
+                                        className="group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] to-[color-mix(in_srgb,var(--stat-color)_6%,var(--color-surface))] p-3 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--stat-color)_35%,transparent)] hover:shadow-[var(--shadow-card-hover)]"
                                     >
                                         {/* Soft corner glow in the stat's accent colour */}
                                         <span className="pointer-events-none absolute -top-8 -right-8 -z-10 size-24 rounded-full bg-[var(--stat-color)] opacity-[0.08] blur-2xl transition-opacity duration-300 group-hover:opacity-[0.16]" />
-                                        <span className="flex size-8 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--stat-color)_12%,transparent)] text-[var(--stat-color)] ring-1 ring-[color-mix(in_srgb,var(--stat-color)_18%,transparent)] sm:size-10">
+                                        <span className="flex size-8 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--stat-color)_12%,transparent)] text-[var(--stat-color)] ring-1 ring-[color-mix(in_srgb,var(--stat-color)_18%,transparent)] sm:size-9">
                                             <Icon className="size-4 sm:size-5" />
                                         </span>
-                                        <p className="mt-3 truncate font-display text-lg leading-none font-bold tracking-tight text-[var(--color-text-primary)] sm:mt-4 sm:text-2xl">
+                                        <p className="mt-2.5 truncate font-display text-lg leading-none font-bold tracking-tight text-[var(--color-text-primary)] sm:text-xl">
                                             {value}
                                         </p>
-                                        <p className="mt-1.5 truncate text-[11px] text-[var(--color-text-secondary)] sm:text-xs">
+                                        <p className="mt-1 truncate text-[11px] text-[var(--color-text-secondary)] sm:text-xs">
                                             {detail}
                                         </p>
-                                        <p className="mt-3 truncate border-t border-dashed border-[var(--color-border)] pt-2 text-[10px] font-semibold tracking-[0.16em] text-[var(--color-text-muted)] uppercase">
+                                        <p className="mt-2 truncate border-t border-dashed border-[var(--color-border)] pt-1.5 text-[10px] font-semibold tracking-[0.16em] text-[var(--color-text-muted)] uppercase">
                                             {label}
                                         </p>
                                     </div>
@@ -1513,10 +1069,16 @@ function ProductListingPage({
                     </div>
                 </section>
 
-                <section className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 sm:px-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
+                <section
+                    className={cn(
+                        SIDEBAR_LAYOUT_CLASS,
+                        'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8',
+                    )}
+                >
                     <aside className="hidden lg:block">
-                        <div className="sticky top-28 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]">
-                            <div className="mb-4 flex items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4">
+                        {/* Sticks below the header and scrolls on its own, independent of the page. */}
+                        <div className="sticky top-28 flex max-h-[calc(100dvh-8.5rem)] flex-col rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] py-5 pr-2 pl-5 shadow-[var(--shadow-card)]">
+                            <div className="mr-3 mb-4 flex shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4">
                                 <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                                     Filters
                                     {activeFilterCount > 0 ? (
@@ -1535,16 +1097,18 @@ function ProductListingPage({
                                     </button>
                                 ) : null}
                             </div>
-                            {sidebarControls}
+                            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-3 [scrollbar-width:thin]">
+                                {sidebarControls}
+                            </div>
                         </div>
                     </aside>
 
-                    <div className="min-w-0 space-y-6">
-                        <div className="rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)] sm:p-4">
-                            <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                    <div className="min-w-0 space-y-6 lg:col-span-3">
+                        <div className="rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-card)] sm:p-2.5">
+                            <div className="grid grid-cols-1 gap-2 sm:gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                                 <form
                                     onSubmit={handleSearchSubmit}
-                                    className="flex min-w-0 gap-3"
+                                    className="flex min-w-0 gap-2"
                                 >
                                     <div className="relative min-w-0 flex-1">
                                         <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
@@ -1556,13 +1120,13 @@ function ProductListingPage({
                                                 )
                                             }
                                             placeholder="Search products, brands, or SKUs"
-                                            className="h-12 rounded-full border-[var(--color-border)] pl-11"
+                                            className="h-10 rounded-full border-[var(--color-border)] pl-11"
                                         />
                                     </div>
                                     <Button
                                         type="submit"
                                         variant="outline"
-                                        className="hidden sm:inline-flex"
+                                        className="hidden h-10 sm:inline-flex"
                                     >
                                         Search
                                     </Button>
@@ -1571,7 +1135,7 @@ function ProductListingPage({
                                 <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                                     <Button
                                         variant="outline"
-                                        className="shrink-0 lg:hidden"
+                                        className="h-10 shrink-0 lg:hidden"
                                         onClick={() => setIsFiltersOpen(true)}
                                     >
                                         <Filter className="size-4" />
@@ -1595,7 +1159,7 @@ function ProductListingPage({
                                         }))}
                                         aria-label="Sort products"
                                         containerClassName="min-w-0 flex-1 lg:flex-none"
-                                        selectClassName="truncate sm:min-w-52"
+                                        selectClassName="h-10 truncate sm:min-w-52"
                                     />
 
                                     <div className="inline-flex shrink-0 overflow-hidden rounded-xl border border-[var(--color-border)]">
@@ -1613,7 +1177,7 @@ function ProductListingPage({
                                             }}
                                             aria-label="Grid view"
                                             className={cn(
-                                                'inline-flex size-11 items-center justify-center transition',
+                                                'inline-flex size-10 items-center justify-center transition',
                                                 draftFilters.view === 'grid'
                                                     ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]'
                                                     : 'bg-white text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]',
@@ -1635,7 +1199,7 @@ function ProductListingPage({
                                             }}
                                             aria-label="List view"
                                             className={cn(
-                                                'inline-flex size-11 items-center justify-center transition',
+                                                'inline-flex size-10 items-center justify-center transition',
                                                 draftFilters.view === 'list'
                                                     ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]'
                                                     : 'bg-white text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]',
@@ -1676,17 +1240,16 @@ function ProductListingPage({
 
                         {isLoading ? (
                             <div
-                                className={cn(
-                                    'grid gap-3 md:gap-4',
+                                className={
                                     draftFilters.view === 'list'
-                                        ? 'grid-cols-1'
-                                        : 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-4',
-                                )}
+                                        ? 'grid grid-cols-1 gap-3 md:gap-4'
+                                        : PRODUCT_GRID_BESIDE_SIDEBAR_CLASS
+                                }
                             >
                                 {Array.from(
                                     { length: DEFAULT_GRID_COUNT },
                                     (_, index) => (
-                                        <ListingProductSkeleton
+                                        <ProductCardSkeleton
                                             key={index}
                                             view={draftFilters.view}
                                         />
@@ -1695,18 +1258,19 @@ function ProductListingPage({
                             </div>
                         ) : products.data.length > 0 ? (
                             <div
-                                className={cn(
-                                    'grid gap-3 md:gap-4',
+                                className={
                                     draftFilters.view === 'list'
-                                        ? 'grid-cols-1'
-                                        : 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-4',
-                                )}
+                                        ? 'grid grid-cols-1 gap-3 md:gap-4'
+                                        : PRODUCT_GRID_BESIDE_SIDEBAR_CLASS
+                                }
                             >
-                                {products.data.map((product) => (
+                                {products.data.map((product, index) => (
                                     <ProductCard
                                         key={product.id}
                                         product={product}
+                                        index={index}
                                         view={draftFilters.view}
+                                        openCartOnAdd
                                     />
                                 ))}
                             </div>

@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from 'react';
+
 import { useUiStore } from '@/stores/uiStore';
 import type { Product, ProductVariant } from '@/types';
 
@@ -7,6 +9,7 @@ export const CART_ITEM_ADDED_EVENT = 'cart:item-added';
 export type CartItemAddedDetail = {
     product: Product;
     variant?: ProductVariant | null;
+    quantity: number;
 };
 
 /** Marks the header cart button the thumbnail flies into. */
@@ -21,6 +24,46 @@ const FLYER_SIZE_PX = 56;
 let lastClickedElement: Element | null = null;
 let lastClickedAt = 0;
 let isInitialized = false;
+
+/**
+ * Quantity that has been added to the cart but is still flying towards it.
+ * The header badge subtracts this, so the count only goes up when the item lands.
+ */
+let pendingArrivalQuantity = 0;
+const pendingArrivalListeners = new Set<() => void>();
+
+function changePendingArrivals(delta: number): void {
+    pendingArrivalQuantity = Math.max(0, pendingArrivalQuantity + delta);
+    pendingArrivalListeners.forEach((listener) => listener());
+}
+
+function subscribeToPendingArrivals(listener: () => void): () => void {
+    pendingArrivalListeners.add(listener);
+
+    return () => pendingArrivalListeners.delete(listener);
+}
+
+/** Cart quantity still in flight; subtract it from the displayed cart count. */
+export function usePendingCartArrivals(): number {
+    return useSyncExternalStore(
+        subscribeToPendingArrivals,
+        () => pendingArrivalQuantity,
+        () => 0,
+    );
+}
+
+/** Hold `quantity` back from the badge; the returned release is safe to call more than once. */
+function holdArrival(quantity: number): () => void {
+    let isReleased = false;
+    changePendingArrivals(quantity);
+
+    return () => {
+        if (!isReleased) {
+            isReleased = true;
+            changePendingArrivals(-quantity);
+        }
+    };
+}
 
 function prefersReducedMotion(): boolean {
     return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -124,7 +167,7 @@ function createFlyer(left: number, top: number): { outer: HTMLDivElement; inner:
  * a gentle arc: X moves linearly while Y eases in, which curves the path.
  * Only transform/opacity animate, so it all runs on the compositor.
  */
-function flyToCart(source: HTMLElement, target: HTMLElement): void {
+function flyToCart(source: HTMLElement, target: HTMLElement, releaseArrival: () => void): void {
     const from = source.getBoundingClientRect();
     const to = target.getBoundingClientRect();
 
@@ -151,44 +194,61 @@ function flyToCart(source: HTMLElement, target: HTMLElement): void {
         { duration: FLIGHT_DURATION_MS, easing: 'cubic-bezier(0.55, 0, 0.85, 0.35)', fill: 'forwards' },
     );
 
+    // Fallback so the count can never stay held back if the animation stalls (e.g. a hidden tab).
+    const fallbackRelease = window.setTimeout(releaseArrival, FLIGHT_DURATION_MS + 600);
+
     const finish = (): void => {
+        window.clearTimeout(fallbackRelease);
         outer.remove();
-        bumpCart(target);
+        releaseArrival();
+        // Wait a frame so the badge has re-rendered with the new count (or appeared) before it pops.
+        requestAnimationFrame(() => bumpCart(target));
     };
 
     flight.addEventListener('finish', finish, { once: true });
-    flight.addEventListener('cancel', () => outer.remove(), { once: true });
+    flight.addEventListener(
+        'cancel',
+        () => {
+            window.clearTimeout(fallbackRelease);
+            outer.remove();
+            releaseArrival();
+        },
+        { once: true },
+    );
 }
 
-function handleItemAdded(): void {
+function handleItemAdded(event: Event): void {
     const source = findSourceElement();
+    const quantity = (event as CustomEvent<CartItemAddedDetail>).detail?.quantity ?? 1;
+
+    if (prefersReducedMotion()) {
+        return;
+    }
+
+    // Hold the count back right away (same tick as the store update), so the badge
+    // never shows the new number before the flyer arrives. Released below if no flight runs.
+    const releaseArrival = holdArrival(quantity);
 
     // Wait a frame so a same-tick `openCart()` from the caller is visible to us.
     requestAnimationFrame(() => {
-        if (prefersReducedMotion()) {
-            return;
-        }
-
         if (source) {
             pulseSource(source);
         }
 
-        // An opened cart drawer is already the confirmation — don't fly behind it.
-        if (useUiStore.getState().cartOpen) {
-            return;
-        }
-
         const target = findVisibleCartTarget();
 
-        if (!target) {
+        // An opened cart drawer is already the confirmation — don't fly behind it.
+        if (useUiStore.getState().cartOpen || !target || !source) {
+            releaseArrival();
+
+            if (target && !useUiStore.getState().cartOpen) {
+                requestAnimationFrame(() => bumpCart(target));
+            }
+
             return;
         }
 
-        if (source) {
-            flyToCart(source, target);
-        } else {
-            bumpCart(target);
-        }
+        flyToCart(source, target, releaseArrival);
     });
 }
 

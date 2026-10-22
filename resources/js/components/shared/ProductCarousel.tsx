@@ -85,15 +85,16 @@ export function ProductCarousel({
             <div 
                 ref={scrollContainerRef}
                 onScroll={checkScroll}
-                className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 -mx-4 px-4 sm:mx-0 sm:px-0"
+                className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-                {products.map((product) => (
-                    <div 
-                        key={product.id} 
-                        className="min-w-[280px] sm:min-w-[300px] md:min-w-[320px] lg:min-w-[280px] snap-start"
+                {/* 2 cards per view on mobile, 3 on tablet, 4 on desktop — same sizing as other product rows */}
+                {products.map((product, index) => (
+                    <div
+                        key={product.id}
+                        className="w-[calc((100%-0.75rem)/2)] shrink-0 snap-start sm:w-[calc((100%-1.5rem)/3)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3rem)/4)]"
                     >
-                        <ProductCard product={product} />
+                        <ProductCard product={product} index={index} />
                     </div>
                 ))}
             </div>

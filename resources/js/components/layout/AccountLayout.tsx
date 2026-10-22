@@ -11,6 +11,7 @@ import {
     User,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SIDEBAR_LAYOUT_CLASS } from '@/lib/constants';
 import { cn, getInitials } from '@/lib/utils';
 import type { SharedPageProps } from '@/types';
 
@@ -31,10 +32,10 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
     return (
         <div className="min-h-screen bg-[var(--color-surface)] py-8 lg:py-12">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+                <div className={cn(SIDEBAR_LAYOUT_CLASS, 'lg:items-start')}>
 
                     {/* Sidebar */}
-                    <aside className="w-full lg:sticky lg:top-24 lg:w-72 lg:shrink-0">
+                    <aside className="w-full lg:sticky lg:top-24">
                         {/* User card */}
                         <div className="relative overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-5">
                             <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-br from-[var(--color-primary)]/15 via-[var(--color-primary)]/5 to-transparent" />
@@ -114,7 +115,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                     </aside>
 
                     {/* Main content */}
-                    <main className="min-w-0 flex-1">
+                    <main className="min-w-0 lg:col-span-3">
                         {children}
                     </main>
                 </div>

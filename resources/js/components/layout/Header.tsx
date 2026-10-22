@@ -26,6 +26,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useInitials } from '@/hooks/use-initials';
+import { usePendingCartArrivals } from '@/lib/add-to-cart-feedback';
 import { cn } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -107,13 +108,36 @@ export default function Header(): React.JSX.Element {
         };
     }, []);
 
+    // Items still flying into the cart aren't counted until they land.
+    const pendingCartArrivals = usePendingCartArrivals();
     const itemCount = useMemo(
-        () => cartItems.reduce((count, item) => count + item.quantity, 0),
-        [cartItems],
+        () => Math.max(0, cartItems.reduce((count, item) => count + item.quantity, 0) - pendingCartArrivals),
+        [cartItems, pendingCartArrivals],
     );
 
     useEffect(() => {
-        const handleScroll = (): void => setIsScrolled(window.scrollY > 60);
+        // Shrinking the header changes its height, which shifts the scroll position.
+        // A single threshold therefore flip-flops (the header shakes) right at that
+        // point, so compact and expanded use separate thresholds whose gap is far
+        // larger than the header's height change: between them the current state holds.
+        const COMPACT_AFTER_PX = 80;
+        const EXPAND_BEFORE_PX = 16;
+
+        const handleScroll = (): void => {
+            const scrollY = window.scrollY;
+
+            setIsScrolled((wasScrolled) => {
+                if (scrollY > COMPACT_AFTER_PX) {
+                    return true;
+                }
+
+                if (scrollY < EXPAND_BEFORE_PX) {
+                    return false;
+                }
+
+                return wasScrolled;
+            });
+        };
         handleScroll();
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
