@@ -1237,6 +1237,14 @@ function ProductGrid({
     );
 }
 
+/**
+ * Columns are exact fractions of the rail (2 per view on mobile, 3 on tablet)
+ * so a short list never overflows; longer lists scroll horizontally until lg,
+ * where the rail becomes a 4-column grid.
+ */
+const PRODUCT_RAIL_CLASS =
+    'grid grid-flow-col auto-cols-[calc((100%-0.75rem)/2)] gap-3 overflow-x-auto pb-2 sm:auto-cols-[calc((100%-1.5rem)/3)] md:auto-cols-[calc((100%-2rem)/3)] md:gap-4 lg:grid-flow-row lg:grid-cols-4 lg:overflow-visible';
+
 type ProductRailProps = {
     title?: string;
     products: Product[];
@@ -1260,9 +1268,9 @@ function ProductRail({
 }: ProductRailProps): React.JSX.Element {
     if (loading) {
         return (
-            <div className="grid auto-cols-[minmax(11rem,1fr)] grid-flow-col gap-3 overflow-x-auto pb-2 md:gap-4 lg:grid-flow-row lg:grid-cols-4 lg:overflow-visible">
+            <div className={PRODUCT_RAIL_CLASS}>
                 {Array.from({ length: 4 }, (_, index) => (
-                    <div key={index} className="min-w-[11rem] lg:min-w-0">
+                    <div key={index} className="min-w-0">
                         <ProductCardSkeleton />
                     </div>
                 ))}
@@ -1295,15 +1303,12 @@ function ProductRail({
                     {title}
                 </h3>
             ) : null}
-            <div className="grid auto-cols-[minmax(11rem,1fr)] grid-flow-col gap-3 overflow-x-auto pb-2 md:gap-4 lg:grid-flow-row lg:grid-cols-4 lg:overflow-visible">
+            <div className={PRODUCT_RAIL_CLASS}>
                 {products.map((product, index) => {
                     const saleProgress = saleProgressMap?.get(product.id);
 
                     return (
-                        <div
-                            key={product.id}
-                            className="min-w-[11rem] lg:min-w-0"
-                        >
+                        <div key={product.id} className="min-w-0">
                             <ProductCard
                                 product={product}
                                 index={index}
