@@ -408,14 +408,16 @@ export function ProductVariantManager({
                                                 ? 'Default'
                                                 : 'Set default'}
                                         </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => removeRow(index)}
-                                            title="Remove variant"
-                                            className="text-slate-400 hover:text-red-500"
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </button>
+                                        {variants.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => removeRow(index)}
+                                                title="Remove variant"
+                                                className="text-slate-400 hover:text-red-500"
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -506,6 +508,13 @@ export function ProductVariantManager({
                             </div>
                         );
                     })}
+                    {variants.length === 1 && (
+                        <p className="text-xs text-slate-400">
+                            This is the only variant, so it can't be removed
+                            directly — deselect its color/size above, or uncheck
+                            "Enable Color"/"Enable Size", to turn variants off.
+                        </p>
+                    )}
                 </div>
             )}
 
