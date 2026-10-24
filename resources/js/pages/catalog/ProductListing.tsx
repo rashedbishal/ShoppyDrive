@@ -981,16 +981,32 @@ function ProductListingPage({
                     }
                     title={title}
                     description={description}
-                    chips={[
-                        {
-                            icon: ShieldCheck,
-                            label: 'Secure checkout ready',
-                            iconClassName: 'text-[var(--color-success)]',
-                        },
-                        { icon: Truck, label: 'Nationwide delivery' },
-                    ]}
+                    wideAside
                     aside={
-                        <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+                        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-stretch sm:gap-3">
+                            {/* Moved out of the left column to keep the hero compact; sits beside
+                                the stat grid, in the same row, instead of its own full-width row. */}
+                            <div className="flex flex-row gap-2 sm:h-auto sm:w-44 sm:shrink-0 sm:flex-col">
+                                <div className="group relative isolate flex flex-1 items-center gap-2 overflow-hidden rounded-xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] to-[color-mix(in_srgb,var(--color-success)_8%,var(--color-surface))] px-3 py-2 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--color-success)_35%,transparent)] hover:shadow-[var(--shadow-card-hover)]">
+                                    <span className="pointer-events-none absolute -top-4 -right-4 -z-10 size-16 rounded-full bg-[var(--color-success)] opacity-[0.08] blur-xl transition-opacity duration-300 group-hover:opacity-[0.16]" />
+                                    <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--color-success)_14%,transparent)] text-[var(--color-success)] ring-1 ring-[color-mix(in_srgb,var(--color-success)_20%,transparent)]">
+                                        <ShieldCheck className="size-3.5" />
+                                    </span>
+                                    <span className="truncate text-xs font-semibold text-[var(--color-text-primary)]">
+                                        Secure checkout
+                                    </span>
+                                </div>
+                                <div className="group relative isolate flex flex-1 items-center gap-2 overflow-hidden rounded-xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] to-[color-mix(in_srgb,var(--color-primary)_8%,var(--color-surface))] px-3 py-2 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--color-primary)_35%,transparent)] hover:shadow-[var(--shadow-card-hover)]">
+                                    <span className="pointer-events-none absolute -top-4 -right-4 -z-10 size-16 rounded-full bg-[var(--color-primary)] opacity-[0.08] blur-xl transition-opacity duration-300 group-hover:opacity-[0.16]" />
+                                    <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--color-primary)_14%,transparent)] text-[var(--color-primary)] ring-1 ring-[color-mix(in_srgb,var(--color-primary)_20%,transparent)]">
+                                        <Truck className="size-3.5" />
+                                    </span>
+                                    <span className="truncate text-xs font-semibold text-[var(--color-text-primary)]">
+                                        Nationwide delivery
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="grid flex-1 grid-cols-3 gap-2.5 sm:gap-3">
                             {[
                                 {
                                     label: 'Result count',
@@ -1054,6 +1070,7 @@ function ProductListingPage({
                                     </div>
                                 ),
                             )}
+                            </div>
                         </div>
                     }
                 />

@@ -60,7 +60,7 @@ function Drawer({
                             <motion.aside
                                 aria-modal="true"
                                 className={cn(
-                                    "fixed top-0 z-50 flex h-full flex-col overflow-hidden border-border bg-surface shadow-[0_20px_60px_rgba(0,0,0,0.2)] will-change-transform",
+                                    "fixed top-0 z-50 flex h-full flex-col overflow-hidden border-border bg-surface backdrop-blur-[var(--ui-blur)] shadow-[0_20px_60px_rgba(0,0,0,0.2)] will-change-transform",
                                     side === "right" ? "right-0 border-l" : "left-0 border-r",
                                     sizeClasses[size],
                                 )}

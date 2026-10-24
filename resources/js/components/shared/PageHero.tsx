@@ -20,6 +20,8 @@ type PageHeroProps = {
     chips?: PageHeroChip[];
     /** Right-hand column on desktop (stats, search, countdown…); stacks below on mobile. */
     aside?: ReactNode;
+    /** Gives the aside column more than its default share of the row — for asides with dense content (e.g. a stat grid) that would otherwise get squeezed. */
+    wideAside?: boolean;
     /** Extra content under the chips, e.g. action buttons. */
     children?: ReactNode;
 };
@@ -36,6 +38,7 @@ export function PageHero({
     description,
     chips = [],
     aside,
+    wideAside = false,
     children,
 }: PageHeroProps): React.JSX.Element {
     const BadgeIcon = badge.icon;
@@ -45,7 +48,7 @@ export function PageHero({
             <div
                 className={cn(
                     'grid grid-cols-1 gap-4 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5 lg:gap-6 lg:px-6 lg:py-5',
-                    aside ? 'lg:grid-cols-[1.1fr_0.9fr]' : '',
+                    aside ? (wideAside ? 'lg:grid-cols-[0.85fr_1.15fr]' : 'lg:grid-cols-[1.1fr_0.9fr]') : '',
                 )}
             >
                 <div className="space-y-3">
