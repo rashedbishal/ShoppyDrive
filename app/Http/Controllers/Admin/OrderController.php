@@ -35,7 +35,10 @@ class OrderController extends Controller
         return Inertia::render('admin/orders/index', [
             'orders' => $orders,
             'filters' => $request->only(['search', 'status', 'payment_status']),
-            'statuses' => OrderStatus::cases(),
+            'statuses' => array_map(
+                fn (OrderStatus $status) => ['value' => $status->value, 'label' => ucfirst($status->value)],
+                OrderStatus::cases(),
+            ),
         ]);
     }
 

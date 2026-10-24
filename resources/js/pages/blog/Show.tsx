@@ -36,7 +36,7 @@ export default function BlogShow({
             <Head title={blog.title} />
 
             <article className="py-6 lg:py-10">
-                <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <Link
                         href="/blog"
                         className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-muted)] transition hover:text-[var(--color-primary)]"

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\DailyVisit;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Review;
@@ -35,6 +36,8 @@ class DashboardController extends Controller
             ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
             ->count();
         $pendingReviews = Review::where('is_approved', false)->count();
+        $todayVisitors = (int) DailyVisit::whereDate('date', $today)->value('visitor_count');
+        $yesterdayVisitors = (int) DailyVisit::whereDate('date', $yesterday)->value('visitor_count');
 
         $revenueChart = Order::select(
             DB::raw('DATE(created_at) as date'),
@@ -57,6 +60,23 @@ class DashboardController extends Controller
                 'label' => $date->format('D'),
                 'revenue' => $row ? (float) $row->revenue : 0,
                 'orders' => $row ? (int) $row->orders : 0,
+            ];
+        })->values();
+
+        $visitChart = DailyVisit::where('date', '>=', Carbon::now()->subDays(6)->startOfDay())
+            ->get()
+            ->keyBy(fn (DailyVisit $visit) => $visit->date->toDateString());
+
+        $visitorChartData = collect(range(6, 0))->map(function (int $daysAgo) use ($visitChart): array {
+            $date = Carbon::today()->subDays($daysAgo);
+            $key = $date->toDateString();
+            $row = $visitChart->get($key);
+
+            return [
+                'date' => $key,
+                'label' => $date->format('D'),
+                'visitors' => $row ? (int) $row->visitor_count : 0,
+                'page_views' => $row ? (int) $row->page_view_count : 0,
             ];
         })->values();
 
@@ -84,8 +104,11 @@ class DashboardController extends Controller
                 'total_products' => $totalProducts,
                 'low_stock_count' => $lowStockCount,
                 'pending_reviews' => $pendingReviews,
+                'today_visitors' => $todayVisitors,
+                'yesterday_visitors' => $yesterdayVisitors,
             ],
             'chartData' => $chartData,
+            'visitorChartData' => $visitorChartData,
             'recentOrders' => $recentOrders,
             'lowStockProducts' => $lowStockProducts,
         ]);
