@@ -1,19 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
-import {
-    ArrowRight,
-    Award,
-    Package,
-    Search,
-    X,
-} from 'lucide-react';
+import { ArrowRight, Award, Package, Search, X } from 'lucide-react';
 import { useState } from 'react';
+import { BrandCard } from '@/components/shared/BrandCard';
 import { PageHero } from '@/components/shared/PageHero';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
-import { PRODUCT_GRID_CLASS } from '@/lib/constants';
-import { getInitials } from '@/lib/utils';
 import type { Brand } from '@/types';
 
 type BrandWithCount = Brand & { products_count?: number };
@@ -22,72 +15,9 @@ type BrandListingPageProps = {
     brands: BrandWithCount[];
 };
 
-/**
- * A stable accent hue per brand, derived from its name, so each brand keeps
- * the same colour across visits without storing one in the database.
- */
-function getBrandHue(name: string): number {
-    let hash = 0;
-
-    for (const character of name) {
-        hash = (hash * 31 + character.charCodeAt(0)) % 360;
-    }
-
-    return hash;
-}
-
-function BrandCard({ brand }: { brand: BrandWithCount }): React.JSX.Element {
-    const [hasLogoError, setHasLogoError] = useState(false);
-    const productCount = brand.products_count ?? 0;
-    const showLogo = Boolean(brand.logo) && !hasLogoError;
-
-    return (
-        <Link
-            href={`/brand/${brand.slug}`}
-            style={
-                {
-                    '--brand-color': `hsl(${getBrandHue(brand.name)} 65% 48%)`,
-                } as React.CSSProperties
-            }
-            className="group overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-1 hover:border-[color-mix(in_srgb,var(--brand-color)_40%,var(--color-border))] hover:shadow-[var(--shadow-card-hover)]"
-        >
-            <div className="relative flex h-24 items-center justify-center overflow-hidden bg-[linear-gradient(135deg,color-mix(in_srgb,var(--brand-color)_18%,var(--color-surface)),color-mix(in_srgb,var(--brand-color)_4%,var(--color-surface)))] sm:h-28">
-                <div className="pointer-events-none absolute inset-0 [background-image:radial-gradient(color-mix(in_srgb,var(--brand-color)_35%,transparent)_1px,transparent_1px)] [background-size:12px_12px] opacity-50" />
-                <div className="pointer-events-none absolute -right-6 -bottom-8 size-24 rounded-full bg-[var(--brand-color)] opacity-15 blur-2xl transition-opacity duration-300 group-hover:opacity-30" />
-                <div className="relative flex size-14 items-center justify-center overflow-hidden rounded-xl bg-white p-2 shadow-[0_10px_24px_-12px_var(--brand-color)] ring-1 ring-black/5 transition duration-300 group-hover:scale-105 sm:size-16">
-                {showLogo ? (
-                    <img
-                        src={brand.logo ?? ''}
-                        alt={`${brand.name} logo`}
-                        loading="lazy"
-                        decoding="async"
-                        onError={() => setHasLogoError(true)}
-                        className="h-full w-full object-contain"
-                    />
-                ) : (
-                    <span
-                        className="text-base font-bold text-[var(--brand-color)]"
-                        aria-hidden="true"
-                    >
-                        {getInitials(brand.name)}
-                    </span>
-                )}
-                </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-2 p-3">
-                <div className="min-w-0">
-                <h3 className="truncate text-sm font-semibold text-[var(--color-text-primary)] transition group-hover:text-[var(--color-primary)]">
-                    {brand.name}
-                </h3>
-                </div>
-                <span className="shrink-0 rounded-full bg-[var(--color-surface-alt)] px-2 py-1 text-[11px] font-medium text-[var(--color-text-secondary)]">
-                    {productCount} {productCount === 1 ? 'item' : 'items'}
-                </span>
-            </div>
-        </Link>
-    );
-}
+/** 2 columns on mobile, up to 5 on desktop, matching the plain logo-card design. */
+const BRAND_GRID_CLASS =
+    'grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 md:grid-cols-4 lg:grid-cols-5';
 
 function BrandListingContent({
     brands,
@@ -176,9 +106,19 @@ function BrandListingContent({
                             }
                         />
                     ) : (
-                        <div className={PRODUCT_GRID_CLASS}>
+                        <div className={BRAND_GRID_CLASS}>
                             {filtered.map((brand) => (
-                                <BrandCard key={brand.id} brand={brand} />
+                                <BrandCard
+                                    key={brand.id}
+                                    brand={{
+                                        id: brand.id,
+                                        name: brand.name,
+                                        slug: brand.slug,
+                                        logo: brand.logo ?? null,
+                                        productsCount:
+                                            brand.products_count ?? 0,
+                                    }}
+                                />
                             ))}
                         </div>
                     )}

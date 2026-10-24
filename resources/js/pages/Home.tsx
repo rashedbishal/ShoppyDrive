@@ -21,6 +21,8 @@ import {
     useState,
     type FormEvent,
 } from 'react';
+import { BrandCard } from '@/components/shared/BrandCard';
+import type { BrandCardData } from '@/components/shared/BrandCard';
 import {
     ProductCard,
     ProductCardSkeleton,
@@ -37,7 +39,7 @@ import {
     PRODUCT_GRID_CLASS,
     PRODUCT_RAIL_CLASS,
 } from '@/lib/constants';
-import { getInitials, isVideoUrl, cn } from '@/lib/utils';
+import { isVideoUrl, cn } from '@/lib/utils';
 import categoryRoutes from '@/routes/category';
 import type {
     Brand,
@@ -77,15 +79,6 @@ type HeroSlide = {
     stats: HeroStat[];
 };
 
-type BrandCard = {
-    id: number;
-    name: string;
-    slug: string;
-    logo: string | null;
-    productsCount: number;
-    accent: string;
-};
-
 type FlashSaleItem = {
     product: Product;
     sold_count: number;
@@ -93,17 +86,6 @@ type FlashSaleItem = {
 };
 
 const DEFAULT_HERO_AUTOPLAY_SECONDS = 6;
-
-const BRAND_ACCENTS = [
-    'bg-sky-50 text-sky-700',
-    'bg-amber-50 text-amber-700',
-    'bg-emerald-50 text-emerald-700',
-    'bg-rose-50 text-rose-700',
-    'bg-indigo-50 text-indigo-700',
-    'bg-fuchsia-50 text-fuchsia-700',
-    'bg-blue-50 text-blue-700',
-    'bg-orange-50 text-orange-700',
-];
 
 type HomePageProps = SharedPageProps & {
     activeFlashSale: FlashSaleData | null;
@@ -779,57 +761,6 @@ function ProductRail({
     );
 }
 
-type BrandTileProps = {
-    brand: BrandCard;
-};
-
-function BrandTile({ brand }: BrandTileProps): React.JSX.Element {
-    const [hasLogoError, setHasLogoError] = useState(false);
-    const showLogo = Boolean(brand.logo) && !hasLogoError;
-
-    return (
-        <Link
-            href={`/brands?brand=${brand.slug}`}
-            className="group min-w-[11rem] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-1 hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card-hover)]"
-        >
-            <div
-                className={cn(
-                    'relative flex h-24 items-center justify-center overflow-hidden sm:h-28',
-                    brand.accent,
-                )}
-            >
-                <div className="pointer-events-none absolute inset-0 [background-image:radial-gradient(rgba(255,255,255,0.45)_1px,transparent_1px)] [background-size:12px_12px] opacity-60" />
-                <div className="pointer-events-none absolute -right-6 -bottom-8 size-24 rounded-full bg-white/40 blur-2xl transition-opacity duration-300 group-hover:opacity-80" />
-                <div className="relative flex size-14 items-center justify-center overflow-hidden rounded-xl bg-white p-2 shadow-[0_10px_24px_-12px_rgba(0,0,0,0.45)] ring-1 ring-black/5 transition duration-300 group-hover:scale-105 sm:size-16">
-                    {showLogo ? (
-                        <img
-                            src={brand.logo ?? ''}
-                            alt={`${brand.name} logo`}
-                            loading="lazy"
-                            decoding="async"
-                            onError={() => setHasLogoError(true)}
-                            className="h-full w-full object-contain"
-                        />
-                    ) : (
-                        <span className="text-lg font-bold" aria-hidden="true">
-                            {getInitials(brand.name)}
-                        </span>
-                    )}
-                </div>
-            </div>
-            <div className="flex items-center justify-between gap-2 p-3">
-                <p className="min-w-0 truncate text-sm font-semibold text-[var(--color-text-primary)] transition group-hover:text-[var(--color-primary)]">
-                    {brand.name}
-                </p>
-                <span className="shrink-0 rounded-full bg-[var(--color-surface-alt)] px-2 py-1 text-[11px] font-medium text-[var(--color-text-secondary)]">
-                    {brand.productsCount}{' '}
-                    {brand.productsCount === 1 ? 'item' : 'items'}
-                </span>
-            </div>
-        </Link>
-    );
-}
-
 type FlashSaleCountdownProps = {
     endsAt: string;
 };
@@ -1041,13 +972,12 @@ function Home(): React.JSX.Element {
         }),
     );
 
-    const brandCards: BrandCard[] = (brands ?? []).map((brand, index) => ({
+    const brandCards: BrandCardData[] = (brands ?? []).map((brand) => ({
         id: brand.id,
         name: brand.name,
         slug: brand.slug,
         logo: brand.logo ?? null,
         productsCount: brand.products_count ?? 0,
-        accent: BRAND_ACCENTS[index % BRAND_ACCENTS.length],
     }));
 
     const flashSale = activeFlashSale
@@ -1294,7 +1224,11 @@ function Home(): React.JSX.Element {
                     {renderHeading('brands', 'Our brands')}
                     <div className="flex gap-4 overflow-x-auto pb-2">
                         {brandCards.map((brand) => (
-                            <BrandTile key={brand.id} brand={brand} />
+                            <BrandCard
+                                key={brand.id}
+                                brand={brand}
+                                className="min-w-[8rem]"
+                            />
                         ))}
                     </div>
                 </section>
