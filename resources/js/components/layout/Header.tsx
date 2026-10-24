@@ -269,7 +269,10 @@ export default function Header(): React.JSX.Element {
                         </button>
 
                         {/* Logo */}
-                        <Link href="/" className="flex shrink-0 items-center gap-3">
+                        <Link
+                            href="/"
+                            className="absolute left-1/2 flex shrink-0 -translate-x-1/2 items-center gap-3 lg:static lg:left-auto lg:translate-x-0"
+                        >
                             {settings?.logo ? (
                                 <img
                                     src={settings.logo}
