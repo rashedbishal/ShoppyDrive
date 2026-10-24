@@ -27,7 +27,7 @@ class PlaceOrderRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => [$guestCheckoutRelaxed ? 'nullable' : 'required', 'email', 'max:255'],
-            'phone' => ['required', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'regex:/^01[3-9][0-9]{8}$/'],
             'address_id' => $isGuest ? ['prohibited'] : ['nullable', 'integer'],
             'address_line1' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:255'],
             'address_line2' => ['nullable', 'string', 'max:255'],
@@ -43,6 +43,13 @@ class PlaceOrderRequest extends FormRequest
             'items.*.product_id' => ['required_with:items', 'integer', 'exists:products,id'],
             'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
             'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'phone.regex' => 'Enter a valid 11-digit Bangladeshi phone number (e.g. 01712345678).',
         ];
     }
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
+    ArrowLeft,
     Check,
     Lock,
     MapPin,
@@ -106,16 +107,23 @@ const DISTRICT_OPTIONS = [
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 const Section = ({
+    step,
     title,
     children,
 }: {
+    step: number;
     title: string;
     children: React.ReactNode;
 }) => (
     <div className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-white p-6">
-        <h3 className="text-xs font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
-            {title}
-        </h3>
+        <div className="flex items-center gap-2.5">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-text-primary)] text-xs font-bold text-white">
+                {step}
+            </span>
+            <h3 className="text-xs font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                {title}
+            </h3>
+        </div>
         {children}
     </div>
 );
@@ -311,9 +319,47 @@ export default function Checkout({
         subtotal - discount - couponDiscount + (shippingCost ?? 0),
     );
 
+    const placeOrderLabel = submitting ? (
+        'Processing…'
+    ) : form.data.payment_method === 'mobile_banking' ? (
+        <>
+            <CreditCard size={16} className="mr-2" />
+            Continue to Payment
+        </>
+    ) : (
+        <>
+            <Lock size={16} className="mr-2" />
+            Place Order
+        </>
+    );
+
     return (
         <CheckoutLayout>
             <Head title="Checkout" />
+
+            <div className="mb-6 flex items-center justify-between">
+                <Link
+                    href={route('cart.index')}
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary)]"
+                >
+                    <ArrowLeft size={15} />
+                    Back to cart
+                </Link>
+                <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-[var(--color-text-muted)] uppercase">
+                    <Lock size={13} />
+                    Secure checkout
+                </div>
+            </div>
+
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold text-[var(--color-text-primary)] sm:text-3xl">
+                    Checkout
+                </h1>
+                <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                    You're almost done — review your details and place your
+                    order.
+                </p>
+            </div>
 
             {flash?.error && (
                 <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -345,12 +391,16 @@ export default function Checkout({
                 </div>
             )}
 
-            <form onSubmit={handleSubmit}>
+            <form
+                id="checkout-form"
+                onSubmit={handleSubmit}
+                className="pb-24 lg:pb-0"
+            >
                 <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
                     {/* ── LEFT: Info + Address + Payment ─────────────────── */}
                     <div className="space-y-4 lg:col-span-7">
                         {/* ── Customer Info ── */}
-                        <Section title="Customer Details">
+                        <Section step={1} title="Customer Details">
                             <div className="space-y-4">
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div className="space-y-1.5">
@@ -409,27 +459,34 @@ export default function Checkout({
                                 </div>
                                 <div className="max-w-xs space-y-1.5">
                                     <Label htmlFor="phone">Phone *</Label>
-                                    <div className="relative">
-                                        <span className="absolute top-1/2 left-3 -translate-y-1/2 text-xs font-bold text-[var(--color-text-muted)]">
-                                            +880
-                                        </span>
-                                        <Input
-                                            id="phone"
-                                            value={form.data.phone}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'phone',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="1XXXXXXXXX"
-                                            className="h-11 rounded-xl pl-14"
-                                            required
-                                        />
-                                    </div>
-                                    {form.errors.phone && (
+                                    <Input
+                                        id="phone"
+                                        type="tel"
+                                        inputMode="numeric"
+                                        value={form.data.phone}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'phone',
+                                                e.target.value
+                                                    .replace(/\D/g, '')
+                                                    .slice(0, 11),
+                                            )
+                                        }
+                                        placeholder="01712345678"
+                                        className="h-11 rounded-xl"
+                                        maxLength={11}
+                                        pattern="01[3-9][0-9]{8}"
+                                        title="Enter an 11-digit Bangladeshi phone number, e.g. 01712345678"
+                                        required
+                                    />
+                                    {form.errors.phone ? (
                                         <p className="text-xs text-red-500">
                                             {form.errors.phone}
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs text-[var(--color-text-muted)]">
+                                            11 digits, starting with 01 (e.g.
+                                            01712345678)
                                         </p>
                                     )}
                                 </div>
@@ -437,7 +494,7 @@ export default function Checkout({
                         </Section>
 
                         {/* ── Shipping Address ── */}
-                        <Section title="Shipping Address">
+                        <Section step={2} title="Shipping Address">
                             {/* MODE: show the selected / default address as info card */}
                             {addressMode === 'default' && selectedAddr && (
                                 <div className="space-y-3">
@@ -709,7 +766,7 @@ export default function Checkout({
                         </Section>
 
                         {/* ── Coupon ── */}
-                        <Section title="Coupon Code">
+                        <Section step={3} title="Coupon Code">
                             {appliedCoupon ? (
                                 <div className="flex items-center justify-between rounded-xl border border-green-200 bg-green-50 px-4 py-3">
                                     <div className="flex items-center gap-2">
@@ -783,7 +840,7 @@ export default function Checkout({
                         </Section>
 
                         {/* ── Payment ── */}
-                        <Section title="Payment Method">
+                        <Section step={4} title="Payment Method">
                             <div className="space-y-3">
                                 {/* COD */}
                                 <button
@@ -1031,35 +1088,14 @@ export default function Checkout({
                                 </div>
                             </div>
 
-                            {/* Place Order */}
+                            {/* Place Order (hidden on mobile — the sticky bottom bar takes over there) */}
                             <Button
                                 type="submit"
                                 disabled={submitting}
                                 size="lg"
-                                className="h-13 w-full rounded-xl text-base font-bold shadow-[var(--color-primary)]/20 shadow-lg"
+                                className="h-13 w-full max-lg:hidden rounded-xl text-base font-bold shadow-[var(--color-primary)]/20 shadow-lg"
                             >
-                                {submitting ? (
-                                    form.data.payment_method ===
-                                    'mobile_banking' ? (
-                                        'Processing…'
-                                    ) : (
-                                        'Processing…'
-                                    )
-                                ) : form.data.payment_method ===
-                                  'mobile_banking' ? (
-                                    <>
-                                        <CreditCard
-                                            size={16}
-                                            className="mr-2"
-                                        />
-                                        Continue to Payment
-                                    </>
-                                ) : (
-                                    <>
-                                        <Lock size={16} className="mr-2" />
-                                        Place Order
-                                    </>
-                                )}
+                                {placeOrderLabel}
                             </Button>
 
                             {/* Trust badge */}
@@ -1077,6 +1113,29 @@ export default function Checkout({
                     </div>
                 </div>
             </form>
+
+            {/* Mobile sticky Place Order bar — the in-card button above is hidden below lg */}
+            <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border)] bg-white/95 p-4 backdrop-blur-sm lg:hidden">
+                <div className="flex items-center gap-4">
+                    <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-semibold tracking-wide text-[var(--color-text-muted)] uppercase">
+                            Total
+                        </p>
+                        <p className="truncate text-lg font-bold text-[var(--color-primary)]">
+                            {formatCurrency(total)}
+                        </p>
+                    </div>
+                    <Button
+                        type="submit"
+                        form="checkout-form"
+                        disabled={submitting}
+                        size="lg"
+                        className="h-12 shrink-0 rounded-xl px-6 text-base font-bold"
+                    >
+                        {placeOrderLabel}
+                    </Button>
+                </div>
+            </div>
         </CheckoutLayout>
     );
 }

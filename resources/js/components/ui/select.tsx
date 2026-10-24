@@ -6,6 +6,7 @@ import {
     type ComponentProps,
     Fragment,
     isValidElement,
+    type KeyboardEvent as ReactKeyboardEvent,
     type ReactElement,
     type ReactNode,
     type RefObject,
@@ -256,6 +257,47 @@ function Select({
         }
     };
 
+    // Type-to-jump: build up a search buffer from consecutive keystrokes (reset
+    // after a short pause, like a native <select>) and select the first option
+    // whose label starts with it. Keeps keyboard search working regardless of
+    // the floating list's open/closed state.
+    const typeaheadRef = useRef<{ query: string; timeout: ReturnType<typeof setTimeout> | null }>({
+        query: "",
+        timeout: null,
+    });
+
+    const handleTypeahead = useCallback(
+        (event: ReactKeyboardEvent<HTMLButtonElement>): void => {
+            if (event.key.length !== 1 || event.altKey || event.ctrlKey || event.metaKey) {
+                return;
+            }
+
+            const state = typeaheadRef.current;
+
+            if (state.timeout) {
+                clearTimeout(state.timeout);
+            }
+
+            state.query += event.key.toLowerCase();
+            state.timeout = setTimeout(() => {
+                state.query = "";
+            }, 600);
+
+            const query = state.query;
+            const match = itemOptions.find(
+                (option) =>
+                    !option.disabled &&
+                    typeof option.label === "string" &&
+                    option.label.toLowerCase().startsWith(query),
+            );
+
+            if (match) {
+                handleChange(match.value);
+            }
+        },
+        [itemOptions, handleChange],
+    );
+
     return (
         <div className={cn("space-y-1.5", containerClassName)}>
             {label ? (
@@ -276,6 +318,7 @@ function Select({
                     aria-invalid={Boolean(error) || undefined}
                     aria-describedby={describedBy}
                     aria-required={required || undefined}
+                    onKeyDown={handleTypeahead}
                     className={cn(
                         "group flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-border bg-surface px-4 text-left text-sm text-text-primary shadow-sm transition-all outline-none hover:border-border-strong focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60 data-open:border-primary data-open:ring-2 data-open:ring-primary/15",
                         error ? "border-destructive focus-visible:ring-destructive" : "",

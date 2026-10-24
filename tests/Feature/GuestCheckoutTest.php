@@ -85,6 +85,21 @@ test('a guest order still requires a phone number', function () {
     $response->assertInvalid(['phone']);
 });
 
+test('an order is rejected when the phone number is not a valid 11-digit Bangladeshi number', function () {
+    enableGuestCheckout();
+    $product = Product::factory()->create();
+
+    $response = $this->post(route('checkout.store'), guestOrderPayload([
+        'phone' => '12345',
+        'items' => [
+            ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
+        ],
+    ]));
+
+    $response->assertInvalid(['phone']);
+    expect(Order::count())->toBe(0);
+});
+
 test('a guest cannot place an order while guest checkout is disabled', function () {
     $product = Product::factory()->create();
 

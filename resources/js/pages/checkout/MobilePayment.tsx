@@ -89,7 +89,7 @@ export default function MobilePayment({ token, amount, orderNumber, bkashNumber,
     };
 
     return (
-        <CheckoutLayout hideHeader>
+        <CheckoutLayout>
             <Head title="Complete Payment" />
             <div className="mx-auto max-w-lg space-y-5">
 

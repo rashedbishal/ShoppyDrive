@@ -19,7 +19,7 @@ class CartController extends Controller
 
     public function index(Request $request): Response
     {
-        return Inertia::render('cart/index', [
+        return Inertia::render('cart/Cart', [
             'cart' => $this->cartManager->serializeForRequest($request),
         ]);
     }
