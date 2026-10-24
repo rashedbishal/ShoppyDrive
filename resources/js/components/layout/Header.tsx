@@ -309,8 +309,10 @@ export default function Header(): React.JSX.Element {
                                 <Search className="size-5" />
                             </button>
 
-                            {/* Theme switcher */}
-                            <ThemeSwitcher />
+                            {/* Theme switcher (moved to the mobile sidebar on small screens) */}
+                            <div className="hidden lg:block">
+                                <ThemeSwitcher />
+                            </div>
 
                             {/* Wishlist */}
                             <Link

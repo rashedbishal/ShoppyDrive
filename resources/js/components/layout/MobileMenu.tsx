@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { FolderOpen, LayoutGrid, LogIn, LogOut, ShoppingBag, UserCircle2 } from 'lucide-react';
+import { Check, FolderOpen, LayoutGrid, LogIn, LogOut, Palette, ShoppingBag, UserCircle2 } from 'lucide-react';
 import { lazy, Suspense } from 'react';
 import { route } from 'ziggy-js';
 import { primaryLinks } from '@/components/layout/navigation';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { useInitials } from '@/hooks/use-initials';
+import { SITE_THEMES, useSiteTheme } from '@/hooks/use-theme';
 import { resolveCategoryColor } from '@/lib/category-colors';
 import type { SharedPageProps } from '@/types';
 
@@ -28,6 +29,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.
     const getInitials = useInitials();
     const user = page.props.auth?.user ?? null;
     const navCategories = page.props.navCategories ?? [];
+    const { theme, setTheme } = useSiteTheme();
 
     return (
         <Drawer
@@ -146,6 +148,30 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.
                         },
                     ]}
                 />
+
+                <div className="space-y-2 rounded-2xl border border-[var(--color-border)] p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
+                        <Palette className="size-4 text-[var(--color-primary)]" />
+                        Theme
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        {SITE_THEMES.map((option) => (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => setTheme(option.value)}
+                                className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
+                                    theme === option.value
+                                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]'
+                                        : 'border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-alt)]'
+                                }`}
+                            >
+                                {option.label}
+                                {theme === option.value ? <Check className="size-4" /> : null}
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
                 <div className="mt-auto space-y-3 border-t border-[var(--color-border)] pt-4">
                     {user ? (
