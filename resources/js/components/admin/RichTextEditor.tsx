@@ -1,3 +1,4 @@
+import { useHttp } from '@inertiajs/react';
 import {
     Bold,
     Heading1,
@@ -11,7 +12,17 @@ import {
     Strikethrough,
     Underline,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 const TOOLBAR_ACTIONS = [
     { label: 'Bold', icon: Bold, command: 'bold' },
@@ -19,6 +30,122 @@ const TOOLBAR_ACTIONS = [
     { label: 'Underline', icon: Underline, command: 'underline' },
     { label: 'Strikethrough', icon: Strikethrough, command: 'strikeThrough' },
 ] as const;
+
+function InsertImageDialog({
+    open,
+    onOpenChange,
+    onInsert,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onInsert: (url: string) => void;
+}) {
+    const [urlInput, setUrlInput] = useState('');
+    const { data, setData, post, processing, errors } = useHttp({
+        image: null as File | null,
+    });
+
+    const reset = (): void => {
+        setData('image', null);
+        setUrlInput('');
+    };
+
+    const handleOpenChange = (nextOpen: boolean): void => {
+        if (!nextOpen) {
+            reset();
+        }
+
+        onOpenChange(nextOpen);
+    };
+
+    const handleInsert = (): void => {
+        if (data.image) {
+            post(route('admin.content-images.store'), {
+                onSuccess: (response) => {
+                    onInsert((response as { url: string }).url);
+                    reset();
+                },
+            });
+        } else if (urlInput.trim()) {
+            onInsert(urlInput.trim());
+            reset();
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Insert Image</DialogTitle>
+                    <DialogDescription>
+                        Upload an image, or paste a link to one that's already
+                        online.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                    <ImageUpload
+                        value={data.image}
+                        onChange={(nextFile) => {
+                            setData('image', nextFile);
+
+                            if (nextFile) {
+                                setUrlInput('');
+                            }
+                        }}
+                        error={errors.image}
+                        previewClassName="h-40 object-contain"
+                    />
+
+                    <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
+                        <div className="h-px flex-1 bg-slate-200" />
+                        OR
+                        <div className="h-px flex-1 bg-slate-200" />
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-slate-700">
+                            Image URL
+                        </label>
+                        <input
+                            type="url"
+                            value={urlInput}
+                            onChange={(e) => {
+                                setUrlInput(e.target.value);
+
+                                if (e.target.value) {
+                                    setData('image', null);
+                                }
+                            }}
+                            placeholder="https://example.com/image.jpg"
+                            className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                        />
+                    </div>
+                </div>
+
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => handleOpenChange(false)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={handleInsert}
+                        disabled={
+                            processing || (!data.image && !urlInput.trim())
+                        }
+                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                    >
+                        {processing ? 'Uploading…' : 'Insert Image'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 export function RichTextEditor({
     value,
@@ -31,6 +158,8 @@ export function RichTextEditor({
 }) {
     const editorRef = useRef<HTMLDivElement>(null);
     const isInitialized = useRef(false);
+    const savedRangeRef = useRef<Range | null>(null);
+    const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
 
     useEffect(() => {
         if (editorRef.current && !isInitialized.current) {
@@ -38,6 +167,46 @@ export function RichTextEditor({
             isInitialized.current = true;
         }
     }, [value]);
+
+    /**
+     * Toolbar controls like the native color picker and the image dialog
+     * steal focus (and with it, the browser's text selection) away from the
+     * contentEditable area. `execCommand` silently no-ops once that happens,
+     * so we snapshot the selection before focus moves and restore it right
+     * before issuing the command.
+     */
+    const saveSelection = useCallback(() => {
+        const selection = window.getSelection();
+
+        if (
+            selection &&
+            selection.rangeCount > 0 &&
+            editorRef.current?.contains(selection.anchorNode)
+        ) {
+            savedRangeRef.current = selection.getRangeAt(0).cloneRange();
+        } else {
+            savedRangeRef.current = null;
+        }
+    }, []);
+
+    const restoreSelection = useCallback(() => {
+        const selection = window.getSelection();
+
+        if (!selection) {
+            return;
+        }
+
+        if (savedRangeRef.current) {
+            selection.removeAllRanges();
+            selection.addRange(savedRangeRef.current);
+        } else if (editorRef.current) {
+            const range = document.createRange();
+            range.selectNodeContents(editorRef.current);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+    }, []);
 
     const execCmd = useCallback(
         (command: string, val?: string) => {
@@ -51,159 +220,196 @@ export function RichTextEditor({
         [onChange],
     );
 
-    const insertImage = useCallback(() => {
-        const url = prompt('Enter image URL:');
+    const applyColor = useCallback(
+        (color: string) => {
+            editorRef.current?.focus();
+            restoreSelection();
+            document.execCommand('foreColor', false, color);
 
-        if (url) {
-execCmd('insertImage', url);
-}
-    }, [execCmd]);
+            // `execCommand` just wrapped the selection in a new element,
+            // which invalidates the `Range` we restored above — re-save the
+            // (now valid) live selection so the next color pick in this same
+            // picker session (still open, still dragging) has something
+            // correct to restore instead of a stale, pre-mutation range.
+            saveSelection();
+
+            if (editorRef.current) {
+                onChange(editorRef.current.innerHTML);
+            }
+        },
+        [onChange, restoreSelection, saveSelection],
+    );
+
+    const insertImageUrl = useCallback(
+        (url: string) => {
+            editorRef.current?.focus();
+            restoreSelection();
+            document.execCommand('insertImage', false, url);
+
+            if (editorRef.current) {
+                onChange(editorRef.current.innerHTML);
+            }
+
+            setIsImageDialogOpen(false);
+        },
+        [onChange, restoreSelection],
+    );
 
     const insertLink = useCallback(() => {
         const url = prompt('Enter link URL:');
 
         if (url) {
-execCmd('createLink', url);
-}
+            execCmd('createLink', url);
+        }
     }, [execCmd]);
 
     return (
-        <div className="overflow-hidden rounded-lg border border-slate-200 focus-within:border-[#c8102e] focus-within:ring-1 focus-within:ring-[#c8102e]">
-            {/* Toolbar */}
-            <div className="flex flex-wrap items-center gap-0.5 border-b border-slate-100 bg-slate-50 p-1.5">
-                {/* Formatting */}
-                {TOOLBAR_ACTIONS.map(({ label, icon: Icon, command }) => (
+        <>
+            <div className="overflow-hidden rounded-lg border border-slate-200 focus-within:border-[#c8102e] focus-within:ring-1 focus-within:ring-[#c8102e]">
+                {/* Toolbar */}
+                <div className="flex flex-wrap items-center gap-0.5 border-b border-slate-100 bg-slate-50 p-1.5">
+                    {/* Formatting */}
+                    {TOOLBAR_ACTIONS.map(({ label, icon: Icon, command }) => (
+                        <button
+                            key={label}
+                            type="button"
+                            title={label}
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                execCmd(command);
+                            }}
+                            className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                        >
+                            <Icon className="size-3.5" />
+                        </button>
+                    ))}
+
+                    <div className="mx-1 h-4 w-px bg-slate-200" />
+
+                    {/* Headings */}
                     <button
-                        key={label}
                         type="button"
-                        title={label}
+                        title="Heading 1"
                         onMouseDown={(e) => {
                             e.preventDefault();
-                            execCmd(command);
+                            execCmd('formatBlock', 'h1');
                         }}
                         className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
                     >
-                        <Icon className="size-3.5" />
+                        <Heading1 className="size-3.5" />
                     </button>
-                ))}
+                    <button
+                        type="button"
+                        title="Heading 2"
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            execCmd('formatBlock', 'h2');
+                        }}
+                        className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                    >
+                        <Heading2 className="size-3.5" />
+                    </button>
+                    <button
+                        type="button"
+                        title="Quote"
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            execCmd('formatBlock', 'blockquote');
+                        }}
+                        className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                    >
+                        <Quote className="size-3.5" />
+                    </button>
 
-                <div className="mx-1 h-4 w-px bg-slate-200" />
+                    <div className="mx-1 h-4 w-px bg-slate-200" />
 
-                {/* Headings */}
-                <button
-                    type="button"
-                    title="Heading 1"
-                    onMouseDown={(e) => {
-                        e.preventDefault();
-                        execCmd('formatBlock', 'h1');
-                    }}
-                    className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
-                >
-                    <Heading1 className="size-3.5" />
-                </button>
-                <button
-                    type="button"
-                    title="Heading 2"
-                    onMouseDown={(e) => {
-                        e.preventDefault();
-                        execCmd('formatBlock', 'h2');
-                    }}
-                    className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
-                >
-                    <Heading2 className="size-3.5" />
-                </button>
-                <button
-                    type="button"
-                    title="Quote"
-                    onMouseDown={(e) => {
-                        e.preventDefault();
-                        execCmd('formatBlock', 'blockquote');
-                    }}
-                    className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
-                >
-                    <Quote className="size-3.5" />
-                </button>
+                    {/* Lists */}
+                    <button
+                        type="button"
+                        title="Bullet list"
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            execCmd('insertUnorderedList');
+                        }}
+                        className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                    >
+                        <List className="size-3.5" />
+                    </button>
+                    <button
+                        type="button"
+                        title="Numbered list"
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            execCmd('insertOrderedList');
+                        }}
+                        className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                    >
+                        <ListOrdered className="size-3.5" />
+                    </button>
 
-                <div className="mx-1 h-4 w-px bg-slate-200" />
+                    <div className="mx-1 h-4 w-px bg-slate-200" />
 
-                {/* Lists */}
-                <button
-                    type="button"
-                    title="Bullet list"
-                    onMouseDown={(e) => {
-                        e.preventDefault();
-                        execCmd('insertUnorderedList');
-                    }}
-                    className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
-                >
-                    <List className="size-3.5" />
-                </button>
-                <button
-                    type="button"
-                    title="Numbered list"
-                    onMouseDown={(e) => {
-                        e.preventDefault();
-                        execCmd('insertOrderedList');
-                    }}
-                    className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
-                >
-                    <ListOrdered className="size-3.5" />
-                </button>
+                    {/* Link & Image */}
+                    <button
+                        type="button"
+                        title="Insert link"
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            insertLink();
+                        }}
+                        className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                    >
+                        <Link2 className="size-3.5" />
+                    </button>
+                    <button
+                        type="button"
+                        title="Insert image"
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            saveSelection();
+                            setIsImageDialogOpen(true);
+                        }}
+                        className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                    >
+                        <Image className="size-3.5" />
+                    </button>
 
-                <div className="mx-1 h-4 w-px bg-slate-200" />
+                    {/* Font color */}
+                    <div className="mx-1 h-4 w-px bg-slate-200" />
+                    <label
+                        title="Text color"
+                        onMouseDown={() => saveSelection()}
+                        className="flex size-7 cursor-pointer items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                    >
+                        <span className="text-xs font-bold">A</span>
+                        <input
+                            type="color"
+                            className="sr-only"
+                            onChange={(e) => applyColor(e.target.value)}
+                        />
+                    </label>
+                </div>
 
-                {/* Link & Image */}
-                <button
-                    type="button"
-                    title="Insert link"
-                    onMouseDown={(e) => {
-                        e.preventDefault();
-                        insertLink();
+                {/* Editable content */}
+                <div
+                    ref={editorRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onInput={() => {
+                        if (editorRef.current) {
+                            onChange(editorRef.current.innerHTML);
+                        }
                     }}
-                    className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
-                >
-                    <Link2 className="size-3.5" />
-                </button>
-                <button
-                    type="button"
-                    title="Insert image"
-                    onMouseDown={(e) => {
-                        e.preventDefault();
-                        insertImage();
-                    }}
-                    className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
-                >
-                    <Image className="size-3.5" />
-                </button>
-
-                {/* Font color */}
-                <div className="mx-1 h-4 w-px bg-slate-200" />
-                <label
-                    title="Text color"
-                    className="flex size-7 cursor-pointer items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
-                >
-                    <span className="text-xs font-bold">A</span>
-                    <input
-                        type="color"
-                        className="sr-only"
-                        onChange={(e) => execCmd('foreColor', e.target.value)}
-                    />
-                </label>
+                    style={{ minHeight }}
+                    className="p-4 text-sm text-slate-800 focus:outline-none [&_a]:text-[#c8102e] [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:text-slate-500 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_img]:max-w-full [&_img]:rounded [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                />
             </div>
 
-            {/* Editable content */}
-            <div
-                ref={editorRef}
-                contentEditable
-                suppressContentEditableWarning
-                onInput={() => {
-                    if (editorRef.current) {
-onChange(editorRef.current.innerHTML);
-}
-                }}
-                style={{ minHeight }}
-                className="p-4 text-sm text-slate-800 focus:outline-none [&_a]:text-[#c8102e] [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:text-slate-500 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_img]:max-w-full [&_img]:rounded [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+            <InsertImageDialog
+                open={isImageDialogOpen}
+                onOpenChange={setIsImageDialogOpen}
+                onInsert={insertImageUrl}
             />
-        </div>
+        </>
     );
 }

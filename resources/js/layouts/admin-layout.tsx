@@ -12,6 +12,7 @@ import {
     Menu,
     MessageSquare,
     MonitorPlay,
+    Newspaper,
     Package,
     Palette,
     Search,
@@ -161,6 +162,13 @@ const navSections: NavSection[] = [
                 label: 'Landing Pages',
                 href: '/admin/landing-pages',
                 icon: MonitorPlay,
+                exact: false,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Blog',
+                href: '/admin/blogs',
+                icon: Newspaper,
                 exact: false,
                 extraMatches: [] as string[],
             },
@@ -459,7 +467,7 @@ export default function AdminLayout({
                                 src={logoUrl}
                                 alt="ShoppyDrive"
                                 onError={() => setHasMobileLogoError(true)}
-                                className="h-full w-full object-contain bg-white p-1"
+                                className="h-full w-full bg-white object-contain p-1"
                             />
                         ) : (
                             <AppLogoIcon className="size-5 fill-current text-white" />

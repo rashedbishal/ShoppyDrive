@@ -1,4 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
@@ -14,6 +15,7 @@ export default function LandingPageCreate({ products }: Props) {
         product_id: '',
         is_active: true,
     });
+    const [slugTouched, setSlugTouched] = useState(false);
 
     const inputClass =
         'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
@@ -54,12 +56,15 @@ export default function LandingPageCreate({ products }: Props) {
                                     className={inputClass}
                                     value={data.title}
                                     onChange={(e) => {
-                                        setData('title', e.target.value);
-                                        if (!data.slug)
-                                            setData(
-                                                'slug',
-                                                autoSlug(e.target.value),
-                                            );
+                                        const title = e.target.value;
+
+                                        setData((prev) => ({
+                                            ...prev,
+                                            title,
+                                            slug: slugTouched
+                                                ? prev.slug
+                                                : autoSlug(title),
+                                        }));
                                     }}
                                     placeholder="e.g. Special Offer on Product X"
                                 />
@@ -81,7 +86,8 @@ export default function LandingPageCreate({ products }: Props) {
                                     <input
                                         className="h-9 flex-1 px-3 font-mono text-sm focus:outline-none"
                                         value={data.slug}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
+                                            setSlugTouched(true);
                                             setData(
                                                 'slug',
                                                 e.target.value
@@ -90,8 +96,8 @@ export default function LandingPageCreate({ products }: Props) {
                                                         /[^a-z0-9\-]/g,
                                                         '',
                                                     ),
-                                            )
-                                        }
+                                            );
+                                        }}
                                         placeholder="my-product-offer"
                                     />
                                 </div>

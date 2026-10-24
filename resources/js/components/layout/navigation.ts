@@ -22,6 +22,7 @@ export const primaryLinks: StorefrontLink[] = [
 export const footerQuickLinks: StorefrontLink[] = [
     { label: 'Home', href: '/' },
     { label: 'Flash Sale', href: '/flash-sales' },
+    { label: 'Blog', href: '/blog' },
     { label: 'Track Order', href: '/track-order' },
     { label: 'About', href: '/about' },
     { label: 'Contact', href: '/contact' },
@@ -37,17 +38,61 @@ export const footerCustomerLinks: StorefrontLink[] = [
 ];
 
 export const storeCategories: StorefrontLink[] = [
-    { label: "Men's Clothing", href: '/category/mens-clothing', description: 'T-shirts, shirts, jeans, hoodies & traditional wear' },
-    { label: "Women's Clothing", href: '/category/womens-clothing', description: 'Dresses, tops, sarees, kurtis & more' },
-    { label: 'Shoes', href: '/category/shoes', description: 'Sneakers, formals, heels, sandals & boots' },
-    { label: 'Bags & Luggage', href: '/category/bags-luggage', description: 'Backpacks, handbags, wallets & travel bags' },
-    { label: 'Jewelry & Accessories', href: '/category/jewelry-accessories', description: 'Necklaces, earrings, sunglasses & belts' },
-    { label: 'Watches', href: '/category/watches', description: "Men's, women's, smart & couple watches" },
-    { label: 'Electronics & Gadgets', href: '/category/electronics', description: 'Earbuds, phone accessories, power banks & gadgets' },
-    { label: 'Beauty & Health', href: '/category/beauty-health', description: 'Makeup, skincare, haircare & fragrances' },
-    { label: 'Home & Living', href: '/category/home-living', description: 'Decor, kitchen, bedding & storage' },
-    { label: 'Mother & Kids', href: '/category/mother-kids', description: "Boys', girls', baby clothes & toys" },
-    { label: 'Sports & Outdoors', href: '/category/sports-outdoors', description: 'Activewear, sports shoes & gym equipment' },
+    {
+        label: "Men's Clothing",
+        href: '/category/mens-clothing',
+        description: 'T-shirts, shirts, jeans, hoodies & traditional wear',
+    },
+    {
+        label: "Women's Clothing",
+        href: '/category/womens-clothing',
+        description: 'Dresses, tops, sarees, kurtis & more',
+    },
+    {
+        label: 'Shoes',
+        href: '/category/shoes',
+        description: 'Sneakers, formals, heels, sandals & boots',
+    },
+    {
+        label: 'Bags & Luggage',
+        href: '/category/bags-luggage',
+        description: 'Backpacks, handbags, wallets & travel bags',
+    },
+    {
+        label: 'Jewelry & Accessories',
+        href: '/category/jewelry-accessories',
+        description: 'Necklaces, earrings, sunglasses & belts',
+    },
+    {
+        label: 'Watches',
+        href: '/category/watches',
+        description: "Men's, women's, smart & couple watches",
+    },
+    {
+        label: 'Electronics & Gadgets',
+        href: '/category/electronics',
+        description: 'Earbuds, phone accessories, power banks & gadgets',
+    },
+    {
+        label: 'Beauty & Health',
+        href: '/category/beauty-health',
+        description: 'Makeup, skincare, haircare & fragrances',
+    },
+    {
+        label: 'Home & Living',
+        href: '/category/home-living',
+        description: 'Decor, kitchen, bedding & storage',
+    },
+    {
+        label: 'Mother & Kids',
+        href: '/category/mother-kids',
+        description: "Boys', girls', baby clothes & toys",
+    },
+    {
+        label: 'Sports & Outdoors',
+        href: '/category/sports-outdoors',
+        description: 'Activewear, sports shoes & gym equipment',
+    },
 ];
 
 export const featuredStorePicks: StorefrontFeature[] = [

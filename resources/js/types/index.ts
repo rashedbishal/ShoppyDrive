@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
 import type { InertiaLinkProps } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 export type Id = number;
 
@@ -514,6 +514,20 @@ export interface RecentlyViewedProduct extends Timestamped {
     product_id: Id;
     viewed_at: string;
     product?: Product;
+}
+
+export interface Blog extends Timestamped {
+    id: Id;
+    title: string;
+    slug: string;
+    excerpt: string | null;
+    content: string;
+    featured_image: string | null;
+    author_name: string | null;
+    meta_title: string | null;
+    meta_description: string | null;
+    is_published: boolean;
+    published_at: string | null;
 }
 
 export interface PageLink {

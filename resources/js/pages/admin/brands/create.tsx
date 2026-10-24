@@ -1,8 +1,41 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+
+const slugify = (name: string) =>
+    name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+
+function Field({
+    label,
+    hint,
+    error,
+    children,
+}: {
+    label: string;
+    hint?: string;
+    error?: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+                {label}
+            </label>
+            {hint && <p className="mb-1.5 text-xs text-slate-400">{hint}</p>}
+            {children}
+            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+        </div>
+    );
+}
+
+const inputClass = (err?: string) =>
+    `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;
 
 export default function BrandCreate() {
     const { data, setData, post, processing, errors } = useForm({
@@ -12,38 +45,12 @@ export default function BrandCreate() {
         description: '',
         is_active: true,
     });
-
-    const slugify = (name: string) =>
-        name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, '');
+    const [slugTouched, setSlugTouched] = useState(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         post(route('admin.brands.store'));
     };
-
-    const Field = ({
-        label,
-        error,
-        children,
-    }: {
-        label: string;
-        error?: string;
-        children: React.ReactNode;
-    }) => (
-        <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-                {label}
-            </label>
-            {children}
-            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-        </div>
-    );
-
-    const inputClass = (err?: string) =>
-        `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;
 
     return (
         <>
@@ -66,22 +73,30 @@ export default function BrandCreate() {
                                     className={inputClass(errors.name)}
                                     value={data.name}
                                     onChange={(e) => {
-                                        setData('name', e.target.value);
-                                        if (!data.slug)
-                                            setData(
-                                                'slug',
-                                                slugify(e.target.value),
-                                            );
+                                        const name = e.target.value;
+
+                                        setData((prev) => ({
+                                            ...prev,
+                                            name,
+                                            slug: slugTouched
+                                                ? prev.slug
+                                                : slugify(name),
+                                        }));
                                     }}
                                 />
                             </Field>
-                            <Field label="Slug *" error={errors.slug}>
+                            <Field
+                                label="Slug *"
+                                hint="Used in the URL — auto-generated from name"
+                                error={errors.slug}
+                            >
                                 <input
                                     className={inputClass(errors.slug)}
                                     value={data.slug}
-                                    onChange={(e) =>
-                                        setData('slug', e.target.value)
-                                    }
+                                    onChange={(e) => {
+                                        setSlugTouched(true);
+                                        setData('slug', e.target.value);
+                                    }}
                                 />
                             </Field>
                             <Field label="Logo" error={errors.logo}>

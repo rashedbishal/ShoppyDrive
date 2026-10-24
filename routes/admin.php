@@ -6,9 +6,11 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\AttributeValueController;
+use App\Http\Controllers\Admin\BlogController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ContactMessageController;
+use App\Http\Controllers\Admin\ContentImageController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -109,6 +111,9 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::delete('newsletter/{subscriber}', [AdminNewsletterController::class, 'destroy'])->name('newsletter.destroy');
     Route::get('newsletter/compose', [AdminNewsletterController::class, 'compose'])->name('newsletter.compose');
     Route::post('newsletter/send', [AdminNewsletterController::class, 'send'])->name('newsletter.send');
+
+    Route::resource('blogs', BlogController::class)->except(['show']);
+    Route::post('content-images', [ContentImageController::class, 'store'])->name('content-images.store');
 
     Route::resource('hero-slides', HeroSlideController::class)->except(['show']);
     Route::get('promotional-banners/products/search', [PromotionalBannerController::class, 'searchProducts'])->name('promotional-banners.products.search');
