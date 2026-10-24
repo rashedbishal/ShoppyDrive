@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
@@ -24,86 +24,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
+import {
+    DHAKA_CITY_OPTIONS,
+    DISTRICT_OPTIONS,
+} from '@/lib/bangladesh-geography';
+import { getXsrfToken } from '@/lib/csrf';
 import { useCartStore } from '@/stores/cartStore';
 import type { Address, CartItem, SharedPageProps } from '@/types';
-
-// ── Bangladesh geography ──────────────────────────────────────────────────────
-const BANGLADESH_DISTRICTS = [
-    'Bagerhat',
-    'Bandarban',
-    'Barguna',
-    'Barishal',
-    'Bhola',
-    'Bogura',
-    'Brahmanbaria',
-    'Chandpur',
-    'Chapai Nawabganj',
-    'Chattogram',
-    'Chuadanga',
-    "Cox's Bazar",
-    'Cumilla',
-    'Dhaka',
-    'Dinajpur',
-    'Faridpur',
-    'Feni',
-    'Gaibandha',
-    'Gazipur',
-    'Gopalganj',
-    'Habiganj',
-    'Jamalpur',
-    'Jashore',
-    'Jhalokati',
-    'Jhenaidah',
-    'Joypurhat',
-    'Khagrachhari',
-    'Khulna',
-    'Kishoreganj',
-    'Kurigram',
-    'Kushtia',
-    'Lakshmipur',
-    'Lalmonirhat',
-    'Madaripur',
-    'Magura',
-    'Manikganj',
-    'Meherpur',
-    'Moulvibazar',
-    'Munshiganj',
-    'Mymensingh',
-    'Naogaon',
-    'Narail',
-    'Narayanganj',
-    'Narsingdi',
-    'Natore',
-    'Netrokona',
-    'Nilphamari',
-    'Noakhali',
-    'Pabna',
-    'Panchagarh',
-    'Patuakhali',
-    'Pirojpur',
-    'Rajbari',
-    'Rajshahi',
-    'Rangamati',
-    'Rangpur',
-    'Satkhira',
-    'Shariatpur',
-    'Sherpur',
-    'Sirajganj',
-    'Sunamganj',
-    'Sylhet',
-    'Tangail',
-    'Thakurgaon',
-];
-
-const DHAKA_CITY_OPTIONS = [
-    'Inside Dhaka City Corporation',
-    'Outside Dhaka City Corporation',
-];
-
-const DISTRICT_OPTIONS = [
-    { label: 'Select district…', value: '', disabled: true },
-    ...BANGLADESH_DISTRICTS.map((d) => ({ label: d, value: d })),
-];
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 const Section = ({
@@ -233,6 +160,61 @@ export default function Checkout({
 
     const [submitting, setSubmitting] = useState(false);
 
+    // ── Incomplete-order tracking ───────────────────────────────────────────
+    // Lets admins follow up on abandoned checkouts: once a valid phone number
+    // is present with items to order, a debounced ping records this attempt.
+    // One row per page visit (the token lives in sessionStorage for this tab,
+    // not across visits), so repeated edits update the same row instead of
+    // creating a new one on every keystroke.
+    const attemptTokenRef = useRef<string>('');
+    if (!attemptTokenRef.current && typeof window !== 'undefined') {
+        attemptTokenRef.current =
+            sessionStorage.getItem('shoppydrive.checkout_attempt') ??
+            crypto.randomUUID();
+        sessionStorage.setItem(
+            'shoppydrive.checkout_attempt',
+            attemptTokenRef.current,
+        );
+    }
+
+    const itemsSignature = items
+        .map(
+            (item) =>
+                `${item.product.id}:${item.variant?.id ?? ''}:${item.quantity}`,
+        )
+        .join('|');
+
+    useEffect(() => {
+        if (!/^01[3-9]\d{8}$/.test(form.data.phone) || items.length === 0) {
+            return;
+        }
+
+        const timeout = setTimeout(() => {
+            fetch(route('checkout.track-incomplete'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-XSRF-TOKEN': getXsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    attempt_token: attemptTokenRef.current,
+                    phone: form.data.phone,
+                    name: form.data.name || null,
+                    items: items.map((item) => ({
+                        product_id: item.product.id,
+                        variant_id: item.variant?.id ?? null,
+                        quantity: item.quantity,
+                    })),
+                }),
+            }).catch(() => {});
+        }, 1000);
+
+        return () => clearTimeout(timeout);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.data.phone, form.data.name, itemsSignature]);
+
     // ── Coupon state ──────────────────────────────────────────────────────────
     const [couponInput, setCouponInput] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState<{
@@ -255,12 +237,7 @@ export default function Checkout({
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN':
-                        (
-                            document.querySelector(
-                                'meta[name="csrf-token"]',
-                            ) as HTMLMetaElement
-                        )?.content ?? '',
+                    'X-XSRF-TOKEN': getXsrfToken(),
                     'X-Requested-With': 'XMLHttpRequest',
                 },
                 body: JSON.stringify({ code, subtotal }),
@@ -301,7 +278,10 @@ export default function Checkout({
                     form.setError(errors as any);
                     setSubmitting(false);
                 },
-                onSuccess: () => setSubmitting(false),
+                onSuccess: () => {
+                    setSubmitting(false);
+                    sessionStorage.removeItem('shoppydrive.checkout_attempt');
+                },
                 onFinish: () => setSubmitting(false),
             },
         );

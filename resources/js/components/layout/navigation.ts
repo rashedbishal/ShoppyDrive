@@ -23,7 +23,7 @@ export const footerQuickLinks: StorefrontLink[] = [
     { label: 'Home', href: '/' },
     { label: 'Flash Sale', href: '/flash-sales' },
     { label: 'Blog', href: '/blog' },
-    { label: 'Track Order', href: '/track-order' },
+    { label: 'Track Order', href: '/order/track' },
     { label: 'About', href: '/about' },
     { label: 'Contact', href: '/contact' },
 ];

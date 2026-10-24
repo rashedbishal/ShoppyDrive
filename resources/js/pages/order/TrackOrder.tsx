@@ -6,8 +6,9 @@ import {
     Phone,
     AlertCircle,
     CheckCircle2,
+    Loader2,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { OrderTimeline } from '@/components/shared/OrderTimeline';
@@ -17,6 +18,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Order } from '@/types';
+
+type RequiredFields = { email: boolean; phone: boolean };
 
 interface TrackOrderProps {
     order?: Order | null;
@@ -37,10 +40,105 @@ export default function TrackOrder({
 
     const [order, setOrder] = useState<Order | null>(initialOrder || null);
     const [error, setError] = useState<string | null>(initialError || null);
+    // What the typed order number can actually be verified with — updated
+    // live as the customer types, so the right field(s) appear instantly:
+    // guests who skipped email at checkout only have a phone on file.
+    const [requires, setRequires] = useState<RequiredFields | null>(null);
+    const [checking, setChecking] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    useEffect(() => {
+        const orderNumber = form.data.order_number.trim();
+
+        if (!orderNumber) {
+            setRequires(null);
+            setChecking(false);
+
+            return;
+        }
+
+        setChecking(true);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(async () => {
+            try {
+                const res = await fetch(
+                    `${route('order.track.check')}?order_number=${encodeURIComponent(orderNumber)}`,
+                    {
+                        signal: controller.signal,
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    },
+                );
+                const data = await res.json();
+
+                setRequires(data.found ? data.requires : null);
+            } catch (err) {
+                // An aborted fetch (superseded by a newer keystroke) is
+                // expected and silent; anything else — e.g. a stale Ziggy
+                // route list — should be visible in the console instead of
+                // just quietly never revealing the fields.
+                if ((err as Error)?.name !== 'AbortError') {
+                    console.error('Order lookup failed', err);
+                }
+            } finally {
+                setChecking(false);
+            }
+        }, 300);
+
+        return () => {
+            clearTimeout(timeoutId);
+            controller.abort();
+        };
+    }, [form.data.order_number]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+
+        const orderNumber = form.data.order_number.trim();
+
+        if (!orderNumber) {
+            return;
+        }
+
+        // The live check below is debounced — if the customer submits
+        // before it's had a chance to resolve, `requires` is still null.
+        // Resolve it synchronously now rather than letting an incomplete
+        // request reach the server and bounce back with a generic error.
+        let resolvedRequires = requires;
+
+        if (!resolvedRequires) {
+            setChecking(true);
+
+            try {
+                const res = await fetch(
+                    `${route('order.track.check')}?order_number=${encodeURIComponent(orderNumber)}`,
+                    {
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    },
+                );
+                const data = await res.json();
+
+                if (!data.found) {
+                    setError(
+                        'No order found with that order number. Please check and try again.',
+                    );
+
+                    return;
+                }
+
+                resolvedRequires = data.requires;
+                setRequires(resolvedRequires);
+            } catch (err) {
+                console.error('Order lookup failed', err);
+            } finally {
+                setChecking(false);
+            }
+        }
 
         if (!form.data.email && !form.data.phone) {
             setError(
@@ -54,6 +152,7 @@ export default function TrackOrder({
             preserveState: true,
             onSuccess: (page) => {
                 const props = page.props as unknown as TrackOrderProps;
+
                 if (props.order) {
                     setOrder(props.order);
                 } else if (props.error) {
@@ -68,25 +167,22 @@ export default function TrackOrder({
             <Head title="Track Your Order" />
 
             <div className="container mx-auto max-w-4xl">
-                <div className="mb-12 text-center">
+                <div className="mb-10 text-center">
                     <div className="mx-auto mb-6 flex h-20 w-20 rotate-3 items-center justify-center rounded-3xl bg-[var(--color-primary)] text-white shadow-xl shadow-red-100">
                         <Truck size={40} />
                     </div>
-                    <h1 className="mb-4 font-serif text-2xl font-bold text-[var(--color-text-primary)] sm:text-4xl">
+                    <h1 className="mb-4 text-2xl font-bold text-[var(--color-text-primary)] sm:text-4xl">
                         Track Your Order
                     </h1>
                     <p className="mx-auto max-w-md text-[var(--color-text-secondary)]">
-                        Enter your order number and either the email or phone
-                        number used when the order was placed.
+                        Start typing your order number — we'll show you
+                        exactly what's needed to verify it.
                     </p>
                 </div>
 
-                <div className="mb-8 rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-sm md:p-12">
-                    <form
-                        onSubmit={handleSubmit}
-                        className="grid grid-cols-1 items-end gap-6 md:grid-cols-12"
-                    >
-                        <div className="space-y-2 md:col-span-12">
+                <div className="mb-8 rounded-3xl border border-[var(--color-border)] bg-white p-5 shadow-sm md:p-10">
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="space-y-2">
                             <Label htmlFor="order_number">Order Number</Label>
                             <div className="relative">
                                 <Input
@@ -98,7 +194,7 @@ export default function TrackOrder({
                                             e.target.value,
                                         )
                                     }
-                                    placeholder="e.g. ORD-123456"
+                                    placeholder="e.g. ORD-20261024-ABC123"
                                     className="h-14 rounded-2xl pl-12"
                                     required
                                 />
@@ -106,61 +202,105 @@ export default function TrackOrder({
                                     size={20}
                                     className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
                                 />
+                                {checking && (
+                                    <Loader2
+                                        size={18}
+                                        className="absolute top-1/2 right-4 -translate-y-1/2 animate-spin text-[var(--color-text-muted)]"
+                                    />
+                                )}
                             </div>
                         </div>
-                        <div className="space-y-2 md:col-span-5">
-                            <Label htmlFor="email">Email Address</Label>
-                            <div className="relative">
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    value={form.data.email}
-                                    onChange={(e) =>
-                                        form.setData('email', e.target.value)
-                                    }
-                                    placeholder="your@email.com"
-                                    className="h-14 rounded-2xl pl-12"
-                                />
-                                <Mail
-                                    size={20}
-                                    className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2 md:col-span-5">
-                            <Label htmlFor="phone">Phone Number</Label>
-                            <div className="relative">
-                                <Input
-                                    id="phone"
-                                    value={form.data.phone}
-                                    onChange={(e) =>
-                                        form.setData('phone', e.target.value)
-                                    }
-                                    placeholder="01XXXXXXXXX"
-                                    className="h-14 rounded-2xl pl-12"
-                                />
-                                <Phone
-                                    size={20}
-                                    className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
-                                />
-                            </div>
-                        </div>
-                        <div className="md:col-span-2">
-                            <Button
-                                type="submit"
-                                disabled={form.processing}
-                                className="h-14 w-full rounded-2xl font-bold shadow-[var(--color-primary)]/20 shadow-lg"
-                            >
-                                {form.processing ? 'Searching...' : 'Track'}
-                            </Button>
-                        </div>
+
+                        <AnimatePresence>
+                            {requires &&
+                                (requires.email || requires.phone) && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -8 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <div
+                                            className={`grid grid-cols-1 gap-4 pt-1 ${requires.email && requires.phone ? 'sm:grid-cols-2' : ''}`}
+                                        >
+                                            {requires.email && (
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="email">
+                                                        Email Address
+                                                    </Label>
+                                                    <div className="relative">
+                                                        <Input
+                                                            id="email"
+                                                            type="email"
+                                                            value={
+                                                                form.data.email
+                                                            }
+                                                            onChange={(e) =>
+                                                                form.setData(
+                                                                    'email',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder="your@email.com"
+                                                            className="h-14 rounded-2xl pl-12"
+                                                        />
+                                                        <Mail
+                                                            size={20}
+                                                            className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {requires.phone && (
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="phone">
+                                                        Phone Number
+                                                    </Label>
+                                                    <div className="relative">
+                                                        <Input
+                                                            id="phone"
+                                                            value={
+                                                                form.data.phone
+                                                            }
+                                                            onChange={(e) =>
+                                                                form.setData(
+                                                                    'phone',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder="01XXXXXXXXX"
+                                                            className="h-14 rounded-2xl pl-12"
+                                                        />
+                                                        <Phone
+                                                            size={20}
+                                                            className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                        </AnimatePresence>
+
+                        <Button
+                            type="submit"
+                            disabled={form.processing || checking}
+                            className="h-14 w-full rounded-2xl font-bold shadow-lg shadow-[var(--color-primary)]/20"
+                        >
+                            {form.processing || checking
+                                ? 'Searching…'
+                                : 'Track Order'}
+                        </Button>
                     </form>
 
                     {error && (
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="mt-8 flex gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-red-800"
+                            className="mt-6 flex gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-red-800"
                         >
                             <AlertCircle size={20} className="shrink-0" />
                             <p className="text-sm font-bold">{error}</p>
@@ -177,22 +317,22 @@ export default function TrackOrder({
                             exit={{ opacity: 0, scale: 0.98 }}
                             className="space-y-8"
                         >
-                            <div className="rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-sm md:p-12">
-                                <div className="mb-12 flex flex-wrap items-center justify-between gap-6 border-b border-[var(--color-border)] pb-8">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-surface-alt)] text-[var(--color-primary)]">
-                                            <Package size={28} />
+                            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-sm md:p-7">
+                                <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--color-border)] pb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-surface-alt)] text-[var(--color-primary)]">
+                                            <Package size={20} />
                                         </div>
                                         <div>
-                                            <div className="mb-1 flex items-center gap-3">
-                                                <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
+                                            <div className="mb-0.5 flex items-center gap-2">
+                                                <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                                                     #{order.order_number}
                                                 </h2>
                                                 <OrderStatusBadge
                                                     status={order.status}
                                                 />
                                             </div>
-                                            <p className="text-sm font-medium text-[var(--color-text-muted)]">
+                                            <p className="text-xs font-medium text-[var(--color-text-muted)]">
                                                 Placed on{' '}
                                                 {formatDate(
                                                     order.created_at,
@@ -203,35 +343,35 @@ export default function TrackOrder({
                                     </div>
 
                                     <div className="text-right">
-                                        <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                        <p className="mb-0.5 text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
                                             Current Status
                                         </p>
-                                        <p className="text-xl font-bold tracking-tight text-[var(--color-text-primary)] uppercase">
+                                        <p className="text-sm font-bold tracking-tight text-[var(--color-text-primary)] uppercase">
                                             {order.status.replace('_', ' ')}
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-12">
+                                <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-8">
                                     <div className="lg:col-span-7">
-                                        <h3 className="mb-8 text-lg font-bold text-[var(--color-text-primary)]">
+                                        <h3 className="mb-4 text-sm font-bold text-[var(--color-text-primary)]">
                                             Delivery Journey
                                         </h3>
                                         <OrderTimeline
                                             histories={order.status_histories}
                                         />
                                     </div>
-                                    <div className="space-y-8 lg:col-span-5">
-                                        <div className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-6">
-                                            <h3 className="mb-4 text-sm font-bold tracking-widest text-[var(--color-text-primary)] uppercase">
+                                    <div className="space-y-4 lg:col-span-5">
+                                        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-4">
+                                            <h3 className="mb-2.5 text-xs font-bold tracking-widest text-[var(--color-text-primary)] uppercase">
                                                 Estimated Delivery
                                             </h3>
-                                            <div className="flex items-center gap-4">
-                                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[var(--color-success)] shadow-sm">
-                                                    <CheckCircle2 size={24} />
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[var(--color-success)] shadow-sm">
+                                                    <CheckCircle2 size={18} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-lg font-bold text-[var(--color-text-primary)]">
+                                                    <p className="text-sm font-bold text-[var(--color-text-primary)]">
                                                         3-5 Business Days
                                                     </p>
                                                     <p className="text-xs font-medium text-[var(--color-text-muted)]">
@@ -242,24 +382,24 @@ export default function TrackOrder({
                                         </div>
 
                                         {order.tracking_number && (
-                                            <div className="rounded-3xl bg-[var(--color-secondary)] p-6 text-white shadow-lg">
+                                            <div className="rounded-xl bg-[var(--color-secondary)] p-4 text-white shadow-lg">
                                                 <p className="mb-1 text-[10px] font-bold tracking-widest text-blue-200 uppercase">
                                                     Tracking ID
                                                 </p>
-                                                <p className="mb-6 font-mono text-xl font-bold">
+                                                <p className="mb-3 font-mono text-base font-bold">
                                                     {order.tracking_number}
                                                 </p>
-                                                <Button className="h-11 w-full rounded-xl bg-white font-bold text-[var(--color-secondary)] hover:bg-gray-100">
+                                                <Button className="h-10 w-full rounded-lg bg-white font-bold text-[var(--color-secondary)] hover:bg-gray-100">
                                                     Track on Carrier Site
                                                 </Button>
                                             </div>
                                         )}
 
-                                        <div className="rounded-3xl border border-[var(--color-border)] p-6">
-                                            <h3 className="mb-4 text-sm font-bold tracking-widest text-[var(--color-text-primary)] uppercase">
+                                        <div className="rounded-xl border border-[var(--color-border)] p-4">
+                                            <h3 className="mb-2.5 text-xs font-bold tracking-widest text-[var(--color-text-primary)] uppercase">
                                                 Order Summary
                                             </h3>
-                                            <div className="space-y-3">
+                                            <div className="space-y-2">
                                                 {order.items.map((item) => (
                                                     <div
                                                         key={item.id}
@@ -276,11 +416,11 @@ export default function TrackOrder({
                                                         </span>
                                                     </div>
                                                 ))}
-                                                <div className="flex items-end justify-between border-t border-[var(--color-border)] pt-3">
+                                                <div className="flex items-end justify-between border-t border-[var(--color-border)] pt-2.5">
                                                     <span className="font-bold text-[var(--color-text-primary)]">
                                                         Total Paid
                                                     </span>
-                                                    <span className="text-xl font-bold text-[var(--color-primary)]">
+                                                    <span className="text-lg font-bold text-[var(--color-primary)]">
                                                         {formatCurrency(
                                                             order.total,
                                                         )}

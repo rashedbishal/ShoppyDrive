@@ -11,6 +11,7 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Coupon;
 use App\Models\HomepageSetting;
+use App\Models\IncompleteOrder;
 use App\Models\Order;
 use App\Models\PendingCheckout;
 use App\Models\Product;
@@ -170,6 +171,10 @@ class CheckoutController extends Controller
                     $cart->items()->delete();
                     $cart->delete();
                 }
+
+                // A real order went through for this phone number, so any
+                // abandoned-checkout rows tracked against it no longer apply.
+                IncompleteOrder::where('phone', $shippingAddress['phone'])->delete();
 
                 return $order;
             });

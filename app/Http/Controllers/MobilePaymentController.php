@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\Cart;
+use App\Models\IncompleteOrder;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PendingCheckout;
@@ -162,6 +163,12 @@ class MobilePaymentController extends Controller
 
                 $sms->update(['is_matched' => true, 'matched_order_id' => $order->id]);
                 $freshPending->update(['order_number' => $order->order_number]);
+
+                // A real order went through for this phone number, so any
+                // abandoned-checkout rows tracked against it no longer apply.
+                if (! empty($data['shipping_address']['phone'])) {
+                    IncompleteOrder::where('phone', $data['shipping_address']['phone'])->delete();
+                }
 
                 if ($freshPending->cart_id) {
                     $cart = Cart::find($freshPending->cart_id);

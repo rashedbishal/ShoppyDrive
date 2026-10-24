@@ -38,7 +38,7 @@ import { useWishlistStore } from '@/stores/wishlistStore';
 import type { SharedPageProps } from '@/types';
 
 const supportItems = [
-    { label: 'Track Order', href: '/track-order' },
+    { label: 'Track Order', href: '/order/track' },
     { label: 'Help Center', href: '/faq' },
 ];
 

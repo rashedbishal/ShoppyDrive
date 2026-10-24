@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FlashSaleController;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\HomepageController;
+use App\Http\Controllers\Admin\IncompleteOrderController;
 use App\Http\Controllers\Admin\LandingPageController as AdminLandingPageController;
 use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Admin\OrderController;
@@ -53,6 +54,17 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
 
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('orders/trashed', [OrderController::class, 'trashed'])->name('orders.trashed');
+
+    // Incomplete orders (abandoned checkouts) — registered above the
+    // orders/{order} wildcard so these literal segments aren't swallowed
+    // by order route-model binding.
+    Route::get('orders/incomplete', [IncompleteOrderController::class, 'index'])->name('orders.incomplete.index');
+    Route::delete('orders/incomplete/all', [IncompleteOrderController::class, 'destroyAll'])->name('orders.incomplete.destroyAll');
+    Route::get('orders/incomplete/products/search', [IncompleteOrderController::class, 'searchProducts'])->name('orders.incomplete.products.search');
+    Route::get('orders/incomplete/{incompleteOrder}/convert', [IncompleteOrderController::class, 'convert'])->name('orders.incomplete.convert');
+    Route::post('orders/incomplete/{incompleteOrder}/convert', [IncompleteOrderController::class, 'placeOrder'])->name('orders.incomplete.placeOrder');
+    Route::delete('orders/incomplete/{incompleteOrder}', [IncompleteOrderController::class, 'destroy'])->name('orders.incomplete.destroy');
+
     Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
     Route::patch('orders/{order}/restore', [OrderController::class, 'restore'])->name('orders.restore')->withTrashed();

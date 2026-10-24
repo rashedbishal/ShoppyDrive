@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\Cart;
+use App\Models\IncompleteOrder;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PendingCheckout;
@@ -89,6 +90,12 @@ class OrderService
 
             // Clear the user's cart
             $this->clearCart($fresh);
+
+            // A real order went through for this phone number, so any
+            // abandoned-checkout rows tracked against it no longer apply.
+            if (! empty($data['shipping_address']['phone'])) {
+                IncompleteOrder::where('phone', $data['shipping_address']['phone'])->delete();
+            }
 
             Log::info('[OrderService] Order created from PendingCheckout', [
                 'order_number' => $order->order_number,

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\IncompleteOrderController;
 use App\Http\Controllers\MobilePaymentController;
 use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\PaymentController;
@@ -24,6 +25,11 @@ Route::middleware(['checkout.access'])->group(function () {
     // Mobile banking (Bkash / Nagad)
     Route::get('/payment/mobile/{token}', [MobilePaymentController::class, 'show'])->name('payment.mobile.show');
     Route::post('/payment/mobile/{token}', [MobilePaymentController::class, 'submit'])->name('payment.mobile.submit');
+
+    // Fires from the checkout page once a valid phone number + items are
+    // present, so admins can follow up on abandoned checkouts — see
+    // Admin\IncompleteOrderController.
+    Route::post('/checkout/track-incomplete', [IncompleteOrderController::class, 'store'])->name('checkout.track-incomplete');
 });
 
 Route::middleware(['auth'])->group(function () {
@@ -34,6 +40,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/payment/cancel/{token}', [PaymentController::class, 'cancel'])->name('payment.cancel');
 });
 Route::get('/order/track', [OrderTrackingController::class, 'show'])->name('order.track');
+Route::get('/order/track/check', [OrderTrackingController::class, 'checkRequirements'])->name('order.track.check');
 Route::get('/order/{order:order_number}/confirmation', function (Order $order) {
     return inertia('order/OrderConfirmation', [
         'order' => $order->load('items.product'),

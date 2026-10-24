@@ -260,6 +260,7 @@ export interface Address {
     id: Id;
     label?: string | null;
     name: string;
+    email?: string | null;
     phone: string;
     address_line1: string;
     address_line2?: string | null;

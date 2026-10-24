@@ -15,6 +15,7 @@ import {
     Newspaper,
     Package,
     Palette,
+    PhoneMissed,
     Search,
     Settings,
     Share2,
@@ -110,6 +111,12 @@ const navSections: NavSection[] = [
                 label: 'Trashed Orders',
                 href: '/admin/orders/trashed',
                 icon: Trash2,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Incomplete Orders',
+                href: '/admin/orders/incomplete',
+                icon: PhoneMissed,
                 extraMatches: [] as string[],
             },
             {

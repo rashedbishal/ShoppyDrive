@@ -28,7 +28,7 @@ export function OrderTimeline({ histories = [] }: OrderTimelineProps): React.JSX
     };
 
     return (
-        <div className="relative pl-8 space-y-8 before:absolute before:inset-0 before:left-[15px] before:w-0.5 before:bg-[var(--color-border)] before:z-0">
+        <div className="relative pl-8 space-y-4 before:absolute before:inset-0 before:left-[15px] before:w-0.5 before:bg-[var(--color-border)] before:z-0">
             {histories.map((item, idx) => {
                 const Icon = statusIcons[item.status] || Clock;
                 const isLatest = idx === histories.length - 1;
@@ -46,7 +46,7 @@ export function OrderTimeline({ histories = [] }: OrderTimelineProps): React.JSX
                             {isLatest ? <Icon size={14} strokeWidth={3} /> : <div className="w-1.5 h-1.5 rounded-full bg-current" />}
                         </div>
                         
-                        <div className={`p-5 rounded-2xl border transition-all ${
+                        <div className={`p-4 rounded-xl border transition-all ${
                             isLatest ? `bg-white ${statusBorderColor} shadow-md` : 'bg-[var(--color-surface-alt)] border-[var(--color-border)]'
                         }`}>
                             <div className="flex flex-wrap items-center justify-between gap-2 mb-2">

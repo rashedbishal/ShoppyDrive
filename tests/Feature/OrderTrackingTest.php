@@ -83,5 +83,47 @@ test('submitting only an order number with neither email nor phone asks for one'
         'order_number' => $order->order_number,
     ]));
 
-    $response->assertInertia(fn ($page) => $page->where('order', null)->has('error'));
+    $response->assertInertia(fn ($page) => $page
+        ->where('order', null)
+        ->where('error', 'Please also enter the email or phone number used for this order.'));
+});
+
+test('the live requirements check reports phone-only for a guest order with no email on file', function () {
+    $order = createTrackableOrder(); // email left as '' — phone-only guest order
+
+    $response = $this->getJson(route('order.track.check', [
+        'order_number' => $order->order_number,
+    ]));
+
+    $response->assertOk()->assertJson([
+        'found' => true,
+        'requires' => ['email' => false, 'phone' => true],
+    ]);
+});
+
+test('the live requirements check reports both fields for an order with email on file', function () {
+    $order = createTrackableOrder(['email' => 'buyer@example.com']);
+
+    $response = $this->getJson(route('order.track.check', [
+        'order_number' => $order->order_number,
+    ]));
+
+    $response->assertOk()->assertJson([
+        'found' => true,
+        'requires' => ['email' => true, 'phone' => true],
+    ]);
+});
+
+test('the live requirements check reports not found for an unknown order number, without leaking anything else', function () {
+    $response = $this->getJson(route('order.track.check', [
+        'order_number' => 'ORD-DOES-NOT-EXIST',
+    ]));
+
+    $response->assertOk()->assertExactJson(['found' => false]);
+});
+
+test('the live requirements check with no order number reports not found', function () {
+    $response = $this->getJson(route('order.track.check'));
+
+    $response->assertOk()->assertExactJson(['found' => false]);
 });

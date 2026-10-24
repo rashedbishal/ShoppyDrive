@@ -9,6 +9,15 @@ import { formatCurrency } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import type { Order } from '@/types';
 
+const DELIVERY_ESTIMATE_DAYS: [number, number] = [3, 5];
+
+function addDays(dateString: string, days: number): string {
+    const date = new Date(dateString);
+    date.setDate(date.getDate() + days);
+
+    return date.toLocaleDateString();
+}
+
 interface OrderConfirmationProps {
     order: Order;
 }
@@ -31,34 +40,44 @@ export default function OrderConfirmation({ order }: OrderConfirmationProps): Re
         <CheckoutLayout>
             <Head title="Order Confirmed" />
             
-            <div className="max-w-3xl mx-auto">
-                <div className="text-center mb-12">
+            <div className="mx-auto max-w-4xl">
+                <div className="mb-12 text-center">
                     <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: 'spring', damping: 12, stiffness: 200 }}
-                        className="w-24 h-24 rounded-full bg-[var(--color-success)] text-white flex items-center justify-center mx-auto mb-6 shadow-xl shadow-green-100"
+                        className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-success)] text-white shadow-xl shadow-green-100"
                     >
-                        <CheckCircle2 size={48} />
+                        <CheckCircle2 size={40} />
                     </motion.div>
-                    
-                    <motion.h1 
+
+                    <motion.h1
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-4xl font-serif font-bold text-[var(--color-text-primary)] mb-4"
+                        className="mb-3 text-3xl font-bold text-[var(--color-text-primary)] sm:text-4xl"
                     >
                         Order Placed Successfully! 🎉
                     </motion.h1>
-                    
-                    <motion.p 
+
+                    <motion.p
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
-                        className="text-[var(--color-text-secondary)]"
+                        className="mx-auto max-w-lg text-[var(--color-text-secondary)]"
                     >
-                        We've received your order and we're getting it ready for shipment.
-                        A confirmation email has been sent to <span className="text-[var(--color-text-primary)] font-bold">{order.shipping_address.email || 'your email'}</span>.
+                        We've received your order and we're getting it ready
+                        for shipment.
+                        {order.shipping_address.email && (
+                            <>
+                                {' '}
+                                A confirmation email has been sent to{' '}
+                                <span className="font-bold text-[var(--color-text-primary)]">
+                                    {order.shipping_address.email}
+                                </span>
+                                .
+                            </>
+                        )}
                     </motion.p>
                 </div>
 
@@ -125,7 +144,16 @@ export default function OrderConfirmation({ order }: OrderConfirmationProps): Re
                                 <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex gap-3">
                                     <CheckCircle2 size={16} className="text-amber-600 shrink-0 mt-0.5" />
                                     <p className="text-[10px] font-bold text-amber-800 uppercase tracking-tight">
-                                        Estimated Delivery: {new Date(Date.now() + 86400000 * 3).toLocaleDateString()} - {new Date(Date.now() + 86400000 * 5).toLocaleDateString()}
+                                        Estimated Delivery:{' '}
+                                        {addDays(
+                                            order.created_at,
+                                            DELIVERY_ESTIMATE_DAYS[0],
+                                        )}{' '}
+                                        -{' '}
+                                        {addDays(
+                                            order.created_at,
+                                            DELIVERY_ESTIMATE_DAYS[1],
+                                        )}
                                     </p>
                                 </div>
                             </div>

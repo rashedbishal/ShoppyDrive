@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -12,10 +13,12 @@ use Inertia\Response;
 class OrderTrackingController extends Controller
 {
     /**
-     * Guests who skip email at checkout (when guest checkout is enabled)
-     * only have a phone number on file, so this matches by order number
-     * plus either the email or the phone number stored in the order's
-     * shipping-address snapshot — not just email like before.
+     * Verifies the order number plus whichever of email/phone was supplied
+     * and, if they match, returns the full order. The frontend only ever
+     * sends email/phone once `checkRequirements()` (below) has told it the
+     * order exists and which of those fields it can actually be verified
+     * with — guests who skipped email at checkout (when guest checkout is
+     * enabled) only have a phone number on file.
      */
     public function show(Request $request): Response
     {
@@ -46,6 +49,35 @@ class OrderTrackingController extends Controller
             'order' => $order,
             'error' => $error,
             'prefill_order_number' => $orderNumber ?? '',
+        ]);
+    }
+
+    /**
+     * Polled live as the customer types the order number (see
+     * TrackOrder.tsx), so the email/phone field(s) can appear instantly
+     * instead of waiting for a separate "Find order" step. Only reports
+     * which field(s) exist on file — never the order itself.
+     */
+    public function checkRequirements(Request $request): JsonResponse
+    {
+        $orderNumber = (string) $request->get('order_number', '');
+
+        if ($orderNumber === '') {
+            return response()->json(['found' => false]);
+        }
+
+        $order = Order::where('order_number', $orderNumber)->first();
+
+        if (! $order) {
+            return response()->json(['found' => false]);
+        }
+
+        return response()->json([
+            'found' => true,
+            'requires' => [
+                'email' => filled($order->shipping_address['email'] ?? null),
+                'phone' => filled($order->shipping_address['phone'] ?? null),
+            ],
         ]);
     }
 
