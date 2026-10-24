@@ -14,6 +14,10 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import MegaMenu from '@/components/layout/MegaMenu';
+import MobileMenu from '@/components/layout/MobileMenu';
+import ThemeSwitcher from '@/components/layout/ThemeSwitcher';
+import { SearchBar } from '@/components/shared/SearchBar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,9 +36,6 @@ import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import type { SharedPageProps } from '@/types';
-import MegaMenu from '@/components/layout/MegaMenu';
-import MobileMenu from '@/components/layout/MobileMenu';
-import { SearchBar } from '@/components/shared/SearchBar';
 
 const supportItems = [
     { label: 'Track Order', href: '/track-order' },
@@ -304,6 +305,9 @@ export default function Header(): React.JSX.Element {
                             >
                                 <Search className="size-5" />
                             </button>
+
+                            {/* Theme switcher */}
+                            <ThemeSwitcher />
 
                             {/* Wishlist */}
                             <Link

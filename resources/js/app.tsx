@@ -6,6 +6,7 @@ import PageLoadingOverlay from '@/components/shared/PageLoadingOverlay';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { APP_NAME } from '@/lib/constants';
 import { initializeTheme } from '@/hooks/use-appearance';
+import { initializeSiteTheme } from '@/hooks/use-theme';
 import AppLayout from '@/layouts/app-layout';
 import AdminLayout from '@/layouts/admin-layout';
 import AuthLayout from '@/layouts/auth-layout';
@@ -264,6 +265,7 @@ createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+initializeSiteTheme();
 
 // Fly-to-cart animation + cart icon bump whenever an item is added.
 initAddToCartFeedback();

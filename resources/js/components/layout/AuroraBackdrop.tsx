@@ -1,4 +1,4 @@
-import { useTheme } from '@/hooks/use-theme';
+import { useSiteTheme } from '@/hooks/use-theme';
 
 /**
  * A fixed, animated gradient-mesh layer behind all storefront content, shown
@@ -6,7 +6,7 @@ import { useTheme } from '@/hooks/use-theme';
  * `aurora-drift` keyframes in app.css) — no JS animation loop.
  */
 export default function AuroraBackdrop(): React.JSX.Element | null {
-    const theme = useTheme();
+    const { theme } = useSiteTheme();
 
     if (theme !== 'aurora') {
         return null;

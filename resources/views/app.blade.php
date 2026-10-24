@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="{{ $theme ?? 'default' }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,6 +16,18 @@
                         document.documentElement.classList.add('dark');
                     }
                 }
+            })();
+        </script>
+
+        {{-- Inline script to apply the visitor's saved storefront theme before paint, so there's no flash of the default theme. Purely client-side — no backend involved. --}}
+        <script>
+            (function() {
+                try {
+                    var theme = localStorage.getItem('site_theme');
+                    if (theme && theme !== 'default') {
+                        document.documentElement.setAttribute('data-theme', theme);
+                    }
+                } catch (e) {}
             })();
         </script>
 
