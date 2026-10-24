@@ -1,15 +1,17 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import { usePage } from '@inertiajs/react';
-import { useEffect, type ReactNode } from 'react';
-import Footer from '@/components/layout/Footer';
-import Header from '@/components/layout/Header';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect  } from 'react';
+import type {ReactNode} from 'react';
+import AuroraBackdrop from '@/components/layout/AuroraBackdrop';
 import CartDrawer from '@/components/layout/CartDrawer';
 import CookieConsent from '@/components/layout/CookieConsent';
+import Footer from '@/components/layout/Footer';
+import Header from '@/components/layout/Header';
 import SocialChatWidget from '@/components/layout/SocialChatWidget';
 import { CompareBar } from '@/components/shared/CompareBar';
+import { MOTION } from '@/lib/constants';
 import { useUiStore } from '@/stores/uiStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
-import { MOTION } from '@/lib/constants';
 import type { SharedPageProps } from '@/types';
 
 type AppLayoutProps = {
@@ -26,18 +28,23 @@ export default function AppLayout({ children }: AppLayoutProps): React.JSX.Eleme
         const user = page.props.auth?.user;
 
         // Guests: never override localStorage wishlist from server
-        if (!user) return;
+        if (!user) {
+return;
+}
 
         const serverIds: number[] = Array.isArray(page.props.wishlist_ids)
             ? (page.props.wishlist_ids as number[])
             : [];
 
         const pendingRaw = localStorage.getItem('shoppydrive.wishlist.pending_merge');
+
         if (pendingRaw) {
             localStorage.removeItem('shoppydrive.wishlist.pending_merge');
+
             try {
                 const guestIds: number[] = JSON.parse(pendingRaw);
                 const toMerge = guestIds.filter((id) => !serverIds.includes(id));
+
                 if (toMerge.length > 0) {
                     // Optimistically show merged list while API call is in flight
                     setWishlist([...new Set([...serverIds, ...guestIds])]);
@@ -59,6 +66,7 @@ export default function AppLayout({ children }: AppLayoutProps): React.JSX.Eleme
                             }
                         })
                         .catch(() => {});
+
                     return;
                 }
             } catch {
@@ -72,6 +80,7 @@ export default function AppLayout({ children }: AppLayoutProps): React.JSX.Eleme
 
     return (
         <div className="flex min-h-screen flex-col bg-[var(--color-surface)] text-[var(--color-text-primary)]">
+            <AuroraBackdrop />
             <Header />
 
             <AnimatePresence mode="wait" initial={false}>

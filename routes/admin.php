@@ -29,6 +29,7 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SmsForwarderSettingsController;
 use App\Http\Controllers\Admin\SmsPatternController;
 use App\Http\Controllers\Admin\SubCategoryController;
+use App\Http\Controllers\Admin\ThemeSettingController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['redirect-customer-from-admin'])->group(function (): void {
@@ -88,6 +89,9 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
 
     Route::get('settings/sms-forwarder', [SmsForwarderSettingsController::class, 'index'])->name('settings.sms-forwarder.index');
     Route::post('settings/sms-forwarder/regenerate', [SmsForwarderSettingsController::class, 'regenerate'])->name('settings.sms-forwarder.regenerate');
+
+    Route::get('settings/theme', [ThemeSettingController::class, 'index'])->name('settings.theme');
+    Route::put('settings/theme', [ThemeSettingController::class, 'update'])->name('settings.theme.update');
 
     Route::resource('admins', AdminController::class)->except(['show']);
     Route::resource('popular-keywords', PopularKeywordController::class)->only(['index', 'store', 'update', 'destroy'])->parameters(['popular-keywords' => 'popularKeyword']);

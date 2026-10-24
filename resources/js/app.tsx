@@ -200,6 +200,11 @@ useCartStore.subscribe((state) => {
 
 router.on('navigate', (event) => {
     const props = event.detail.page.props as SharedPageProps;
+
+    // Inertia preserves the original document between visits, so Blade only
+    // writes this attribute on the initial load. Keep it in sync with the
+    // server-resolved CMS theme after every subsequent visit as well.
+    document.documentElement.dataset.theme = props.theme;
     const currentUserId = props.auth?.user?.id ?? null;
     const stored = localStorage.getItem(LAST_USER_KEY);
     const currentCart = props.cart ?? null;

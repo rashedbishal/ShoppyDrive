@@ -46,6 +46,12 @@ export default defineConfig({
                 '**/.junie/**',
                 '**/vendor/**',
             ],
+            // Native fs events (inotify) are unreliable for this project's
+            // directory, so file edits can go undetected until the dev
+            // server is restarted. Polling trades a little CPU for actually
+            // noticing changes.
+            usePolling: true,
+            interval: 300,
         },
     },
 });

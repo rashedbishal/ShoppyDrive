@@ -651,6 +651,7 @@ export interface SharedPageProps {
     appName: string;
     auth: Auth;
     cart: Cart | null;
+    theme: string;
     flash: {
         success?: string | null;
         error?: string | null;

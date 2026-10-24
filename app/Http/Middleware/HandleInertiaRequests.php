@@ -67,6 +67,7 @@ class HandleInertiaRequests extends Middleware
                 'admin' => $request->user('admin'),
             ],
             'cart' => fn () => $this->cartManager->serializeForRequest($request),
+            'theme' => fn () => $request->attributes->get('resolved_theme', 'default'),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'navCategories' => fn () => Category::active()
                 ->with(['subCategories' => fn ($q) => $q->active()->orderBy('sort_order')->orderBy('name')->select(['id', 'name', 'slug', 'category_id', 'description'])])
