@@ -76,6 +76,46 @@ class OrderController extends Controller
         return back()->with('success', 'Order marked as refunded.');
     }
 
+    public function destroy(Order $order): RedirectResponse
+    {
+        if ($order->status !== OrderStatus::CANCELLED) {
+            return back()->with('error', 'Only cancelled orders can be deleted.');
+        }
+
+        $order->delete();
+
+        return redirect()->route('admin.orders.index')->with('success', 'Order moved to trash.');
+    }
+
+    public function trashed(Request $request): Response
+    {
+        $orders = Order::onlyTrashed()
+            ->with('user:id,name,email')
+            ->when($request->search, fn ($q) => $q->where('order_number', 'like', "%{$request->search}%"))
+            ->orderByDesc('deleted_at')
+            ->paginate(20)
+            ->withQueryString();
+
+        return Inertia::render('admin/orders/trashed', [
+            'orders' => $orders,
+            'filters' => $request->only(['search']),
+        ]);
+    }
+
+    public function restore(Order $order): RedirectResponse
+    {
+        $order->restore();
+
+        return back()->with('success', 'Order restored.');
+    }
+
+    public function forceDelete(Order $order): RedirectResponse
+    {
+        $order->forceDelete();
+
+        return redirect()->route('admin.orders.trashed')->with('success', 'Order permanently deleted.');
+    }
+
     public function cancel(Request $request, Order $order): RedirectResponse
     {
         $request->validate([

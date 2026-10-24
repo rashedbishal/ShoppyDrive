@@ -1,9 +1,17 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { ArrowLeft, Package, RefreshCw, Truck, XCircle } from 'lucide-react';
+import {
+    ArrowLeft,
+    Package,
+    RefreshCw,
+    Trash2,
+    Truck,
+    XCircle,
+} from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
 
 type OrderItem = {
@@ -93,6 +101,15 @@ export default function OrderShow({ order }: Props) {
     });
 
     const [refundProcessing, setRefundProcessing] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [deleteProcessing, setDeleteProcessing] = useState(false);
+
+    const handleDelete = () => {
+        setDeleteProcessing(true);
+        router.delete(route('admin.orders.destroy', order.id), {
+            onFinish: () => setDeleteProcessing(false),
+        });
+    };
 
     const handleMarkRefunded = () => {
         if (
@@ -137,7 +154,9 @@ export default function OrderShow({ order }: Props) {
     const handleSendToCourier = () => {
         const label = courierProvider === 'pathao' ? 'Pathao' : 'Steadfast';
 
-        if (!confirm(`Send order ${order.order_number} to ${label} for pickup?`)) {
+        if (
+            !confirm(`Send order ${order.order_number} to ${label} for pickup?`)
+        ) {
             return;
         }
 
@@ -354,10 +373,10 @@ export default function OrderShow({ order }: Props) {
                             </CardHeader>
                             <CardContent className="space-y-3 pt-4">
                                 <p className="text-xs text-slate-500">
-                                    Status now advances automatically from
-                                    the courier (see the Courier card below)
-                                    and can no longer be set by hand, except
-                                    marking a paid order as refunded.
+                                    Status now advances automatically from the
+                                    courier (see the Courier card below) and can
+                                    no longer be set by hand, except marking a
+                                    paid order as refunded.
                                 </p>
                                 {order.payment_status === 'paid' &&
                                     order.status !== 'refunded' && (
@@ -415,6 +434,33 @@ export default function OrderShow({ order }: Props) {
                                     </CardContent>
                                 </Card>
                             )}
+
+                        {order.status === 'cancelled' && (
+                            <Card className="border-red-100 shadow-sm">
+                                <CardHeader className="border-b border-red-100 pb-4">
+                                    <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-red-600">
+                                        <Trash2 className="size-4" /> Delete
+                                        Order
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    <p className="mb-3 text-xs text-slate-500">
+                                        Moves this cancelled order to trash. It
+                                        can be restored or permanently deleted
+                                        from there.
+                                    </p>
+                                    <Button
+                                        className="w-full bg-red-600 text-white hover:bg-red-700"
+                                        onClick={() =>
+                                            setIsDeleteDialogOpen(true)
+                                        }
+                                    >
+                                        <Trash2 className="size-4" /> Delete
+                                        This Order
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
@@ -621,9 +667,9 @@ export default function OrderShow({ order }: Props) {
                                         <p className="text-xs text-slate-500">
                                             Not sent to a courier yet. This
                                             books a pickup from the selected
-                                            provider using this order's
-                                            shipping address and total as the
-                                            COD amount to collect.
+                                            provider using this order's shipping
+                                            address and total as the COD amount
+                                            to collect.
                                         </p>
                                         <Select
                                             selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
@@ -662,6 +708,16 @@ export default function OrderShow({ order }: Props) {
                     </div>
                 </div>
             </div>
+
+            <ConfirmDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                title="Delete this order?"
+                description={`This will move order ${order.order_number} to trash. It can be restored later, or permanently deleted from the Trashed Orders section.`}
+                confirmLabel="Delete Order"
+                onConfirm={handleDelete}
+                processing={deleteProcessing}
+            />
         </>
     );
 }

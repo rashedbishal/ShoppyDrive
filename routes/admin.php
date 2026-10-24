@@ -52,7 +52,11 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::resource('flash-sales', FlashSaleController::class)->parameters(['flash-sales' => 'flashSale']);
 
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('orders/trashed', [OrderController::class, 'trashed'])->name('orders.trashed');
     Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
+    Route::patch('orders/{order}/restore', [OrderController::class, 'restore'])->name('orders.restore')->withTrashed();
+    Route::delete('orders/{order}/force', [OrderController::class, 'forceDelete'])->name('orders.forceDelete')->withTrashed();
     Route::patch('orders/{order}/refund', [OrderController::class, 'markRefunded'])->name('orders.markRefunded');
     Route::patch('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     Route::post('orders/{order}/pathao/send', [OrderController::class, 'sendToPathao'])->name('orders.pathao.send');

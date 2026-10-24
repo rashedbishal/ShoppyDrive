@@ -22,6 +22,7 @@ import {
     Smartphone,
     Star,
     Tag,
+    Trash2,
     Truck,
     UserCog,
     Users,
@@ -103,6 +104,12 @@ const navSections: NavSection[] = [
                 label: 'Orders',
                 href: '/admin/orders',
                 icon: ShoppingCart,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Trashed Orders',
+                href: '/admin/orders/trashed',
+                icon: Trash2,
                 extraMatches: [] as string[],
             },
             {
@@ -257,6 +264,22 @@ const navSections: NavSection[] = [
     },
 ];
 
+const allNavItems = navSections.flatMap((section) => section.items);
+
+/**
+ * The nav item whose href is the longest (most specific) prefix of the
+ * current URL — e.g. for /admin/orders/trashed this picks "Trashed Orders"
+ * over "Orders", so only one item highlights instead of both.
+ */
+function findMostSpecificMatch(currentUrl: string): NavItem | undefined {
+    return allNavItems
+        .filter(
+            (candidate) =>
+                !candidate.exact && currentUrl.startsWith(candidate.href),
+        )
+        .sort((a, b) => b.href.length - a.href.length)[0];
+}
+
 function SidebarContent({
     currentUrl,
     logoUrl,
@@ -266,6 +289,8 @@ function SidebarContent({
     logoUrl?: string | null;
     onClose?: () => void;
 }) {
+    const mostSpecificMatch = findMostSpecificMatch(currentUrl);
+
     return (
         <div className="flex h-full flex-col">
             {/* Logo */}
@@ -317,7 +342,7 @@ function SidebarContent({
                             const isActive =
                                 (item.exact
                                     ? currentUrl === item.href
-                                    : currentUrl.startsWith(item.href)) ||
+                                    : mostSpecificMatch?.href === item.href) ||
                                 item.extraMatches.some((m) =>
                                     currentUrl.startsWith(m),
                                 );
