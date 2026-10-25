@@ -57,4 +57,16 @@ class CouponController extends Controller
 
         return redirect()->route('admin.coupons.index')->with('success', 'Coupon deleted.');
     }
+
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:coupons,id'],
+        ])['ids'];
+
+        Coupon::whereIn('id', $ids)->delete();
+
+        return redirect()->route('admin.coupons.index')->with('success', count($ids).' coupon(s) deleted.');
+    }
 }

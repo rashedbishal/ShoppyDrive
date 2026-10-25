@@ -76,6 +76,22 @@ class BrandController extends Controller
         return redirect()->route('admin.brands.index')->with('success', 'Brand deleted.');
     }
 
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:brands,id'],
+        ])['ids'];
+
+        foreach (Brand::whereIn('id', $ids)->get() as $brand) {
+            $brand->is_active = false;
+            $this->syncHomepageSetting($brand);
+            $brand->delete();
+        }
+
+        return redirect()->route('admin.brands.index')->with('success', count($ids).' brand(s) deleted.');
+    }
+
     private function syncHomepageSetting(Brand $brand): void
     {
         $setting = HomepageSetting::where('section_key', 'brands')->first();

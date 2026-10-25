@@ -87,4 +87,16 @@ class BlogController extends Controller
 
         return redirect()->route('admin.blogs.index')->with('success', 'Blog post deleted.');
     }
+
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:blogs,id'],
+        ])['ids'];
+
+        Blog::whereIn('id', $ids)->delete();
+
+        return redirect()->route('admin.blogs.index')->with('success', count($ids).' blog post(s) deleted.');
+    }
 }

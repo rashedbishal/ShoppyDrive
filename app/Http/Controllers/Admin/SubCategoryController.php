@@ -79,4 +79,16 @@ class SubCategoryController extends Controller
 
         return redirect()->route('admin.sub-categories.index')->with('success', 'Sub-category deleted.');
     }
+
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:sub_categories,id'],
+        ])['ids'];
+
+        SubCategory::whereIn('id', $ids)->delete();
+
+        return redirect()->route('admin.sub-categories.index')->with('success', count($ids).' sub-category(ies) deleted.');
+    }
 }

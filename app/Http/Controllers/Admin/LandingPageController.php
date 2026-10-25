@@ -94,4 +94,16 @@ class LandingPageController extends Controller
 
         return redirect()->route('admin.landing-pages.index')->with('success', 'Landing page deleted.');
     }
+
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:landing_pages,id'],
+        ])['ids'];
+
+        LandingPage::whereIn('id', $ids)->delete();
+
+        return redirect()->route('admin.landing-pages.index')->with('success', count($ids).' landing page(s) deleted.');
+    }
 }

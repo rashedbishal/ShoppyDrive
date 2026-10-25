@@ -8,10 +8,13 @@ import {
     Trash2,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { BulkActionBar } from '@/components/admin/bulk-action-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useBulkSelect } from '@/hooks/use-bulk-select';
 import { resolveCategoryColor } from '@/lib/category-colors';
 import { CategoryIcon } from '@/lib/category-icons';
 import { cn } from '@/lib/utils';
@@ -43,10 +46,26 @@ export default function CategoriesIndex({ categories, filters }: Props) {
         null,
     );
     const [deleting, setDeleting] = useState(false);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
     const { props } = usePage<any>();
     const flash = props.flash as { success?: string } | undefined;
     const canReorder = search.trim() === '';
     const items = optimisticOrder ?? categories;
+
+    const bulk = useBulkSelect(items.map((c) => c.id));
+
+    const confirmBulkDelete = () => {
+        setBulkDeleting(true);
+        router.delete(route('admin.categories.destroyMany'), {
+            data: { ids: bulk.selected },
+            onFinish: () => {
+                setBulkDeleting(false);
+                setBulkConfirmOpen(false);
+                bulk.clear();
+            },
+        });
+    };
 
     const applySearch = () => {
         router.get(
@@ -162,6 +181,26 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                         )}
                     </div>
 
+                    <BulkActionBar
+                        count={bulk.selected.length}
+                        onClear={bulk.clear}
+                        onDelete={() => setBulkConfirmOpen(true)}
+                        deleting={bulkDeleting}
+                        label="category(ies) selected"
+                    />
+
+                    {items.length > 0 && (
+                        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-2">
+                            <Checkbox
+                                checked={bulk.allSelected}
+                                onCheckedChange={bulk.toggleAll}
+                            />
+                            <span className="text-xs font-medium text-slate-500">
+                                Select all
+                            </span>
+                        </div>
+                    )}
+
                     <div className="divide-y divide-slate-50">
                         {items.length === 0 ? (
                             <div className="flex flex-col items-center gap-2 py-14">
@@ -202,6 +241,12 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                                         ) : (
                                             <span className="size-4 shrink-0" />
                                         )}
+                                        <Checkbox
+                                            checked={bulk.isSelected(cat.id)}
+                                            onCheckedChange={() =>
+                                                bulk.toggle(cat.id)
+                                            }
+                                        />
                                         <div
                                             style={
                                                 {
@@ -288,6 +333,15 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                 }
                 onConfirm={confirmDelete}
                 processing={deleting}
+            />
+
+            <ConfirmDialog
+                open={bulkConfirmOpen}
+                onOpenChange={setBulkConfirmOpen}
+                title="Delete selected categories?"
+                description={`This will permanently delete ${bulk.selected.length} category(ies), including their sub-categories. This cannot be undone.`}
+                onConfirm={confirmBulkDelete}
+                processing={bulkDeleting}
             />
         </>
     );

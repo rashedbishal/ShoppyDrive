@@ -84,6 +84,18 @@ class CategoryController extends Controller
         return redirect()->route('admin.categories.index')->with('success', 'Category deleted.');
     }
 
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:categories,id'],
+        ])['ids'];
+
+        Category::whereIn('id', $ids)->get()->each(fn (Category $category) => $category->delete());
+
+        return redirect()->route('admin.categories.index')->with('success', count($ids).' category(ies) deleted.');
+    }
+
     public function reorder(Request $request): RedirectResponse
     {
         $ids = $request->validate([

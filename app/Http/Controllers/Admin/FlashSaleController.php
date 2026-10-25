@@ -95,4 +95,19 @@ class FlashSaleController extends Controller
 
         return redirect()->route('admin.flash-sales.index')->with('success', 'Flash sale deleted.');
     }
+
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:flash_sales,id'],
+        ])['ids'];
+
+        foreach (FlashSale::whereIn('id', $ids)->get() as $flashSale) {
+            $flashSale->items()->delete();
+            $flashSale->delete();
+        }
+
+        return redirect()->route('admin.flash-sales.index')->with('success', count($ids).' flash sale(s) deleted.');
+    }
 }

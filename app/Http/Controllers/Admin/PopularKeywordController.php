@@ -62,4 +62,16 @@ class PopularKeywordController extends Controller
 
         return back()->with('success', 'Keyword deleted.');
     }
+
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:popular_keywords,id'],
+        ])['ids'];
+
+        PopularKeyword::whereIn('id', $ids)->delete();
+
+        return back()->with('success', count($ids).' keyword(s) deleted.');
+    }
 }
