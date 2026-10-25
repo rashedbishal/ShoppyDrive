@@ -1,10 +1,14 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Edit2, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
+import { BulkActionBar } from '@/components/admin/bulk-action-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
+import { useBulkSelect } from '@/hooks/use-bulk-select';
 
 type Pattern = {
     id: number;
@@ -37,6 +41,22 @@ export default function SmsPatternsIndex({ patterns }: Props) {
     const flash = props.flash as { success?: string } | undefined;
 
     const [editingId, setEditingId] = useState<number | 'new' | null>(null);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+
+    const bulk = useBulkSelect(patterns.map((p) => p.id));
+
+    const confirmBulkDelete = () => {
+        setBulkDeleting(true);
+        router.delete(route('admin.sms-patterns.destroyMany'), {
+            data: { ids: bulk.selected },
+            onFinish: () => {
+                setBulkDeleting(false);
+                setBulkConfirmOpen(false);
+                bulk.clear();
+            },
+        });
+    };
 
     const { data, setData, post, patch, processing, errors, reset } = useForm(emptyForm);
 
@@ -186,6 +206,26 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                 )}
 
                 <Card className="overflow-hidden p-0 shadow-sm">
+                    <BulkActionBar
+                        count={bulk.selected.length}
+                        onClear={bulk.clear}
+                        onDelete={() => setBulkConfirmOpen(true)}
+                        deleting={bulkDeleting}
+                        label="pattern(s) selected"
+                    />
+
+                    {patterns.length > 0 && (
+                        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-2">
+                            <Checkbox
+                                checked={bulk.allSelected}
+                                onCheckedChange={bulk.toggleAll}
+                            />
+                            <span className="text-xs font-medium text-slate-500">
+                                Select all
+                            </span>
+                        </div>
+                    )}
+
                     {patterns.length === 0 ? (
                         <p className="py-12 text-center text-sm text-slate-400">No patterns yet. Add one above.</p>
                     ) : (
@@ -193,6 +233,11 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                             {patterns.map((p) => (
                                 <div key={p.id} className={`px-4 py-3 hover:bg-slate-50/60 ${!p.is_active ? 'opacity-50' : ''}`}>
                                     <div className="flex items-start gap-3">
+                                        <Checkbox
+                                            checked={bulk.isSelected(p.id)}
+                                            onCheckedChange={() => bulk.toggle(p.id)}
+                                            className="mt-0.5"
+                                        />
                                         <div className="flex-1 min-w-0 space-y-1.5">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${providerColor[p.provider]}`}>
