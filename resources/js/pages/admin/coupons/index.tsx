@@ -277,6 +277,15 @@ export default function CouponsIndex({ coupons, filters }: Props) {
                 onConfirm={confirmDelete}
                 processing={deleting}
             />
+
+            <ConfirmDialog
+                open={bulkConfirmOpen}
+                onOpenChange={setBulkConfirmOpen}
+                title="Delete selected coupons?"
+                description={`This will permanently delete ${bulk.selected.length} coupon(s). This cannot be undone.`}
+                onConfirm={confirmBulkDelete}
+                processing={bulkDeleting}
+            />
         </>
     );
 }
