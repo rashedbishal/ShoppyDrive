@@ -20,13 +20,50 @@ class HandleInertiaRequests extends Middleware
     /**
      * Routes that should not use SSR — these are authenticated or browser-heavy pages.
      *
+     * This is matched against the request PATH via `$request->is(...)`
+     * (Illuminate\Foundation\Http\Middleware\Concerns\ExcludesPaths), not
+     * the Inertia component name — and `foo/*` alone never matches the
+     * bare `/foo` path, only deeper segments, so a section's own index
+     * page has to be listed separately from its `/*` wildcard. Most of
+     * the entries below were previously missing that bare form (or, for
+     * auth, assumed a `/auth/*` URL prefix that was never actually true —
+     * Fortify's pages are top-level routes like `/login`, `/register`),
+     * so despite the intent, almost none of these were actually excluded
+     * from SSR before.
+     *
      * @var array<int, string>
      */
     protected $withoutSsr = [
+        'admin',
         'admin/*',
-        'auth/*',
+
+        // Fortify's auth pages (top-level routes, no shared `/auth/*` prefix).
+        'login',
+        'register',
+        'forgot-password',
+        'reset-password/*',
+        'email/verify',
+        'email/verify/*',
+        'user/confirm-password',
+        'two-factor-challenge',
+
+        'account',
         'account/*',
+        'settings',
         'settings/*',
+
+        // Both render totals straight from the client-only zustand cart
+        // store (localStorage), which the server has no access to for a
+        // guest (no server-side Cart row exists until they sync via
+        // login) — SSR-ing them always disagrees with the client's real
+        // numbers, causing a hydration-mismatch React recovers from by
+        // discarding and rebuilding the subtree, which can disrupt
+        // effects that should have run cleanly on mount (e.g.
+        // abandoned-checkout tracking).
+        'checkout',
+        'checkout/*',
+        'cart',
+        'cart/*',
     ];
 
     public function __construct(private readonly CartManager $cartManager) {}
