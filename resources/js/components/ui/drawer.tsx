@@ -18,6 +18,8 @@ type DrawerProps = {
     description?: string;
     footer?: React.ReactNode;
     closeLabel?: string;
+    /** Replaces the visible title/description with custom content (e.g. a logo), while keeping `title`/`description` for screen readers. */
+    header?: ReactNode;
 };
 
 /** iOS-style deceleration — quick start, soft landing. */
@@ -39,6 +41,7 @@ function Drawer({
     description,
     footer,
     closeLabel = "Close drawer",
+    header,
 }: DrawerProps) {
     return (
         <AnimatePresence>
@@ -69,19 +72,31 @@ function Drawer({
                                 exit={{ x: side === "right" ? "100%" : "-100%" }}
                                 transition={{ duration: 0.32, ease: DRAWER_EASE }}
                             >
-                                <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-6 py-4">
-                                    <div className="space-y-1">
-                                        <DialogPrimitive.Title asChild>
-                                            <h2 className="text-lg font-semibold text-text-primary">
-                                                {title}
-                                            </h2>
-                                        </DialogPrimitive.Title>
-                                        {description ? (
-                                            <DialogPrimitive.Description asChild>
-                                                <p className="text-sm text-text-secondary">{description}</p>
-                                            </DialogPrimitive.Description>
-                                        ) : null}
-                                    </div>
+                                <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-6 py-4">
+                                    {header ? (
+                                        <>
+                                            <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
+                                            {description ? (
+                                                <DialogPrimitive.Description className="sr-only">
+                                                    {description}
+                                                </DialogPrimitive.Description>
+                                            ) : null}
+                                            {header}
+                                        </>
+                                    ) : (
+                                        <div className="space-y-1">
+                                            <DialogPrimitive.Title asChild>
+                                                <h2 className="text-lg font-semibold text-text-primary">
+                                                    {title}
+                                                </h2>
+                                            </DialogPrimitive.Title>
+                                            {description ? (
+                                                <DialogPrimitive.Description asChild>
+                                                    <p className="text-sm text-text-secondary">{description}</p>
+                                                </DialogPrimitive.Description>
+                                            ) : null}
+                                        </div>
+                                    )}
                                     <button
                                         type="button"
                                         onClick={onClose}

@@ -1,11 +1,20 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Check, FolderOpen, LayoutGrid, LogIn, LogOut, Palette, ShoppingBag, UserCircle2 } from 'lucide-react';
+import {
+    Check,
+    FolderOpen,
+    LayoutGrid,
+    LogIn,
+    LogOut,
+    Palette,
+    ShoppingBag,
+    UserCircle2,
+} from 'lucide-react';
 import { lazy, Suspense } from 'react';
 import { route } from 'ziggy-js';
+import AppLogoIcon from '@/components/app-logo-icon';
 import { primaryLinks } from '@/components/layout/navigation';
 import { Accordion } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { useInitials } from '@/hooks/use-initials';
@@ -24,12 +33,17 @@ type MobileMenuProps = {
     onClose: () => void;
 };
 
-export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.JSX.Element {
+export default function MobileMenu({
+    isOpen,
+    onClose,
+}: MobileMenuProps): React.JSX.Element {
     const page = usePage<SharedPageProps>();
     const getInitials = useInitials();
     const user = page.props.auth?.user ?? null;
     const navCategories = page.props.navCategories ?? [];
     const { theme, setTheme } = useSiteTheme();
+    const settings = page.props.settings;
+    const siteName = settings?.site_name ?? 'ShoppyDrive';
 
     return (
         <Drawer
@@ -37,13 +51,38 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.
             onClose={onClose}
             title="Menu"
             description="Browse categories, track orders, and access your account."
+            header={
+                <Link
+                    href="/"
+                    onClick={onClose}
+                    className="flex shrink-0 items-center gap-3"
+                >
+                    {settings?.logo ? (
+                        <img
+                            src={settings.logo}
+                            alt={siteName}
+                            className="h-10 w-auto object-contain"
+                        />
+                    ) : (
+                        <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-secondary)] text-white shadow-sm">
+                            <AppLogoIcon className="size-5 fill-current text-white" />
+                        </span>
+                    )}
+                    <span className="text-[17px] font-bold tracking-tight text-[var(--color-text-primary)]">
+                        {siteName}
+                    </span>
+                </Link>
+            }
             side="left"
             size="md"
         >
             <div className="flex h-full flex-col gap-5">
                 <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-4">
                     <Avatar className="size-12 border border-[var(--color-border)]">
-                        <AvatarImage src={user?.avatar ?? undefined} alt={user?.name ?? 'Guest user'} />
+                        <AvatarImage
+                            src={user?.avatar ?? undefined}
+                            alt={user?.name ?? 'Guest user'}
+                        />
                         <AvatarFallback className="bg-[var(--color-secondary)] text-white">
                             {getInitials(user?.name ?? 'Guest')}
                         </AvatarFallback>
@@ -53,7 +92,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.
                             {user?.name ?? 'Guest shopper'}
                         </p>
                         <p className="truncate text-sm text-[var(--color-text-secondary)]">
-                            {user?.email ?? 'Sign in to sync your cart and wishlist'}
+                            {user?.email ??
+                                'Sign in to sync your cart and wishlist'}
                         </p>
                     </div>
                 </div>
@@ -99,32 +139,56 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.
                                             <FolderOpen className="size-4 opacity-50" />
                                             No categories yet
                                         </div>
-                                    ) : navCategories.map((category, index) => (
-                                        <Link
-                                            key={category.id}
-                                            href={`/category/${category.slug}`}
-                                            onClick={onClose}
-                                            style={{ '--category-color': resolveCategoryColor(category.color, index) } as React.CSSProperties}
-                                            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-primary-light)] active:bg-[var(--color-primary-light)]"
-                                        >
-                                            {/* Same colour-tinted icon tile as the desktop mega menu */}
-                                            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--category-color)_12%,white)] text-[var(--category-color)] ring-1 ring-[color-mix(in_srgb,var(--category-color)_18%,white)]">
-                                                <Suspense fallback={<ShoppingBag className="size-4" strokeWidth={1.75} />}>
-                                                    <CategoryIcon icon={category.icon} className="size-4" />
-                                                </Suspense>
-                                            </span>
-                                            <span className="min-w-0 flex-1">
-                                                <span className="block truncate font-medium">
-                                                    {category.name}
+                                    ) : (
+                                        navCategories.map((category, index) => (
+                                            <Link
+                                                key={category.id}
+                                                href={`/category/${category.slug}`}
+                                                onClick={onClose}
+                                                style={
+                                                    {
+                                                        '--category-color':
+                                                            resolveCategoryColor(
+                                                                category.color,
+                                                                index,
+                                                            ),
+                                                    } as React.CSSProperties
+                                                }
+                                                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-primary-light)] active:bg-[var(--color-primary-light)]"
+                                            >
+                                                {/* Same colour-tinted icon tile as the desktop mega menu */}
+                                                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--category-color)_12%,white)] text-[var(--category-color)] ring-1 ring-[color-mix(in_srgb,var(--category-color)_18%,white)]">
+                                                    <Suspense
+                                                        fallback={
+                                                            <ShoppingBag
+                                                                className="size-4"
+                                                                strokeWidth={
+                                                                    1.75
+                                                                }
+                                                            />
+                                                        }
+                                                    >
+                                                        <CategoryIcon
+                                                            icon={category.icon}
+                                                            className="size-4"
+                                                        />
+                                                    </Suspense>
                                                 </span>
-                                                {category.description && (
-                                                    <span className="block truncate text-xs text-[var(--color-text-secondary)]">
-                                                        {category.description}
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="block truncate font-medium">
+                                                        {category.name}
                                                     </span>
-                                                )}
-                                            </span>
-                                        </Link>
-                                    ))}
+                                                    {category.description && (
+                                                        <span className="block truncate text-xs text-[var(--color-text-secondary)]">
+                                                            {
+                                                                category.description
+                                                            }
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            </Link>
+                                        ))
+                                    )}
                                 </div>
                             ),
                         },
@@ -167,7 +231,9 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.
                                 }`}
                             >
                                 {option.label}
-                                {theme === option.value ? <Check className="size-4" /> : null}
+                                {theme === option.value ? (
+                                    <Check className="size-4" />
+                                ) : null}
                             </button>
                         ))}
                     </div>
@@ -189,25 +255,17 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps): React.
                         </Button>
                     ) : (
                         <div>
-                            <Button asChild fullWidth leftIcon={<LogIn className="size-4" />}>
+                            <Button
+                                asChild
+                                fullWidth
+                                leftIcon={<LogIn className="size-4" />}
+                            >
                                 <Link href={route('login')} onClick={onClose}>
                                     Log in
                                 </Link>
                             </Button>
                         </div>
                     )}
-
-                    <div className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--color-accent-light)] px-4 py-3">
-                        <div>
-                            <p className="text-sm font-semibold text-[var(--color-secondary)]">
-                                BDT pricing
-                            </p>
-                            <p className="text-xs text-[var(--color-text-secondary)]">
-                                All prices are displayed in Bangladeshi Taka.
-                            </p>
-                        </div>
-                        <Badge variant="amber">৳</Badge>
-                    </div>
                 </div>
             </div>
         </Drawer>
