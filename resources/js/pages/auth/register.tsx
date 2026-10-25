@@ -17,8 +17,10 @@ import type { SharedPageProps } from '@/types';
 
 export default function Register({
     referralCode,
+    referralCodeValid,
 }: {
     referralCode?: string | null;
+    referralCodeValid?: boolean | null;
 }): React.JSX.Element {
     const { settings } = usePage<SharedPageProps>().props;
     const [showPassword, setShowPassword] = useState(false);
@@ -152,22 +154,41 @@ export default function Register({
                             </p>
                         </div>
 
-                        {settings.referral_enabled && data.referral_code && (
-                            <div className="mb-3 flex items-start gap-2 rounded-lg border border-[#c8102e]/20 bg-[#c8102e]/5 p-3">
-                                <Gift className="mt-0.5 size-4 shrink-0 text-[#c8102e]" />
-                                <p className="text-xs text-gray-700">
-                                    You were referred! You&apos;ll get{' '}
-                                    <span className="font-semibold text-[#c8102e]">
-                                        {settings.referral_discount_type ===
-                                        'fixed'
-                                            ? `${settings.currency_symbol}${settings.referral_discount_value}`
-                                            : `${settings.referral_discount_value}%`}{' '}
-                                        off
-                                    </span>{' '}
-                                    your first order.
-                                </p>
-                            </div>
-                        )}
+                        {settings.referral_enabled &&
+                            referralCode &&
+                            referralCodeValid && (
+                                <div className="mb-3 flex items-start gap-2 rounded-lg border border-[#c8102e]/20 bg-[#c8102e]/5 p-3">
+                                    <Gift className="mt-0.5 size-4 shrink-0 text-[#c8102e]" />
+                                    <p className="text-xs text-gray-700">
+                                        You were referred! You&apos;ll get{' '}
+                                        <span className="font-semibold text-[#c8102e]">
+                                            {settings.referral_discount_type ===
+                                            'fixed'
+                                                ? `${settings.currency_symbol}${settings.referral_discount_value}`
+                                                : `${settings.referral_discount_value}%`}{' '}
+                                            off
+                                        </span>{' '}
+                                        your first order.
+                                    </p>
+                                </div>
+                            )}
+
+                        {settings.referral_enabled &&
+                            referralCode &&
+                            referralCodeValid === false && (
+                                <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3">
+                                    <Gift className="mt-0.5 size-4 shrink-0 text-amber-600" />
+                                    <p className="text-xs text-gray-700">
+                                        <span className="font-semibold text-amber-700">
+                                            Invalid referral code.
+                                        </span>{' '}
+                                        &ldquo;{referralCode}&rdquo;
+                                        doesn&apos;t match an existing referral
+                                        code — you can still create an account
+                                        without one.
+                                    </p>
+                                </div>
+                            )}
 
                         {/* Social */}
                         {(settings.google_login_enabled ||
@@ -344,7 +365,9 @@ export default function Register({
                                             className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-3 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
                                         />
                                     </div>
-                                    <InputError message={errors.referral_code} />
+                                    <InputError
+                                        message={errors.referral_code}
+                                    />
                                 </div>
                             )}
 

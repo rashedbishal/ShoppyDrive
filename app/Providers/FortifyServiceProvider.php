@@ -8,6 +8,7 @@ use App\Actions\Fortify\UpdateUserProfileInformation;
 use App\Http\Responses\LoginResponse;
 use App\Http\Responses\RegisterResponse;
 use App\Models\User;
+use App\Services\ReferralService;
 use App\Support\CartManager;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -108,12 +109,22 @@ class FortifyServiceProvider extends ServiceProvider
         ]));
 
         Fortify::registerView(function (Request $request) {
-            if ($request->filled('ref')) {
-                session(['pending_referral_code' => $request->query('ref')]);
+            $code = $request->filled('ref') ? trim((string) $request->query('ref')) : null;
+
+            // A code typo'd in the URL (or a stale/revoked one) must not
+            // silently show the "you get a discount" banner — only a code
+            // that actually resolves to a user is treated as valid here,
+            // reusing the same lookup CreateNewUser uses at registration
+            // time so the two can never disagree.
+            $referrerId = $code !== null ? app(ReferralService::class)->resolveReferrerId($code) : null;
+
+            if ($referrerId !== null) {
+                session(['pending_referral_code' => $code]);
             }
 
             return Inertia::render('auth/register', [
-                'referralCode' => $request->query('ref'),
+                'referralCode' => $code,
+                'referralCodeValid' => $code !== null ? $referrerId !== null : null,
             ]);
         });
 

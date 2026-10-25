@@ -109,6 +109,53 @@ test('referral links create no attribution while the program is disabled', funct
     expect($newUser->referred_by_id)->toBeNull();
 });
 
+// ── Registration page: referral code validity ───────────────────────────────
+
+test('visiting the register page with a valid referral code flags it as valid', function () {
+    enableReferralProgram();
+    $referrer = User::factory()->create();
+
+    $response = $this->get(route('register', ['ref' => $referrer->referral_code]));
+
+    $response->assertInertia(fn ($page) => $page
+        ->component('auth/register')
+        ->where('referralCode', $referrer->referral_code)
+        ->where('referralCodeValid', true)
+    );
+});
+
+test('visiting the register page with an unknown referral code flags it as invalid, not silently valid', function () {
+    enableReferralProgram();
+
+    $response = $this->get(route('register', ['ref' => 'NOTAREALCODE']));
+
+    $response->assertInertia(fn ($page) => $page
+        ->component('auth/register')
+        ->where('referralCode', 'NOTAREALCODE')
+        ->where('referralCodeValid', false)
+    );
+});
+
+test('visiting the register page without a referral code sends neither a code nor a validity flag', function () {
+    enableReferralProgram();
+
+    $response = $this->get(route('register'));
+
+    $response->assertInertia(fn ($page) => $page
+        ->component('auth/register')
+        ->where('referralCode', null)
+        ->where('referralCodeValid', null)
+    );
+});
+
+test('an unknown referral code on the register page is not stashed in session for attribution', function () {
+    enableReferralProgram();
+
+    $this->get(route('register', ['ref' => 'NOTAREALCODE']));
+
+    expect(session('pending_referral_code'))->toBeNull();
+});
+
 // ── Checkout discount ────────────────────────────────────────────────────────
 
 test('an eligible referred customer gets the referral discount on their first order but not their second', function () {
