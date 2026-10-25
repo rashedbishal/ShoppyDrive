@@ -22,7 +22,7 @@ class TrackDailyVisit
 {
     private const COOKIE_NAME = 'sd_last_seen';
 
-    private const EXCLUDED_PATH_PREFIXES = ['admin', 'api', 'storage', '_boost', 'up'];
+    private const EXCLUDED_PATH_PREFIXES = ['admin', 'api', 'storage', '_boost', 'up', '.well-known'];
 
     public function handle(Request $request, Closure $next): Response
     {

@@ -67,3 +67,16 @@ test('guest can visit admin login page', function () {
 test('guest can visit storefront homepage', function () {
     get(route('home'))->assertOk();
 });
+
+// --- Bare /admin redirects to the right place ---
+
+test('guest visiting bare admin path is redirected to admin login', function () {
+    get(route('admin.index'))->assertRedirect(route('admin.login'));
+});
+
+test('logged-in admin visiting bare admin path is redirected to admin dashboard', function () {
+    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
+    actingAs($admin, 'admin');
+
+    get(route('admin.index'))->assertRedirect(route('admin.dashboard'));
+});

@@ -50,3 +50,9 @@ test('bot requests are not tracked', function () {
 
     expect(DailyVisit::count())->toBe(0);
 });
+
+test('chrome devtools probe requests are not tracked', function () {
+    $this->get('/.well-known/appspecific/com.chrome.devtools.json')->assertOk();
+
+    expect(DailyVisit::count())->toBe(0);
+});

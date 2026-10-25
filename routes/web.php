@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 
+// Chrome DevTools probes this on every page load when open; without a route
+// it 404s through the app's themed error page instead of failing silently.
+Route::get('/.well-known/appspecific/com.chrome.devtools.json', fn () => response()->json([]));
+
 Route::get('/about', [AboutController::class, 'show'])->name('about');
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
