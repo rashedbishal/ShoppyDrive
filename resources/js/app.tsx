@@ -1,20 +1,20 @@
 import { createInertiaApp, router } from '@inertiajs/react';
 import { route as ziggyRoute } from 'ziggy-js';
-import { Toaster } from '@/components/ui/sonner';
 import PageLoadingOverlay from '@/components/shared/PageLoadingOverlay';
+import { Toaster } from '@/components/ui/sonner';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { APP_NAME } from '@/lib/constants';
 import { initializeTheme } from '@/hooks/use-appearance';
 import { initializeSiteTheme } from '@/hooks/use-theme';
-import AppLayout from '@/layouts/app-layout';
 import AdminLayout from '@/layouts/admin-layout';
+import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { initAddToCartFeedback } from '@/lib/add-to-cart-feedback';
+import { APP_NAME } from '@/lib/constants';
+import { STORAGE_KEYS } from '@/lib/constants';
 import { useCartStore } from '@/stores/cartStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
-import { STORAGE_KEYS } from '@/lib/constants';
 import type { Cart, SharedPageProps } from '@/types';
 import { Ziggy as ziggyConfig } from './ziggy';
 
@@ -35,9 +35,15 @@ declare global {
 // `./ziggy` snapshot, which is a build-time file committed to the repo and can
 // go stale (e.g. still pointing at a local dev url/port) relative to prod.
 globalThis.Ziggy = typeof window !== 'undefined' && window.Ziggy ? window.Ziggy : ziggyConfig;
+// Defaults every `route(...)` call (none in this app pass `absolute`
+// explicitly) to a relative path instead of Ziggy's own default of an
+// absolute URL built from the server's `APP_URL`. An absolute URL there
+// can point at a different host than the one actually serving the page
+// (e.g. `www.` vs bare domain), which the browser then blocks as a
+// cross-origin request on any XHR-driven call like a login form POST.
 globalThis.route = ((name: string | undefined, params?: unknown, absolute?: boolean, config?: typeof ziggyConfig) =>
     // @ts-expect-error — delegating to Ziggy's overloaded signature via a single concrete implementation
-    ziggyRoute(name, params, absolute, config ?? globalThis.Ziggy)) as typeof ziggyRoute;
+    ziggyRoute(name, params, absolute ?? false, config ?? globalThis.Ziggy)) as typeof ziggyRoute;
 
 const appName = APP_NAME;
 
@@ -46,16 +52,24 @@ const LAST_USER_KEY = `${STORAGE_KEYS.cart}.last_user`;
 function readInitialUserId(): number | null {
     try {
         const raw = document.getElementById('app')?.dataset.page;
-        if (raw) return JSON.parse(raw)?.props?.auth?.user?.id ?? null;
+
+        if (raw) {
+return JSON.parse(raw)?.props?.auth?.user?.id ?? null;
+}
     } catch {}
+
     return null;
 }
 
 function readInitialCart(): Cart | null {
     try {
         const raw = document.getElementById('app')?.dataset.page;
-        if (raw) return JSON.parse(raw)?.props?.cart ?? null;
+
+        if (raw) {
+return JSON.parse(raw)?.props?.cart ?? null;
+}
     } catch {}
+
     return null;
 }
 
@@ -112,6 +126,7 @@ function hydrateCart(cart: Cart | null): void {
 async function syncAuthenticatedCart(merge: boolean): Promise<void> {
     if (activeAuthUserId === null || cartSyncInFlight) {
         pendingSync = pendingSync === null ? merge : pendingSync || merge;
+
         return;
     }
 
@@ -216,10 +231,12 @@ router.on('navigate', (event) => {
         // If transitioning from guest → logged-in, snapshot local wishlist for merge
         if (prevAuthUserId === null) {
             const guestIds = useWishlistStore.getState().productIds;
+
             if (guestIds.length > 0) {
                 localStorage.setItem('shoppydrive.wishlist.pending_merge', JSON.stringify(guestIds));
             }
         }
+
         applyLogin(currentUserId, currentCart, prevAuthUserId === null);
     } else if (currentUserId !== null) {
         activeAuthUserId = currentUserId;
