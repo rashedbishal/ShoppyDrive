@@ -2,6 +2,7 @@
 
 use App\Enums\OrderStatus;
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Address;
 use App\Models\Order;
@@ -89,6 +90,7 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
 
         return $pdf->download("invoice-{$order->order_number}.pdf");
     })->name('account.orders.invoice');
+    Route::get('/referral', [ReferralController::class, 'index'])->name('account.referral');
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('account.wishlist');
     Route::get('/addresses', [AddressController::class, 'index'])->name('account.addresses');
     Route::post('/addresses', [AddressController::class, 'store'])->name('account.addresses.store');

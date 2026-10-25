@@ -60,6 +60,8 @@ export interface User extends Timestamped {
     role: UserRole;
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
+    referral_code?: string;
+    points_balance?: number;
 }
 
 export interface Auth {
@@ -97,6 +99,9 @@ export interface AppSettings {
     free_delivery_threshold?: number | null;
     google_login_enabled?: boolean;
     facebook_login_enabled?: boolean;
+    referral_enabled?: boolean;
+    referral_discount_type?: 'percent' | 'fixed';
+    referral_discount_value?: number;
 }
 
 export interface Category extends Timestamped, SoftDeletable {
@@ -535,6 +540,16 @@ export interface PageLink {
     url?: string | null;
     label: string;
     active: boolean;
+}
+
+export interface PointTransaction {
+    id: Id;
+    type: 'earn' | 'redeem' | 'revoke' | 'refund';
+    points: number;
+    currency_amount: number | null;
+    note: string | null;
+    referred_user: { id: Id; name: string } | null;
+    created_at: string;
 }
 
 export interface PaginatedData<T> {

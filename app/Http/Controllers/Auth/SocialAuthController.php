@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\SocialAccount;
 use App\Models\User;
+use App\Services\ReferralService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,10 @@ use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
 {
+    public function __construct(
+        private readonly ReferralService $referrals,
+    ) {}
+
     public function redirect(string $provider): RedirectResponse
     {
         return Socialite::driver($provider)->redirect();
@@ -65,6 +70,7 @@ class SocialAuthController extends Controller
                     'email_verified_at' => now(),
                     'password' => Hash::make(Str::password(24)),
                     'has_password' => false,
+                    'referred_by_id' => $this->referrals->resolveReferrerId(session('pending_referral_code')),
                 ]);
             }
 
@@ -78,6 +84,8 @@ class SocialAuthController extends Controller
 
             return $user;
         });
+
+        session()->forget('pending_referral_code');
 
         Auth::login($user);
 

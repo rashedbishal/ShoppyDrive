@@ -37,6 +37,8 @@ class PlaceOrderRequest extends FormRequest
             'country' => ['nullable', 'string', 'max:100'],
             'save_address' => ['boolean'],
             'coupon_code' => ['nullable', 'string', 'max:50'],
+            'redeem_points' => ['nullable', 'boolean'],
+            'points_to_redeem' => ['nullable', 'integer', 'min:1', 'required_if:redeem_points,true'],
             'payment_method' => ['required', 'in:cod,zinipay,mobile_banking'],
             'is_buy_now' => ['nullable', 'boolean'],
             'items' => [$this->boolean('is_buy_now') ? 'required' : 'nullable', 'array'],

@@ -16,6 +16,10 @@ use Illuminate\Support\Facades\Log;
 
 class OrderService
 {
+    public function __construct(
+        private readonly ReferralService $referrals,
+    ) {}
+
     /**
      * Create an order from a verified PendingCheckout and mark payment as paid.
      * Uses a DB lock to prevent double-creation from concurrent callback + webhook.
@@ -50,11 +54,28 @@ class OrderService
                 'discount' => $data['discount'],
                 'coupon_id' => $data['coupon_id'],
                 'coupon_code' => $data['coupon_code'],
+                'used_referral_discount' => $data['used_referral_discount'] ?? false,
+                'points_redeemed' => ($data['points_redeemed'] ?? 0) ?: null,
                 'tax' => $data['tax'],
                 'total' => $data['total'],
                 'shipping_address' => $data['shipping_address'],
                 'billing_address' => $data['shipping_address'],
             ]);
+
+            // Mirror CheckoutController::store()'s COD side effects: lock the
+            // purchaser and commit whichever referral/points outcome was
+            // already baked into checkout_data at checkout time.
+            if ($fresh->user_id !== null) {
+                $lockedUser = $this->referrals->lockUser($fresh->user_id);
+
+                if ($order->used_referral_discount) {
+                    $this->referrals->awardPointsForQualifyingOrder($order, $lockedUser);
+                }
+
+                if (! empty($data['points_redeemed'])) {
+                    $this->referrals->debitPointsForOrder($order, $lockedUser, (int) $data['points_redeemed'], (float) ($data['points_discount_amount'] ?? 0));
+                }
+            }
 
             $order->statusHistories()->create([
                 'status' => 'processing',

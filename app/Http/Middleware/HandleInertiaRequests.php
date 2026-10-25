@@ -97,6 +97,9 @@ class HandleInertiaRequests extends Middleware
                     'messenger_link' => $db->get('messenger_link'),
                     'google_login_enabled' => filled(config('services.google.client_id')),
                     'facebook_login_enabled' => filled(config('services.facebook.client_id')),
+                    'referral_enabled' => (bool) $db->get('referral_enabled', false),
+                    'referral_discount_type' => $db->get('referral_discount_type', 'percent'),
+                    'referral_discount_value' => (float) $db->get('referral_discount_value', 0),
                     'free_delivery_threshold' => (function () {
                         $bar = HomepageSetting::where('section_key', 'announcement_bar')->first();
 

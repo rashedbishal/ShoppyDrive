@@ -107,7 +107,15 @@ class FortifyServiceProvider extends ServiceProvider
             'resendAvailableAt' => $request->user()?->verificationCodeResendAvailableAt()?->toIso8601String(),
         ]));
 
-        Fortify::registerView(fn () => Inertia::render('auth/register'));
+        Fortify::registerView(function (Request $request) {
+            if ($request->filled('ref')) {
+                session(['pending_referral_code' => $request->query('ref')]);
+            }
+
+            return Inertia::render('auth/register', [
+                'referralCode' => $request->query('ref'),
+            ]);
+        });
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 

@@ -96,6 +96,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::get('settings/courier', [SettingController::class, 'courierConfig'])->name('settings.courier');
     Route::get('settings/about-page', [SettingController::class, 'aboutPageConfig'])->name('settings.about-page');
     Route::get('settings/contact-page', [SettingController::class, 'contactPageConfig'])->name('settings.contact-page');
+    Route::get('settings/referral', [SettingController::class, 'referralConfig'])->name('settings.referral');
     Route::get('settings/pathao/stores', [SettingController::class, 'pathaoStores'])->name('settings.pathao.stores');
     Route::get('settings/steadfast/balance', [SettingController::class, 'steadfastBalance'])->name('settings.steadfast.balance');
 

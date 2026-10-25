@@ -16,6 +16,9 @@ use App\Models\Order;
 use App\Models\PendingCheckout;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Setting;
+use App\Models\User;
+use App\Services\ReferralService;
 use App\Support\CartManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,6 +31,7 @@ class CheckoutController extends Controller
 {
     public function __construct(
         private readonly CartManager $cartManager,
+        private readonly ReferralService $referrals,
     ) {}
 
     public function index(Request $request): Response
@@ -42,10 +46,18 @@ class CheckoutController extends Controller
                 ->toArray();
         }
 
+        $cart = $this->cartManager->serializeForRequest($request);
+        $user = $request->user();
+        $subtotal = (float) ($cart['subtotal'] ?? 0);
+
         return Inertia::render('checkout/Checkout', [
-            'cart' => $this->cartManager->serializeForRequest($request),
+            'cart' => $cart,
             'savedAddresses' => $savedAddresses,
             'buyNowItem' => $this->resolveBuyNowItem($request),
+            'referralDiscountEligible' => $this->referrals->isEligibleForDiscount($user),
+            'referralDiscountPreview' => $user ? $this->referrals->calculateReferralDiscount($user, $subtotal) : 0.0,
+            'pointsBalance' => $user?->points_balance ?? 0,
+            'pointsValue' => (float) (Setting::find('referral_points_value')?->value ?? 0),
         ]);
     }
 
@@ -119,13 +131,23 @@ class CheckoutController extends Controller
 
         $subtotal = $cart->items->sum(fn ($item) => $item->price * $item->quantity);
         $shippingCost = $this->calculateShippingCost($shippingAddress, $cart, $subtotal);
-        [$couponId, $couponCode, $discount] = $this->resolveCoupon($request, $subtotal);
-        $total = max(0, $subtotal - $discount + $shippingCost);
+        [$couponId, $couponCode, $couponDiscount] = $this->resolveCoupon($request, $subtotal);
 
         // ── COD ─────────────────────────────────────────────────────────────
         if ($request->payment_method === PaymentMethod::COD->value) {
-            $order = DB::transaction(function () use ($request, $cart, $isBuyNow, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $discount, $total) {
+            $order = DB::transaction(function () use ($request, $cart, $isBuyNow, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $couponDiscount) {
                 $this->maybeAutoSaveAddress($request, $shippingAddress);
+
+                // Locking the purchaser's row here (rather than before the
+                // transaction) lets us re-check referral/points eligibility
+                // against a guaranteed-fresh row, so two concurrent COD
+                // checkouts by the same user can never both consume the
+                // one-time referral discount or double-spend points.
+                $lockedUser = auth()->check() ? $this->referrals->lockUser(auth()->id()) : null;
+                [$discount, $finalCouponId, $finalCouponCode, $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount] =
+                    $this->resolveFinalDiscount($request, $subtotal, $couponId, $couponCode, $couponDiscount, $lockedUser);
+
+                $total = max(0, $subtotal - $discount + $shippingCost);
 
                 $order = Order::create([
                     'order_number' => $this->generateOrderNumber(),
@@ -136,8 +158,10 @@ class CheckoutController extends Controller
                     'subtotal' => $subtotal,
                     'shipping_cost' => $shippingCost,
                     'discount' => $discount,
-                    'coupon_id' => $couponId,
-                    'coupon_code' => $couponCode,
+                    'coupon_id' => $finalCouponId,
+                    'coupon_code' => $finalCouponCode,
+                    'used_referral_discount' => $usedReferralDiscount,
+                    'points_redeemed' => $pointsToRedeem ?: null,
                     'tax' => 0,
                     'total' => $total,
                     'shipping_address' => $shippingAddress,
@@ -167,6 +191,15 @@ class CheckoutController extends Controller
                     ]);
                 }
 
+                if ($lockedUser) {
+                    if ($usedReferralDiscount) {
+                        $this->referrals->awardPointsForQualifyingOrder($order, $lockedUser);
+                    }
+                    if ($pointsToRedeem > 0) {
+                        $this->referrals->debitPointsForOrder($order, $lockedUser, $pointsToRedeem, $pointsDiscountAmount);
+                    }
+                }
+
                 if (! $isBuyNow) {
                     $cart->items()->delete();
                     $cart->delete();
@@ -183,7 +216,65 @@ class CheckoutController extends Controller
         }
 
         // ── Mobile Banking (Bkash / Nagad) ───────────────────────────────────
-        return $this->initiateMobileBanking($request, $cart, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $discount, $total);
+        // Not inside a DB transaction/lock (no Order exists yet — this only
+        // stages a PendingCheckout; the real order is created later, under a
+        // lock, in MobilePaymentController::submit()). This is therefore a
+        // best-effort preview: the discount baked in here is what the
+        // customer is told to pay and is NOT recomputed at submit() time, so
+        // it must match exactly. Same residual double-discount risk as the
+        // existing, already-unenforced `Coupon::max_uses`/`per_user_limit`
+        // check below — acceptable, not worth a reservation mechanism.
+        $user = $request->user();
+        [$discount, $finalCouponId, $finalCouponCode, $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount] =
+            $this->resolveFinalDiscount($request, $subtotal, $couponId, $couponCode, $couponDiscount, $user);
+        $total = max(0, $subtotal - $discount + $shippingCost);
+
+        return $this->initiateMobileBanking(
+            $request, $cart, $shippingAddress, $subtotal, $shippingCost,
+            $finalCouponId, $finalCouponCode, $discount, $total,
+            $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount,
+        );
+    }
+
+    /**
+     * Discount priority: an explicit coupon code wins outright; otherwise a
+     * points redemption request is honored if the (possibly locked) user has
+     * enough balance; otherwise an eligible referred customer's one-time
+     * discount auto-applies. Only one of the three ever contributes.
+     *
+     * @return array{0: float, 1: int|null, 2: string|null, 3: bool, 4: int, 5: float}
+     */
+    private function resolveFinalDiscount(
+        PlaceOrderRequest $request,
+        float $subtotal,
+        ?int $couponId,
+        ?string $couponCode,
+        float $couponDiscount,
+        ?User $user,
+    ): array {
+        if ($couponDiscount > 0) {
+            return [$couponDiscount, $couponId, $couponCode, false, 0, 0.0];
+        }
+
+        if ($user && $request->boolean('redeem_points')) {
+            $requested = max(0, $request->integer('points_to_redeem'));
+            $pointsToRedeem = min($requested, $user->points_balance);
+            $amount = $pointsToRedeem > 0 ? $this->referrals->redeemPoints($user, $pointsToRedeem) : 0.0;
+
+            if ($amount > 0) {
+                return [$amount, null, null, false, $pointsToRedeem, $amount];
+            }
+        }
+
+        if ($user && $this->referrals->isEligibleForDiscount($user)) {
+            $referralDiscount = $this->referrals->calculateReferralDiscount($user, $subtotal);
+
+            if ($referralDiscount > 0) {
+                return [$referralDiscount, null, null, true, 0, 0.0];
+            }
+        }
+
+        return [0.0, null, null, false, 0, 0.0];
     }
 
     private function initiateMobileBanking(
@@ -196,6 +287,9 @@ class CheckoutController extends Controller
         ?string $couponCode,
         float $discount,
         float $total,
+        bool $usedReferralDiscount,
+        int $pointsRedeemed,
+        float $pointsDiscountAmount,
     ): RedirectResponse {
         $itemsSnapshot = $cart->items->map(function ($item) {
             $product = $item->product;
@@ -237,6 +331,9 @@ class CheckoutController extends Controller
                 'discount' => $discount,
                 'coupon_id' => $couponId,
                 'coupon_code' => $couponCode,
+                'used_referral_discount' => $usedReferralDiscount,
+                'points_redeemed' => $pointsRedeemed,
+                'points_discount_amount' => $pointsDiscountAmount,
                 'tax' => 0,
                 'total' => $total,
             ],

@@ -59,6 +59,13 @@ class SettingController extends Controller
         ]);
     }
 
+    public function referralConfig(): Response
+    {
+        return Inertia::render('admin/settings/referral', [
+            'settings' => $this->settingsProp(),
+        ]);
+    }
+
     public function update(Request $request): RedirectResponse
     {
         $request->validate([
@@ -125,6 +132,11 @@ class SettingController extends Controller
             'contact_page_hero_title_highlight' => ['nullable', 'string', 'max:100'],
             'contact_page_hero_description' => ['nullable', 'string', 'max:500'],
             'contact_page_support_hours' => ['nullable', 'string', 'max:100'],
+            'referral_enabled' => ['nullable', 'boolean'],
+            'referral_discount_type' => ['nullable', 'in:percent,fixed'],
+            'referral_discount_value' => ['nullable', 'numeric', 'min:0'],
+            'referral_points_per_referral' => ['nullable', 'integer', 'min:0'],
+            'referral_points_value' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         // Handle logo upload separately
@@ -163,6 +175,8 @@ class SettingController extends Controller
             'about_mission_features', 'about_values', 'about_team', 'about_cta_title', 'about_cta_description',
             'contact_page_hero_eyebrow', 'contact_page_hero_title', 'contact_page_hero_title_highlight',
             'contact_page_hero_description', 'contact_page_support_hours',
+            'referral_enabled', 'referral_discount_type', 'referral_discount_value',
+            'referral_points_per_referral', 'referral_points_value',
         ];
 
         foreach ($fields as $key) {
@@ -224,6 +238,7 @@ class SettingController extends Controller
             in_array($key, ['steadfast_api_key', 'steadfast_secret_key', 'steadfast_webhook_secret', 'steadfast_webhook_url']) => 'courier',
             str_starts_with($key, 'about_') => 'about_page',
             str_starts_with($key, 'contact_page_') => 'contact_page',
+            str_starts_with($key, 'referral_') => 'referral',
             default => 'integrations',
         };
     }

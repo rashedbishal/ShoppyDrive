@@ -10,12 +10,14 @@ use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -32,6 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'phone',
         'avatar',
         'role',
+        'referred_by_id',
     ];
 
     protected $hidden = [
@@ -120,5 +123,42 @@ class User extends Authenticatable implements MustVerifyEmail
     public function socialAccounts(): HasMany
     {
         return $this->hasMany(SocialAccount::class);
+    }
+
+    /**
+     * The existing customer whose referral link this user signed up through, if any.
+     */
+    public function referrer(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'referred_by_id');
+    }
+
+    /**
+     * Customers who signed up through this user's referral link.
+     */
+    public function referredUsers(): HasMany
+    {
+        return $this->hasMany(self::class, 'referred_by_id');
+    }
+
+    public function pointTransactions(): HasMany
+    {
+        return $this->hasMany(ReferralPointTransaction::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $user): void {
+            $user->referral_code ??= self::generateUniqueReferralCode();
+        });
+    }
+
+    private static function generateUniqueReferralCode(): string
+    {
+        do {
+            $code = Str::upper(Str::random(8));
+        } while (self::where('referral_code', $code)->exists());
+
+        return $code;
     }
 }

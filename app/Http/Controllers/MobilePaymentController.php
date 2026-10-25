@@ -13,6 +13,7 @@ use App\Models\Payment;
 use App\Models\PendingCheckout;
 use App\Models\ReceivedSms;
 use App\Models\Setting;
+use App\Services\ReferralService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,10 @@ use Inertia\Response;
 
 class MobilePaymentController extends Controller
 {
+    public function __construct(
+        private readonly ReferralService $referrals,
+    ) {}
+
     /**
      * Show the payment instruction page.
      * Route: GET /payment/mobile/{token}
@@ -123,11 +128,28 @@ class MobilePaymentController extends Controller
                     'discount' => $data['discount'],
                     'coupon_id' => $data['coupon_id'],
                     'coupon_code' => $data['coupon_code'],
+                    'used_referral_discount' => $data['used_referral_discount'] ?? false,
+                    'points_redeemed' => ($data['points_redeemed'] ?? 0) ?: null,
                     'tax' => $data['tax'],
                     'total' => $data['total'],
                     'shipping_address' => $data['shipping_address'],
                     'billing_address' => $data['shipping_address'],
                 ]);
+
+                // Mirror CheckoutController::store()'s COD side effects: lock
+                // the purchaser and commit whichever referral/points outcome
+                // was already baked into checkout_data at checkout time.
+                if ($freshPending->user_id !== null) {
+                    $lockedUser = $this->referrals->lockUser($freshPending->user_id);
+
+                    if ($order->used_referral_discount) {
+                        $this->referrals->awardPointsForQualifyingOrder($order, $lockedUser);
+                    }
+
+                    if (! empty($data['points_redeemed'])) {
+                        $this->referrals->debitPointsForOrder($order, $lockedUser, (int) $data['points_redeemed'], (float) ($data['points_discount_amount'] ?? 0));
+                    }
+                }
 
                 $order->statusHistories()->create([
                     'status' => 'processing',

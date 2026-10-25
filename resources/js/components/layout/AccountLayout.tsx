@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import {
     ChevronRight,
+    Gift,
     Heart,
     LayoutDashboard,
     Lock,
@@ -19,6 +20,7 @@ const navItems = [
     { label: 'Dashboard', href: '/account', icon: LayoutDashboard },
     { label: 'My Orders', href: '/account/orders', icon: Package },
     { label: 'Wishlist', href: '/account/wishlist', icon: Heart },
+    { label: 'Referral & Points', href: '/account/referral', icon: Gift },
     { label: 'Addresses', href: '/account/addresses', icon: MapPin },
     { label: 'Profile', href: '/account/profile', icon: User },
     { label: 'Change Password', href: '/account/password', icon: Lock },
@@ -80,6 +82,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                                     const isActive = href === '/account'
                                         ? currentPath === '/account'
                                         : currentPath === href || currentPath.startsWith(href + '/');
+
                                     return (
                                         <Link
                                             key={href}

@@ -5,6 +5,7 @@ namespace App\Actions\Fortify;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
+use App\Services\ReferralService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Validator as ValidatorInstance;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
@@ -12,6 +13,10 @@ use Laravel\Fortify\Contracts\CreatesNewUsers;
 class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules, ProfileValidationRules;
+
+    public function __construct(
+        private readonly ReferralService $referrals,
+    ) {}
 
     /**
      * Validate and create a newly registered user.
@@ -28,11 +33,17 @@ class CreateNewUser implements CreatesNewUsers
             $this->guardAgainstDuplicateEmail($validator, $input['email'] ?? null);
         })->validate();
 
+        $referredById = $this->referrals->resolveReferrerId(
+            $input['referral_code'] ?? session('pending_referral_code'),
+        );
+        session()->forget('pending_referral_code');
+
         return User::create([
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => $input['password'],
             'has_password' => true,
+            'referred_by_id' => $referredById,
         ]);
     }
 

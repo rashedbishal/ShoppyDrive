@@ -1,4 +1,3 @@
-import React, { useEffect, useRef, useState } from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
@@ -15,20 +14,21 @@ import {
     CreditCard,
     LogIn,
 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import {
     DHAKA_CITY_OPTIONS,
     DISTRICT_OPTIONS,
 } from '@/lib/bangladesh-geography';
 import { getXsrfToken } from '@/lib/csrf';
+import { formatCurrency } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import type { Address, CartItem, SharedPageProps } from '@/types';
 
@@ -59,6 +59,10 @@ const Section = ({
 interface CheckoutProps {
     savedAddresses: Address[];
     buyNowItem?: CartItem | null;
+    referralDiscountEligible?: boolean;
+    referralDiscountPreview?: number;
+    pointsBalance?: number;
+    pointsValue?: number;
 }
 
 type AddressMode = 'default' | 'select' | 'new';
@@ -66,6 +70,10 @@ type AddressMode = 'default' | 'select' | 'new';
 export default function Checkout({
     savedAddresses = [],
     buyNowItem = null,
+    referralDiscountEligible = false,
+    referralDiscountPreview = 0,
+    pointsBalance = 0,
+    pointsValue = 0,
 }: CheckoutProps): React.JSX.Element {
     const { auth, flash, settings } = usePage<SharedPageProps>().props;
     const { items: cartItems, getSubtotal, getDiscount } = useCartStore();
@@ -115,22 +123,36 @@ export default function Checkout({
 
     // ── Shipping cost calculation ─────────────────────────────────────────────
     function calcShipping(district: string, city: string): number | null {
-        if (!district || !city) return null; // address incomplete
+        if (!district || !city) {
+return null;
+} // address incomplete
 
         // Free delivery threshold
         const threshold = settings.free_delivery_threshold ?? 0;
-        if (threshold > 0 && subtotal >= threshold) return 0;
+
+        if (threshold > 0 && subtotal >= threshold) {
+return 0;
+}
 
         // Per-product free delivery: if ALL items qualify → free
         if (items.length > 0) {
             const allFree = items.every((item) => {
                 const p = item.product;
-                if (!p.free_delivery) return false;
-                if (p.free_delivery_min_qty != null)
-                    return item.quantity >= p.free_delivery_min_qty;
+
+                if (!p.free_delivery) {
+return false;
+}
+
+                if (p.free_delivery_min_qty != null) {
+return item.quantity >= p.free_delivery_min_qty;
+}
+
                 return true;
             });
-            if (allFree) return 0;
+
+            if (allFree) {
+return 0;
+}
         }
 
         return district === 'Dhaka' && city === 'Inside Dhaka City Corporation'
@@ -167,6 +189,7 @@ export default function Checkout({
     // not across visits), so repeated edits update the same row instead of
     // creating a new one on every keystroke.
     const attemptTokenRef = useRef<string>('');
+
     if (!attemptTokenRef.current && typeof window !== 'undefined') {
         attemptTokenRef.current =
             sessionStorage.getItem('shoppydrive.checkout_attempt') ??
@@ -228,9 +251,14 @@ export default function Checkout({
 
     const handleApplyCoupon = async () => {
         const code = couponInput.trim().toUpperCase();
-        if (!code) return;
+
+        if (!code) {
+return;
+}
+
         setApplyingCoupon(true);
         setCouponError('');
+
         try {
             const res = await fetch(route('coupon.validate'), {
                 method: 'POST',
@@ -243,9 +271,13 @@ export default function Checkout({
                 body: JSON.stringify({ code, subtotal }),
             });
             const data = await res.json();
+
             if (res.ok) {
                 setAppliedCoupon(data.coupon);
                 setCouponInput('');
+                // Only one discount mechanism applies per order — a coupon
+                // always wins over a points redemption.
+                setUsePoints(false);
             } else {
                 setCouponError(data.error || 'Invalid coupon.');
             }
@@ -256,16 +288,44 @@ export default function Checkout({
         }
     };
 
+    // ── Points redemption state ─────────────────────────────────────────────
+    // Mutually exclusive with a coupon (coupon wins) and with the
+    // auto-applied referral discount (points win if the customer opts in).
+    const [usePoints, setUsePoints] = useState(false);
+    const maxRedeemablePoints = pointsValue > 0
+        ? Math.min(pointsBalance, Math.ceil(subtotal / pointsValue))
+        : 0;
+    const [pointsToUse, setPointsToUse] = useState(maxRedeemablePoints);
+
+    const handleTogglePoints = (checked: boolean) => {
+        setUsePoints(checked);
+
+        if (checked) {
+            setAppliedCoupon(null);
+            setCouponError('');
+            setPointsToUse(maxRedeemablePoints);
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (submitting) return;
+
+        if (submitting) {
+return;
+}
+
         setSubmitting(true);
+
+        const redeemingPoints =
+            !appliedCoupon && usePoints && pointsToUse > 0;
 
         router.post(
             route('checkout.store'),
             {
                 ...form.data,
                 coupon_code: appliedCoupon?.code ?? null,
+                redeem_points: redeemingPoints,
+                points_to_redeem: redeemingPoints ? pointsToUse : null,
                 is_buy_now: buyNowItem !== null,
                 items: items.map((item) => ({
                     product_id: item.product.id,
@@ -288,15 +348,37 @@ export default function Checkout({
     };
 
     const couponDiscount = (() => {
-        if (!appliedCoupon) return 0;
-        if (appliedCoupon.type === 'percent')
-            return Math.min((subtotal * appliedCoupon.value) / 100, subtotal);
+        if (!appliedCoupon) {
+return 0;
+}
+
+        if (appliedCoupon.type === 'percent') {
+return Math.min((subtotal * appliedCoupon.value) / 100, subtotal);
+}
+
         return Math.min(appliedCoupon.value, subtotal);
     })();
 
+    // Discount priority mirrors the backend exactly: coupon > points > the
+    // auto-applied referral discount. Only one ever contributes.
+    const pointsDiscount =
+        !appliedCoupon && usePoints && pointsToUse > 0
+            ? Math.min(pointsToUse * pointsValue, subtotal)
+            : 0;
+
+    const referralDiscount =
+        !appliedCoupon && !(usePoints && pointsToUse > 0) && referralDiscountEligible
+            ? Math.min(referralDiscountPreview, subtotal)
+            : 0;
+
     const total = Math.max(
         0,
-        subtotal - discount - couponDiscount + (shippingCost ?? 0),
+        subtotal -
+            discount -
+            couponDiscount -
+            pointsDiscount -
+            referralDiscount +
+            (shippingCost ?? 0),
     );
 
     const placeOrderLabel = submitting ? (
@@ -817,6 +899,91 @@ export default function Checkout({
                                     )}
                                 </div>
                             )}
+
+                            {pointsBalance > 0 && pointsValue > 0 && (
+                                <div
+                                    className={`mt-3 rounded-xl border px-4 py-3 ${
+                                        usePoints
+                                            ? 'border-green-200 bg-green-50'
+                                            : 'border-[var(--color-border)]'
+                                    } ${appliedCoupon ? 'opacity-50' : ''}`}
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        <Label
+                                            htmlFor="use-points"
+                                            className="flex items-center gap-2 text-sm font-medium"
+                                        >
+                                            <Checkbox
+                                                id="use-points"
+                                                checked={usePoints}
+                                                disabled={
+                                                    !!appliedCoupon ||
+                                                    maxRedeemablePoints === 0
+                                                }
+                                                onCheckedChange={(checked) =>
+                                                    handleTogglePoints(
+                                                        checked === true,
+                                                    )
+                                                }
+                                            />
+                                            Use my points ({pointsBalance}{' '}
+                                            available)
+                                        </Label>
+                                        {usePoints && (
+                                            <span className="text-sm font-semibold text-green-700">
+                                                −{formatCurrency(pointsDiscount)}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {usePoints && (
+                                        <div className="mt-2 flex items-center gap-2">
+                                            <Input
+                                                type="number"
+                                                min={1}
+                                                max={maxRedeemablePoints}
+                                                value={pointsToUse}
+                                                onChange={(e) =>
+                                                    setPointsToUse(
+                                                        Math.max(
+                                                            0,
+                                                            Math.min(
+                                                                maxRedeemablePoints,
+                                                                Number(
+                                                                    e.target
+                                                                        .value,
+                                                                ),
+                                                            ),
+                                                        ),
+                                                    )
+                                                }
+                                                className="h-9 w-28 rounded-lg"
+                                            />
+                                            <span className="text-xs text-[var(--color-text-secondary)]">
+                                                points (worth{' '}
+                                                {formatCurrency(pointsValue)}{' '}
+                                                each)
+                                            </span>
+                                        </div>
+                                    )}
+                                    {appliedCoupon && (
+                                        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                                            Remove your coupon to use points
+                                            instead.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {referralDiscountEligible &&
+                                !appliedCoupon &&
+                                !usePoints && (
+                                    <p className="mt-3 flex items-center gap-1.5 text-xs text-green-700">
+                                        <Tag size={12} />
+                                        Your first-order referral discount (
+                                        {formatCurrency(referralDiscount)}) will
+                                        be applied automatically.
+                                    </p>
+                                )}
                         </Section>
 
                         {/* ── Payment ── */}
@@ -1022,6 +1189,26 @@ export default function Checkout({
                                         </span>
                                         <span className="font-semibold text-[var(--color-success)]">
                                             −{formatCurrency(couponDiscount)}
+                                        </span>
+                                    </div>
+                                )}
+                                {pointsDiscount > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-[var(--color-text-secondary)]">
+                                            Points redeemed ({pointsToUse})
+                                        </span>
+                                        <span className="font-semibold text-[var(--color-success)]">
+                                            −{formatCurrency(pointsDiscount)}
+                                        </span>
+                                    </div>
+                                )}
+                                {referralDiscount > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-[var(--color-text-secondary)]">
+                                            Referral discount
+                                        </span>
+                                        <span className="font-semibold text-[var(--color-success)]">
+                                            −{formatCurrency(referralDiscount)}
                                         </span>
                                     </div>
                                 )}

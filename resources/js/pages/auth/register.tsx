@@ -3,6 +3,7 @@ import {
     ArrowRight,
     Eye,
     EyeOff,
+    Gift,
     Lock,
     Mail,
     Phone,
@@ -14,7 +15,11 @@ import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
 import type { SharedPageProps } from '@/types';
 
-export default function Register(): React.JSX.Element {
+export default function Register({
+    referralCode,
+}: {
+    referralCode?: string | null;
+}): React.JSX.Element {
     const { settings } = usePage<SharedPageProps>().props;
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
@@ -24,6 +29,7 @@ export default function Register(): React.JSX.Element {
         phone: '',
         password: '',
         password_confirmation: '',
+        referral_code: referralCode ?? '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -145,6 +151,23 @@ export default function Register(): React.JSX.Element {
                                 Free forever. No credit card required.
                             </p>
                         </div>
+
+                        {settings.referral_enabled && data.referral_code && (
+                            <div className="mb-3 flex items-start gap-2 rounded-lg border border-[#c8102e]/20 bg-[#c8102e]/5 p-3">
+                                <Gift className="mt-0.5 size-4 shrink-0 text-[#c8102e]" />
+                                <p className="text-xs text-gray-700">
+                                    You were referred! You&apos;ll get{' '}
+                                    <span className="font-semibold text-[#c8102e]">
+                                        {settings.referral_discount_type ===
+                                        'fixed'
+                                            ? `${settings.currency_symbol}${settings.referral_discount_value}`
+                                            : `${settings.referral_discount_value}%`}{' '}
+                                        off
+                                    </span>{' '}
+                                    your first order.
+                                </p>
+                            </div>
+                        )}
 
                         {/* Social */}
                         {(settings.google_login_enabled ||
@@ -293,6 +316,37 @@ export default function Register(): React.JSX.Element {
                                     />
                                 </div>
                             </div>
+
+                            {settings.referral_enabled && (
+                                <div className="col-span-2 space-y-1">
+                                    <label
+                                        htmlFor="referral_code"
+                                        className="text-xs font-medium text-gray-700"
+                                    >
+                                        Referral code{' '}
+                                        <span className="text-gray-400">
+                                            (optional)
+                                        </span>
+                                    </label>
+                                    <div className="relative">
+                                        <Gift className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
+                                        <input
+                                            id="referral_code"
+                                            type="text"
+                                            value={data.referral_code}
+                                            onChange={(e) =>
+                                                setData(
+                                                    'referral_code',
+                                                    e.target.value.toUpperCase(),
+                                                )
+                                            }
+                                            placeholder="e.g. AB12CD34"
+                                            className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-3 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
+                                        />
+                                    </div>
+                                    <InputError message={errors.referral_code} />
+                                </div>
+                            )}
 
                             {/* Password */}
                             <div className="space-y-1">
