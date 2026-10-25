@@ -361,7 +361,7 @@ export default function Register({
                                                     e.target.value.toUpperCase(),
                                                 )
                                             }
-                                            placeholder="e.g. AB12CD34"
+                                            placeholder="e.g. AB12CD34EF56"
                                             className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-3 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
                                         />
                                     </div>

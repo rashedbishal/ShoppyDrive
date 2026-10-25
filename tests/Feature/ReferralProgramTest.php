@@ -54,7 +54,7 @@ test('every new user is given a unique referral code', function () {
     $user = User::factory()->create();
 
     expect($user->referral_code)->not->toBeNull();
-    expect(strlen($user->referral_code))->toBe(8);
+    expect(strlen($user->referral_code))->toBe(12);
 });
 
 // ── Registration attribution ────────────────────────────────────────────────

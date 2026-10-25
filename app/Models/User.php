@@ -156,7 +156,7 @@ class User extends Authenticatable implements MustVerifyEmail
     private static function generateUniqueReferralCode(): string
     {
         do {
-            $code = Str::upper(Str::random(8));
+            $code = Str::upper(Str::random(12));
         } while (self::where('referral_code', $code)->exists());
 
         return $code;
