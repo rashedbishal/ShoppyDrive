@@ -22,10 +22,26 @@ type Props = { pages: LandingPage[] };
 export default function LandingPagesIndex({ pages }: Props) {
     const [deleteTarget, setDeleteTarget] = useState<LandingPage | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
     const { props } = usePage<any>();
     const flash = props.flash as
         | { success?: string; error?: string }
         | undefined;
+
+    const bulk = useBulkSelect(pages.map((p) => p.id));
+
+    const confirmBulkDelete = () => {
+        setBulkDeleting(true);
+        router.delete(route('admin.landing-pages.destroyMany'), {
+            data: { ids: bulk.selected },
+            onFinish: () => {
+                setBulkDeleting(false);
+                setBulkConfirmOpen(false);
+                bulk.clear();
+            },
+        });
+    };
 
     const confirmDelete = () => {
         if (!deleteTarget) {
