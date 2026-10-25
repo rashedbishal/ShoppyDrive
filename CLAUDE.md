@@ -302,6 +302,8 @@ php artisan wayfinder:generate
 
 **`App\Models\PendingCheckout`** is the staging record for checkouts awaiting external confirmation — manual mobile banking SMS verification, a ZiniPay webhook callback, or a landing-page/guest buy-now flow — before an `Order` is materialized. It's read/written across `CheckoutController`, `LandingPageController`, `MobilePaymentController`, `PaymentController`, `ZiniPayWebhookController`, and `OrderService`.
 
+**Abandoned-checkout tracking** uses `App\Models\IncompleteOrder`, upserted by `IncompleteOrderController::store()` keyed on a per-visit `attempt_token` whenever a guest/customer has a valid phone number and items on the checkout page but hasn't placed the order yet. The matching row is deleted once a real order is placed with the same phone number (see `CheckoutController::store()` and `OrderService::createFromPending()`) — this is for admin follow-up on drop-off, not a cart/stock mechanism.
+
 **Order lifecycle** is modeled with the `OrderStatus`/`PaymentStatus`/`PaymentMethod` enums (`app/Enums`), `OrderStatusHistory` for auditing, and `App\Services\OrderService` for placement logic. Transactional emails for each stage live in `app/Mail` (e.g. `OrderPlacedMail`, `ShippedWithTrackingMail`, `OrderDeliveredMail`, `OrderCancelledMail`) and are dispatched around status transitions.
 
 **Response caching**: `spatie/laravel-responsecache` is installed — be aware that public GET storefront pages may be cached at the HTTP layer; cache-busting on content changes (e.g. product/homepage updates in the admin panel) should be handled where those admin actions occur.
