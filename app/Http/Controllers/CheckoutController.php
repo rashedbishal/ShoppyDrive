@@ -125,6 +125,14 @@ class CheckoutController extends Controller
 
             // Eager-load products so free_delivery checks don't N+1
             $cart->load('items.product');
+
+            // Drops items whose product was deleted/deactivated since being
+            // added to the cart — every downstream read of `$cart->items`
+            // (shipping calc, order-item creation) assumes `item->product`
+            // exists, so this has to happen before any of that runs.
+            $cart->setRelation('items', $this->cartManager->validItems($cart));
+
+            abort_if($cart->items->isEmpty(), 422, 'Your cart is empty.');
         }
 
         $shippingAddress = $this->resolveShippingAddress($request);

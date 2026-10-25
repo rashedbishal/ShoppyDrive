@@ -24,7 +24,7 @@ export default defineConfig({
     ],
 
     server: {
-        host: '192.168.0.113',
+        host: '192.168.0.111',
         port: 5173,
         // Vite's default CORS allowlist only recognizes literal
         // localhost/127.0.0.1 origins. The app is served over the LAN IP
@@ -49,9 +49,12 @@ export default defineConfig({
             // Native fs events (inotify) are unreliable for this project's
             // directory, so file edits can go undetected until the dev
             // server is restarted. Polling trades a little CPU for actually
-            // noticing changes.
+            // noticing changes. A longer interval reduces how often rapid,
+            // overlapping poll events trip Vite's module-invalidation race
+            // ("Soft-invalidated module ... should not have existing
+            // transform result").
             usePolling: true,
-            interval: 300,
+            interval: 800,
         },
     },
 });

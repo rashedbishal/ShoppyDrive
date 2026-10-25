@@ -19,8 +19,9 @@ import {
     useMemo,
     useRef,
     useState,
-    type FormEvent,
+    useSyncExternalStore,
 } from 'react';
+import type { FormEvent } from 'react';
 import { BrandCard } from '@/components/shared/BrandCard';
 import type { BrandCardData } from '@/components/shared/BrandCard';
 import {
@@ -539,7 +540,11 @@ function FlashSaleSlider({
 
     const syncButtons = () => {
         const el = scrollRef.current;
-        if (!el) return;
+
+        if (!el) {
+            return;
+        }
+
         setCanScrollLeft(el.scrollLeft > 4);
         setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
     };
@@ -547,15 +552,24 @@ function FlashSaleSlider({
     useEffect(() => {
         syncButtons();
         const el = scrollRef.current;
-        if (!el) return;
+
+        if (!el) {
+            return;
+        }
+
         const ro = new ResizeObserver(syncButtons);
         ro.observe(el);
+
         return () => ro.disconnect();
     }, [items]);
 
     const scroll = (dir: 'left' | 'right') => {
         const el = scrollRef.current;
-        if (!el) return;
+
+        if (!el) {
+            return;
+        }
+
         const card = el.querySelector<HTMLElement>('[data-flash-card]');
         const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
         const step = card ? (card.offsetWidth + gap) * 2 : 480;
@@ -575,6 +589,7 @@ function FlashSaleSlider({
             >
                 {items.map((item) => {
                     const progress = saleProgressMap.get(item.product.id);
+
                     return (
                         <div
                             key={item.product.id}
@@ -765,23 +780,42 @@ type FlashSaleCountdownProps = {
     endsAt: string;
 };
 
+function subscribeToClockTick(callback: () => void): () => void {
+    const intervalId = window.setInterval(callback, 1000);
+
+    return () => window.clearInterval(intervalId);
+}
+
+function getClockSnapshot(): number | null {
+    return Date.now();
+}
+
+// `null` until mounted so the server render and the client's first hydration
+// pass produce identical output — reading `Date.now()` for both would
+// capture two different timestamps (one at SSR time, one when the client
+// hydrates a moment later), which can disagree on the displayed seconds and
+// trigger a hydration mismatch. `useSyncExternalStore` then swaps in the
+// real, ticking clock right after mount without an extra manual effect.
+function getServerClockSnapshot(): number | null {
+    return null;
+}
+
 function FlashSaleCountdown({
     endsAt,
 }: FlashSaleCountdownProps): React.JSX.Element {
-    const [now, setNow] = useState(() => new Date());
-
-    useEffect(() => {
-        const intervalId = window.setInterval(() => {
-            setNow(new Date());
-        }, 1000);
-
-        return () => window.clearInterval(intervalId);
-    }, []);
+    const nowMs = useSyncExternalStore(
+        subscribeToClockTick,
+        getClockSnapshot,
+        getServerClockSnapshot,
+    );
 
     const remaining = useMemo(() => {
+        if (nowMs === null) {
+            return { difference: 1, days: 0, hours: 0, minutes: 0, seconds: 0 };
+        }
+
         const end = new Date(endsAt).getTime();
-        const current = now.getTime();
-        const difference = Math.max(0, end - current);
+        const difference = Math.max(0, end - nowMs);
 
         const totalSeconds = Math.floor(difference / 1000);
         const days = Math.floor(totalSeconds / 86_400);
@@ -796,7 +830,7 @@ function FlashSaleCountdown({
             minutes,
             seconds,
         };
-    }, [endsAt, now]);
+    }, [endsAt, nowMs]);
 
     if (remaining.difference <= 0) {
         return (
@@ -839,11 +873,16 @@ function NewsletterForm(): React.JSX.Element {
     const checkTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const checkStatus = (email: string): void => {
-        if (checkTimeout.current) clearTimeout(checkTimeout.current);
+        if (checkTimeout.current) {
+            clearTimeout(checkTimeout.current);
+        }
+
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             setIsSubscribed(false);
+
             return;
         }
+
         checkTimeout.current = setTimeout(() => {
             fetch(`/newsletter/status?email=${encodeURIComponent(email)}`)
                 .then((r) => r.json())
@@ -1020,7 +1059,11 @@ function Home(): React.JSX.Element {
         showAction = true,
     ) => {
         const s = getSection(key);
-        if (!s) return null;
+
+        if (!s) {
+            return null;
+        }
+
         return (
             <SectionHeading
                 eyebrow={s.eyebrow ?? undefined}

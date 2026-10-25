@@ -18,18 +18,22 @@ class FlashSaleController extends Controller
             ->where('starts_at', '<=', now())
             ->where('ends_at', '>=', now())
             ->with([
+                // Excludes items whose product was deleted/deactivated since
+                // being added to the sale — otherwise `item.product` would be
+                // null and crash the frontend's product card rendering.
                 'items' => static function ($query): void {
-                    $query->with([
-                        'product' => static function ($productQuery): void {
-                            $productQuery->with(['brand', 'images'])
-                                ->withCount([
-                                    'reviews as reviews_count' => static fn ($q) => $q->where('is_approved', true),
-                                ])
-                                ->withAvg([
-                                    'reviews as average_rating' => static fn ($q) => $q->where('is_approved', true),
-                                ], 'rating');
-                        },
-                    ]);
+                    $query->whereHas('product', static fn ($productQuery) => $productQuery->active()->published())
+                        ->with([
+                            'product' => static function ($productQuery): void {
+                                $productQuery->with(['brand', 'images'])
+                                    ->withCount([
+                                        'reviews as reviews_count' => static fn ($q) => $q->where('is_approved', true),
+                                    ])
+                                    ->withAvg([
+                                        'reviews as average_rating' => static fn ($q) => $q->where('is_approved', true),
+                                    ], 'rating');
+                            },
+                        ]);
                 },
             ])
             ->first();

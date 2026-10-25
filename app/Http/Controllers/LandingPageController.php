@@ -27,8 +27,12 @@ class LandingPageController extends Controller
 {
     public function show(string $slug): Response|RedirectResponse
     {
+        // The promoted product can be deleted/deactivated after the landing
+        // page link is already out in ads — without this, an old link would
+        // 500 instead of 404 when `page->product` turns out to be null.
         $page = LandingPage::where('slug', $slug)
             ->where('is_active', true)
+            ->whereHas('product', fn ($q) => $q->active()->published())
             ->with([
                 'product' => fn ($q) => $q->with(['media', 'variants']),
             ])
@@ -53,7 +57,11 @@ class LandingPageController extends Controller
 
     public function placeOrder(Request $request, string $slug): RedirectResponse
     {
-        $page = LandingPage::where('slug', $slug)->where('is_active', true)->with('product')->firstOrFail();
+        $page = LandingPage::where('slug', $slug)
+            ->where('is_active', true)
+            ->whereHas('product', fn ($q) => $q->active()->published())
+            ->with('product')
+            ->firstOrFail();
         $product = $page->product;
 
         $request->validate([

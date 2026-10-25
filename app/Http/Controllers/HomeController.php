@@ -17,8 +17,13 @@ class HomeController extends Controller
     public function __invoke(): Response
     {
         $activeFlashSale = FlashSale::with([
-            'items.product.brand',
-            'items.product.images',
+            // Excludes items whose product was deleted/deactivated since
+            // being added to the sale — otherwise `item.product` would be
+            // null and crash the frontend's product card rendering.
+            'items' => static function ($query): void {
+                $query->whereHas('product', static fn ($productQuery) => $productQuery->active()->published())
+                    ->with(['product.brand', 'product.images']);
+            },
         ])
             ->where('is_active', true)
             ->where('starts_at', '<=', now())
@@ -27,10 +32,8 @@ class HomeController extends Controller
 
         if ($activeFlashSale) {
             foreach ($activeFlashSale->items as $item) {
-                if ($item->product) {
-                    $item->product->in_flash_sale = true;
-                    $item->product->flash_sale_price = $item->sale_price;
-                }
+                $item->product->in_flash_sale = true;
+                $item->product->flash_sale_price = $item->sale_price;
             }
         }
 

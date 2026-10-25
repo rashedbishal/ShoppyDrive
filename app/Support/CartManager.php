@@ -105,20 +105,33 @@ class CartManager
         return $cart->fresh(['coupon', 'items.product.images', 'items.variant.media']);
     }
 
+    /**
+     * Cart items whose product still exists. A product can be soft-deleted
+     * (or otherwise go missing) after being added to a cart; relying on
+     * this everywhere cart items are read keeps a stale item from 500ing
+     * checkout or the `cart` prop shared on every single page load.
+     */
+    public function validItems(Cart $cart): Collection
+    {
+        return $cart->items->filter(fn (CartItem $item): bool => $item->product !== null)->values();
+    }
+
     public function serialize(?Cart $cart): ?array
     {
         if ($cart === null) {
             return null;
         }
 
-        $subtotal = (float) $cart->items->sum(fn (CartItem $item): float => (float) $item->price * $item->quantity);
+        $items = $this->validItems($cart);
+
+        $subtotal = (float) $items->sum(fn (CartItem $item): float => (float) $item->price * $item->quantity);
         $discount = 0.0;
         $shippingEstimate = 0.0;
         $tax = 0.0;
         $total = max(0, $subtotal - $discount + $shippingEstimate + $tax);
 
         return [
-            'items' => $cart->items->map(fn (CartItem $item): array => [
+            'items' => $items->map(fn (CartItem $item): array => [
                 'id' => $item->id,
                 'item_key' => $this->itemKey($item->product_id, $item->variant_id),
                 'product' => $item->product->toArray(),
@@ -135,7 +148,7 @@ class CartManager
             'tax' => $tax,
             'total' => $total,
             'coupon' => $cart->coupon?->toArray(),
-            'item_count' => (int) $cart->items->sum('quantity'),
+            'item_count' => (int) $items->sum('quantity'),
             'formatted_subtotal' => $this->formatMoney($subtotal),
             'formatted_total' => $this->formatMoney($total),
         ];

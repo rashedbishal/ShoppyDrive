@@ -14,7 +14,7 @@ import {
     CreditCard,
     LogIn,
 } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +31,33 @@ import { getXsrfToken } from '@/lib/csrf';
 import { formatCurrency } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import type { Address, CartItem, SharedPageProps } from '@/types';
+
+// `crypto.randomUUID()` only exists in secure contexts (HTTPS, or HTTP on
+// localhost) - browsing the dev server over a LAN IP doesn't qualify, so this
+// falls back to `crypto.getRandomValues()` (available everywhere) and finally
+// `Math.random()`. Not used for anything security-sensitive, just a unique
+// per-visit tracking token.
+function generateAttemptToken(): string {
+    if (
+        typeof crypto !== 'undefined' &&
+        typeof crypto.randomUUID === 'function'
+    ) {
+        return crypto.randomUUID();
+    }
+
+    if (
+        typeof crypto !== 'undefined' &&
+        typeof crypto.getRandomValues === 'function'
+    ) {
+        const bytes = crypto.getRandomValues(new Uint8Array(16));
+
+        return Array.from(bytes, (byte) =>
+            byte.toString(16).padStart(2, '0'),
+        ).join('');
+    }
+
+    return `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+}
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 const Section = ({
@@ -124,15 +151,15 @@ export default function Checkout({
     // ── Shipping cost calculation ─────────────────────────────────────────────
     function calcShipping(district: string, city: string): number | null {
         if (!district || !city) {
-return null;
-} // address incomplete
+            return null;
+        } // address incomplete
 
         // Free delivery threshold
         const threshold = settings.free_delivery_threshold ?? 0;
 
         if (threshold > 0 && subtotal >= threshold) {
-return 0;
-}
+            return 0;
+        }
 
         // Per-product free delivery: if ALL items qualify → free
         if (items.length > 0) {
@@ -140,19 +167,19 @@ return 0;
                 const p = item.product;
 
                 if (!p.free_delivery) {
-return false;
-}
+                    return false;
+                }
 
                 if (p.free_delivery_min_qty != null) {
-return item.quantity >= p.free_delivery_min_qty;
-}
+                    return item.quantity >= p.free_delivery_min_qty;
+                }
 
                 return true;
             });
 
             if (allFree) {
-return 0;
-}
+                return 0;
+            }
         }
 
         return district === 'Dhaka' && city === 'Inside Dhaka City Corporation'
@@ -188,17 +215,22 @@ return 0;
     // One row per page visit (the token lives in sessionStorage for this tab,
     // not across visits), so repeated edits update the same row instead of
     // creating a new one on every keystroke.
-    const attemptTokenRef = useRef<string>('');
+    const [attemptToken] = useState<string>(() => {
+        if (typeof window === 'undefined') {
+            return '';
+        }
 
-    if (!attemptTokenRef.current && typeof window !== 'undefined') {
-        attemptTokenRef.current =
-            sessionStorage.getItem('shoppydrive.checkout_attempt') ??
-            crypto.randomUUID();
-        sessionStorage.setItem(
-            'shoppydrive.checkout_attempt',
-            attemptTokenRef.current,
-        );
-    }
+        const existing = sessionStorage.getItem('shoppydrive.checkout_attempt');
+
+        if (existing) {
+            return existing;
+        }
+
+        const token = generateAttemptToken();
+        sessionStorage.setItem('shoppydrive.checkout_attempt', token);
+
+        return token;
+    });
 
     const itemsSignature = items
         .map(
@@ -222,7 +254,7 @@ return 0;
                     'X-Requested-With': 'XMLHttpRequest',
                 },
                 body: JSON.stringify({
-                    attempt_token: attemptTokenRef.current,
+                    attempt_token: attemptToken,
                     phone: form.data.phone,
                     name: form.data.name || null,
                     items: items.map((item) => ({
@@ -253,8 +285,8 @@ return 0;
         const code = couponInput.trim().toUpperCase();
 
         if (!code) {
-return;
-}
+            return;
+        }
 
         setApplyingCoupon(true);
         setCouponError('');
@@ -292,9 +324,10 @@ return;
     // Mutually exclusive with a coupon (coupon wins) and with the
     // auto-applied referral discount (points win if the customer opts in).
     const [usePoints, setUsePoints] = useState(false);
-    const maxRedeemablePoints = pointsValue > 0
-        ? Math.min(pointsBalance, Math.ceil(subtotal / pointsValue))
-        : 0;
+    const maxRedeemablePoints =
+        pointsValue > 0
+            ? Math.min(pointsBalance, Math.ceil(subtotal / pointsValue))
+            : 0;
     const [pointsToUse, setPointsToUse] = useState(maxRedeemablePoints);
 
     const handleTogglePoints = (checked: boolean) => {
@@ -311,13 +344,12 @@ return;
         e.preventDefault();
 
         if (submitting) {
-return;
-}
+            return;
+        }
 
         setSubmitting(true);
 
-        const redeemingPoints =
-            !appliedCoupon && usePoints && pointsToUse > 0;
+        const redeemingPoints = !appliedCoupon && usePoints && pointsToUse > 0;
 
         router.post(
             route('checkout.store'),
@@ -349,12 +381,12 @@ return;
 
     const couponDiscount = (() => {
         if (!appliedCoupon) {
-return 0;
-}
+            return 0;
+        }
 
         if (appliedCoupon.type === 'percent') {
-return Math.min((subtotal * appliedCoupon.value) / 100, subtotal);
-}
+            return Math.min((subtotal * appliedCoupon.value) / 100, subtotal);
+        }
 
         return Math.min(appliedCoupon.value, subtotal);
     })();
@@ -367,7 +399,9 @@ return Math.min((subtotal * appliedCoupon.value) / 100, subtotal);
             : 0;
 
     const referralDiscount =
-        !appliedCoupon && !(usePoints && pointsToUse > 0) && referralDiscountEligible
+        !appliedCoupon &&
+        !(usePoints && pointsToUse > 0) &&
+        referralDiscountEligible
             ? Math.min(referralDiscountPreview, subtotal)
             : 0;
 
@@ -931,7 +965,8 @@ return Math.min((subtotal * appliedCoupon.value) / 100, subtotal);
                                         </Label>
                                         {usePoints && (
                                             <span className="text-sm font-semibold text-green-700">
-                                                −{formatCurrency(pointsDiscount)}
+                                                −
+                                                {formatCurrency(pointsDiscount)}
                                             </span>
                                         )}
                                     </div>
@@ -1260,7 +1295,7 @@ return Math.min((subtotal * appliedCoupon.value) / 100, subtotal);
                                 type="submit"
                                 disabled={submitting}
                                 size="lg"
-                                className="h-13 w-full max-lg:hidden rounded-xl text-base font-bold shadow-[var(--color-primary)]/20 shadow-lg"
+                                className="h-13 w-full rounded-xl text-base font-bold shadow-[var(--color-primary)]/20 shadow-lg max-lg:hidden"
                             >
                                 {placeOrderLabel}
                             </Button>
