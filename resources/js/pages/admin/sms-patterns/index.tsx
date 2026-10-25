@@ -284,6 +284,15 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                     )}
                 </Card>
             </div>
+
+            <ConfirmDialog
+                open={bulkConfirmOpen}
+                onOpenChange={setBulkConfirmOpen}
+                title="Delete selected patterns?"
+                description={`This will permanently delete ${bulk.selected.length} pattern(s). This cannot be undone.`}
+                onConfirm={confirmBulkDelete}
+                processing={bulkDeleting}
+            />
         </>
     );
 }

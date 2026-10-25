@@ -1,9 +1,12 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Edit, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { BulkActionBar } from '@/components/admin/bulk-action-bar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useBulkSelect } from '@/hooks/use-bulk-select';
 
 type LandingPage = {
     id: number;
