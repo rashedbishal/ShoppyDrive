@@ -41,19 +41,26 @@ export function RouteModal({
                 }
             }}
         >
-            <DialogContent
-                className={cn(
-                    'max-h-[85vh] overflow-y-auto sm:max-w-lg',
-                    className,
-                )}
-            >
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
-                    {description && (
-                        <DialogDescription>{description}</DialogDescription>
-                    )}
-                </DialogHeader>
-                {children}
+            <DialogContent className={cn('sm:max-w-lg', className)}>
+                {/*
+                 * Scrolling lives here, not on DialogContent itself — DialogContent
+                 * is the dialog's transform origin, so anything clipped by an
+                 * `overflow` set directly on it would also clip absolutely
+                 * positioned popups (e.g. a `Select`'s open list) rendered
+                 * anywhere underneath, no matter how they're portaled. See
+                 * `useDialogPortalTarget` in dialog.tsx.
+                 */}
+                <div className="max-h-[calc(85vh-3rem)] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>{title}</DialogTitle>
+                        {description && (
+                            <DialogDescription>
+                                {description}
+                            </DialogDescription>
+                        )}
+                    </DialogHeader>
+                    {children}
+                </div>
             </DialogContent>
         </Dialog>
     );

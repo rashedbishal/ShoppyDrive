@@ -44,11 +44,29 @@ function DialogOverlay({
   )
 }
 
+// Lets a floating-anchored control rendered deep inside dialog content (e.g.
+// `Select`) portal its popup to a sibling of that content instead of a
+// descendant of it. `DialogPrimitive.Content` is both the transform origin
+// (so it's the containing block for anything `position: absolute`/`fixed`
+// underneath it, no matter how deep) and, when a caller like `RouteModal`
+// makes its content scrollable, the overflow-clipping box — so a popup
+// nested inside that scrollable region gets clipped against the dialog's
+// own scroll, not just the viewport. Portaling to this sibling keeps the
+// popup in the same stacking context (so it still renders above the
+// overlay) without being inside anything that scrolls or clips.
+const DialogPortalTargetContext = React.createContext<React.RefObject<HTMLDivElement | null> | null>(null)
+
+function useDialogPortalTarget(): React.RefObject<HTMLDivElement | null> | null {
+  return React.useContext(DialogPortalTargetContext)
+}
+
 function DialogContent({
   className,
   children,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content>) {
+  const portalTargetRef = React.useRef<HTMLDivElement>(null)
+
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
@@ -60,7 +78,20 @@ function DialogContent({
         )}
         {...props}
       >
-        {children}
+        <DialogPortalTargetContext.Provider value={portalTargetRef}>
+          {children}
+        </DialogPortalTargetContext.Provider>
+        {/*
+         * `display: contents` keeps this out of the layout box entirely — it exists only as a
+         * portal target. The inner child keeps it non-empty: Headless UI's `Portal` deletes
+         * whatever DOM node it portals into once that node has zero children left (cleanup
+         * logic meant for the singleton root it creates for itself) — without this, the very
+         * first popup to close here would delete this div out from under its own ref, so every
+         * popup after the first would portal into an already-detached, invisible node.
+         */}
+        <div ref={portalTargetRef} className="contents">
+          <span className="hidden" aria-hidden="true" />
+        </div>
         <DialogPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
           <XIcon />
           <span className="sr-only">Close</span>
@@ -130,4 +161,5 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
+  useDialogPortalTarget,
 }

@@ -20,6 +20,7 @@ import {
 } from "react";
 
 import { Label } from "@/components/ui/label";
+import { useDialogPortalTarget } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 type SelectOption = {
@@ -213,19 +214,12 @@ function Select({
     // Headless UI always portals an anchored list (its `portal` prop is ignored when
     // `anchor` is set) — to the end of <body> by default, so cards can't clip it.
     // Inside a (Radix) modal dialog that would put it behind the dialog and in the
-    // inert page outside it, so there the portal is retargeted to a wrapper around
-    // the button, keeping the list inside the dialog. The wrapper always holds the
-    // button, so Headless UI never removes it as an emptied portal root on close.
-    const [isInsideDialog, setIsInsideDialog] = useState(false);
-    const dialogPortalTargetRef = useRef<HTMLDivElement | null>(null);
+    // inert page outside it, so there the portal is retargeted to a sibling of the
+    // dialog's content (see `useDialogPortalTarget`) instead — same stacking context
+    // as the dialog, but not nested inside anything that scrolls or clips.
+    const dialogPortalTarget = useDialogPortalTarget();
+    const isInsideDialog = dialogPortalTarget !== null;
     const buttonRef = useRef<HTMLButtonElement | null>(null);
-    const attachButton = useCallback((element: HTMLButtonElement | null): void => {
-        buttonRef.current = element;
-
-        if (element) {
-            setIsInsideDialog(Boolean(element.closest('[role="dialog"]')));
-        }
-    }, []);
     // Headless UI has no API to close a Listbox, and a programmatic button click is
     // ignored after a mouse open (it toggles on pointerdown), so remount it instead.
     // Its value lives in our props/state, so remounting loses nothing but the open list.
@@ -313,7 +307,7 @@ function Select({
                 {({ open }) => {
                 const listboxButton = (
                 <ListboxButton
-                    ref={attachButton}
+                    ref={buttonRef}
                     id={selectId}
                     aria-invalid={Boolean(error) || undefined}
                     aria-describedby={describedBy}
@@ -361,11 +355,11 @@ function Select({
                 <>
                 {open ? <CloseOnScroll buttonRef={buttonRef} onClose={closeList} /> : null}
                 {open && isInsideDialog ? <CloseOnEscapeInsideDialog onClose={closeList} /> : null}
-                {isInsideDialog ? (
-                    <div ref={dialogPortalTargetRef}>
+                {dialogPortalTarget ? (
+                    <>
                         {listboxButton}
-                        <Portal.Group target={dialogPortalTargetRef}>{listboxOptions}</Portal.Group>
-                    </div>
+                        <Portal.Group target={dialogPortalTarget}>{listboxOptions}</Portal.Group>
+                    </>
                 ) : (
                     <>
                         {listboxButton}
