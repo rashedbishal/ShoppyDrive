@@ -70,10 +70,6 @@ type HeroSlide = {
         label: string;
         href: string;
     };
-    secondaryCta: {
-        label: string;
-        href: string;
-    };
     image: string;
     stats: HeroStat[];
 };
@@ -300,13 +296,6 @@ function HeroSlider({
                                             <ArrowRight className="size-3 sm:size-3.5" />
                                         </Link>
                                     </Button>
-                                    <Link
-                                        href={activeSlide.secondaryCta.href}
-                                        className="flex shrink-0 items-center gap-1.5 text-xs font-medium whitespace-nowrap text-white/80 transition hover:text-white sm:text-sm"
-                                    >
-                                        {activeSlide.secondaryCta.label}
-                                        <ArrowRight className="size-3 sm:size-3.5" />
-                                    </Link>
                                 </motion.div>
                             </motion.div>
 
@@ -1043,11 +1032,6 @@ function Home(): React.JSX.Element {
                                 primaryCta: {
                                     label: s.primary_cta_label || 'Shop Now',
                                     href: s.primary_cta_href || '#',
-                                },
-                                secondaryCta: {
-                                    label:
-                                        s.secondary_cta_label || 'Learn More',
-                                    href: s.secondary_cta_href || '#',
                                 },
                                 image: s.image,
                                 stats: s.stats || [],

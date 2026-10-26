@@ -116,8 +116,6 @@ class HomepageSettingsSeeder extends Seeder
             'image' => self::PLACEHOLDER,
             'primary_cta_label' => "Shop Men's Clothing",
             'primary_cta_href' => '/category/mens-clothing',
-            'secondary_cta_label' => "Women's Collection",
-            'secondary_cta_href' => '/category/womens-clothing',
             'stats' => [
                 ['label' => 'Style drops', 'value' => 'Weekly'],
                 ['label' => 'Returns',     'value' => 'Easy exchange'],
@@ -134,8 +132,6 @@ class HomepageSettingsSeeder extends Seeder
             'image' => self::PLACEHOLDER,
             'primary_cta_label' => 'Shop Electronics',
             'primary_cta_href' => '/category/electronics',
-            'secondary_cta_label' => 'View Flash Sale',
-            'secondary_cta_href' => '/flash-sales',
             'stats' => [
                 ['label' => 'Payment',  'value' => 'Cash on Delivery'],
                 ['label' => 'Support',  'value' => 'Bangla + English'],

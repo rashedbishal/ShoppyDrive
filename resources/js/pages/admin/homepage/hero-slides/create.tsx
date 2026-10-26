@@ -15,8 +15,6 @@ export default function HeroSlideCreate() {
         image: null as File | null,
         primary_cta_label: '',
         primary_cta_href: '',
-        secondary_cta_label: '',
-        secondary_cta_href: '',
         is_active: true,
         sort_order: '0',
         stats: [] as { label: string; value: string }[],
@@ -142,67 +140,33 @@ export default function HeroSlideCreate() {
                         <Card>
                             <CardHeader className="border-b border-slate-100 pb-4">
                                 <CardTitle className="text-base font-semibold">
-                                    Call to Actions
+                                    Call to Action
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4 pt-6">
-                                <div className="space-y-4">
-                                    <h5 className="text-xs font-bold text-slate-400 uppercase">
-                                        Primary CTA
-                                    </h5>
-                                    <div className="grid gap-3">
-                                        <Input
-                                            label="Label"
-                                            value={data.primary_cta_label}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'primary_cta_label',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="e.g. Shop Now"
-                                        />
-                                        <Input
-                                            label="Link"
-                                            value={data.primary_cta_href}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'primary_cta_href',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="/category/..."
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-4 border-t border-slate-50 pt-4">
-                                    <h5 className="text-xs font-bold text-slate-400 uppercase">
-                                        Secondary CTA
-                                    </h5>
-                                    <div className="grid gap-3">
-                                        <Input
-                                            label="Label"
-                                            value={data.secondary_cta_label}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'secondary_cta_label',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="e.g. Learn More"
-                                        />
-                                        <Input
-                                            label="Link"
-                                            value={data.secondary_cta_href}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'secondary_cta_href',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="/..."
-                                        />
-                                    </div>
+                                <div className="grid gap-3">
+                                    <Input
+                                        label="Label"
+                                        value={data.primary_cta_label}
+                                        onChange={(e) =>
+                                            setData(
+                                                'primary_cta_label',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="e.g. Shop Now"
+                                    />
+                                    <Input
+                                        label="Link"
+                                        value={data.primary_cta_href}
+                                        onChange={(e) =>
+                                            setData(
+                                                'primary_cta_href',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="/category/..."
+                                    />
                                 </div>
                             </CardContent>
                         </Card>

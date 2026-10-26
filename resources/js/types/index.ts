@@ -642,8 +642,6 @@ export interface HeroSlide {
     image: string;
     primary_cta_label?: string | null;
     primary_cta_href?: string | null;
-    secondary_cta_label?: string | null;
-    secondary_cta_href?: string | null;
     stats?: { label: string; value: string }[] | null;
     is_active: boolean;
     sort_order: number;

@@ -15,8 +15,6 @@ class HeroSlide extends Model
         'image',
         'primary_cta_label',
         'primary_cta_href',
-        'secondary_cta_label',
-        'secondary_cta_href',
         'stats',
         'is_active',
         'sort_order',
