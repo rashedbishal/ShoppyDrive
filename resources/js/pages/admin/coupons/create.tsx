@@ -3,23 +3,51 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import { maxLength, minValue, required, validate } from '@/lib/validate';
 
 export default function CouponCreate() {
-    const { data, setData, post, processing, errors } = useForm({
-        code: '',
-        name: '',
-        type: 'percent' as 'percent' | 'fixed',
-        value: '',
-        min_order_amount: '',
-        max_uses: '',
-        per_user_limit: '',
-        starts_at: '',
-        expires_at: '',
-        is_active: true,
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            code: '',
+            name: '',
+            type: 'percent' as 'percent' | 'fixed',
+            value: '',
+            min_order_amount: '',
+            max_uses: '',
+            per_user_limit: '',
+            starts_at: '',
+            expires_at: '',
+            is_active: true,
+        });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors: Record<string, string> = validate(data, {
+            code: [required(), maxLength(50)],
+            name: [required(), maxLength(255)],
+            value: [required(), minValue(0)],
+            min_order_amount: [minValue(0)],
+            max_uses: [minValue(1)],
+            per_user_limit: [minValue(1)],
+        });
+
+        if (
+            data.starts_at &&
+            data.expires_at &&
+            new Date(data.expires_at) < new Date(data.starts_at)
+        ) {
+            clientErrors.expires_at =
+                'The expiry date must be on or after the start date.';
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.coupons.store'));
     };
 

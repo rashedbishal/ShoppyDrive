@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import { maxLength, required, validate } from '@/lib/validate';
 
 type Product = { id: number; name: string; price: number; sku: string | null };
 
@@ -12,13 +13,14 @@ type Props = { products: Product[] };
 type SaleItem = { product_id: string; sale_price: string; stock_limit: string };
 
 export default function FlashSaleCreate({ products }: Props) {
-    const { data, setData, post, processing, errors } = useForm({
-        name: '',
-        starts_at: '',
-        ends_at: '',
-        is_active: false,
-        items: [] as SaleItem[],
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            name: '',
+            starts_at: '',
+            ends_at: '',
+            is_active: false,
+            items: [] as SaleItem[],
+        });
 
     const addItem = () => {
         setData('items', [
@@ -42,6 +44,38 @@ export default function FlashSaleCreate({ products }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors: Record<string, string> = validate(data, {
+            name: [required(), maxLength(255)],
+            starts_at: [required()],
+            ends_at: [required()],
+        });
+
+        if (
+            data.starts_at &&
+            data.ends_at &&
+            new Date(data.ends_at) <= new Date(data.starts_at)
+        ) {
+            clientErrors.ends_at = 'The end date must be after the start date.';
+        }
+
+        if (
+            data.items.some(
+                (item) =>
+                    !item.product_id || !item.sale_price || !item.stock_limit,
+            )
+        ) {
+            clientErrors.items =
+                'Every product row needs a product, sale price, and stock limit.';
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.flash-sales.store'));
     };
 
@@ -145,6 +179,11 @@ export default function FlashSaleCreate({ products }: Props) {
                             </button>
                         </CardHeader>
                         <CardContent className="pt-4">
+                            {errors.items && (
+                                <p className="mb-3 text-xs text-red-500">
+                                    {errors.items}
+                                </p>
+                            )}
                             {data.items.length === 0 ? (
                                 <p className="py-4 text-center text-sm text-slate-400">
                                     No products added yet. Click "Add Product"
@@ -170,6 +209,7 @@ export default function FlashSaleCreate({ products }: Props) {
                                                     String(p.id) ===
                                                         item.product_id,
                                             );
+
                                         return (
                                             <div
                                                 key={i}

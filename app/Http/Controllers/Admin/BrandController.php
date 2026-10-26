@@ -23,7 +23,7 @@ class BrandController extends Controller
     {
         $brands = Brand::withCount('products')
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
-            ->orderBy('name')->paginate(20)->withQueryString();
+            ->orderByDesc('created_at')->paginate(20)->withQueryString();
 
         return Inertia::render('admin/brands/index', [
             'brands' => $brands,

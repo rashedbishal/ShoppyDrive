@@ -2,26 +2,41 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { ImageUpload } from '@/components/ui/image-upload';
+import { maxLength, required, validate } from '@/lib/validate';
 
 export default function PromotionalBannerCreate() {
-    const { data, setData, post, processing, errors, clearErrors } = useForm({
-        title: '',
-        description: '',
-        image: null as File | null,
-        href: '',
-        badge: '',
-        accent: 'from-secondary/90 via-secondary/70 to-secondary/20',
-        is_active: true,
-        sort_order: '0',
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            title: '',
+            description: '',
+            image: null as File | null,
+            href: '',
+            badge: '',
+            accent: 'from-secondary/90 via-secondary/70 to-secondary/20',
+            is_active: true,
+            sort_order: '0',
+        });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         clearErrors();
+
+        const clientErrors = validate(data, {
+            title: [required(), maxLength(255)],
+            href: [maxLength(255)],
+            badge: [maxLength(100)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.promotional-banners.store'));
     };
 

@@ -9,10 +9,12 @@ import {
     Users,
     X,
 } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
+import { maxLength, required, validate } from '@/lib/validate';
 
 type ProductMedia = {
     id: number;
@@ -80,9 +82,11 @@ export default function NewsletterCompose({
         setSelectedImage(null);
         productForm.setData('product_id', String(id));
         const product = products.find((p) => p.id === id);
+
         if (product) {
             const primary =
                 product.media.find((m) => m.is_primary) ?? product.media[0];
+
             if (primary) {
                 setSelectedImage(primary.path);
                 productForm.setData('selected_image', primary.path);
@@ -92,15 +96,31 @@ export default function NewsletterCompose({
 
     const handleSend = () => {
         if (emailType === 'custom') {
-            if (!customForm.data.subject.trim() || !customForm.data.body.trim())
+            customForm.clearErrors();
+            const clientErrors = validate(customForm.data, {
+                subject: [required(), maxLength(255)],
+                body: [required()],
+            });
+
+            if (Object.keys(clientErrors).length > 0) {
+                customForm.setError(clientErrors);
+
                 return;
+            }
         } else {
-            if (
-                !productForm.data.subject.trim() ||
-                !productForm.data.product_id
-            )
+            productForm.clearErrors();
+            const clientErrors = validate(productForm.data, {
+                subject: [required(), maxLength(255)],
+                product_id: [required()],
+            });
+
+            if (Object.keys(clientErrors).length > 0) {
+                productForm.setError(clientErrors);
+
                 return;
+            }
         }
+
         setShowConfirm(true);
     };
 
@@ -452,6 +472,11 @@ export default function NewsletterCompose({
                                         }
                                         className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                     />
+                                    {productForm.errors.subject && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {productForm.errors.subject}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Product picker */}
@@ -480,6 +505,11 @@ export default function NewsletterCompose({
                                             ))}
                                         </Select>
                                     </div>
+                                    {productForm.errors.product_id && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {productForm.errors.product_id}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Image picker */}

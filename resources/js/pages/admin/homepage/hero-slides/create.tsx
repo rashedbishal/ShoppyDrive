@@ -6,23 +6,38 @@ import { Input } from '@/components/ui/input';
 import { MediaUpload } from '@/components/ui/media-upload';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { maxLength, required, validate } from '@/lib/validate';
 
 export default function HeroSlideCreate() {
-    const { data, setData, post, processing, errors, clearErrors } = useForm({
-        title: '',
-        eyebrow: '',
-        description: '',
-        image: null as File | null,
-        primary_cta_label: '',
-        primary_cta_href: '',
-        is_active: true,
-        sort_order: '0',
-        stats: [] as { label: string; value: string }[],
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            title: '',
+            eyebrow: '',
+            description: '',
+            image: null as File | null,
+            primary_cta_label: '',
+            primary_cta_href: '',
+            is_active: true,
+            sort_order: '0',
+            stats: [] as { label: string; value: string }[],
+        });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         clearErrors();
+
+        const clientErrors = validate(data, {
+            title: [required(), maxLength(255)],
+            eyebrow: [maxLength(255)],
+            image: [required('The slide image or video is required.')],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.hero-slides.store'), {
             // Keeps "stats" array items correctly indexed (stats[0][label], stats[1][label], ...)
             // since the image is required here, this request always goes as multipart/form-data.

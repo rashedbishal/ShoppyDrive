@@ -5,17 +5,19 @@ import { ColorPicker } from '@/components/ui/color-picker';
 import { IconPicker } from '@/components/ui/icon-picker';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { maxLength, required, validate } from '@/lib/validate';
 
 export default function CategoryCreate() {
-    const { data, setData, post, processing, errors } = useForm({
-        name: '',
-        slug: '',
-        description: '',
-        image: null as File | string | null,
-        icon: 'shopping-bag',
-        color: '',
-        is_active: true,
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            name: '',
+            slug: '',
+            description: '',
+            image: null as File | string | null,
+            icon: 'shopping-bag',
+            color: '',
+            is_active: true,
+        });
 
     const slugify = (name: string) =>
         name
@@ -25,6 +27,19 @@ export default function CategoryCreate() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors = validate(data, {
+            name: [required(), maxLength(255)],
+            slug: [required(), maxLength(255)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.categories.store'));
     };
 

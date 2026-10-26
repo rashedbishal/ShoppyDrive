@@ -6,6 +6,7 @@ import { ColorPicker } from '@/components/ui/color-picker';
 import { IconPicker } from '@/components/ui/icon-picker';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { maxLength, required, validate } from '@/lib/validate';
 
 type Category = {
     id: number;
@@ -23,19 +24,33 @@ type Category = {
 type Props = { category: Category };
 
 export default function CategoryEdit({ category }: Props) {
-    const { data, setData, post, processing, errors } = useForm({
-        _method: 'PUT',
-        name: category.name,
-        slug: category.slug,
-        description: category.description ?? '',
-        image: category.image as File | string | null,
-        icon: category.icon ?? 'shopping-bag',
-        color: category.color ?? '',
-        is_active: category.is_active,
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            _method: 'PUT',
+            name: category.name,
+            slug: category.slug,
+            description: category.description ?? '',
+            image: category.image as File | string | null,
+            icon: category.icon ?? 'shopping-bag',
+            color: category.color ?? '',
+            is_active: category.is_active,
+        });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors = validate(data, {
+            name: [required(), maxLength(255)],
+            slug: [required(), maxLength(255)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.categories.update', category.id), {
             forceFormData: true,
         });

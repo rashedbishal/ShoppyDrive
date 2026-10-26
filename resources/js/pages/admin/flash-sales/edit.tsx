@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import { maxLength, required, validate } from '@/lib/validate';
 
 type Product = { id: number; name: string; price: number; sku: string | null };
 type FlashSaleItemData = {
@@ -30,17 +31,18 @@ type Props = {
 const toDatetimeLocal = (str: string) => str.slice(0, 16);
 
 export default function FlashSaleEdit({ flashSale, products }: Props) {
-    const { data, setData, put, processing, errors } = useForm({
-        name: flashSale.name,
-        starts_at: toDatetimeLocal(flashSale.starts_at),
-        ends_at: toDatetimeLocal(flashSale.ends_at),
-        is_active: flashSale.is_active,
-        items: flashSale.items.map((item) => ({
-            product_id: String(item.product_id),
-            sale_price: String(item.sale_price),
-            stock_limit: String(item.stock_limit),
-        })),
-    });
+    const { data, setData, put, processing, errors, setError, clearErrors } =
+        useForm({
+            name: flashSale.name,
+            starts_at: toDatetimeLocal(flashSale.starts_at),
+            ends_at: toDatetimeLocal(flashSale.ends_at),
+            is_active: flashSale.is_active,
+            items: flashSale.items.map((item) => ({
+                product_id: String(item.product_id),
+                sale_price: String(item.sale_price),
+                stock_limit: String(item.stock_limit),
+            })),
+        });
 
     const addItem = () => {
         setData('items', [
@@ -68,6 +70,38 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors: Record<string, string> = validate(data, {
+            name: [required(), maxLength(255)],
+            starts_at: [required()],
+            ends_at: [required()],
+        });
+
+        if (
+            data.starts_at &&
+            data.ends_at &&
+            new Date(data.ends_at) <= new Date(data.starts_at)
+        ) {
+            clientErrors.ends_at = 'The end date must be after the start date.';
+        }
+
+        if (
+            data.items.some(
+                (item) =>
+                    !item.product_id || !item.sale_price || !item.stock_limit,
+            )
+        ) {
+            clientErrors.items =
+                'Every product row needs a product, sale price, and stock limit.';
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         put(route('admin.flash-sales.update', flashSale.id));
     };
 
@@ -171,6 +205,11 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                             </button>
                         </CardHeader>
                         <CardContent className="pt-4">
+                            {errors.items && (
+                                <p className="mb-3 text-xs text-red-500">
+                                    {errors.items}
+                                </p>
+                            )}
                             {data.items.length === 0 ? (
                                 <p className="py-4 text-center text-sm text-slate-400">
                                     No products. Click "Add Product" above.
@@ -195,6 +234,7 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                                                     String(p.id) ===
                                                         item.product_id,
                                             );
+
                                         return (
                                             <div
                                                 key={i}

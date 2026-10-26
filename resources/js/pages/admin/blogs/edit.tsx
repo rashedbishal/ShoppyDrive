@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { maxLength, required, validate } from '@/lib/validate';
 import type { Blog } from '@/types';
 
 type Props = { blog: Blog };
@@ -43,22 +44,40 @@ const inputClass = (err?: string) =>
     `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;
 
 export default function BlogEdit({ blog }: Props) {
-    const { data, setData, post, processing, errors } = useForm({
-        _method: 'PUT',
-        title: blog.title,
-        slug: blog.slug,
-        excerpt: blog.excerpt ?? '',
-        content: blog.content,
-        featured_image: blog.featured_image as File | string | null,
-        author_name: blog.author_name ?? '',
-        meta_title: blog.meta_title ?? '',
-        meta_description: blog.meta_description ?? '',
-        is_published: blog.is_published,
-        published_at: toDatetimeLocal(blog.published_at),
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            _method: 'PUT',
+            title: blog.title,
+            slug: blog.slug,
+            excerpt: blog.excerpt ?? '',
+            content: blog.content,
+            featured_image: blog.featured_image as File | string | null,
+            author_name: blog.author_name ?? '',
+            meta_title: blog.meta_title ?? '',
+            meta_description: blog.meta_description ?? '',
+            is_published: blog.is_published,
+            published_at: toDatetimeLocal(blog.published_at),
+        });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors = validate(data, {
+            title: [required(), maxLength(255)],
+            slug: [required(), maxLength(255)],
+            excerpt: [maxLength(500)],
+            content: [required()],
+            meta_title: [maxLength(255)],
+            meta_description: [maxLength(500)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.blogs.update', blog.id), { forceFormData: true });
     };
 

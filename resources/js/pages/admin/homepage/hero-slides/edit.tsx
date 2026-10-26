@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { MediaUpload } from '@/components/ui/media-upload';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { maxLength, required, validate } from '@/lib/validate';
 import type { HeroSlide } from '@/types';
 
 type Props = {
@@ -13,22 +14,36 @@ type Props = {
 };
 
 export default function HeroSlideEdit({ slide }: Props) {
-    const { data, setData, post, processing, errors, clearErrors } = useForm({
-        _method: 'PUT',
-        title: slide.title,
-        eyebrow: slide.eyebrow ?? '',
-        description: slide.description ?? '',
-        image: slide.image as File | string | null,
-        primary_cta_label: slide.primary_cta_label ?? '',
-        primary_cta_href: slide.primary_cta_href ?? '',
-        is_active: slide.is_active,
-        sort_order: String(slide.sort_order),
-        stats: slide.stats ?? ([] as { label: string; value: string }[]),
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            _method: 'PUT',
+            title: slide.title,
+            eyebrow: slide.eyebrow ?? '',
+            description: slide.description ?? '',
+            image: slide.image as File | string | null,
+            primary_cta_label: slide.primary_cta_label ?? '',
+            primary_cta_href: slide.primary_cta_href ?? '',
+            is_active: slide.is_active,
+            sort_order: String(slide.sort_order),
+            stats: slide.stats ?? ([] as { label: string; value: string }[]),
+        });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         clearErrors();
+
+        const clientErrors = validate(data, {
+            title: [required(), maxLength(255)],
+            eyebrow: [maxLength(255)],
+            image: [required('The slide image or video is required.')],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         // PHP never populates $_POST/$_FILES for a literal PUT + multipart/form-data
         // request, so this must go as a real POST with _method spoofing (forceFormData
         // keeps the encoding consistent even when no new image is selected).

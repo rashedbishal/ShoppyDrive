@@ -20,6 +20,7 @@ import {
     DISTRICT_OPTIONS,
 } from '@/lib/bangladesh-geography';
 import { formatCurrency } from '@/lib/utils';
+import { maxLength, pattern, required, validate } from '@/lib/validate';
 
 type IncompleteOrderItem = {
     product_id: number;
@@ -70,7 +71,10 @@ type Props = {
 };
 
 function variantLabel(attributes: Record<string, string> | null): string {
-    if (!attributes) return '';
+    if (!attributes) {
+        return '';
+    }
+
     return Object.entries(attributes)
         .map(([k, v]) => `${k}: ${v}`)
         .join(', ');
@@ -129,6 +133,7 @@ export default function ConvertIncompleteOrder({
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
+
         return () =>
             document.removeEventListener('mousedown', handleClickOutside);
     }, []);
@@ -136,12 +141,14 @@ export default function ConvertIncompleteOrder({
     useEffect(() => {
         if (!query.trim()) {
             setResults([]);
+
             return;
         }
 
         const controller = new AbortController();
         const timeoutId = setTimeout(async () => {
             setSearching(true);
+
             try {
                 const res = await fetch(
                     route('admin.orders.incomplete.products.search', {
@@ -155,7 +162,10 @@ export default function ConvertIncompleteOrder({
                         },
                     },
                 );
-                if (res.ok) setResults(await res.json());
+
+                if (res.ok) {
+                    setResults(await res.json());
+                }
             } catch {
                 // aborted or network error
             } finally {
@@ -169,16 +179,14 @@ export default function ConvertIncompleteOrder({
         };
     }, [query]);
 
-    const addLine = (
-        product: SearchProduct,
-        variant: SearchVariant | null,
-    ) => {
+    const addLine = (product: SearchProduct, variant: SearchVariant | null) => {
         setLines((prev) => {
             const existing = prev.find(
                 (l) =>
                     l.product_id === product.id &&
                     l.variant_id === (variant?.id ?? null),
             );
+
             if (existing) {
                 return prev.map((l) =>
                     l === existing ? { ...l, quantity: l.quantity + 1 } : l,
@@ -206,8 +214,10 @@ export default function ConvertIncompleteOrder({
     const handleSelectProduct = (product: SearchProduct) => {
         if (product.variants.length > 0) {
             setPendingVariantFor(product);
+
             return;
         }
+
         addLine(product, null);
     };
 
@@ -228,7 +238,37 @@ export default function ConvertIncompleteOrder({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (lines.length === 0 || submitting) return;
+
+        if (submitting) {
+            return;
+        }
+
+        form.clearErrors();
+        const clientErrors: Record<string, string> = validate(form.data, {
+            name: [required(), maxLength(255)],
+            phone: [
+                required(),
+                pattern(
+                    /^01[3-9][0-9]{8}$/,
+                    'Enter a valid 11-digit Bangladeshi phone number (e.g. 01712345678).',
+                ),
+            ],
+            address_line1: [required(), maxLength(255)],
+            address_line2: [maxLength(255)],
+            city: [required(), maxLength(255)],
+            state: [required(), maxLength(255)],
+            postal_code: [maxLength(20)],
+        });
+
+        if (lines.length === 0) {
+            clientErrors.items = 'Add at least one product to the order.';
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            form.setError(clientErrors);
+
+            return;
+        }
 
         setSubmitting(true);
         router.post(
@@ -441,8 +481,8 @@ export default function ConvertIncompleteOrder({
 
                                 <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                                     <Truck className="size-4 shrink-0" />
-                                    Payment method: this order will be
-                                    created as <strong>Cash on Delivery</strong>.
+                                    Payment method: this order will be created
+                                    as <strong>Cash on Delivery</strong>.
                                 </div>
                             </CardContent>
                         </Card>
@@ -544,8 +584,7 @@ export default function ConvertIncompleteOrder({
                                                         <span className="truncate">
                                                             {product.name}
                                                             {product.variants
-                                                                .length >
-                                                                0 && (
+                                                                .length > 0 && (
                                                                 <span className="ml-1.5 text-xs text-slate-400">
                                                                     (
                                                                     {
@@ -654,9 +693,7 @@ export default function ConvertIncompleteOrder({
                                 <Button
                                     type="submit"
                                     size="lg"
-                                    disabled={
-                                        submitting || lines.length === 0
-                                    }
+                                    disabled={submitting || lines.length === 0}
                                     className="w-full"
                                 >
                                     {submitting

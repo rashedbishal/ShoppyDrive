@@ -4,21 +4,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import {
+    maxLength,
+    minValue,
+    numeric,
+    required,
+    validate,
+} from '@/lib/validate';
 
 type Props = {
     categories: { id: number; name: string }[];
 };
 
 export default function SubCategoryCreate({ categories }: Props) {
-    const { data, setData, post, processing, errors } = useForm({
-        name: '',
-        slug: '',
-        category_id: '',
-        description: '',
-        image: null as File | string | null,
-        is_active: true,
-        sort_order: '0',
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            name: '',
+            slug: '',
+            category_id: '',
+            description: '',
+            image: null as File | string | null,
+            is_active: true,
+            sort_order: '0',
+        });
 
     const slugify = (name: string) =>
         name
@@ -28,6 +36,21 @@ export default function SubCategoryCreate({ categories }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors = validate(data, {
+            name: [required(), maxLength(255)],
+            slug: [required(), maxLength(255)],
+            category_id: [required()],
+            sort_order: [numeric(), minValue(0)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.sub-categories.store'));
     };
 
