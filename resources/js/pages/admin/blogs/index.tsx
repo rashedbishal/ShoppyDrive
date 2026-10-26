@@ -8,7 +8,10 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
-import { destroyMany as bulkDestroyRoute } from '@/routes/admin/blogs';
+import {
+    destroyMany as bulkDestroyRoute,
+    updateStatusMany as bulkStatusRoute,
+} from '@/routes/admin/blogs';
 import type { Blog, PaginatedData } from '@/types';
 
 type Props = {
@@ -110,6 +113,10 @@ export default function BlogsIndex({ blogs, filters }: Props) {
 
                     <BulkActionBar
                         count={bulk.selected.length}
+                        statusUrl={bulkStatusRoute.url()}
+                        selectedIds={bulk.selected}
+                        activateLabel="Publish"
+                        deactivateLabel="Unpublish"
                         onClear={bulk.clear}
                         onDelete={() => setBulkConfirmOpen(true)}
                         deleting={bulkDeleting}

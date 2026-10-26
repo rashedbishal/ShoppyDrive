@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SubCategoryRequest;
 use App\Models\Category;
@@ -16,6 +17,8 @@ use Inertia\Response;
 
 class SubCategoryController extends Controller
 {
+    use UpdatesStatusInBulk;
+
     public function index(Request $request): Response
     {
         $subCategories = SubCategory::with('category:id,name')
@@ -78,6 +81,13 @@ class SubCategoryController extends Controller
         $subCategory->delete();
 
         return redirect()->route('admin.sub-categories.index')->with('success', 'Sub-category deleted.');
+    }
+
+    public function updateStatusMany(Request $request): RedirectResponse
+    {
+        $result = $this->updateStatusInBulk($request, SubCategory::class);
+
+        return redirect()->route('admin.sub-categories.index')->with('success', $result['count'].' sub-category(ies) '.($result['active'] ? 'activated' : 'deactivated').'.');
     }
 
     public function destroyMany(Request $request): RedirectResponse

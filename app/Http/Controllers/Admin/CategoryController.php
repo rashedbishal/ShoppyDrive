@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CategoryRequest;
 use App\Models\Category;
@@ -15,6 +16,8 @@ use Inertia\Response;
 
 class CategoryController extends Controller
 {
+    use UpdatesStatusInBulk;
+
     public function index(Request $request): Response
     {
         $categories = Category::withCount([
@@ -82,6 +85,13 @@ class CategoryController extends Controller
         $category->delete();
 
         return redirect()->route('admin.categories.index')->with('success', 'Category deleted.');
+    }
+
+    public function updateStatusMany(Request $request): RedirectResponse
+    {
+        $result = $this->updateStatusInBulk($request, Category::class);
+
+        return redirect()->route('admin.categories.index')->with('success', $result['count'].' category(ies) '.($result['active'] ? 'activated' : 'deactivated').'.');
     }
 
     public function destroyMany(Request $request): RedirectResponse

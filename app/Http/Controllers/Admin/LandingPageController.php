@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Models\LandingPage;
 use App\Models\Product;
@@ -15,6 +16,8 @@ use Inertia\Response;
 
 class LandingPageController extends Controller
 {
+    use UpdatesStatusInBulk;
+
     public function index(): Response
     {
         $pages = LandingPage::with('product:id,name')
@@ -93,6 +96,13 @@ class LandingPageController extends Controller
         $landingPage->delete();
 
         return redirect()->route('admin.landing-pages.index')->with('success', 'Landing page deleted.');
+    }
+
+    public function updateStatusMany(Request $request): RedirectResponse
+    {
+        $result = $this->updateStatusInBulk($request, LandingPage::class);
+
+        return redirect()->route('admin.landing-pages.index')->with('success', $result['count'].' landing page(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
     }
 
     public function destroyMany(Request $request): RedirectResponse

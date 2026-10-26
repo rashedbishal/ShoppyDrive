@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\FlashSaleRequest;
 use App\Models\FlashSale;
@@ -16,6 +17,8 @@ use Inertia\Response;
 
 class FlashSaleController extends Controller
 {
+    use UpdatesStatusInBulk;
+
     public function index(Request $request): Response
     {
         $flashSales = FlashSale::withCount('items')
@@ -94,6 +97,13 @@ class FlashSaleController extends Controller
         $flashSale->delete();
 
         return redirect()->route('admin.flash-sales.index')->with('success', 'Flash sale deleted.');
+    }
+
+    public function updateStatusMany(Request $request): RedirectResponse
+    {
+        $result = $this->updateStatusInBulk($request, FlashSale::class);
+
+        return redirect()->route('admin.flash-sales.index')->with('success', $result['count'].' flash sale(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
     }
 
     public function destroyMany(Request $request): RedirectResponse

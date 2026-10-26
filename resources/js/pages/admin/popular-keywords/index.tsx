@@ -7,7 +7,10 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
-import { destroyMany as bulkDestroyRoute } from '@/routes/admin/popular-keywords';
+import {
+    destroyMany as bulkDestroyRoute,
+    updateStatusMany as bulkStatusRoute,
+} from '@/routes/admin/popular-keywords';
 
 type Keyword = {
     id: number;
@@ -225,6 +228,8 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                 <Card className="overflow-hidden p-0 shadow-sm">
                     <BulkActionBar
                         count={bulk.selected.length}
+                        statusUrl={bulkStatusRoute.url()}
+                        selectedIds={bulk.selected}
                         onClear={bulk.clear}
                         onDelete={() => setBulkConfirmOpen(true)}
                         deleting={bulkDeleting}

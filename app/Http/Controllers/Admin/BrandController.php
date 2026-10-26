@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BrandRequest;
 use App\Models\Brand;
@@ -16,6 +17,8 @@ use Inertia\Response;
 
 class BrandController extends Controller
 {
+    use UpdatesStatusInBulk;
+
     public function index(Request $request): Response
     {
         $brands = Brand::withCount('products')
@@ -74,6 +77,13 @@ class BrandController extends Controller
         $brand->delete();
 
         return redirect()->route('admin.brands.index')->with('success', 'Brand deleted.');
+    }
+
+    public function updateStatusMany(Request $request): RedirectResponse
+    {
+        $result = $this->updateStatusInBulk($request, Brand::class, 'is_active', fn (Brand $brand) => $this->syncHomepageSetting($brand));
+
+        return redirect()->route('admin.brands.index')->with('success', $result['count'].' brand(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
     }
 
     public function destroyMany(Request $request): RedirectResponse

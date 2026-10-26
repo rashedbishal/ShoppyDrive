@@ -8,7 +8,10 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
-import { destroyMany as bulkDestroyRoute } from '@/routes/admin/brands';
+import {
+    destroyMany as bulkDestroyRoute,
+    updateStatusMany as bulkStatusRoute,
+} from '@/routes/admin/brands';
 
 type Brand = {
     id: number;
@@ -126,6 +129,8 @@ export default function BrandsIndex({ brands, filters }: Props) {
 
                     <BulkActionBar
                         count={bulk.selected.length}
+                        statusUrl={bulkStatusRoute.url()}
+                        selectedIds={bulk.selected}
                         onClear={bulk.clear}
                         onDelete={() => setBulkConfirmOpen(true)}
                         deleting={bulkDeleting}

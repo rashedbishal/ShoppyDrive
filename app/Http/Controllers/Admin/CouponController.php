@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CouponRequest;
 use App\Models\Coupon;
@@ -14,6 +15,8 @@ use Inertia\Response;
 
 class CouponController extends Controller
 {
+    use UpdatesStatusInBulk;
+
     public function index(Request $request): Response
     {
         $coupons = Coupon::when($request->search, fn ($q) => $q->where('code', 'like', "%{$request->search}%")->orWhere('name', 'like', "%{$request->search}%"))
@@ -56,6 +59,13 @@ class CouponController extends Controller
         $coupon->delete();
 
         return redirect()->route('admin.coupons.index')->with('success', 'Coupon deleted.');
+    }
+
+    public function updateStatusMany(Request $request): RedirectResponse
+    {
+        $result = $this->updateStatusInBulk($request, Coupon::class);
+
+        return redirect()->route('admin.coupons.index')->with('success', $result['count'].' coupon(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
     }
 
     public function destroyMany(Request $request): RedirectResponse
