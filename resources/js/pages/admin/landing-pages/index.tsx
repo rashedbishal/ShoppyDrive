@@ -89,6 +89,26 @@ export default function LandingPagesIndex({ pages }: Props) {
                 )}
 
                 <Card className="overflow-hidden p-0 shadow-sm">
+                    <BulkActionBar
+                        count={bulk.selected.length}
+                        onClear={bulk.clear}
+                        onDelete={() => setBulkConfirmOpen(true)}
+                        deleting={bulkDeleting}
+                        label="landing page(s) selected"
+                    />
+
+                    {pages.length > 0 && (
+                        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-2">
+                            <Checkbox
+                                checked={bulk.allSelected}
+                                onCheckedChange={bulk.toggleAll}
+                            />
+                            <span className="text-xs font-medium text-slate-500">
+                                Select all
+                            </span>
+                        </div>
+                    )}
+
                     {pages.length === 0 ? (
                         <div className="py-16 text-center text-sm text-slate-400">
                             No landing pages yet. Create one to get started.
@@ -100,6 +120,12 @@ export default function LandingPagesIndex({ pages }: Props) {
                                     key={page.id}
                                     className="flex items-center gap-4 px-4 py-3"
                                 >
+                                    <Checkbox
+                                        checked={bulk.isSelected(page.id)}
+                                        onCheckedChange={() =>
+                                            bulk.toggle(page.id)
+                                        }
+                                    />
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm font-semibold text-slate-800">
@@ -175,6 +201,15 @@ export default function LandingPagesIndex({ pages }: Props) {
                 }
                 onConfirm={confirmDelete}
                 processing={deleting}
+            />
+
+            <ConfirmDialog
+                open={bulkConfirmOpen}
+                onOpenChange={setBulkConfirmOpen}
+                title="Delete selected landing pages?"
+                description={`This will permanently delete ${bulk.selected.length} landing page(s). This cannot be undone.`}
+                onConfirm={confirmBulkDelete}
+                processing={bulkDeleting}
             />
         </>
     );
