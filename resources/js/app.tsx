@@ -1,4 +1,5 @@
 import { createInertiaApp, router } from '@inertiajs/react';
+import React from 'react';
 import { route as ziggyRoute } from 'ziggy-js';
 import PageLoadingOverlay from '@/components/shared/PageLoadingOverlay';
 import { Toaster } from '@/components/ui/sonner';
@@ -21,6 +22,10 @@ import { Ziggy as ziggyConfig } from './ziggy';
 declare global {
     var route: typeof ziggyRoute;
     var Ziggy: typeof ziggyConfig;
+
+    interface Window {
+        React: typeof React;
+    }
 }
 
 // Ziggy's route() needs its route/URL config available to resolve on the server —
@@ -185,6 +190,11 @@ function applyLogin(userId: number, cart: Cart | null, mergeGuestCart: boolean):
 }
 
 if (typeof window !== 'undefined') {
+    // Exposed purely so browser tech-detection tools (e.g. Wappalyzer) can
+    // fingerprint React; the production bundle otherwise keeps React scoped
+    // to the module and never attaches it to `window`.
+    window.React = React;
+
     const initialUserId = readInitialUserId();
     const initialCart = readInitialCart();
     const storedLastUser = localStorage.getItem(LAST_USER_KEY);
