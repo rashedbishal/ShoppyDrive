@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BlogRequest;
 use App\Models\Blog;
@@ -15,6 +16,8 @@ use Inertia\Response;
 
 class BlogController extends Controller
 {
+    use UpdatesStatusInBulk;
+
     public function index(Request $request): Response
     {
         $blogs = Blog::query()
@@ -86,5 +89,24 @@ class BlogController extends Controller
         $blog->delete();
 
         return redirect()->route('admin.blogs.index')->with('success', 'Blog post deleted.');
+    }
+
+    public function updateStatusMany(Request $request): RedirectResponse
+    {
+        $result = $this->updateStatusInBulk($request, Blog::class, 'is_published');
+
+        return redirect()->route('admin.blogs.index')->with('success', $result['count'].' blog(s) '.($result['active'] ? 'published' : 'unpublished').'.');
+    }
+
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:blogs,id'],
+        ])['ids'];
+
+        Blog::whereIn('id', $ids)->delete();
+
+        return redirect()->route('admin.blogs.index')->with('success', count($ids).' blog post(s) deleted.');
     }
 }

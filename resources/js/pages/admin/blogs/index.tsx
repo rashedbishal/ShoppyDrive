@@ -1,10 +1,17 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Edit, Plus, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { BulkActionBar } from '@/components/admin/bulk-action-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useBulkSelect } from '@/hooks/use-bulk-select';
+import {
+    destroyMany as bulkDestroyRoute,
+    updateStatusMany as bulkStatusRoute,
+} from '@/routes/admin/blogs';
 import type { Blog, PaginatedData } from '@/types';
 
 type Props = {
@@ -16,8 +23,24 @@ export default function BlogsIndex({ blogs, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [deleteTarget, setDeleteTarget] = useState<Blog | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
     const { props } = usePage<any>();
     const flash = props.flash as { success?: string } | undefined;
+
+    const bulk = useBulkSelect(blogs.data.map((b) => b.id));
+
+    const confirmBulkDelete = () => {
+        setBulkDeleting(true);
+        router.delete(bulkDestroyRoute.url(), {
+            data: { ids: bulk.selected },
+            onFinish: () => {
+                setBulkDeleting(false);
+                setBulkConfirmOpen(false);
+                bulk.clear();
+            },
+        });
+    };
 
     const applySearch = () => {
         router.get(
@@ -88,6 +111,30 @@ export default function BlogsIndex({ blogs, filters }: Props) {
                         </div>
                     </div>
 
+                    <BulkActionBar
+                        count={bulk.selected.length}
+                        statusUrl={bulkStatusRoute.url()}
+                        selectedIds={bulk.selected}
+                        activateLabel="Publish"
+                        deactivateLabel="Unpublish"
+                        onClear={bulk.clear}
+                        onDelete={() => setBulkConfirmOpen(true)}
+                        deleting={bulkDeleting}
+                        label="post(s) selected"
+                    />
+
+                    {blogs.data.length > 0 && (
+                        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-2">
+                            <Checkbox
+                                checked={bulk.allSelected}
+                                onCheckedChange={bulk.toggleAll}
+                            />
+                            <span className="text-xs font-medium text-slate-500">
+                                Select all
+                            </span>
+                        </div>
+                    )}
+
                     <div className="divide-y divide-slate-50">
                         {blogs.data.length === 0 ? (
                             <p className="py-12 text-center text-sm text-slate-400">
@@ -99,6 +146,12 @@ export default function BlogsIndex({ blogs, filters }: Props) {
                                     key={blog.id}
                                     className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
                                 >
+                                    <Checkbox
+                                        checked={bulk.isSelected(blog.id)}
+                                        onCheckedChange={() =>
+                                            bulk.toggle(blog.id)
+                                        }
+                                    />
                                     {blog.featured_image ? (
                                         <img
                                             src={blog.featured_image}
@@ -199,6 +252,15 @@ export default function BlogsIndex({ blogs, filters }: Props) {
                 }
                 onConfirm={confirmDelete}
                 processing={deleting}
+            />
+
+            <ConfirmDialog
+                open={bulkConfirmOpen}
+                onOpenChange={setBulkConfirmOpen}
+                title="Delete selected posts?"
+                description={`This will permanently delete ${bulk.selected.length} post(s). This cannot be undone.`}
+                onConfirm={confirmBulkDelete}
+                processing={bulkDeleting}
             />
         </>
     );

@@ -1,9 +1,16 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { GripVertical, Plus, Save, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { BulkActionBar } from '@/components/admin/bulk-action-bar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useBulkSelect } from '@/hooks/use-bulk-select';
+import {
+    destroyMany as bulkDestroyRoute,
+    updateStatusMany as bulkStatusRoute,
+} from '@/routes/admin/popular-keywords';
 
 type Keyword = {
     id: number;
@@ -16,9 +23,13 @@ type Props = { keywords: Keyword[] };
 function KeywordRow({
     keyword,
     onDelete,
+    selected,
+    onToggleSelect,
 }: {
     keyword: Keyword;
     onDelete: (id: number) => void;
+    selected: boolean;
+    onToggleSelect: () => void;
 }) {
     const [editing, setEditing] = useState(false);
     const { data, setData, put, processing } = useForm({
@@ -38,6 +49,7 @@ function KeywordRow({
 
     return (
         <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50/60">
+            <Checkbox checked={selected} onCheckedChange={onToggleSelect} />
             <GripVertical className="size-4 shrink-0 text-slate-300" />
 
             {editing ? (
@@ -123,8 +135,25 @@ function KeywordRow({
 export default function PopularKeywordsIndex({ keywords }: Props) {
     const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
     const { props } = usePage<any>();
     const flash = props.flash as { success?: string } | undefined;
+
+    const bulk = useBulkSelect(keywords.map((k) => k.id));
+
+    const confirmBulkDelete = () => {
+        setBulkDeleting(true);
+        router.delete(bulkDestroyRoute.url(), {
+            data: { ids: bulk.selected },
+            preserveScroll: true,
+            onFinish: () => {
+                setBulkDeleting(false);
+                setBulkConfirmOpen(false);
+                bulk.clear();
+            },
+        });
+    };
 
     const { data, setData, post, processing, reset } = useForm({ keyword: '' });
 
@@ -197,6 +226,28 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
 
                 {/* Keywords list */}
                 <Card className="overflow-hidden p-0 shadow-sm">
+                    <BulkActionBar
+                        count={bulk.selected.length}
+                        statusUrl={bulkStatusRoute.url()}
+                        selectedIds={bulk.selected}
+                        onClear={bulk.clear}
+                        onDelete={() => setBulkConfirmOpen(true)}
+                        deleting={bulkDeleting}
+                        label="keyword(s) selected"
+                    />
+
+                    {keywords.length > 0 && (
+                        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-2">
+                            <Checkbox
+                                checked={bulk.allSelected}
+                                onCheckedChange={bulk.toggleAll}
+                            />
+                            <span className="text-xs font-medium text-slate-500">
+                                Select all
+                            </span>
+                        </div>
+                    )}
+
                     {keywords.length === 0 ? (
                         <div className="py-10 text-center text-sm text-slate-400">
                             No keywords yet. Add one above.
@@ -208,6 +259,8 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                                     key={kw.id}
                                     keyword={kw}
                                     onDelete={setDeleteTargetId}
+                                    selected={bulk.isSelected(kw.id)}
+                                    onToggleSelect={() => bulk.toggle(kw.id)}
                                 />
                             ))}
                         </div>
@@ -228,6 +281,15 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                 description="This will permanently delete this search keyword. This cannot be undone."
                 onConfirm={confirmDelete}
                 processing={deleting}
+            />
+
+            <ConfirmDialog
+                open={bulkConfirmOpen}
+                onOpenChange={setBulkConfirmOpen}
+                title="Delete selected keywords?"
+                description={`This will permanently delete ${bulk.selected.length} keyword(s). This cannot be undone.`}
+                onConfirm={confirmBulkDelete}
+                processing={bulkDeleting}
             />
         </>
     );

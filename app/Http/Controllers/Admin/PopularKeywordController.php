@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Models\PopularKeyword;
 use Illuminate\Http\RedirectResponse;
@@ -13,6 +14,8 @@ use Inertia\Response;
 
 class PopularKeywordController extends Controller
 {
+    use UpdatesStatusInBulk;
+
     public function index(): Response
     {
         $keywords = PopularKeyword::orderBy('sort_order')->orderBy('id')->get();
@@ -61,5 +64,24 @@ class PopularKeywordController extends Controller
         $popularKeyword->delete();
 
         return back()->with('success', 'Keyword deleted.');
+    }
+
+    public function updateStatusMany(Request $request): RedirectResponse
+    {
+        $result = $this->updateStatusInBulk($request, PopularKeyword::class);
+
+        return redirect()->route('admin.popular-keywords.index')->with('success', $result['count'].' keyword(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
+    }
+
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:popular_keywords,id'],
+        ])['ids'];
+
+        PopularKeyword::whereIn('id', $ids)->delete();
+
+        return back()->with('success', count($ids).' keyword(s) deleted.');
     }
 }

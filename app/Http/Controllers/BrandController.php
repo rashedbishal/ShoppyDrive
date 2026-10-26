@@ -18,7 +18,7 @@ class BrandController extends Controller
             ->withCount([
                 'products as products_count' => static fn ($query) => $query->active()->published(),
             ])
-            ->orderBy('name')
+            ->orderByDesc('id')
             ->get();
 
         return Inertia::render('catalog/BrandListing', [

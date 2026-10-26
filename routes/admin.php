@@ -47,10 +47,20 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::get('attributes', [AttributeController::class, 'index'])->name('attributes.index');
     Route::resource('attribute-values', AttributeValueController::class)->only(['store', 'update', 'destroy']);
     Route::post('categories/reorder', [CategoryController::class, 'reorder'])->name('categories.reorder');
+    Route::patch('categories/bulk-status', [CategoryController::class, 'updateStatusMany'])->name('categories.updateStatusMany');
+    Route::delete('categories/bulk-delete', [CategoryController::class, 'destroyMany'])->name('categories.destroyMany');
     Route::resource('categories', CategoryController::class);
+    Route::patch('sub-categories/bulk-status', [SubCategoryController::class, 'updateStatusMany'])->name('sub-categories.updateStatusMany');
+    Route::delete('sub-categories/bulk-delete', [SubCategoryController::class, 'destroyMany'])->name('sub-categories.destroyMany');
     Route::resource('sub-categories', SubCategoryController::class);
+    Route::patch('brands/bulk-status', [BrandController::class, 'updateStatusMany'])->name('brands.updateStatusMany');
+    Route::delete('brands/bulk-delete', [BrandController::class, 'destroyMany'])->name('brands.destroyMany');
     Route::resource('brands', BrandController::class);
+    Route::patch('coupons/bulk-status', [CouponController::class, 'updateStatusMany'])->name('coupons.updateStatusMany');
+    Route::delete('coupons/bulk-delete', [CouponController::class, 'destroyMany'])->name('coupons.destroyMany');
     Route::resource('coupons', CouponController::class);
+    Route::patch('flash-sales/bulk-status', [FlashSaleController::class, 'updateStatusMany'])->name('flash-sales.updateStatusMany');
+    Route::delete('flash-sales/bulk-delete', [FlashSaleController::class, 'destroyMany'])->name('flash-sales.destroyMany');
     Route::resource('flash-sales', FlashSaleController::class)->parameters(['flash-sales' => 'flashSale']);
 
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
@@ -104,7 +114,11 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::post('settings/sms-forwarder/regenerate', [SmsForwarderSettingsController::class, 'regenerate'])->name('settings.sms-forwarder.regenerate');
 
     Route::resource('admins', AdminController::class)->except(['show']);
+    Route::patch('popular-keywords/bulk-status', [PopularKeywordController::class, 'updateStatusMany'])->name('popular-keywords.updateStatusMany');
+    Route::delete('popular-keywords/bulk-delete', [PopularKeywordController::class, 'destroyMany'])->name('popular-keywords.destroyMany');
     Route::resource('popular-keywords', PopularKeywordController::class)->only(['index', 'store', 'update', 'destroy'])->parameters(['popular-keywords' => 'popularKeyword']);
+    Route::patch('landing-pages/bulk-status', [AdminLandingPageController::class, 'updateStatusMany'])->name('landing-pages.updateStatusMany');
+    Route::delete('landing-pages/bulk-delete', [AdminLandingPageController::class, 'destroyMany'])->name('landing-pages.destroyMany');
     Route::resource('landing-pages', AdminLandingPageController::class)->except(['show'])->parameters(['landing-pages' => 'landingPage']);
 
     Route::get('received-sms', [ReceivedSmsController::class, 'index'])->name('received-sms.index');
@@ -113,6 +127,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
 
     Route::get('sms-patterns', [SmsPatternController::class, 'index'])->name('sms-patterns.index');
     Route::post('sms-patterns', [SmsPatternController::class, 'store'])->name('sms-patterns.store');
+    Route::patch('sms-patterns/bulk-status', [SmsPatternController::class, 'updateStatusMany'])->name('sms-patterns.updateStatusMany');
+    Route::delete('sms-patterns/bulk-delete', [SmsPatternController::class, 'destroyMany'])->name('sms-patterns.destroyMany');
     Route::patch('sms-patterns/{smsPattern}', [SmsPatternController::class, 'update'])->name('sms-patterns.update');
     Route::delete('sms-patterns/{smsPattern}', [SmsPatternController::class, 'destroy'])->name('sms-patterns.destroy');
 
@@ -130,6 +146,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::get('newsletter/compose', [AdminNewsletterController::class, 'compose'])->name('newsletter.compose');
     Route::post('newsletter/send', [AdminNewsletterController::class, 'send'])->name('newsletter.send');
 
+    Route::patch('blogs/bulk-status', [BlogController::class, 'updateStatusMany'])->name('blogs.updateStatusMany');
+    Route::delete('blogs/bulk-delete', [BlogController::class, 'destroyMany'])->name('blogs.destroyMany');
     Route::resource('blogs', BlogController::class)->except(['show']);
     Route::post('content-images', [ContentImageController::class, 'store'])->name('content-images.store');
 

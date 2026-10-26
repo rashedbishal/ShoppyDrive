@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Models\SmsPattern;
 use Illuminate\Http\RedirectResponse;
@@ -13,6 +14,8 @@ use Inertia\Response;
 
 class SmsPatternController extends Controller
 {
+    use UpdatesStatusInBulk;
+
     public function index(): Response
     {
         return Inertia::render('admin/sms-patterns/index', [
@@ -58,5 +61,24 @@ class SmsPatternController extends Controller
         $smsPattern->delete();
 
         return back()->with('success', 'Pattern deleted.');
+    }
+
+    public function updateStatusMany(Request $request): RedirectResponse
+    {
+        $result = $this->updateStatusInBulk($request, SmsPattern::class);
+
+        return redirect()->route('admin.sms-patterns.index')->with('success', $result['count'].' SMS pattern(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
+    }
+
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:sms_patterns,id'],
+        ])['ids'];
+
+        SmsPattern::whereIn('id', $ids)->delete();
+
+        return back()->with('success', count($ids).' pattern(s) deleted.');
     }
 }
