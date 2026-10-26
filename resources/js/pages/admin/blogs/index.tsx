@@ -44,6 +44,10 @@ export default function BlogsIndex({ blogs, filters }: Props) {
     };
 
     const applySearch = () => {
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
         router.get(
             route('admin.blogs.index'),
             { search },

@@ -60,6 +60,10 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
     };
 
     const applySearch = () => {
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
         router.get(
             route('admin.sub-categories.index'),
             { search },

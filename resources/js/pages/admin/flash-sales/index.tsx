@@ -60,6 +60,10 @@ export default function FlashSalesIndex({ flashSales, filters }: Props) {
     };
 
     const applySearch = () => {
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
         router.get(
             route('admin.flash-sales.index'),
             { search },

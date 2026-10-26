@@ -73,6 +73,10 @@ export default function CategoriesIndex({ categories, filters }: Props) {
     };
 
     const applySearch = () => {
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
         router.get(
             route('admin.categories.index'),
             { search },

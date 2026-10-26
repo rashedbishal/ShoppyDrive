@@ -63,6 +63,10 @@ export default function CouponsIndex({ coupons, filters }: Props) {
     };
 
     const applySearch = () => {
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
         router.get(
             route('admin.coupons.index'),
             { search },

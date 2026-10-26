@@ -52,6 +52,14 @@ export default function NewsletterIndex({
         }
 
         Object.assign(params, overrides);
+
+        if (
+            (params.search ?? '') === (filters.search ?? '') &&
+            (params.status ?? '') === (filters.status ?? '')
+        ) {
+            return;
+        }
+
         router.get(route('admin.newsletter.index'), params, {
             preserveState: true,
             replace: true,

@@ -40,6 +40,10 @@ export default function TrashedOrders({ orders, filters }: Props) {
         | undefined;
 
     const applySearch = () => {
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
         router.get(
             route('admin.orders.trashed'),
             { search },

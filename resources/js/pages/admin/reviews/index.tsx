@@ -36,11 +36,19 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
     const flash = props.flash as { success?: string } | undefined;
 
     const applyFilters = (overrides: Record<string, string>) => {
-        router.get(
-            route('admin.reviews.index'),
-            { ...filters, search, ...overrides },
-            { preserveState: true, replace: true },
-        );
+        const params = { ...filters, search, ...overrides };
+
+        if (
+            (params.search ?? '') === (filters.search ?? '') &&
+            (params.status ?? '') === (filters.status ?? '')
+        ) {
+            return;
+        }
+
+        router.get(route('admin.reviews.index'), params, {
+            preserveState: true,
+            replace: true,
+        });
     };
 
     const clearFilters = () => {

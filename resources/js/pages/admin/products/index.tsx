@@ -55,6 +55,13 @@ export default function ProductsIndex({
     const flash = props.flash as { success?: string } | undefined;
 
     const applyFilters = (overrides: Record<string, string>) => {
+        if (
+            Object.keys(overrides).length === 0 &&
+            search === (filters.search ?? '')
+        ) {
+            return;
+        }
+
         router.get(
             route('admin.products.index'),
             { ...filters, search, ...overrides },

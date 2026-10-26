@@ -32,6 +32,10 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
     const flash = props.flash as { success?: string } | undefined;
 
     const applyFilters = () => {
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
         router.get(
             route('admin.contact-messages.index'),
             search ? { search } : {},

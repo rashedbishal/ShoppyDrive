@@ -60,6 +60,10 @@ export default function BrandsIndex({ brands, filters }: Props) {
     };
 
     const applySearch = () => {
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
         router.get(
             route('admin.brands.index'),
             { search },

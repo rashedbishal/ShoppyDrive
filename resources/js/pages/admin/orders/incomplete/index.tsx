@@ -57,6 +57,10 @@ export default function IncompleteOrdersIndex({
         | undefined;
 
     const applySearch = () => {
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
         router.get(
             route('admin.orders.incomplete.index'),
             { search },

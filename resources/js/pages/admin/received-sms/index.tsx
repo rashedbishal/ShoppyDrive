@@ -132,6 +132,13 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
     usePoll(5000, { only: ['sms'], preserveScroll: true });
 
     const applyFilters = (overrides: Record<string, string | number>) => {
+        if (
+            Object.keys(overrides).length === 0 &&
+            search === (filters.search ?? '')
+        ) {
+            return;
+        }
+
         router.get(
             route('admin.received-sms.index'),
             { ...filters, search, ...overrides },

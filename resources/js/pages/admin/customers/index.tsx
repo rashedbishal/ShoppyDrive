@@ -34,6 +34,10 @@ export default function CustomersIndex({ customers, filters }: Props) {
     const flash = props.flash as { success?: string } | undefined;
 
     const applySearch = () => {
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
         router.get(
             route('admin.customers.index'),
             { search },
