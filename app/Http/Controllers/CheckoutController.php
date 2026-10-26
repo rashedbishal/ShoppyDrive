@@ -16,8 +16,8 @@ use App\Models\Order;
 use App\Models\PendingCheckout;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\Setting;
 use App\Models\User;
+use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
 use App\Support\CartManager;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +32,7 @@ class CheckoutController extends Controller
     public function __construct(
         private readonly CartManager $cartManager,
         private readonly ReferralService $referrals,
+        private readonly LoyaltyPointsService $loyalty,
     ) {}
 
     public function index(Request $request): Response
@@ -57,7 +58,8 @@ class CheckoutController extends Controller
             'referralDiscountEligible' => $this->referrals->isEligibleForDiscount($user),
             'referralDiscountPreview' => $user ? $this->referrals->calculateReferralDiscount($user, $subtotal) : 0.0,
             'pointsBalance' => $user?->points_balance ?? 0,
-            'pointsValue' => (float) (Setting::find('referral_points_value')?->value ?? 0),
+            'pointsValue' => $this->loyalty->pointsValue(),
+            'pointsRedeemMaxPercent' => $this->loyalty->redeemMaxPercent(),
         ]);
     }
 
@@ -201,10 +203,10 @@ class CheckoutController extends Controller
 
                 if ($lockedUser) {
                     if ($usedReferralDiscount) {
-                        $this->referrals->awardPointsForQualifyingOrder($order, $lockedUser);
+                        $this->referrals->markReferralDiscountUsed($order, $lockedUser);
                     }
                     if ($pointsToRedeem > 0) {
-                        $this->referrals->debitPointsForOrder($order, $lockedUser, $pointsToRedeem, $pointsDiscountAmount);
+                        $this->loyalty->debitPointsForOrder($order, $lockedUser, $pointsToRedeem, $pointsDiscountAmount);
                     }
                 }
 
@@ -266,8 +268,8 @@ class CheckoutController extends Controller
 
         if ($user && $request->boolean('redeem_points')) {
             $requested = max(0, $request->integer('points_to_redeem'));
-            $pointsToRedeem = min($requested, $user->points_balance);
-            $amount = $pointsToRedeem > 0 ? $this->referrals->redeemPoints($user, $pointsToRedeem) : 0.0;
+            $pointsToRedeem = min($requested, $this->loyalty->maxRedeemablePoints($user, $subtotal));
+            $amount = $pointsToRedeem > 0 ? $this->loyalty->redeemPoints($user, $pointsToRedeem, $subtotal) : 0.0;
 
             if ($amount > 0) {
                 return [$amount, null, null, false, $pointsToRedeem, $amount];

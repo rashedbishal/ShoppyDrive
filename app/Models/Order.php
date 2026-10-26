@@ -7,7 +7,7 @@ namespace App\Models;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
-use App\Services\ReferralService;
+use App\Services\LoyaltyPointsService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -67,6 +67,8 @@ class Order extends Model
             'tax' => 'float',
             'used_referral_discount' => 'boolean',
             'points_refunded_at' => 'datetime',
+            'referral_reward_granted_at' => 'datetime',
+            'loyalty_points_granted_at' => 'datetime',
             'pathao_delivery_fee' => 'float',
             'pathao_sent_at' => 'datetime',
             'steadfast_sent_at' => 'datetime',
@@ -104,7 +106,7 @@ class Order extends Model
             }
 
             if (in_array($order->status, [OrderStatus::CANCELLED, OrderStatus::REFUNDED], true)) {
-                app(ReferralService::class)->handleOrderCancelledOrRefunded($order);
+                app(LoyaltyPointsService::class)->handleOrderCancelledOrRefunded($order);
             }
         });
     }

@@ -18,6 +18,7 @@ class OrderService
 {
     public function __construct(
         private readonly ReferralService $referrals,
+        private readonly LoyaltyPointsService $loyalty,
     ) {}
 
     /**
@@ -69,11 +70,11 @@ class OrderService
                 $lockedUser = $this->referrals->lockUser($fresh->user_id);
 
                 if ($order->used_referral_discount) {
-                    $this->referrals->awardPointsForQualifyingOrder($order, $lockedUser);
+                    $this->referrals->markReferralDiscountUsed($order, $lockedUser);
                 }
 
                 if (! empty($data['points_redeemed'])) {
-                    $this->referrals->debitPointsForOrder($order, $lockedUser, (int) $data['points_redeemed'], (float) ($data['points_discount_amount'] ?? 0));
+                    $this->loyalty->debitPointsForOrder($order, $lockedUser, (int) $data['points_redeemed'], (float) ($data['points_discount_amount'] ?? 0));
                 }
             }
 

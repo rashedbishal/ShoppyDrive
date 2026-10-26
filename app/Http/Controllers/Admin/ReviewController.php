@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Review;
+use App\Services\LoyaltyPointsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,6 +14,10 @@ use Inertia\Response;
 
 class ReviewController extends Controller
 {
+    public function __construct(
+        private readonly LoyaltyPointsService $loyalty,
+    ) {}
+
     public function index(Request $request): Response
     {
         $reviews = Review::with(['user:id,name,email', 'product:id,name,slug'])
@@ -31,6 +36,7 @@ class ReviewController extends Controller
     public function approve(Review $review): RedirectResponse
     {
         $review->update(['is_approved' => true]);
+        $this->loyalty->grantReviewBonus($review);
 
         return back()->with('success', 'Review approved.');
     }

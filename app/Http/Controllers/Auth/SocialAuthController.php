@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\SocialAccount;
 use App\Models\User;
+use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,7 @@ class SocialAuthController extends Controller
 {
     public function __construct(
         private readonly ReferralService $referrals,
+        private readonly LoyaltyPointsService $loyalty,
     ) {}
 
     public function redirect(string $provider): RedirectResponse
@@ -72,6 +74,8 @@ class SocialAuthController extends Controller
                     'has_password' => false,
                     'referred_by_id' => $this->referrals->resolveReferrerId(session('pending_referral_code')),
                 ]);
+
+                $this->loyalty->grantRegistrationBonus($user);
             }
 
             $user->socialAccounts()->create([

@@ -4,13 +4,20 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrderStatus;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Review;
+use App\Services\LoyaltyPointsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
+    public function __construct(
+        private readonly LoyaltyPointsService $loyalty,
+    ) {}
+
     public function store(Request $request, Product $product): RedirectResponse
     {
         $validated = $request->validate([
@@ -27,15 +34,34 @@ class ReviewController extends Controller
             return back()->withErrors(['review' => 'You have already reviewed this product.']);
         }
 
-        Review::create([
+        $review = Review::create([
             'product_id' => $product->id,
             'user_id' => $request->user()->id,
+            'order_id' => $this->resolveVerifiedPurchaseOrderId($request->user()->id, $product->id),
             'rating' => $validated['rating'],
             'title' => $validated['title'] ?? null,
             'body' => $validated['body'],
             'is_approved' => true,
         ]);
 
+        $this->loyalty->grantReviewBonus($review);
+
         return back()->with('success', 'Your review has been submitted. Thank you!');
+    }
+
+    /**
+     * The id of this reviewer's own delivered order that actually contained
+     * this product, if any — what makes a review a "verified purchase"
+     * eligible for the review bonus. Null for a review with no matching
+     * order (the reviewer never bought this product here, or their order
+     * hasn't been delivered yet).
+     */
+    private function resolveVerifiedPurchaseOrderId(int $userId, int $productId): ?int
+    {
+        return OrderItem::where('product_id', $productId)
+            ->whereHas('order', fn ($query) => $query
+                ->where('user_id', $userId)
+                ->where('status', OrderStatus::DELIVERED))
+            ->value('order_id');
     }
 }

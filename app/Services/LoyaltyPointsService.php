@@ -1,0 +1,390 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Enums\OrderStatus;
+use App\Enums\PointTransactionType;
+use App\Models\Order;
+use App\Models\ReferralPointTransaction;
+use App\Models\Review;
+use App\Models\Setting;
+use App\Models\User;
+use Carbon\CarbonImmutable;
+
+/**
+ * The general points ledger: earning (orders, registration, reviews, daily
+ * login), redeeming at checkout, and reversing both on cancellation/refund.
+ * Referral-specific calculations (discount eligibility, the delayed
+ * referrer reward) live in `ReferralService`; this service is what actually
+ * touches `User::points_balance` and writes `ReferralPointTransaction` rows
+ * for every source except the referral reward itself, which `ReferralService`
+ * writes directly since granting it is wholly a referral concern.
+ */
+class LoyaltyPointsService
+{
+    /**
+     * Fallback values used whenever the admin hasn't (yet) set the matching
+     * Setting row. See `ReferralService`'s equivalent constants for referral
+     * program defaults.
+     */
+    private const DEFAULT_EARN_RATE_BDT_PER_POINT = 150.0;
+
+    private const DEFAULT_EARN_DELAY_DAYS = 7;
+
+    private const DEFAULT_REGISTRATION_BONUS_POINTS = 20;
+
+    private const DEFAULT_REVIEW_BONUS_POINTS = 15;
+
+    private const DEFAULT_DAILY_LOGIN_BASE_POINTS = 2;
+
+    private const DEFAULT_DAILY_LOGIN_CAP_DAYS = 30;
+
+    private const DEFAULT_REDEEM_MAX_PERCENT = 50.0;
+
+    private const DHAKA_TIMEZONE = 'Asia/Dhaka';
+
+    public function __construct(
+        private readonly ReferralService $referrals,
+    ) {}
+
+    public function pointsValue(): float
+    {
+        return $this->referrals->pointsValue();
+    }
+
+    public function redeemMaxPercent(): float
+    {
+        return max(0.0, min(100.0, (float) (Setting::find('points_redeem_max_percent')?->value ?? self::DEFAULT_REDEEM_MAX_PERCENT)));
+    }
+
+    /**
+     * The most points a customer could apply at checkout right now, capped
+     * by both their balance and the configured max-percent-of-subtotal rule.
+     * Used both to compute the frontend's slider max and to clamp whatever
+     * the client actually requested server-side.
+     */
+    public function maxRedeemablePoints(User $user, float $subtotal): int
+    {
+        $pointsValue = $this->pointsValue();
+
+        if ($pointsValue <= 0 || $subtotal <= 0) {
+            return 0;
+        }
+
+        $maxAmount = $subtotal * ($this->redeemMaxPercent() / 100);
+        $maxByPercent = (int) floor($maxAmount / $pointsValue);
+
+        return max(0, min($user->points_balance, $maxByPercent));
+    }
+
+    /**
+     * Currency value of redeeming N points at today's conversion rate,
+     * clamped to the balance and the max-percent-of-subtotal rule. Pure
+     * calculation — does not touch the database. Call on the LOCKED user so
+     * the balance check reflects any concurrent transaction.
+     */
+    public function redeemPoints(User $lockedUser, int $points, float $subtotal): float
+    {
+        $points = min($points, $this->maxRedeemablePoints($lockedUser, $subtotal));
+
+        if ($points <= 0) {
+            return 0.0;
+        }
+
+        return round($points * $this->pointsValue(), 2);
+    }
+
+    /**
+     * Debit redeemed points from the LOCKED user and record the order that
+     * spent them. Call inside the same transaction that created the order.
+     */
+    public function debitPointsForOrder(Order $order, User $lockedUser, int $points, float $amount): void
+    {
+        if ($points <= 0) {
+            return;
+        }
+
+        $lockedUser->decrement('points_balance', $points);
+
+        ReferralPointTransaction::create([
+            'user_id' => $lockedUser->id,
+            'order_id' => $order->id,
+            'type' => PointTransactionType::REDEEM,
+            'points' => -$points,
+            'currency_amount' => $amount,
+            'note' => 'Redeemed at checkout on order '.$order->order_number.'.',
+        ]);
+    }
+
+    /**
+     * Reverse every points side effect of an order that just transitioned to
+     * cancelled/refunded: the referrer's reward (if any — delegated to
+     * `ReferralService`, which is the only thing that knows whether/when it
+     * was granted) and this order's own redeemed points.
+     */
+    public function handleOrderCancelledOrRefunded(Order $order): void
+    {
+        $this->referrals->handleOrderCancelledOrRefunded($order);
+        $this->refundRedeemedPointsIfApplicable($order);
+    }
+
+    private function refundRedeemedPointsIfApplicable(Order $order): void
+    {
+        if (! $order->points_redeemed || $order->points_refunded_at !== null || $order->user_id === null) {
+            return;
+        }
+
+        $purchaser = User::whereKey($order->user_id)->lockForUpdate()->first();
+
+        if ($purchaser === null) {
+            return;
+        }
+
+        $purchaser->increment('points_balance', $order->points_redeemed);
+
+        ReferralPointTransaction::create([
+            'user_id' => $purchaser->id,
+            'order_id' => $order->id,
+            'type' => PointTransactionType::REFUND,
+            'points' => $order->points_redeemed,
+            'note' => 'Order '.$order->order_number.' was cancelled/refunded — redeemed points refunded.',
+        ]);
+
+        $order->forceFill(['points_refunded_at' => now()])->saveQuietly();
+    }
+
+    /**
+     * Award the once-per-account signup bonus. Call right after the user
+     * row is created — idempotent via a guard query, so a retried/duplicated
+     * call (an event firing twice, say) never double-credits.
+     */
+    public function grantRegistrationBonus(User $user): void
+    {
+        $points = max(0, (int) (Setting::find('registration_bonus_points')?->value ?? self::DEFAULT_REGISTRATION_BONUS_POINTS));
+
+        if ($points <= 0) {
+            return;
+        }
+
+        $alreadyGranted = ReferralPointTransaction::where('user_id', $user->id)
+            ->where('type', PointTransactionType::EARN_REGISTRATION)
+            ->exists();
+
+        if ($alreadyGranted) {
+            return;
+        }
+
+        $user->increment('points_balance', $points);
+
+        ReferralPointTransaction::create([
+            'user_id' => $user->id,
+            'type' => PointTransactionType::EARN_REGISTRATION,
+            'points' => $points,
+            'note' => 'New account bonus.',
+        ]);
+    }
+
+    /**
+     * Award the verified-purchase review bonus, if this review qualifies:
+     * approved, and linked to an order that actually delivered the reviewed
+     * product to this reviewer. Safe to call on every save (submit,
+     * re-approve, admin edit) — only ever grants once per review.
+     */
+    public function grantReviewBonus(Review $review): void
+    {
+        if (! $review->is_approved || $review->order_id === null || $review->points_awarded_at !== null) {
+            return;
+        }
+
+        $points = max(0, (int) (Setting::find('review_bonus_points')?->value ?? self::DEFAULT_REVIEW_BONUS_POINTS));
+
+        if ($points <= 0) {
+            return;
+        }
+
+        $user = User::whereKey($review->user_id)->lockForUpdate()->first();
+
+        if ($user === null) {
+            return;
+        }
+
+        $user->increment('points_balance', $points);
+
+        ReferralPointTransaction::create([
+            'user_id' => $user->id,
+            'order_id' => $review->order_id,
+            'type' => PointTransactionType::EARN_REVIEW,
+            'points' => $points,
+            'note' => 'Verified review bonus.',
+        ]);
+
+        $review->forceFill(['points_awarded_at' => now()])->saveQuietly();
+    }
+
+    public function earnDelayDays(): int
+    {
+        return max(0, (int) (Setting::find('loyalty_earn_delay_days')?->value ?? self::DEFAULT_EARN_DELAY_DAYS));
+    }
+
+    public function earnRateBdtPerPoint(): float
+    {
+        return max(0.0, (float) (Setting::find('loyalty_earn_rate_bdt_per_point')?->value ?? self::DEFAULT_EARN_RATE_BDT_PER_POINT));
+    }
+
+    /**
+     * Credit spend-based points on every delivered order that has now sat
+     * past the earn delay (covering the return window) without being
+     * cancelled/returned. 1 point per `loyalty_earn_rate_bdt_per_point` BDT
+     * of the order's subtotal (product spend only — shipping is a separate
+     * column and never included), rounded UP so any order earns at least 1
+     * point. Intended to run on a schedule; see `rewards:grant-due`.
+     */
+    public function grantDueOrderEarnPoints(): int
+    {
+        $rate = $this->earnRateBdtPerPoint();
+
+        if ($rate <= 0) {
+            return 0;
+        }
+
+        $cutoff = CarbonImmutable::now(self::DHAKA_TIMEZONE)->subDays($this->earnDelayDays());
+
+        $dueOrders = Order::where('status', OrderStatus::DELIVERED)
+            ->whereNotNull('delivered_at')
+            ->whereNull('loyalty_points_granted_at')
+            ->whereNotNull('user_id')
+            ->where('delivered_at', '<=', $cutoff)
+            ->orderBy('delivered_at')
+            ->get();
+
+        $granted = 0;
+
+        foreach ($dueOrders as $order) {
+            $spend = max(0.0, (float) $order->subtotal - (float) $order->discount);
+            $points = $spend > 0 ? (int) ceil($spend / $rate) : 0;
+
+            if ($points > 0) {
+                $user = User::whereKey($order->user_id)->lockForUpdate()->first();
+
+                if ($user !== null) {
+                    $user->increment('points_balance', $points);
+
+                    ReferralPointTransaction::create([
+                        'user_id' => $user->id,
+                        'order_id' => $order->id,
+                        'type' => PointTransactionType::EARN_ORDER,
+                        'points' => $points,
+                        'note' => 'Earned from order '.$order->order_number.'.',
+                    ]);
+                }
+            }
+
+            $order->forceFill(['loyalty_points_granted_at' => now()])->saveQuietly();
+            $granted++;
+        }
+
+        return $granted;
+    }
+
+    public function dailyLoginBasePoints(): int
+    {
+        return max(0, (int) (Setting::find('daily_login_base_points')?->value ?? self::DEFAULT_DAILY_LOGIN_BASE_POINTS));
+    }
+
+    public function dailyLoginCapDays(): int
+    {
+        return max(1, (int) (Setting::find('daily_login_cap_days')?->value ?? self::DEFAULT_DAILY_LOGIN_CAP_DAYS));
+    }
+
+    /**
+     * Today's streak day (1-indexed) and whether it's already been claimed,
+     * without claiming it — for rendering the widget. Streak day N earns
+     * N × base points, capped at `dailyLoginCapDays()`.
+     *
+     * @return array{streakDay: int, claimedToday: bool, points: int}
+     */
+    public function dailyLoginStatus(User $user): array
+    {
+        $today = CarbonImmutable::now(self::DHAKA_TIMEZONE)->toDateString();
+        $lastDate = $user->login_streak_date?->toDateString();
+        $claimedToday = $lastDate === $today;
+        $streakDay = $claimedToday ? max(1, $user->login_streak_count) : $this->nextStreakDay($user, $today);
+
+        return [
+            'streakDay' => $streakDay,
+            'claimedToday' => $claimedToday,
+            'points' => $this->pointsForStreakDay($streakDay),
+        ];
+    }
+
+    /**
+     * Claim today's daily-login bonus. Idempotent per Asia/Dhaka calendar
+     * day regardless of how many times/devices it's called from — a second
+     * call on the same day is a no-op that reports `claimedToday: true`
+     * rather than erroring, since the frontend's own disabled-button state
+     * can't fully prevent a double-submit.
+     *
+     * @return array{streakDay: int, claimedToday: bool, points: int, awarded: bool}
+     */
+    public function claimDailyLogin(User $user): array
+    {
+        $locked = User::whereKey($user->id)->lockForUpdate()->first();
+
+        if ($locked === null) {
+            return ['streakDay' => 1, 'claimedToday' => false, 'points' => 0, 'awarded' => false];
+        }
+
+        $today = CarbonImmutable::now(self::DHAKA_TIMEZONE)->toDateString();
+
+        if ($locked->login_streak_date?->toDateString() === $today) {
+            return [
+                'streakDay' => max(1, $locked->login_streak_count),
+                'claimedToday' => true,
+                'points' => $this->pointsForStreakDay(max(1, $locked->login_streak_count)),
+                'awarded' => false,
+            ];
+        }
+
+        $streakDay = $this->nextStreakDay($locked, $today);
+        $points = $this->pointsForStreakDay($streakDay);
+
+        $locked->forceFill([
+            'login_streak_count' => $streakDay,
+            'login_streak_date' => $today,
+        ])->save();
+
+        if ($points > 0) {
+            $locked->increment('points_balance', $points);
+
+            ReferralPointTransaction::create([
+                'user_id' => $locked->id,
+                'type' => PointTransactionType::EARN_DAILY_LOGIN,
+                'points' => $points,
+                'note' => "Daily login bonus — day {$streakDay}.",
+            ]);
+        }
+
+        return ['streakDay' => $streakDay, 'claimedToday' => true, 'points' => $points, 'awarded' => true];
+    }
+
+    /**
+     * Day the NEXT claim would land on: +1 if the last claim was yesterday
+     * (Asia/Dhaka), 1 if it was never claimed or the streak was broken (a
+     * day missed resets it), unaffected by an already-claimed today (callers
+     * needing that case check it themselves first).
+     */
+    private function nextStreakDay(User $user, string $today): int
+    {
+        $lastDate = $user->login_streak_date?->toDateString();
+        $yesterday = CarbonImmutable::parse($today, self::DHAKA_TIMEZONE)->subDay()->toDateString();
+
+        return $lastDate === $yesterday ? $user->login_streak_count + 1 : 1;
+    }
+
+    private function pointsForStreakDay(int $streakDay): int
+    {
+        return min($streakDay, $this->dailyLoginCapDays()) * $this->dailyLoginBasePoints();
+    }
+}

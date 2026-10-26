@@ -91,6 +91,7 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
         return $pdf->download("invoice-{$order->order_number}.pdf");
     })->name('account.orders.invoice');
     Route::get('/referral', [ReferralController::class, 'index'])->name('account.referral');
+    Route::post('/referral/daily-login', [ReferralController::class, 'claimDailyLogin'])->name('account.referral.daily-login');
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('account.wishlist');
     Route::get('/addresses', [AddressController::class, 'index'])->name('account.addresses');
     Route::post('/addresses', [AddressController::class, 'store'])->name('account.addresses.store');

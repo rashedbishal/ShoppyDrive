@@ -13,6 +13,7 @@ use App\Models\Payment;
 use App\Models\PendingCheckout;
 use App\Models\ReceivedSms;
 use App\Models\Setting;
+use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ class MobilePaymentController extends Controller
 {
     public function __construct(
         private readonly ReferralService $referrals,
+        private readonly LoyaltyPointsService $loyalty,
     ) {}
 
     /**
@@ -143,11 +145,11 @@ class MobilePaymentController extends Controller
                     $lockedUser = $this->referrals->lockUser($freshPending->user_id);
 
                     if ($order->used_referral_discount) {
-                        $this->referrals->awardPointsForQualifyingOrder($order, $lockedUser);
+                        $this->referrals->markReferralDiscountUsed($order, $lockedUser);
                     }
 
                     if (! empty($data['points_redeemed'])) {
-                        $this->referrals->debitPointsForOrder($order, $lockedUser, (int) $data['points_redeemed'], (float) ($data['points_discount_amount'] ?? 0));
+                        $this->loyalty->debitPointsForOrder($order, $lockedUser, (int) $data['points_redeemed'], (float) ($data['points_discount_amount'] ?? 0));
                     }
                 }
 

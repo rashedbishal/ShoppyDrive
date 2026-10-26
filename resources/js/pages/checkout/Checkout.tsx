@@ -90,6 +90,7 @@ interface CheckoutProps {
     referralDiscountPreview?: number;
     pointsBalance?: number;
     pointsValue?: number;
+    pointsRedeemMaxPercent?: number;
 }
 
 type AddressMode = 'default' | 'select' | 'new';
@@ -101,6 +102,7 @@ export default function Checkout({
     referralDiscountPreview = 0,
     pointsBalance = 0,
     pointsValue = 0,
+    pointsRedeemMaxPercent = 100,
 }: CheckoutProps): React.JSX.Element {
     const { auth, flash, settings } = usePage<SharedPageProps>().props;
     const { items: cartItems, getSubtotal, getDiscount } = useCartStore();
@@ -324,9 +326,13 @@ export default function Checkout({
     // Mutually exclusive with a coupon (coupon wins) and with the
     // auto-applied referral discount (points win if the customer opts in).
     const [usePoints, setUsePoints] = useState(false);
+    const maxRedeemableAmount = subtotal * (pointsRedeemMaxPercent / 100);
     const maxRedeemablePoints =
         pointsValue > 0
-            ? Math.min(pointsBalance, Math.ceil(subtotal / pointsValue))
+            ? Math.min(
+                  pointsBalance,
+                  Math.floor(maxRedeemableAmount / pointsValue),
+              )
             : 0;
     const [pointsToUse, setPointsToUse] = useState(maxRedeemablePoints);
 

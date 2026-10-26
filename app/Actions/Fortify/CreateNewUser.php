@@ -5,6 +5,7 @@ namespace App\Actions\Fortify;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
+use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Validator as ValidatorInstance;
@@ -16,6 +17,7 @@ class CreateNewUser implements CreatesNewUsers
 
     public function __construct(
         private readonly ReferralService $referrals,
+        private readonly LoyaltyPointsService $loyalty,
     ) {}
 
     /**
@@ -38,13 +40,17 @@ class CreateNewUser implements CreatesNewUsers
         );
         session()->forget('pending_referral_code');
 
-        return User::create([
+        $user = User::create([
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => $input['password'],
             'has_password' => true,
             'referred_by_id' => $referredById,
         ]);
+
+        $this->loyalty->grantRegistrationBonus($user);
+
+        return $user;
     }
 
     /**

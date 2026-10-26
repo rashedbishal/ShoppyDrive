@@ -58,6 +58,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'has_password' => 'boolean',
             'role' => UserRole::class,
+            'login_streak_date' => 'date',
         ];
     }
 

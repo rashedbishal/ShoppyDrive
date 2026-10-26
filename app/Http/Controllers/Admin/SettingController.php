@@ -135,8 +135,20 @@ class SettingController extends Controller
             'referral_enabled' => ['nullable', 'boolean'],
             'referral_discount_type' => ['nullable', 'in:percent,fixed'],
             'referral_discount_value' => ['nullable', 'numeric', 'min:0'],
-            'referral_points_per_referral' => ['nullable', 'integer', 'min:0'],
-            'referral_points_value' => ['nullable', 'numeric', 'min:0'],
+            'referral_min_order_amount' => ['nullable', 'numeric', 'min:0'],
+            'referral_reward_points' => ['nullable', 'integer', 'min:0'],
+            'referral_reward_delay_days' => ['nullable', 'integer', 'min:0'],
+            'referral_unlock_order_count' => ['nullable', 'integer', 'min:0'],
+            'referral_reward_cap_amount' => ['nullable', 'numeric', 'min:0'],
+            'referral_reward_cap_period' => ['nullable', 'in:week,month'],
+            'loyalty_earn_rate_bdt_per_point' => ['nullable', 'numeric', 'min:0.01'],
+            'loyalty_earn_delay_days' => ['nullable', 'integer', 'min:0'],
+            'registration_bonus_points' => ['nullable', 'integer', 'min:0'],
+            'review_bonus_points' => ['nullable', 'integer', 'min:0'],
+            'daily_login_base_points' => ['nullable', 'integer', 'min:0'],
+            'daily_login_cap_days' => ['nullable', 'integer', 'min:1'],
+            'points_redeem_value_bdt' => ['nullable', 'numeric', 'min:0'],
+            'points_redeem_max_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
         // Handle logo upload separately
@@ -176,7 +188,12 @@ class SettingController extends Controller
             'contact_page_hero_eyebrow', 'contact_page_hero_title', 'contact_page_hero_title_highlight',
             'contact_page_hero_description', 'contact_page_support_hours',
             'referral_enabled', 'referral_discount_type', 'referral_discount_value',
-            'referral_points_per_referral', 'referral_points_value',
+            'referral_min_order_amount', 'referral_reward_points', 'referral_reward_delay_days',
+            'referral_unlock_order_count', 'referral_reward_cap_amount', 'referral_reward_cap_period',
+            'loyalty_earn_rate_bdt_per_point', 'loyalty_earn_delay_days',
+            'registration_bonus_points', 'review_bonus_points',
+            'daily_login_base_points', 'daily_login_cap_days',
+            'points_redeem_value_bdt', 'points_redeem_max_percent',
         ];
 
         foreach ($fields as $key) {
@@ -239,6 +256,8 @@ class SettingController extends Controller
             str_starts_with($key, 'about_') => 'about_page',
             str_starts_with($key, 'contact_page_') => 'contact_page',
             str_starts_with($key, 'referral_') => 'referral',
+            str_starts_with($key, 'loyalty_') => 'referral',
+            in_array($key, ['registration_bonus_points', 'review_bonus_points', 'daily_login_base_points', 'daily_login_cap_days', 'points_redeem_value_bdt', 'points_redeem_max_percent']) => 'referral',
             default => 'integrations',
         };
     }

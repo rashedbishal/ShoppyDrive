@@ -29,6 +29,7 @@ class Review extends Model
         return [
             'images' => 'array',
             'is_approved' => 'boolean',
+            'points_awarded_at' => 'datetime',
         ];
     }
 

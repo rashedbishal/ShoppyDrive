@@ -5,12 +5,20 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Services\LoyaltyPointsService;
+use App\Services\ReferralService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ReferralController extends Controller
 {
+    public function __construct(
+        private readonly ReferralService $referrals,
+        private readonly LoyaltyPointsService $loyalty,
+    ) {}
+
     public function index(Request $request): Response
     {
         $user = $request->user();
@@ -26,9 +34,26 @@ class ReferralController extends Controller
             'pointsBalance' => $user->points_balance,
             'referredCount' => $user->referredUsers()->count(),
             'transactions' => $transactions,
-            'referralEnabled' => (bool) (Setting::find('referral_enabled')?->value ?? false),
-            'pointsValue' => (float) (Setting::find('referral_points_value')?->value ?? 0),
-            'pointsPerReferral' => (int) (Setting::find('referral_points_per_referral')?->value ?? 0),
+            'referralEnabled' => $this->referrals->isEnabled(),
+            'inviteUnlocked' => $this->referrals->hasUnlockedInviteLink($user),
+            'unlockOrderCount' => $this->referrals->unlockOrderCount(),
+            'deliveredOrderCount' => $this->referrals->deliveredOrderCount($user),
+            'pointsValue' => $this->loyalty->pointsValue(),
+            'pointsPerReferral' => $this->referrals->rewardPoints(),
+            'referralRewardDelayDays' => $this->referrals->rewardDelayDays(),
+            'referralMinOrderAmount' => $this->referrals->minOrderAmountForDiscount(),
+            'referralDiscountType' => (string) (Setting::find('referral_discount_type')?->value ?? 'percent'),
+            'referralDiscountValue' => (float) (Setting::find('referral_discount_value')?->value ?? 0),
+            'loyaltyEarnRateBdtPerPoint' => $this->loyalty->earnRateBdtPerPoint(),
+            'loyaltyEarnDelayDays' => $this->loyalty->earnDelayDays(),
+            'dailyLogin' => $this->loyalty->dailyLoginStatus($user),
+            'dailyLoginBasePoints' => $this->loyalty->dailyLoginBasePoints(),
+            'dailyLoginCapDays' => $this->loyalty->dailyLoginCapDays(),
         ]);
+    }
+
+    public function claimDailyLogin(Request $request): JsonResponse
+    {
+        return response()->json($this->loyalty->claimDailyLogin($request->user()));
     }
 }

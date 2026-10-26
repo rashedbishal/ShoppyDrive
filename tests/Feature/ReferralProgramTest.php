@@ -14,9 +14,11 @@ use App\Models\ReceivedSms;
 use App\Models\ReferralPointTransaction;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\ReferralService;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\artisan;
 
 function enableReferralProgram(array $overrides = []): void
 {
@@ -24,13 +26,35 @@ function enableReferralProgram(array $overrides = []): void
         'referral_enabled' => true,
         'referral_discount_type' => 'percent',
         'referral_discount_value' => 10,
-        'referral_points_per_referral' => 50,
-        'referral_points_value' => 1,
+        'referral_min_order_amount' => 0,
+        'referral_reward_points' => 50,
+        'referral_reward_delay_days' => 0,
+        'referral_unlock_order_count' => 0,
+        'referral_reward_cap_amount' => 0,
+        'referral_reward_cap_period' => 'month',
+        'points_redeem_value_bdt' => 1,
+        'points_redeem_max_percent' => 50,
     ];
 
     foreach (array_merge($defaults, $overrides) as $key => $value) {
         Setting::updateOrCreate(['key' => $key], ['value' => $value, 'group' => 'referral']);
     }
+}
+
+/** Places and delivers a qualifying order for $referred, backdating delivery so it's immediately due. */
+function placeAndDeliverQualifyingOrder(User $referred, Product $product, int $daysAgo = 1): Order
+{
+    Cart::query()->where('user_id', $referred->id)->delete();
+
+    test()->actingAs($referred)->post(route('checkout.store'), codPayload([
+        'email' => $referred->email,
+        'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
+    ]));
+
+    $order = Order::where('user_id', $referred->id)->latest()->firstOrFail();
+    $order->update(['status' => OrderStatus::DELIVERED, 'delivered_at' => now()->subDays($daysAgo)]);
+
+    return $order->refresh();
 }
 
 function codPayload(array $overrides = []): array
@@ -190,6 +214,38 @@ test('an eligible referred customer gets the referral discount on their first or
     expect($secondOrder->discount)->toBe(0.0);
 });
 
+test('an order below the minimum amount gets no referral discount and leaves eligibility untouched', function () {
+    enableReferralProgram(['referral_min_order_amount' => 500]);
+    $referrer = User::factory()->create();
+    $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
+
+    $product = Product::factory()->create(['price' => 400, 'stock_quantity' => 10]);
+    Cart::query()->where('user_id', $referred->id)->delete();
+
+    $this->actingAs($referred)->post(route('checkout.store'), codPayload([
+        'email' => $referred->email,
+        'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
+    ]));
+
+    $order = Order::where('user_id', $referred->id)->firstOrFail();
+    expect($order->used_referral_discount)->toBeFalse();
+    expect($order->discount)->toBe(0.0);
+
+    $referred->refresh();
+    expect($referred->referral_discount_used_order_id)->toBeNull();
+
+    // A later, qualifying order can still use the discount.
+    Cart::query()->where('user_id', $referred->id)->delete();
+    $bigProduct = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
+    $this->actingAs($referred)->post(route('checkout.store'), codPayload([
+        'email' => $referred->email,
+        'items' => [['product_id' => $bigProduct->id, 'variant_id' => null, 'quantity' => 1]],
+    ]));
+
+    $secondOrder = Order::where('user_id', $referred->id)->where('id', '!=', $order->id)->firstOrFail();
+    expect($secondOrder->used_referral_discount)->toBeTrue();
+});
+
 test('a coupon code takes precedence over the referral discount', function () {
     enableReferralProgram();
     $referrer = User::factory()->create();
@@ -222,51 +278,130 @@ test('a coupon code takes precedence over the referral discount', function () {
     expect($referred->referral_discount_used_order_id)->toBeNull();
 });
 
-// ── Points earning / revocation ─────────────────────────────────────────────
+// ── Invite link unlock ───────────────────────────────────────────────────────
 
-test('the referrer earns points once the referred customers qualifying order is placed', function () {
+test('the invite link is locked until the user has enough delivered orders', function () {
+    enableReferralProgram(['referral_unlock_order_count' => 2]);
+    $user = User::factory()->create();
+
+    $service = app(ReferralService::class);
+    expect($service->hasUnlockedInviteLink($user))->toBeFalse();
+
+    for ($i = 0; $i < 2; $i++) {
+        Order::create([
+            'order_number' => 'ORD-UNLOCK-'.$i,
+            'user_id' => $user->id,
+            'status' => OrderStatus::DELIVERED,
+            'payment_status' => 'paid',
+            'payment_method' => 'cod',
+            'subtotal' => 500,
+            'shipping_cost' => 60,
+            'discount' => 0,
+            'tax' => 0,
+            'total' => 560,
+            'shipping_address' => ['name' => 'Test', 'phone' => '01700000000'],
+            'billing_address' => [],
+        ]);
+    }
+
+    expect($service->hasUnlockedInviteLink($user->refresh()))->toBeTrue();
+});
+
+// ── Delayed referral reward ──────────────────────────────────────────────────
+
+test('placing a qualifying order does not instantly award the referrer any points', function () {
     enableReferralProgram();
     $referrer = User::factory()->create(['points_balance' => 0]);
     $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
-
     $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
-    Cart::query()->where('user_id', $referred->id)->delete();
 
+    Cart::query()->where('user_id', $referred->id)->delete();
     $this->actingAs($referred)->post(route('checkout.store'), codPayload([
         'email' => $referred->email,
         'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
     ]));
 
-    $order = Order::where('user_id', $referred->id)->firstOrFail();
+    expect($referrer->refresh()->points_balance)->toBe(0);
+    expect(ReferralPointTransaction::where('type', PointTransactionType::EARN_REFERRAL)->count())->toBe(0);
+});
+
+test('the referrer earns points once the delivered order has sat past the reward delay', function () {
+    enableReferralProgram(['referral_reward_delay_days' => 7]);
+    $referrer = User::factory()->create(['points_balance' => 0]);
+    $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
+
+    // Delivered yesterday — not due yet.
+    $order = placeAndDeliverQualifyingOrder($referred, $product, daysAgo: 1);
+    artisan('rewards:grant-due');
+    expect($referrer->refresh()->points_balance)->toBe(0);
+
+    // Delivered 8 days ago — now due.
+    $order->update(['delivered_at' => now()->subDays(8)]);
+    artisan('rewards:grant-due');
 
     $referrer->refresh();
     expect($referrer->points_balance)->toBe(50);
+    expect($order->refresh()->referral_reward_granted_at)->not->toBeNull();
 
     $this->assertDatabaseHas('referral_point_transactions', [
         'user_id' => $referrer->id,
         'referred_user_id' => $referred->id,
         'order_id' => $order->id,
-        'type' => PointTransactionType::EARN->value,
+        'type' => PointTransactionType::EARN_REFERRAL->value,
         'points' => 50,
     ]);
+
+    // Running the grant command again must not double-credit.
+    artisan('rewards:grant-due');
+    expect($referrer->refresh()->points_balance)->toBe(50);
 });
 
-test('cancelling the qualifying order revokes the referrers points and restores the referred users eligibility', function () {
+test('a reward that would exceed the per-period cap is held, not granted, until the next period', function () {
+    enableReferralProgram(['referral_reward_points' => 50, 'points_redeem_value_bdt' => 1, 'referral_reward_cap_amount' => 60]);
+    $referrer = User::factory()->create(['points_balance' => 0]);
+    $referredA = User::factory()->create(['referred_by_id' => $referrer->id]);
+    $referredB = User::factory()->create(['referred_by_id' => $referrer->id]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
+
+    $orderA = placeAndDeliverQualifyingOrder($referredA, $product, daysAgo: 1);
+    $orderB = placeAndDeliverQualifyingOrder($referredB, $product, daysAgo: 1);
+
+    artisan('rewards:grant-due');
+
+    // 50 BDT-equivalent granted for the first order; the second (another 50)
+    // would push the referrer to 100, over the 60 cap, so it's held.
+    expect($referrer->refresh()->points_balance)->toBe(50);
+    expect($orderA->refresh()->referral_reward_granted_at)->not->toBeNull();
+    expect($orderB->refresh()->referral_reward_granted_at)->toBeNull();
+});
+
+test('cancelling a qualifying order before its reward is granted restores eligibility but credits nothing', function () {
+    enableReferralProgram(['referral_reward_delay_days' => 7]);
+    $referrer = User::factory()->create(['points_balance' => 0]);
+    $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
+
+    $order = placeAndDeliverQualifyingOrder($referred, $product, daysAgo: 1);
+    $order->update(['status' => OrderStatus::CANCELLED]);
+
+    expect($referrer->refresh()->points_balance)->toBe(0);
+    expect($referred->refresh()->referral_discount_used_order_id)->toBeNull();
+
+    // Even once due, a cancelled order is never granted (no longer DELIVERED).
+    artisan('rewards:grant-due');
+    expect($referrer->refresh()->points_balance)->toBe(0);
+});
+
+test('cancelling a qualifying order after its reward was already granted revokes the referrers points', function () {
     enableReferralProgram();
     $referrer = User::factory()->create(['points_balance' => 0]);
     $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
-
     $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
-    Cart::query()->where('user_id', $referred->id)->delete();
 
-    $this->actingAs($referred)->post(route('checkout.store'), codPayload([
-        'email' => $referred->email,
-        'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
-    ]));
-
-    $order = Order::where('user_id', $referred->id)->firstOrFail();
-    $referrer->refresh();
-    expect($referrer->points_balance)->toBe(50);
+    $order = placeAndDeliverQualifyingOrder($referred, $product, daysAgo: 1);
+    artisan('rewards:grant-due');
+    expect($referrer->refresh()->points_balance)->toBe(50);
 
     $order->update(['status' => OrderStatus::CANCELLED]);
 
@@ -323,27 +458,30 @@ test('a customer can redeem points at checkout, and cancelling that order refund
     expect($customer->points_balance)->toBe(100);
 });
 
-test('points balance always equals the sum of that users ledger transactions', function () {
-    enableReferralProgram();
-    $referrer = User::factory()->create(['points_balance' => 0]);
-    $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
+test('redemption is capped at the configured percentage of the subtotal, even if the customer has more points', function () {
+    enableReferralProgram(['points_redeem_max_percent' => 20]);
+    $customer = User::factory()->create(['points_balance' => 500]);
 
     $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
-    Cart::query()->where('user_id', $referred->id)->delete();
+    Cart::query()->where('user_id', $customer->id)->delete();
 
-    $this->actingAs($referred)->post(route('checkout.store'), codPayload([
-        'email' => $referred->email,
+    $this->actingAs($customer)->post(route('checkout.store'), codPayload([
+        'email' => $customer->email,
+        'redeem_points' => true,
+        'points_to_redeem' => 500,
         'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
     ]));
 
-    $referrer->refresh();
-    $sum = ReferralPointTransaction::where('user_id', $referrer->id)->sum('points');
-    expect($sum)->toBe($referrer->points_balance);
+    $order = Order::where('user_id', $customer->id)->firstOrFail();
+    // 20% of 1000 = 200, at ৳1/point that's 200 points, not the requested 500.
+    expect($order->points_redeemed)->toBe(200);
+    expect($order->discount)->toBe(200.0);
+    expect($customer->refresh()->points_balance)->toBe(300);
 });
 
 // ── Mobile banking path ─────────────────────────────────────────────────────
 
-test('the referrer earns points when the qualifying order is placed via mobile banking', function () {
+test('a qualifying order placed via mobile banking still only rewards the referrer once due', function () {
     enableReferralProgram();
     $referrer = User::factory()->create(['points_balance' => 0]);
     $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
@@ -377,14 +515,17 @@ test('the referrer earns points when the qualifying order is placed via mobile b
 
     $order = Order::where('user_id', $referred->id)->firstOrFail();
     expect($order->used_referral_discount)->toBeTrue();
+    expect($referrer->refresh()->points_balance)->toBe(0);
 
-    $referrer->refresh();
-    expect($referrer->points_balance)->toBe(50);
+    $order->update(['status' => OrderStatus::DELIVERED, 'delivered_at' => now()->subDay()]);
+    artisan('rewards:grant-due');
+
+    expect($referrer->refresh()->points_balance)->toBe(50);
 });
 
 // ── Admin settings ───────────────────────────────────────────────────────────
 
-test('admin can update referral settings', function () {
+test('admin can update referral and loyalty settings', function () {
     $admin = Admin::create([
         'name' => 'Admin User',
         'email' => 'admin-'.Str::random(6).'@example.com',
@@ -397,8 +538,20 @@ test('admin can update referral settings', function () {
         'referral_enabled' => true,
         'referral_discount_type' => 'fixed',
         'referral_discount_value' => 75,
-        'referral_points_per_referral' => 25,
-        'referral_points_value' => 2,
+        'referral_min_order_amount' => 300,
+        'referral_reward_points' => 25,
+        'referral_reward_delay_days' => 5,
+        'referral_unlock_order_count' => 2,
+        'referral_reward_cap_amount' => 400,
+        'referral_reward_cap_period' => 'week',
+        'loyalty_earn_rate_bdt_per_point' => 100,
+        'loyalty_earn_delay_days' => 3,
+        'registration_bonus_points' => 10,
+        'review_bonus_points' => 5,
+        'daily_login_base_points' => 1,
+        'daily_login_cap_days' => 14,
+        'points_redeem_value_bdt' => 2,
+        'points_redeem_max_percent' => 40,
     ]);
 
     $response->assertRedirect();
@@ -406,6 +559,18 @@ test('admin can update referral settings', function () {
     expect(Setting::find('referral_enabled')?->value)->toBeTrue();
     expect(Setting::find('referral_discount_type')?->value)->toBe('fixed');
     expect((float) Setting::find('referral_discount_value')?->value)->toBe(75.0);
-    expect((int) Setting::find('referral_points_per_referral')?->value)->toBe(25);
-    expect((float) Setting::find('referral_points_value')?->value)->toBe(2.0);
+    expect((float) Setting::find('referral_min_order_amount')?->value)->toBe(300.0);
+    expect((int) Setting::find('referral_reward_points')?->value)->toBe(25);
+    expect((int) Setting::find('referral_reward_delay_days')?->value)->toBe(5);
+    expect((int) Setting::find('referral_unlock_order_count')?->value)->toBe(2);
+    expect((float) Setting::find('referral_reward_cap_amount')?->value)->toBe(400.0);
+    expect(Setting::find('referral_reward_cap_period')?->value)->toBe('week');
+    expect((float) Setting::find('loyalty_earn_rate_bdt_per_point')?->value)->toBe(100.0);
+    expect((int) Setting::find('loyalty_earn_delay_days')?->value)->toBe(3);
+    expect((int) Setting::find('registration_bonus_points')?->value)->toBe(10);
+    expect((int) Setting::find('review_bonus_points')?->value)->toBe(5);
+    expect((int) Setting::find('daily_login_base_points')?->value)->toBe(1);
+    expect((int) Setting::find('daily_login_cap_days')?->value)->toBe(14);
+    expect((float) Setting::find('points_redeem_value_bdt')?->value)->toBe(2.0);
+    expect((float) Setting::find('points_redeem_max_percent')?->value)->toBe(40.0);
 });

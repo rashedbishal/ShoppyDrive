@@ -544,7 +544,15 @@ export interface PageLink {
 
 export interface PointTransaction {
     id: Id;
-    type: 'earn' | 'redeem' | 'revoke' | 'refund';
+    type:
+        | 'earn_order'
+        | 'earn_referral'
+        | 'earn_registration'
+        | 'earn_review'
+        | 'earn_daily_login'
+        | 'redeem'
+        | 'revoke'
+        | 'refund';
     points: number;
     currency_amount: number | null;
     note: string | null;
