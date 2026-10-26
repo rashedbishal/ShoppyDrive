@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { destroyMany as bulkDestroyRoute } from '@/routes/admin/sms-patterns';
 
 type Pattern = {
     id: number;
@@ -48,7 +49,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
 
     const confirmBulkDelete = () => {
         setBulkDeleting(true);
-        router.delete(route('admin.sms-patterns.destroyMany'), {
+        router.delete(bulkDestroyRoute.url(), {
             data: { ids: bulk.selected },
             onFinish: () => {
                 setBulkDeleting(false);

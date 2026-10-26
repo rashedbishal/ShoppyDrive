@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { destroyMany as bulkDestroyRoute } from '@/routes/admin/landing-pages';
 
 type LandingPage = {
     id: number;
@@ -33,7 +34,7 @@ export default function LandingPagesIndex({ pages }: Props) {
 
     const confirmBulkDelete = () => {
         setBulkDeleting(true);
-        router.delete(route('admin.landing-pages.destroyMany'), {
+        router.delete(bulkDestroyRoute.url(), {
             data: { ids: bulk.selected },
             onFinish: () => {
                 setBulkDeleting(false);

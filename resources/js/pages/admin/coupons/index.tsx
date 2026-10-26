@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { destroyMany as bulkDestroyRoute } from '@/routes/admin/coupons';
 
 type Coupon = {
     id: number;
@@ -47,7 +48,7 @@ export default function CouponsIndex({ coupons, filters }: Props) {
 
     const confirmBulkDelete = () => {
         setBulkDeleting(true);
-        router.delete(route('admin.coupons.destroyMany'), {
+        router.delete(bulkDestroyRoute.url(), {
             data: { ids: bulk.selected },
             onFinish: () => {
                 setBulkDeleting(false);

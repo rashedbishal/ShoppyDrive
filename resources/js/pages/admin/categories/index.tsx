@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { destroyMany as bulkDestroyRoute } from '@/routes/admin/categories';
 import { resolveCategoryColor } from '@/lib/category-colors';
 import { CategoryIcon } from '@/lib/category-icons';
 import { cn } from '@/lib/utils';
@@ -57,7 +58,7 @@ export default function CategoriesIndex({ categories, filters }: Props) {
 
     const confirmBulkDelete = () => {
         setBulkDeleting(true);
-        router.delete(route('admin.categories.destroyMany'), {
+        router.delete(bulkDestroyRoute.url(), {
             data: { ids: bulk.selected },
             onFinish: () => {
                 setBulkDeleting(false);

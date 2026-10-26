@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { destroyMany as bulkDestroyRoute } from '@/routes/admin/popular-keywords';
 
 type Keyword = {
     id: number;
@@ -140,7 +141,7 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
 
     const confirmBulkDelete = () => {
         setBulkDeleting(true);
-        router.delete(route('admin.popular-keywords.destroyMany'), {
+        router.delete(bulkDestroyRoute.url(), {
             data: { ids: bulk.selected },
             preserveScroll: true,
             onFinish: () => {
