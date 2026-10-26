@@ -5,8 +5,6 @@ import {
     BadgeCheck,
     ChevronLeft,
     ChevronRight,
-    Pause,
-    Play,
     ShoppingBag,
     Sparkles,
     Star,
@@ -178,10 +176,6 @@ function HeroSlider({
         return () => window.clearInterval(intervalId);
     }, [isPaused, prefersReducedMotion, slides.length, autoplaySeconds]);
 
-    const goToSlide = (index: number): void => {
-        setActiveIndex(index);
-    };
-
     const goToPrevious = (): void => {
         setActiveIndex((current) =>
             current === 0 ? slides.length - 1 : current - 1,
@@ -196,7 +190,7 @@ function HeroSlider({
 
     return (
         <section
-            className="group relative overflow-hidden rounded-[2rem] bg-[var(--color-secondary)] text-white shadow-[var(--shadow-modal)]"
+            className="group relative rounded-[1.25rem] bg-[var(--color-secondary)] text-white shadow-[var(--shadow-modal)] [clip-path:inset(0_round_1.25rem)]"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
             aria-label="Homepage hero banner"
@@ -369,53 +363,6 @@ function HeroSlider({
                 <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs text-white/90 backdrop-blur-md sm:bottom-6 sm:left-6">
                     <Truck className="size-4 text-[var(--color-accent)]" />
                     Nationwide delivery across Bangladesh
-                </div>
-
-                <button
-                    type="button"
-                    onClick={() => setIsPaused((current) => !current)}
-                    aria-label={
-                        isPaused
-                            ? 'Resume hero autoplay'
-                            : 'Pause hero autoplay'
-                    }
-                    className="absolute right-4 bottom-4 z-20 hidden items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs text-white/90 backdrop-blur-md transition hover:bg-white/15 sm:right-6 sm:bottom-6 sm:inline-flex"
-                >
-                    {isPaused ? (
-                        <Play className="size-4" />
-                    ) : (
-                        <Pause className="size-4" />
-                    )}
-                    {isPaused ? 'Resume' : 'Pause'}
-                </button>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-4 sm:px-6">
-                <div className="flex items-center gap-2">
-                    {slides.map((slide, index) => {
-                        const isActive = index === activeIndex;
-
-                        return (
-                            <button
-                                key={slide.id}
-                                type="button"
-                                onClick={() => goToSlide(index)}
-                                aria-label={`Go to slide ${index + 1}`}
-                                aria-pressed={isActive}
-                                className={cn(
-                                    'h-2.5 rounded-full transition-all focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-secondary)] focus-visible:outline-none',
-                                    isActive
-                                        ? 'w-10 bg-white'
-                                        : 'w-2.5 bg-white/40 hover:bg-white/60',
-                                )}
-                            />
-                        );
-                    })}
-                </div>
-
-                <div className="text-xs text-white/70">
-                    {String(activeIndex + 1).padStart(2, '0')} /{' '}
-                    {String(slides.length).padStart(2, '0')}
                 </div>
             </div>
         </section>
