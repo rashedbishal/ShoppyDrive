@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Mail, Plus, Search, Trash2, Users } from 'lucide-react';
 import { useState } from 'react';
+import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
 
@@ -27,23 +28,54 @@ type Props = {
     total_active: number;
 };
 
-export default function NewsletterIndex({ subscribers, filters, total_active }: Props) {
+export default function NewsletterIndex({
+    subscribers,
+    filters,
+    total_active,
+}: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [status, setStatus] = useState(filters.status ?? '');
     const { props } = usePage<any>();
-    const flash = props.flash as { success?: string; error?: string } | undefined;
+    const flash = props.flash as
+        | { success?: string; error?: string }
+        | undefined;
 
     const applyFilters = (overrides: Record<string, string> = {}) => {
         const params: Record<string, string> = {};
-        if (search) params.search = search;
-        if (status) params.status = status;
+
+        if (search) {
+            params.search = search;
+        }
+
+        if (status) {
+            params.status = status;
+        }
+
         Object.assign(params, overrides);
-        router.get(route('admin.newsletter.index'), params, { preserveState: true, replace: true });
+        router.get(route('admin.newsletter.index'), params, {
+            preserveState: true,
+            replace: true,
+        });
+    };
+
+    const clearFilters = () => {
+        setSearch('');
+        setStatus('');
+        router.get(
+            route('admin.newsletter.index'),
+            {},
+            { preserveState: true, replace: true },
+        );
     };
 
     const handleDelete = (id: number, email: string) => {
-        if (!confirm(`Remove ${email} from the subscriber list?`)) return;
-        router.delete(route('admin.newsletter.destroy', id), { preserveScroll: true });
+        if (!confirm(`Remove ${email} from the subscriber list?`)) {
+            return;
+        }
+
+        router.delete(route('admin.newsletter.destroy', id), {
+            preserveScroll: true,
+        });
     };
 
     return (
@@ -53,8 +85,12 @@ export default function NewsletterIndex({ subscribers, filters, total_active }: 
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl font-bold text-slate-900">Newsletter</h1>
-                        <p className="text-sm text-slate-500">{total_active} active subscribers</p>
+                        <h1 className="text-xl font-bold text-slate-900">
+                            Newsletter
+                        </h1>
+                        <p className="text-sm text-slate-500">
+                            {total_active} active subscribers
+                        </p>
                     </div>
                     <Link
                         href={route('admin.newsletter.compose')}
@@ -85,8 +121,12 @@ export default function NewsletterIndex({ subscribers, filters, total_active }: 
                                 <Users className="size-4 text-emerald-600" />
                             </div>
                             <div>
-                                <p className="text-lg font-bold text-slate-900">{total_active}</p>
-                                <p className="text-xs text-slate-500">Active subscribers</p>
+                                <p className="text-lg font-bold text-slate-900">
+                                    {total_active}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                    Active subscribers
+                                </p>
                             </div>
                         </div>
                     </Card>
@@ -96,8 +136,12 @@ export default function NewsletterIndex({ subscribers, filters, total_active }: 
                                 <Mail className="size-4 text-blue-600" />
                             </div>
                             <div>
-                                <p className="text-lg font-bold text-slate-900">{subscribers.total}</p>
-                                <p className="text-xs text-slate-500">Total (all time)</p>
+                                <p className="text-lg font-bold text-slate-900">
+                                    {subscribers.total}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                    Total (all time)
+                                </p>
                             </div>
                         </div>
                     </Card>
@@ -107,14 +151,16 @@ export default function NewsletterIndex({ subscribers, filters, total_active }: 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     <div className="flex flex-col gap-2 border-b border-slate-100 p-4 sm:flex-row">
                         <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                             <input
                                 type="text"
                                 placeholder="Search by email…"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-                                className="h-9 w-full rounded-lg border border-slate-200 pl-9 pr-3 text-sm focus:border-[#c8102e] focus:outline-none"
+                                onKeyDown={(e) =>
+                                    e.key === 'Enter' && applyFilters()
+                                }
+                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
                             />
                         </div>
                         <Select
@@ -137,22 +183,38 @@ export default function NewsletterIndex({ subscribers, filters, total_active }: 
                         >
                             Search
                         </button>
+                        <ClearFiltersButton
+                            active={Boolean(search || status)}
+                            onClear={clearFilters}
+                        />
                     </div>
 
                     {/* Table */}
                     <div className="divide-y divide-slate-50">
                         {subscribers.data.length === 0 ? (
-                            <p className="py-12 text-center text-sm text-slate-400">No subscribers found.</p>
+                            <p className="py-12 text-center text-sm text-slate-400">
+                                No subscribers found.
+                            </p>
                         ) : (
                             subscribers.data.map((subscriber) => (
-                                <div key={subscriber.id} className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60">
+                                <div
+                                    key={subscriber.id}
+                                    className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
+                                >
                                     <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">
-                                        {subscriber.email.slice(0, 2).toUpperCase()}
+                                        {subscriber.email
+                                            .slice(0, 2)
+                                            .toUpperCase()}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-medium text-slate-800">{subscriber.email}</p>
+                                        <p className="text-sm font-medium text-slate-800">
+                                            {subscriber.email}
+                                        </p>
                                         <p className="text-xs text-slate-400">
-                                            Subscribed {new Date(subscriber.subscribed_at).toLocaleDateString()}
+                                            Subscribed{' '}
+                                            {new Date(
+                                                subscriber.subscribed_at,
+                                            ).toLocaleDateString()}
                                         </p>
                                     </div>
                                     <span
@@ -162,11 +224,18 @@ export default function NewsletterIndex({ subscribers, filters, total_active }: 
                                                 : 'bg-slate-100 text-slate-500'
                                         }`}
                                     >
-                                        {subscriber.is_active ? 'Active' : 'Unsubscribed'}
+                                        {subscriber.is_active
+                                            ? 'Active'
+                                            : 'Unsubscribed'}
                                     </span>
                                     <button
                                         type="button"
-                                        onClick={() => handleDelete(subscriber.id, subscriber.email)}
+                                        onClick={() =>
+                                            handleDelete(
+                                                subscriber.id,
+                                                subscriber.email,
+                                            )
+                                        }
                                         className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
                                         aria-label={`Delete ${subscriber.email}`}
                                     >
@@ -181,16 +250,29 @@ export default function NewsletterIndex({ subscribers, filters, total_active }: 
                     {subscribers.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
                             <p className="text-xs text-slate-500">
-                                Page {subscribers.current_page} of {subscribers.last_page} &middot; {subscribers.total} total
+                                Page {subscribers.current_page} of{' '}
+                                {subscribers.last_page} &middot;{' '}
+                                {subscribers.total} total
                             </p>
                             <div className="flex gap-1">
                                 {subscribers.links[0]?.url && (
-                                    <Link href={subscribers.links[0].url} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50">
+                                    <Link
+                                        href={subscribers.links[0].url}
+                                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50"
+                                    >
                                         Prev
                                     </Link>
                                 )}
-                                {subscribers.links[subscribers.links.length - 1]?.url && (
-                                    <Link href={subscribers.links[subscribers.links.length - 1].url!} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50">
+                                {subscribers.links[subscribers.links.length - 1]
+                                    ?.url && (
+                                    <Link
+                                        href={
+                                            subscribers.links[
+                                                subscribers.links.length - 1
+                                            ].url!
+                                        }
+                                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50"
+                                    >
                                         Next
                                     </Link>
                                 )}

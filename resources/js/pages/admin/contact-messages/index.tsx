@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Mail, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Card } from '@/components/ui/card';
 
 type ContactMessageRow = {
@@ -34,6 +35,15 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
         router.get(
             route('admin.contact-messages.index'),
             search ? { search } : {},
+            { preserveState: true, replace: true },
+        );
+    };
+
+    const clearFilters = () => {
+        setSearch('');
+        router.get(
+            route('admin.contact-messages.index'),
+            {},
             { preserveState: true, replace: true },
         );
     };
@@ -117,6 +127,10 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                         >
                             Search
                         </button>
+                        <ClearFiltersButton
+                            active={Boolean(search || filters.search)}
+                            onClear={clearFilters}
+                        />
                     </div>
 
                     <div className="divide-y divide-slate-50">

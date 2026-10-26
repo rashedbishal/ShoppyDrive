@@ -2,6 +2,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Edit, Plus, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { BulkActionBar } from '@/components/admin/bulk-action-bar';
+import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -66,6 +67,15 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
         );
     };
 
+    const clearFilters = () => {
+        setSearch('');
+        router.get(
+            route('admin.sub-categories.index'),
+            {},
+            { preserveState: true, replace: true },
+        );
+    };
+
     const confirmDelete = () => {
         if (!deleteTarget) {
             return;
@@ -125,6 +135,10 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
                                 className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
                             />
                         </div>
+                        <ClearFiltersButton
+                            active={Boolean(search || filters.search)}
+                            onClear={clearFilters}
+                        />
                     </div>
 
                     <BulkActionBar

@@ -9,19 +9,20 @@ import {
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { BulkActionBar } from '@/components/admin/bulk-action-bar';
+import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { resolveCategoryColor } from '@/lib/category-colors';
+import { CategoryIcon } from '@/lib/category-icons';
+import { cn } from '@/lib/utils';
 import {
     destroyMany as bulkDestroyRoute,
     updateStatusMany as bulkStatusRoute,
 } from '@/routes/admin/categories';
-import { resolveCategoryColor } from '@/lib/category-colors';
-import { CategoryIcon } from '@/lib/category-icons';
-import { cn } from '@/lib/utils';
 
 type ParentCategory = {
     id: number;
@@ -75,6 +76,15 @@ export default function CategoriesIndex({ categories, filters }: Props) {
         router.get(
             route('admin.categories.index'),
             { search },
+            { preserveState: true, replace: true },
+        );
+    };
+
+    const clearFilters = () => {
+        setSearch('');
+        router.get(
+            route('admin.categories.index'),
+            {},
             { preserveState: true, replace: true },
         );
     };
@@ -178,6 +188,10 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                                 className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
                             />
                         </div>
+                        <ClearFiltersButton
+                            active={Boolean(search || filters.search)}
+                            onClear={clearFilters}
+                        />
                         {!canReorder && (
                             <p className="flex items-center text-xs text-slate-400">
                                 Clear search to drag-and-drop reorder

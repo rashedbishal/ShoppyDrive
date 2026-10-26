@@ -29,7 +29,25 @@ export function RouteModal({
     children,
 }: RouteModalProps): React.JSX.Element {
     const close = () => {
-        router.visit(returnTo, { preserveScroll: true });
+        // Closing without saving shouldn't re-fetch returnTo's props from the
+        // server — the list page is already cached from the visit that opened
+        // this modal (always via a Link from that page). Going back lets
+        // Inertia restore it from that cache instead of issuing a fresh
+        // request. If there's no history to go back to (e.g. this route was
+        // loaded directly), fall back to a normal visit.
+        let wentBack = false;
+        const onPopState = () => {
+            wentBack = true;
+            window.removeEventListener('popstate', onPopState);
+        };
+        window.addEventListener('popstate', onPopState);
+        window.history.back();
+        setTimeout(() => {
+            window.removeEventListener('popstate', onPopState);
+            if (!wentBack) {
+                router.visit(returnTo, { preserveScroll: true });
+            }
+        }, 150);
     };
 
     return (
