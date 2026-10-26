@@ -33,7 +33,6 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->call(HomepageSettingsSeeder::class);
-        $this->call(AttributeSeeder::class);
         $this->seedSettings();
         $categories = $this->seedCategories();
         $brands = $this->seedBrands();

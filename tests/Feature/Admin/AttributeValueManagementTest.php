@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\AttributeType;
 use App\Models\Admin;
 use App\Models\Attribute;
 use App\Models\AttributeValue;
@@ -18,8 +17,8 @@ beforeEach(function () {
         'password' => bcrypt('password'),
     ]);
 
-    $this->colorAttribute = Attribute::create(['name' => 'Color', 'type' => AttributeType::COLOR]);
-    $this->sizeAttribute = Attribute::create(['name' => 'Size', 'type' => AttributeType::SELECT]);
+    $this->colorAttribute = Attribute::firstWhere('name', 'Color');
+    $this->sizeAttribute = Attribute::firstWhere('name', 'Size');
 });
 
 test('admin can view the attributes index with color and size grouped', function () {
