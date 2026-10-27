@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { maxLength, required, validate } from '@/lib/validate';
 
 const slugify = (name: string) =>
     name
@@ -38,17 +39,31 @@ const inputClass = (err?: string) =>
     `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;
 
 export default function BrandCreate() {
-    const { data, setData, post, processing, errors } = useForm({
-        name: '',
-        slug: '',
-        logo: null as File | string | null,
-        description: '',
-        is_active: true,
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            name: '',
+            slug: '',
+            logo: null as File | string | null,
+            description: '',
+            is_active: true,
+        });
     const [slugTouched, setSlugTouched] = useState(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors = validate(data, {
+            name: [required(), maxLength(255)],
+            slug: [required(), maxLength(255)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.brands.store'));
     };
 

@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowLeft, RotateCcw, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -39,9 +40,22 @@ export default function TrashedOrders({ orders, filters }: Props) {
         | undefined;
 
     const applySearch = () => {
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
         router.get(
             route('admin.orders.trashed'),
             { search },
+            { preserveState: true, replace: true },
+        );
+    };
+
+    const clearFilters = () => {
+        setSearch('');
+        router.get(
+            route('admin.orders.trashed'),
+            {},
             { preserveState: true, replace: true },
         );
     };
@@ -118,6 +132,10 @@ export default function TrashedOrders({ orders, filters }: Props) {
                                 className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
                             />
                         </div>
+                        <ClearFiltersButton
+                            active={Boolean(search || filters.search)}
+                            onClear={clearFilters}
+                        />
                     </div>
 
                     <div className="divide-y divide-slate-50">

@@ -11,11 +11,12 @@ import {
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { ImageUpload } from '@/components/ui/image-upload';
 import { cn } from '@/lib/utils';
+import { maxLength, required, validate } from '@/lib/validate';
 import type { PromotionalBanner } from '@/types';
 
 type SimpleProduct = {
@@ -33,20 +34,21 @@ export default function PromotionalBannerEdit({
     banner,
     bannerProducts,
 }: Props) {
-    const { data, setData, post, processing, errors, clearErrors } = useForm({
-        _method: 'PUT',
-        title: banner.title,
-        description: banner.description ?? '',
-        image: banner.image as File | string | null,
-        href: banner.href ?? '',
-        badge: banner.badge ?? '',
-        accent:
-            banner.accent ??
-            'from-secondary/90 via-secondary/70 to-secondary/20',
-        is_active: banner.is_active,
-        sort_order: String(banner.sort_order),
-        products: bannerProducts.map((p) => p.id),
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            _method: 'PUT',
+            title: banner.title,
+            description: banner.description ?? '',
+            image: banner.image as File | string | null,
+            href: banner.href ?? '',
+            badge: banner.badge ?? '',
+            accent:
+                banner.accent ??
+                'from-secondary/90 via-secondary/70 to-secondary/20',
+            is_active: banner.is_active,
+            sort_order: String(banner.sort_order),
+            products: bannerProducts.map((p) => p.id),
+        });
 
     const [selectedProducts, setSelectedProducts] =
         useState<SimpleProduct[]>(bannerProducts);
@@ -65,6 +67,7 @@ export default function PromotionalBannerEdit({
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
+
         return () =>
             document.removeEventListener('mousedown', handleClickOutside);
     }, []);
@@ -72,12 +75,14 @@ export default function PromotionalBannerEdit({
     useEffect(() => {
         if (!searchQuery.trim()) {
             setSearchResults([]);
+
             return;
         }
 
         const controller = new AbortController();
         const timeoutId = setTimeout(async () => {
             setSearching(true);
+
             try {
                 const res = await fetch(
                     `/admin/promotional-banners/products/search?q=${encodeURIComponent(searchQuery)}`,
@@ -89,7 +94,10 @@ export default function PromotionalBannerEdit({
                         },
                     },
                 );
-                if (res.ok) setSearchResults(await res.json());
+
+                if (res.ok) {
+                    setSearchResults(await res.json());
+                }
             } catch {
                 // aborted or network error
             } finally {
@@ -104,7 +112,10 @@ export default function PromotionalBannerEdit({
     }, [searchQuery]);
 
     const addProduct = (product: SimpleProduct) => {
-        if (selectedProducts.some((p) => p.id === product.id)) return;
+        if (selectedProducts.some((p) => p.id === product.id)) {
+            return;
+        }
+
         const next = [...selectedProducts, product];
         setSelectedProducts(next);
         setData(
@@ -127,6 +138,19 @@ export default function PromotionalBannerEdit({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         clearErrors();
+
+        const clientErrors = validate(data, {
+            title: [required(), maxLength(255)],
+            href: [maxLength(255)],
+            badge: [maxLength(100)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         // PHP never populates $_POST/$_FILES for a literal PUT + multipart/form-data
         // request, so this must go as a real POST with _method spoofing (forceFormData
         // keeps the encoding consistent even when no new image is selected).
@@ -291,6 +315,7 @@ export default function PromotionalBannerEdit({
                                                         (p) =>
                                                             p.id === product.id,
                                                     );
+
                                                 return (
                                                     <button
                                                         key={product.id}

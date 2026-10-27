@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { maxLength, required, validate } from '@/lib/validate';
 
 function Field({
     label,
@@ -32,18 +33,19 @@ const inputClass = (err?: string) =>
     `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;
 
 export default function BlogCreate() {
-    const { data, setData, post, processing, errors } = useForm({
-        title: '',
-        slug: '',
-        excerpt: '',
-        content: '',
-        featured_image: null as File | string | null,
-        author_name: '',
-        meta_title: '',
-        meta_description: '',
-        is_published: false,
-        published_at: '',
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            title: '',
+            slug: '',
+            excerpt: '',
+            content: '',
+            featured_image: null as File | string | null,
+            author_name: '',
+            meta_title: '',
+            meta_description: '',
+            is_published: false,
+            published_at: '',
+        });
 
     const slugify = (title: string) =>
         title
@@ -53,6 +55,23 @@ export default function BlogCreate() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors = validate(data, {
+            title: [required(), maxLength(255)],
+            slug: [required(), maxLength(255)],
+            excerpt: [maxLength(500)],
+            content: [required()],
+            meta_title: [maxLength(255)],
+            meta_description: [maxLength(500)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.blogs.store'), { forceFormData: true });
     };
 

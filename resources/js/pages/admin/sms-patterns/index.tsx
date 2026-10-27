@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { maxLength, required, validate } from '@/lib/validate';
 import {
     destroyMany as bulkDestroyRoute,
     updateStatusMany as bulkStatusRoute,
@@ -66,8 +67,17 @@ export default function SmsPatternsIndex({ patterns }: Props) {
         });
     };
 
-    const { data, setData, post, patch, processing, errors, reset } =
-        useForm(emptyForm);
+    const {
+        data,
+        setData,
+        post,
+        patch,
+        processing,
+        errors,
+        reset,
+        setError,
+        clearErrors,
+    } = useForm(emptyForm);
 
     const openNew = () => {
         reset();
@@ -90,6 +100,32 @@ export default function SmsPatternsIndex({ patterns }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors: Record<string, string> = validate(data, {
+            name: [required(), maxLength(100)],
+            identifier: [required(), maxLength(255)],
+            txn_id_regex: [required(), maxLength(500)],
+            amount_regex: [required(), maxLength(500)],
+        });
+
+        for (const field of ['txn_id_regex', 'amount_regex'] as const) {
+            if (!clientErrors[field]) {
+                try {
+                    new RegExp(data[field]);
+                } catch {
+                    clientErrors[field] =
+                        'This is not a valid regular expression.';
+                }
+            }
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         if (editingId === 'new') {
             post(route('admin.sms-patterns.store'), {
                 onSuccess: () => setEditingId(null),
@@ -102,7 +138,10 @@ export default function SmsPatternsIndex({ patterns }: Props) {
     };
 
     const handleDelete = (id: number) => {
-        if (!confirm('Delete this pattern?')) return;
+        if (!confirm('Delete this pattern?')) {
+            return;
+        }
+
         router.delete(route('admin.sms-patterns.destroy', id));
     };
 

@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
+import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
@@ -56,12 +57,32 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
     const flash = props.flash as { success?: string } | undefined;
 
     const applyFilters = (overrides: Record<string, string>) => {
+        if (
+            Object.keys(overrides).length === 0 &&
+            search === (filters.search ?? '')
+        ) {
+            return;
+        }
+
         router.get(
             route('admin.orders.index'),
             { ...filters, search, ...overrides },
             { preserveState: true, replace: true },
         );
     };
+
+    const clearFilters = () => {
+        setSearch('');
+        router.get(
+            route('admin.orders.index'),
+            {},
+            { preserveState: true, replace: true },
+        );
+    };
+
+    const hasActiveFilters = Boolean(
+        search || filters.search || filters.status || filters.payment_status,
+    );
 
     return (
         <>
@@ -127,6 +148,10 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
                             <option value="unpaid">Unpaid</option>
                             <option value="refunded">Refunded</option>
                         </Select>
+                        <ClearFiltersButton
+                            active={hasActiveFilters}
+                            onClear={clearFilters}
+                        />
                     </div>
 
                     <div className="divide-y divide-slate-50">

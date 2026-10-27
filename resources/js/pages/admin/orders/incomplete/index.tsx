@@ -1,11 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import {
-    ArrowRight,
-    PhoneMissed,
-    Search,
-    Trash2,
-} from 'lucide-react';
+import { ArrowRight, PhoneMissed, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
@@ -61,9 +57,22 @@ export default function IncompleteOrdersIndex({
         | undefined;
 
     const applySearch = () => {
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
         router.get(
             route('admin.orders.incomplete.index'),
             { search },
+            { preserveState: true, replace: true },
+        );
+    };
+
+    const clearFilters = () => {
+        setSearch('');
+        router.get(
+            route('admin.orders.incomplete.index'),
+            {},
             { preserveState: true, replace: true },
         );
     };
@@ -74,12 +83,15 @@ export default function IncompleteOrdersIndex({
         }
 
         setDeleting(true);
-        router.delete(route('admin.orders.incomplete.destroy', deleteTarget.id), {
-            onFinish: () => {
-                setDeleting(false);
-                setDeleteTarget(null);
+        router.delete(
+            route('admin.orders.incomplete.destroy', deleteTarget.id),
+            {
+                onFinish: () => {
+                    setDeleting(false);
+                    setDeleteTarget(null);
+                },
             },
-        });
+        );
     };
 
     const handleDeleteAll = () => {
@@ -144,6 +156,10 @@ export default function IncompleteOrdersIndex({
                                 className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
                             />
                         </div>
+                        <ClearFiltersButton
+                            active={Boolean(search || filters.search)}
+                            onClear={clearFilters}
+                        />
                     </div>
 
                     <div className="divide-y divide-slate-50">
@@ -166,7 +182,7 @@ export default function IncompleteOrdersIndex({
                                         </p>
                                         <p className="text-xs text-slate-400">
                                             {incomplete.name || (
-                                                <span className="italic text-slate-300">
+                                                <span className="text-slate-300 italic">
                                                     No name provided
                                                 </span>
                                             )}
@@ -174,41 +190,34 @@ export default function IncompleteOrdersIndex({
                                     </div>
 
                                     <div className="min-w-0 flex-1 space-y-1">
-                                        {incomplete.items.map(
-                                            (item, index) => (
-                                                <div
-                                                    key={index}
-                                                    className="flex items-center justify-between gap-2 text-xs"
-                                                >
-                                                    <span className="min-w-0 truncate text-slate-700">
-                                                        {item.product_name}
-                                                        {item.variant_attributes && (
-                                                            <span className="text-slate-400">
-                                                                {' '}
-                                                                (
-                                                                {Object.entries(
-                                                                    item.variant_attributes,
+                                        {incomplete.items.map((item, index) => (
+                                            <div
+                                                key={index}
+                                                className="flex items-center justify-between gap-2 text-xs"
+                                            >
+                                                <span className="min-w-0 truncate text-slate-700">
+                                                    {item.product_name}
+                                                    {item.variant_attributes && (
+                                                        <span className="text-slate-400">
+                                                            {' '}
+                                                            (
+                                                            {Object.entries(
+                                                                item.variant_attributes,
+                                                            )
+                                                                .map(
+                                                                    ([k, v]) =>
+                                                                        `${k}: ${v}`,
                                                                 )
-                                                                    .map(
-                                                                        ([
-                                                                            k,
-                                                                            v,
-                                                                        ]) =>
-                                                                            `${k}: ${v}`,
-                                                                    )
-                                                                    .join(
-                                                                        ', ',
-                                                                    )}
-                                                                )
-                                                            </span>
-                                                        )}
-                                                    </span>
-                                                    <span className="shrink-0 text-slate-400">
-                                                        ×{item.quantity}
-                                                    </span>
-                                                </div>
-                                            ),
-                                        )}
+                                                                .join(', ')}
+                                                            )
+                                                        </span>
+                                                    )}
+                                                </span>
+                                                <span className="shrink-0 text-slate-400">
+                                                    ×{item.quantity}
+                                                </span>
+                                            </div>
+                                        ))}
                                     </div>
 
                                     <p className="shrink-0 text-xs text-slate-400 sm:w-28">
@@ -265,8 +274,8 @@ export default function IncompleteOrdersIndex({
                                     <Link
                                         href={
                                             incompleteOrders.links[
-                                                incompleteOrders.links
-                                                    .length - 1
+                                                incompleteOrders.links.length -
+                                                    1
                                             ].url!
                                         }
                                         className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs hover:bg-slate-50"

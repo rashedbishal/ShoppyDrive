@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Eye, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { DeleteCustomerDialog } from '@/components/admin/delete-customer-dialog';
 import { Card } from '@/components/ui/card';
 
@@ -33,9 +34,22 @@ export default function CustomersIndex({ customers, filters }: Props) {
     const flash = props.flash as { success?: string } | undefined;
 
     const applySearch = () => {
+        if (search === (filters.search ?? '')) {
+            return;
+        }
+
         router.get(
             route('admin.customers.index'),
             { search },
+            { preserveState: true, replace: true },
+        );
+    };
+
+    const clearFilters = () => {
+        setSearch('');
+        router.get(
+            route('admin.customers.index'),
+            {},
             { preserveState: true, replace: true },
         );
     };
@@ -74,6 +88,10 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                 className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
                             />
                         </div>
+                        <ClearFiltersButton
+                            active={Boolean(search || filters.search)}
+                            onClear={clearFilters}
+                        />
                     </div>
 
                     <div className="divide-y divide-slate-50">

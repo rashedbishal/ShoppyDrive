@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { maxLength, required, validate } from '@/lib/validate';
 
 type AttributeValue = {
     id: number;
@@ -31,13 +32,25 @@ function ValueRow({
     onDelete: (id: number) => void;
 }) {
     const [editing, setEditing] = useState(false);
-    const { data, setData, put, processing } = useForm({
-        value: attributeValue.value,
-        color_hex: attributeValue.color_hex ?? '#000000',
-        sort_order: attributeValue.sort_order,
-    });
+    const { data, setData, put, processing, errors, setError, clearErrors } =
+        useForm({
+            value: attributeValue.value,
+            color_hex: attributeValue.color_hex ?? '#000000',
+            sort_order: attributeValue.sort_order,
+        });
 
     const save = () => {
+        clearErrors();
+        const clientErrors = validate(data, {
+            value: [required(), maxLength(100)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         put(route('admin.attribute-values.update', attributeValue.id), {
             onSuccess: () => setEditing(false),
         });
@@ -61,13 +74,20 @@ function ValueRow({
 
             {editing ? (
                 <>
-                    <input
-                        autoFocus
-                        className={`${inputClass} flex-1`}
-                        value={data.value}
-                        onChange={(e) => setData('value', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && save()}
-                    />
+                    <div className="flex-1">
+                        <input
+                            autoFocus
+                            className={`${inputClass} w-full`}
+                            value={data.value}
+                            onChange={(e) => setData('value', e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && save()}
+                        />
+                        {errors.value && (
+                            <p className="mt-1 text-xs text-red-500">
+                                {errors.value}
+                            </p>
+                        )}
+                    </div>
                     {isColor && (
                         <input
                             type="color"
@@ -138,7 +158,16 @@ function AttributeSection({
     onDelete: (id: number) => void;
 }) {
     const isColor = attribute.type === 'color';
-    const { data, setData, post, processing, reset, errors } = useForm({
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        reset,
+        errors,
+        setError,
+        clearErrors,
+    } = useForm({
         attribute_id: attribute.id,
         value: '',
         color_hex: '#c8102e',
@@ -147,6 +176,18 @@ function AttributeSection({
 
     const handleAdd = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors = validate(data, {
+            value: [required(), maxLength(100)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.attribute-values.store'), {
             onSuccess: () => {
                 reset('value', 'color_hex');

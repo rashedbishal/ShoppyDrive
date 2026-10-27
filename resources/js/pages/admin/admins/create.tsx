@@ -2,20 +2,50 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
+import {
+    email as emailRule,
+    maxLength,
+    minLength,
+    required,
+    validate,
+} from '@/lib/validate';
 
 export default function AdminCreate() {
-    const { data, setData, post, processing, errors } = useForm({
-        name: '',
-        email: '',
-        password: '',
-        password_confirmation: '',
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            name: '',
+            email: '',
+            password: '',
+            password_confirmation: '',
+        });
 
     const inputClass =
         'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors: Record<string, string> = validate(data, {
+            name: [required(), maxLength(255)],
+            email: [required(), maxLength(255), emailRule()],
+            password: [required(), minLength(8)],
+        });
+
+        if (
+            data.password &&
+            data.password_confirmation &&
+            data.password !== data.password_confirmation
+        ) {
+            clientErrors.password_confirmation = 'The passwords do not match.';
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.admins.store'));
     };
 
@@ -110,6 +140,11 @@ export default function AdminCreate() {
                                     }
                                     placeholder="Repeat password"
                                 />
+                                {errors.password_confirmation && (
+                                    <p className="mt-1 text-xs text-red-600">
+                                        {errors.password_confirmation}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="flex gap-2 pt-2">

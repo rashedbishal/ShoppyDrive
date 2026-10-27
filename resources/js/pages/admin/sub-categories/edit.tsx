@@ -4,6 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import {
+    maxLength,
+    minValue,
+    numeric,
+    required,
+    validate,
+} from '@/lib/validate';
 
 type Category = {
     id: number;
@@ -25,19 +32,37 @@ export default function SubCategoryEdit({
     subCategory: category,
     categories,
 }: Props) {
-    const { data, setData, post, processing, errors } = useForm({
-        _method: 'PUT',
-        name: category.name,
-        slug: category.slug,
-        category_id: category.category_id ? String(category.category_id) : '',
-        description: category.description ?? '',
-        image: category.image as File | string | null,
-        is_active: category.is_active,
-        sort_order: String(category.sort_order),
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            _method: 'PUT',
+            name: category.name,
+            slug: category.slug,
+            category_id: category.category_id
+                ? String(category.category_id)
+                : '',
+            description: category.description ?? '',
+            image: category.image as File | string | null,
+            is_active: category.is_active,
+            sort_order: String(category.sort_order),
+        });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors = validate(data, {
+            name: [required(), maxLength(255)],
+            slug: [required(), maxLength(255)],
+            category_id: [required()],
+            sort_order: [numeric(), minValue(0)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.sub-categories.update', category.id), {
             forceFormData: true,
         });

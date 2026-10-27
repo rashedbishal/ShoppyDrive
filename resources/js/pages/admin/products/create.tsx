@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import { maxLength, minValue, required, validate } from '@/lib/validate';
 import { buildMediaTagOptions } from '@/lib/variant-media-tags';
 import { computeMinVariantPrice } from '@/lib/variant-pricing';
 
@@ -38,31 +39,32 @@ export default function ProductCreate({
     brands,
     attributeValues,
 }: Props) {
-    const { data, setData, post, processing, errors } = useForm({
-        name: '',
-        slug: '',
-        sku: '',
-        short_description: '',
-        description: '',
-        category_id: '',
-        sub_category_id: '',
-        brand_id: '',
-        price: '',
-        compare_price: '',
-        cost_price: '',
-        stock_quantity: '0',
-        low_stock_threshold: '5',
-        is_active: true,
-        is_featured: false,
-        has_color_variant: false,
-        has_size_variant: false,
-        variants: [] as VariantRow[],
-        cry_baby_enabled: false,
-        images: [] as (File | string)[],
-        media_tags: [] as (string | null)[],
-        meta_title: '',
-        meta_description: '',
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            name: '',
+            slug: '',
+            sku: '',
+            short_description: '',
+            description: '',
+            category_id: '',
+            sub_category_id: '',
+            brand_id: '',
+            price: '',
+            compare_price: '',
+            cost_price: '',
+            stock_quantity: '0',
+            low_stock_threshold: '5',
+            is_active: true,
+            is_featured: false,
+            has_color_variant: false,
+            has_size_variant: false,
+            variants: [] as VariantRow[],
+            cry_baby_enabled: false,
+            images: [] as (File | string)[],
+            media_tags: [] as (string | null)[],
+            meta_title: '',
+            meta_description: '',
+        });
 
     const hasVariants = data.has_color_variant || data.has_size_variant;
 
@@ -104,6 +106,56 @@ export default function ProductCreate({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors: Record<string, string> = validate(data, {
+            name: [required(), maxLength(255)],
+            slug: [required(), maxLength(255)],
+            category_id: [required()],
+            sub_category_id: [required()],
+        });
+
+        if (!hasVariants) {
+            Object.assign(
+                clientErrors,
+                validate(data, {
+                    price: [required(), minValue(0)],
+                    stock_quantity: [required(), minValue(0)],
+                }),
+            );
+        } else if (data.variants.length === 0) {
+            clientErrors.variants =
+                'Add at least one color/size variant, or turn off the variant toggles.';
+        } else {
+            let defaultCount = 0;
+            data.variants.forEach((variant, index) => {
+                if (!variant.price) {
+                    clientErrors[`variants.${index}.price`] =
+                        'The variant price is required.';
+                }
+
+                if (!variant.stock_quantity) {
+                    clientErrors[`variants.${index}.stock_quantity`] =
+                        'The variant stock quantity is required.';
+                }
+
+                if (variant.is_default) {
+                    defaultCount++;
+                }
+            });
+
+            if (defaultCount !== 1) {
+                clientErrors.variants =
+                    'Exactly one variant must be marked as the default.';
+            }
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.products.store'));
     };
 

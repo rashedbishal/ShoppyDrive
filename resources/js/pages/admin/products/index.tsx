@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Baby, Edit, Plus, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -46,20 +47,40 @@ export default function ProductsIndex({
         name: string;
     } | null>(null);
     const [deleting, setDeleting] = useState(false);
-    const [cryBabyBulkTarget, setCryBabyBulkTarget] = useState<
-        boolean | null
-    >(null);
+    const [cryBabyBulkTarget, setCryBabyBulkTarget] = useState<boolean | null>(
+        null,
+    );
     const [updatingCryBaby, setUpdatingCryBaby] = useState(false);
     const { props } = usePage<any>();
     const flash = props.flash as { success?: string } | undefined;
 
     const applyFilters = (overrides: Record<string, string>) => {
+        if (
+            Object.keys(overrides).length === 0 &&
+            search === (filters.search ?? '')
+        ) {
+            return;
+        }
+
         router.get(
             route('admin.products.index'),
             { ...filters, search, ...overrides },
             { preserveState: true, replace: true },
         );
     };
+
+    const clearFilters = () => {
+        setSearch('');
+        router.get(
+            route('admin.products.index'),
+            {},
+            { preserveState: true, replace: true },
+        );
+    };
+
+    const hasActiveFilters = Boolean(
+        search || filters.search || filters.status || filters.category_id,
+    );
 
     const confirmDelete = () => {
         if (!deleteTarget) {
@@ -205,6 +226,10 @@ export default function ProductsIndex({
                                 </option>
                             ))}
                         </Select>
+                        <ClearFiltersButton
+                            active={hasActiveFilters}
+                            onClear={clearFilters}
+                        />
                     </div>
 
                     <div className="divide-y divide-slate-50">

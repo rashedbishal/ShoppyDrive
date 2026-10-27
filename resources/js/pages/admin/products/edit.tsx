@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import { maxLength, minValue, required, validate } from '@/lib/validate';
 import { buildMediaTagOptions } from '@/lib/variant-media-tags';
 import { computeMinVariantPrice } from '@/lib/variant-pricing';
 
@@ -115,58 +116,61 @@ export default function ProductEdit({
     brands,
     attributeValues,
 }: Props) {
-    const { data, setData, post, processing, errors } = useForm({
-        _method: 'PUT',
-        name: product.name,
-        slug: product.slug,
-        sku: product.sku ?? '',
-        short_description: product.short_description ?? '',
-        description: product.description ?? '',
-        category_id: product.category_id ? String(product.category_id) : '',
-        sub_category_id: product.sub_category_id
-            ? String(product.sub_category_id)
-            : '',
-        brand_id: product.brand_id ? String(product.brand_id) : '',
-        price: String(product.price),
-        compare_price: product.compare_price
-            ? String(product.compare_price)
-            : '',
-        cost_price: product.cost_price ? String(product.cost_price) : '',
-        stock_quantity: String(product.stock_quantity),
-        low_stock_threshold: String(product.low_stock_threshold),
-        is_active: product.is_active,
-        is_featured: product.is_featured,
-        free_delivery: product.free_delivery,
-        free_delivery_min_qty: product.free_delivery_min_qty
-            ? String(product.free_delivery_min_qty)
-            : '',
-        has_color_variant: product.has_color_variant,
-        has_size_variant: product.has_size_variant,
-        variants: product.variants.map(
-            (v): VariantRow => ({
-                color_value_id: v.color_value_id,
-                size_value_id: v.size_value_id,
-                sku: v.sku ?? '',
-                price: String(v.price),
-                compare_price: v.compare_price ? String(v.compare_price) : '',
-                cost_price: v.cost_price ? String(v.cost_price) : '',
-                stock_quantity: String(v.stock_quantity),
-                low_stock_threshold: v.low_stock_threshold
-                    ? String(v.low_stock_threshold)
-                    : '5',
-                is_default: v.is_default,
-            }),
-        ),
-        cry_baby_enabled: product.cry_baby_enabled,
-        images: product.media.length
-            ? product.media.map((m) => m.path)
-            : ([] as (File | string)[]),
-        media_tags: product.media.map((m) =>
-            mediaTagFor(m, product.variants),
-        ) as (string | null)[],
-        meta_title: product.meta_title ?? '',
-        meta_description: product.meta_description ?? '',
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            _method: 'PUT',
+            name: product.name,
+            slug: product.slug,
+            sku: product.sku ?? '',
+            short_description: product.short_description ?? '',
+            description: product.description ?? '',
+            category_id: product.category_id ? String(product.category_id) : '',
+            sub_category_id: product.sub_category_id
+                ? String(product.sub_category_id)
+                : '',
+            brand_id: product.brand_id ? String(product.brand_id) : '',
+            price: String(product.price),
+            compare_price: product.compare_price
+                ? String(product.compare_price)
+                : '',
+            cost_price: product.cost_price ? String(product.cost_price) : '',
+            stock_quantity: String(product.stock_quantity),
+            low_stock_threshold: String(product.low_stock_threshold),
+            is_active: product.is_active,
+            is_featured: product.is_featured,
+            free_delivery: product.free_delivery,
+            free_delivery_min_qty: product.free_delivery_min_qty
+                ? String(product.free_delivery_min_qty)
+                : '',
+            has_color_variant: product.has_color_variant,
+            has_size_variant: product.has_size_variant,
+            variants: product.variants.map(
+                (v): VariantRow => ({
+                    color_value_id: v.color_value_id,
+                    size_value_id: v.size_value_id,
+                    sku: v.sku ?? '',
+                    price: String(v.price),
+                    compare_price: v.compare_price
+                        ? String(v.compare_price)
+                        : '',
+                    cost_price: v.cost_price ? String(v.cost_price) : '',
+                    stock_quantity: String(v.stock_quantity),
+                    low_stock_threshold: v.low_stock_threshold
+                        ? String(v.low_stock_threshold)
+                        : '5',
+                    is_default: v.is_default,
+                }),
+            ),
+            cry_baby_enabled: product.cry_baby_enabled,
+            images: product.media.length
+                ? product.media.map((m) => m.path)
+                : ([] as (File | string)[]),
+            media_tags: product.media.map((m) =>
+                mediaTagFor(m, product.variants),
+            ) as (string | null)[],
+            meta_title: product.meta_title ?? '',
+            meta_description: product.meta_description ?? '',
+        });
 
     const hasVariants = data.has_color_variant || data.has_size_variant;
 
@@ -202,6 +206,56 @@ export default function ProductEdit({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors: Record<string, string> = validate(data, {
+            name: [required(), maxLength(255)],
+            slug: [required(), maxLength(255)],
+            category_id: [required()],
+            sub_category_id: [required()],
+        });
+
+        if (!hasVariants) {
+            Object.assign(
+                clientErrors,
+                validate(data, {
+                    price: [required(), minValue(0)],
+                    stock_quantity: [required(), minValue(0)],
+                }),
+            );
+        } else if (data.variants.length === 0) {
+            clientErrors.variants =
+                'Add at least one color/size variant, or turn off the variant toggles.';
+        } else {
+            let defaultCount = 0;
+            data.variants.forEach((variant, index) => {
+                if (!variant.price) {
+                    clientErrors[`variants.${index}.price`] =
+                        'The variant price is required.';
+                }
+
+                if (!variant.stock_quantity) {
+                    clientErrors[`variants.${index}.stock_quantity`] =
+                        'The variant stock quantity is required.';
+                }
+
+                if (variant.is_default) {
+                    defaultCount++;
+                }
+            });
+
+            if (defaultCount !== 1) {
+                clientErrors.variants =
+                    'Exactly one variant must be marked as the default.';
+            }
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.products.update', product.id), {
             forceFormData: true,
         });

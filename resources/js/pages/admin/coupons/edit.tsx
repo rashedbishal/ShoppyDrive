@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import { maxLength, minValue, required, validate } from '@/lib/validate';
 
 type Coupon = {
     id: number;
@@ -21,30 +22,60 @@ type Coupon = {
 type Props = { coupon: Coupon };
 
 const toDatetimeLocal = (str: string | null) => {
-    if (!str) return '';
+    if (!str) {
+        return '';
+    }
+
     return str.slice(0, 16);
 };
 
 export default function CouponEdit({ coupon }: Props) {
-    const { data, setData, put, processing, errors } = useForm({
-        code: coupon.code,
-        name: coupon.name,
-        type: coupon.type,
-        value: String(coupon.value),
-        min_order_amount: coupon.min_order_amount
-            ? String(coupon.min_order_amount)
-            : '',
-        max_uses: coupon.max_uses ? String(coupon.max_uses) : '',
-        per_user_limit: coupon.per_user_limit
-            ? String(coupon.per_user_limit)
-            : '',
-        starts_at: toDatetimeLocal(coupon.starts_at),
-        expires_at: toDatetimeLocal(coupon.expires_at),
-        is_active: coupon.is_active,
-    });
+    const { data, setData, put, processing, errors, setError, clearErrors } =
+        useForm({
+            code: coupon.code,
+            name: coupon.name,
+            type: coupon.type,
+            value: String(coupon.value),
+            min_order_amount: coupon.min_order_amount
+                ? String(coupon.min_order_amount)
+                : '',
+            max_uses: coupon.max_uses ? String(coupon.max_uses) : '',
+            per_user_limit: coupon.per_user_limit
+                ? String(coupon.per_user_limit)
+                : '',
+            starts_at: toDatetimeLocal(coupon.starts_at),
+            expires_at: toDatetimeLocal(coupon.expires_at),
+            is_active: coupon.is_active,
+        });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors: Record<string, string> = validate(data, {
+            code: [required(), maxLength(50)],
+            name: [required(), maxLength(255)],
+            value: [required(), minValue(0)],
+            min_order_amount: [minValue(0)],
+            max_uses: [minValue(1)],
+            per_user_limit: [minValue(1)],
+        });
+
+        if (
+            data.starts_at &&
+            data.expires_at &&
+            new Date(data.expires_at) < new Date(data.starts_at)
+        ) {
+            clientErrors.expires_at =
+                'The expiry date must be on or after the start date.';
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         put(route('admin.coupons.update', coupon.id));
     };
 

@@ -4,17 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import { maxLength, pattern, required, validate } from '@/lib/validate';
 
 type Product = { id: number; name: string; price: number };
 type Props = { products: Product[] };
 
 export default function LandingPageCreate({ products }: Props) {
-    const { data, setData, post, processing, errors } = useForm({
-        title: '',
-        slug: '',
-        product_id: '',
-        is_active: true,
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            title: '',
+            slug: '',
+            product_id: '',
+            is_active: true,
+        });
     const [slugTouched, setSlugTouched] = useState(false);
 
     const inputClass =
@@ -44,6 +46,27 @@ export default function LandingPageCreate({ products }: Props) {
                         <form
                             onSubmit={(e) => {
                                 e.preventDefault();
+
+                                clearErrors();
+                                const clientErrors = validate(data, {
+                                    title: [required(), maxLength(255)],
+                                    slug: [
+                                        required(),
+                                        maxLength(255),
+                                        pattern(
+                                            /^[a-z0-9-]+$/,
+                                            'Only lowercase letters, numbers, and hyphens are allowed.',
+                                        ),
+                                    ],
+                                    product_id: [required()],
+                                });
+
+                                if (Object.keys(clientErrors).length > 0) {
+                                    setError(clientErrors);
+
+                                    return;
+                                }
+
                                 post(route('admin.landing-pages.store'));
                             }}
                             className="space-y-4"

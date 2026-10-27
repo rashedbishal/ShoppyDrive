@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { maxLength, required, validate } from '@/lib/validate';
 import {
     destroyMany as bulkDestroyRoute,
     updateStatusMany as bulkStatusRoute,
@@ -32,13 +33,25 @@ function KeywordRow({
     onToggleSelect: () => void;
 }) {
     const [editing, setEditing] = useState(false);
-    const { data, setData, put, processing } = useForm({
-        keyword: keyword.keyword,
-        sort_order: keyword.sort_order,
-        is_active: keyword.is_active,
-    });
+    const { data, setData, put, processing, errors, setError, clearErrors } =
+        useForm({
+            keyword: keyword.keyword,
+            sort_order: keyword.sort_order,
+            is_active: keyword.is_active,
+        });
 
     const save = () => {
+        clearErrors();
+        const clientErrors = validate(data, {
+            keyword: [required(), maxLength(100)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         put(route('admin.popular-keywords.update', keyword.id), {
             onSuccess: () => setEditing(false),
         });
@@ -54,13 +67,20 @@ function KeywordRow({
 
             {editing ? (
                 <>
-                    <input
-                        autoFocus
-                        className={`${inputClass} flex-1`}
-                        value={data.keyword}
-                        onChange={(e) => setData('keyword', e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && save()}
-                    />
+                    <div className="flex-1">
+                        <input
+                            autoFocus
+                            className={`${inputClass} w-full`}
+                            value={data.keyword}
+                            onChange={(e) => setData('keyword', e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && save()}
+                        />
+                        {errors.keyword && (
+                            <p className="mt-1 text-xs text-red-500">
+                                {errors.keyword}
+                            </p>
+                        )}
+                    </div>
                     <input
                         type="number"
                         min={0}
@@ -155,10 +175,31 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
         });
     };
 
-    const { data, setData, post, processing, reset } = useForm({ keyword: '' });
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        reset,
+        errors,
+        setError,
+        clearErrors,
+    } = useForm({ keyword: '' });
 
     const handleAdd = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors = validate(data, {
+            keyword: [required(), maxLength(100)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.popular-keywords.store'), {
             onSuccess: () => reset(),
         });
@@ -207,15 +248,24 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                 {/* Add keyword */}
                 <Card className="p-4 shadow-sm">
                     <form onSubmit={handleAdd} className="flex gap-2">
-                        <input
-                            className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
-                            value={data.keyword}
-                            onChange={(e) => setData('keyword', e.target.value)}
-                            placeholder="New keyword…"
-                        />
+                        <div className="flex-1">
+                            <input
+                                className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                value={data.keyword}
+                                onChange={(e) =>
+                                    setData('keyword', e.target.value)
+                                }
+                                placeholder="New keyword…"
+                            />
+                            {errors.keyword && (
+                                <p className="mt-1 text-xs text-red-500">
+                                    {errors.keyword}
+                                </p>
+                            )}
+                        </div>
                         <Button
                             type="submit"
-                            disabled={processing || !data.keyword.trim()}
+                            disabled={processing}
                             className="shrink-0 bg-[#c8102e] text-white hover:bg-[#a50d25]"
                         >
                             <Plus className="size-4" />

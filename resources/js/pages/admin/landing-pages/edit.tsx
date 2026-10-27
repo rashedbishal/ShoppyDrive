@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import { maxLength, pattern, required, validate } from '@/lib/validate';
 
 type Product = { id: number; name: string; price: number };
 
@@ -67,6 +68,7 @@ function SectionWrap({
     children: React.ReactNode;
 }) {
     const [open, setOpen] = useState(false);
+
     return (
         <Card className="shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
@@ -121,13 +123,14 @@ export default function LandingPageEdit({
         'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e] resize-none';
     const labelClass = 'mb-1 block text-xs font-medium text-slate-600';
 
-    const { data, setData, put, processing, errors } = useForm({
-        title: page.title,
-        slug: page.slug,
-        product_id: String(page.product_id),
-        is_active: page.is_active,
-        sections: initialSections,
-    });
+    const { data, setData, put, processing, errors, setError, clearErrors } =
+        useForm({
+            title: page.title,
+            slug: page.slug,
+            product_id: String(page.product_id),
+            is_active: page.is_active,
+            sections: initialSections,
+        });
 
     const sec = data.sections;
     const setSec = (patch: Partial<Sections>) =>
@@ -159,6 +162,27 @@ export default function LandingPageEdit({
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
+
+                        clearErrors();
+                        const clientErrors = validate(data, {
+                            title: [required(), maxLength(255)],
+                            slug: [
+                                required(),
+                                maxLength(255),
+                                pattern(
+                                    /^[a-z0-9-]+$/,
+                                    'Only lowercase letters, numbers, and hyphens are allowed.',
+                                ),
+                            ],
+                            product_id: [required()],
+                        });
+
+                        if (Object.keys(clientErrors).length > 0) {
+                            setError(clientErrors);
+
+                            return;
+                        }
+
                         put(route('admin.landing-pages.update', page.id));
                     }}
                     className="space-y-4"

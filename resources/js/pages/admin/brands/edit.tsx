@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { maxLength, required, validate } from '@/lib/validate';
 
 type Brand = {
     id: number;
@@ -16,17 +17,31 @@ type Brand = {
 type Props = { brand: Brand };
 
 export default function BrandEdit({ brand }: Props) {
-    const { data, setData, post, processing, errors } = useForm({
-        _method: 'PUT',
-        name: brand.name,
-        slug: brand.slug,
-        logo: brand.logo as File | string | null,
-        description: brand.description ?? '',
-        is_active: brand.is_active,
-    });
+    const { data, setData, post, processing, errors, setError, clearErrors } =
+        useForm({
+            _method: 'PUT',
+            name: brand.name,
+            slug: brand.slug,
+            logo: brand.logo as File | string | null,
+            description: brand.description ?? '',
+            is_active: brand.is_active,
+        });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        clearErrors();
+        const clientErrors = validate(data, {
+            name: [required(), maxLength(255)],
+            slug: [required(), maxLength(255)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            setError(clientErrors);
+
+            return;
+        }
+
         post(route('admin.brands.update', brand.id), {
             forceFormData: true,
         });
