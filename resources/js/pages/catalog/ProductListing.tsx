@@ -18,15 +18,17 @@ import {
 import {
     useEffect,
     useMemo,
-    useState,
-    type FormEvent,
-    type ReactNode,
+    useState
+    
+    
 } from 'react';
+import type {FormEvent, ReactNode} from 'react';
+import { route } from 'ziggy-js';
+import { PageHero } from '@/components/shared/PageHero';
 import {
     ProductCard,
     ProductCardSkeleton,
 } from '@/components/shared/ProductCard';
-import { PageHero } from '@/components/shared/PageHero';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -37,8 +39,8 @@ import {
     PRODUCT_GRID_BESIDE_SIDEBAR_CLASS,
     SIDEBAR_LAYOUT_CLASS,
 } from '@/lib/constants';
-import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
+import { cn } from '@/lib/utils';
 import type {
     Attribute,
     AttributeValue,
@@ -49,7 +51,6 @@ import type {
     SharedPageProps,
     SubCategory,
 } from '@/types';
-import { route } from 'ziggy-js';
 
 type ListingAttributeValue = AttributeValue;
 
@@ -483,9 +484,15 @@ function ProductListingPage({
 
     const handleSearchSubmit = (event: FormEvent<HTMLFormElement>): void => {
         event.preventDefault();
+        const trimmed = searchInput.trim();
+
+        if (trimmed === '' && draftFilters.q === '') {
+            return;
+        }
+
         const next = {
             ...draftFilters,
-            q: searchInput.trim(),
+            q: trimmed,
             page: 1,
         };
         setDraftFilters(next);
