@@ -375,7 +375,8 @@ export default function ProductEdit({
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4 pt-4">
-                                {!hasVariants && (
+                                {(!hasVariants ||
+                                    data.variants.length === 0) && (
                                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                                         <Field
                                             label="Price (৳) *"
