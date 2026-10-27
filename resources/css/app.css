@@ -855,8 +855,15 @@ input[type='radio']:checked:focus-visible {
     100% { opacity: 1; transform: none; filter: none; }
 }
 
+/* A brief lift (anticipation), then the panel sinks away into a blur. */
 @keyframes dialog-premium-panel-out {
-    to { opacity: 0; transform: translateY(12px) scale(0.97); filter: blur(4px); }
+    0% { opacity: 1; transform: none; filter: none; }
+    28% { opacity: 1; transform: translateY(-4px) scale(1.015); filter: none; }
+    100% { opacity: 0; transform: translateY(18px) scale(0.9); filter: blur(10px); }
+}
+
+@keyframes dialog-premium-item-out {
+    to { opacity: 0; transform: translateY(-6px); }
 }
 
 @keyframes dialog-premium-item-in {
@@ -868,7 +875,7 @@ input[type='radio']:checked:focus-visible {
 }
 
 .dialog-premium-overlay[data-state='closed'] {
-    animation: dialog-premium-overlay-out 160ms ease-in forwards;
+    animation: dialog-premium-overlay-out 320ms cubic-bezier(0.4, 0, 0.2, 1) 40ms forwards;
 }
 
 .dialog-premium[data-state='open'] {
@@ -876,8 +883,19 @@ input[type='radio']:checked:focus-visible {
 }
 
 .dialog-premium[data-state='closed'] {
-    animation: dialog-premium-panel-out 160ms cubic-bezier(0.4, 0, 1, 1) forwards;
+    animation: dialog-premium-panel-out 300ms cubic-bezier(0.55, 0, 0.75, 0) forwards;
 }
+
+/* Sections fade out bottom-up just ahead of the panel. Each finishes well
+ * before the panel's own animation, which is the one Radix waits on. */
+.dialog-premium[data-state='closed'] > * {
+    animation: dialog-premium-item-out 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.dialog-premium[data-state='closed'] > :nth-last-child(1) { animation-delay: 0ms; }
+.dialog-premium[data-state='closed'] > :nth-last-child(2) { animation-delay: 25ms; }
+.dialog-premium[data-state='closed'] > :nth-last-child(3) { animation-delay: 50ms; }
+.dialog-premium[data-state='closed'] > :nth-last-child(n + 4) { animation-delay: 75ms; }
 
 .dialog-premium[data-state='open'] > * {
     animation: dialog-premium-item-in 380ms cubic-bezier(0.16, 1.12, 0.3, 1) backwards;
@@ -924,7 +942,8 @@ input[type='radio']:checked:focus-visible {
         animation: dialog-premium-overlay-in 200ms ease-out backwards;
     }
 
-    .dialog-premium[data-state='closed'] {
-        animation: dialog-premium-overlay-out 160ms ease-in forwards;
+    .dialog-premium[data-state='closed'],
+    .dialog-premium[data-state='closed'] > * {
+        animation: dialog-premium-overlay-out 200ms ease-in forwards;
     }
 }

@@ -9,7 +9,14 @@ import type { Transition, Variants } from 'framer-motion';
 export const dialogOverlayMotion = {
     initial: { opacity: 0 },
     animate: { opacity: 1 },
-    exit: { opacity: 0 },
+    exit: {
+        opacity: 0,
+        transition: {
+            duration: 0.32,
+            delay: 0.04,
+            ease: [0.4, 0, 0.2, 1],
+        } satisfies Transition,
+    },
     transition: { duration: 0.2 } satisfies Transition,
 };
 
@@ -30,12 +37,20 @@ export const dialogPanel: Variants = {
             delayChildren: 0.06,
         },
     },
+    // A brief lift (anticipation), then the panel sinks away into a blur
+    // while its sections fade out bottom-up just ahead of it.
     exit: {
-        opacity: 0,
-        y: 12,
-        scale: 0.97,
-        filter: 'blur(4px)',
-        transition: { duration: 0.16, ease: [0.4, 0, 1, 1] },
+        opacity: [1, 1, 0],
+        y: [0, -4, 18],
+        scale: [1, 1.015, 0.9],
+        filter: ['blur(0px)', 'blur(0px)', 'blur(10px)'],
+        transition: {
+            duration: 0.3,
+            times: [0, 0.28, 1],
+            ease: [0.55, 0, 0.75, 0],
+            staggerChildren: 0.025,
+            staggerDirection: -1,
+        },
     },
 };
 
@@ -45,5 +60,10 @@ export const dialogItem: Variants = {
         opacity: 1,
         y: 0,
         transition: { type: 'spring', stiffness: 500, damping: 34 },
+    },
+    exit: {
+        opacity: 0,
+        y: -6,
+        transition: { duration: 0.15, ease: [0.4, 0, 1, 1] },
     },
 };
