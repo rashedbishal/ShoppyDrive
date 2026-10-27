@@ -157,9 +157,26 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
-        $product->delete();
+        // Blocks deletion while any order (including a trashed/cancelled one still
+        // awaiting a permanent delete) has a line item for this exact product —
+        // scoped by product_id, so an order that also contains other products
+        // doesn't falsely block or get missed. Admin has to permanently delete
+        // those orders first (Admin > Orders > trash > force delete).
+        if (OrderItem::where('product_id', $product->id)->exists()) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => 'This product has orders and cannot be deleted. Delete all orders containing this product first.',
+            ]);
 
-        return redirect()->route('admin.products.index')->with('success', 'Product deleted.');
+            return back();
+        }
+
+        // No order history left to protect, so this is a real, permanent
+        // delete rather than a soft-delete — Product::booted()'s deleting
+        // hook re-checks the same order-history condition as a backstop.
+        $product->forceDelete();
+
+        return redirect()->route('admin.products.index')->with('success', 'Product permanently deleted.');
     }
 
     /**

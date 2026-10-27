@@ -63,6 +63,24 @@ class Product extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Product $product) {
+            // Same rule as Category/SubCategory's own force-delete guard: once
+            // the row is actually removed, order_items.product_id is now
+            // nullOnDelete() (see the migration that changed it from
+            // cascadeOnDelete()), so the FK itself won't destroy order
+            // history — but refusing outright here is still the clearer
+            // signal than silently nulling out a historical line item's
+            // product reference.
+            if ($product->isForceDeleting() && OrderItem::where('product_id', $product->id)->exists()) {
+                throw new \RuntimeException(
+                    "Cannot permanently delete product \"{$product->name}\": it has order history. Soft-delete it instead.",
+                );
+            }
+        });
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
