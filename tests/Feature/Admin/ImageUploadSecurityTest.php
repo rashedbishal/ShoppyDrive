@@ -61,6 +61,18 @@ test('a brand logo upload accepts a valid JPEG', function () {
     expect($brand->logo)->toStartWith('/storage/brands/');
 });
 
+test('creating a brand flashes a success toast instead of a session message', function () {
+    $admin = imageSecurityAdmin();
+    actingAs($admin, 'admin');
+
+    $response = $this->post(route('admin.brands.store'), [
+        'name' => 'Acme', 'slug' => 'acme',
+    ]);
+
+    $response->assertSessionHas('inertia.flash_data.toast', ['type' => 'success', 'message' => 'Brand created.'])
+        ->assertSessionMissing('success');
+});
+
 test('a brand logo upload of exactly 1MB is accepted', function () {
     $admin = imageSecurityAdmin();
     actingAs($admin, 'admin');

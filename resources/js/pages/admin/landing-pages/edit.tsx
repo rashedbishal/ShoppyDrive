@@ -1,4 +1,4 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import {
     ChevronDown,
     ChevronUp,
@@ -114,9 +114,6 @@ export default function LandingPageEdit({
     sections: initialSections,
     products,
 }: Props) {
-    const { props } = usePage<any>();
-    const flash = props.flash as { success?: string } | undefined;
-
     const inputClass =
         'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
     const textareaClass =
@@ -152,12 +149,6 @@ export default function LandingPageEdit({
                 >
                     <ExternalLink className="size-3.5" /> Preview
                 </a>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
 
                 <form
                     onSubmit={(e) => {

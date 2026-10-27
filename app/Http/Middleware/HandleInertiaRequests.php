@@ -14,6 +14,7 @@ use App\Models\Wishlist;
 use App\Services\BundleService;
 use App\Support\CartManager;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -100,6 +101,8 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $this->flashSessionMessageAsToast($request);
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -182,6 +185,34 @@ class HandleInertiaRequests extends Middleware
             'cart_shipping_cost' => fn () => $this->resolveCartShippingCost($request),
             'cart_base_shipping_rate' => fn () => $this->resolveBaseShippingRate($request),
         ];
+    }
+
+    /**
+     * Admin controllers report outcomes with `->with('success'|'error'|'info', ...)`.
+     * Surface those as the standard toast (see `useFlashToast`) instead of
+     * per-page banners. This runs before the controller, and Inertia pulls
+     * flash data when the page renders, so the toast lands in this same
+     * response. Skipped when the controller already flashed a toast itself.
+     */
+    private function flashSessionMessageAsToast(Request $request): void
+    {
+        if (! $request->hasSession() || ! $request->is('admin', 'admin/*')) {
+            return;
+        }
+
+        if (array_key_exists('toast', Inertia::getFlashed($request))) {
+            return;
+        }
+
+        foreach (['error', 'success', 'info'] as $type) {
+            $message = $request->session()->get($type);
+
+            if (is_string($message) && $message !== '') {
+                Inertia::flash('toast', ['type' => $type, 'message' => $message]);
+
+                return;
+            }
+        }
     }
 
     private function resolveBaseShippingRate(Request $request): ?int

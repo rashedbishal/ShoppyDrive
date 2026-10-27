@@ -1,4 +1,4 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     Edit,
     FolderOpen,
@@ -54,8 +54,6 @@ export default function CategoriesIndex({ categories, filters }: Props) {
     const [deleting, setDeleting] = useState(false);
     const [bulkDeleting, setBulkDeleting] = useState(false);
     const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
-    const { props } = usePage<any>();
-    const flash = props.flash as { success?: string } | undefined;
     const canReorder = search.trim() === '';
     const items = optimisticOrder ?? categories;
 
@@ -157,12 +155,6 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                         </Link>
                     </Button>
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
 
                 {/* Info banner */}
                 <div className="rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-3 text-xs text-blue-700">
@@ -293,7 +285,9 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                                             />
                                         ) : (
                                             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-400">
-                                                {cat.name.slice(0, 2).toUpperCase()}
+                                                {cat.name
+                                                    .slice(0, 2)
+                                                    .toUpperCase()}
                                             </div>
                                         )}
                                         <div className="min-w-0 flex-1">

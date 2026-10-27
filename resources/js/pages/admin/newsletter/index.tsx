@@ -1,4 +1,4 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Mail, Plus, Search, Trash2, Users } from 'lucide-react';
 import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
@@ -35,10 +35,6 @@ export default function NewsletterIndex({
 }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [status, setStatus] = useState(filters.status ?? '');
-    const { props } = usePage<any>();
-    const flash = props.flash as
-        | { success?: string; error?: string }
-        | undefined;
 
     const applyFilters = (overrides: Record<string, string> = {}) => {
         const params: Record<string, string> = {};
@@ -110,16 +106,6 @@ export default function NewsletterIndex({
                 </div>
 
                 {/* Flash messages */}
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">
-                        {flash.error}
-                    </div>
-                )}
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">

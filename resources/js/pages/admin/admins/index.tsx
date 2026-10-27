@@ -28,9 +28,6 @@ export default function AdminsIndex({ admins }: Props) {
     const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
     const [deleting, setDeleting] = useState(false);
     const { props } = usePage<any>();
-    const flash = props.flash as
-        | { success?: string; error?: string }
-        | undefined;
     const currentAdmin = props.auth.admin as CurrentAdmin;
 
     const confirmDelete = () => {
@@ -84,17 +81,6 @@ export default function AdminsIndex({ admins }: Props) {
                         </Link>
                     )}
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">
-                        {flash.error}
-                    </div>
-                )}
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     <div className="divide-y divide-slate-100">

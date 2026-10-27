@@ -1,4 +1,4 @@
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import {
     AlertTriangle,
@@ -49,11 +49,6 @@ export default function NewsletterCompose({
     products,
     active_subscribers_count,
 }: Props) {
-    const { props } = usePage<any>();
-    const flash = props.flash as
-        | { success?: string; error?: string }
-        | undefined;
-
     const [emailType, setEmailType] = useState<EmailType>(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [selectedProductId, setSelectedProductId] = useState<number | null>(
@@ -343,17 +338,6 @@ export default function NewsletterCompose({
                         </p>
                     </div>
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">
-                        {flash.error}
-                    </div>
-                )}
 
                 {/* CUSTOM EMAIL FORM */}
                 {emailType === 'custom' && (

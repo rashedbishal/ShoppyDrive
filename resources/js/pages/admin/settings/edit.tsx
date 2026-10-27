@@ -1,4 +1,4 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import {
     SettingsField,
     settingsInputClass,
@@ -13,9 +13,6 @@ type Props = {
 };
 
 export default function SettingsEdit({ settings }: Props) {
-    const { props } = usePage<any>();
-    const flash = props.flash as { success?: string } | undefined;
-
     const socialLinks = (settings.social_links ?? {}) as Record<string, string>;
 
     const { data, setData, post, processing } = useForm({
@@ -65,12 +62,6 @@ export default function SettingsEdit({ settings }: Props) {
                         .
                     </p>
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
 
                 <form onSubmit={handleSubmit} className="max-w-2xl space-y-5">
                     <Card className="shadow-sm">

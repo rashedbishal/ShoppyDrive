@@ -51,7 +51,9 @@ class BrandController extends Controller
 
         $this->syncHomepageSetting($brand);
 
-        return redirect()->route('admin.brands.index')->with('success', 'Brand created.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Brand created.']);
+
+        return redirect()->route('admin.brands.index');
     }
 
     public function edit(Brand $brand): Response
@@ -70,7 +72,9 @@ class BrandController extends Controller
 
         $this->syncHomepageSetting($brand);
 
-        return redirect()->route('admin.brands.index')->with('success', 'Brand updated.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Brand updated.']);
+
+        return redirect()->route('admin.brands.index');
     }
 
     public function destroy(Brand $brand): RedirectResponse
@@ -95,14 +99,18 @@ class BrandController extends Controller
         $this->syncHomepageSetting($brand);
         $brand->delete();
 
-        return redirect()->route('admin.brands.index')->with('success', 'Brand deleted.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Brand deleted.']);
+
+        return redirect()->route('admin.brands.index');
     }
 
     public function updateStatusMany(Request $request): RedirectResponse
     {
         $result = $this->updateStatusInBulk($request, Brand::class, 'is_active', fn (Brand $brand) => $this->syncHomepageSetting($brand));
 
-        return redirect()->route('admin.brands.index')->with('success', $result['count'].' brand(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => $result['count'].' brand(s) '.($result['active'] ? 'activated' : 'deactivated').'.']);
+
+        return redirect()->route('admin.brands.index');
     }
 
     public function destroyMany(Request $request): RedirectResponse
@@ -143,7 +151,9 @@ class BrandController extends Controller
             $brand->delete();
         }
 
-        return redirect()->route('admin.brands.index')->with('success', count($ids).' brand(s) deleted.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' brand(s) deleted.']);
+
+        return redirect()->route('admin.brands.index');
     }
 
     private function syncHomepageSetting(Brand $brand): void

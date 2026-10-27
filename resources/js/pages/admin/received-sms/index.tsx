@@ -153,8 +153,6 @@ function DeleteModal({
 
 export default function ReceivedSmsIndex({ sms, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
-    const { props } = usePage<any>();
-    const flash = props.flash as { success?: string } | undefined;
     const [deletingItem, setDeletingItem] = useState<ReceivedSms | null>(null);
 
     usePoll(5000, { only: ['sms'], preserveScroll: true });
@@ -223,12 +221,6 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
                         </p>
                     </div>
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     <div className="flex flex-wrap gap-2 border-b border-slate-100 p-4">
