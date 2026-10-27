@@ -22,6 +22,8 @@ type PageHeroProps = {
     aside?: ReactNode;
     /** Gives the aside column more than its default share of the row — for asides with dense content (e.g. a stat grid) that would otherwise get squeezed. */
     wideAside?: boolean;
+    /** Optional middle column between the text and the aside (e.g. a category image). Switches the row to a 12-col 2/2/8 split; ignored when `aside` isn't also given. */
+    media?: ReactNode;
     /** Extra content under the chips, e.g. action buttons. */
     children?: ReactNode;
 };
@@ -39,19 +41,27 @@ export function PageHero({
     chips = [],
     aside,
     wideAside = false,
+    media,
     children,
 }: PageHeroProps): React.JSX.Element {
     const BadgeIcon = badge.icon;
+    const hasMedia = Boolean(media && aside);
 
     return (
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div
                 className={cn(
                     'grid grid-cols-1 gap-4 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5 lg:gap-6 lg:px-6 lg:py-5',
-                    aside ? (wideAside ? 'lg:grid-cols-[0.85fr_1.15fr]' : 'lg:grid-cols-[1.1fr_0.9fr]') : '',
+                    hasMedia
+                        ? 'lg:grid-cols-12'
+                        : aside
+                          ? wideAside
+                              ? 'lg:grid-cols-[0.85fr_1.15fr]'
+                              : 'lg:grid-cols-[1.1fr_0.9fr]'
+                          : '',
                 )}
             >
-                <div className="space-y-3">
+                <div className={cn('space-y-3', hasMedia && 'lg:col-span-2')}>
                     <Badge variant="amber" className="w-fit">
                         <BadgeIcon className="size-3.5" />
                         {badge.label}
@@ -98,8 +108,21 @@ export function PageHero({
                     {children}
                 </div>
 
+                {hasMedia ? (
+                    <div className="min-w-0 self-center lg:col-span-2">
+                        {media}
+                    </div>
+                ) : null}
+
                 {aside ? (
-                    <div className="min-w-0 self-center">{aside}</div>
+                    <div
+                        className={cn(
+                            'min-w-0 self-center',
+                            hasMedia && 'lg:col-span-8',
+                        )}
+                    >
+                        {aside}
+                    </div>
                 ) : null}
             </div>
         </section>

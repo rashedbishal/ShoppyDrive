@@ -324,6 +324,15 @@ export default function MegaMenu({
                                                                     />
                                                                 </Suspense>
                                                             </span>
+                                                            {activeCategory.image && (
+                                                                <img
+                                                                    src={
+                                                                        activeCategory.image
+                                                                    }
+                                                                    alt=""
+                                                                    className="size-11 shrink-0 rounded-xl border border-[var(--color-border)] bg-white object-contain p-1.5"
+                                                                />
+                                                            )}
                                                             <div className="min-w-0 flex-1">
                                                                 <h3 className="truncate font-display text-lg leading-tight font-semibold tracking-tight text-[var(--color-text-primary)]">
                                                                     {

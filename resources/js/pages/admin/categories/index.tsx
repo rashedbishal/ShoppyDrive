@@ -30,6 +30,7 @@ type ParentCategory = {
     slug: string;
     icon: string | null;
     color: string | null;
+    image: string | null;
     is_active: boolean;
     sub_categories_count: number;
     direct_products_count: number;
@@ -284,6 +285,17 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                                                 className="size-4"
                                             />
                                         </div>
+                                        {cat.image ? (
+                                            <img
+                                                src={cat.image}
+                                                alt={cat.name}
+                                                className="size-9 shrink-0 rounded-lg border border-slate-100 bg-white object-contain p-1"
+                                            />
+                                        ) : (
+                                            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-400">
+                                                {cat.name.slice(0, 2).toUpperCase()}
+                                            </div>
+                                        )}
                                         <div className="min-w-0 flex-1">
                                             <p className="text-sm font-semibold text-slate-800">
                                                 {cat.name}

@@ -982,6 +982,17 @@ function ProductListingPage({
                     title={title}
                     description={description}
                     wideAside
+                    media={
+                        category?.image ? (
+                            <div className="flex h-full items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+                                <img
+                                    src={category.image}
+                                    alt={category.name}
+                                    className="max-h-24 w-full object-contain"
+                                />
+                            </div>
+                        ) : undefined
+                    }
                     aside={
                         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-stretch sm:gap-3">
                             {/* Moved out of the left column to keep the hero compact; sits beside
