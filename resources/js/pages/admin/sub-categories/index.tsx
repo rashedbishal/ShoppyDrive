@@ -18,6 +18,7 @@ type Category = {
     id: number;
     name: string;
     slug: string;
+    image: string | null;
     sort_order: number;
     is_active: boolean;
     category: { id: number; name: string } | null;
@@ -184,6 +185,17 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
                                             bulk.toggle(cat.id)
                                         }
                                     />
+                                    {cat.image ? (
+                                        <img
+                                            src={cat.image}
+                                            alt={cat.name}
+                                            className="size-9 shrink-0 rounded-lg border border-slate-100 bg-white object-contain p-1"
+                                        />
+                                    ) : (
+                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-400">
+                                            {cat.name.slice(0, 2).toUpperCase()}
+                                        </div>
+                                    )}
                                     <div className="min-w-0 flex-1">
                                         <p className="text-sm font-semibold text-slate-800">
                                             {cat.name}
