@@ -423,6 +423,25 @@ export default function AttributesIndex({ attributes }: Props) {
         setHexDraft(hex.toUpperCase());
     };
 
+    /**
+     * Also names the color, but only when the name is blank or still a
+     * preset name — clicking through presets keeps the name in step, while
+     * a name the admin typed themselves is never overwritten.
+     */
+    const applyPreset = (preset: (typeof COLOR_PRESETS)[number]) => {
+        const currentName = form.data.value.trim();
+        const isNameReplaceable =
+            currentName === '' ||
+            COLOR_PRESETS.some((p) => p.name === currentName);
+
+        form.setData((data) => ({
+            ...data,
+            color_hex: preset.hex,
+            value: isNameReplaceable ? preset.name : data.value,
+        }));
+        setHexDraft(preset.hex.toUpperCase());
+    };
+
     const openAdd = (attribute: Attribute) => {
         setFormAttribute(attribute);
         setEditingValue(null);
@@ -778,8 +797,8 @@ export default function AttributesIndex({ attributes }: Props) {
                                                                         title={`${preset.name} (${preset.hex.toUpperCase()})`}
                                                                         aria-label={`Use ${preset.name}`}
                                                                         onClick={() =>
-                                                                            setColorHex(
-                                                                                preset.hex,
+                                                                            applyPreset(
+                                                                                preset,
                                                                             )
                                                                         }
                                                                         whileHover={{
