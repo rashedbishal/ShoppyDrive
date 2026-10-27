@@ -1,4 +1,5 @@
 import { Head, Link, router, usePage, usePoll } from '@inertiajs/react';
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import { MessageSquare, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
@@ -7,6 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
+import {
+    dialogItem,
+    dialogOverlayMotion,
+    dialogPanel,
+} from '@/lib/dialog-motion';
 import type { PaginatedData } from '@/types';
 
 type ReceivedSms = {
@@ -51,75 +57,97 @@ function DeleteModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-            <div className="relative z-10 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
-                <div className="mb-4 flex items-start gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
-                        <Trash2 className="size-5 text-red-600" />
-                    </div>
-                    <div>
-                        <h2 className="text-base font-semibold text-slate-900">
-                            Delete SMS
-                        </h2>
-                        <p className="mt-0.5 text-sm text-slate-500">
-                            This action cannot be undone. Enter your admin
-                            password to confirm.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="mb-1 line-clamp-2 rounded-lg bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
-                    {sms.content}
-                </div>
-                <p className="mb-4 text-[11px] text-slate-400">
-                    From: {sms.sender}
-                </p>
-
-                <div className="mb-4">
-                    <label className="mb-1 block text-sm font-medium text-slate-700">
-                        Your Password
-                    </label>
-                    <input
-                        type="password"
-                        autoFocus
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        onKeyDown={(e) =>
-                            e.key === 'Enter' && !processing && handleConfirm()
-                        }
-                        placeholder="Enter your admin password"
-                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:border-red-400 focus:ring-1 focus:ring-red-400 focus:outline-none"
-                    />
-                    {errors.password && (
-                        <p className="mt-1 text-xs font-medium text-red-600">
-                            {errors.password}
-                        </p>
-                    )}
-                </div>
-
-                <div className="flex justify-end gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={onClose}
-                        disabled={processing}
+        <MotionConfig reducedMotion="user">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div
+                    className="absolute inset-0 bg-slate-950/40 backdrop-blur-[3px]"
+                    onClick={onClose}
+                    {...dialogOverlayMotion}
+                />
+                <motion.div
+                    variants={dialogPanel}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="relative z-10 w-full max-w-md rounded-2xl bg-white p-5 shadow-[0_24px_64px_-16px_rgba(15,23,42,0.35)] ring-1 ring-slate-900/5"
+                >
+                    <motion.div
+                        variants={dialogItem}
+                        className="mb-3.5 flex items-start gap-3"
                     >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="button"
-                        size="sm"
-                        disabled={!password || processing}
-                        onClick={handleConfirm}
-                        className="bg-red-600 text-white hover:bg-red-700"
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
+                            <Trash2 className="size-5 text-red-600" />
+                        </div>
+                        <div>
+                            <h2 className="text-[15px] font-semibold text-slate-900">
+                                Delete SMS
+                            </h2>
+                            <p className="mt-0.5 text-[13px] text-slate-500">
+                                This action cannot be undone. Enter your admin
+                                password to confirm.
+                            </p>
+                        </div>
+                    </motion.div>
+
+                    <motion.div variants={dialogItem}>
+                        <div className="mb-1 line-clamp-2 rounded-lg bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
+                            {sms.content}
+                        </div>
+                        <p className="mb-3.5 text-[11px] text-slate-400">
+                            From: {sms.sender}
+                        </p>
+                    </motion.div>
+
+                    <motion.div variants={dialogItem} className="mb-4">
+                        <label className="mb-1 block text-sm font-medium text-slate-700">
+                            Your Password
+                        </label>
+                        <input
+                            type="password"
+                            autoFocus
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onKeyDown={(e) =>
+                                e.key === 'Enter' &&
+                                !processing &&
+                                handleConfirm()
+                            }
+                            placeholder="Enter your admin password"
+                            className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:border-red-400 focus:ring-1 focus:ring-red-400 focus:outline-none"
+                        />
+                        {errors.password && (
+                            <p className="mt-1 text-xs font-medium text-red-600">
+                                {errors.password}
+                            </p>
+                        )}
+                    </motion.div>
+
+                    <motion.div
+                        variants={dialogItem}
+                        className="-mx-5 -mb-5 flex justify-end gap-2 rounded-b-2xl border-t border-slate-100 bg-slate-50/80 px-5 py-3"
                     >
-                        {processing ? 'Deleting…' : 'Delete SMS'}
-                    </Button>
-                </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onClose}
+                            disabled={processing}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            disabled={!password || processing}
+                            onClick={handleConfirm}
+                            className="bg-red-600 text-white hover:bg-red-700"
+                        >
+                            {processing ? 'Deleting…' : 'Delete SMS'}
+                        </Button>
+                    </motion.div>
+                </motion.div>
             </div>
-        </div>
+        </MotionConfig>
     );
 }
 
@@ -165,12 +193,15 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
         <>
             <Head title="Received SMS — Admin" />
 
-            {deletingItem && (
-                <DeleteModal
-                    sms={deletingItem}
-                    onClose={() => setDeletingItem(null)}
-                />
-            )}
+            <AnimatePresence>
+                {deletingItem && (
+                    <DeleteModal
+                        key="delete-sms"
+                        sms={deletingItem}
+                        onClose={() => setDeletingItem(null)}
+                    />
+                )}
+            </AnimatePresence>
 
             <div className="space-y-5">
                 <div className="flex items-center justify-between">

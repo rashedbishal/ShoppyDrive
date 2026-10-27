@@ -74,7 +74,7 @@ function InsertImageDialog({
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent appearance="premium" className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Insert Image</DialogTitle>
                     <DialogDescription>

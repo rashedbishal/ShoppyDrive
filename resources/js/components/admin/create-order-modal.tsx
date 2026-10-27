@@ -437,7 +437,10 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="flex max-h-[90vh] flex-col overflow-y-auto sm:max-w-3xl">
+            <DialogContent
+                appearance="premium"
+                className="flex max-h-[90vh] flex-col overflow-y-auto sm:max-w-3xl"
+            >
                 <DialogHeader>
                     <DialogTitle>Create Order</DialogTitle>
                     <DialogDescription>
