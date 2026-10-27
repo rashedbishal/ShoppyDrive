@@ -23,12 +23,14 @@ class SubCategoryController extends Controller
     {
         $subCategories = SubCategory::with('category:id,name')
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
+            ->when($request->status === 'active', fn ($q) => $q->where('is_active', true))
+            ->when($request->status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->orderBy('sort_order')->orderBy('name')
             ->paginate(20)->withQueryString();
 
         return Inertia::render('admin/sub-categories/index', [
             'subCategories' => $subCategories,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'status']),
         ]);
     }
 

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Select } from '@/components/ui/select';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
 import {
     destroyMany as bulkDestroyRoute,
@@ -33,7 +34,7 @@ type Paginated<T> = {
 
 type Props = {
     brands: Paginated<Brand>;
-    filters: { search?: string };
+    filters: { search?: string; status?: string };
 };
 
 export default function BrandsIndex({ brands, filters }: Props) {
@@ -59,14 +60,17 @@ export default function BrandsIndex({ brands, filters }: Props) {
         });
     };
 
-    const applySearch = () => {
-        if (search === (filters.search ?? '')) {
+    const applyFilters = (overrides: Record<string, string>) => {
+        if (
+            Object.keys(overrides).length === 0 &&
+            search === (filters.search ?? '')
+        ) {
             return;
         }
 
         router.get(
             route('admin.brands.index'),
-            { search },
+            { ...filters, search, ...overrides },
             { preserveState: true, replace: true },
         );
     };
@@ -79,6 +83,10 @@ export default function BrandsIndex({ brands, filters }: Props) {
             { preserveState: true, replace: true },
         );
     };
+
+    const hasActiveFilters = Boolean(
+        search || filters.search || filters.status,
+    );
 
     const confirmDelete = () => {
         if (!deleteTarget) {
@@ -125,8 +133,8 @@ export default function BrandsIndex({ brands, filters }: Props) {
                 )}
 
                 <Card className="overflow-hidden p-0 shadow-sm">
-                    <div className="flex gap-2 border-b border-slate-100 p-4">
-                        <div className="relative flex-1">
+                    <div className="flex flex-wrap gap-2 border-b border-slate-100 p-4">
+                        <div className="relative min-w-[200px] flex-1">
                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                             <input
                                 type="text"
@@ -134,13 +142,25 @@ export default function BrandsIndex({ brands, filters }: Props) {
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 onKeyDown={(e) =>
-                                    e.key === 'Enter' && applySearch()
+                                    e.key === 'Enter' && applyFilters({})
                                 }
                                 className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
                             />
                         </div>
+                        <Select
+                            value={filters.status ?? ''}
+                            onChange={(e) =>
+                                applyFilters({ status: e.target.value })
+                            }
+                            containerClassName="min-w-40"
+                            selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
+                        >
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </Select>
                         <ClearFiltersButton
-                            active={Boolean(search || filters.search)}
+                            active={hasActiveFilters}
                             onClear={clearFilters}
                         />
                     </div>

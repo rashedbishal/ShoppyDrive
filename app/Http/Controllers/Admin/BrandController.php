@@ -23,11 +23,13 @@ class BrandController extends Controller
     {
         $brands = Brand::withCount('products')
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
+            ->when($request->status === 'active', fn ($q) => $q->where('is_active', true))
+            ->when($request->status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->orderByDesc('created_at')->paginate(20)->withQueryString();
 
         return Inertia::render('admin/brands/index', [
             'brands' => $brands,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'status']),
         ]);
     }
 
