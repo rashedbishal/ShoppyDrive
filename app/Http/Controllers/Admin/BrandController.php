@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BrandRequest;
 use App\Models\Brand;
 use App\Models\HomepageSetting;
+use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -74,6 +75,22 @@ class BrandController extends Controller
 
     public function destroy(Brand $brand): RedirectResponse
     {
+        $products = $brand->products()->get(['products.id', 'products.name', 'products.slug']);
+
+        if ($products->isNotEmpty()) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => "Can't delete \"{$brand->name}\" — it's used by {$products->count()} product(s). Remove it from those products first.",
+                'products' => $products->map(fn (Product $product): array => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                ])->all(),
+            ]);
+
+            return redirect()->route('admin.brands.index');
+        }
+
         $brand->is_active = false;
         $this->syncHomepageSetting($brand);
         $brand->delete();
@@ -95,7 +112,32 @@ class BrandController extends Controller
             'ids.*' => ['integer', 'distinct', 'exists:brands,id'],
         ])['ids'];
 
-        foreach (Brand::whereIn('id', $ids)->get() as $brand) {
+        $brands = Brand::withCount('products')->whereIn('id', $ids)->get();
+        $blocked = $brands->filter(fn (Brand $brand): bool => $brand->products_count > 0);
+
+        // All-or-nothing: partially deleting the selection would be a
+        // confusing outcome for a bulk action, so any brand still in use
+        // blocks the whole batch rather than silently skipping it.
+        if ($blocked->isNotEmpty()) {
+            $products = $blocked
+                ->flatMap(fn (Brand $brand) => $brand->products()->get(['products.id', 'products.name', 'products.slug']))
+                ->unique('id')
+                ->values();
+
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => "Can't delete — {$blocked->count()} of the selected brand(s) are used by {$products->count()} product(s). Remove it from those products first.",
+                'products' => $products->map(fn (Product $product): array => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                ])->all(),
+            ]);
+
+            return redirect()->route('admin.brands.index');
+        }
+
+        foreach ($brands as $brand) {
             $brand->is_active = false;
             $this->syncHomepageSetting($brand);
             $brand->delete();

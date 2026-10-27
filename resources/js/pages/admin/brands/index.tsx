@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Edit, Plus, Search, Trash2 } from 'lucide-react';
+import { Edit, Package, Plus, Search, Tag, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { BulkActionBar } from '@/components/admin/bulk-action-bar';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { cn } from '@/lib/utils';
 import {
     destroyMany as bulkDestroyRoute,
     updateStatusMany as bulkStatusRoute,
@@ -36,6 +37,89 @@ type Props = {
     brands: Paginated<Brand>;
     filters: { search?: string; status?: string };
 };
+
+function BrandCard({
+    brand,
+    selected,
+    onToggle,
+    onDelete,
+}: {
+    brand: Brand;
+    selected: boolean;
+    onToggle: () => void;
+    onDelete: () => void;
+}) {
+    return (
+        <div
+            className={cn(
+                'group relative flex flex-col overflow-hidden rounded-2xl border bg-white p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
+                selected
+                    ? 'border-[#c8102e] ring-1 ring-[#c8102e]'
+                    : 'border-slate-200',
+            )}
+        >
+            <div className="absolute top-2.5 left-2.5 z-10">
+                <Checkbox
+                    checked={selected}
+                    onCheckedChange={onToggle}
+                    className="bg-white shadow-sm"
+                />
+            </div>
+            <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1">
+                <Link
+                    href={route('admin.brands.edit', brand.id)}
+                    className="flex size-7 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm backdrop-blur-sm transition-colors hover:text-slate-700"
+                    title="Edit"
+                >
+                    <Edit className="size-3.5" />
+                </Link>
+                <button
+                    type="button"
+                    onClick={onDelete}
+                    className="flex size-7 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm backdrop-blur-sm transition-colors hover:text-red-500"
+                    title="Delete"
+                >
+                    <Trash2 className="size-3.5" />
+                </button>
+            </div>
+
+            <div className="mb-3 flex h-20 items-center justify-center rounded-xl bg-slate-50">
+                {brand.logo ? (
+                    <img
+                        src={brand.logo}
+                        alt={brand.name}
+                        className="max-h-14 max-w-[75%] object-contain"
+                    />
+                ) : (
+                    <div className="flex size-12 items-center justify-center rounded-xl bg-slate-200 text-sm font-bold text-slate-500">
+                        {brand.name.slice(0, 2).toUpperCase()}
+                    </div>
+                )}
+            </div>
+
+            <p
+                className="truncate text-sm font-bold text-slate-800"
+                title={brand.name}
+            >
+                {brand.name}
+            </p>
+            <p className="truncate text-xs text-slate-400">{brand.slug}</p>
+
+            <div className="mt-2.5 flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
+                    <Package className="size-3" />
+                    {brand.products_count}
+                </span>
+                <Badge
+                    variant={brand.is_active ? 'success' : 'error'}
+                    size="sm"
+                >
+                    {brand.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+            </div>
+        </div>
+    );
+}
 
 export default function BrandsIndex({ brands, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
@@ -105,15 +189,20 @@ export default function BrandsIndex({ brands, filters }: Props) {
     return (
         <>
             <Head title="Brands — Admin" />
-            <div className="space-y-5">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-xl font-bold text-slate-900">
-                            Brands
-                        </h1>
-                        <p className="text-sm text-slate-500">
-                            {brands.total} total
-                        </p>
+            <div className="space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#c8102e]/10 text-[#c8102e]">
+                            <Tag className="size-5" />
+                        </span>
+                        <div>
+                            <h1 className="text-xl font-bold text-slate-900">
+                                Brands
+                            </h1>
+                            <p className="text-sm text-slate-500">
+                                {brands.total} total
+                            </p>
+                        </div>
                     </div>
                     <Button
                         asChild
@@ -176,90 +265,37 @@ export default function BrandsIndex({ brands, filters }: Props) {
                     />
 
                     {brands.data.length > 0 && (
-                        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-2">
+                        <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-2.5">
                             <Checkbox
                                 checked={bulk.allSelected}
                                 onCheckedChange={bulk.toggleAll}
                             />
                             <span className="text-xs font-medium text-slate-500">
-                                Select all
+                                Select all {brands.data.length} on this page
                             </span>
                         </div>
                     )}
 
-                    <div className="divide-y divide-slate-50">
+                    <div className="p-4">
                         {brands.data.length === 0 ? (
-                            <p className="py-12 text-center text-sm text-slate-400">
-                                No brands found.
-                            </p>
+                            <div className="flex flex-col items-center gap-2 py-16 text-center">
+                                <Tag className="size-8 text-slate-200" />
+                                <p className="text-sm text-slate-400">
+                                    No brands found.
+                                </p>
+                            </div>
                         ) : (
-                            brands.data.map((brand) => (
-                                <div
-                                    key={brand.id}
-                                    className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
-                                >
-                                    <Checkbox
-                                        checked={bulk.isSelected(brand.id)}
-                                        onCheckedChange={() =>
-                                            bulk.toggle(brand.id)
-                                        }
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                                {brands.data.map((brand) => (
+                                    <BrandCard
+                                        key={brand.id}
+                                        brand={brand}
+                                        selected={bulk.isSelected(brand.id)}
+                                        onToggle={() => bulk.toggle(brand.id)}
+                                        onDelete={() => setDeleteTarget(brand)}
                                     />
-                                    {brand.logo ? (
-                                        <img
-                                            src={brand.logo}
-                                            alt={brand.name}
-                                            className="size-9 rounded-lg border border-slate-100 bg-white object-contain p-1"
-                                        />
-                                    ) : (
-                                        <div className="flex size-9 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-400">
-                                            {brand.name
-                                                .slice(0, 2)
-                                                .toUpperCase()}
-                                        </div>
-                                    )}
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-semibold text-slate-800">
-                                            {brand.name}
-                                        </p>
-                                        <p className="text-xs text-slate-400">
-                                            {brand.slug} ·{' '}
-                                            {brand.products_count} products
-                                        </p>
-                                    </div>
-                                    <Badge
-                                        variant={
-                                            brand.is_active
-                                                ? 'success'
-                                                : 'error'
-                                        }
-                                        size="sm"
-                                    >
-                                        {brand.is_active
-                                            ? 'Active'
-                                            : 'Inactive'}
-                                    </Badge>
-                                    <div className="flex items-center gap-1.5">
-                                        <Link
-                                            href={route(
-                                                'admin.brands.edit',
-                                                brand.id,
-                                            )}
-                                            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                                        >
-                                            <Edit className="size-4" />
-                                        </Link>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setDeleteTarget(brand)
-                                            }
-                                            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))
+                                ))}
+                            </div>
                         )}
                     </div>
 
