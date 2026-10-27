@@ -3,16 +3,12 @@
 namespace App\Http\Middleware;
 
 use App\Models\Address;
-use App\Models\Category;
-use App\Models\HeroSlide;
-use App\Models\HomepageSetting;
 use App\Models\Order;
-use App\Models\PopularKeyword;
-use App\Models\PromotionalBanner;
 use App\Models\Setting;
 use App\Models\Wishlist;
 use App\Services\BundleService;
 use App\Support\CartManager;
+use App\Support\LayoutCache;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Middleware;
@@ -113,13 +109,9 @@ class HandleInertiaRequests extends Middleware
             'cart' => fn () => $this->cartManager->serializeForRequest($request),
             'active_bundle_recipes' => fn () => $this->bundles->activeRecipes(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-            'navCategories' => fn () => Category::active()
-                ->with(['subCategories' => fn ($q) => $q->active()->orderBy('sort_order')->orderBy('name')->select(['id', 'name', 'slug', 'category_id', 'description'])])
-                ->orderBy('sort_order')
-                ->orderBy('name')
-                ->get(['id', 'name', 'slug', 'description', 'icon', 'color', 'image']),
+            'navCategories' => fn () => LayoutCache::navCategories(),
             'settings' => function () {
-                $db = Setting::all()->keyBy('key')->map(fn ($s) => $s->value);
+                $db = collect(LayoutCache::settings());
                 $socialLinks = $db->get('social_links', []);
 
                 return [
@@ -145,20 +137,12 @@ class HandleInertiaRequests extends Middleware
                     'referral_enabled' => (bool) $db->get('referral_enabled', false),
                     'referral_discount_type' => $db->get('referral_discount_type', 'percent'),
                     'referral_discount_value' => (float) $db->get('referral_discount_value', 0),
-                    'free_delivery_threshold' => (function () {
-                        $bar = HomepageSetting::where('section_key', 'announcement_bar')->first();
-
-                        return (float) ($bar?->metadata['free_delivery_amount'] ?? 0);
-                    })(),
+                    'free_delivery_threshold' => (float) (LayoutCache::homepageSettings()['announcement_bar']['metadata']['free_delivery_amount'] ?? 0),
                     'shipping_rate_inside_dhaka' => Setting::shippingRateFor('Dhaka', 'Inside Dhaka City Corporation'),
                     'shipping_rate_outside_dhaka' => Setting::shippingRateFor(null, null),
                 ];
             },
-            'popular_keywords' => fn () => PopularKeyword::where('is_active', true)
-                ->orderBy('sort_order')
-                ->orderBy('id')
-                ->pluck('keyword')
-                ->toArray(),
+            'popular_keywords' => fn () => LayoutCache::popularKeywords(),
             // No session exists on error pages for unmatched URLs (rendered before the web middleware runs).
             'flash' => fn () => $request->hasSession() ? [
                 'success' => $request->session()->get('success'),
@@ -171,9 +155,9 @@ class HandleInertiaRequests extends Middleware
                 'info' => null,
                 'newToken' => null,
             ],
-            'homepage_settings' => fn () => HomepageSetting::orderBy('sort_order')->get()->keyBy('section_key'),
-            'hero_slides' => fn () => HeroSlide::where('is_active', true)->orderBy('sort_order')->get(),
-            'promotional_banners' => fn () => PromotionalBanner::where('is_active', true)->orderBy('sort_order')->get(),
+            'homepage_settings' => fn () => LayoutCache::homepageSettings(),
+            'hero_slides' => fn () => LayoutCache::heroSlides(),
+            'promotional_banners' => fn () => LayoutCache::promotionalBanners(),
             'wishlist_ids' => fn () => $request->user()
                 ? Wishlist::where('user_id', $request->user()->id)->pluck('product_id')->toArray()
                 : [],
@@ -248,8 +232,7 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        $bar = HomepageSetting::where('section_key', 'announcement_bar')->first();
-        $threshold = (float) ($bar?->metadata['free_delivery_amount'] ?? 0);
+        $threshold = (float) (LayoutCache::homepageSettings()['announcement_bar']['metadata']['free_delivery_amount'] ?? 0);
 
         $cart = $this->cartManager->getCurrentCart($request);
 

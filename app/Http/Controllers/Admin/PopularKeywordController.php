@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Models\PopularKeyword;
+use App\Support\LayoutCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -81,6 +82,9 @@ class PopularKeywordController extends Controller
         ])['ids'];
 
         PopularKeyword::whereIn('id', $ids)->delete();
+
+        // Bulk delete() fires no model events, so clear the cache here.
+        LayoutCache::forget(...PopularKeyword::LAYOUT_CACHE_KEYS);
 
         return back()->with('success', count($ids).' keyword(s) deleted.');
     }

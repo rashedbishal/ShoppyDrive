@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\HomepageSectionRequest;
 use App\Models\Brand;
 use App\Models\HomepageSetting;
 use App\Models\Product;
+use App\Support\LayoutCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -131,6 +132,9 @@ class HomepageController extends Controller
         foreach ($ids as $index => $id) {
             HomepageSetting::whereKey($id)->update(['sort_order' => $index]);
         }
+
+        // Bulk update() fires no model events, so clear the cache here.
+        LayoutCache::forget(...HomepageSetting::LAYOUT_CACHE_KEYS);
 
         return redirect()->route('admin.homepage.index');
     }

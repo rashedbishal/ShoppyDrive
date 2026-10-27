@@ -4,10 +4,17 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\FlushesLayoutCache;
+use App\Support\LayoutCache;
 use Illuminate\Database\Eloquent\Model;
 
 class HomepageSetting extends Model
 {
+    use FlushesLayoutCache;
+
+    /** LayoutCache entries built from this table (see FlushesLayoutCache). */
+    public const LAYOUT_CACHE_KEYS = [LayoutCache::HOMEPAGE_SETTINGS];
+
     protected $fillable = [
         'section_key',
         'section_name',

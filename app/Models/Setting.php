@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\FlushesLayoutCache;
+use App\Support\LayoutCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
 {
-    use HasFactory;
+    use FlushesLayoutCache, HasFactory;
+
+    /** LayoutCache entries built from this table (see FlushesLayoutCache). */
+    public const LAYOUT_CACHE_KEYS = [LayoutCache::SETTINGS];
 
     protected $primaryKey = 'key';
 
@@ -42,6 +47,6 @@ class Setting extends Model
         $key = $isInsideDhaka ? 'shipping_rate_inside_dhaka' : 'shipping_rate_outside_dhaka';
         $default = $isInsideDhaka ? 60.0 : 120.0;
 
-        return (float) (static::find($key)?->value ?? $default);
+        return (float) (LayoutCache::settings()[$key] ?? $default);
     }
 }

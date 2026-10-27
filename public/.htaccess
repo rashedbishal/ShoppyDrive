@@ -23,3 +23,38 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# ── Browser caching for static files ────────────────────────────────────────
+# Only real files on disk are affected — pages and API responses go through
+# index.php and keep the no-cache headers Laravel sends.
+
+<IfModule mod_headers.c>
+    # Vite build output (public/build/assets) has an 8-character content hash
+    # in every file name, e.g. About-B1JvqVSd.js. A deploy that changes a file
+    # also changes its name, so browsers can keep these for a year.
+    <FilesMatch "-[A-Za-z0-9_-]{8}\.(js|mjs|css)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_expires.c>
+    # Images and fonts. Uploads get a new random file name each time (Laravel
+    # store()), so a replaced image always has a new URL.
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 30 days"
+    ExpiresByType image/png "access plus 30 days"
+    ExpiresByType image/webp "access plus 30 days"
+    ExpiresByType image/avif "access plus 30 days"
+    ExpiresByType image/gif "access plus 30 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+    ExpiresByType image/x-icon "access plus 30 days"
+    ExpiresByType image/vnd.microsoft.icon "access plus 30 days"
+    ExpiresByType font/ttf "access plus 30 days"
+    ExpiresByType font/woff "access plus 30 days"
+    ExpiresByType font/woff2 "access plus 30 days"
+</IfModule>
+
+# ── Compression ─────────────────────────────────────────────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml application/xml application/javascript application/json image/svg+xml
+</IfModule>

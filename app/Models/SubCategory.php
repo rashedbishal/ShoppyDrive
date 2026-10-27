@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\FlushesLayoutCache;
+use App\Support\LayoutCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +14,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SubCategory extends Model
 {
-    use HasFactory, SoftDeletes;
+    use FlushesLayoutCache, HasFactory, SoftDeletes;
+
+    /** LayoutCache entries built from this table (see FlushesLayoutCache). */
+    public const LAYOUT_CACHE_KEYS = [LayoutCache::NAV_CATEGORIES];
 
     protected $fillable = [
         'name',
