@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AttributeValueRequest;
 use App\Models\AttributeValue;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class AttributeValueController extends Controller
 {
@@ -23,6 +24,20 @@ class AttributeValueController extends Controller
         $attributeValue->update($request->validated());
 
         return redirect()->route('admin.attributes.index')->with('success', 'Value updated.');
+    }
+
+    public function reorder(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'distinct', 'exists:attribute_values,id'],
+        ])['ids'];
+
+        foreach ($ids as $index => $id) {
+            AttributeValue::whereKey($id)->update(['sort_order' => $index]);
+        }
+
+        return redirect()->route('admin.attributes.index');
     }
 
     public function destroy(AttributeValue $attributeValue): RedirectResponse

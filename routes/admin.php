@@ -48,6 +48,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::patch('products/cry-baby', [ProductController::class, 'updateCryBabyForAll'])->name('products.cry-baby.update-all');
     Route::resource('products', ProductController::class);
     Route::get('attributes', [AttributeController::class, 'index'])->name('attributes.index');
+    Route::post('attribute-values/reorder', [AttributeValueController::class, 'reorder'])->name('attribute-values.reorder');
     Route::resource('attribute-values', AttributeValueController::class)->only(['store', 'update', 'destroy']);
     Route::post('categories/reorder', [CategoryController::class, 'reorder'])->name('categories.reorder');
     Route::patch('categories/bulk-status', [CategoryController::class, 'updateStatusMany'])->name('categories.updateStatusMany');

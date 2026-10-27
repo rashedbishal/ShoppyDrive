@@ -19,11 +19,16 @@ class AttributeValueRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'attribute_id' => ['required', 'integer', 'exists:attributes,id'],
+            'attribute_id' => [
+                Rule::requiredIf(fn (): bool => $this->isMethod('post')),
+                'sometimes', 'integer', 'exists:attributes,id',
+            ],
             'value' => ['required', 'string', 'max:100'],
             'color_hex' => [
                 Rule::requiredIf(function (): bool {
-                    $attribute = Attribute::find($this->input('attribute_id'));
+                    $attribute = $this->filled('attribute_id')
+                        ? Attribute::find($this->input('attribute_id'))
+                        : $this->route('attributeValue')?->attribute;
 
                     return $attribute?->type === AttributeType::COLOR;
                 }),

@@ -88,6 +88,36 @@ test('admin can update an attribute value', function () {
     expect($value->refresh()->value)->toBe('Medium');
 });
 
+test('admin can update an attribute value without resubmitting attribute_id', function () {
+    actingAs($this->admin, 'admin');
+
+    $value = AttributeValue::create(['attribute_id' => $this->sizeAttribute->id, 'value' => 'M']);
+
+    $response = $this->put(route('admin.attribute-values.update', $value), [
+        'value' => 'Medium',
+    ]);
+
+    $response->assertRedirect(route('admin.attributes.index'));
+    expect($value->refresh()->value)->toBe('Medium');
+});
+
+test('admin can reorder attribute values', function () {
+    actingAs($this->admin, 'admin');
+
+    $first = AttributeValue::create(['attribute_id' => $this->sizeAttribute->id, 'value' => 'S', 'sort_order' => 0]);
+    $second = AttributeValue::create(['attribute_id' => $this->sizeAttribute->id, 'value' => 'M', 'sort_order' => 1]);
+    $third = AttributeValue::create(['attribute_id' => $this->sizeAttribute->id, 'value' => 'L', 'sort_order' => 2]);
+
+    $response = $this->post(route('admin.attribute-values.reorder'), [
+        'ids' => [$third->id, $first->id, $second->id],
+    ]);
+
+    $response->assertRedirect(route('admin.attributes.index'));
+    expect($third->refresh()->sort_order)->toBe(0);
+    expect($first->refresh()->sort_order)->toBe(1);
+    expect($second->refresh()->sort_order)->toBe(2);
+});
+
 test('admin can delete an unused attribute value', function () {
     actingAs($this->admin, 'admin');
 

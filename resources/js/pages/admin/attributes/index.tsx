@@ -1,13 +1,25 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Palette, Plus, Ruler, Save, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import {
+    Check,
+    Edit,
+    GripVertical,
+    Palette,
+    Plus,
+    Ruler,
+    Save,
+    Trash2,
+    X,
+} from 'lucide-react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { cn } from '@/lib/utils';
 import { maxLength, required, validate } from '@/lib/validate';
 
 type AttributeValue = {
     id: number;
+    attribute_id: number;
     value: string;
     color_hex: string | null;
     sort_order: number;
@@ -26,17 +38,29 @@ function ValueRow({
     attributeValue,
     isColor,
     onDelete,
+    reorderMode,
+    isDragging,
+    onDragStart,
+    onDragOver,
+    onDrop,
+    onDragEnd,
 }: {
     attributeValue: AttributeValue;
     isColor: boolean;
     onDelete: (id: number) => void;
+    reorderMode: boolean;
+    isDragging: boolean;
+    onDragStart: () => void;
+    onDragOver: (e: React.DragEvent) => void;
+    onDrop: () => void;
+    onDragEnd: () => void;
 }) {
     const [editing, setEditing] = useState(false);
     const { data, setData, put, processing, errors, setError, clearErrors } =
         useForm({
+            attribute_id: attributeValue.attribute_id,
             value: attributeValue.value,
             color_hex: attributeValue.color_hex ?? '#000000',
-            sort_order: attributeValue.sort_order,
         });
 
     const save = () => {
@@ -58,6 +82,35 @@ function ValueRow({
 
     const inputClass =
         'h-8 rounded-lg border border-slate-200 px-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
+
+    if (reorderMode) {
+        return (
+            <div
+                draggable
+                onDragStart={onDragStart}
+                onDragOver={onDragOver}
+                onDrop={onDrop}
+                onDragEnd={onDragEnd}
+                className={cn(
+                    'flex items-center gap-3 px-4 py-2.5',
+                    isDragging && 'opacity-40',
+                )}
+            >
+                <GripVertical className="size-4 shrink-0 cursor-grab text-slate-300 active:cursor-grabbing" />
+                {isColor && (
+                    <span
+                        className="size-5 shrink-0 rounded-full border border-slate-200 shadow-inner"
+                        style={{
+                            backgroundColor: attributeValue.color_hex || '#ccc',
+                        }}
+                    />
+                )}
+                <span className="flex-1 text-sm font-medium text-slate-800">
+                    {attributeValue.value}
+                </span>
+            </div>
+        );
+    }
 
     return (
         <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50/60">
@@ -99,16 +152,6 @@ function ValueRow({
                             title="Swatch color"
                         />
                     )}
-                    <input
-                        type="number"
-                        min={0}
-                        className={`${inputClass} w-16`}
-                        value={data.sort_order}
-                        onChange={(e) =>
-                            setData('sort_order', Number(e.target.value))
-                        }
-                        title="Sort order"
-                    />
                     <Button
                         size="sm"
                         disabled={processing}
@@ -127,20 +170,22 @@ function ValueRow({
                 </>
             ) : (
                 <>
+                    <span className="flex-1 text-left text-sm font-medium text-slate-800">
+                        {attributeValue.value}
+                    </span>
                     <button
                         type="button"
                         onClick={() => setEditing(true)}
-                        className="flex-1 text-left text-sm font-medium text-slate-800"
+                        className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                        title="Edit"
                     >
-                        {attributeValue.value}
+                        <Edit className="size-4" />
                     </button>
-                    <span className="shrink-0 text-[11px] text-slate-400">
-                        #{attributeValue.sort_order}
-                    </span>
                     <button
                         type="button"
                         onClick={() => onDelete(attributeValue.id)}
                         className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                        title="Delete"
                     >
                         <Trash2 className="size-4" />
                     </button>
@@ -173,6 +218,52 @@ function AttributeSection({
         color_hex: '#c8102e',
         sort_order: attribute.values.length,
     });
+
+    const [reorderMode, setReorderMode] = useState(false);
+    const [reorderValues, setReorderValues] = useState(attribute.values);
+    const [reordering, setReordering] = useState(false);
+    const [draggingId, setDraggingId] = useState<number | null>(null);
+    const dragIndexRef = useRef<number | null>(null);
+
+    const startReorder = () => {
+        setReorderValues(attribute.values);
+        setReorderMode(true);
+    };
+
+    const cancelReorder = () => {
+        setReorderMode(false);
+        setReorderValues(attribute.values);
+    };
+
+    const confirmReorder = () => {
+        setReordering(true);
+        router.post(
+            route('admin.attribute-values.reorder'),
+            { ids: reorderValues.map((v) => v.id) },
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setReordering(false);
+                    setReorderMode(false);
+                },
+            },
+        );
+    };
+
+    const handleDrop = (dropIndex: number) => {
+        const dragIndex = dragIndexRef.current;
+        dragIndexRef.current = null;
+        setDraggingId(null);
+
+        if (dragIndex === null || dragIndex === dropIndex) {
+            return;
+        }
+
+        const reordered = [...reorderValues];
+        const [moved] = reordered.splice(dragIndex, 1);
+        reordered.splice(dropIndex, 0, moved);
+        setReorderValues(reordered);
+    };
 
     const handleAdd = (e: React.FormEvent) => {
         e.preventDefault();
@@ -211,6 +302,41 @@ function AttributeSection({
                     {attribute.values.length} value
                     {attribute.values.length === 1 ? '' : 's'}
                 </span>
+                <div className="ml-auto flex items-center gap-1.5">
+                    {reorderMode ? (
+                        <>
+                            <Button
+                                size="sm"
+                                disabled={reordering}
+                                onClick={confirmReorder}
+                                className="h-7 bg-[#c8102e] px-2.5 text-white hover:bg-[#a50d25]"
+                            >
+                                <Check className="size-3.5" />
+                                Confirm
+                            </Button>
+                            <button
+                                type="button"
+                                disabled={reordering}
+                                onClick={cancelReorder}
+                                className="flex h-7 items-center gap-1 rounded-lg px-2 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                            >
+                                <X className="size-3.5" />
+                                Cancel
+                            </button>
+                        </>
+                    ) : (
+                        attribute.values.length > 1 && (
+                            <button
+                                type="button"
+                                onClick={startReorder}
+                                className="flex h-7 items-center gap-1 rounded-lg px-2 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                            >
+                                <GripVertical className="size-3.5" />
+                                Reorder
+                            </button>
+                        )
+                    )}
+                </div>
             </div>
 
             {attribute.values.length === 0 ? (
@@ -219,48 +345,70 @@ function AttributeSection({
                 </div>
             ) : (
                 <div className="divide-y divide-slate-50">
-                    {attribute.values.map((value) => (
-                        <ValueRow
-                            key={value.id}
-                            attributeValue={value}
-                            isColor={isColor}
-                            onDelete={onDelete}
-                        />
-                    ))}
+                    {(reorderMode ? reorderValues : attribute.values).map(
+                        (value, index) => (
+                            <ValueRow
+                                key={value.id}
+                                attributeValue={value}
+                                isColor={isColor}
+                                onDelete={onDelete}
+                                reorderMode={reorderMode}
+                                isDragging={draggingId === value.id}
+                                onDragStart={() => {
+                                    dragIndexRef.current = index;
+                                    setDraggingId(value.id);
+                                }}
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={() => handleDrop(index)}
+                                onDragEnd={() => {
+                                    dragIndexRef.current = null;
+                                    setDraggingId(null);
+                                }}
+                            />
+                        ),
+                    )}
                 </div>
             )}
 
-            <form
-                onSubmit={handleAdd}
-                className="flex items-center gap-2 border-t border-slate-100 bg-slate-50/50 px-4 py-3"
-            >
-                <input
-                    className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
-                    value={data.value}
-                    onChange={(e) => setData('value', e.target.value)}
-                    placeholder={isColor ? 'e.g. Red' : 'e.g. M'}
-                />
-                {isColor && (
-                    <input
-                        type="color"
-                        className="h-9 w-10 shrink-0 cursor-pointer rounded-lg border border-slate-200"
-                        value={data.color_hex}
-                        onChange={(e) => setData('color_hex', e.target.value)}
-                        title="Swatch color"
-                    />
-                )}
-                <Button
-                    type="submit"
-                    size="sm"
-                    disabled={processing || !data.value.trim()}
-                    className="shrink-0 bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                >
-                    <Plus className="size-4" />
-                    Add
-                </Button>
-            </form>
-            {errors.value && (
-                <p className="px-4 pb-3 text-xs text-red-500">{errors.value}</p>
+            {!reorderMode && (
+                <>
+                    <form
+                        onSubmit={handleAdd}
+                        className="flex items-center gap-2 border-t border-slate-100 bg-slate-50/50 px-4 py-3"
+                    >
+                        <input
+                            className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                            value={data.value}
+                            onChange={(e) => setData('value', e.target.value)}
+                            placeholder={isColor ? 'e.g. Red' : 'e.g. M'}
+                        />
+                        {isColor && (
+                            <input
+                                type="color"
+                                className="h-9 w-10 shrink-0 cursor-pointer rounded-lg border border-slate-200"
+                                value={data.color_hex}
+                                onChange={(e) =>
+                                    setData('color_hex', e.target.value)
+                                }
+                                title="Swatch color"
+                            />
+                        )}
+                        <Button
+                            type="submit"
+                            size="sm"
+                            disabled={processing || !data.value.trim()}
+                            className="shrink-0 bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                        >
+                            <Plus className="size-4" />
+                            Add
+                        </Button>
+                    </form>
+                    {errors.value && (
+                        <p className="px-4 pb-3 text-xs text-red-500">
+                            {errors.value}
+                        </p>
+                    )}
+                </>
             )}
         </Card>
     );
