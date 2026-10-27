@@ -113,7 +113,6 @@ test('placing a real COD order deletes any incomplete order rows tracked against
         'country' => 'Bangladesh',
         'save_address' => false,
         'payment_method' => 'cod',
-        'is_buy_now' => true,
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
         ],

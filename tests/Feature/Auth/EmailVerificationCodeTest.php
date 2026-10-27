@@ -1,6 +1,7 @@
 <?php
 
 use App\Mail\VerifyEmailCodeMail;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -103,8 +104,14 @@ test('an unverified customer is blocked from checkout and account pages', functi
 
 test('a verified customer can reach checkout and account pages', function () {
     $user = User::factory()->create();
+    $product = Product::factory()->create();
 
-    $this->actingAs($user)->get(route('checkout.index'))->assertOk();
+    // A Buy Now item gives /checkout something to check out without
+    // needing a real cart row — see CheckoutController::index()'s
+    // empty-cart-and-no-buy-now-item redirect to home.
+    $this->actingAs($user)
+        ->get(route('checkout.index', ['buy_now_product' => $product->id]))
+        ->assertOk();
     $this->actingAs($user)->get(route('account.dashboard'))->assertOk();
 });
 

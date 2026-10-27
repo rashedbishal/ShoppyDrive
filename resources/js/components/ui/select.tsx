@@ -88,11 +88,20 @@ function collectOptions(children: ReactNode): ResolvedOption[] {
 /** How far (px) the button may move while open before the list closes. */
 const SCROLL_CLOSE_THRESHOLD_PX = 4;
 
+/** Marks the floating options panel so `CloseOnScroll` can tell its own internal scrolling apart from the page/modal scrolling underneath it. */
+const OPTIONS_PANEL_ATTR = "data-select-options-panel";
+
 /**
  * Close the open list once any scroll (page, admin content pane, modal…)
  * moves its button — like a native select. Otherwise the floating list
  * would stay pinned while its button slides under headers or off-screen.
- * Scrolling inside the list itself doesn't move the button, so it's unaffected.
+ *
+ * Scrolling inside the list itself is explicitly excluded via
+ * OPTIONS_PANEL_ATTR rather than just relying on "the button didn't move":
+ * for a long list (hundreds-to-thousands of options, e.g. an icon picker),
+ * wheel-scrolling through it or typing to jump the active option into view
+ * could still nudge the page enough to cross the move threshold below,
+ * closing the list out from under a still-in-progress selection.
  */
 function CloseOnScroll({
     buttonRef,
@@ -110,7 +119,13 @@ function CloseOnScroll({
 
         const origin = button.getBoundingClientRect();
 
-        const handleScroll = (): void => {
+        const handleScroll = (event: Event): void => {
+            const target = event.target;
+
+            if (target instanceof Element && target.closest(`[${OPTIONS_PANEL_ATTR}]`)) {
+                return;
+            }
+
             const current = button.getBoundingClientRect();
             const hasMoved =
                 Math.abs(current.top - origin.top) > SCROLL_CLOSE_THRESHOLD_PX ||
@@ -312,7 +327,15 @@ function Select({
                     aria-invalid={Boolean(error) || undefined}
                     aria-describedby={describedBy}
                     aria-required={required || undefined}
-                    onKeyDown={handleTypeahead}
+                    // Only while closed — mimics a native <select> letting you type to
+                    // jump straight to a value without opening the list. Once open,
+                    // Headless UI's own typeahead already highlights matches as you
+                    // type (Enter/click still confirms); running ours too on every
+                    // keystroke fought it for the same keystrokes and committed a
+                    // value mid-search, which is what made a long list (e.g. the
+                    // ~1500-icon picker) feel like it was closing on you before you
+                    // could click anything.
+                    onKeyDown={open ? undefined : handleTypeahead}
                     className={cn(
                         "group flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-border bg-surface px-4 text-left text-sm text-text-primary shadow-sm transition-all outline-none hover:border-border-strong focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60 data-open:border-primary data-open:ring-2 data-open:ring-primary/15",
                         error ? "border-destructive focus-visible:ring-destructive" : "",
@@ -330,12 +353,15 @@ function Select({
 
                 const listboxOptions = (
                 <ListboxOptions
+                    {...{ [OPTIONS_PANEL_ATTR]: "" }}
                     anchor={{ to: "bottom start", gap: 6, padding: 12 }}
                     modal={false}
                     transition
                     // z-20: above page content but below every sticky header (landing z-30,
                     // admin z-40, storefront/checkout z-50), so lists never cover a navbar.
-                    className="z-20 max-h-[min(var(--anchor-max-height),20rem)] min-w-[max(var(--button-width),10rem)] overflow-y-auto rounded-xl border border-border bg-surface p-1 text-text-primary shadow-[var(--shadow-dropdown)] outline-none transition duration-150 ease-out [--anchor-max-height:20rem] data-closed:-translate-y-1 data-closed:scale-[0.98] data-closed:opacity-0"
+                    // pointer-events-auto: re-enables clicks when portaled into a dialog's
+                    // pointer-events-none portal target (see dialog.tsx DialogContent).
+                    className="pointer-events-auto z-20 max-h-[min(var(--anchor-max-height),20rem)] min-w-[max(var(--button-width),10rem)] overflow-y-auto rounded-xl border border-border bg-surface p-1 text-text-primary shadow-[var(--shadow-dropdown)] outline-none transition duration-150 ease-out [--anchor-max-height:20rem] data-closed:-translate-y-1 data-closed:scale-[0.98] data-closed:opacity-0"
                 >
                     {itemOptions.map((option) => (
                         <ListboxOption

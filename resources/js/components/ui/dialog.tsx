@@ -82,14 +82,20 @@ function DialogContent({
           {children}
         </DialogPortalTargetContext.Provider>
         {/*
-         * `display: contents` keeps this out of the layout box entirely — it exists only as a
-         * portal target. The inner child keeps it non-empty: Headless UI's `Portal` deletes
-         * whatever DOM node it portals into once that node has zero children left (cleanup
-         * logic meant for the singleton root it creates for itself) — without this, the very
-         * first popup to close here would delete this div out from under its own ref, so every
-         * popup after the first would portal into an already-detached, invisible node.
+         * `absolute inset-0` (rather than `display: contents`) guarantees this never
+         * contributes to `DialogContent`'s own `grid` sizing, even transiently — a
+         * `display: contents` wrapper hoists its children directly into the grid, so
+         * whatever gets portaled into it (e.g. an open `Select` list) briefly counted as
+         * an extra grid item and nudged the dialog's height. `pointer-events-none` keeps
+         * it from intercepting clicks over the rest of the dialog; portaled popups
+         * re-enable their own pointer events. The inner child keeps it non-empty:
+         * Headless UI's `Portal` deletes whatever DOM node it portals into once that node
+         * has zero children left (cleanup logic meant for the singleton root it creates
+         * for itself) — without this, the very first popup to close here would delete
+         * this div out from under its own ref, so every popup after the first would
+         * portal into an already-detached, invisible node.
          */}
-        <div ref={portalTargetRef} className="contents">
+        <div ref={portalTargetRef} className="pointer-events-none absolute inset-0">
           <span className="hidden" aria-hidden="true" />
         </div>
         <DialogPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">

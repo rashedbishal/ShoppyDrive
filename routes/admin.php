@@ -69,7 +69,9 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::resource('flash-sales', FlashSaleController::class)->parameters(['flash-sales' => 'flashSale']);
 
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::post('orders', [OrderController::class, 'store'])->name('orders.store');
     Route::get('orders/trashed', [OrderController::class, 'trashed'])->name('orders.trashed');
+    Route::get('orders/customers/search', [OrderController::class, 'searchCustomers'])->name('orders.customers.search');
 
     // Incomplete orders (abandoned checkouts) — registered above the
     // orders/{order} wildcard so these literal segments aren't swallowed

@@ -10,7 +10,6 @@ use App\Exceptions\InsufficientStockException;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\Address;
 use App\Models\Cart;
-use App\Models\CartItem;
 use App\Models\Coupon;
 use App\Models\HomepageSetting;
 use App\Models\IncompleteOrder;
@@ -42,8 +41,19 @@ class CheckoutController extends Controller
         private readonly CouponService $coupons,
     ) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
+        $cart = $this->cartManager->serializeForRequest($request);
+        $buyNowItem = $this->resolveBuyNowItem($request);
+
+        // Nothing to check out — a direct/stale visit to /checkout with an
+        // empty cart and no "Buy Now" item would otherwise render a blank
+        // checkout page. Buy Now itself never touches the cart (see
+        // resolveBuyNowItem()), so this can't false-positive on that flow.
+        if (empty($cart['items']) && $buyNowItem === null) {
+            return redirect()->route('home');
+        }
+
         $savedAddresses = [];
 
         if (auth()->check()) {
@@ -54,14 +64,13 @@ class CheckoutController extends Controller
                 ->toArray();
         }
 
-        $cart = $this->cartManager->serializeForRequest($request);
         $user = $request->user();
         $subtotal = (float) ($cart['subtotal'] ?? 0);
 
         return Inertia::render('checkout/Checkout', [
             'cart' => $cart,
             'savedAddresses' => $savedAddresses,
-            'buyNowItem' => $this->resolveBuyNowItem($request),
+            'buyNowItem' => $buyNowItem,
             'referralDiscountEligible' => $this->referrals->isEligibleForDiscount($user),
             'referralDiscountPreview' => $user ? $this->referrals->calculateReferralDiscount($user, $subtotal) : 0.0,
             'pointsBalance' => $user?->points_balance ?? 0,
@@ -112,46 +121,44 @@ class CheckoutController extends Controller
 
     public function store(PlaceOrderRequest $request): RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
-        $isBuyNow = $request->boolean('is_buy_now');
-
-        if ($isBuyNow) {
-            // Never touches carts/cart_items — Buy Now must not disturb the
-            // customer's real cart (which, for a logged-in user, the client
-            // re-hydrates from the server cart on every page navigation).
-            $cart = $this->buildBuyNowCart($request->validated('items', []));
-        } else {
-            if ($request->filled('items')) {
-                if ($request->user() !== null) {
-                    $this->cartManager->syncUserCart($request->user(), $request->validated('items'));
-                } else {
-                    $this->cartManager->syncSessionCart($request->session()->getId(), $request->validated('items'));
-                }
+        // The checkout page always submits its full, already-merged items
+        // list (cart items plus a "Buy Now" item, if any — see
+        // Checkout.tsx) — so syncing the cart to exactly that list and then
+        // checking out from it handles a plain cart, a plain Buy Now, and a
+        // Buy Now merged with an existing cart identically, with no special
+        // casing needed here. Viewing the checkout page never reaches this
+        // method, so an abandoned Buy Now still never touches the cart.
+        if ($request->filled('items')) {
+            if ($request->user() !== null) {
+                $this->cartManager->syncUserCart($request->user(), $request->validated('items'));
+            } else {
+                $this->cartManager->syncSessionCart($request->session()->getId(), $request->validated('items'));
             }
+        }
 
-            $cart = $this->cartManager->getCurrentCart($request);
+        $cart = $this->cartManager->getCurrentCart($request);
 
-            abort_if(! $cart || $cart->items->isEmpty(), 422, 'Your cart is empty.');
+        abort_if(! $cart || $cart->items->isEmpty(), 422, 'Your cart is empty.');
 
-            // Eager-load products so free_delivery checks don't N+1
-            $cart->load('items.product');
+        // Eager-load products so free_delivery checks don't N+1
+        $cart->load('items.product');
 
-            // Drops items whose product was deleted/deactivated since being
-            // added to the cart — every downstream read of `$cart->items`
-            // (shipping calc, order-item creation) assumes `item->product`
-            // exists, so this has to happen before any of that runs.
-            $cart->setRelation('items', $this->cartManager->validItems($cart));
+        // Drops items whose product was deleted/deactivated since being
+        // added to the cart — every downstream read of `$cart->items`
+        // (shipping calc, order-item creation) assumes `item->product`
+        // exists, so this has to happen before any of that runs.
+        $cart->setRelation('items', $this->cartManager->validItems($cart));
 
-            abort_if($cart->items->isEmpty(), 422, 'Your cart is empty.');
+        abort_if($cart->items->isEmpty(), 422, 'Your cart is empty.');
 
-            // A cart item's price is a snapshot frozen at the last add/sync
-            // — it can go stale (a flash sale started, ended, or sold out)
-            // between then and now. Re-resolve against current state and
-            // refuse to silently charge a different amount than the
-            // checkout page just showed; the redirect back re-renders the
-            // cart with the corrected prices for the customer to confirm.
-            if ($this->cartManager->revalidatePrices($cart)) {
-                return back()->with('error', 'Some prices in your cart have changed. Please review your updated cart and try again.');
-            }
+        // A cart item's price is a snapshot frozen at the last add/sync
+        // — it can go stale (a flash sale started, ended, or sold out)
+        // between then and now. Re-resolve against current state and
+        // refuse to silently charge a different amount than the
+        // checkout page just showed; the redirect back re-renders the
+        // cart with the corrected prices for the customer to confirm.
+        if ($this->cartManager->revalidatePrices($cart)) {
+            return back()->with('error', 'Some prices in your cart have changed. Please review your updated cart and try again.');
         }
 
         $shippingAddress = $this->resolveShippingAddress($request);
@@ -168,7 +175,7 @@ class CheckoutController extends Controller
         // ── COD ─────────────────────────────────────────────────────────────
         if ($request->payment_method === PaymentMethod::COD->value) {
             try {
-                $order = DB::transaction(function () use ($request, $cart, $isBuyNow, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $couponDiscount) {
+                $order = DB::transaction(function () use ($request, $cart, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $couponDiscount) {
                     $this->maybeAutoSaveAddress($request, $shippingAddress);
 
                     // Locking the purchaser's row here (rather than before the
@@ -239,10 +246,8 @@ class CheckoutController extends Controller
                         }
                     }
 
-                    if (! $isBuyNow) {
-                        $cart->items()->delete();
-                        $cart->delete();
-                    }
+                    $cart->items()->delete();
+                    $cart->delete();
 
                     // A real order went through for this phone number (or
                     // this logged-in customer, who may have used a different
@@ -437,42 +442,6 @@ class CheckoutController extends Controller
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
-
-    /**
-     * Builds an in-memory, never-persisted Cart/CartItem pair for "Buy Now"
-     * so the rest of this method (shipping calc, order-item creation, mobile
-     * banking) can treat it exactly like a real cart — without ever writing
-     * to the carts/cart_items tables, so the customer's actual cart is left
-     * completely untouched.
-     *
-     * @param  array<int, array{product_id:int, variant_id:int|null, quantity:int}>  $items
-     */
-    private function buildBuyNowCart(array $items): Cart
-    {
-        abort_if(count($items) !== 1, 422, 'Buy Now requires exactly one item.');
-
-        $payload = $items[0];
-        $product = Product::with('images')->findOrFail($payload['product_id']);
-        $variant = ! empty($payload['variant_id'])
-            ? ProductVariant::with('media')->findOrFail($payload['variant_id'])
-            : null;
-        $quantity = max(1, (int) $payload['quantity']);
-        $price = $this->cartManager->resolvePrice($product->id, $variant?->id);
-
-        $cartItem = new CartItem([
-            'product_id' => $product->id,
-            'variant_id' => $variant?->id,
-            'quantity' => $quantity,
-            'price' => $price,
-        ]);
-        $cartItem->setRelation('product', $product);
-        $cartItem->setRelation('variant', $variant);
-
-        $cart = new Cart;
-        $cart->setRelation('items', collect([$cartItem]));
-
-        return $cart;
-    }
 
     /**
      * A preview check only — it validates eligibility and computes the

@@ -88,7 +88,11 @@ test('buy now places an order without ever creating a cart row', function () {
     expect(Cart::where('user_id', $user->id)->exists())->toBeFalse();
 });
 
-test('buy now leaves the customer\'s existing cart completely untouched', function () {
+test('a buy-now item is merged into the order alongside what was already in the cart', function () {
+    // Checkout.tsx merges the Buy Now item with whatever's in the cart
+    // store (summing quantity if it's the same product/variant) before
+    // ever submitting — so what reaches checkout.store() here is already
+    // the combined list, not a separate "is_buy_now" item on its own.
     $user = User::factory()->create();
     $cartedProduct = Product::factory()->create(['price' => 150]);
     $buyNowProduct = Product::factory()->create(['price' => 299]);
@@ -105,42 +109,74 @@ test('buy now leaves the customer\'s existing cart completely untouched', functi
 
     $response = $this->actingAs($user)->post(route('checkout.store'), buyNowOrderPayload([
         'email' => $user->email,
-        'is_buy_now' => true,
         'items' => [
+            ['product_id' => $cartedProduct->id, 'variant_id' => null, 'quantity' => 3],
             ['product_id' => $buyNowProduct->id, 'variant_id' => null, 'quantity' => 1],
         ],
     ]));
 
     $response->assertRedirect();
 
-    // The buy-now order was placed for the buy-now product only...
     $order = Order::query()->firstOrFail();
     $this->assertDatabaseHas('order_items', [
         'order_id' => $order->id,
         'product_id' => $buyNowProduct->id,
         'quantity' => 1,
     ]);
-    $this->assertDatabaseMissing('order_items', [
+    $this->assertDatabaseHas('order_items', [
         'order_id' => $order->id,
-        'product_id' => $cartedProduct->id,
-    ]);
-
-    // ...and the real cart (with its unrelated item) is exactly as it was.
-    $this->assertDatabaseHas('carts', ['id' => $cart->id, 'user_id' => $user->id]);
-    $this->assertDatabaseHas('cart_items', [
-        'cart_id' => $cart->id,
         'product_id' => $cartedProduct->id,
         'quantity' => 3,
     ]);
+
+    // The order went through, so the cart (now fully represented in the
+    // order) is cleared — same as any other successful checkout.
+    expect(Cart::where('id', $cart->id)->exists())->toBeFalse();
 });
 
-test('buy now requires items to be present', function () {
+test('a buy-now item for a product already in the cart sums into a single combined quantity', function () {
     $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 100]);
+
+    Cart::query()->where('user_id', $user->id)->delete();
+
+    $cart = Cart::create(['user_id' => $user->id]);
+    $cart->items()->create([
+        'product_id' => $product->id,
+        'variant_id' => null,
+        'quantity' => 1,
+        'price' => 100,
+    ]);
+
+    // Buying the same product again merges into one line of quantity 2,
+    // exactly like clicking "Add to Cart" a second time would.
+    $response = $this->actingAs($user)->post(route('checkout.store'), buyNowOrderPayload([
+        'email' => $user->email,
+        'items' => [
+            ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 2],
+        ],
+    ]));
+
+    $response->assertRedirect();
+
+    $order = Order::query()->firstOrFail();
+    $this->assertDatabaseHas('order_items', [
+        'order_id' => $order->id,
+        'product_id' => $product->id,
+        'quantity' => 2,
+        'subtotal' => 200.00,
+    ]);
+    expect($order->items()->count())->toBe(1);
+});
+
+test('checkout with no items and no existing cart is rejected', function () {
+    $user = User::factory()->create();
+    Cart::query()->where('user_id', $user->id)->delete();
 
     $response = $this->actingAs($user)->post(route('checkout.store'), buyNowOrderPayload([
         'email' => $user->email,
-        'is_buy_now' => true,
     ]));
 
-    $response->assertInvalid(['items']);
+    $response->assertStatus(422);
+    expect(Order::query()->count())->toBe(0);
 });

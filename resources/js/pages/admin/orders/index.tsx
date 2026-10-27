@@ -1,8 +1,10 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
+import { CreateOrderModal } from '@/components/admin/create-order-modal';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
 
@@ -53,6 +55,7 @@ const paymentVariant: Record<
 
 export default function OrdersIndex({ orders, filters, statuses }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
+    const [createOrderOpen, setCreateOrderOpen] = useState(false);
     const { props } = usePage<any>();
     const flash = props.flash as { success?: string } | undefined;
 
@@ -97,6 +100,14 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
                             {orders.total} total
                         </p>
                     </div>
+                    <Button
+                        size="sm"
+                        onClick={() => setCreateOrderOpen(true)}
+                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                    >
+                        <Plus className="mr-1.5 size-4" />
+                        Create Order
+                    </Button>
                 </div>
 
                 {flash?.success && (
@@ -235,6 +246,11 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
                     )}
                 </Card>
             </div>
+
+            <CreateOrderModal
+                open={createOrderOpen}
+                onOpenChange={setCreateOrderOpen}
+            />
         </>
     );
 }

@@ -319,23 +319,50 @@ export default function Checkout({
     pointsRedeemMaxPercent = 100,
 }: CheckoutProps): React.JSX.Element {
     const { auth, flash, settings } = usePage<SharedPageProps>().props;
-    const { items: cartItems, getSubtotal, getDiscount } = useCartStore();
+    const { items: cartItems, getDiscount } = useCartStore();
 
     // Reaching this page at all as a guest already means "Allow Guest
     // Checkout" is on (the server redirects to login otherwise) — email
     // becomes optional for them, phone stays required either way.
     const isGuest = !auth.user;
 
-    // Buy Now bypasses the real cart entirely — checking out a single item
-    // this way must never touch what's actually in the customer's cart.
-    // Memoized so the array reference is stable across unrelated re-renders
-    // (e.g. typing in any field) — otherwise `[buyNowItem]` is a brand new
-    // array every render, which would defeat OrderSummary's memoization for
-    // every buy-now checkout even though its actual contents never changed.
-    const items = useMemo(
-        () => (buyNowItem ? [buyNowItem] : cartItems),
-        [buyNowItem, cartItems],
-    );
+    // A "Buy Now" item is shown merged with whatever's already in the cart
+    // (summed into the same line if it's the same product/variant) — but
+    // only for this page's display and for what gets submitted if the order
+    // is actually placed. It's never written back into the cart store
+    // itself, so abandoning checkout here leaves the real cart exactly as
+    // it was. Memoized so the array reference is stable across unrelated
+    // re-renders (e.g. typing in any field) — otherwise this is a brand new
+    // array every render, which would defeat OrderSummary's memoization.
+    const items = useMemo(() => {
+        if (!buyNowItem) {
+            return cartItems;
+        }
+
+        const existingIndex = cartItems.findIndex(
+            (item) => item.item_key === buyNowItem.item_key,
+        );
+
+        if (existingIndex === -1) {
+            return [...cartItems, buyNowItem];
+        }
+
+        return cartItems.map((item, index) => {
+            if (index !== existingIndex) {
+                return item;
+            }
+
+            const quantity = item.quantity + buyNowItem.quantity;
+            const subtotal = item.price * quantity;
+
+            return {
+                ...item,
+                quantity,
+                subtotal,
+                formatted_subtotal: formatCurrency(subtotal),
+            };
+        });
+    }, [buyNowItem, cartItems]);
 
     const defaultAddress = savedAddresses.find((a) => a.is_default) ?? null;
     const hasDefault = defaultAddress !== null;
@@ -368,7 +395,10 @@ export default function Checkout({
 
     const isDhaka = form.data.state === 'Dhaka';
 
-    const subtotal = buyNowItem ? buyNowItem.subtotal : getSubtotal();
+    // Based on the merged `items` (cart + Buy Now item, if any) so the total
+    // always matches what's actually listed above, instead of just the cart
+    // store's own subtotal, which wouldn't include a merged Buy Now item.
+    const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
     const discount = buyNowItem ? 0 : getDiscount();
 
     // ── Shipping cost calculation ─────────────────────────────────────────────
@@ -585,7 +615,6 @@ export default function Checkout({
                 coupon_code: appliedCoupon?.code ?? null,
                 redeem_points: redeemingPoints,
                 points_to_redeem: redeemingPoints ? pointsToUse : null,
-                is_buy_now: buyNowItem !== null,
                 items: items.map((item) => ({
                     product_id: item.product.id,
                     variant_id: item.variant?.id ?? null,

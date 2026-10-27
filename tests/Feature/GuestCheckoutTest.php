@@ -38,8 +38,13 @@ test('guest checkout is off by default: visiting checkout redirects to login', f
 
 test('when guest checkout is enabled, a guest can view the checkout page', function () {
     enableGuestCheckout();
+    $product = Product::factory()->create();
 
-    $response = $this->get(route('checkout.index'));
+    // /checkout with nothing to check out (no cart items, no Buy Now item)
+    // redirects to home — a Buy Now item is the simplest way to give this
+    // guest-access test something to check out without needing a real
+    // session-backed cart row.
+    $response = $this->get(route('checkout.index', ['buy_now_product' => $product->id]));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page->component('checkout/Checkout'));
