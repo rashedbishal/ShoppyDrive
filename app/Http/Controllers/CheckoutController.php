@@ -18,6 +18,7 @@ use App\Models\Order;
 use App\Models\PendingCheckout;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\CouponService;
 use App\Services\InventoryService;
@@ -419,11 +420,8 @@ class CheckoutController extends Controller
             }
         }
 
-        // 3. Standard location-based rate
-        $district = $shippingAddress['state'] ?? '';
-        $city = $shippingAddress['city'] ?? '';
-
-        return ($district === 'Dhaka' && $city === 'Inside Dhaka City Corporation') ? 60.0 : 120.0;
+        // 3. Standard location-based rate (admin-configurable, see Setting::shippingRateFor())
+        return Setting::shippingRateFor($shippingAddress['state'] ?? null, $shippingAddress['city'] ?? null);
     }
 
     private function getFreeDeliveryThreshold(): float

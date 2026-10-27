@@ -53,9 +53,9 @@ Route::get('/newsletter/status', [NewsletterController::class, 'status'])->name(
 
 // Landing pages (public, guest-accessible)
 Route::get('/lp/{slug}', [LandingPageController::class, 'show'])->name('lp.show');
-Route::post('/lp/{slug}/order', [LandingPageController::class, 'placeOrder'])->name('lp.order');
+Route::post('/lp/{slug}/order', [LandingPageController::class, 'placeOrder'])->middleware('blocked-ip')->name('lp.order');
 Route::get('/lp/{slug}/payment/{token}', [LandingPageController::class, 'payment'])->name('lp.payment');
-Route::post('/lp/{slug}/payment/{token}', [LandingPageController::class, 'submitPayment'])->name('lp.payment.submit');
+Route::post('/lp/{slug}/payment/{token}', [LandingPageController::class, 'submitPayment'])->middleware('blocked-ip')->name('lp.payment.submit');
 Route::get('/lp/confirmation/{guestToken}', [LandingPageController::class, 'confirmation'])->name('lp.confirmation');
 Route::get('/lp/invoice/{guestToken}', [LandingPageController::class, 'downloadInvoice'])->name('lp.invoice');
 

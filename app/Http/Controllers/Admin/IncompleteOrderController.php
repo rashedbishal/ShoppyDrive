@@ -12,6 +12,7 @@ use App\Models\IncompleteOrder;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -209,10 +210,7 @@ class IncompleteOrderController extends Controller
             return 0.0;
         }
 
-        $district = $shippingAddress['state'] ?? '';
-        $city = $shippingAddress['city'] ?? '';
-
-        return ($district === 'Dhaka' && $city === 'Inside Dhaka City Corporation') ? 60.0 : 120.0;
+        return Setting::shippingRateFor($shippingAddress['state'] ?? null, $shippingAddress['city'] ?? null);
     }
 
     private function generateOrderNumber(): string

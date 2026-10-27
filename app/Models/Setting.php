@@ -29,4 +29,19 @@ class Setting extends Model
             'value' => 'array',
         ];
     }
+
+    /**
+     * The flat delivery charge for a shipping address, admin-configurable
+     * from Admin > Courier Config. Falls back to the original hardcoded
+     * rates when not yet set, so existing orders/estimates don't change
+     * until an admin actually saves a rate.
+     */
+    public static function shippingRateFor(?string $district, ?string $city): float
+    {
+        $isInsideDhaka = $district === 'Dhaka' && $city === 'Inside Dhaka City Corporation';
+        $key = $isInsideDhaka ? 'shipping_rate_inside_dhaka' : 'shipping_rate_outside_dhaka';
+        $default = $isInsideDhaka ? 60.0 : 120.0;
+
+        return (float) (static::find($key)?->value ?? $default);
+    }
 }

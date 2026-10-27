@@ -35,10 +35,10 @@ const BD_DISTRICTS = [
     'Sherpur','Sirajganj','Sunamganj','Sylhet','Tangail','Thakurgaon',
 ];
 
-function calcShipping(state: string, city: string, freeDelivery: boolean): number {
+function calcShipping(state: string, city: string, freeDelivery: boolean, insideDhakaRate: number, outsideDhakaRate: number): number {
     if (freeDelivery) return 0;
-    if (state === 'Dhaka' && city === 'Inside Dhaka City Corporation') return 60;
-    return 120;
+    if (state === 'Dhaka' && city === 'Inside Dhaka City Corporation') return insideDhakaRate;
+    return outsideDhakaRate;
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -101,6 +101,7 @@ function InlinePayment({ pending, slug, bkashNumber, nagadNumber }: { pending: P
             </ol>
 
             <form onSubmit={handleSubmit} className="space-y-3">
+                {errors.ip && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">{errors.ip}</p>}
                 <div>
                     <input
                         className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-mono uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-[#c8102e]/30 focus:border-[#c8102e]"
@@ -127,12 +128,16 @@ function InlinePayment({ pending, slug, bkashNumber, nagadNumber }: { pending: P
 }
 
 function OrderForm({ product, slug, bkashNumber, nagadNumber }: { product: Props['product']; slug: string; bkashNumber: string | null; nagadNumber: string | null }) {
+    const { settings } = usePage<SharedPageProps>().props;
+    const insideDhakaRate = settings.shipping_rate_inside_dhaka ?? 60;
+    const outsideDhakaRate = settings.shipping_rate_outside_dhaka ?? 120;
+
     const [qty, setQty] = useState(1);
     const [state, setState] = useState('');
     const [city, setCity] = useState('');
     const [paymentStep, setPaymentStep] = useState(false);
 
-    const shipping = calcShipping(state, city, product.free_delivery);
+    const shipping = calcShipping(state, city, product.free_delivery, insideDhakaRate, outsideDhakaRate);
     const subtotal = product.price * qty;
     const total = subtotal + shipping;
 
@@ -276,6 +281,8 @@ function OrderForm({ product, slug, bkashNumber, nagadNumber }: { product: Props
 export default function LandingPageShow({ page, product, bkashNumber, nagadNumber, siteName, siteLogo, pendingPayment }: Props) {
     const sec = page.sections;
     const { settings } = usePage<SharedPageProps>().props;
+    const insideDhakaRate = settings.shipping_rate_inside_dhaka ?? 60;
+    const outsideDhakaRate = settings.shipping_rate_outside_dhaka ?? 120;
 
     // Scroll payment section into view when pending payment is active
     useEffect(() => {
@@ -457,8 +464,8 @@ export default function LandingPageShow({ page, product, bkashNumber, nagadNumbe
                                     <p className="text-sm text-emerald-600 font-medium">✓ Free delivery on this product</p>
                                 ) : (
                                     <div className="text-sm text-slate-600 space-y-1">
-                                        <p>Inside Dhaka City Corporation: <strong>৳60</strong></p>
-                                        <p>Outside Dhaka / Rest of Bangladesh: <strong>৳120</strong></p>
+                                        <p>Inside Dhaka City Corporation: <strong>৳{insideDhakaRate}</strong></p>
+                                        <p>Outside Dhaka / Rest of Bangladesh: <strong>৳{outsideDhakaRate}</strong></p>
                                     </div>
                                 )}
                             </div>

@@ -408,7 +408,7 @@ class LandingPageController extends Controller
             return 0.0;
         }
 
-        return ($state === 'Dhaka' && $city === 'Inside Dhaka City Corporation') ? 60.0 : 120.0;
+        return Setting::shippingRateFor($state, $city);
     }
 
     private function generateOrderNumber(): string

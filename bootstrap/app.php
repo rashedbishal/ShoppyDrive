@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\BlockBlockedIp;
+use App\Http\Middleware\CaptureTrafficSource;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureCheckoutAccess;
 use App\Http\Middleware\HandleAppearance;
@@ -25,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => EnsureAdmin::class,
             'redirect-customer-from-admin' => RedirectCustomerFromAdmin::class,
             'checkout.access' => EnsureCheckoutAccess::class,
+            'blocked-ip' => BlockBlockedIp::class,
         ]);
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
@@ -40,6 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             TrackDailyVisit::class,
+            CaptureTrafficSource::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

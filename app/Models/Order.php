@@ -126,6 +126,28 @@ class Order extends Model
 
     protected static function booted(): void
     {
+        // ip_address/user_agent are deliberately excluded from $fillable
+        // (like Admin::is_mother) — captured here from the request that's
+        // actually creating the order, not from any caller-supplied data,
+        // so nothing passed to Order::create() can spoof them. Only set
+        // when not already provided, so tests/backfills can still assign
+        // explicit values via forceFill().
+        static::creating(function (self $order): void {
+            if ($order->ip_address === null && app()->bound('request')) {
+                $order->ip_address = request()->ip();
+                $order->user_agent = request()->userAgent();
+            }
+
+            // traffic_source/traffic_referrer are set from the sd_traffic_source/
+            // sd_traffic_referrer cookies CaptureTrafficSource populates on the
+            // customer's very first page view (or latest ad click) — not from
+            // caller-supplied data, same spoofing rationale as ip_address above.
+            if ($order->traffic_source === null && app()->bound('request')) {
+                $order->traffic_source = request()->cookie('sd_traffic_source') ?? 'direct';
+                $order->traffic_referrer = request()->cookie('sd_traffic_referrer') ?: null;
+            }
+        });
+
         // Fires exactly once per order row ever created — every order-
         // creation path (COD, ZiniPay, mobile banking, landing-page) has
         // its own idempotency guard that returns the already-existing

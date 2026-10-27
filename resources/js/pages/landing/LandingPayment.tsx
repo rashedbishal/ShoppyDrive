@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { ShoppingBag } from 'lucide-react';
 
 type Props = {
@@ -18,6 +18,7 @@ export default function LandingPayment({ token, slug, amount, orderNumber, provi
     const providerLabel = provider === 'bkash' ? 'Bkash' : 'Nagad';
     const providerColor = provider === 'bkash' ? '#e2136e' : '#f4821f';
 
+    const { errors: pageErrors } = usePage<any>().props as { errors: Record<string, string> };
     const { data, setData, post, processing, errors } = useForm({ transaction_id: '' });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -70,6 +71,7 @@ export default function LandingPayment({ token, slug, amount, orderNumber, provi
                             </ol>
 
                             <form onSubmit={handleSubmit} className="space-y-3">
+                                {pageErrors.ip && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">{pageErrors.ip}</p>}
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-slate-700">Transaction ID</label>
                                     <input

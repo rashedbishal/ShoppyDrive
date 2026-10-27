@@ -64,7 +64,7 @@ export default function ProductDetail({
     ratingBreakdown,
     shippingMethods = [],
 }: ProductDetailProps): React.JSX.Element {
-    const { auth } = usePage<SharedPageProps>().props;
+    const { auth, settings } = usePage<SharedPageProps>().props;
 
     // Review form
     const reviewForm = useForm({ title: '', body: '' });
@@ -1013,7 +1013,9 @@ export default function ProductDetail({
                                                         </p>
                                                     </div>
                                                     <span className="font-bold text-[var(--color-primary)]">
-                                                        ৳60.00
+                                                        {formatCurrency(
+                                                            settings.shipping_rate_inside_dhaka ?? 60,
+                                                        )}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center justify-between rounded-2xl border border-[var(--color-border)] p-4">
@@ -1026,7 +1028,9 @@ export default function ProductDetail({
                                                         </p>
                                                     </div>
                                                     <span className="font-bold text-[var(--color-primary)]">
-                                                        ৳120.00
+                                                        {formatCurrency(
+                                                            settings.shipping_rate_outside_dhaka ?? 120,
+                                                        )}
                                                     </span>
                                                 </div>
                                             </>

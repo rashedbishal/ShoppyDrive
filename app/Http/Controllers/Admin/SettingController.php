@@ -104,6 +104,8 @@ class SettingController extends Controller
             'steadfast_secret_key' => ['nullable', 'string', 'max:255'],
             'steadfast_webhook_secret' => ['nullable', 'string', 'max:255'],
             'steadfast_webhook_url' => ['nullable', 'string', 'max:500'],
+            'shipping_rate_inside_dhaka' => ['nullable', 'numeric', 'min:0'],
+            'shipping_rate_outside_dhaka' => ['nullable', 'numeric', 'min:0'],
             'about_hero_eyebrow' => ['nullable', 'string', 'max:100'],
             'about_hero_title' => ['nullable', 'string', 'max:255'],
             'about_hero_title_highlight' => ['nullable', 'string', 'max:255'],
@@ -182,6 +184,7 @@ class SettingController extends Controller
             'pathao_environment', 'pathao_client_id', 'pathao_client_secret',
             'pathao_username', 'pathao_password', 'pathao_store_id',
             'steadfast_api_key', 'steadfast_secret_key', 'steadfast_webhook_secret', 'steadfast_webhook_url',
+            'shipping_rate_inside_dhaka', 'shipping_rate_outside_dhaka',
             'about_hero_eyebrow', 'about_hero_title', 'about_hero_title_highlight', 'about_hero_description',
             'about_stats', 'about_mission_eyebrow', 'about_mission_title', 'about_mission_body',
             'about_mission_features', 'about_values', 'about_team', 'about_cta_title', 'about_cta_description',
@@ -200,6 +203,15 @@ class SettingController extends Controller
             if ($request->has($key)) {
                 Setting::updateOrCreate(['key' => $key], ['value' => $request->input($key), 'group' => $this->getGroup($key)]);
             }
+        }
+
+        // The shipping rate cards save one field each, same as Profile/Security/Connections
+        // (see Inertia::flash('toast', ...) there) — an animated toast reads better for a
+        // single-field card than the static "Saved." badge the other courier cards use.
+        if ($request->has('shipping_rate_inside_dhaka')) {
+            Inertia::flash('toast', ['type' => 'success', 'message' => 'Inside Dhaka delivery charge updated.']);
+        } elseif ($request->has('shipping_rate_outside_dhaka')) {
+            Inertia::flash('toast', ['type' => 'success', 'message' => 'Outside Dhaka delivery charge updated.']);
         }
 
         return back()->with('success', 'Settings saved.');
@@ -253,6 +265,7 @@ class SettingController extends Controller
             in_array($key, ['google_client_id', 'google_client_secret', 'google_redirect_uri', 'facebook_client_id', 'facebook_client_secret', 'facebook_redirect_uri']) => 'social_login',
             in_array($key, ['pathao_environment', 'pathao_client_id', 'pathao_client_secret', 'pathao_username', 'pathao_password', 'pathao_store_id']) => 'courier',
             in_array($key, ['steadfast_api_key', 'steadfast_secret_key', 'steadfast_webhook_secret', 'steadfast_webhook_url']) => 'courier',
+            in_array($key, ['shipping_rate_inside_dhaka', 'shipping_rate_outside_dhaka']) => 'shipping',
             str_starts_with($key, 'about_') => 'about_page',
             str_starts_with($key, 'contact_page_') => 'contact_page',
             str_starts_with($key, 'referral_') => 'referral',

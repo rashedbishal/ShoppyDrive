@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import {
     Award,
+    Ban,
     Folder,
     FolderTree,
     Gift,
@@ -245,6 +246,12 @@ const navSections: NavSection[] = [
                 href: '/admin/admins',
                 icon: UserCog,
                 exact: false,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Blocked IPs',
+                href: '/admin/blocked-ips',
+                icon: Ban,
                 extraMatches: [] as string[],
             },
             {

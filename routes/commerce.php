@@ -20,11 +20,11 @@ Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
 // either way.
 Route::middleware(['checkout.access'])->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('blocked-ip')->name('checkout.store');
 
     // Mobile banking (Bkash / Nagad)
     Route::get('/payment/mobile/{token}', [MobilePaymentController::class, 'show'])->name('payment.mobile.show');
-    Route::post('/payment/mobile/{token}', [MobilePaymentController::class, 'submit'])->name('payment.mobile.submit');
+    Route::post('/payment/mobile/{token}', [MobilePaymentController::class, 'submit'])->middleware('blocked-ip')->name('payment.mobile.submit');
 
     // Fires from the checkout page once a valid phone number + items are
     // present, so admins can follow up on abandoned checkouts — see

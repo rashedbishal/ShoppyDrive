@@ -1,6 +1,8 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
+    Ban,
+    Globe,
     Package,
     RefreshCw,
     Trash2,
@@ -66,6 +68,10 @@ type Order = {
         country: string;
     };
     created_at: string;
+    ip_address: string | null;
+    user_agent: string | null;
+    traffic_source: string | null;
+    traffic_referrer: string | null;
     user: { id: number; name: string; email: string; phone?: string } | null;
     items: OrderItem[];
     status_histories: StatusHistory[];
@@ -73,6 +79,25 @@ type Order = {
 
 type Props = {
     order: Order;
+};
+
+const trafficSourceLabel: Record<string, string> = {
+    google: 'Google',
+    facebook: 'Facebook',
+    instagram: 'Instagram',
+    direct: 'Direct / Typed URL',
+    other: 'Other Website',
+};
+
+const trafficSourceVariant: Record<
+    string,
+    'success' | 'warning' | 'error' | 'info' | 'default' | 'amber' | 'secondary'
+> = {
+    google: 'info',
+    facebook: 'secondary',
+    instagram: 'amber',
+    direct: 'default',
+    other: 'warning',
 };
 
 const statusVariant: Record<
@@ -103,6 +128,31 @@ export default function OrderShow({ order }: Props) {
     const [refundProcessing, setRefundProcessing] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [deleteProcessing, setDeleteProcessing] = useState(false);
+    const [blockingIp, setBlockingIp] = useState(false);
+
+    const handleBlockIp = () => {
+        if (!order.ip_address) {
+            return;
+        }
+
+        if (
+            !confirm(
+                `Block ${order.ip_address} from placing future orders?`,
+            )
+        ) {
+            return;
+        }
+
+        setBlockingIp(true);
+        router.post(
+            route('admin.blocked-ips.store'),
+            {
+                ip_address: order.ip_address,
+                reason: `Blocked from order ${order.order_number}`,
+            },
+            { onFinish: () => setBlockingIp(false) },
+        );
+    };
 
     const handleDelete = () => {
         setDeleteProcessing(true);
@@ -525,6 +575,84 @@ export default function OrderShow({ order }: Props) {
                                 <p>{order.shipping_address.country}</p>
                             </CardContent>
                         </Card>
+
+                        {(order.ip_address ||
+                            order.user_agent ||
+                            order.traffic_source) && (
+                            <Card className="shadow-sm">
+                                <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                                        <Globe className="size-4" /> Device
+                                        & Traffic Source
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2 pt-4 text-sm text-slate-700">
+                                    {order.traffic_source && (
+                                        <div>
+                                            <p className="text-xs text-slate-500">
+                                                Came From
+                                            </p>
+                                            <div className="mt-0.5 flex items-center gap-2">
+                                                <Badge
+                                                    variant={
+                                                        trafficSourceVariant[
+                                                            order
+                                                                .traffic_source
+                                                        ] ?? 'default'
+                                                    }
+                                                >
+                                                    {trafficSourceLabel[
+                                                        order.traffic_source
+                                                    ] ??
+                                                        order.traffic_source}
+                                                </Badge>
+                                                {order.traffic_referrer && (
+                                                    <span className="text-xs text-slate-400">
+                                                        via{' '}
+                                                        {
+                                                            order.traffic_referrer
+                                                        }
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {order.ip_address && (
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div>
+                                                <p className="text-xs text-slate-500">
+                                                    IP Address
+                                                </p>
+                                                <p className="font-mono font-medium">
+                                                    {order.ip_address}
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleBlockIp}
+                                                disabled={blockingIp}
+                                                className="flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                                            >
+                                                <Ban className="size-3" />
+                                                {blockingIp
+                                                    ? 'Blocking…'
+                                                    : 'Block IP'}
+                                            </button>
+                                        </div>
+                                    )}
+                                    {order.user_agent && (
+                                        <div>
+                                            <p className="text-xs text-slate-500">
+                                                Browser / Device
+                                            </p>
+                                            <p className="break-all text-xs font-medium text-slate-600">
+                                                {order.user_agent}
+                                            </p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {order.tracking_number && (
                             <Card className="shadow-sm">

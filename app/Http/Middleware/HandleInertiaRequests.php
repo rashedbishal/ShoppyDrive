@@ -142,6 +142,8 @@ class HandleInertiaRequests extends Middleware
 
                         return (float) ($bar?->metadata['free_delivery_amount'] ?? 0);
                     })(),
+                    'shipping_rate_inside_dhaka' => Setting::shippingRateFor('Dhaka', 'Inside Dhaka City Corporation'),
+                    'shipping_rate_outside_dhaka' => Setting::shippingRateFor(null, null),
                 ];
             },
             'popular_keywords' => fn () => PopularKeyword::where('is_active', true)
@@ -192,9 +194,7 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        return $default->state === 'Dhaka' && $default->city === 'Inside Dhaka City Corporation'
-            ? 60
-            : 120;
+        return (int) Setting::shippingRateFor($default->state, $default->city);
     }
 
     private function resolveCartShippingCost(Request $request): ?int
@@ -248,8 +248,6 @@ class HandleInertiaRequests extends Middleware
             }
         }
 
-        return $default->state === 'Dhaka' && $default->city === 'Inside Dhaka City Corporation'
-            ? 60
-            : 120;
+        return (int) Setting::shippingRateFor($default->state, $default->city);
     }
 }

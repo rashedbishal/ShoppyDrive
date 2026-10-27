@@ -97,6 +97,8 @@ export interface AppSettings {
     whatsapp_number?: string | null;
     messenger_link?: string | null;
     free_delivery_threshold?: number | null;
+    shipping_rate_inside_dhaka?: number;
+    shipping_rate_outside_dhaka?: number;
     google_login_enabled?: boolean;
     facebook_login_enabled?: boolean;
     referral_enabled?: boolean;

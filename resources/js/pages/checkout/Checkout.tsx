@@ -406,8 +406,8 @@ export default function Checkout({
         }
 
         return district === 'Dhaka' && city === 'Inside Dhaka City Corporation'
-            ? 60
-            : 120;
+            ? settings.shipping_rate_inside_dhaka ?? 60
+            : settings.shipping_rate_outside_dhaka ?? 120;
     }
 
     const effectiveDistrict = selectedAddr?.state ?? form.data.state;

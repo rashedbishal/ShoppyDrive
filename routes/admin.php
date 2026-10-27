@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\AttributeValueController;
+use App\Http\Controllers\Admin\BlockedIpController;
 use App\Http\Controllers\Admin\BlogController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
@@ -140,6 +141,10 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::delete('sms-patterns/bulk-delete', [SmsPatternController::class, 'destroyMany'])->name('sms-patterns.destroyMany');
     Route::patch('sms-patterns/{smsPattern}', [SmsPatternController::class, 'update'])->name('sms-patterns.update');
     Route::delete('sms-patterns/{smsPattern}', [SmsPatternController::class, 'destroy'])->name('sms-patterns.destroy');
+
+    Route::get('blocked-ips', [BlockedIpController::class, 'index'])->name('blocked-ips.index');
+    Route::post('blocked-ips', [BlockedIpController::class, 'store'])->name('blocked-ips.store');
+    Route::delete('blocked-ips/{blockedIp}', [BlockedIpController::class, 'destroy'])->name('blocked-ips.destroy');
 
     // Homepage Management
     Route::get('homepage', [HomepageController::class, 'index'])->name('homepage.index');

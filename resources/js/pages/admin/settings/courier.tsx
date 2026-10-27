@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import {
     SettingsField,
@@ -253,6 +253,64 @@ function PathaoCourierCard({ settings }: Props) {
     );
 }
 
+function ShippingRateCard({
+    zoneKey,
+    title,
+    hint,
+}: {
+    zoneKey: 'shipping_rate_inside_dhaka' | 'shipping_rate_outside_dhaka';
+    title: string;
+    hint: string;
+}) {
+    const page = usePage<{ settings: Record<string, unknown> }>();
+    const settings = page.props.settings;
+    const defaultRate = zoneKey === 'shipping_rate_inside_dhaka' ? 60 : 120;
+
+    const { data, setData, put, processing } = useForm({
+        [zoneKey]: String(settings[zoneKey] ?? defaultRate),
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        put(route('admin.settings.update'), { preserveScroll: true });
+    };
+
+    return (
+        <Card className="shadow-sm">
+            <CardHeader className="border-b border-slate-100 pb-4">
+                <CardTitle className="text-sm font-semibold text-slate-700">
+                    {title}
+                </CardTitle>
+            </CardHeader>
+            <form onSubmit={handleSubmit}>
+                <CardContent className="space-y-4 pt-4">
+                    <SettingsField label="Delivery Charge (৳)" hint={hint}>
+                        <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            className={settingsInputClass}
+                            value={data[zoneKey]}
+                            onChange={(e) =>
+                                setData(zoneKey, e.target.value)
+                            }
+                        />
+                    </SettingsField>
+                </CardContent>
+                <div className="flex items-center gap-3 border-t border-slate-100 px-6 py-4">
+                    <Button
+                        type="submit"
+                        disabled={processing}
+                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                    >
+                        {processing ? 'Saving…' : 'Save'}
+                    </Button>
+                </div>
+            </form>
+        </Card>
+    );
+}
+
 function SteadfastCourierCard({ settings }: Props) {
     const { data, setData, put, processing, recentlySuccessful } = useForm({
         steadfast_api_key: (settings.steadfast_api_key as string) ?? '',
@@ -440,6 +498,16 @@ export default function CourierConfig({ settings }: Props) {
                     Courier Config
                 </h1>
 
+                <ShippingRateCard
+                    zoneKey="shipping_rate_inside_dhaka"
+                    title="Inside Dhaka City Corporation"
+                    hint="Flat delivery charge for addresses inside Dhaka City Corporation."
+                />
+                <ShippingRateCard
+                    zoneKey="shipping_rate_outside_dhaka"
+                    title="Outside Dhaka City Corporation"
+                    hint="Flat delivery charge for every other district, and areas of Dhaka outside the city corporation."
+                />
                 <PathaoCourierCard settings={settings} />
                 <SteadfastCourierCard settings={settings} />
             </div>
