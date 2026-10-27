@@ -1,5 +1,5 @@
-import { createJSONStorage, persist } from 'zustand/middleware';
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { STORAGE_KEYS } from '@/lib/constants';
 import type { FlashToast, UiState, UiStateToast, Product } from '@/types';
 
@@ -15,6 +15,12 @@ type UiStoreState = Omit<UiState, 'compareItems'> & {
     mobileMenuOpen: boolean;
     searchOpen: boolean;
     toasts: UiStateToast[];
+    /** Products listed in the "can't delete, in use by N product(s)" flash toast's modal — kept outside the toast's own lifecycle so the modal survives if the toast auto-dismisses. */
+    blockedDeleteProducts: { id: number; name: string; slug: string }[] | null;
+    showBlockedDeleteProducts: (
+        products: { id: number; name: string; slug: string }[],
+    ) => void;
+    hideBlockedDeleteProducts: () => void;
     openCart: () => void;
     closeCart: () => void;
     toggleCart: () => void;
@@ -71,6 +77,13 @@ export const useUiStore = create<UiStoreState>()(
             searchOpen: false,
             compareItems: [],
             toasts: [],
+            blockedDeleteProducts: null,
+            showBlockedDeleteProducts: (products) => {
+                set({ blockedDeleteProducts: products });
+            },
+            hideBlockedDeleteProducts: () => {
+                set({ blockedDeleteProducts: null });
+            },
             openCart: () => {
                 set({ cartOpen: true });
             },
@@ -100,9 +113,10 @@ export const useUiStore = create<UiStoreState>()(
             },
             addCompareItem: (product) => {
                 set((state) => {
-                    if (state.compareItems.some(p => p.id === product.id)) {
+                    if (state.compareItems.some((p) => p.id === product.id)) {
                         return state;
                     }
+
                     if (state.compareItems.length >= 3) {
                         return state;
                     }
@@ -114,14 +128,16 @@ export const useUiStore = create<UiStoreState>()(
             },
             removeCompareItem: (productId) => {
                 set((state) => ({
-                    compareItems: state.compareItems.filter((p) => p.id !== productId),
+                    compareItems: state.compareItems.filter(
+                        (p) => p.id !== productId,
+                    ),
                 }));
             },
             clearCompareItems: () => {
                 set({ compareItems: [] });
             },
             hasCompareItem: (productId) => {
-                return get().compareItems.some(p => p.id === productId);
+                return get().compareItems.some((p) => p.id === productId);
             },
             addToast: (toast) => {
                 const id = toast.id ?? createToastId();
@@ -162,4 +178,3 @@ export const useUiStore = create<UiStoreState>()(
         },
     ),
 );
-

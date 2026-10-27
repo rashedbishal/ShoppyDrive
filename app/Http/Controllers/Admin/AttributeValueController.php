@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AttributeValueRequest;
 use App\Models\AttributeValue;
+use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -47,13 +48,21 @@ class AttributeValueController extends Controller
 
     public function destroy(AttributeValue $attributeValue): RedirectResponse
     {
-        $productCount = $attributeValue->products()->count();
-        $variantCount = $attributeValue->colorVariants()->count() + $attributeValue->sizeVariants()->count();
+        $products = $attributeValue->products()->get(['products.id', 'products.name', 'products.slug'])
+            ->merge($attributeValue->colorVariants()->with('product:id,name,slug')->get()->pluck('product')->filter())
+            ->merge($attributeValue->sizeVariants()->with('product:id,name,slug')->get()->pluck('product')->filter())
+            ->unique('id')
+            ->values();
 
-        if ($productCount > 0 || $variantCount > 0) {
+        if ($products->isNotEmpty()) {
             Inertia::flash('toast', [
                 'type' => 'error',
-                'message' => "Can't delete \"{$attributeValue->value}\" — it's used by {$productCount} product(s). Remove it from those products first.",
+                'message' => "Can't delete \"{$attributeValue->value}\" — it's used by {$products->count()} product(s). Remove it from those products first.",
+                'products' => $products->map(fn (Product $product): array => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                ])->all(),
             ]);
 
             return redirect()->route('admin.attributes.index');

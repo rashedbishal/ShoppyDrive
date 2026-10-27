@@ -49,6 +49,8 @@ export interface FlashToast {
     message: string;
     title?: string;
     duration?: number;
+    /** When set, the toast's trailing "N product(s)" becomes a clickable link that opens a modal listing these. */
+    products?: { id: Id; name: string; slug: string }[];
 }
 
 export interface User extends Timestamped {

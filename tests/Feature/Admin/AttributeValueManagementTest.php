@@ -143,6 +143,40 @@ test('deleting an attribute value in use by a product is blocked', function () {
     expect(AttributeValue::find($value->id))->not->toBeNull();
 });
 
+test('the blocked-delete flash includes the list of products using the value', function () {
+    actingAs($this->admin, 'admin');
+
+    $value = AttributeValue::create(['attribute_id' => $this->sizeAttribute->id, 'value' => 'M']);
+    $product = Product::factory()->create(['name' => 'Blocking Product']);
+    $product->attributeValues()->attach($value->id);
+
+    $response = $this->delete(route('admin.attribute-values.destroy', $value));
+
+    $response->assertSessionHas('inertia.flash_data', function ($flash) use ($product) {
+        $products = $flash['toast']['products'] ?? null;
+
+        return $products !== null
+            && count($products) === 1
+            && $products[0]['id'] === $product->id
+            && $products[0]['name'] === 'Blocking Product';
+    });
+});
+
+test('a product reachable only through a variant still counts toward the blocked-delete list', function () {
+    actingAs($this->admin, 'admin');
+
+    $value = AttributeValue::create(['attribute_id' => $this->sizeAttribute->id, 'value' => 'M']);
+    $product = Product::factory()->create(['name' => 'Variant-Only Product']);
+    $product->variants()->create(['sku' => 'SKU-1', 'price' => 10, 'stock_quantity' => 1, 'size_value_id' => $value->id, 'attributes' => ['Size' => 'M']]);
+
+    $response = $this->delete(route('admin.attribute-values.destroy', $value));
+
+    $response->assertSessionHas('inertia.flash_data', function ($flash) use ($product) {
+        return str_contains($flash['toast']['message'] ?? '', 'used by 1 product(s)')
+            && ($flash['toast']['products'][0]['id'] ?? null) === $product->id;
+    });
+});
+
 test('a duplicate size value is rejected', function () {
     actingAs($this->admin, 'admin');
 
