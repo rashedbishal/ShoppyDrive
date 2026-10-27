@@ -18,25 +18,58 @@ class AttributeValueRequest extends FormRequest
 
     public function rules(): array
     {
+        // Resolved once and reused below: which attribute (Color/Size) this
+        // value belongs to — from the submitted attribute_id on create, or
+        // from the existing value's own attribute on update, since update
+        // requests don't resubmit attribute_id (see 'sometimes' below).
+        $attributeId = $this->filled('attribute_id')
+            ? (int) $this->input('attribute_id')
+            : $this->route('attribute_value')?->attribute_id;
+        $attribute = $attributeId ? Attribute::find($attributeId) : null;
+        $currentValueId = $this->route('attribute_value')?->id;
+        $isColor = $attribute?->type === AttributeType::COLOR;
+
+        $colorHexRules = [
+            Rule::requiredIf(fn (): bool => $isColor),
+            'nullable',
+            'string',
+            'max:9',
+        ];
+
+        if ($isColor) {
+            // Only enforced for the Color attribute itself: the add/edit form
+            // always submits a color_hex value (even for Size, where it's
+            // just an unused default), so checking uniqueness unconditionally
+            // would falsely reject adding a second size.
+            $colorHexRules[] = Rule::unique('attribute_values', 'color_hex')
+                ->where('attribute_id', $attributeId)
+                ->ignore($currentValueId);
+        }
+
         return [
             'attribute_id' => [
                 Rule::requiredIf(fn (): bool => $this->isMethod('post')),
                 'sometimes', 'integer', 'exists:attributes,id',
             ],
-            'value' => ['required', 'string', 'max:100'],
-            'color_hex' => [
-                Rule::requiredIf(function (): bool {
-                    $attribute = $this->filled('attribute_id')
-                        ? Attribute::find($this->input('attribute_id'))
-                        : $this->route('attributeValue')?->attribute;
-
-                    return $attribute?->type === AttributeType::COLOR;
-                }),
-                'nullable',
-                'string',
-                'max:9',
+            'value' => [
+                'required', 'string', 'max:100',
+                // Scoped per attribute, not globally — "M" must be unique
+                // among sizes and "Red" among colors, but they don't
+                // collide with each other.
+                Rule::unique('attribute_values', 'value')
+                    ->where('attribute_id', $attributeId)
+                    ->ignore($currentValueId),
             ],
+            'color_hex' => $colorHexRules,
             'sort_order' => ['nullable', 'integer', 'min:0'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'value.unique' => 'This value already exists.',
+            'color_hex.unique' => 'This color code is already used by another color.',
         ];
     }
 }

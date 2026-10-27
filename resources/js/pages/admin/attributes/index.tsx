@@ -1,4 +1,4 @@
-import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import {
     Check,
     Edit,
@@ -11,6 +11,7 @@ import {
     X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -34,6 +35,43 @@ type Attribute = {
 
 type Props = { attributes: Attribute[] };
 
+/**
+ * Accepts 3- or 6-digit hex (with or without "#"); returns null for
+ * anything else rather than guessing, since this only ever feeds a
+ * read-only label next to the swatch.
+ */
+function hexToRgb(hex: string): string | null {
+    const normalized = hex.replace('#', '').trim();
+    const full =
+        normalized.length === 3
+            ? normalized
+                  .split('')
+                  .map((c) => c + c)
+                  .join('')
+            : normalized;
+
+    if (!/^[0-9a-fA-F]{6}$/.test(full)) {
+        return null;
+    }
+
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+/** Shows the first validation error (client or server) as a toast. */
+function toastFirstError(errors: Record<string, string | string[]>) {
+    const first = Object.values(errors)[0];
+
+    if (!first) {
+        return;
+    }
+
+    toast.error(Array.isArray(first) ? first[0] : first);
+}
+
 function ValueRow({
     attributeValue,
     isColor,
@@ -56,27 +94,26 @@ function ValueRow({
     onDragEnd: () => void;
 }) {
     const [editing, setEditing] = useState(false);
-    const { data, setData, put, processing, errors, setError, clearErrors } =
-        useForm({
-            attribute_id: attributeValue.attribute_id,
-            value: attributeValue.value,
-            color_hex: attributeValue.color_hex ?? '#000000',
-        });
+    const { data, setData, put, processing } = useForm({
+        attribute_id: attributeValue.attribute_id,
+        value: attributeValue.value,
+        color_hex: attributeValue.color_hex ?? '#000000',
+    });
 
     const save = () => {
-        clearErrors();
         const clientErrors = validate(data, {
             value: [required(), maxLength(100)],
         });
 
         if (Object.keys(clientErrors).length > 0) {
-            setError(clientErrors);
+            toastFirstError(clientErrors);
 
             return;
         }
 
         put(route('admin.attribute-values.update', attributeValue.id), {
             onSuccess: () => setEditing(false),
+            onError: toastFirstError,
         });
     };
 
@@ -135,11 +172,6 @@ function ValueRow({
                             onChange={(e) => setData('value', e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && save()}
                         />
-                        {errors.value && (
-                            <p className="mt-1 text-xs text-red-500">
-                                {errors.value}
-                            </p>
-                        )}
                     </div>
                     {isColor && (
                         <input
@@ -170,9 +202,18 @@ function ValueRow({
                 </>
             ) : (
                 <>
-                    <span className="flex-1 text-left text-sm font-medium text-slate-800">
-                        {attributeValue.value}
-                    </span>
+                    <div className="flex-1 text-left">
+                        <span className="text-sm font-medium text-slate-800">
+                            {attributeValue.value}
+                        </span>
+                        {isColor && attributeValue.color_hex && (
+                            <p className="font-mono text-xs text-slate-400">
+                                {attributeValue.color_hex.toUpperCase()}
+                                {hexToRgb(attributeValue.color_hex) &&
+                                    ` · ${hexToRgb(attributeValue.color_hex)}`}
+                            </p>
+                        )}
+                    </div>
                     <button
                         type="button"
                         onClick={() => setEditing(true)}
@@ -203,16 +244,7 @@ function AttributeSection({
     onDelete: (id: number) => void;
 }) {
     const isColor = attribute.type === 'color';
-    const {
-        data,
-        setData,
-        post,
-        processing,
-        reset,
-        errors,
-        setError,
-        clearErrors,
-    } = useForm({
+    const { data, setData, post, processing, reset } = useForm({
         attribute_id: attribute.id,
         value: '',
         color_hex: '#c8102e',
@@ -268,13 +300,12 @@ function AttributeSection({
     const handleAdd = (e: React.FormEvent) => {
         e.preventDefault();
 
-        clearErrors();
         const clientErrors = validate(data, {
             value: [required(), maxLength(100)],
         });
 
         if (Object.keys(clientErrors).length > 0) {
-            setError(clientErrors);
+            toastFirstError(clientErrors);
 
             return;
         }
@@ -284,6 +315,7 @@ function AttributeSection({
                 reset('value', 'color_hex');
                 setData('sort_order', attribute.values.length + 1);
             },
+            onError: toastFirstError,
         });
     };
 
@@ -403,11 +435,6 @@ function AttributeSection({
                             Add
                         </Button>
                     </form>
-                    {errors.value && (
-                        <p className="px-4 pb-3 text-xs text-red-500">
-                            {errors.value}
-                        </p>
-                    )}
                 </>
             )}
         </Card>
@@ -417,10 +444,6 @@ function AttributeSection({
 export default function AttributesIndex({ attributes }: Props) {
     const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
-    const { props } = usePage<any>();
-    const flash = props.flash as
-        | { success?: string; error?: string }
-        | undefined;
 
     const confirmDelete = () => {
         if (deleteTargetId === null) {
@@ -451,17 +474,6 @@ export default function AttributesIndex({ attributes }: Props) {
                         product is blocked.
                     </p>
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600">
-                        {flash.error}
-                    </div>
-                )}
 
                 {attributes.map((attribute) => (
                     <AttributeSection

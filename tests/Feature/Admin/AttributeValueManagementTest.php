@@ -139,6 +139,121 @@ test('deleting an attribute value in use by a product is blocked', function () {
     $response = $this->delete(route('admin.attribute-values.destroy', $value));
 
     $response->assertRedirect(route('admin.attributes.index'));
-    $response->assertSessionHas('error');
+    $response->assertSessionHas('inertia.flash_data', fn ($flash) => ($flash['toast']['type'] ?? null) === 'error');
     expect(AttributeValue::find($value->id))->not->toBeNull();
+});
+
+test('a duplicate size value is rejected', function () {
+    actingAs($this->admin, 'admin');
+
+    AttributeValue::create(['attribute_id' => $this->sizeAttribute->id, 'value' => 'XL']);
+
+    $response = $this->post(route('admin.attribute-values.store'), [
+        'attribute_id' => $this->sizeAttribute->id,
+        'value' => 'XL',
+    ]);
+
+    $response->assertInvalid(['value']);
+    expect(AttributeValue::where('attribute_id', $this->sizeAttribute->id)->where('value', 'XL')->count())->toBe(1);
+});
+
+test('the same size value is allowed to coexist with an identically named color', function () {
+    actingAs($this->admin, 'admin');
+
+    AttributeValue::create(['attribute_id' => $this->sizeAttribute->id, 'value' => 'Gold']);
+
+    $response = $this->post(route('admin.attribute-values.store'), [
+        'attribute_id' => $this->colorAttribute->id,
+        'value' => 'Gold',
+        'color_hex' => '#ffd700',
+    ]);
+
+    $response->assertRedirect(route('admin.attributes.index'));
+    $response->assertSessionDoesntHaveErrors();
+});
+
+test('renaming a size value to its own current name is not rejected as a duplicate', function () {
+    actingAs($this->admin, 'admin');
+
+    $value = AttributeValue::create(['attribute_id' => $this->sizeAttribute->id, 'value' => 'M']);
+
+    $response = $this->put(route('admin.attribute-values.update', $value), [
+        'value' => 'M',
+    ]);
+
+    $response->assertRedirect(route('admin.attributes.index'));
+    $response->assertSessionDoesntHaveErrors();
+});
+
+test('renaming a size value to one already used by another size is rejected', function () {
+    actingAs($this->admin, 'admin');
+
+    AttributeValue::create(['attribute_id' => $this->sizeAttribute->id, 'value' => 'XL']);
+    $value = AttributeValue::create(['attribute_id' => $this->sizeAttribute->id, 'value' => 'M']);
+
+    $response = $this->put(route('admin.attribute-values.update', $value), [
+        'value' => 'XL',
+    ]);
+
+    $response->assertInvalid(['value']);
+    expect($value->refresh()->value)->toBe('M');
+});
+
+test('a duplicate color name is rejected', function () {
+    actingAs($this->admin, 'admin');
+
+    AttributeValue::create(['attribute_id' => $this->colorAttribute->id, 'value' => 'Red', 'color_hex' => '#ff0000']);
+
+    $response = $this->post(route('admin.attribute-values.store'), [
+        'attribute_id' => $this->colorAttribute->id,
+        'value' => 'Red',
+        'color_hex' => '#cc0000',
+    ]);
+
+    $response->assertInvalid(['value']);
+});
+
+test('a duplicate color hex code is rejected even with a different name', function () {
+    actingAs($this->admin, 'admin');
+
+    AttributeValue::create(['attribute_id' => $this->colorAttribute->id, 'value' => 'Red', 'color_hex' => '#ff0000']);
+
+    $response = $this->post(route('admin.attribute-values.store'), [
+        'attribute_id' => $this->colorAttribute->id,
+        'value' => 'Fire Red',
+        'color_hex' => '#ff0000',
+    ]);
+
+    $response->assertInvalid(['color_hex']);
+});
+
+test('adding a second size value is not blocked by the shared default color_hex', function () {
+    actingAs($this->admin, 'admin');
+
+    AttributeValue::create(['attribute_id' => $this->sizeAttribute->id, 'value' => 'S', 'color_hex' => '#c8102e']);
+
+    $response = $this->post(route('admin.attribute-values.store'), [
+        'attribute_id' => $this->sizeAttribute->id,
+        'value' => 'L',
+        'color_hex' => '#c8102e',
+    ]);
+
+    $response->assertRedirect(route('admin.attributes.index'));
+    $response->assertSessionDoesntHaveErrors();
+    expect(AttributeValue::where('attribute_id', $this->sizeAttribute->id)->where('value', 'L')->exists())->toBeTrue();
+});
+
+test('editing a color to reuse its own current hex code is not rejected as a duplicate', function () {
+    actingAs($this->admin, 'admin');
+
+    $value = AttributeValue::create(['attribute_id' => $this->colorAttribute->id, 'value' => 'Red', 'color_hex' => '#ff0000']);
+
+    $response = $this->put(route('admin.attribute-values.update', $value), [
+        'value' => 'Bright Red',
+        'color_hex' => '#ff0000',
+    ]);
+
+    $response->assertRedirect(route('admin.attributes.index'));
+    $response->assertSessionDoesntHaveErrors();
+    expect($value->refresh()->value)->toBe('Bright Red');
 });

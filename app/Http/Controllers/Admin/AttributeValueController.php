@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\AttributeValueRequest;
 use App\Models\AttributeValue;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AttributeValueController extends Controller
 {
@@ -16,14 +17,18 @@ class AttributeValueController extends Controller
     {
         AttributeValue::create($request->validated());
 
-        return redirect()->route('admin.attributes.index')->with('success', 'Value added.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Value added.']);
+
+        return redirect()->route('admin.attributes.index');
     }
 
     public function update(AttributeValueRequest $request, AttributeValue $attributeValue): RedirectResponse
     {
         $attributeValue->update($request->validated());
 
-        return redirect()->route('admin.attributes.index')->with('success', 'Value updated.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Value updated.']);
+
+        return redirect()->route('admin.attributes.index');
     }
 
     public function reorder(Request $request): RedirectResponse
@@ -46,12 +51,18 @@ class AttributeValueController extends Controller
         $variantCount = $attributeValue->colorVariants()->count() + $attributeValue->sizeVariants()->count();
 
         if ($productCount > 0 || $variantCount > 0) {
-            return redirect()->route('admin.attributes.index')
-                ->with('error', "Can't delete \"{$attributeValue->value}\" — it's used by {$productCount} product(s). Remove it from those products first.");
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => "Can't delete \"{$attributeValue->value}\" — it's used by {$productCount} product(s). Remove it from those products first.",
+            ]);
+
+            return redirect()->route('admin.attributes.index');
         }
 
         $attributeValue->delete();
 
-        return redirect()->route('admin.attributes.index')->with('success', 'Value deleted.');
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Value deleted.']);
+
+        return redirect()->route('admin.attributes.index');
     }
 }
