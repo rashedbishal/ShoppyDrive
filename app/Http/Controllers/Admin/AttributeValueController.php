@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AttributeValueRequest;
 use App\Models\AttributeValue;
 use App\Models\Product;
+use App\Support\CatalogFilterCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -42,6 +43,10 @@ class AttributeValueController extends Controller
         foreach ($ids as $index => $id) {
             AttributeValue::whereKey($id)->update(['sort_order' => $index]);
         }
+
+        // Bulk update() fires no model events; colours/sizes are listed in
+        // this order in the product-listing filters.
+        CatalogFilterCache::flush();
 
         return redirect()->route('admin.attributes.index');
     }

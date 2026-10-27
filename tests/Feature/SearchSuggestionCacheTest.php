@@ -46,6 +46,16 @@ function suggestionQueriesDuring(Closure $request): int
     return $count;
 }
 
+/**
+ * The fields the admin homepage-section form always submits.
+ *
+ * @return array<string, mixed>
+ */
+function homepageForm(): array
+{
+    return ['title' => null, 'description' => null, 'eyebrow' => null, 'action_label' => null, 'action_href' => null, 'is_visible' => true];
+}
+
 function suggestionAdmin(): Admin
 {
     return Admin::create(['name' => 'Admin', 'email' => 'suggest-'.uniqid().'@example.com', 'password' => bcrypt('password')]);
@@ -150,22 +160,32 @@ test('brand, category and sub-category changes show up immediately', function ()
         ->and($response->json('subcategories.0.category_name'))->toBe('Shirts & Tops');
 });
 
-test('homepage bulk changes to featured products and active brands show up immediately', function () {
-    $plain = searchableProduct(['name' => 'Plain Shirt']);
+// Each bulk action is tested on its own: run together, one action's cache
+// clear would mask another's missing one.
+
+test('the homepage featured-products change (bulk update) shows up immediately', function () {
+    searchableProduct(['name' => 'Plain Shirt']);
     $star = searchableProduct(['name' => 'Star Shirt']);
-    $brand = Brand::factory()->create(['name' => 'Shirtmakers']);
     $featured = HomepageSetting::updateOrCreate(['section_key' => 'featured_products'], ['section_name' => 'Featured']);
+    suggest('shirt');
+
+    actingAs(suggestionAdmin(), 'admin')
+        ->put(route('admin.homepage.update', $featured), [...homepageForm(), 'featured_products' => [['id' => $star->id]]])
+        ->assertSessionHasNoErrors();
+
+    expect(suggest('shirt')->json('products.0.id'))->toBe($star->id);
+});
+
+test('the homepage brands toggle (bulk update) shows up immediately', function () {
+    $brand = Brand::factory()->create(['name' => 'Shirtmakers']);
     $brands = HomepageSetting::updateOrCreate(['section_key' => 'brands'], ['section_name' => 'Brands']);
     expect(suggest('shirt')->json('brands.0.id'))->toBe($brand->id);
 
-    actingAs(suggestionAdmin(), 'admin');
-    $form = ['title' => null, 'description' => null, 'eyebrow' => null, 'action_label' => null, 'action_href' => null, 'is_visible' => true];
-    $this->put(route('admin.homepage.update', $featured), [...$form, 'featured_products' => [['id' => $star->id]]])->assertSessionHasNoErrors();
-    $this->put(route('admin.homepage.update', $brands), [...$form, 'section_brands' => []])->assertSessionHasNoErrors();
+    actingAs(suggestionAdmin(), 'admin')
+        ->put(route('admin.homepage.update', $brands), [...homepageForm(), 'section_brands' => []])
+        ->assertSessionHasNoErrors();
 
-    $response = suggest('shirt');
-    expect($response->json('products.0.id'))->toBe($star->id)
-        ->and($response->json('brands'))->toBe([]);
+    expect(suggest('shirt')->json('brands'))->toBe([]);
 });
 
 test('suggestions survive a real persistent cache store between requests', function () {

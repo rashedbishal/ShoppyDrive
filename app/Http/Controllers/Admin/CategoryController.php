@@ -11,6 +11,7 @@ use App\Http\Requests\Admin\CategoryRequest;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\SubCategory;
+use App\Support\CatalogFilterCache;
 use App\Support\LayoutCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -155,8 +156,10 @@ class CategoryController extends Controller
             Category::whereKey($id)->update(['sort_order' => $index]);
         }
 
-        // Bulk update() fires no model events, so clear the menu cache here.
+        // Bulk update() fires no model events, so clear the menu cache and
+        // the product-listing filters (which list categories in this order).
         LayoutCache::forget(...Category::LAYOUT_CACHE_KEYS);
+        CatalogFilterCache::flush();
 
         return redirect()->route('admin.categories.index');
     }

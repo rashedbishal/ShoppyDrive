@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\HomepageSectionRequest;
 use App\Models\Brand;
 use App\Models\HomepageSetting;
 use App\Models\Product;
+use App\Support\CatalogFilterCache;
 use App\Support\LayoutCache;
 use App\Support\SearchSuggestionCache;
 use Illuminate\Http\JsonResponse;
@@ -123,8 +124,10 @@ class HomepageController extends Controller
                 Brand::whereIn('id', $brandIds)->update(['is_active' => true]);
             }
 
-            // Bulk update() fires no model events; only active brands are suggested.
+            // Bulk update() fires no model events; only active brands are
+            // suggested in search or offered as listing filters.
             SearchSuggestionCache::flush();
+            CatalogFilterCache::flush();
         }
 
         return redirect()->route('admin.homepage.index')->with('success', 'Homepage section updated.');

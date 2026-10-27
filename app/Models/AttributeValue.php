@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\FlushesCatalogFilters;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AttributeValue extends Model
 {
-    use HasFactory;
+    use FlushesCatalogFilters, HasFactory;
+
+    /** Any change affects the product-listing filter options (see FlushesCatalogFilters). */
+    public const CATALOG_FILTER_FIELDS = null;
 
     protected $fillable = [
         'attribute_id',

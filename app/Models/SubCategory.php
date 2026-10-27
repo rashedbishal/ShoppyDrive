@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\FlushesCatalogFilters;
 use App\Concerns\FlushesLayoutCache;
 use App\Concerns\FlushesSearchSuggestions;
 use App\Support\LayoutCache;
@@ -15,7 +16,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SubCategory extends Model
 {
-    use FlushesLayoutCache, FlushesSearchSuggestions, HasFactory, SoftDeletes;
+    use FlushesCatalogFilters, FlushesLayoutCache, FlushesSearchSuggestions, HasFactory, SoftDeletes;
+
+    /** Any change affects the product-listing filter options (see FlushesCatalogFilters). */
+    public const CATALOG_FILTER_FIELDS = null;
 
     /** Columns the search-bar suggestions depend on (see FlushesSearchSuggestions). */
     public const SEARCH_SUGGESTION_FIELDS = ['name', 'slug', 'is_active', 'category_id'];
