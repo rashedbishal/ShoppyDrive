@@ -91,6 +91,7 @@ class OrderService
                     'product_id' => $item['product_id'],
                     'variant_id' => $item['variant_id'],
                     'flash_sale_item_id' => $flashSaleItemId,
+                    'bundle_id' => $item['bundle_id'] ?? null,
                     'product_name' => $item['product_name'],
                     'sku' => $item['sku'],
                     'price' => $item['price'],

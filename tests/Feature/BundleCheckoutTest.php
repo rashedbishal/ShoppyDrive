@@ -1,0 +1,129 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Enums\BundleDiscountType;
+use App\Models\Cart;
+use App\Models\Order;
+use App\Models\Product;
+use App\Models\ProductBundle;
+use App\Models\ProductBundleItem;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
+
+function bundleCheckoutPayload(ProductBundle $bundle, array $items, array $overrides = []): array
+{
+    return array_merge([
+        'name' => 'Bundle Buyer',
+        'email' => 'bundle-buyer@example.com',
+        'phone' => '01700000000',
+        'address_line1' => 'House 1',
+        'city' => 'Dhaka',
+        'state' => 'Dhaka',
+        'country' => 'Bangladesh',
+        'payment_method' => 'cod',
+        'items' => array_map(fn (array $item) => array_merge(['bundle_id' => $bundle->id], $item), $items),
+    ], $overrides);
+}
+
+test('a COD checkout with a complete bundle charges exactly the bundle price and tags order items', function () {
+    $user = User::factory()->create();
+    $a = Product::factory()->create(['price' => 150, 'stock_quantity' => 10]);
+    $b = Product::factory()->create(['price' => 50, 'stock_quantity' => 10]);
+
+    $bundle = ProductBundle::factory()->create([
+        'discount_type' => BundleDiscountType::FixedPrice,
+        'bundle_price' => 120,
+    ]);
+    ProductBundleItem::factory()->create(['product_bundle_id' => $bundle->id, 'product_id' => $a->id, 'quantity' => 1]);
+    ProductBundleItem::factory()->create(['product_bundle_id' => $bundle->id, 'product_id' => $b->id, 'quantity' => 1]);
+
+    Cart::query()->where('user_id', $user->id)->delete();
+
+    $this->actingAs($user)->post(route('checkout.store'), bundleCheckoutPayload($bundle, [
+        ['product_id' => $a->id, 'variant_id' => null, 'quantity' => 1, 'bundle_unit_quantity' => 1],
+        ['product_id' => $b->id, 'variant_id' => null, 'quantity' => 1, 'bundle_unit_quantity' => 1],
+    ]))->assertRedirect();
+
+    $order = Order::query()->firstOrFail();
+    expect((float) $order->subtotal)->toBe(120.0);
+
+    $items = $order->items;
+    expect($items)->toHaveCount(2);
+    expect($items->every(fn ($item) => $item->bundle_id === $bundle->id))->toBeTrue();
+    expect((float) $items->firstWhere('product_id', $a->id)->price)->toBe(90.0);
+    expect((float) $items->firstWhere('product_id', $b->id)->price)->toBe(30.0);
+
+    expect($a->refresh()->stock_quantity)->toBe(9);
+    expect($b->refresh()->stock_quantity)->toBe(9);
+});
+
+test('buying two units of the same bundle scales quantities and the charged total together', function () {
+    $user = User::factory()->create();
+    $a = Product::factory()->create(['price' => 150, 'stock_quantity' => 10]);
+    $b = Product::factory()->create(['price' => 50, 'stock_quantity' => 10]);
+
+    $bundle = ProductBundle::factory()->create([
+        'discount_type' => BundleDiscountType::FixedPrice,
+        'bundle_price' => 120,
+    ]);
+    ProductBundleItem::factory()->create(['product_bundle_id' => $bundle->id, 'product_id' => $a->id, 'quantity' => 1]);
+    ProductBundleItem::factory()->create(['product_bundle_id' => $bundle->id, 'product_id' => $b->id, 'quantity' => 1]);
+
+    Cart::query()->where('user_id', $user->id)->delete();
+
+    $this->actingAs($user)->post(route('checkout.store'), bundleCheckoutPayload($bundle, [
+        ['product_id' => $a->id, 'variant_id' => null, 'quantity' => 2, 'bundle_unit_quantity' => 1],
+        ['product_id' => $b->id, 'variant_id' => null, 'quantity' => 2, 'bundle_unit_quantity' => 1],
+    ]))->assertRedirect();
+
+    $order = Order::query()->firstOrFail();
+    // 2x the bundle: proration is per-unit, so the line subtotal doubles with quantity.
+    expect((float) $order->subtotal)->toBe(240.0);
+    expect($a->refresh()->stock_quantity)->toBe(8);
+    expect($b->refresh()->stock_quantity)->toBe(8);
+});
+
+test('removing a bundle component before checkout breaks the group and charges normal prices instead', function () {
+    $user = User::factory()->create();
+    $a = Product::factory()->create(['price' => 150, 'stock_quantity' => 10]);
+    $b = Product::factory()->create(['price' => 50, 'stock_quantity' => 10]);
+
+    $bundle = ProductBundle::factory()->create([
+        'discount_type' => BundleDiscountType::FixedPrice,
+        'bundle_price' => 120,
+    ]);
+    ProductBundleItem::factory()->create(['product_bundle_id' => $bundle->id, 'product_id' => $a->id, 'quantity' => 1]);
+    ProductBundleItem::factory()->create(['product_bundle_id' => $bundle->id, 'product_id' => $b->id, 'quantity' => 1]);
+
+    Cart::query()->where('user_id', $user->id)->delete();
+
+    // Only product A is submitted, tagged as if it were still part of the
+    // bundle — the group is incomplete, so it must not get the bundle price.
+    // The first submission only syncs the cart and discovers the price
+    // needs correcting (same "stale price" bounce as flash sales), so it
+    // redirects back with an error instead of placing an order yet.
+    $basePayload = [
+        'name' => 'Bundle Buyer', 'email' => $user->email, 'phone' => '01700000000',
+        'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
+        'payment_method' => 'cod',
+    ];
+
+    $first = $this->actingAs($user)->post(route('checkout.store'), $basePayload + [
+        'items' => [
+            ['product_id' => $a->id, 'variant_id' => null, 'quantity' => 1, 'bundle_id' => $bundle->id, 'bundle_unit_quantity' => 1],
+        ],
+    ]);
+
+    $first->assertSessionHas('error');
+    expect(Order::query()->count())->toBe(0);
+
+    // Retrying now succeeds at the corrected (normal, non-bundle) price.
+    $this->actingAs($user)->post(route('checkout.store'), $basePayload)->assertRedirect();
+
+    $order = Order::query()->firstOrFail();
+    expect((float) $order->subtotal)->toBe(150.0);
+    expect($order->items->first()->bundle_id)->toBeNull();
+});

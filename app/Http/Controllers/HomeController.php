@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\FlashSale;
 use App\Models\HomepageSetting;
 use App\Models\Product;
+use App\Models\ProductBundle;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -100,6 +101,23 @@ class HomeController extends Controller
             $brands = collect();
         }
 
+        $bundleDeals = ProductBundle::query()
+            ->active()
+            ->with([
+                // Same guard as the dedicated /bundle-deals page — excludes
+                // bundles whose component product was deleted/deactivated
+                // since being added.
+                'items' => static function ($query): void {
+                    $query->whereHas('product', static fn ($productQuery) => $productQuery->active()->published())
+                        ->with(['product.images', 'variant']);
+                },
+            ])
+            ->orderBy('sort_order')
+            ->get()
+            ->filter(fn (ProductBundle $bundle): bool => $bundle->items->count() >= 2)
+            ->take(3)
+            ->values();
+
         $categories = Category::active()
             ->withCount('products')
             ->orderBy('sort_order')
@@ -172,6 +190,7 @@ class HomeController extends Controller
             'featuredProducts' => $featuredProducts->map($mapProduct)->values(),
             'newArrivals' => $newArrivals->map($mapProduct)->values(),
             'bestSellers' => $bestSellers->map($mapProduct)->values(),
+            'bundleDeals' => $bundleDeals,
             'brands' => $brands,
             'categories' => $categories,
         ]);

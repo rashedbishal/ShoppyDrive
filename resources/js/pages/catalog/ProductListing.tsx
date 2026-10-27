@@ -13,7 +13,6 @@ import {
     ShieldCheck,
     SlidersHorizontal,
     Truck,
-    X,
 } from 'lucide-react';
 import {
     useEffect,
@@ -178,49 +177,66 @@ function PriceRangeFilter({
             'PageDown',
         ].includes(key);
 
+    const noSpinnerClass =
+        '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
+
     return (
-        <div className="space-y-4">
-            <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                    <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-medium text-[var(--color-text-muted)]">
-                        ৳
-                    </span>
-                    <input
-                        type="number"
-                        min={0}
-                        inputMode="numeric"
-                        value={inputLo}
-                        placeholder="Min"
-                        onChange={(e) => setInputLo(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && apply()}
-                        className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white pr-2 pl-7 text-sm transition focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none"
-                    />
+        <div className="space-y-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)]/60 p-4">
+            <div className="flex items-end gap-2.5">
+                <div className="flex-1 space-y-1.5">
+                    <label className="block text-[10px] font-bold tracking-[0.12em] text-[var(--color-text-muted)] uppercase">
+                        Min
+                    </label>
+                    <div className="relative">
+                        <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-xs font-semibold text-[var(--color-text-muted)]">
+                            ৳
+                        </span>
+                        <input
+                            type="number"
+                            min={0}
+                            inputMode="numeric"
+                            value={inputLo}
+                            onChange={(e) => setInputLo(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && apply()}
+                            onBlur={apply}
+                            className={cn(
+                                'h-9 w-full rounded-xl border border-[var(--color-border)] bg-white py-0 pr-2 pl-5 text-sm font-medium text-[var(--color-text-primary)] shadow-sm transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/15 focus:outline-none',
+                                noSpinnerClass,
+                            )}
+                        />
+                    </div>
                 </div>
-                <span className="text-sm text-[var(--color-text-muted)]">
-                    —
-                </span>
-                <div className="relative flex-1">
-                    <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-medium text-[var(--color-text-muted)]">
-                        ৳
-                    </span>
-                    <input
-                        type="number"
-                        min={0}
-                        inputMode="numeric"
-                        value={inputHi}
-                        placeholder="Max"
-                        onChange={(e) => setInputHi(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && apply()}
-                        className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-white pr-2 pl-7 text-sm transition focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none"
-                    />
+                <div className="mb-[18px] h-px w-3 shrink-0 bg-[var(--color-border-strong)]" />
+                <div className="flex-1 space-y-1.5">
+                    <label className="block text-[10px] font-bold tracking-[0.12em] text-[var(--color-text-muted)] uppercase">
+                        Max
+                    </label>
+                    <div className="relative">
+                        <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-xs font-semibold text-[var(--color-text-muted)]">
+                            ৳
+                        </span>
+                        <input
+                            type="number"
+                            min={0}
+                            inputMode="numeric"
+                            value={inputHi}
+                            onChange={(e) => setInputHi(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && apply()}
+                            onBlur={apply}
+                            className={cn(
+                                'h-9 w-full rounded-xl border border-[var(--color-border)] bg-white py-0 pr-2 pl-5 text-sm font-medium text-[var(--color-text-primary)] shadow-sm transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/15 focus:outline-none',
+                                noSpinnerClass,
+                            )}
+                        />
+                    </div>
                 </div>
                 <button
                     type="button"
                     onClick={apply}
                     aria-label="Apply price range"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface-alt)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-primary)] hover:text-white"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-white p-0 text-[var(--color-text-secondary)] shadow-sm transition hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white"
                 >
-                    <ChevronRight className="size-4" />
+                    <ChevronRight className="size-3.5" />
                 </button>
             </div>
 
@@ -228,67 +244,73 @@ function PriceRangeFilter({
                 pointer events except on their own thumb, so each handle is only
                 draggable where it is; dragging updates the inputs live and the
                 filter applies on release. */}
-            <div className="relative mx-2.5 h-6">
-                <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-surface-alt)] shadow-inner" />
-                <div
-                    className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-[var(--color-primary)]"
-                    style={{
-                        left: `${loPercent}%`,
-                        width: `${Math.max(0, hiPercent - loPercent)}%`,
-                    }}
-                />
-                <input
-                    type="range"
-                    min={0}
-                    max={cap}
-                    step={PRICE_SLIDER_STEP}
-                    value={sliderLo}
-                    aria-label="Minimum price"
-                    onChange={(e) =>
-                        setInputLo(
-                            String(Math.min(Number(e.target.value), sliderHi)),
-                        )
-                    }
-                    onPointerUp={commitSlider}
-                    onKeyUp={(e) => isCommitKey(e.key) && commitSlider()}
-                    className={cn(
-                        PRICE_SLIDER_INPUT_CLASS,
-                        'peer/lo',
-                        isLoOnTop ? 'z-30' : 'z-20',
-                    )}
-                />
-                <span
-                    className="pointer-events-none absolute top-1/2 z-10 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--color-primary)] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-shadow peer-focus-visible/lo:ring-4 peer-focus-visible/lo:ring-[var(--color-primary)]/20"
-                    style={{ left: `${loPercent}%` }}
-                />
-                <input
-                    type="range"
-                    min={0}
-                    max={cap}
-                    step={PRICE_SLIDER_STEP}
-                    value={sliderHi}
-                    aria-label="Maximum price"
-                    onChange={(e) =>
-                        setInputHi(
-                            String(Math.max(Number(e.target.value), sliderLo)),
-                        )
-                    }
-                    onPointerUp={commitSlider}
-                    onKeyUp={(e) => isCommitKey(e.key) && commitSlider()}
-                    className={cn(
-                        PRICE_SLIDER_INPUT_CLASS,
-                        'peer/hi',
-                        isLoOnTop ? 'z-20' : 'z-30',
-                    )}
-                />
-                <span
-                    className="pointer-events-none absolute top-1/2 z-10 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--color-primary)] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-shadow peer-focus-visible/hi:ring-4 peer-focus-visible/hi:ring-[var(--color-primary)]/20"
-                    style={{ left: `${hiPercent}%` }}
-                />
-            </div>
-            <div className="-mt-1 flex justify-between text-[11px] font-medium text-[var(--color-text-muted)]">
-                <span>৳0</span>
-                <span>৳{cap.toLocaleString('en-BD')}</span>
+            <div className="px-1 pt-1">
+                <div className="relative mx-2.5 h-6">
+                    <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-[var(--color-border)]" />
+                    <div
+                        className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)]"
+                        style={{
+                            left: `${loPercent}%`,
+                            width: `${Math.max(0, hiPercent - loPercent)}%`,
+                        }}
+                    />
+                    <input
+                        type="range"
+                        min={0}
+                        max={cap}
+                        step={PRICE_SLIDER_STEP}
+                        value={sliderLo}
+                        aria-label="Minimum price"
+                        onChange={(e) =>
+                            setInputLo(
+                                String(
+                                    Math.min(Number(e.target.value), sliderHi),
+                                ),
+                            )
+                        }
+                        onPointerUp={commitSlider}
+                        onKeyUp={(e) => isCommitKey(e.key) && commitSlider()}
+                        className={cn(
+                            PRICE_SLIDER_INPUT_CLASS,
+                            'peer/lo',
+                            isLoOnTop ? 'z-30' : 'z-20',
+                        )}
+                    />
+                    <span
+                        className="pointer-events-none absolute top-1/2 z-10 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--color-primary)] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.18)] transition-transform peer-hover/lo:scale-110 peer-focus-visible/lo:ring-4 peer-focus-visible/lo:ring-[var(--color-primary)]/20"
+                        style={{ left: `${loPercent}%` }}
+                    />
+                    <input
+                        type="range"
+                        min={0}
+                        max={cap}
+                        step={PRICE_SLIDER_STEP}
+                        value={sliderHi}
+                        aria-label="Maximum price"
+                        onChange={(e) =>
+                            setInputHi(
+                                String(
+                                    Math.max(Number(e.target.value), sliderLo),
+                                ),
+                            )
+                        }
+                        onPointerUp={commitSlider}
+                        onKeyUp={(e) => isCommitKey(e.key) && commitSlider()}
+                        className={cn(
+                            PRICE_SLIDER_INPUT_CLASS,
+                            'peer/hi',
+                            isLoOnTop ? 'z-20' : 'z-30',
+                        )}
+                    />
+                    <span
+                        className="pointer-events-none absolute top-1/2 z-10 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--color-primary)] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.18)] transition-transform peer-hover/hi:scale-110 peer-focus-visible/hi:ring-4 peer-focus-visible/hi:ring-[var(--color-primary)]/20"
+                        style={{ left: `${hiPercent}%` }}
+                    />
+                </div>
+                <div className="mt-2 flex justify-between text-[11px] font-semibold text-[var(--color-text-muted)]">
+                    <span>৳0</span>
+                    <span>৳{cap.toLocaleString('en-BD')}</span>
+                </div>
             </div>
         </div>
     );
@@ -455,11 +477,23 @@ function ProductListingPage({
         setIsLoading(true);
 
         const query = buildQuery(nextFilters);
+        // Filter/sort/pagination changes stay on the same category/listing
+        // context (nextUrl === listingUrl) — those only need fresh
+        // `products`/`filters` back, so a partial reload skips re-querying
+        // and re-sending categories/brands/attributes/maxPrice entirely,
+        // keeping the sidebar's own React state (and focus) untouched.
+        // Switching to a different category/listing URL still needs the
+        // full prop set (title, category, etc.), so it isn't scoped — `only`
+        // must be omitted entirely rather than set to `undefined`, which
+        // Inertia's router doesn't tolerate (it reads `visit.only.length`
+        // unconditionally).
+        const isSameContext = nextUrl === listingUrl;
 
         router.get(nextUrl, query as never, {
             preserveScroll: true,
             preserveState: true,
             replace: true,
+            ...(isSameContext ? { only: ['products', 'filters'] } : {}),
             onFinish: () => {
                 setIsLoading(false);
                 setIsFiltersOpen(false);
@@ -549,46 +583,6 @@ function ProductListingPage({
         setDraftFilters(next);
         submitFilters(next, '/products');
     };
-
-    const removeBrand = (brandSlug: string): void => {
-        const next = {
-            ...draftFilters,
-            brand: draftFilters.brand.filter(
-                (current) => current !== brandSlug,
-            ),
-            page: 1,
-        };
-
-        setDraftFilters(next);
-        submitFilters(next);
-    };
-
-    const removeAttribute = (attributeId: string, valueId: number): void => {
-        const currentValues = draftFilters.attributes[attributeId] ?? [];
-        const nextAttributes = {
-            ...draftFilters.attributes,
-            [attributeId]: currentValues.filter(
-                (current) => current !== valueId,
-            ),
-        };
-
-        if (nextAttributes[attributeId].length === 0) {
-            delete nextAttributes[attributeId];
-        }
-
-        const next = {
-            ...draftFilters,
-            attributes: nextAttributes,
-            page: 1,
-        };
-
-        setDraftFilters(next);
-        submitFilters(next);
-    };
-
-    const activeBrandNames = brands
-        .filter((brand) => draftFilters.brand.includes(brand.slug))
-        .map((brand) => ({ slug: brand.slug, label: brand.name }));
 
     // SubCategory rows carry `category_id`; plain Category rows never do — use
     // that to disambiguate, since Category and SubCategory ids are independent
@@ -846,118 +840,6 @@ function ProductListingPage({
         </div>
     );
 
-    const activeAttributeChips = Object.entries(
-        draftFilters.attributes,
-    ).flatMap(([attributeId, valueIds]) => {
-        const attribute = attributes.find(
-            (item) => item.id === Number(attributeId),
-        );
-
-        if (!attribute) {
-            return [];
-        }
-
-        return valueIds.flatMap((valueId) => {
-            const value = attribute.values.find((item) => item.id === valueId);
-
-            if (!value) {
-                return [];
-            }
-
-            return [
-                {
-                    key: `attribute-${attributeId}-${valueId}`,
-                    label: `${attribute.name}: ${value.value}`,
-                    onRemove: () => removeAttribute(attributeId, valueId),
-                },
-            ];
-        });
-    });
-
-    const activeFilterChips = [
-        ...(category
-            ? [
-                  {
-                      key: 'category',
-                      label: `Category: ${category.name}`,
-                      onRemove: clearCategory,
-                  },
-              ]
-            : []),
-        ...(draftFilters.q
-            ? [
-                  {
-                      key: 'search',
-                      label: `Search: ${draftFilters.q}`,
-                      onRemove: () => {
-                          const next = { ...draftFilters, q: '', page: 1 };
-                          setDraftFilters(next);
-                          setSearchInput('');
-                          submitFilters(next);
-                      },
-                  },
-              ]
-            : []),
-        ...activeBrandNames.map((brand) => ({
-            key: `brand-${brand.slug}`,
-            label: `Brand: ${brand.label}`,
-            onRemove: () => removeBrand(brand.slug),
-        })),
-        ...(draftFilters.min_price !== null || draftFilters.max_price !== null
-            ? [
-                  {
-                      key: 'price',
-                      label: `Price: ৳${(draftFilters.min_price ?? 0).toLocaleString('en-BD')} - ৳${(draftFilters.max_price ?? maxPrice).toLocaleString('en-BD')}`,
-                      onRemove: () => {
-                          const next = {
-                              ...draftFilters,
-                              min_price: null,
-                              max_price: null,
-                              page: 1,
-                          };
-                          setDraftFilters(next);
-                          submitFilters(next);
-                      },
-                  },
-              ]
-            : []),
-        ...(draftFilters.rating !== null
-            ? [
-                  {
-                      key: 'rating',
-                      label: `${draftFilters.rating}★ & up`,
-                      onRemove: () => {
-                          const next = {
-                              ...draftFilters,
-                              rating: null,
-                              page: 1,
-                          };
-                          setDraftFilters(next);
-                          submitFilters(next);
-                      },
-                  },
-              ]
-            : []),
-        ...(draftFilters.in_stock
-            ? [
-                  {
-                      key: 'stock',
-                      label: 'In stock only',
-                      onRemove: () => {
-                          const next = {
-                              ...draftFilters,
-                              in_stock: false,
-                              page: 1,
-                          };
-                          setDraftFilters(next);
-                          submitFilters(next);
-                      },
-                  },
-              ]
-            : []),
-        ...activeAttributeChips,
-    ];
-
     const drawerFooter = (
         <div className="flex items-center gap-3">
             <Button variant="outline" fullWidth onClick={handleClearAll}>
@@ -1025,69 +907,71 @@ function ProductListingPage({
                                 </div>
                             </div>
                             <div className="grid flex-1 grid-cols-3 gap-2.5 sm:gap-3">
-                            {[
-                                {
-                                    label: 'Result count',
-                                    value: products.total.toLocaleString(),
-                                    detail:
-                                        products.total === 1 ? 'item' : 'items',
-                                    icon: Package,
-                                    color: 'var(--color-primary)',
-                                },
-                                {
-                                    label: 'Current view',
-                                    value:
-                                        draftFilters.view === 'grid'
-                                            ? 'Grid'
-                                            : 'List',
-                                    detail: 'layout',
-                                    icon:
-                                        draftFilters.view === 'grid'
-                                            ? LayoutGrid
-                                            : List,
-                                    color: '#2563eb',
-                                },
-                                {
-                                    label: 'Currency',
-                                    value: '৳ BDT',
-                                    detail: 'Bangladeshi taka',
-                                    icon: Banknote,
-                                    color: 'var(--color-success)',
-                                },
-                            ].map(
-                                ({
-                                    label,
-                                    value,
-                                    detail,
-                                    icon: Icon,
-                                    color,
-                                }) => (
-                                    <div
-                                        key={label}
-                                        style={
-                                            {
-                                                '--stat-color': color,
-                                            } as React.CSSProperties
-                                        }
-                                        className="group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] to-[color-mix(in_srgb,var(--stat-color)_6%,var(--color-surface))] p-3 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--stat-color)_35%,transparent)] hover:shadow-[var(--shadow-card-hover)]"
-                                    >
-                                        {/* Soft corner glow in the stat's accent colour */}
-                                        <span className="pointer-events-none absolute -top-8 -right-8 -z-10 size-24 rounded-full bg-[var(--stat-color)] opacity-[0.08] blur-2xl transition-opacity duration-300 group-hover:opacity-[0.16]" />
-                                        <span className="flex size-8 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--stat-color)_12%,transparent)] text-[var(--stat-color)] ring-1 ring-[color-mix(in_srgb,var(--stat-color)_18%,transparent)] sm:size-9">
-                                            <Icon className="size-4 sm:size-5" />
-                                        </span>
-                                        <p className="mt-2.5 truncate font-display text-lg leading-none font-bold tracking-tight text-[var(--color-text-primary)] sm:text-xl">
-                                            {value}
-                                        </p>
-                                        <p className="mt-1 truncate text-[11px] text-[var(--color-text-secondary)] sm:text-xs">
-                                            {detail}
-                                        </p>
-                                        <p className="mt-2 truncate border-t border-dashed border-[var(--color-border)] pt-1.5 text-[10px] font-semibold tracking-[0.16em] text-[var(--color-text-muted)] uppercase">
-                                            {label}
-                                        </p>
-                                    </div>
-                                ),
-                            )}
+                                {[
+                                    {
+                                        label: 'Result count',
+                                        value: products.total.toLocaleString(),
+                                        detail:
+                                            products.total === 1
+                                                ? 'item'
+                                                : 'items',
+                                        icon: Package,
+                                        color: 'var(--color-primary)',
+                                    },
+                                    {
+                                        label: 'Current view',
+                                        value:
+                                            draftFilters.view === 'grid'
+                                                ? 'Grid'
+                                                : 'List',
+                                        detail: 'layout',
+                                        icon:
+                                            draftFilters.view === 'grid'
+                                                ? LayoutGrid
+                                                : List,
+                                        color: '#2563eb',
+                                    },
+                                    {
+                                        label: 'Currency',
+                                        value: '৳ BDT',
+                                        detail: 'Bangladeshi taka',
+                                        icon: Banknote,
+                                        color: 'var(--color-success)',
+                                    },
+                                ].map(
+                                    ({
+                                        label,
+                                        value,
+                                        detail,
+                                        icon: Icon,
+                                        color,
+                                    }) => (
+                                        <div
+                                            key={label}
+                                            style={
+                                                {
+                                                    '--stat-color': color,
+                                                } as React.CSSProperties
+                                            }
+                                            className="group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] to-[color-mix(in_srgb,var(--stat-color)_6%,var(--color-surface))] p-3 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--stat-color)_35%,transparent)] hover:shadow-[var(--shadow-card-hover)]"
+                                        >
+                                            {/* Soft corner glow in the stat's accent colour */}
+                                            <span className="pointer-events-none absolute -top-8 -right-8 -z-10 size-24 rounded-full bg-[var(--stat-color)] opacity-[0.08] blur-2xl transition-opacity duration-300 group-hover:opacity-[0.16]" />
+                                            <span className="flex size-8 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--stat-color)_12%,transparent)] text-[var(--stat-color)] ring-1 ring-[color-mix(in_srgb,var(--stat-color)_18%,transparent)] sm:size-9">
+                                                <Icon className="size-4 sm:size-5" />
+                                            </span>
+                                            <p className="mt-2.5 truncate font-display text-lg leading-none font-bold tracking-tight text-[var(--color-text-primary)] sm:text-xl">
+                                                {value}
+                                            </p>
+                                            <p className="mt-1 truncate text-[11px] text-[var(--color-text-secondary)] sm:text-xs">
+                                                {detail}
+                                            </p>
+                                            <p className="mt-2 truncate border-t border-dashed border-[var(--color-border)] pt-1.5 text-[10px] font-semibold tracking-[0.16em] text-[var(--color-text-muted)] uppercase">
+                                                {label}
+                                            </p>
+                                        </div>
+                                    ),
+                                )}
                             </div>
                         </div>
                     }
@@ -1235,22 +1119,6 @@ function ProductListingPage({
                                 </div>
                             </div>
                         </div>
-
-                        {activeFilterChips.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                                {activeFilterChips.map((chip) => (
-                                    <button
-                                        key={chip.key}
-                                        type="button"
-                                        onClick={chip.onRemove}
-                                        className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-secondary)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
-                                    >
-                                        {chip.label}
-                                        <X className="size-3.5" />
-                                    </button>
-                                ))}
-                            </div>
-                        ) : null}
 
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <p className="text-sm text-[var(--color-text-secondary)]">

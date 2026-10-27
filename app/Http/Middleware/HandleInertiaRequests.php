@@ -11,6 +11,7 @@ use App\Models\PopularKeyword;
 use App\Models\PromotionalBanner;
 use App\Models\Setting;
 use App\Models\Wishlist;
+use App\Services\BundleService;
 use App\Support\CartManager;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -66,7 +67,10 @@ class HandleInertiaRequests extends Middleware
         'cart/*',
     ];
 
-    public function __construct(private readonly CartManager $cartManager) {}
+    public function __construct(
+        private readonly CartManager $cartManager,
+        private readonly BundleService $bundles,
+    ) {}
 
     /**
      * The root template that's loaded on the first page visit.
@@ -218,7 +222,8 @@ class HandleInertiaRequests extends Middleware
         $cart = $this->cartManager->getCurrentCart($request);
 
         if ($cart) {
-            $cart->load('items.product');
+            $cart->load('items.product', 'items.bundle');
+            $this->bundles->reconcile($cart);
 
             // Free delivery threshold: entire cart qualifies if subtotal meets the bar
             if ($threshold > 0) {
@@ -228,9 +233,13 @@ class HandleInertiaRequests extends Middleware
                 }
             }
 
-            // Per-product free delivery: all items must individually qualify
+            // Per-product free delivery (or an intact free-delivery bundle): all items must individually qualify
             if ($cart->items->isNotEmpty()) {
                 $allFree = $cart->items->every(function ($item) {
+                    if ($this->bundles->itemQualifiesForFreeDelivery($item)) {
+                        return true;
+                    }
+
                     $product = $item->product;
                     if (! $product->free_delivery) {
                         return false;

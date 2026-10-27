@@ -44,6 +44,8 @@ class PlaceOrderRequest extends FormRequest
             'items.*.product_id' => ['required_with:items', 'integer', 'exists:products,id'],
             'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
             'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
+            'items.*.bundle_id' => ['nullable', 'integer', 'exists:product_bundles,id'],
+            'items.*.bundle_unit_quantity' => ['nullable', 'integer', 'min:1'],
         ];
     }
 

@@ -3,6 +3,7 @@ import {
     AlertCircle,
     ArrowLeft,
     ArrowRight,
+    Package,
     ShoppingBag,
     Trash2,
     X,
@@ -15,12 +16,50 @@ import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { getXsrfToken } from '@/lib/csrf';
 import { formatCurrency } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
+import type { CartItem as CartItemType } from '@/types';
+
+type ItemGroup = {
+    bundleId: number | null;
+    bundleName: string | null;
+    items: CartItemType[];
+};
+
+/** Keeps bundle-tagged items grouped together under their bundle's own quantity/remove controls; everything else renders as its own one-item group exactly as before. */
+function groupItems(items: CartItemType[]): ItemGroup[] {
+    const groups: ItemGroup[] = [];
+    const indexByBundle = new Map<number, number>();
+
+    for (const item of items) {
+        if (item.bundle_id == null) {
+            groups.push({ bundleId: null, bundleName: null, items: [item] });
+            continue;
+        }
+
+        const bundleId = Number(item.bundle_id);
+        const existingIndex = indexByBundle.get(bundleId);
+
+        if (existingIndex !== undefined) {
+            groups[existingIndex].items.push(item);
+        } else {
+            indexByBundle.set(bundleId, groups.length);
+            groups.push({
+                bundleId,
+                bundleName: item.bundle?.name ?? 'Bundle',
+                items: [item],
+            });
+        }
+    }
+
+    return groups;
+}
 
 export default function Cart(): React.JSX.Element {
     const {
         items,
         removeItem,
         updateQuantity,
+        updateBundleQuantity,
+        removeBundle,
         getSubtotal,
         getDiscount,
         getTotal,
@@ -35,10 +74,14 @@ export default function Cart(): React.JSX.Element {
 
     const handleApplyCoupon = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!couponCode.trim()) return;
+
+        if (!couponCode.trim()) {
+            return;
+        }
 
         setIsApplyingCoupon(true);
         setCouponError('');
+
         try {
             const response = await fetch(route('coupon.validate'), {
                 method: 'POST',
@@ -54,6 +97,7 @@ export default function Cart(): React.JSX.Element {
                 }),
             });
             const data = await response.json();
+
             if (response.ok) {
                 applyCoupon(data.coupon);
                 setCouponCode('');
@@ -135,117 +179,76 @@ export default function Cart(): React.JSX.Element {
                             </div>
 
                             <div className="divide-y divide-[var(--color-border)]">
-                                {items.map((item) => (
-                                    <div
-                                        key={item.item_key}
-                                        className="grid grid-cols-1 items-center gap-3 p-4 md:grid-cols-12"
-                                    >
-                                        {/* Product Info */}
-                                        <div className="flex gap-3 md:col-span-6">
-                                            <Link
-                                                href={route(
-                                                    'product.show',
-                                                    item.product.slug,
-                                                )}
-                                                className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)]"
-                                            >
-                                                <img
-                                                    src={
-                                                        item.variant?.image ||
-                                                        item.product
-                                                            .primary_image_url ||
-                                                        item.product.images[0]
-                                                            ?.path
-                                                    }
-                                                    alt={item.product.name}
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            </Link>
-                                            <div className="flex min-w-0 flex-col justify-center">
-                                                <Link
-                                                    href={route(
-                                                        'product.show',
-                                                        item.product.slug,
-                                                    )}
-                                                    className="line-clamp-2 text-sm font-bold text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-primary)]"
-                                                >
-                                                    {item.product.name}
-                                                </Link>
-                                                {item.variant && (
-                                                    <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
-                                                        {Object.entries(
-                                                            item.variant
-                                                                .attributes,
-                                                        ).map(
-                                                            ([key, value]) => (
-                                                                <span
-                                                                    key={key}
-                                                                    className="text-[11px] font-bold tracking-wider text-[var(--color-text-muted)] uppercase"
-                                                                >
-                                                                    {key}:{' '}
-                                                                    {value}
-                                                                </span>
-                                                            ),
-                                                        )}
-                                                    </div>
-                                                )}
-                                                <button
-                                                    onClick={() =>
-                                                        removeItem(
-                                                            item.item_key,
-                                                        )
-                                                    }
-                                                    className="mt-1.5 flex items-center gap-1 text-xs font-bold text-[var(--color-error)] transition-opacity hover:opacity-80"
-                                                >
-                                                    <Trash2 size={13} />
-                                                    Remove
-                                                </button>
+                                {groupItems(items).map((group) =>
+                                    group.bundleId === null ? (
+                                        <CartRow
+                                            key={group.items[0].item_key}
+                                            item={group.items[0]}
+                                            onQuantityChange={(val) =>
+                                                updateQuantity(
+                                                    group.items[0].item_key,
+                                                    val,
+                                                )
+                                            }
+                                            onRemove={() =>
+                                                removeItem(
+                                                    group.items[0].item_key,
+                                                )
+                                            }
+                                        />
+                                    ) : (
+                                        <div
+                                            key={`bundle-${group.bundleId}`}
+                                            className="bg-[var(--color-surface-alt)]/40"
+                                        >
+                                            <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-3">
+                                                <div className="flex items-center gap-1.5 text-xs font-bold tracking-widest text-[var(--color-primary)] uppercase">
+                                                    <Package size={14} />
+                                                    {group.bundleName} (bundle)
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <QuantityStepper
+                                                        value={
+                                                            group.items[0]
+                                                                .bundle_unit_quantity
+                                                                ? group.items[0]
+                                                                      .quantity /
+                                                                  group.items[0]
+                                                                      .bundle_unit_quantity!
+                                                                : 1
+                                                        }
+                                                        onChange={(val) =>
+                                                            updateBundleQuantity(
+                                                                group.bundleId!,
+                                                                val,
+                                                            )
+                                                        }
+                                                        className="scale-90 rounded-lg"
+                                                    />
+                                                    <button
+                                                        onClick={() =>
+                                                            removeBundle(
+                                                                group.bundleId!,
+                                                            )
+                                                        }
+                                                        className="flex items-center gap-1 text-xs font-bold text-[var(--color-error)] transition-opacity hover:opacity-80"
+                                                    >
+                                                        <Trash2 size={13} />
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="divide-y divide-[var(--color-border)]/60">
+                                                {group.items.map((item) => (
+                                                    <CartRow
+                                                        key={item.item_key}
+                                                        item={item}
+                                                    />
+                                                ))}
                                             </div>
                                         </div>
-
-                                        {/* Price (Mobile labels shown via CSS or separate divs) */}
-                                        <div className="text-center md:col-span-2">
-                                            <span className="mb-1 block text-xs font-bold text-[var(--color-text-muted)] uppercase md:hidden">
-                                                Price
-                                            </span>
-                                            <span className="text-sm font-bold text-[var(--color-text-primary)]">
-                                                {formatCurrency(item.price)}
-                                            </span>
-                                        </div>
-
-                                        {/* Quantity */}
-                                        <div className="flex flex-col items-center md:col-span-2">
-                                            <span className="mb-1 block text-xs font-bold text-[var(--color-text-muted)] uppercase md:hidden">
-                                                Quantity
-                                            </span>
-                                            <QuantityStepper
-                                                value={item.quantity}
-                                                onChange={(val) =>
-                                                    updateQuantity(
-                                                        item.item_key,
-                                                        val,
-                                                    )
-                                                }
-                                                max={
-                                                    item.variant
-                                                        ?.stock_quantity ??
-                                                    item.product.stock_quantity
-                                                }
-                                                className="scale-90 rounded-lg"
-                                            />
-                                        </div>
-
-                                        {/* Total */}
-                                        <div className="text-right md:col-span-2">
-                                            <span className="mb-1 block text-xs font-bold text-[var(--color-text-muted)] uppercase md:hidden">
-                                                Total
-                                            </span>
-                                            <span className="text-sm font-bold text-[var(--color-primary)]">
-                                                {formatCurrency(item.subtotal)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
+                                    ),
+                                )}
                             </div>
                         </div>
 
@@ -412,6 +415,114 @@ export default function Cart(): React.JSX.Element {
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+type CartRowProps = {
+    item: CartItemType;
+    /** Omitted for a bundle's sub-rows — quantity/remove live on the bundle group header instead. */
+    onQuantityChange?: (value: number) => void;
+    onRemove?: () => void;
+};
+
+function CartRow({
+    item,
+    onQuantityChange,
+    onRemove,
+}: CartRowProps): React.JSX.Element {
+    return (
+        <div className="grid grid-cols-1 items-center gap-3 p-4 md:grid-cols-12">
+            {/* Product Info */}
+            <div className="flex gap-3 md:col-span-6">
+                <Link
+                    href={route('product.show', item.product.slug)}
+                    className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)]"
+                >
+                    <img
+                        src={
+                            item.variant?.image ||
+                            item.product.primary_image_url ||
+                            item.product.images[0]?.path
+                        }
+                        alt={item.product.name}
+                        className="h-full w-full object-cover"
+                    />
+                </Link>
+                <div className="flex min-w-0 flex-col justify-center">
+                    <Link
+                        href={route('product.show', item.product.slug)}
+                        className="line-clamp-2 text-sm font-bold text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-primary)]"
+                    >
+                        {item.product.name}
+                    </Link>
+                    {item.variant && (
+                        <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
+                            {Object.entries(item.variant.attributes).map(
+                                ([key, value]) => (
+                                    <span
+                                        key={key}
+                                        className="text-[11px] font-bold tracking-wider text-[var(--color-text-muted)] uppercase"
+                                    >
+                                        {key}: {value}
+                                    </span>
+                                ),
+                            )}
+                        </div>
+                    )}
+                    {onRemove && (
+                        <button
+                            onClick={onRemove}
+                            className="mt-1.5 flex items-center gap-1 text-xs font-bold text-[var(--color-error)] transition-opacity hover:opacity-80"
+                        >
+                            <Trash2 size={13} />
+                            Remove
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Price */}
+            <div className="text-center md:col-span-2">
+                <span className="mb-1 block text-xs font-bold text-[var(--color-text-muted)] uppercase md:hidden">
+                    Price
+                </span>
+                <span className="text-sm font-bold text-[var(--color-text-primary)]">
+                    {formatCurrency(item.price)}
+                </span>
+            </div>
+
+            {/* Quantity */}
+            <div className="flex flex-col items-center md:col-span-2">
+                <span className="mb-1 block text-xs font-bold text-[var(--color-text-muted)] uppercase md:hidden">
+                    Quantity
+                </span>
+                {onQuantityChange ? (
+                    <QuantityStepper
+                        value={item.quantity}
+                        onChange={onQuantityChange}
+                        max={
+                            item.variant?.stock_quantity ??
+                            item.product.stock_quantity
+                        }
+                        className="scale-90 rounded-lg"
+                    />
+                ) : (
+                    <span className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                        × {item.quantity}
+                    </span>
+                )}
+            </div>
+
+            {/* Total */}
+            <div className="text-right md:col-span-2">
+                <span className="mb-1 block text-xs font-bold text-[var(--color-text-muted)] uppercase md:hidden">
+                    Total
+                </span>
+                <span className="text-sm font-bold text-[var(--color-primary)]">
+                    {formatCurrency(item.subtotal)}
+                </span>
             </div>
         </div>
     );

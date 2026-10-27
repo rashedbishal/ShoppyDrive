@@ -16,6 +16,7 @@ import {
     MonitorPlay,
     Newspaper,
     Package,
+    PackagePlus,
     Palette,
     PhoneMissed,
     Search,
@@ -138,6 +139,12 @@ const navSections: NavSection[] = [
                 label: 'Flash Sales',
                 href: '/admin/flash-sales',
                 icon: Zap,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Bundles',
+                href: '/admin/product-bundles',
+                icon: PackagePlus,
                 extraMatches: [] as string[],
             },
             {

@@ -145,52 +145,49 @@ class ProductListingController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        $categories = Category::query()
-            ->active()
-            ->withCount([
-                'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
-            ])
-            ->with([
-                'subCategories' => static function ($childQuery): void {
-                    $childQuery
-                        ->active()
-                        ->orderBy('sort_order')
-                        ->withCount([
-                            'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
-                        ]);
-                },
-            ])
-            ->orderBy('sort_order')
-            ->get();
-
-        $brands = Brand::query()
-            ->active()
-            ->withCount([
-                'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
-            ])
-            ->orderBy('name')
-            ->get();
-
-        $attributesFilter = Attribute::query()
-            ->with([
-                'values' => static fn ($valueQuery) => $valueQuery->orderBy('sort_order'),
-            ])
-            ->orderBy('name')
-            ->get();
-
-        $catalogMaxPrice = (int) (Product::query()
-            ->active()
-            ->published()
-            ->max('price') ?? 0);
-
+        // Wrapped in closures (not eagerly queried above) so a filter-triggered
+        // partial reload — which only asks for `products`/`filters`, see
+        // Filters sidebar's `onApply`/`router.get(..., { only: [...] })` — never
+        // re-runs these queries at all, instead of just trimming them from the
+        // response. They're still resolved normally on the first full page load.
         return Inertia::render('catalog/ProductListing', [
             'category' => $category ?? $subCategory,
-            'categories' => $categories,
-            'brands' => $brands,
-            'attributes' => $attributesFilter,
+            'categories' => fn () => Category::query()
+                ->active()
+                ->withCount([
+                    'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
+                ])
+                ->with([
+                    'subCategories' => static function ($childQuery): void {
+                        $childQuery
+                            ->active()
+                            ->orderBy('sort_order')
+                            ->withCount([
+                                'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
+                            ]);
+                    },
+                ])
+                ->orderBy('sort_order')
+                ->get(),
+            'brands' => fn () => Brand::query()
+                ->active()
+                ->withCount([
+                    'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
+                ])
+                ->orderBy('name')
+                ->get(),
+            'attributes' => fn () => Attribute::query()
+                ->with([
+                    'values' => static fn ($valueQuery) => $valueQuery->orderBy('sort_order'),
+                ])
+                ->orderBy('name')
+                ->get(),
             'products' => $products,
             'listingUrl' => $listingUrl,
-            'maxPrice' => $catalogMaxPrice,
+            'maxPrice' => fn () => (int) (Product::query()
+                ->active()
+                ->published()
+                ->max('price') ?? 0),
             'filters' => [
                 'q' => $search,
                 'brand' => $brandSlugs,

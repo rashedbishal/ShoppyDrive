@@ -5,6 +5,7 @@ import {
     BadgeCheck,
     ChevronLeft,
     ChevronRight,
+    PackagePlus,
     ShoppingBag,
     Sparkles,
     Star,
@@ -22,6 +23,8 @@ import {
 import type { FormEvent } from 'react';
 import { BrandCard } from '@/components/shared/BrandCard';
 import type { BrandCardData } from '@/components/shared/BrandCard';
+import { BundleCard } from '@/components/shared/BundleCard';
+import type { ProductBundle } from '@/components/shared/BundleCard';
 import {
     ProductCard,
     ProductCardSkeleton,
@@ -87,6 +90,7 @@ type HomePageProps = SharedPageProps & {
     featuredProducts: Product[];
     newArrivals: Product[];
     bestSellers: Product[];
+    bundleDeals: ProductBundle[];
     brands: Brand[];
     categories: Category[];
 };
@@ -933,6 +937,7 @@ function Home(): React.JSX.Element {
         featuredProducts,
         newArrivals,
         bestSellers,
+        bundleDeals,
         brands,
         categories,
     } = usePage<HomePageProps>().props;
@@ -1222,6 +1227,80 @@ function Home(): React.JSX.Element {
                     />
                 </section>
             ),
+        },
+        {
+            key: 'bundle_deals',
+            node: getSection('bundle_deals')?.is_visible &&
+                bundleDeals?.length > 0 && (
+                    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="relative overflow-hidden rounded-[2.5rem] border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-primary-light)] via-[var(--color-surface)] to-[var(--color-accent-light)] p-6 sm:p-10">
+                            <div
+                                aria-hidden="true"
+                                className="pointer-events-none absolute -top-16 -right-16 size-64 rounded-full bg-[var(--color-accent)]/15 blur-3xl"
+                            />
+                            <div
+                                aria-hidden="true"
+                                className="pointer-events-none absolute -bottom-20 -left-16 size-64 rounded-full bg-[var(--color-primary)]/10 blur-3xl"
+                            />
+
+                            <div className="relative space-y-8">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="flex size-8 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white shadow-[var(--shadow-card)]">
+                                                <PackagePlus className="size-4" />
+                                            </span>
+                                            <span className="text-xs font-bold tracking-[0.24em] text-[var(--color-primary)] uppercase">
+                                                {getSection('bundle_deals')
+                                                    ?.eyebrow || 'Save more'}
+                                            </span>
+                                        </div>
+                                        <h2 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-3xl">
+                                            {getSection('bundle_deals')
+                                                ?.title || 'Bundle deals'}
+                                        </h2>
+                                        {getSection('bundle_deals')
+                                            ?.description && (
+                                            <p className="max-w-2xl text-sm text-[var(--color-text-secondary)] sm:text-base">
+                                                {
+                                                    getSection('bundle_deals')
+                                                        ?.description
+                                                }
+                                            </p>
+                                        )}
+                                    </div>
+                                    <Button
+                                        asChild
+                                        variant="secondary"
+                                        className="w-fit shrink-0"
+                                    >
+                                        <Link
+                                            href={
+                                                getSection('bundle_deals')
+                                                    ?.action_href ||
+                                                '/bundle-deals'
+                                            }
+                                        >
+                                            {getSection('bundle_deals')
+                                                ?.action_label ||
+                                                'View all bundles'}
+                                            <ArrowRight className="size-3.5" />
+                                        </Link>
+                                    </Button>
+                                </div>
+
+                                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                                    {bundleDeals.map((bundle) => (
+                                        <BundleCard
+                                            key={bundle.id}
+                                            bundle={bundle}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                ),
         },
     ];
 

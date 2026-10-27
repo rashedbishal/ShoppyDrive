@@ -19,6 +19,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\BundleService;
 use App\Services\CouponService;
 use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
@@ -39,6 +40,7 @@ class CheckoutController extends Controller
         private readonly LoyaltyPointsService $loyalty,
         private readonly InventoryService $inventory,
         private readonly CouponService $coupons,
+        private readonly BundleService $bundles,
     ) {}
 
     public function index(Request $request): Response|RedirectResponse
@@ -217,6 +219,7 @@ class CheckoutController extends Controller
                             'product_id' => $item->product_id,
                             'variant_id' => $item->variant_id,
                             'flash_sale_item_id' => $flashSaleItemId,
+                            'bundle_id' => $item->bundle_id,
                             'product_name' => $product->name,
                             'sku' => $item->variant?->sku ?? $product->sku,
                             'price' => $item->price,
@@ -348,6 +351,7 @@ class CheckoutController extends Controller
             return [
                 'product_id' => $item->product_id,
                 'variant_id' => $item->variant_id,
+                'bundle_id' => $item->bundle_id,
                 'product_name' => $product->name,
                 'sku' => $item->variant?->sku ?? $product->sku,
                 'price' => $item->price,
@@ -404,10 +408,14 @@ class CheckoutController extends Controller
             return 0.0;
         }
 
-        // 2. Per-product free delivery:
+        // 2. Per-product free delivery (or an intact free-delivery bundle):
         //    If EVERY item in cart qualifies for free delivery → no charge
         if ($cart->items->isNotEmpty()) {
             $allFree = $cart->items->every(function ($item) {
+                if ($this->bundles->itemQualifiesForFreeDelivery($item)) {
+                    return true;
+                }
+
                 $product = $item->product;
                 if (! $product->free_delivery) {
                     return false;

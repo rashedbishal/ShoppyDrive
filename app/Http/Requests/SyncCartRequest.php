@@ -43,6 +43,8 @@ class SyncCartRequest extends FormRequest
                 },
             ],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.bundle_id' => ['nullable', 'integer', 'exists:product_bundles,id'],
+            'items.*.bundle_unit_quantity' => ['nullable', 'integer', 'min:1'],
         ];
     }
 }

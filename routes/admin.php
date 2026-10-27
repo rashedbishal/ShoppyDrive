@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\LandingPageController as AdminLandingPageControll
 use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PopularKeywordController;
+use App\Http\Controllers\Admin\ProductBundleController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\PromotionalBannerController;
 use App\Http\Controllers\Admin\ReceivedSmsController;
@@ -67,6 +68,10 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::patch('flash-sales/bulk-status', [FlashSaleController::class, 'updateStatusMany'])->name('flash-sales.updateStatusMany');
     Route::delete('flash-sales/bulk-delete', [FlashSaleController::class, 'destroyMany'])->name('flash-sales.destroyMany');
     Route::resource('flash-sales', FlashSaleController::class)->parameters(['flash-sales' => 'flashSale']);
+    Route::get('product-bundles/products/search', [ProductBundleController::class, 'searchProducts'])->name('product-bundles.products.search');
+    Route::patch('product-bundles/bulk-status', [ProductBundleController::class, 'updateStatusMany'])->name('product-bundles.updateStatusMany');
+    Route::delete('product-bundles/bulk-delete', [ProductBundleController::class, 'destroyMany'])->name('product-bundles.destroyMany');
+    Route::resource('product-bundles', ProductBundleController::class)->parameters(['product-bundles' => 'productBundle']);
 
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
     Route::post('orders', [OrderController::class, 'store'])->name('orders.store');

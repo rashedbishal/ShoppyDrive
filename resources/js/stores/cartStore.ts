@@ -1,9 +1,9 @@
-import { createJSONStorage, persist } from 'zustand/middleware';
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { CART_ITEM_ADDED_EVENT } from '@/lib/add-to-cart-feedback';
 import type { CartItemAddedDetail } from '@/lib/add-to-cart-feedback';
-import { formatCurrency } from '@/lib/utils';
 import { STORAGE_KEYS } from '@/lib/constants';
+import { formatCurrency } from '@/lib/utils';
 import type { Cart, CartItem, Coupon, Product, ProductVariant } from '@/types';
 
 type CartPayload = {
@@ -11,6 +11,8 @@ type CartPayload = {
     quantity?: number;
     variant?: ProductVariant | null;
     price?: number;
+    bundleId?: number | null;
+    bundleUnitQuantity?: number | null;
 };
 
 type CartStoreState = {
@@ -21,6 +23,8 @@ type CartStoreState = {
     addItem: (payload: CartPayload) => void;
     removeItem: (itemKey: string) => void;
     updateQuantity: (itemKey: string, quantity: number) => void;
+    updateBundleQuantity: (bundleId: number, multiplier: number) => void;
+    removeBundle: (bundleId: number) => void;
     clearCart: () => void;
     mergeGuestCart: (items: CartItem[]) => void;
     applyCoupon: (coupon: Coupon | null) => void;
@@ -33,7 +37,10 @@ type CartStoreState = {
     getTotal: () => number;
 };
 
-type CartPersistedState = Pick<CartStoreState, 'items' | 'coupon' | 'shippingEstimate' | 'tax'>;
+type CartPersistedState = Pick<
+    CartStoreState,
+    'items' | 'coupon' | 'shippingEstimate' | 'tax'
+>;
 
 type StorageLike = {
     getItem: (name: string) => string | null;
@@ -59,15 +66,25 @@ const storage = createJSONStorage<CartPersistedState>(() =>
     typeof window === 'undefined' ? memoryStorage() : window.localStorage,
 );
 
-function createItemKey(product: Product, variant?: ProductVariant | null): string {
-    return variant ? `variant:${variant.id}` : `product:${product.id}`;
+function createItemKey(
+    product: Product,
+    variant?: ProductVariant | null,
+    bundleId?: number | null,
+): string {
+    const key = variant ? `variant:${variant.id}` : `product:${product.id}`;
+
+    return bundleId ? `bundle:${bundleId}:${key}` : key;
 }
 
 function createItemId(): number {
     return Date.now() + Math.floor(Math.random() * 1000000);
 }
 
-function getItemPrice(product: Product, variant?: ProductVariant | null, fallback?: number): number {
+function getItemPrice(
+    product: Product,
+    variant?: ProductVariant | null,
+    fallback?: number,
+): number {
     if (typeof fallback === 'number') {
         return fallback;
     }
@@ -105,12 +122,22 @@ export const useCartStore = create<CartStoreState>()(
             shippingEstimate: 0,
             tax: 0,
             addItem: (payload) => {
-                const itemKey = createItemKey(payload.product, payload.variant ?? null);
+                const itemKey = createItemKey(
+                    payload.product,
+                    payload.variant ?? null,
+                    payload.bundleId ?? null,
+                );
                 const quantity = Math.max(1, payload.quantity ?? 1);
-                const price = getItemPrice(payload.product, payload.variant ?? null, payload.price);
+                const price = getItemPrice(
+                    payload.product,
+                    payload.variant ?? null,
+                    payload.price,
+                );
 
                 set((state) => {
-                    const existingItem = state.items.find((item) => item.item_key === itemKey);
+                    const existingItem = state.items.find(
+                        (item) => item.item_key === itemKey,
+                    );
 
                     if (existingItem !== undefined) {
                         const nextQuantity = existingItem.quantity + quantity;
@@ -122,8 +149,11 @@ export const useCartStore = create<CartStoreState>()(
                                           ...item,
                                           quantity: nextQuantity,
                                           subtotal: price * nextQuantity,
-                                          formatted_price: formatCurrency(price),
-                                          formatted_subtotal: formatCurrency(price * nextQuantity),
+                                          formatted_price:
+                                              formatCurrency(price),
+                                          formatted_subtotal: formatCurrency(
+                                              price * nextQuantity,
+                                          ),
                                       }
                                     : item,
                             ),
@@ -135,6 +165,9 @@ export const useCartStore = create<CartStoreState>()(
                         item_key: itemKey,
                         product: payload.product,
                         variant: payload.variant ?? null,
+                        bundle_id: payload.bundleId ?? null,
+                        bundle_unit_quantity:
+                            payload.bundleUnitQuantity ?? null,
                         quantity,
                         price,
                         formatted_price: formatCurrency(price),
@@ -150,20 +183,30 @@ export const useCartStore = create<CartStoreState>()(
                 // Let UI feedback (fly-to-cart animation) react without the store knowing about it.
                 if (typeof window !== 'undefined') {
                     window.dispatchEvent(
-                        new CustomEvent<CartItemAddedDetail>(CART_ITEM_ADDED_EVENT, {
-                            detail: { product: payload.product, variant: payload.variant ?? null, quantity },
-                        }),
+                        new CustomEvent<CartItemAddedDetail>(
+                            CART_ITEM_ADDED_EVENT,
+                            {
+                                detail: {
+                                    product: payload.product,
+                                    variant: payload.variant ?? null,
+                                    quantity,
+                                },
+                            },
+                        ),
                     );
                 }
             },
             removeItem: (itemKey) => {
                 set((state) => ({
-                    items: state.items.filter((item) => item.item_key !== itemKey),
+                    items: state.items.filter(
+                        (item) => item.item_key !== itemKey,
+                    ),
                 }));
             },
             updateQuantity: (itemKey, quantity) => {
                 if (quantity <= 0) {
                     get().removeItem(itemKey);
+
                     return;
                 }
 
@@ -174,9 +217,44 @@ export const useCartStore = create<CartStoreState>()(
                                   ...item,
                                   quantity,
                                   subtotal: item.price * quantity,
-                                  formatted_subtotal: formatCurrency(item.price * quantity),
+                                  formatted_subtotal: formatCurrency(
+                                      item.price * quantity,
+                                  ),
                               }
                             : item,
+                    ),
+                }));
+            },
+            updateBundleQuantity: (bundleId, multiplier) => {
+                const nextMultiplier = Math.max(1, multiplier);
+
+                set((state) => ({
+                    items: state.items.map((item) => {
+                        if (
+                            item.bundle_id !== bundleId ||
+                            !item.bundle_unit_quantity
+                        ) {
+                            return item;
+                        }
+
+                        const quantity =
+                            item.bundle_unit_quantity * nextMultiplier;
+
+                        return {
+                            ...item,
+                            quantity,
+                            subtotal: item.price * quantity,
+                            formatted_subtotal: formatCurrency(
+                                item.price * quantity,
+                            ),
+                        };
+                    }),
+                }));
+            },
+            removeBundle: (bundleId) => {
+                set((state) => ({
+                    items: state.items.filter(
+                        (item) => item.bundle_id !== bundleId,
                     ),
                 }));
             },
@@ -193,7 +271,9 @@ export const useCartStore = create<CartStoreState>()(
                     const merged = [...state.items];
 
                     for (const item of items) {
-                        const existingItem = merged.find((current) => current.item_key === item.item_key);
+                        const existingItem = merged.find(
+                            (current) => current.item_key === item.item_key,
+                        );
 
                         if (existingItem === undefined) {
                             merged.push(item);
@@ -203,18 +283,16 @@ export const useCartStore = create<CartStoreState>()(
                         const quantity = existingItem.quantity + item.quantity;
                         const price = item.price;
 
-                        merged.splice(
-                            merged.indexOf(existingItem),
-                            1,
-                            {
-                                ...existingItem,
-                                quantity,
-                                price,
-                                formatted_price: formatCurrency(price),
-                                subtotal: price * quantity,
-                                formatted_subtotal: formatCurrency(price * quantity),
-                            },
-                        );
+                        merged.splice(merged.indexOf(existingItem), 1, {
+                            ...existingItem,
+                            quantity,
+                            price,
+                            formatted_price: formatCurrency(price),
+                            subtotal: price * quantity,
+                            formatted_subtotal: formatCurrency(
+                                price * quantity,
+                            ),
+                        });
                     }
 
                     return {
@@ -240,10 +318,16 @@ export const useCartStore = create<CartStoreState>()(
                 });
             },
             getItemCount: () => {
-                return get().items.reduce((total, item) => total + item.quantity, 0);
+                return get().items.reduce(
+                    (total, item) => total + item.quantity,
+                    0,
+                );
             },
             getSubtotal: () => {
-                return get().items.reduce((total, item) => total + item.subtotal, 0);
+                return get().items.reduce(
+                    (total, item) => total + item.subtotal,
+                    0,
+                );
             },
             getDiscount: () => {
                 return getCouponDiscount(get().coupon, get().getSubtotal());
@@ -254,7 +338,10 @@ export const useCartStore = create<CartStoreState>()(
                 const shippingEstimate = get().shippingEstimate;
                 const tax = get().tax;
 
-                return Math.max(0, subtotal - discount + shippingEstimate + tax);
+                return Math.max(
+                    0,
+                    subtotal - discount + shippingEstimate + tax,
+                );
             },
         }),
         {

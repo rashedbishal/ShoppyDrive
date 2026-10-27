@@ -230,11 +230,21 @@ export interface Product extends Timestamped, SoftDeletable {
     flash_sale_price?: number | null;
 }
 
+export interface CartItemBundle {
+    id: Id;
+    name: string;
+    image: string | null;
+    discount_type: 'fixed_price' | 'free_delivery';
+}
+
 export interface CartItem {
     id: Id;
     item_key: string;
     product: Product;
     variant?: ProductVariant | null;
+    bundle_id?: Id | null;
+    bundle?: CartItemBundle | null;
+    bundle_unit_quantity?: number | null;
     quantity: number;
     price: number;
     formatted_price: string;

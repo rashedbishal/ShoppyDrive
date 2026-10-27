@@ -100,6 +100,17 @@ class HomepageSettingsSeeder extends Seeder
                 'is_visible' => true,
                 'sort_order' => 8,
             ],
+            [
+                'section_key' => 'bundle_deals',
+                'section_name' => 'Bundle Deals',
+                'eyebrow' => 'Save more',
+                'title' => 'Bundle deals',
+                'description' => 'Hand-picked product combos at a special price or with free delivery.',
+                'action_label' => 'View all bundles',
+                'action_href' => '/bundle-deals',
+                'is_visible' => true,
+                'sort_order' => 9,
+            ],
         ];
 
         foreach ($sections as $section) {
