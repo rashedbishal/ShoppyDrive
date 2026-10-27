@@ -3,7 +3,6 @@ import { Edit, Package, Plus, Search, Tag, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { BulkActionBar } from '@/components/admin/bulk-action-bar';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -52,70 +51,88 @@ function BrandCard({
     return (
         <div
             className={cn(
-                'group relative flex flex-col overflow-hidden rounded-2xl border bg-white p-3.5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md',
+                'group relative flex flex-col overflow-hidden rounded-2xl border bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_32px_-16px_rgba(15,23,42,0.25)]',
                 selected
-                    ? 'border-[#c8102e] ring-1 ring-[#c8102e]'
-                    : 'border-slate-200',
+                    ? 'border-[#c8102e] ring-2 ring-[#c8102e]/20'
+                    : 'border-slate-200 hover:border-slate-300',
             )}
         >
-            <div className="absolute top-2.5 left-2.5 z-10">
-                <Checkbox
-                    checked={selected}
-                    onCheckedChange={onToggle}
-                    className="bg-white shadow-sm"
-                />
-            </div>
-            <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1">
-                <Link
-                    href={route('admin.brands.edit', brand.id)}
-                    className="flex size-7 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm backdrop-blur-sm transition-colors hover:text-slate-700"
-                    title="Edit"
-                >
-                    <Edit className="size-3.5" />
-                </Link>
-                <button
-                    type="button"
-                    onClick={onDelete}
-                    className="flex size-7 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm backdrop-blur-sm transition-colors hover:text-red-500"
-                    title="Delete"
-                >
-                    <Trash2 className="size-3.5" />
-                </button>
-            </div>
+            <div className="relative mb-3 flex h-24 items-center justify-center overflow-hidden rounded-xl bg-[radial-gradient(circle_at_50%_40%,#ffffff_0%,#f1f5f9_100%)] ring-1 ring-slate-900/5 ring-inset">
+                <div className="absolute top-2 left-2 z-10">
+                    <Checkbox
+                        checked={selected}
+                        onCheckedChange={onToggle}
+                        className="bg-white shadow-sm"
+                    />
+                </div>
+                <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+                    <Link
+                        href={route('admin.brands.edit', brand.id)}
+                        className="flex size-7 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm ring-1 ring-slate-900/10 transition-colors hover:bg-slate-900 hover:text-white"
+                        title="Edit"
+                    >
+                        <Edit className="size-3.5" />
+                    </Link>
+                    <button
+                        type="button"
+                        onClick={onDelete}
+                        className="flex size-7 items-center justify-center rounded-full bg-white text-red-500 shadow-sm ring-1 ring-slate-900/10 transition-colors hover:bg-red-500 hover:text-white"
+                        title="Delete"
+                    >
+                        <Trash2 className="size-3.5" />
+                    </button>
+                </div>
 
-            <div className="mb-3 flex h-20 items-center justify-center rounded-xl bg-slate-50">
                 {brand.logo ? (
                     <img
                         src={brand.logo}
                         alt={brand.name}
-                        className="max-h-14 max-w-[75%] object-contain"
+                        className="max-h-14 max-w-[70%] object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-105"
                     />
                 ) : (
-                    <div className="flex size-12 items-center justify-center rounded-xl bg-slate-200 text-sm font-bold text-slate-500">
+                    <div className="flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#c8102e] to-[#8f0b20] text-sm font-bold tracking-wide text-white shadow-md shadow-[#c8102e]/25 transition-transform duration-300 group-hover:scale-105">
                         {brand.name.slice(0, 2).toUpperCase()}
                     </div>
                 )}
             </div>
 
             <p
-                className="truncate text-sm font-bold text-slate-800"
+                className="truncate text-[15px] leading-snug font-semibold text-slate-900"
                 title={brand.name}
             >
                 {brand.name}
             </p>
-            <p className="truncate text-xs text-slate-400">{brand.slug}</p>
+            <p
+                className="truncate font-mono text-xs text-slate-600"
+                title={brand.slug}
+            >
+                /{brand.slug}
+            </p>
 
-            <div className="mt-2.5 flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
-                    <Package className="size-3" />
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 border-t border-slate-100 pt-2.5">
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                    <Package className="size-3.5" />
                     {brand.products_count}
+                    <span className="font-medium">
+                        {brand.products_count === 1 ? 'product' : 'products'}
+                    </span>
                 </span>
-                <Badge
-                    variant={brand.is_active ? 'success' : 'error'}
-                    size="sm"
+                <span
+                    className={cn(
+                        'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset',
+                        brand.is_active
+                            ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
+                            : 'bg-red-50 text-red-700 ring-red-600/20',
+                    )}
                 >
+                    <span
+                        className={cn(
+                            'size-1.5 rounded-full',
+                            brand.is_active ? 'bg-emerald-500' : 'bg-red-500',
+                        )}
+                    />
                     {brand.is_active ? 'Active' : 'Inactive'}
-                </Badge>
+                </span>
             </div>
         </div>
     );
