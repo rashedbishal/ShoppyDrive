@@ -7,12 +7,24 @@ namespace App\Models;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Mail\NewOrderAlertMail;
+use App\Mail\OrderCancelledMail;
+use App\Mail\OrderDeliveredMail;
+use App\Mail\OrderPlacedMail;
+use App\Mail\OrderStatusUpdatedMail;
+use App\Mail\ShippedWithTrackingMail;
+use App\Services\CouponService;
+use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Mail\Mailable;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class Order extends Model
 {
@@ -36,6 +48,8 @@ class Order extends Model
         'used_referral_discount',
         'points_redeemed',
         'points_refunded_at',
+        'stock_restored_at',
+        'coupon_released_at',
         'shipping_address',
         'billing_address',
         'notes',
@@ -67,6 +81,8 @@ class Order extends Model
             'tax' => 'float',
             'used_referral_discount' => 'boolean',
             'points_refunded_at' => 'datetime',
+            'stock_restored_at' => 'datetime',
+            'coupon_released_at' => 'datetime',
             'referral_reward_granted_at' => 'datetime',
             'loyalty_points_granted_at' => 'datetime',
             'pathao_delivery_fee' => 'float',
@@ -98,8 +114,28 @@ class Order extends Model
         return $this->hasMany(OrderStatusHistory::class);
     }
 
+    public function returnRequests(): HasMany
+    {
+        return $this->hasMany(ReturnRequest::class);
+    }
+
+    public function latestReturnRequest(): HasOne
+    {
+        return $this->hasOne(ReturnRequest::class)->latestOfMany();
+    }
+
     protected static function booted(): void
     {
+        // Fires exactly once per order row ever created — every order-
+        // creation path (COD, ZiniPay, mobile banking, landing-page) has
+        // its own idempotency guard that returns the already-existing
+        // order instead of calling create() again on a retry/duplicate
+        // webhook, so this can never double-send for the same order.
+        static::created(function (self $order): void {
+            static::dispatchMail(OrderPlacedMail::class, $order);
+            static::dispatchAdminMail(NewOrderAlertMail::class, $order);
+        });
+
         static::updated(function (self $order): void {
             if (! $order->wasChanged('status')) {
                 return;
@@ -107,7 +143,57 @@ class Order extends Model
 
             if (in_array($order->status, [OrderStatus::CANCELLED, OrderStatus::REFUNDED], true)) {
                 app(LoyaltyPointsService::class)->handleOrderCancelledOrRefunded($order);
+                app(InventoryService::class)->restoreForOrder($order);
+                app(CouponService::class)->release($order);
             }
+
+            match ($order->status) {
+                OrderStatus::SHIPPED => static::dispatchMail(ShippedWithTrackingMail::class, $order),
+                OrderStatus::DELIVERED => static::dispatchMail(OrderDeliveredMail::class, $order),
+                OrderStatus::CANCELLED => static::dispatchMail(OrderCancelledMail::class, $order),
+                OrderStatus::PROCESSING, OrderStatus::REFUNDED => static::dispatchMail(OrderStatusUpdatedMail::class, $order),
+                OrderStatus::PENDING => null,
+            };
         });
+    }
+
+    /**
+     * Resolves the customer's email strictly from the order's own data
+     * (the account it belongs to, or the shipping address captured at
+     * checkout) — never from the currently-authenticated session, which
+     * for every status-change caller (admin actions, courier webhooks) is
+     * an admin, not the customer. Queued (afterCommit()) so a transient
+     * mail failure can never affect the order/payment/shipment action
+     * that triggered it, and the job is only actually enqueued once the
+     * triggering DB transaction (if any) has committed — discarded
+     * entirely if it rolls back. Every one of these Mailables takes the
+     * Order as its sole constructor argument.
+     */
+    private static function dispatchMail(string $mailableClass, self $order): void
+    {
+        $email = $order->user?->email ?: ($order->shipping_address['email'] ?? null);
+
+        if (! $email) {
+            return;
+        }
+
+        /** @var Mailable $mailable */
+        $mailable = new $mailableClass($order);
+        Mail::to($email)->send($mailable->afterCommit());
+    }
+
+    private static function dispatchAdminMail(string $mailableClass, self $order): void
+    {
+        $adminEmail = Admin::where('is_mother', true)->value('email');
+
+        if (! $adminEmail) {
+            Log::warning('No mother admin configured — skipping admin order alert.', ['order_number' => $order->order_number]);
+
+            return;
+        }
+
+        /** @var Mailable $mailable */
+        $mailable = new $mailableClass($order);
+        Mail::to($adminEmail)->send($mailable->afterCommit());
     }
 }

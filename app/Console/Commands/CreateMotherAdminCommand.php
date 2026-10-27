@@ -70,14 +70,17 @@ class CreateMotherAdminCommand extends Command
             'name' => $name,
             'email' => $email,
             'password' => Hash::make($password),
-            'is_mother' => true,
         ];
 
+        // is_mother is deliberately not mass-assignable (see Admin::$fillable)
+        // — this command is the one legitimate place it's ever set, via
+        // forceFill(), so no request path can self-promote an admin.
         if ($existing) {
-            $existing->update($attributes);
+            $existing->fill($attributes)->forceFill(['is_mother' => true])->save();
             $this->info("Mother admin account replaced. New email: {$email}.");
         } else {
-            Admin::create($attributes);
+            $admin = Admin::make($attributes);
+            $admin->forceFill(['is_mother' => true])->save();
             $this->info("Mother admin account created for {$email}.");
         }
 

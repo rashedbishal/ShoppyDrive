@@ -12,14 +12,164 @@ import {
     MessageSquare,
     XCircle
 } from 'lucide-react';
-import React from 'react';
+import React, { useState } from 'react';
 
 import AccountLayout from '@/components/layout/AccountLayout';
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/shared/OrderStatusBadge';
 import { OrderTimeline } from '@/components/shared/OrderTimeline';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Order, SharedPageProps } from '@/types';
+
+const RETURN_STATUS_LABEL: Record<string, string> = {
+    pending: 'Return requested',
+    approved: 'Return approved',
+    rejected: 'Return rejected',
+    refunded: 'Return refunded',
+};
+
+const RETURN_STATUS_VARIANT: Record<string, 'warning' | 'success' | 'error' | 'info'> = {
+    pending: 'warning',
+    approved: 'success',
+    rejected: 'error',
+    refunded: 'info',
+};
+
+function RequestReturnDialog({
+    order,
+    open,
+    onOpenChange,
+}: {
+    order: Order;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const [selected, setSelected] = useState<Record<number, boolean>>({});
+    const [quantities, setQuantities] = useState<Record<number, number>>({});
+    const [reason, setReason] = useState('');
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    const toggleItem = (itemId: number, maxQuantity: number) => {
+        setSelected((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
+        setQuantities((prev) => ({ ...prev, [itemId]: prev[itemId] ?? maxQuantity }));
+    };
+
+    const hasSelection = Object.values(selected).some(Boolean);
+
+    const submit = () => {
+        const items = order.items
+            .filter((item) => selected[item.id])
+            .map((item) => ({
+                order_item_id: item.id,
+                quantity: quantities[item.id] ?? item.quantity,
+            }));
+
+        if (items.length === 0 || !reason.trim() || processing) {
+            return;
+        }
+
+        setProcessing(true);
+        setErrors({});
+
+        router.post(
+            route('account.orders.return.store', order.order_number),
+            { reason, items },
+            {
+                onSuccess: () => {
+                    onOpenChange(false);
+                    setReason('');
+                    setSelected({});
+                    setQuantities({});
+                },
+                onError: (pageErrors) => setErrors(pageErrors as Record<string, string>),
+                onFinish: () => setProcessing(false),
+            },
+        );
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>Request a return</DialogTitle>
+                    <DialogDescription>
+                        Select the item(s) you'd like to return and tell us why. We'll review your request and follow up by email.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                    {order.items.map((item) => (
+                        <div key={item.id} className="flex items-start gap-3 rounded-xl border border-[var(--color-border)] p-3">
+                            <Checkbox
+                                checked={!!selected[item.id]}
+                                onCheckedChange={() => toggleItem(item.id, item.quantity)}
+                            />
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold text-[var(--color-text-primary)] line-clamp-1">{item.product_name}</p>
+                                <p className="text-xs text-[var(--color-text-muted)]">Ordered: {item.quantity}</p>
+                            </div>
+                            {selected[item.id] && (
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    max={item.quantity}
+                                    value={quantities[item.id] ?? item.quantity}
+                                    onChange={(e) =>
+                                        setQuantities((prev) => ({
+                                            ...prev,
+                                            [item.id]: Math.max(1, Math.min(item.quantity, Number(e.target.value) || 1)),
+                                        }))
+                                    }
+                                    className="h-9 w-16 rounded-lg text-center"
+                                />
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                <div className="space-y-1.5">
+                    <Label htmlFor="return-reason">Reason for return *</Label>
+                    <Textarea
+                        id="return-reason"
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="Tell us what went wrong…"
+                        rows={3}
+                    />
+                    {errors.reason && <p className="text-xs text-red-500">{errors.reason}</p>}
+                    {errors.items && <p className="text-xs text-red-500">{errors.items}</p>}
+                </div>
+
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                        Cancel
+                    </Button>
+                    <Button
+                        type="button"
+                        disabled={processing || !reason.trim() || !hasSelection}
+                        onClick={submit}
+                    >
+                        {processing ? 'Submitting…' : 'Submit Request'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 interface OrderDetailProps {
     order: Order;
@@ -41,6 +191,16 @@ export default function OrderDetail({
         if (order.payment_method === 'cod') return order.status === 'delivered';
         return true;
     })();
+
+    const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+    const latestReturn = order.latest_return_request;
+    // The backend now allows a separate return request per item (not just
+    // one per order), and enforces per-item remaining quantity itself with
+    // a clear error message — this page doesn't have enough information
+    // to know which items (if any) still have returnable quantity left,
+    // so it always offers the button for a delivered order and lets the
+    // backend be the authority on whether a given submission is valid.
+    const canRequestReturn = order.status === 'delivered';
 
     return (
         <AccountLayout>
@@ -88,11 +248,19 @@ export default function OrderDetail({
                                 </Button>
                             </a>
                         )}
-                        {order.status === 'delivered' && (
-                            <Button className="rounded-xl font-bold bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]">
+                        {canRequestReturn && (
+                            <Button
+                                onClick={() => setReturnDialogOpen(true)}
+                                className="rounded-xl font-bold bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]"
+                            >
                                 <Undo2 size={16} className="mr-2" />
                                 Return Items
                             </Button>
+                        )}
+                        {latestReturn && latestReturn.status !== 'rejected' && (
+                            <Badge variant={RETURN_STATUS_VARIANT[latestReturn.status]} className="self-center">
+                                {RETURN_STATUS_LABEL[latestReturn.status]}
+                            </Badge>
                         )}
                         {order.status === 'pending' && (
                             <Button
@@ -106,6 +274,13 @@ export default function OrderDetail({
                         )}
                     </div>
                 </div>
+
+                {latestReturn?.status === 'rejected' && (
+                    <div className="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-4 text-sm text-amber-800">
+                        Your previous return request for this order was rejected
+                        {latestReturn.admin_note ? `: ${latestReturn.admin_note}` : '.'} You can submit a new request if you'd like.
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     {/* Left: Timeline and Items */}
@@ -280,6 +455,12 @@ export default function OrderDetail({
                     </div>
                 </div>
             </div>
+
+            <RequestReturnDialog
+                order={order}
+                open={returnDialogOpen}
+                onOpenChange={setReturnDialogOpen}
+            />
         </AccountLayout>
     );
 }

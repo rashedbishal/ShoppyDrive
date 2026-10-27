@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\PromotionalBanner;
 use App\Models\Review;
 use App\Models\SubCategory;
+use App\Support\ProductSearchQuery;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -71,12 +72,7 @@ class ProductListingController extends Controller
 
         $search = trim((string) $request->string('q'));
         if ($search !== '') {
-            $query->where(static function ($productQuery) use ($search): void {
-                $productQuery
-                    ->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('short_description', 'like', "%{$search}%");
-            });
+            $query->where(static fn ($productQuery) => ProductSearchQuery::apply($productQuery, $search));
         }
 
         $brandSlugs = collect($request->input('brand', []))

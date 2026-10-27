@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CouponUnavailableException;
+use App\Exceptions\InsufficientStockException;
 use App\Models\PendingCheckout;
 use App\Services\OrderService;
 use App\Services\ZiniPayService;
@@ -59,7 +61,28 @@ class PaymentController extends Controller
         $status = strtoupper($verified['status'] ?? '');
 
         if ($status === 'COMPLETED') {
-            $order = $this->orderService->createFromPending($pending, $verified);
+            try {
+                $order = $this->orderService->createFromPending($pending, $verified);
+            } catch (InsufficientStockException $e) {
+                // Payment already succeeded on ZiniPay's side but stock can't
+                // cover it — keep the PendingCheckout (don't delete) so an
+                // admin can resolve/refund manually instead of silently
+                // losing the paid-for order.
+                Log::error('[ZiniPay] Order creation failed after payment: insufficient stock', [
+                    'token' => $token, 'error' => $e->getMessage(),
+                ]);
+
+                return redirect()->route('checkout.index')
+                    ->with('error', 'Your payment was received, but we hit a stock issue finalizing your order. Please contact support with reference: '.$token);
+            } catch (CouponUnavailableException $e) {
+                Log::error('[ZiniPay] Order creation failed after payment: coupon no longer valid', [
+                    'token' => $token, 'error' => $e->getMessage(),
+                ]);
+
+                return redirect()->route('checkout.index')
+                    ->with('error', 'Your payment was received, but we hit an issue finalizing your order. Please contact support with reference: '.$token);
+            }
+
             $pending->delete();
 
             return redirect()->route('order.confirmation', $order->order_number);

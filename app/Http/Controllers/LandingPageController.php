@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Exceptions\InsufficientStockException;
 use App\Models\HomepageSetting;
 use App\Models\LandingPage;
 use App\Models\Order;
@@ -13,6 +14,8 @@ use App\Models\Payment;
 use App\Models\PendingCheckout;
 use App\Models\ReceivedSms;
 use App\Models\Setting;
+use App\Services\InventoryService;
+use App\Support\CartManager;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +28,11 @@ use Inertia\Response;
 
 class LandingPageController extends Controller
 {
+    public function __construct(
+        private readonly InventoryService $inventory,
+        private readonly CartManager $cartManager,
+    ) {}
+
     public function show(string $slug): Response|RedirectResponse
     {
         // The promoted product can be deleted/deactivated after the landing
@@ -79,7 +87,8 @@ class LandingPageController extends Controller
         ]);
 
         $qty = (int) $request->quantity;
-        $subtotal = round($product->price * $qty, 2);
+        $price = $this->cartManager->resolvePrice($product->id, null);
+        $subtotal = round($price * $qty, 2);
         $shippingCost = $this->calculateShipping($product, $request->state, $request->city, $subtotal);
         $total = $subtotal + $shippingCost;
 
@@ -100,14 +109,14 @@ class LandingPageController extends Controller
             'variant_id' => null,
             'product_name' => $product->name,
             'sku' => $product->sku ?? '',
-            'price' => $product->price,
+            'price' => $price,
             'quantity' => $qty,
             'subtotal' => $subtotal,
             'product_snapshot' => [
                 'id' => $product->id,
                 'name' => $product->name,
                 'sku' => $product->sku,
-                'price' => $product->price,
+                'price' => $price,
                 'image' => $product->media->where('is_primary', true)->first()?->path
                     ?? $product->media->first()?->path,
             ],
@@ -117,29 +126,35 @@ class LandingPageController extends Controller
             $guestToken = Str::random(40);
             $orderNumber = $this->generateOrderNumber();
 
-            $order = DB::transaction(function () use ($page, $shippingAddress, $itemData, $subtotal, $shippingCost, $total, $guestToken, $orderNumber) {
-                $order = Order::create([
-                    'order_number' => $orderNumber,
-                    'user_id' => auth()->id(),
-                    'landing_page_id' => $page->id,
-                    'guest_token' => $guestToken,
-                    'status' => 'pending',
-                    'payment_status' => 'unpaid',
-                    'payment_method' => PaymentMethod::COD->value,
-                    'subtotal' => $subtotal,
-                    'shipping_cost' => $shippingCost,
-                    'discount' => 0,
-                    'tax' => 0,
-                    'total' => $total,
-                    'shipping_address' => $shippingAddress,
-                    'billing_address' => $shippingAddress,
-                ]);
+            try {
+                $order = DB::transaction(function () use ($page, $shippingAddress, $itemData, $subtotal, $shippingCost, $total, $guestToken, $orderNumber) {
+                    $order = Order::create([
+                        'order_number' => $orderNumber,
+                        'user_id' => auth()->id(),
+                        'landing_page_id' => $page->id,
+                        'guest_token' => $guestToken,
+                        'status' => 'pending',
+                        'payment_status' => 'unpaid',
+                        'payment_method' => PaymentMethod::COD->value,
+                        'subtotal' => $subtotal,
+                        'shipping_cost' => $shippingCost,
+                        'discount' => 0,
+                        'tax' => 0,
+                        'total' => $total,
+                        'shipping_address' => $shippingAddress,
+                        'billing_address' => $shippingAddress,
+                    ]);
 
-                $order->statusHistories()->create(['status' => 'pending', 'notes' => 'Order placed via landing page.']);
-                $order->items()->create($itemData);
+                    $order->statusHistories()->create(['status' => 'pending', 'notes' => 'Order placed via landing page.']);
 
-                return $order;
-            });
+                    $flashSaleItemId = $this->inventory->decrementForOrderItem($order, $itemData['product_id'], $itemData['variant_id'], $itemData['quantity'], (float) $itemData['price']);
+                    $order->items()->create([...$itemData, 'flash_sale_item_id' => $flashSaleItemId]);
+
+                    return $order;
+                });
+            } catch (InsufficientStockException $e) {
+                return back()->withErrors(['quantity' => $e->getMessage()])->withInput();
+            }
 
             return redirect()->route('lp.confirmation', $guestToken);
         }
@@ -248,11 +263,18 @@ class LandingPageController extends Controller
                     return Order::where('order_number', $freshPending->order_number)->firstOrFail();
                 }
 
+                // See MobilePaymentController::submit() — the row is locked
+                // regardless of match status so a unique DB constraint on
+                // (provider, parsed_transaction_id) lets us tell "already
+                // consumed" apart from "never existed" for the same reasons.
                 $sms = ReceivedSms::lockForUpdate()
                     ->where('parsed_transaction_id', $transactionId)
                     ->where('provider', $provider)
-                    ->where('is_matched', false)
                     ->first();
+
+                if ($sms && $sms->is_matched) {
+                    throw new \RuntimeException('already_used');
+                }
 
                 if (! $sms) {
                     $existsOtherProvider = ReceivedSms::where('parsed_transaction_id', $transactionId)
@@ -292,7 +314,8 @@ class LandingPageController extends Controller
                 ]);
 
                 foreach ($data['items'] as $item) {
-                    $order->items()->create($item);
+                    $flashSaleItemId = $this->inventory->decrementForOrderItem($order, $item['product_id'], $item['variant_id'], $item['quantity'], (float) $item['price']);
+                    $order->items()->create([...$item, 'flash_sale_item_id' => $flashSaleItemId]);
                 }
 
                 Payment::create([
@@ -330,10 +353,14 @@ class LandingPageController extends Controller
             session()->flash('lp_pending_payment', $pendingFlash);
 
             return match (true) {
+                $e instanceof InsufficientStockException => redirect()->route('lp.show', $slug)
+                    ->withErrors(['transaction_id' => $msg]),
                 $msg === 'not_found' => redirect()->route('lp.show', $slug)
                     ->withErrors(['transaction_id' => "Transaction ID not found in our {$providerLabel} records. Please double-check the ID from your SMS."]),
                 $msg === 'wrong_provider' => redirect()->route('lp.show', $slug)
                     ->withErrors(['transaction_id' => 'This Transaction ID belongs to a different payment provider.']),
+                $msg === 'already_used' => redirect()->route('lp.show', $slug)
+                    ->withErrors(['transaction_id' => 'This Transaction ID has already been used to pay for another order.']),
                 str_starts_with($msg, 'amount_mismatch:') => redirect()->route('lp.show', $slug)
                     ->withErrors(['transaction_id' => 'Amount mismatch. Expected ৳'.$expectedAmount.' but SMS shows ৳'.substr($msg, 16).'.']),
                 default => redirect()->route('lp.show', $slug)->with('error', 'Something went wrong. Please contact support.'),

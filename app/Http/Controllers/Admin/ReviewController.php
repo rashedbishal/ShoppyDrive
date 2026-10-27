@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\ReviewApprovedMail;
 use App\Models\Review;
 use App\Services\LoyaltyPointsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,8 +37,16 @@ class ReviewController extends Controller
 
     public function approve(Review $review): RedirectResponse
     {
+        // Guard before the update, not after — re-approving an
+        // already-approved review (e.g. a double-click) must not resend.
+        $wasAlreadyApproved = $review->is_approved;
+
         $review->update(['is_approved' => true]);
         $this->loyalty->grantReviewBonus($review);
+
+        if (! $wasAlreadyApproved && $review->user?->email) {
+            Mail::to($review->user->email)->send((new ReviewApprovedMail($review))->afterCommit());
+        }
 
         return back()->with('success', 'Review approved.');
     }

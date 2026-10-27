@@ -335,6 +335,7 @@ export interface Order extends Timestamped, SoftDeletable {
     items: OrderItem[];
     status_histories: OrderStatusHistory[];
     formatted_total: string;
+    latest_return_request?: ReturnRequest | null;
 }
 
 export interface Payment extends Timestamped {

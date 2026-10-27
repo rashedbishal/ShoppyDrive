@@ -6,6 +6,7 @@ namespace App\Support;
 
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
@@ -257,8 +258,22 @@ class CartManager
         return array_values($normalized);
     }
 
+    /**
+     * The single authoritative price for a product/variant — this is the
+     * only place in the app that decides what a customer pays, and every
+     * cart write, checkout revalidation, and order-item snapshot goes
+     * through it. A currently-active, non-exhausted flash sale always
+     * wins over the ordinary price (never a client-submitted one — no
+     * request anywhere accepts a price field).
+     */
     public function resolvePrice(int $productId, ?int $variantId): float
     {
+        $flashItem = FlashSaleItem::findActiveFor($productId, $variantId);
+
+        if ($flashItem !== null) {
+            return (float) $flashItem->sale_price;
+        }
+
         if ($variantId !== null) {
             $variant = ProductVariant::query()->findOrFail($variantId);
 
@@ -270,6 +285,32 @@ class CartManager
         $product = Product::query()->findOrFail($productId);
 
         return (float) $product->price;
+    }
+
+    /**
+     * Re-resolves every item's price against current flash-sale/catalog
+     * state and persists any change. Must run at the start of checkout
+     * submission, before totals are computed — a cart item's price is
+     * otherwise a snapshot frozen at the last add/sync, which can go stale
+     * (a sale starts, ends, or exhausts its cap) between then and when the
+     * customer actually submits the order. Returns true if any item's
+     * price changed, so the caller can refuse to silently charge a
+     * different amount than what the checkout page showed.
+     */
+    public function revalidatePrices(Cart $cart): bool
+    {
+        $changed = false;
+
+        foreach ($this->validItems($cart) as $item) {
+            $current = round($this->resolvePrice($item->product_id, $item->variant_id), 2);
+
+            if (round((float) $item->price, 2) !== $current) {
+                $item->update(['price' => $current]);
+                $changed = true;
+            }
+        }
+
+        return $changed;
     }
 
     private function itemKey(int $productId, ?int $variantId): string

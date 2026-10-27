@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Rules\RasterImageOrUrl;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Http\UploadedFile;
 
 class BrandRequest extends FormRequest
 {
@@ -21,11 +21,7 @@ class BrandRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', 'unique:brands,slug,'.($brandId ?? 'NULL').',id'],
-            'logo' => ['nullable', function ($attribute, $value, $fail) {
-                if (! is_string($value) && ! ($value instanceof UploadedFile)) {
-                    $fail('The '.$attribute.' must be an image file or a valid URL.');
-                }
-            }],
+            'logo' => ['nullable', new RasterImageOrUrl],
             'description' => ['nullable', 'string'],
             'is_active' => ['boolean'],
         ];

@@ -19,6 +19,8 @@ class OrderService
     public function __construct(
         private readonly ReferralService $referrals,
         private readonly LoyaltyPointsService $loyalty,
+        private readonly InventoryService $inventory,
+        private readonly CouponService $coupons,
     ) {}
 
     /**
@@ -84,9 +86,11 @@ class OrderService
             ]);
 
             foreach ($data['items'] as $item) {
+                $flashSaleItemId = $this->inventory->decrementForOrderItem($order, $item['product_id'], $item['variant_id'], $item['quantity'], (float) $item['price']);
                 $order->items()->create([
                     'product_id' => $item['product_id'],
                     'variant_id' => $item['variant_id'],
+                    'flash_sale_item_id' => $flashSaleItemId,
                     'product_name' => $item['product_name'],
                     'sku' => $item['sku'],
                     'price' => $item['price'],
@@ -94,6 +98,10 @@ class OrderService
                     'subtotal' => $item['subtotal'],
                     'product_snapshot' => $item['product_snapshot'],
                 ]);
+            }
+
+            if ($data['coupon_id'] !== null) {
+                $this->coupons->consume($data['coupon_id'], $order, $fresh->user_id, (float) $data['discount']);
             }
 
             // Create payment record
@@ -113,10 +121,12 @@ class OrderService
             // Clear the user's cart
             $this->clearCart($fresh);
 
-            // A real order went through for this phone number, so any
-            // abandoned-checkout rows tracked against it no longer apply.
+            // A real order went through for this phone number (or this
+            // logged-in customer, who may have used a different phone
+            // number than their abandoned attempt), so any abandoned-
+            // checkout rows tracked against it no longer apply.
             if (! empty($data['shipping_address']['phone'])) {
-                IncompleteOrder::where('phone', $data['shipping_address']['phone'])->delete();
+                IncompleteOrder::deleteCompletedFor($data['shipping_address']['phone'], $order->user_id);
             }
 
             Log::info('[OrderService] Order created from PendingCheckout', [

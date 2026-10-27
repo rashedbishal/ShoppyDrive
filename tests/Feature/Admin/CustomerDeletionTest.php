@@ -11,11 +11,10 @@ use function Pest\Laravel\actingAs;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->mother = Admin::create([
+    $this->mother = createMotherAdmin([
         'name' => 'Mother Admin',
         'email' => 'mother@example.com',
         'password' => bcrypt('mother-secret'),
-        'is_mother' => true,
     ]);
 
     $this->admin = Admin::create([

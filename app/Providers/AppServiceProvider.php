@@ -6,10 +6,14 @@ use App\Models\Setting;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Inertia\ExceptionResponse;
 use Inertia\Inertia;
@@ -34,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureGoogleSocialite();
         $this->configureFacebookSocialite();
         $this->configureErrorPages();
+        $this->configureRateLimiting();
 
         // Guard against double-registering on persistent-worker setups
         // (Octane, or a long-lived `artisan serve` process reusing the
@@ -103,6 +108,24 @@ class AppServiceProvider extends ServiceProvider
             ]);
 
             return $status >= 500 ? $errorPage : $errorPage->withSharedData();
+        });
+    }
+
+    /**
+     * The admin guard is a separate, hand-rolled auth flow (see
+     * AdminAuthController) that never goes through Fortify's pipeline, so
+     * it doesn't get Fortify's 'login' rate limiter for free — registered
+     * here instead, with the identical email+IP keying FortifyServiceProvider
+     * uses for the customer 'login' limiter, so brute-forcing any one admin
+     * account (including the is_mother super-admin, which this applies to
+     * exactly like every other admin) is bounded the same way.
+     */
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('admin-login', function (Request $request) {
+            $throttleKey = Str::transliterate(Str::lower((string) $request->input('email'))).'|'.$request->ip();
+
+            return Limit::perMinute(5)->by($throttleKey);
         });
     }
 

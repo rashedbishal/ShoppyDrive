@@ -25,8 +25,8 @@ test('replaces an existing mother admin when forced', function () {
         'name' => 'Existing Mother',
         'email' => 'mother@example.com',
         'password' => bcrypt('password'),
-        'is_mother' => true,
     ]);
+    $existing->forceFill(['is_mother' => true])->save();
 
     $this->artisan('admin:create-mother', [
         '--name' => 'New Mother',
@@ -50,8 +50,7 @@ test('aborts replacing an existing mother admin without confirmation', function 
         'name' => 'Existing Mother',
         'email' => 'mother@example.com',
         'password' => bcrypt('password'),
-        'is_mother' => true,
-    ]);
+    ])->forceFill(['is_mother' => true])->save();
 
     $this->artisan('admin:create-mother', [
         '--name' => 'New Mother',

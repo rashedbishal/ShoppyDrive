@@ -52,6 +52,21 @@ class SubCategory extends Model
     {
         static::deleting(function (SubCategory $subCategory) {
             if ($subCategory->isForceDeleting()) {
+                // `products.sub_category_id` cascadeOnDeletes at the DB
+                // level: once this row is actually deleted, every product
+                // under it is hard-deleted by the database regardless of
+                // what Eloquent does first, which in turn hard-deletes
+                // their historical OrderItem rows. Refuse the whole
+                // force-delete outright when any of those products has
+                // order history — there is no safe partial option.
+                $productIds = $subCategory->products()->pluck('id');
+
+                if (OrderItem::whereIn('product_id', $productIds)->exists()) {
+                    throw new \RuntimeException(
+                        "Cannot permanently delete sub-category \"{$subCategory->name}\": one or more of its products have order history. Soft-delete it instead.",
+                    );
+                }
+
                 $subCategory->products()->forceDelete();
             } else {
                 $subCategory->products()->each(fn ($product) => $product->delete());

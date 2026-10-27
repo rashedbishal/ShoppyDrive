@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\SubCategory;
+use App\Support\ProductSearchQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -41,10 +42,7 @@ class SearchController extends Controller
             ->with(['images', 'brand', 'category'])
             ->withCount(['reviews as reviews_count' => fn ($q) => $q->where('is_approved', true)])
             ->withAvg(['reviews as average_rating' => fn ($q) => $q->where('is_approved', true)], 'rating')
-            ->when($query !== '', fn ($q) => $q->where(fn ($sub) => $sub
-                ->where('name', 'like', "%{$query}%")
-                ->orWhere('sku', 'like', "%{$query}%")
-                ->orWhere('short_description', 'like', "%{$query}%")
+            ->when($query !== '', fn ($q) => $q->where(fn ($sub) => ProductSearchQuery::apply($sub, $query)
                 ->orWhereHas('brand', fn ($b) => $b->where('name', 'like', "%{$query}%"))
                 ->orWhereHas('category', fn ($c) => $c->where('name', 'like', "%{$query}%"))
                 ->orWhereHas('subCategory', fn ($s) => $s->where('name', 'like', "%{$query}%"))
@@ -124,10 +122,7 @@ class SearchController extends Controller
             ->active()
             ->published()
             ->with(['images'])
-            ->where(fn ($q) => $q
-                ->where('name', 'like', "%{$query}%")
-                ->orWhere('sku', 'like', "%{$query}%")
-            )
+            ->where(fn ($q) => ProductSearchQuery::apply($q, $query, includeShortDescription: false))
             ->orderByDesc('is_featured')
             ->limit(4)
             ->get()

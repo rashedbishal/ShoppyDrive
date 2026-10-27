@@ -14,7 +14,7 @@ import {
     CreditCard,
     LogIn,
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import { Badge } from '@/components/ui/badge';
@@ -82,6 +82,220 @@ const Section = ({
     </div>
 );
 
+// Pulled out of the main render tree and memoized: this is the one part of
+// the page with real per-item DOM work (an <img> per cart line), and its
+// inputs (items/totals/shipping/coupon/points) are untouched by typing into
+// name/email/phone/address fields or switching payment method — the most
+// frequent interactions on this page. Without this, every keystroke
+// anywhere on the form re-rendered and re-reconciled the whole items list
+// and every totals row for no reason. `submitting`/`paymentMethod` are
+// passed as primitives (not the pre-built `placeOrderLabel` node) so a
+// fresh-but-equal JSX element each parent render can't defeat memo.
+interface OrderSummaryProps {
+    items: CartItem[];
+    subtotal: number;
+    discount: number;
+    couponDiscount: number;
+    appliedCouponCode: string | null;
+    pointsDiscount: number;
+    pointsToUse: number;
+    referralDiscount: number;
+    shippingCost: number | null;
+    total: number;
+    submitting: boolean;
+    paymentMethod: 'cod' | 'mobile_banking';
+    itemsError?: string;
+}
+
+const OrderSummary = React.memo(function OrderSummary({
+    items,
+    subtotal,
+    discount,
+    couponDiscount,
+    appliedCouponCode,
+    pointsDiscount,
+    pointsToUse,
+    referralDiscount,
+    shippingCost,
+    total,
+    submitting,
+    paymentMethod,
+    itemsError,
+}: OrderSummaryProps) {
+    const placeOrderLabel = submitting ? (
+        'Processing…'
+    ) : paymentMethod === 'mobile_banking' ? (
+        <>
+            <CreditCard size={16} className="mr-2" />
+            Continue to Payment
+        </>
+    ) : (
+        <>
+            <Lock size={16} className="mr-2" />
+            Place Order
+        </>
+    );
+
+    return (
+        <div className="lg:col-span-5">
+            <div className="sticky top-24 space-y-5 rounded-2xl border border-[var(--color-border)] bg-white p-6">
+                <h3 className="text-base font-bold text-[var(--color-text-primary)]">
+                    Order Summary
+                </h3>
+
+                {/* Items */}
+                <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
+                    {items.length === 0 ? (
+                        <p className="py-4 text-center text-sm text-[var(--color-text-muted)]">
+                            Your cart is empty.
+                        </p>
+                    ) : (
+                        items.map((item) => (
+                            <div key={item.item_key} className="flex gap-3">
+                                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)]">
+                                    <img
+                                        src={
+                                            item.variant?.image ||
+                                            item.product.primary_image_url ||
+                                            item.product.images[0]?.path
+                                        }
+                                        alt={item.product.name}
+                                        className="h-full w-full object-cover"
+                                    />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
+                                        {item.product.name}
+                                    </p>
+                                    <p className="text-xs text-[var(--color-text-muted)]">
+                                        Qty: {item.quantity}
+                                    </p>
+                                    <p className="text-sm font-bold text-[var(--color-primary)]">
+                                        {formatCurrency(item.subtotal)}
+                                    </p>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {/* Totals */}
+                <div className="space-y-2.5 border-t border-[var(--color-border)] pt-4">
+                    <div className="flex justify-between text-sm">
+                        <span className="text-[var(--color-text-secondary)]">
+                            Subtotal
+                        </span>
+                        <span className="font-semibold">
+                            {formatCurrency(subtotal)}
+                        </span>
+                    </div>
+                    {discount > 0 && (
+                        <div className="flex justify-between text-sm">
+                            <span className="text-[var(--color-text-secondary)]">
+                                Discount
+                            </span>
+                            <span className="font-semibold text-[var(--color-success)]">
+                                −{formatCurrency(discount)}
+                            </span>
+                        </div>
+                    )}
+                    {couponDiscount > 0 && appliedCouponCode && (
+                        <div className="flex justify-between text-sm">
+                            <span className="flex items-center gap-1 text-[var(--color-text-secondary)]">
+                                <Tag size={12} />
+                                Coupon ({appliedCouponCode})
+                            </span>
+                            <span className="font-semibold text-[var(--color-success)]">
+                                −{formatCurrency(couponDiscount)}
+                            </span>
+                        </div>
+                    )}
+                    {pointsDiscount > 0 && (
+                        <div className="flex justify-between text-sm">
+                            <span className="text-[var(--color-text-secondary)]">
+                                Points redeemed ({pointsToUse})
+                            </span>
+                            <span className="font-semibold text-[var(--color-success)]">
+                                −{formatCurrency(pointsDiscount)}
+                            </span>
+                        </div>
+                    )}
+                    {referralDiscount > 0 && (
+                        <div className="flex justify-between text-sm">
+                            <span className="text-[var(--color-text-secondary)]">
+                                Referral discount
+                            </span>
+                            <span className="font-semibold text-[var(--color-success)]">
+                                −{formatCurrency(referralDiscount)}
+                            </span>
+                        </div>
+                    )}
+                    <div className="flex items-start justify-between gap-2 text-sm">
+                        <div>
+                            <span className="text-[var(--color-text-secondary)]">
+                                Shipping
+                            </span>
+                            {shippingCost === 0 && (
+                                <p className="mt-0.5 text-[11px] text-[var(--color-success)]">
+                                    All items qualify for free delivery
+                                </p>
+                            )}
+                            {shippingCost !== null && shippingCost > 0 && (
+                                <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
+                                    1+ item requires delivery charge
+                                </p>
+                            )}
+                        </div>
+                        <span className="shrink-0 font-semibold">
+                            {shippingCost === null ? (
+                                <span className="text-xs font-normal text-[var(--color-text-muted)]">
+                                    Enter address
+                                </span>
+                            ) : shippingCost === 0 ? (
+                                <span className="text-[var(--color-success)]">
+                                    Free
+                                </span>
+                            ) : (
+                                formatCurrency(shippingCost)
+                            )}
+                        </span>
+                    </div>
+                    <div className="flex justify-between border-t border-[var(--color-border)] pt-3">
+                        <span className="font-bold text-[var(--color-text-primary)]">
+                            Total
+                        </span>
+                        <span className="text-xl font-bold text-[var(--color-primary)]">
+                            {formatCurrency(total)}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Place Order (hidden on mobile — the sticky bottom bar takes over there) */}
+                <Button
+                    type="submit"
+                    disabled={submitting}
+                    size="lg"
+                    className="h-13 w-full rounded-xl text-base font-bold shadow-[var(--color-primary)]/20 shadow-lg max-lg:hidden"
+                >
+                    {placeOrderLabel}
+                </Button>
+
+                {/* Trust badge */}
+                <div className="flex items-center justify-center gap-2 text-xs text-[var(--color-text-muted)]">
+                    <ShieldCheck size={14} />
+                    <span>Secure & encrypted checkout</span>
+                </div>
+
+                {itemsError && (
+                    <p className="text-center text-sm text-red-500">
+                        {itemsError}
+                    </p>
+                )}
+            </div>
+        </div>
+    );
+});
+
 // ── Component ─────────────────────────────────────────────────────────────────
 interface CheckoutProps {
     savedAddresses: Address[];
@@ -114,7 +328,14 @@ export default function Checkout({
 
     // Buy Now bypasses the real cart entirely — checking out a single item
     // this way must never touch what's actually in the customer's cart.
-    const items = buyNowItem ? [buyNowItem] : cartItems;
+    // Memoized so the array reference is stable across unrelated re-renders
+    // (e.g. typing in any field) — otherwise `[buyNowItem]` is a brand new
+    // array every render, which would defeat OrderSummary's memoization for
+    // every buy-now checkout even though its actual contents never changed.
+    const items = useMemo(
+        () => (buyNowItem ? [buyNowItem] : cartItems),
+        [buyNowItem, cartItems],
+    );
 
     const defaultAddress = savedAddresses.find((a) => a.is_default) ?? null;
     const hasDefault = defaultAddress !== null;
@@ -1152,173 +1373,21 @@ export default function Checkout({
                         </Section>
                     </div>
 
-                    {/* ── RIGHT: Order Summary ────────────────────────────── */}
-                    <div className="lg:col-span-5">
-                        <div className="sticky top-24 space-y-5 rounded-2xl border border-[var(--color-border)] bg-white p-6">
-                            <h3 className="text-base font-bold text-[var(--color-text-primary)]">
-                                Order Summary
-                            </h3>
-
-                            {/* Items */}
-                            <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
-                                {items.length === 0 ? (
-                                    <p className="py-4 text-center text-sm text-[var(--color-text-muted)]">
-                                        Your cart is empty.
-                                    </p>
-                                ) : (
-                                    items.map((item) => (
-                                        <div
-                                            key={item.item_key}
-                                            className="flex gap-3"
-                                        >
-                                            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)]">
-                                                <img
-                                                    src={
-                                                        item.variant?.image ||
-                                                        item.product
-                                                            .primary_image_url ||
-                                                        item.product.images[0]
-                                                            ?.path
-                                                    }
-                                                    alt={item.product.name}
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
-                                                    {item.product.name}
-                                                </p>
-                                                <p className="text-xs text-[var(--color-text-muted)]">
-                                                    Qty: {item.quantity}
-                                                </p>
-                                                <p className="text-sm font-bold text-[var(--color-primary)]">
-                                                    {formatCurrency(
-                                                        item.subtotal,
-                                                    )}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-
-                            {/* Totals */}
-                            <div className="space-y-2.5 border-t border-[var(--color-border)] pt-4">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-[var(--color-text-secondary)]">
-                                        Subtotal
-                                    </span>
-                                    <span className="font-semibold">
-                                        {formatCurrency(subtotal)}
-                                    </span>
-                                </div>
-                                {discount > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-[var(--color-text-secondary)]">
-                                            Discount
-                                        </span>
-                                        <span className="font-semibold text-[var(--color-success)]">
-                                            −{formatCurrency(discount)}
-                                        </span>
-                                    </div>
-                                )}
-                                {couponDiscount > 0 && appliedCoupon && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="flex items-center gap-1 text-[var(--color-text-secondary)]">
-                                            <Tag size={12} />
-                                            Coupon ({appliedCoupon.code})
-                                        </span>
-                                        <span className="font-semibold text-[var(--color-success)]">
-                                            −{formatCurrency(couponDiscount)}
-                                        </span>
-                                    </div>
-                                )}
-                                {pointsDiscount > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-[var(--color-text-secondary)]">
-                                            Points redeemed ({pointsToUse})
-                                        </span>
-                                        <span className="font-semibold text-[var(--color-success)]">
-                                            −{formatCurrency(pointsDiscount)}
-                                        </span>
-                                    </div>
-                                )}
-                                {referralDiscount > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-[var(--color-text-secondary)]">
-                                            Referral discount
-                                        </span>
-                                        <span className="font-semibold text-[var(--color-success)]">
-                                            −{formatCurrency(referralDiscount)}
-                                        </span>
-                                    </div>
-                                )}
-                                <div className="flex items-start justify-between gap-2 text-sm">
-                                    <div>
-                                        <span className="text-[var(--color-text-secondary)]">
-                                            Shipping
-                                        </span>
-                                        {shippingCost === 0 && (
-                                            <p className="mt-0.5 text-[11px] text-[var(--color-success)]">
-                                                All items qualify for free
-                                                delivery
-                                            </p>
-                                        )}
-                                        {shippingCost !== null &&
-                                            shippingCost > 0 && (
-                                                <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
-                                                    1+ item requires delivery
-                                                    charge
-                                                </p>
-                                            )}
-                                    </div>
-                                    <span className="shrink-0 font-semibold">
-                                        {shippingCost === null ? (
-                                            <span className="text-xs font-normal text-[var(--color-text-muted)]">
-                                                Enter address
-                                            </span>
-                                        ) : shippingCost === 0 ? (
-                                            <span className="text-[var(--color-success)]">
-                                                Free
-                                            </span>
-                                        ) : (
-                                            formatCurrency(shippingCost)
-                                        )}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between border-t border-[var(--color-border)] pt-3">
-                                    <span className="font-bold text-[var(--color-text-primary)]">
-                                        Total
-                                    </span>
-                                    <span className="text-xl font-bold text-[var(--color-primary)]">
-                                        {formatCurrency(total)}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Place Order (hidden on mobile — the sticky bottom bar takes over there) */}
-                            <Button
-                                type="submit"
-                                disabled={submitting}
-                                size="lg"
-                                className="h-13 w-full rounded-xl text-base font-bold shadow-[var(--color-primary)]/20 shadow-lg max-lg:hidden"
-                            >
-                                {placeOrderLabel}
-                            </Button>
-
-                            {/* Trust badge */}
-                            <div className="flex items-center justify-center gap-2 text-xs text-[var(--color-text-muted)]">
-                                <ShieldCheck size={14} />
-                                <span>Secure & encrypted checkout</span>
-                            </div>
-
-                            {form.errors.items && (
-                                <p className="text-center text-sm text-red-500">
-                                    {form.errors.items}
-                                </p>
-                            )}
-                        </div>
-                    </div>
+                    <OrderSummary
+                        items={items}
+                        subtotal={subtotal}
+                        discount={discount}
+                        couponDiscount={couponDiscount}
+                        appliedCouponCode={appliedCoupon?.code ?? null}
+                        pointsDiscount={pointsDiscount}
+                        pointsToUse={pointsToUse}
+                        referralDiscount={referralDiscount}
+                        shippingCost={shippingCost}
+                        total={total}
+                        submitting={submitting}
+                        paymentMethod={form.data.payment_method}
+                        itemsError={form.errors.items}
+                    />
                 </div>
             </form>
 

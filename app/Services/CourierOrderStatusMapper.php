@@ -84,12 +84,28 @@ class CourierOrderStatusMapper
     }
 
     /**
+     * Order statuses a courier-reported status is never allowed to move
+     * the order away from. Cancelled and refunded are both terminal
+     * outcomes already decided by the store (an admin cancellation, a
+     * refund) — a late or retried courier webhook (e.g. a "delivered"
+     * notification that arrives after the order was cancelled, or a
+     * duplicate/out-of-order delivery report) must never resurrect the
+     * order into an active status or mark it paid again.
+     *
+     * @var list<OrderStatus>
+     */
+    private const TERMINAL_STATUSES = [OrderStatus::CANCELLED, OrderStatus::REFUNDED];
+
+    /**
      * Record a provider's raw status on the order and, when it maps to a
-     * different lifecycle status, advance the order's status to match.
-     * A refunded order is a terminal payment decision and is never moved by
-     * a courier status. No-ops (and writes nothing) when the raw status is
-     * unchanged from what's already stored, so repeated polls/webhook
-     * retries don't create duplicate history entries.
+     * different lifecycle status, advance the order's status to match —
+     * unless the order is already in a terminal status (see
+     * TERMINAL_STATUSES), in which case only the raw tracking field is
+     * recorded (so admins can still see what the courier reported) and a
+     * history note is written, but the order's own status/payment_status
+     * is never touched. No-ops (and writes nothing at all) when the raw
+     * status is unchanged from what's already stored, so repeated
+     * polls/webhook retries don't create duplicate history entries.
      */
     public static function sync(Order $order, string $provider, string $rawStatus, ?string $extraNote = null): void
     {
@@ -102,7 +118,7 @@ class CourierOrderStatusMapper
         $mapped = $provider === 'pathao' ? self::forPathao($rawStatus) : self::forSteadfast($rawStatus);
         $statusChanged = $mapped !== null
             && $mapped !== $order->status
-            && $order->status !== OrderStatus::REFUNDED;
+            && ! in_array($order->status, self::TERMINAL_STATUSES, true);
 
         $updates = [$statusField => $rawStatus];
 
@@ -117,8 +133,16 @@ class CourierOrderStatusMapper
 
         $order->update($updates);
 
-        $note = ucfirst($provider).' reported "'.self::label($rawStatus).'"'
-            .($statusChanged ? ' — order status updated to '.$mapped->value.'.' : '.');
+        $ignoredAsTerminal = ! $statusChanged
+            && $mapped !== null
+            && $mapped !== $order->status
+            && in_array($order->status, self::TERMINAL_STATUSES, true);
+
+        $note = ucfirst($provider).' reported "'.self::label($rawStatus).'"'.match (true) {
+            $statusChanged => ' — order status updated to '.$mapped->value.'.',
+            $ignoredAsTerminal => " — order is already {$order->status->value}; status left unchanged.",
+            default => '.',
+        };
 
         if ($extraNote) {
             $note .= ' '.$extraNote;

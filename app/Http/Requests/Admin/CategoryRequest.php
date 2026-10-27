@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Rules\RasterImageOrUrl;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Http\UploadedFile;
 
 class CategoryRequest extends FormRequest
 {
@@ -67,11 +67,7 @@ class CategoryRequest extends FormRequest
                 'unique:categories,slug,'.($categoryId ?? 'NULL').',id,deleted_at,NULL',
             ],
             'description' => ['nullable', 'string'],
-            'image' => ['nullable', function ($attribute, $value, $fail) {
-                if (! is_string($value) && ! ($value instanceof UploadedFile)) {
-                    $fail('The '.$attribute.' must be an image file or a valid URL.');
-                }
-            }],
+            'image' => ['nullable', new RasterImageOrUrl],
             'icon' => ['nullable', 'string', 'max:50', 'regex:'.self::ICON_PATTERN],
             'color' => ['nullable', 'string', 'max:20', function ($attribute, $value, $fail) {
                 if (preg_match(self::HEX_COLOR_PATTERN, $value) === 1) {

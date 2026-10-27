@@ -103,6 +103,67 @@ it('never overwrites a refunded order', function () {
     expect($order->pathao_order_status)->toBe('returned');
 });
 
+it('never overwrites a cancelled order', function () {
+    $order = makeMapperTestOrder(['status' => 'cancelled']);
+
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered_parcels');
+
+    expect($order->status)->toBe(OrderStatus::CANCELLED);
+    expect($order->steadfast_status)->toBe('delivered_parcels');
+});
+
+it('a late delivered webhook after cancellation does not resurrect the order or mark it paid', function () {
+    $order = makeMapperTestOrder(['status' => 'shipped', 'payment_status' => 'unpaid']);
+
+    // Admin cancels the order (same transition Admin\OrderController::cancel() performs).
+    $order->update(['status' => OrderStatus::CANCELLED]);
+
+    // The courier's "delivered" webhook for the original shipment arrives late.
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered_parcels');
+
+    expect($order->status)->toBe(OrderStatus::CANCELLED);
+    expect($order->payment_status->value)->toBe('unpaid');
+    expect($order->delivered_at)->toBeNull();
+    expect($order->steadfast_status)->toBe('delivered_parcels');
+});
+
+it('a late delivered webhook after cancellation writes a history note once, then is idempotent on retry', function () {
+    $order = makeMapperTestOrder(['status' => 'cancelled']);
+    $historyCountBefore = $order->statusHistories()->count();
+
+    CourierOrderStatusMapper::sync($order, 'pathao', 'delivery');
+    expect($order->statusHistories()->count())->toBe($historyCountBefore + 1);
+    expect($order->statusHistories()->latest()->first()->notes)->toContain('already cancelled');
+
+    // The webhook is retried with the identical raw status.
+    CourierOrderStatusMapper::sync($order, 'pathao', 'delivery');
+    expect($order->statusHistories()->count())->toBe($historyCountBefore + 1);
+    expect($order->status)->toBe(OrderStatus::CANCELLED);
+});
+
+it('a courier-reported return still legitimately cancels an active (non-terminal) order', function () {
+    $order = makeMapperTestOrder(['status' => 'shipped']);
+
+    CourierOrderStatusMapper::sync($order, 'pathao', 'return_to_merchant');
+
+    expect($order->status)->toBe(OrderStatus::CANCELLED);
+});
+
+it('a courier that reports a return and then later reports delivered cannot flip the order back', function () {
+    $order = makeMapperTestOrder(['status' => 'shipped']);
+
+    // The courier itself reports the parcel coming back — a legitimate
+    // return, correctly cancels the order.
+    CourierOrderStatusMapper::sync($order, 'pathao', 'return_to_merchant');
+    expect($order->status)->toBe(OrderStatus::CANCELLED);
+
+    // A later, conflicting "delivered" signal for the same shipment must
+    // not undo that — the order is already terminal.
+    CourierOrderStatusMapper::sync($order, 'pathao', 'delivery');
+    expect($order->status)->toBe(OrderStatus::CANCELLED);
+    expect($order->payment_status->value)->toBe('unpaid');
+});
+
 it('does nothing when the raw status is unchanged (idempotent retries)', function () {
     $order = makeMapperTestOrder();
     $order->update(['pathao_order_status' => 'in_transit', 'status' => 'shipped']);

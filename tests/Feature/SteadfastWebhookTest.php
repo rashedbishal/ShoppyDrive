@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 
 uses(RefreshDatabase::class);
 
@@ -44,10 +45,94 @@ function makeSteadfastOrder(): Order
     return $order;
 }
 
-it('updates the order steadfast status from a delivery_status webhook', function () {
+function configureSteadfastWebhookSecret(string $secret = 'super-secret'): void
+{
+    Setting::updateOrCreate(
+        ['key' => 'steadfast_webhook_secret'],
+        ['value' => $secret, 'group' => 'courier'],
+    );
+}
+
+/** @param  array<string, mixed>  $payload */
+function postSignedSteadfastWebhook(array $payload, string $secret = 'super-secret'): TestResponse
+{
+    $body = json_encode($payload);
+    $signature = hash_hmac('sha256', $body, $secret);
+
+    return test()->call(
+        'POST',
+        route('steadfast.webhook'),
+        [],
+        [],
+        [],
+        ['CONTENT_TYPE' => 'application/json', 'HTTP_X-Signature' => $signature],
+        $body,
+    );
+}
+
+it('rejects every webhook when no secret is configured, even a well-formed one, and never touches the order', function () {
     $order = makeSteadfastOrder();
 
+    // Not signed at all — this is exactly the previously-exploitable
+    // "fail open" path: no secret configured must reject, not accept.
     $response = $this->postJson(route('steadfast.webhook'), [
+        'notification_type' => 'delivery_status',
+        'consignment_id' => 'CONSIGN-ABC',
+        'status' => 'delivered',
+    ]);
+
+    $response->assertStatus(401);
+    expect($order->refresh()->steadfast_status)->toBe('in_review');
+    expect($order->statusHistories()->count())->toBe(0);
+});
+
+it('rejects a request with an invalid signature when a webhook secret is configured', function () {
+    $order = makeSteadfastOrder();
+    configureSteadfastWebhookSecret();
+
+    $response = $this->postJson(route('steadfast.webhook'), [
+        'notification_type' => 'delivery_status',
+        'consignment_id' => 'CONSIGN-ABC',
+        'status' => 'delivered',
+    ], ['X-Signature' => 'wrong-signature']);
+
+    $response->assertStatus(401);
+    expect($order->refresh()->steadfast_status)->toBe('in_review');
+});
+
+it('rejects a request with no signature header at all when a secret is configured', function () {
+    $order = makeSteadfastOrder();
+    configureSteadfastWebhookSecret();
+
+    $response = $this->postJson(route('steadfast.webhook'), [
+        'notification_type' => 'delivery_status',
+        'consignment_id' => 'CONSIGN-ABC',
+        'status' => 'delivered',
+    ]);
+
+    $response->assertStatus(401);
+    expect($order->refresh()->steadfast_status)->toBe('in_review');
+});
+
+it('accepts a request with a valid signature when a webhook secret is configured', function () {
+    $order = makeSteadfastOrder();
+    configureSteadfastWebhookSecret();
+
+    $response = postSignedSteadfastWebhook([
+        'notification_type' => 'delivery_status',
+        'consignment_id' => 'CONSIGN-ABC',
+        'status' => 'delivered',
+    ]);
+
+    $response->assertOk();
+    expect($order->refresh()->steadfast_status)->toBe('delivered');
+});
+
+it('updates the order steadfast status from a signed delivery_status webhook', function () {
+    $order = makeSteadfastOrder();
+    configureSteadfastWebhookSecret();
+
+    $response = postSignedSteadfastWebhook([
         'notification_type' => 'delivery_status',
         'consignment_id' => 'CONSIGN-ABC',
         'invoice' => 'ORD-WEBHOOK-1',
@@ -63,8 +148,9 @@ it('updates the order steadfast status from a delivery_status webhook', function
 
 it('matches the order by consignment_id when invoice is missing', function () {
     $order = makeSteadfastOrder();
+    configureSteadfastWebhookSecret();
 
-    $response = $this->postJson(route('steadfast.webhook'), [
+    $response = postSignedSteadfastWebhook([
         'notification_type' => 'delivery_status',
         'consignment_id' => 'CONSIGN-ABC',
         'status' => 'cancelled',
@@ -76,8 +162,9 @@ it('matches the order by consignment_id when invoice is missing', function () {
 
 it('ignores non delivery_status events without erroring', function () {
     makeSteadfastOrder();
+    configureSteadfastWebhookSecret();
 
-    $response = $this->postJson(route('steadfast.webhook'), [
+    $response = postSignedSteadfastWebhook([
         'notification_type' => 'tracking_update',
         'consignment_id' => 'CONSIGN-ABC',
     ]);
@@ -85,55 +172,64 @@ it('ignores non delivery_status events without erroring', function () {
     $response->assertOk();
 });
 
-it('rejects a request with an invalid signature when a webhook secret is configured', function () {
-    makeSteadfastOrder();
+it('rejects a malformed (non-JSON) body unless its exact bytes are correctly signed, and never crashes either way', function () {
+    $order = makeSteadfastOrder();
+    configureSteadfastWebhookSecret();
+    $malformed = '{not valid json';
 
-    Setting::create([
-        'key' => 'steadfast_webhook_secret',
-        'value' => 'super-secret',
-        'group' => 'courier',
-    ]);
+    // Wrong signature for this body — rejected, no crash, no change.
+    $this->call(
+        'POST', route('steadfast.webhook'), [], [], [],
+        ['CONTENT_TYPE' => 'application/json', 'HTTP_X-Signature' => 'wrong'],
+        $malformed,
+    )->assertStatus(401);
+    expect($order->refresh()->steadfast_status)->toBe('in_review');
 
-    $response = $this->postJson(route('steadfast.webhook'), [
-        'notification_type' => 'delivery_status',
-        'consignment_id' => 'CONSIGN-ABC',
-        'status' => 'delivered',
-    ], ['X-Signature' => 'wrong-signature']);
-
-    $response->assertStatus(401);
-    expect(Order::first()->steadfast_status)->toBe('in_review');
+    // Correctly signed, but still not valid JSON — Laravel's request
+    // parsing just yields no fields, so there's no notification_type to
+    // match; handled as a harmless no-op, not a crash.
+    $signature = hash_hmac('sha256', $malformed, 'super-secret');
+    $this->call(
+        'POST', route('steadfast.webhook'), [], [], [],
+        ['CONTENT_TYPE' => 'application/json', 'HTTP_X-Signature' => $signature],
+        $malformed,
+    )->assertOk();
+    expect($order->refresh()->steadfast_status)->toBe('in_review');
 });
 
-it('accepts a request with a valid signature when a webhook secret is configured', function () {
+it('replaying the same signed webhook does not create duplicate status history entries', function () {
     $order = makeSteadfastOrder();
+    configureSteadfastWebhookSecret();
 
-    Setting::create([
-        'key' => 'steadfast_webhook_secret',
-        'value' => 'super-secret',
-        'group' => 'courier',
-    ]);
-
-    $body = json_encode([
+    $payload = [
         'notification_type' => 'delivery_status',
         'consignment_id' => 'CONSIGN-ABC',
         'status' => 'delivered',
+    ];
+
+    postSignedSteadfastWebhook($payload)->assertOk();
+    expect($order->refresh()->steadfast_status)->toBe('delivered');
+    $historyCountAfterFirst = $order->statusHistories()->count();
+
+    // Steadfast retries the identical webhook (e.g. it didn't see our 200 in time).
+    postSignedSteadfastWebhook($payload)->assertOk();
+
+    expect($order->refresh()->steadfast_status)->toBe('delivered');
+    expect($order->statusHistories()->count())->toBe($historyCountAfterFirst);
+});
+
+it('a late, validly-signed delivered_parcels webhook cannot resurrect a cancelled order through the real controller', function () {
+    $order = makeSteadfastOrder();
+    configureSteadfastWebhookSecret();
+    $order->update(['status' => 'cancelled']);
+
+    $response = postSignedSteadfastWebhook([
+        'notification_type' => 'delivery_status',
+        'consignment_id' => 'CONSIGN-ABC',
+        'status' => 'delivered_parcels',
     ]);
 
-    $signature = hash_hmac('sha256', $body, 'super-secret');
-
-    $response = $this->call(
-        'POST',
-        route('steadfast.webhook'),
-        [],
-        [],
-        [],
-        [
-            'CONTENT_TYPE' => 'application/json',
-            'HTTP_X-Signature' => $signature,
-        ],
-        $body,
-    );
-
     $response->assertOk();
-    expect($order->refresh()->steadfast_status)->toBe('delivered');
+    expect($order->refresh()->status->value)->toBe('cancelled');
+    expect($order->payment_status->value)->toBe('unpaid');
 });

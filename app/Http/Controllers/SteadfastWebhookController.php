@@ -76,12 +76,18 @@ class SteadfastWebhookController extends Controller
     {
         $secret = Setting::where('key', 'steadfast_webhook_secret')->first()?->value;
 
-        // No secret configured — the auth token is optional per Steadfast's
-        // docs, so accept the request but note it was unverified.
+        // Fail closed, always — an unconfigured secret must never be
+        // treated as "verification not required." Until an admin
+        // configures a matching secret here and on Steadfast's merchant
+        // dashboard, every webhook is rejected rather than silently
+        // trusted; this is deliberately not environment-conditional (no
+        // "allow unsigned in local/test"), since that would just move the
+        // fail-open risk to a config/env flag that could be mis-set in
+        // production instead of removing it.
         if (blank($secret)) {
-            Log::warning('[Steadfast] Webhook received without a configured webhook secret; signature not verified');
+            Log::warning('[Steadfast] Webhook rejected: no webhook secret configured.');
 
-            return true;
+            return false;
         }
 
         $signature = $request->header('X-Signature');

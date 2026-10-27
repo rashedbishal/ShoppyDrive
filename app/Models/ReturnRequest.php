@@ -44,4 +44,38 @@ class ReturnRequest extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Statuses that permanently consume returnable quantity against the
+     * order item they reference. A rejected request never happened — the
+     * goods never actually left the customer — so it's deliberately
+     * excluded here, freeing that quantity back up for a new request.
+     *
+     * @return array<int, ReturnStatus>
+     */
+    public static function quantityConsumingStatuses(): array
+    {
+        return [ReturnStatus::PENDING, ReturnStatus::APPROVED, ReturnStatus::REFUNDED];
+    }
+
+    /**
+     * Sum, per order_item_id, how many units are already spoken for by
+     * this order's own non-rejected return requests. Callers that need
+     * this to be race-safe against a concurrent submission for the same
+     * order must call it after locking the order row in the same
+     * transaction (see ReturnRequestController::store()) — this method
+     * itself does not lock anything.
+     *
+     * @return array<int, int> order_item_id => committed quantity
+     */
+    public static function committedQuantitiesByOrderItem(Order $order): array
+    {
+        return $order->returnRequests()
+            ->whereIn('status', self::quantityConsumingStatuses())
+            ->get()
+            ->flatMap(fn (self $returnRequest) => $returnRequest->items)
+            ->groupBy('order_item_id')
+            ->map(fn ($group) => (int) $group->sum('quantity'))
+            ->all();
+    }
 }

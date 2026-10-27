@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\PopularKeywordController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\PromotionalBannerController;
 use App\Http\Controllers\Admin\ReceivedSmsController;
+use App\Http\Controllers\Admin\ReturnController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SmsForwarderSettingsController;
@@ -34,7 +35,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['redirect-customer-from-admin'])->group(function (): void {
     Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
-    Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.submit');
+    Route::post('/admin/login', [AdminAuthController::class, 'login'])
+        ->middleware('throttle:admin-login')
+        ->name('admin.login.submit');
     Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 });
 
@@ -86,6 +89,11 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::post('orders/{order}/pathao/refresh', [OrderController::class, 'refreshPathaoStatus'])->name('orders.pathao.refresh');
     Route::post('orders/{order}/steadfast/send', [OrderController::class, 'sendToSteadfast'])->name('orders.steadfast.send');
     Route::post('orders/{order}/steadfast/refresh', [OrderController::class, 'refreshSteadfastStatus'])->name('orders.steadfast.refresh');
+
+    Route::get('returns', [ReturnController::class, 'index'])->name('returns.index');
+    Route::patch('returns/{returnRequest}/approve', [ReturnController::class, 'approve'])->name('returns.approve');
+    Route::patch('returns/{returnRequest}/reject', [ReturnController::class, 'reject'])->name('returns.reject');
+    Route::patch('returns/{returnRequest}/refund', [ReturnController::class, 'markRefunded'])->name('returns.markRefunded');
 
     Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::get('customers/{user}', [CustomerController::class, 'show'])->name('customers.show');

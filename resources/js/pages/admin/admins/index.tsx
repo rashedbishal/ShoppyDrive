@@ -47,15 +47,19 @@ export default function AdminsIndex({ admins }: Props) {
         });
     };
 
+    // Mirrors AdminController's server-side authorization — only the
+    // mother admin manages other admins' accounts; everyone can still
+    // manage their own.
     const canEdit = (admin: AdminUser) => {
-        if (admin.is_mother && currentAdmin.id !== admin.id) return false;
-        return true;
+        if (admin.id === currentAdmin.id) return true;
+        if (admin.is_mother) return false;
+        return currentAdmin.is_mother;
     };
 
     const canDelete = (admin: AdminUser) => {
         if (admin.id === currentAdmin.id) return false;
         if (admin.is_mother) return false;
-        return true;
+        return currentAdmin.is_mother;
     };
 
     return (
@@ -71,12 +75,14 @@ export default function AdminsIndex({ admins }: Props) {
                             {admins.length} total
                         </p>
                     </div>
-                    <Link href={route('admin.admins.create')}>
-                        <Button className="bg-[#c8102e] text-white hover:bg-[#a50d25]">
-                            <Plus className="size-4" />
-                            New Admin
-                        </Button>
-                    </Link>
+                    {currentAdmin.is_mother && (
+                        <Link href={route('admin.admins.create')}>
+                            <Button className="bg-[#c8102e] text-white hover:bg-[#a50d25]">
+                                <Plus className="size-4" />
+                                New Admin
+                            </Button>
+                        </Link>
+                    )}
                 </div>
 
                 {flash?.success && (

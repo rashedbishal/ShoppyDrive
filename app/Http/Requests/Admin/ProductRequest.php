@@ -63,9 +63,14 @@ class ProductRequest extends FormRequest
                     $fail('The '.$attribute.' must be a valid string, image, or video file.');
                 }
                 if ($value instanceof UploadedFile) {
+                    // Explicit raster allowlist, not a blanket "image/*"
+                    // prefix check — that previously admitted
+                    // image/svg+xml, which is served straight from public
+                    // storage with no sanitization (stored XSS).
                     $mime = $value->getMimeType();
-                    if (! str_starts_with($mime, 'image/') && ! str_starts_with($mime, 'video/')) {
-                        $fail('The '.$attribute.' must be an image or a video.');
+                    $allowedImageMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+                    if (! in_array($mime, $allowedImageMimes, true) && ! str_starts_with($mime, 'video/')) {
+                        $fail('The '.$attribute.' must be a JPEG, PNG, WebP, GIF image, or a video.');
                     }
                 }
             }],

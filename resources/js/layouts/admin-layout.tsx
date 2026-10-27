@@ -26,6 +26,7 @@ import {
     Tag,
     Trash2,
     Truck,
+    Undo2,
     UserCog,
     Users,
     X,
@@ -118,6 +119,12 @@ const navSections: NavSection[] = [
                 label: 'Incomplete Orders',
                 href: '/admin/orders/incomplete',
                 icon: PhoneMissed,
+                extraMatches: [] as string[],
+            },
+            {
+                label: 'Returns',
+                href: '/admin/returns',
+                icon: Undo2,
                 extraMatches: [] as string[],
             },
             {

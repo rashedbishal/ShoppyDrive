@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\CouponType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Coupon extends Model
 {
@@ -36,5 +37,50 @@ class Coupon extends Model
             'expires_at' => 'datetime',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function uses(): HasMany
+    {
+        return $this->hasMany(CouponUse::class);
+    }
+
+    /**
+     * The single source of truth for "can this coupon be applied right
+     * now" — used identically by the /coupon/validate preview endpoint
+     * and the authoritative check in CheckoutController::resolveCoupon(),
+     * so the two can never disagree about eligibility. Returns a
+     * human-readable error, or null if eligible. Does NOT check
+     * max_uses/per_user_limit under a lock — that race-sensitive,
+     * authoritative re-check happens separately in CouponService::consume()
+     * at the moment of actual order creation, mirroring how flash-sale
+     * stock caps are only authoritatively enforced at commit time.
+     */
+    public function eligibilityError(float $subtotal, ?int $userId): ?string
+    {
+        if (! $this->is_active) {
+            return 'This coupon is not active.';
+        }
+
+        if ($this->starts_at && $this->starts_at->isFuture()) {
+            return 'This coupon is not yet active.';
+        }
+
+        if ($this->expires_at && $this->expires_at->isPast()) {
+            return 'This coupon has expired.';
+        }
+
+        if ($this->max_uses !== null && $this->used_count >= $this->max_uses) {
+            return 'This coupon has reached its usage limit.';
+        }
+
+        if ($this->min_order_amount !== null && $subtotal < $this->min_order_amount) {
+            return 'Minimum order amount of ৳'.number_format($this->min_order_amount, 0).' required.';
+        }
+
+        if ($userId !== null && $this->uses()->where('user_id', $userId)->count() >= $this->per_user_limit) {
+            return 'You have already used this coupon the maximum number of times.';
+        }
+
+        return null;
     }
 }

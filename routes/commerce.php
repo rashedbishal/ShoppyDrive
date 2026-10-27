@@ -53,30 +53,19 @@ Route::post('/coupon/validate', function (Request $request) {
         'subtotal' => ['required', 'numeric', 'min:0'],
     ]);
 
-    $coupon = Coupon::where('code', strtoupper(trim($request->code)))
-        ->where('is_active', true)
-        ->first();
+    $coupon = Coupon::where('code', strtoupper(trim($request->code)))->first();
 
     if (! $coupon) {
         return response()->json(['error' => 'Invalid coupon code.'], 422);
     }
 
-    if ($coupon->starts_at && $coupon->starts_at->isFuture()) {
-        return response()->json(['error' => 'This coupon is not yet active.'], 422);
-    }
+    // Same check CheckoutController::resolveCoupon() uses at actual
+    // checkout time, so this preview can never promise a discount the
+    // real submission would then reject.
+    $error = $coupon->eligibilityError((float) $request->subtotal, $request->user()?->id);
 
-    if ($coupon->expires_at && $coupon->expires_at->isPast()) {
-        return response()->json(['error' => 'This coupon has expired.'], 422);
-    }
-
-    if ($coupon->max_uses !== null && $coupon->used_count >= $coupon->max_uses) {
-        return response()->json(['error' => 'This coupon has reached its usage limit.'], 422);
-    }
-
-    if ($coupon->min_order_amount !== null && $request->subtotal < $coupon->min_order_amount) {
-        return response()->json([
-            'error' => 'Minimum order amount of ৳'.number_format($coupon->min_order_amount, 0).' required.',
-        ], 422);
+    if ($error !== null) {
+        return response()->json(['error' => $error], 422);
     }
 
     return response()->json(['coupon' => $coupon]);

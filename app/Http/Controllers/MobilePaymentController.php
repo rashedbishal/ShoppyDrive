@@ -6,6 +6,8 @@ namespace App\Http\Controllers;
 
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Exceptions\CouponUnavailableException;
+use App\Exceptions\InsufficientStockException;
 use App\Models\Cart;
 use App\Models\IncompleteOrder;
 use App\Models\Order;
@@ -13,6 +15,8 @@ use App\Models\Payment;
 use App\Models\PendingCheckout;
 use App\Models\ReceivedSms;
 use App\Models\Setting;
+use App\Services\CouponService;
+use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +31,8 @@ class MobilePaymentController extends Controller
     public function __construct(
         private readonly ReferralService $referrals,
         private readonly LoyaltyPointsService $loyalty,
+        private readonly InventoryService $inventory,
+        private readonly CouponService $coupons,
     ) {}
 
     /**
@@ -97,11 +103,19 @@ class MobilePaymentController extends Controller
                     return Order::where('order_number', $freshPending->order_number)->firstOrFail();
                 }
 
+                // Lock the row for this (provider, transaction id) regardless of
+                // match status: a unique DB constraint guarantees at most one row
+                // exists per real transaction, so the lock serializes concurrent
+                // or duplicate-SMS claims against the same transaction and lets
+                // us tell "already consumed" apart from "never existed".
                 $sms = ReceivedSms::lockForUpdate()
                     ->where('parsed_transaction_id', $transactionId)
                     ->where('provider', $provider)
-                    ->where('is_matched', false)
                     ->first();
+
+                if ($sms && $sms->is_matched) {
+                    throw new \RuntimeException('already_used');
+                }
 
                 if (! $sms) {
                     // Check if TxnID exists but for a different provider
@@ -159,9 +173,11 @@ class MobilePaymentController extends Controller
                 ]);
 
                 foreach ($data['items'] as $item) {
+                    $flashSaleItemId = $this->inventory->decrementForOrderItem($order, $item['product_id'], $item['variant_id'], $item['quantity'], (float) $item['price']);
                     $order->items()->create([
                         'product_id' => $item['product_id'],
                         'variant_id' => $item['variant_id'],
+                        'flash_sale_item_id' => $flashSaleItemId,
                         'product_name' => $item['product_name'],
                         'sku' => $item['sku'],
                         'price' => $item['price'],
@@ -169,6 +185,10 @@ class MobilePaymentController extends Controller
                         'subtotal' => $item['subtotal'],
                         'product_snapshot' => $item['product_snapshot'],
                     ]);
+                }
+
+                if ($data['coupon_id'] !== null) {
+                    $this->coupons->consume($data['coupon_id'], $order, $freshPending->user_id, (float) $data['discount']);
                 }
 
                 Payment::create([
@@ -188,10 +208,12 @@ class MobilePaymentController extends Controller
                 $sms->update(['is_matched' => true, 'matched_order_id' => $order->id]);
                 $freshPending->update(['order_number' => $order->order_number]);
 
-                // A real order went through for this phone number, so any
-                // abandoned-checkout rows tracked against it no longer apply.
+                // A real order went through for this phone number (or this
+                // logged-in customer, who may have used a different phone
+                // number than their abandoned attempt), so any abandoned-
+                // checkout rows tracked against it no longer apply.
                 if (! empty($data['shipping_address']['phone'])) {
-                    IncompleteOrder::where('phone', $data['shipping_address']['phone'])->delete();
+                    IncompleteOrder::deleteCompletedFor($data['shipping_address']['phone'], $order->user_id);
                 }
 
                 if ($freshPending->cart_id) {
@@ -215,6 +237,14 @@ class MobilePaymentController extends Controller
             $providerLabel = $provider === 'bkash' ? 'Bkash' : 'Nagad';
 
             return match (true) {
+                $e instanceof InsufficientStockException => back()->withErrors([
+                    'transaction_id' => $msg,
+                ]),
+
+                $e instanceof CouponUnavailableException => back()->withErrors([
+                    'transaction_id' => $msg,
+                ]),
+
                 $msg === 'expired' => redirect()->route('checkout.index')
                     ->with('error', 'Payment session expired.'),
 
@@ -224,6 +254,10 @@ class MobilePaymentController extends Controller
 
                 $msg === 'wrong_provider' => back()->withErrors([
                     'transaction_id' => 'This Transaction ID belongs to a different payment provider. Please select the correct one.',
+                ]),
+
+                $msg === 'already_used' => back()->withErrors([
+                    'transaction_id' => 'This Transaction ID has already been used to pay for another order.',
                 ]),
 
                 str_starts_with($msg, 'amount_mismatch:') => back()->withErrors([

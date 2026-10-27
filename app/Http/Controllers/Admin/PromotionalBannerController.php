@@ -7,10 +7,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\PromotionalBanner;
+use App\Rules\RasterImageOrUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -33,11 +33,7 @@ class PromotionalBannerController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'image' => ['nullable', function ($attribute, $value, $fail): void {
-                if ($value !== null && ! is_string($value) && ! ($value instanceof UploadedFile)) {
-                    $fail("The {$attribute} must be an image file.");
-                }
-            }],
+            'image' => ['nullable', new RasterImageOrUrl],
             'href' => ['nullable', 'string', 'max:255'],
             'badge' => ['nullable', 'string', 'max:100'],
             'accent' => ['nullable', 'string', 'max:255'],
@@ -69,11 +65,7 @@ class PromotionalBannerController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'image' => ['nullable', function ($attribute, $value, $fail): void {
-                if ($value !== null && ! is_string($value) && ! ($value instanceof UploadedFile)) {
-                    $fail("The {$attribute} must be an image file.");
-                }
-            }],
+            'image' => ['nullable', new RasterImageOrUrl],
             'href' => ['nullable', 'string', 'max:255'],
             'badge' => ['nullable', 'string', 'max:100'],
             'accent' => ['nullable', 'string', 'max:255'],

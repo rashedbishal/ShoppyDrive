@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\PaymentMethod;
+use App\Exceptions\CouponUnavailableException;
+use App\Exceptions\InsufficientStockException;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\Address;
 use App\Models\Cart;
@@ -17,6 +19,8 @@ use App\Models\PendingCheckout;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Services\CouponService;
+use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
 use App\Support\CartManager;
@@ -33,6 +37,8 @@ class CheckoutController extends Controller
         private readonly CartManager $cartManager,
         private readonly ReferralService $referrals,
         private readonly LoyaltyPointsService $loyalty,
+        private readonly InventoryService $inventory,
+        private readonly CouponService $coupons,
     ) {}
 
     public function index(Request $request): Response
@@ -135,92 +141,121 @@ class CheckoutController extends Controller
             $cart->setRelation('items', $this->cartManager->validItems($cart));
 
             abort_if($cart->items->isEmpty(), 422, 'Your cart is empty.');
+
+            // A cart item's price is a snapshot frozen at the last add/sync
+            // — it can go stale (a flash sale started, ended, or sold out)
+            // between then and now. Re-resolve against current state and
+            // refuse to silently charge a different amount than the
+            // checkout page just showed; the redirect back re-renders the
+            // cart with the corrected prices for the customer to confirm.
+            if ($this->cartManager->revalidatePrices($cart)) {
+                return back()->with('error', 'Some prices in your cart have changed. Please review your updated cart and try again.');
+            }
         }
 
         $shippingAddress = $this->resolveShippingAddress($request);
 
         $subtotal = $cart->items->sum(fn ($item) => $item->price * $item->quantity);
         $shippingCost = $this->calculateShippingCost($shippingAddress, $cart, $subtotal);
-        [$couponId, $couponCode, $couponDiscount] = $this->resolveCoupon($request, $subtotal);
+
+        try {
+            [$couponId, $couponCode, $couponDiscount] = $this->resolveCoupon($request, $subtotal);
+        } catch (CouponUnavailableException $e) {
+            return back()->withErrors(['coupon_code' => $e->getMessage()])->withInput();
+        }
 
         // ── COD ─────────────────────────────────────────────────────────────
         if ($request->payment_method === PaymentMethod::COD->value) {
-            $order = DB::transaction(function () use ($request, $cart, $isBuyNow, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $couponDiscount) {
-                $this->maybeAutoSaveAddress($request, $shippingAddress);
+            try {
+                $order = DB::transaction(function () use ($request, $cart, $isBuyNow, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $couponDiscount) {
+                    $this->maybeAutoSaveAddress($request, $shippingAddress);
 
-                // Locking the purchaser's row here (rather than before the
-                // transaction) lets us re-check referral/points eligibility
-                // against a guaranteed-fresh row, so two concurrent COD
-                // checkouts by the same user can never both consume the
-                // one-time referral discount or double-spend points.
-                $lockedUser = auth()->check() ? $this->referrals->lockUser(auth()->id()) : null;
-                [$discount, $finalCouponId, $finalCouponCode, $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount] =
-                    $this->resolveFinalDiscount($request, $subtotal, $couponId, $couponCode, $couponDiscount, $lockedUser);
+                    // Locking the purchaser's row here (rather than before the
+                    // transaction) lets us re-check referral/points eligibility
+                    // against a guaranteed-fresh row, so two concurrent COD
+                    // checkouts by the same user can never both consume the
+                    // one-time referral discount or double-spend points.
+                    $lockedUser = auth()->check() ? $this->referrals->lockUser(auth()->id()) : null;
+                    [$discount, $finalCouponId, $finalCouponCode, $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount] =
+                        $this->resolveFinalDiscount($request, $subtotal, $couponId, $couponCode, $couponDiscount, $lockedUser);
 
-                $total = max(0, $subtotal - $discount + $shippingCost);
+                    $total = max(0, $subtotal - $discount + $shippingCost);
 
-                $order = Order::create([
-                    'order_number' => $this->generateOrderNumber(),
-                    'user_id' => auth()->id(),
-                    'status' => 'pending',
-                    'payment_status' => 'unpaid',
-                    'payment_method' => PaymentMethod::COD->value,
-                    'subtotal' => $subtotal,
-                    'shipping_cost' => $shippingCost,
-                    'discount' => $discount,
-                    'coupon_id' => $finalCouponId,
-                    'coupon_code' => $finalCouponCode,
-                    'used_referral_discount' => $usedReferralDiscount,
-                    'points_redeemed' => $pointsToRedeem ?: null,
-                    'tax' => 0,
-                    'total' => $total,
-                    'shipping_address' => $shippingAddress,
-                    'billing_address' => $shippingAddress,
-                ]);
-
-                $order->statusHistories()->create(['status' => 'pending', 'notes' => 'Order placed successfully.']);
-
-                foreach ($cart->items as $item) {
-                    $product = $item->product;
-                    $order->items()->create([
-                        'product_id' => $item->product_id,
-                        'variant_id' => $item->variant_id,
-                        'product_name' => $product->name,
-                        'sku' => $item->variant?->sku ?? $product->sku,
-                        'price' => $item->price,
-                        'quantity' => $item->quantity,
-                        'subtotal' => $item->price * $item->quantity,
-                        'product_snapshot' => [
-                            'id' => $product->id,
-                            'name' => $product->name,
-                            'sku' => $product->sku,
-                            'price' => $item->price,
-                            'image' => $item->variant?->image ?? $product->images->first()?->path,
-                            'variant_attributes' => $item->variant?->attributes,
-                        ],
+                    $order = Order::create([
+                        'order_number' => $this->generateOrderNumber(),
+                        'user_id' => auth()->id(),
+                        'status' => 'pending',
+                        'payment_status' => 'unpaid',
+                        'payment_method' => PaymentMethod::COD->value,
+                        'subtotal' => $subtotal,
+                        'shipping_cost' => $shippingCost,
+                        'discount' => $discount,
+                        'coupon_id' => $finalCouponId,
+                        'coupon_code' => $finalCouponCode,
+                        'used_referral_discount' => $usedReferralDiscount,
+                        'points_redeemed' => $pointsToRedeem ?: null,
+                        'tax' => 0,
+                        'total' => $total,
+                        'shipping_address' => $shippingAddress,
+                        'billing_address' => $shippingAddress,
                     ]);
-                }
 
-                if ($lockedUser) {
-                    if ($usedReferralDiscount) {
-                        $this->referrals->markReferralDiscountUsed($order, $lockedUser);
+                    $order->statusHistories()->create(['status' => 'pending', 'notes' => 'Order placed successfully.']);
+
+                    foreach ($cart->items as $item) {
+                        $product = $item->product;
+                        $flashSaleItemId = $this->inventory->decrementForOrderItem($order, $item->product_id, $item->variant_id, $item->quantity, (float) $item->price);
+                        $order->items()->create([
+                            'product_id' => $item->product_id,
+                            'variant_id' => $item->variant_id,
+                            'flash_sale_item_id' => $flashSaleItemId,
+                            'product_name' => $product->name,
+                            'sku' => $item->variant?->sku ?? $product->sku,
+                            'price' => $item->price,
+                            'quantity' => $item->quantity,
+                            'subtotal' => $item->price * $item->quantity,
+                            'product_snapshot' => [
+                                'id' => $product->id,
+                                'name' => $product->name,
+                                'sku' => $product->sku,
+                                'price' => $item->price,
+                                'image' => $item->variant?->image ?? $product->images->first()?->path,
+                                'variant_attributes' => $item->variant?->attributes,
+                            ],
+                        ]);
                     }
-                    if ($pointsToRedeem > 0) {
-                        $this->loyalty->debitPointsForOrder($order, $lockedUser, $pointsToRedeem, $pointsDiscountAmount);
+
+                    if ($finalCouponId !== null) {
+                        $this->coupons->consume($finalCouponId, $order, auth()->id(), $discount);
                     }
-                }
 
-                if (! $isBuyNow) {
-                    $cart->items()->delete();
-                    $cart->delete();
-                }
+                    if ($lockedUser) {
+                        if ($usedReferralDiscount) {
+                            $this->referrals->markReferralDiscountUsed($order, $lockedUser);
+                        }
+                        if ($pointsToRedeem > 0) {
+                            $this->loyalty->debitPointsForOrder($order, $lockedUser, $pointsToRedeem, $pointsDiscountAmount);
+                        }
+                    }
 
-                // A real order went through for this phone number, so any
-                // abandoned-checkout rows tracked against it no longer apply.
-                IncompleteOrder::where('phone', $shippingAddress['phone'])->delete();
+                    if (! $isBuyNow) {
+                        $cart->items()->delete();
+                        $cart->delete();
+                    }
 
-                return $order;
-            });
+                    // A real order went through for this phone number (or
+                    // this logged-in customer, who may have used a different
+                    // phone number than their abandoned attempt), so any
+                    // abandoned-checkout rows tracked against it no longer apply.
+                    IncompleteOrder::deleteCompletedFor($shippingAddress['phone'], $order->user_id);
+
+                    return $order;
+                });
+            } catch (InsufficientStockException $e) {
+                return back()->withErrors(['items' => $e->getMessage()])->withInput();
+            } catch (CouponUnavailableException $e) {
+                return back()->withErrors(['coupon_code' => $e->getMessage()])->withInput();
+            }
 
             return redirect()->route('order.confirmation', $order->order_number);
         }
@@ -441,7 +476,16 @@ class CheckoutController extends Controller
         return $cart;
     }
 
-    /** @return array{0: int|null, 1: string|null, 2: float} */
+    /**
+     * A preview check only — it validates eligibility and computes the
+     * discount amount, but does not touch `used_count`. Usage is only
+     * ever counted inside CouponService::consume(), at the moment an
+     * order is actually created (see CouponService's docblock for why).
+     *
+     * @return array{0: int|null, 1: string|null, 2: float}
+     *
+     * @throws CouponUnavailableException
+     */
     private function resolveCoupon(PlaceOrderRequest $request, float $subtotal): array
     {
         $code = $request->coupon_code ? strtoupper(trim($request->coupon_code)) : null;
@@ -449,16 +493,21 @@ class CheckoutController extends Controller
             return [null, null, 0.0];
         }
 
-        $coupon = Coupon::where('code', $code)->where('is_active', true)->first();
-        if (! $coupon) {
-            return [null, null, 0.0];
+        $coupon = Coupon::where('code', $code)->first();
+
+        if ($coupon === null) {
+            throw CouponUnavailableException::because('Invalid coupon code.');
+        }
+
+        $error = $coupon->eligibilityError($subtotal, auth()->id());
+
+        if ($error !== null) {
+            throw CouponUnavailableException::because($error);
         }
 
         $discount = $coupon->type->value === 'percent'
             ? min($subtotal, $subtotal * $coupon->value / 100)
             : min($subtotal, $coupon->value);
-
-        $coupon->increment('used_count');
 
         return [$coupon->id, $coupon->code, round($discount, 2)];
     }

@@ -3,6 +3,7 @@
 use App\Enums\OrderStatus;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\ReferralController;
+use App\Http\Controllers\ReturnRequestController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Address;
 use App\Models\Order;
@@ -61,12 +62,14 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
             abort(403);
         }
 
-        $order->load(['items.product', 'statusHistories']);
+        $order->load(['items.product', 'statusHistories', 'latestReturnRequest']);
 
         return inertia('account/OrderDetail', [
             'order' => $order,
         ]);
     })->name('account.orders.show');
+
+    Route::post('/orders/{order:order_number}/return', [ReturnRequestController::class, 'store'])->name('account.orders.return.store');
 
     Route::get('/orders/{order:order_number}/invoice', function (Order $order) {
         if ($order->user_id !== auth()->id()) {

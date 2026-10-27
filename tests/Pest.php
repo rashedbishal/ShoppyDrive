@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Admin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,4 +48,24 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * is_mother is deliberately not mass-assignable (see Admin::$fillable) —
+ * tests that need a mother admin must set it via forceFill(), exactly
+ * like the one legitimate place in the app that does (CreateMotherAdminCommand).
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function createMotherAdmin(array $attributes = []): Admin
+{
+    $admin = Admin::create(array_merge([
+        'name' => 'Mother Admin',
+        'email' => 'mother-'.uniqid().'@example.com',
+        'password' => bcrypt('password'),
+    ], $attributes));
+
+    $admin->forceFill(['is_mother' => true])->save();
+
+    return $admin;
 }

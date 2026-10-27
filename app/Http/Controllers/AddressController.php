@@ -75,6 +75,12 @@ class AddressController extends Controller
 
     private function validateAddress(Request $request): array
     {
+        // Normalize before validating: an unchecked checkbox simply omits
+        // the key, and `boolean` alone (without `sometimes`/a default) then
+        // leaves it out of validated() entirely, so $validated['is_default']
+        // below would throw on a key that was never sent.
+        $request->merge(['is_default' => $request->boolean('is_default')]);
+
         return $request->validate([
             'label' => ['nullable', 'string', 'max:100'],
             'name' => ['required', 'string', 'max:255'],

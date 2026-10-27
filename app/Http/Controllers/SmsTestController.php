@@ -7,6 +7,8 @@ namespace App\Http\Controllers;
 use App\Models\ReceivedSms;
 use App\Services\SmsParserService;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -15,7 +17,7 @@ class SmsTestController extends Controller
 {
     public function __construct(private readonly SmsParserService $parser) {}
 
-    private function parseReceivedAt(mixed $value): Carbon
+    private function parseReceivedAt(mixed $value): CarbonInterface
     {
         if ($value === null) {
             return now();
@@ -49,14 +51,41 @@ class SmsTestController extends Controller
         $content = (string) $request->input('content', '');
         $parsed = $this->parser->parse($content);
 
-        $sms = ReceivedSms::create([
-            'sender' => $request->input('from', ''),
-            'provider' => $parsed['provider'],
-            'content' => $content,
-            'received_at' => $this->parseReceivedAt($request->input('received_at')),
-            'parsed_transaction_id' => $parsed['transaction_id'],
-            'parsed_amount' => $parsed['amount'],
-        ]);
+        try {
+            $sms = ReceivedSms::create([
+                'sender' => $request->input('from', ''),
+                'provider' => $parsed['provider'],
+                'content' => $content,
+                'received_at' => $this->parseReceivedAt($request->input('received_at')),
+                'parsed_transaction_id' => $parsed['transaction_id'],
+                'parsed_amount' => $parsed['amount'],
+            ]);
+        } catch (QueryException $e) {
+            // A (provider, parsed_transaction_id) unique constraint protects
+            // against the same real transaction being claimable twice. The
+            // forwarder app retries on any network hiccup, so a duplicate
+            // delivery of the same SMS is expected, not an error — ignore it.
+            // SQLSTATE 23000 covers any integrity-constraint violation, not
+            // just this one, so confirm a row for this exact key actually
+            // exists before swallowing the error — otherwise rethrow so an
+            // unrelated failure (e.g. a NOT NULL violation) surfaces as one.
+            $isDuplicateKey = $parsed['transaction_id'] !== null
+                && $e->getCode() === '23000'
+                && ReceivedSms::where('provider', $parsed['provider'])
+                    ->where('parsed_transaction_id', $parsed['transaction_id'])
+                    ->exists();
+
+            if (! $isDuplicateKey) {
+                throw $e;
+            }
+
+            Log::info('SMS received (duplicate delivery ignored)', [
+                'provider' => $parsed['provider'],
+                'transaction_id' => $parsed['transaction_id'],
+            ]);
+
+            return response()->json(['status' => 'ok']);
+        }
 
         Log::info('SMS received', [
             'id' => $sms->id,

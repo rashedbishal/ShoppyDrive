@@ -21,13 +21,17 @@ class IncompleteOrderFactory extends Factory
     {
         $product = Product::factory()->create();
 
+        $price = (float) $product->price;
+        $quantity = fake()->numberBetween(1, 3);
+
         $items = [[
             'product_id' => $product->id,
             'variant_id' => null,
             'product_name' => $product->name,
             'sku' => $product->sku,
-            'price' => (float) $product->price,
-            'quantity' => fake()->numberBetween(1, 3),
+            'price' => $price,
+            'quantity' => $quantity,
+            'subtotal' => $price * $quantity,
             'image' => null,
             'variant_attributes' => null,
         ]];
