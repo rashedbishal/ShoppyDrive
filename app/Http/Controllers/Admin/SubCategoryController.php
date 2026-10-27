@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\FlashesDeletionBlockedByProducts;
 use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SubCategoryRequest;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\SubCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,7 +19,7 @@ use Inertia\Response;
 
 class SubCategoryController extends Controller
 {
-    use UpdatesStatusInBulk;
+    use FlashesDeletionBlockedByProducts, UpdatesStatusInBulk;
 
     public function index(Request $request): Response
     {
@@ -80,6 +82,20 @@ class SubCategoryController extends Controller
 
     public function destroy(SubCategory $subCategory): RedirectResponse
     {
+        // Deleting a sub-category would also delete (hide) every product in
+        // it, so refuse while it still has any — they must be moved or
+        // deleted first.
+        $products = $subCategory->products()->get(['id', 'name', 'slug']);
+
+        if ($products->isNotEmpty()) {
+            $this->flashDeletionBlockedByProducts(
+                "Can't delete \"{$subCategory->name}\" — it's used by {$products->count()} product(s). Move or delete those products first.",
+                $products,
+            );
+
+            return redirect()->route('admin.sub-categories.index');
+        }
+
         $subCategory->delete();
 
         return redirect()->route('admin.sub-categories.index')->with('success', 'Sub-category deleted.');
@@ -99,7 +115,25 @@ class SubCategoryController extends Controller
             'ids.*' => ['integer', 'distinct', 'exists:sub_categories,id'],
         ])['ids'];
 
-        SubCategory::whereIn('id', $ids)->delete();
+        $subCategories = SubCategory::whereIn('id', $ids)->get();
+        $products = Product::whereIn('sub_category_id', $ids)->get(['id', 'name', 'slug', 'sub_category_id']);
+
+        // All-or-nothing, like brands: any sub-category still in use blocks
+        // the whole batch rather than silently skipping it.
+        if ($products->isNotEmpty()) {
+            $blockedCount = $products->pluck('sub_category_id')->unique()->count();
+
+            $this->flashDeletionBlockedByProducts(
+                "Can't delete — {$blockedCount} of the selected sub-category(ies) are used by {$products->count()} product(s). Move or delete those products first.",
+                $products,
+            );
+
+            return redirect()->route('admin.sub-categories.index');
+        }
+
+        // Per-model delete (not a query-builder delete) so the model's
+        // deleting hook runs, same as single delete.
+        $subCategories->each(fn (SubCategory $subCategory) => $subCategory->delete());
 
         return redirect()->route('admin.sub-categories.index')->with('success', count($ids).' sub-category(ies) deleted.');
     }
