@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\FlushesSearchSuggestions;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Brand extends Model
 {
-    use HasFactory;
+    use FlushesSearchSuggestions, HasFactory;
+
+    /** Columns the search-bar suggestions depend on (see FlushesSearchSuggestions). */
+    public const SEARCH_SUGGESTION_FIELDS = ['name', 'slug', 'is_active'];
 
     protected $fillable = [
         'name',

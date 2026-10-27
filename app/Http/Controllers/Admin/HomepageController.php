@@ -10,6 +10,7 @@ use App\Models\Brand;
 use App\Models\HomepageSetting;
 use App\Models\Product;
 use App\Support\LayoutCache;
+use App\Support\SearchSuggestionCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -85,6 +86,10 @@ class HomepageController extends Controller
             if (! empty($productIds)) {
                 Product::whereIn('id', $productIds)->update(['is_featured' => true]);
             }
+
+            // Bulk update() fires no model events; featured products rank
+            // first in search suggestions.
+            SearchSuggestionCache::flush();
         }
 
         if ($setting->section_key === 'new_arrivals' || $setting->section_key === 'best_sellers') {
@@ -117,6 +122,9 @@ class HomepageController extends Controller
             if (! empty($brandIds)) {
                 Brand::whereIn('id', $brandIds)->update(['is_active' => true]);
             }
+
+            // Bulk update() fires no model events; only active brands are suggested.
+            SearchSuggestionCache::flush();
         }
 
         return redirect()->route('admin.homepage.index')->with('success', 'Homepage section updated.');

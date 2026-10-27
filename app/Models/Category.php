@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Concerns\FlushesLayoutCache;
+use App\Concerns\FlushesSearchSuggestions;
 use App\Support\LayoutCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Category extends Model
 {
-    use FlushesLayoutCache, HasFactory, SoftDeletes;
+    use FlushesLayoutCache, FlushesSearchSuggestions, HasFactory, SoftDeletes;
+
+    /** Columns the search-bar suggestions depend on (see FlushesSearchSuggestions). */
+    public const SEARCH_SUGGESTION_FIELDS = ['name', 'slug', 'is_active'];
 
     /** LayoutCache entries built from this table (see FlushesLayoutCache). */
     public const LAYOUT_CACHE_KEYS = [LayoutCache::NAV_CATEGORIES];

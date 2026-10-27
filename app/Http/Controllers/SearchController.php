@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Review;
 use App\Models\SubCategory;
 use App\Support\ProductSearchQuery;
+use App\Support\SearchSuggestionCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -118,54 +119,56 @@ class SearchController extends Controller
             return response()->json($empty);
         }
 
-        $products = Product::query()
-            ->active()
-            ->published()
-            ->with(['images'])
-            ->where(fn ($q) => ProductSearchQuery::apply($q, $query, includeShortDescription: false))
-            ->orderByDesc('is_featured')
-            ->limit(4)
-            ->get()
-            ->map(fn ($p) => [
-                'id' => $p->id,
-                'name' => $p->name,
-                'slug' => $p->slug,
-                'price' => $p->price,
-                'compare_price' => $p->compare_price,
-                'primary_image_url' => $p->images->first()?->path,
-                'images' => $p->images->map(fn ($i) => ['path' => $i->path])->values(),
-            ]);
+        return response()->json(SearchSuggestionCache::remember($query, function () use ($query): array {
+            $products = Product::query()
+                ->active()
+                ->published()
+                ->with(['images'])
+                ->where(fn ($q) => ProductSearchQuery::apply($q, $query, includeShortDescription: false))
+                ->orderByDesc('is_featured')
+                ->limit(4)
+                ->get()
+                ->map(fn ($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'slug' => $p->slug,
+                    'price' => $p->price,
+                    'compare_price' => $p->compare_price,
+                    'primary_image_url' => $p->images->first()?->path,
+                    'images' => $p->images->map(fn ($i) => ['path' => $i->path])->values(),
+                ]);
 
-        $brands = Brand::query()
-            ->active()
-            ->where('name', 'like', "%{$query}%")
-            ->limit(3)
-            ->get(['id', 'name', 'slug']);
+            $brands = Brand::query()
+                ->active()
+                ->where('name', 'like', "%{$query}%")
+                ->limit(3)
+                ->get(['id', 'name', 'slug']);
 
-        $categories = Category::query()
-            ->active()
-            ->where('name', 'like', "%{$query}%")
-            ->limit(3)
-            ->get(['id', 'name', 'slug']);
+            $categories = Category::query()
+                ->active()
+                ->where('name', 'like', "%{$query}%")
+                ->limit(3)
+                ->get(['id', 'name', 'slug']);
 
-        $subcategories = SubCategory::query()
-            ->active()
-            ->where('name', 'like', "%{$query}%")
-            ->with(['category:id,name,slug'])
-            ->limit(3)
-            ->get(['id', 'name', 'slug', 'category_id'])
-            ->map(fn ($s) => [
-                'id' => $s->id,
-                'name' => $s->name,
-                'slug' => $s->slug,
-                'category_name' => $s->category?->name,
-            ]);
+            $subcategories = SubCategory::query()
+                ->active()
+                ->where('name', 'like', "%{$query}%")
+                ->with(['category:id,name,slug'])
+                ->limit(3)
+                ->get(['id', 'name', 'slug', 'category_id'])
+                ->map(fn ($s) => [
+                    'id' => $s->id,
+                    'name' => $s->name,
+                    'slug' => $s->slug,
+                    'category_name' => $s->category?->name,
+                ]);
 
-        return response()->json([
-            'products' => $products,
-            'brands' => $brands,
-            'categories' => $categories,
-            'subcategories' => $subcategories,
-        ]);
+            return [
+                'products' => $products->toArray(),
+                'brands' => $brands->toArray(),
+                'categories' => $categories->toArray(),
+                'subcategories' => $subcategories->toArray(),
+            ];
+        }));
     }
 }
