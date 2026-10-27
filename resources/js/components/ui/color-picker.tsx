@@ -1,11 +1,18 @@
+import { Pipette, Shuffle } from 'lucide-react';
 import React from 'react';
-import { Select } from '@/components/ui/select';
+import { ComboboxField } from '@/components/ui/combobox';
 import { CATEGORY_COLOR_OPTIONS, isHexColor, resolveCategoryColor } from '@/lib/category-colors';
 import { cn } from '@/lib/utils';
 
 const CUSTOM_VALUE = '__custom__';
-const AUTO_VALUE = '';
+const AUTO_VALUE = '__auto__';
 const DEFAULT_CUSTOM_HEX = '#3b82f6';
+
+const PICKER_OPTIONS = [
+    { value: AUTO_VALUE, label: 'Automatic (rotate colors)' },
+    ...CATEGORY_COLOR_OPTIONS,
+    { value: CUSTOM_VALUE, label: 'Custom color…' },
+];
 
 interface ColorPickerProps {
     value: string | null;
@@ -19,9 +26,7 @@ export function ColorPicker({ value, onChange, error, className }: ColorPickerPr
     const selectValue = value == null ? AUTO_VALUE : isCustom ? CUSTOM_VALUE : value;
     const previewColor = resolveCategoryColor(value, 0);
 
-    const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const next = e.target.value;
-
+    const handleSelect = (next: string) => {
         if (next === AUTO_VALUE) {
             onChange(null);
         } else if (next === CUSTOM_VALUE) {
@@ -41,23 +46,59 @@ export function ColorPicker({ value, onChange, error, className }: ColorPickerPr
                     )}
                     style={{ backgroundColor: previewColor }}
                 />
-                <Select
+                <ComboboxField
                     value={selectValue}
                     onChange={handleSelect}
-                    containerClassName="min-w-0 flex-1"
-                    selectClassName={cn(
-                        'h-11 w-full rounded-lg border bg-white px-3 text-sm focus:outline-none focus:ring-1',
-                        error ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]',
-                    )}
-                >
-                    <option value={AUTO_VALUE}>Automatic (rotate colors)</option>
-                    {CATEGORY_COLOR_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                            {option.label}
-                        </option>
-                    ))}
-                    <option value={CUSTOM_VALUE}>Custom color…</option>
-                </Select>
+                    options={PICKER_OPTIONS}
+                    error={error}
+                    placeholder="Search colors… (e.g. rose, sky, slate)"
+                    emptyMessage="No colors match that search."
+                    maxResults={200}
+                    optionsClassName="grid grid-cols-9 gap-1 sm:grid-cols-10"
+                    optionClassName="group relative flex items-center justify-center rounded-md p-0.5 outline-none cursor-pointer data-focus:ring-2 data-focus:ring-[#c8102e]/50"
+                    renderOption={(option, { selected }) => {
+                        if (option.value === AUTO_VALUE) {
+                            return (
+                                <span
+                                    title={option.label}
+                                    className={cn(
+                                        'flex size-7 items-center justify-center rounded-md border border-dashed bg-white text-slate-400',
+                                        selected ? 'border-[#c8102e] text-[#c8102e]' : 'border-slate-300',
+                                    )}
+                                >
+                                    <Shuffle className="size-3.5" />
+                                </span>
+                            );
+                        }
+
+                        if (option.value === CUSTOM_VALUE) {
+                            return (
+                                <span
+                                    title={option.label}
+                                    className={cn(
+                                        'flex size-7 items-center justify-center rounded-md border bg-white text-slate-400',
+                                        selected ? 'border-[#c8102e] text-[#c8102e]' : 'border-slate-300',
+                                    )}
+                                >
+                                    <Pipette className="size-3.5" />
+                                </span>
+                            );
+                        }
+
+                        return (
+                            <span
+                                title={option.label}
+                                style={{ backgroundColor: option.value }}
+                                className={cn(
+                                    'size-7 rounded-md border',
+                                    selected
+                                        ? 'border-white ring-2 ring-[#c8102e] ring-offset-1'
+                                        : 'border-black/5',
+                                )}
+                            />
+                        );
+                    }}
+                />
                 {isCustom && (
                     <div className="flex shrink-0 items-center gap-2">
                         <input

@@ -103,11 +103,11 @@ const OPTIONS_PANEL_ATTR = "data-select-options-panel";
  * could still nudge the page enough to cross the move threshold below,
  * closing the list out from under a still-in-progress selection.
  */
-function CloseOnScroll({
+export function CloseOnScroll({
     buttonRef,
     onClose,
 }: {
-    buttonRef: RefObject<HTMLButtonElement | null>;
+    buttonRef: RefObject<HTMLElement | null>;
     onClose: () => void;
 }): null {
     useEffect(() => {
@@ -152,7 +152,7 @@ function CloseOnScroll({
  * listener runs first, stops the event, and closes the list itself. (Merely
  * preventing default isn't enough: Headless UI skips default-prevented events.)
  */
-function CloseOnEscapeInsideDialog({ onClose }: { onClose: () => void }): null {
+export function CloseOnEscapeInsideDialog({ onClose }: { onClose: () => void }): null {
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent): void => {
             if (event.key !== "Escape") {
