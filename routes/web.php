@@ -17,7 +17,7 @@ Route::get('/.well-known/appspecific/com.chrome.devtools.json', fn () => respons
 
 Route::get('/about', [AboutController::class, 'show'])->name('about');
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
-Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:contact-message')->name('contact.store');
 
 Route::get('/page/{page:slug}', function (Page $page) {
     abort_unless($page->is_published, 404);
@@ -47,17 +47,17 @@ Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{blog:slug}', [BlogController::class, 'show'])->name('blog.show');
 
 // Newsletter
-Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');
-Route::post('/newsletter/unsubscribe', [NewsletterController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
-Route::get('/newsletter/status', [NewsletterController::class, 'status'])->name('newsletter.status');
+Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->middleware('throttle:newsletter-signup')->name('newsletter.subscribe');
+Route::post('/newsletter/unsubscribe', [NewsletterController::class, 'unsubscribe'])->middleware('throttle:newsletter-signup')->name('newsletter.unsubscribe');
+Route::get('/newsletter/status', [NewsletterController::class, 'status'])->middleware('throttle:newsletter-check')->name('newsletter.status');
 
 // Landing pages (public, guest-accessible)
 Route::get('/lp/{slug}', [LandingPageController::class, 'show'])->name('lp.show');
-Route::post('/lp/{slug}/order', [LandingPageController::class, 'placeOrder'])->middleware('blocked-ip')->name('lp.order');
+Route::post('/lp/{slug}/order', [LandingPageController::class, 'placeOrder'])->middleware(['blocked-ip', 'throttle:place-order'])->name('lp.order');
 Route::get('/lp/{slug}/payment/{token}', [LandingPageController::class, 'payment'])->name('lp.payment');
-Route::post('/lp/{slug}/payment/{token}', [LandingPageController::class, 'submitPayment'])->middleware('blocked-ip')->name('lp.payment.submit');
+Route::post('/lp/{slug}/payment/{token}', [LandingPageController::class, 'submitPayment'])->middleware(['blocked-ip', 'throttle:payment-verify'])->name('lp.payment.submit');
 Route::get('/lp/confirmation/{guestToken}', [LandingPageController::class, 'confirmation'])->name('lp.confirmation');
-Route::get('/lp/invoice/{guestToken}', [LandingPageController::class, 'downloadInvoice'])->name('lp.invoice');
+Route::get('/lp/invoice/{guestToken}', [LandingPageController::class, 'downloadInvoice'])->middleware('throttle:invoice-download')->name('lp.invoice');
 
 require __DIR__.'/admin.php';
 require __DIR__.'/settings.php';

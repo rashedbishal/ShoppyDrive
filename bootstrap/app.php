@@ -9,6 +9,7 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RedirectAdminToDashboard;
 use App\Http\Middleware\RedirectCustomerFromAdmin;
 use App\Http\Middleware\RedirectToCanonicalDomain;
+use App\Http\Middleware\ThrottleFortifyActions;
 use App\Http\Middleware\TrackDailyVisit;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'redirect-customer-from-admin' => RedirectCustomerFromAdmin::class,
             'checkout.access' => EnsureCheckoutAccess::class,
             'blocked-ip' => BlockBlockedIp::class,
+            'fortify.throttle' => ThrottleFortifyActions::class,
         ]);
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 

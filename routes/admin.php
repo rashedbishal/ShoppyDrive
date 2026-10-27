@@ -29,6 +29,7 @@ use App\Http\Controllers\Admin\PromotionalBannerController;
 use App\Http\Controllers\Admin\ReceivedSmsController;
 use App\Http\Controllers\Admin\ReturnController;
 use App\Http\Controllers\Admin\ReviewController;
+use App\Http\Controllers\Admin\SecuritySettingsController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SmsForwarderSettingsController;
 use App\Http\Controllers\Admin\SmsPatternController;
@@ -127,6 +128,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::get('settings/pathao/stores', [SettingController::class, 'pathaoStores'])->name('settings.pathao.stores');
     Route::get('settings/steadfast/balance', [SettingController::class, 'steadfastBalance'])->name('settings.steadfast.balance');
 
+    Route::get('settings/security', [SecuritySettingsController::class, 'edit'])->name('settings.security.edit');
+    Route::put('settings/security', [SecuritySettingsController::class, 'update'])->name('settings.security.update');
     Route::get('settings/sms-forwarder', [SmsForwarderSettingsController::class, 'index'])->name('settings.sms-forwarder.index');
     Route::post('settings/sms-forwarder/regenerate', [SmsForwarderSettingsController::class, 'regenerate'])->name('settings.sms-forwarder.regenerate');
 

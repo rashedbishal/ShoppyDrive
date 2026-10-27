@@ -123,6 +123,15 @@ export default function TrackOrder({
                 );
                 const data = await res.json();
 
+                if (res.status === 429) {
+                    setError(
+                        data.error ??
+                            'Too many order lookups. Please wait a minute and try again.',
+                    );
+
+                    return;
+                }
+
                 if (!data.found) {
                     setError(
                         'No order found with that order number. Please check and try again.',

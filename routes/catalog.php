@@ -9,14 +9,14 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/products', [ProductListingController::class, 'index'])->name('products.index');
-Route::get('/category/{slug}', [ProductListingController::class, 'category'])->name('category.show');
+Route::get('/products', [ProductListingController::class, 'index'])->middleware('throttle:product-browsing')->name('products.index');
+Route::get('/category/{slug}', [ProductListingController::class, 'category'])->middleware('throttle:product-browsing')->name('category.show');
 Route::get('/product/{product:slug}', [ProductController::class, 'show'])->name('product.show');
 Route::post('/product/{product:slug}/reviews', [ReviewController::class, 'store'])
-    ->middleware('auth')
+    ->middleware(['auth', 'throttle:review'])
     ->name('product.reviews.store');
 
-Route::get('/search', [SearchController::class, 'index'])->name('search');
+Route::get('/search', [SearchController::class, 'index'])->middleware('throttle:product-browsing')->name('search');
 
 Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
 Route::get('/brand/{brand:slug}', [BrandController::class, 'show'])->name('brand.show');
