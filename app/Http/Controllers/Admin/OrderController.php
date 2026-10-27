@@ -195,7 +195,7 @@ class OrderController extends Controller
 
     public function show(Order $order): Response
     {
-        $order->load(['user:id,name,email,phone', 'items.product:id,name,slug', 'statusHistories']);
+        $order->load(['user:id,name,email,phone', 'items.product:id,name,slug', 'items.variant:id,attributes', 'statusHistories']);
 
         return Inertia::render('admin/orders/show', [
             'order' => array_merge($order->toArray(), [

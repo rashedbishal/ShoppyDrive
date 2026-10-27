@@ -62,7 +62,7 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
             abort(403);
         }
 
-        $order->load(['items.product', 'statusHistories', 'latestReturnRequest']);
+        $order->load(['items.product', 'items.variant', 'statusHistories', 'latestReturnRequest']);
 
         return inertia('account/OrderDetail', [
             'order' => $order,
@@ -87,7 +87,7 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
             abort(403, 'Invoice is only available after delivery for Cash on Delivery orders.');
         }
 
-        $order->load(['items.product', 'user']);
+        $order->load(['items.product', 'items.variant', 'user']);
 
         $pdf = Pdf::loadView('invoices.order', ['order' => $order]);
 

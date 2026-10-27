@@ -24,6 +24,7 @@ type OrderItem = {
     quantity: number;
     subtotal: number;
     product: { id: number; name: string; slug: string } | null;
+    variant: { id: number; attributes: Record<string, string> } | null;
 };
 
 type StatusHistory = {
@@ -135,11 +136,7 @@ export default function OrderShow({ order }: Props) {
             return;
         }
 
-        if (
-            !confirm(
-                `Block ${order.ip_address} from placing future orders?`,
-            )
-        ) {
+        if (!confirm(`Block ${order.ip_address} from placing future orders?`)) {
             return;
         }
 
@@ -312,6 +309,22 @@ export default function OrderShow({ order }: Props) {
                                                 <p className="text-sm font-medium text-slate-800">
                                                     {item.product_name}
                                                 </p>
+                                                {item.variant && (
+                                                    <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">
+                                                        {Object.entries(
+                                                            item.variant
+                                                                .attributes,
+                                                        )
+                                                            .map(
+                                                                ([
+                                                                    key,
+                                                                    value,
+                                                                ]) =>
+                                                                    `${key}: ${value}`,
+                                                            )
+                                                            .join(' | ')}
+                                                    </p>
+                                                )}
                                                 {item.sku && (
                                                     <p className="font-mono text-xs text-slate-400">
                                                         {item.sku}
@@ -582,8 +595,8 @@ export default function OrderShow({ order }: Props) {
                             <Card className="shadow-sm">
                                 <CardHeader className="border-b border-slate-100 pb-4">
                                     <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                                        <Globe className="size-4" /> Device
-                                        & Traffic Source
+                                        <Globe className="size-4" /> Device &
+                                        Traffic Source
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-2 pt-4 text-sm text-slate-700">
@@ -596,22 +609,18 @@ export default function OrderShow({ order }: Props) {
                                                 <Badge
                                                     variant={
                                                         trafficSourceVariant[
-                                                            order
-                                                                .traffic_source
+                                                            order.traffic_source
                                                         ] ?? 'default'
                                                     }
                                                 >
                                                     {trafficSourceLabel[
                                                         order.traffic_source
-                                                    ] ??
-                                                        order.traffic_source}
+                                                    ] ?? order.traffic_source}
                                                 </Badge>
                                                 {order.traffic_referrer && (
                                                     <span className="text-xs text-slate-400">
                                                         via{' '}
-                                                        {
-                                                            order.traffic_referrer
-                                                        }
+                                                        {order.traffic_referrer}
                                                     </span>
                                                 )}
                                             </div>
@@ -645,7 +654,7 @@ export default function OrderShow({ order }: Props) {
                                             <p className="text-xs text-slate-500">
                                                 Browser / Device
                                             </p>
-                                            <p className="break-all text-xs font-medium text-slate-600">
+                                            <p className="text-xs font-medium break-all text-slate-600">
                                                 {order.user_agent}
                                             </p>
                                         </div>
