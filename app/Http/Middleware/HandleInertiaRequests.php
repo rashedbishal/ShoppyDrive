@@ -108,6 +108,7 @@ class HandleInertiaRequests extends Middleware
                 'admin' => $request->user('admin'),
             ],
             'cart' => fn () => $this->cartManager->serializeForRequest($request),
+            'active_bundle_recipes' => fn () => $this->bundles->activeRecipes(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'navCategories' => fn () => Category::active()
                 ->with(['subCategories' => fn ($q) => $q->active()->orderBy('sort_order')->orderBy('name')->select(['id', 'name', 'slug', 'category_id', 'description'])])
@@ -224,6 +225,7 @@ class HandleInertiaRequests extends Middleware
         if ($cart) {
             $cart->load('items.product', 'items.bundle');
             $this->bundles->reconcile($cart);
+            $this->bundles->autoAssemble($cart);
 
             // Free delivery threshold: entire cart qualifies if subtotal meets the bar
             if ($threshold > 0) {

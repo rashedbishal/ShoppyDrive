@@ -13,45 +13,11 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
+import { groupCartItems } from '@/lib/cart-bundles';
 import { getXsrfToken } from '@/lib/csrf';
 import { formatCurrency } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import type { CartItem as CartItemType } from '@/types';
-
-type ItemGroup = {
-    bundleId: number | null;
-    bundleName: string | null;
-    items: CartItemType[];
-};
-
-/** Keeps bundle-tagged items grouped together under their bundle's own quantity/remove controls; everything else renders as its own one-item group exactly as before. */
-function groupItems(items: CartItemType[]): ItemGroup[] {
-    const groups: ItemGroup[] = [];
-    const indexByBundle = new Map<number, number>();
-
-    for (const item of items) {
-        if (item.bundle_id == null) {
-            groups.push({ bundleId: null, bundleName: null, items: [item] });
-            continue;
-        }
-
-        const bundleId = Number(item.bundle_id);
-        const existingIndex = indexByBundle.get(bundleId);
-
-        if (existingIndex !== undefined) {
-            groups[existingIndex].items.push(item);
-        } else {
-            indexByBundle.set(bundleId, groups.length);
-            groups.push({
-                bundleId,
-                bundleName: item.bundle?.name ?? 'Bundle',
-                items: [item],
-            });
-        }
-    }
-
-    return groups;
-}
 
 export default function Cart(): React.JSX.Element {
     const {
@@ -179,7 +145,7 @@ export default function Cart(): React.JSX.Element {
                             </div>
 
                             <div className="divide-y divide-[var(--color-border)]">
-                                {groupItems(items).map((group) =>
+                                {groupCartItems(items).map((group) =>
                                     group.bundleId === null ? (
                                         <CartRow
                                             key={group.items[0].item_key}

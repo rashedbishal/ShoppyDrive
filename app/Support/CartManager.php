@@ -128,6 +128,7 @@ class CartManager
         }
 
         $this->bundles->reconcile($cart);
+        $this->bundles->autoAssemble($cart);
 
         $items = $this->validItems($cart);
 
@@ -338,8 +339,7 @@ class CartManager
     public function revalidatePrices(Cart $cart): bool
     {
         $this->bundles->reconcile($cart);
-
-        $changed = false;
+        $changed = $this->bundles->autoAssemble($cart);
 
         foreach ($this->validItems($cart) as $item) {
             $current = round($this->resolvePrice($item->product_id, $item->variant_id, $item->bundle_id), 2);

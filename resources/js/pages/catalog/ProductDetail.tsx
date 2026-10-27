@@ -25,10 +25,10 @@ import {
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { CryBabyEasterEgg } from '@/components/shared/CryBabyEasterEgg';
+import { FlashSaleCountdown } from '@/components/shared/FlashSaleCountdown';
 import { ProductCarousel } from '@/components/shared/ProductCarousel';
 import { RatingBreakdown } from '@/components/shared/RatingBreakdown';
 import { ReviewCard } from '@/components/shared/ReviewCard';
-import { FlashSaleCountdown } from '@/components/shared/FlashSaleCountdown';
 import { Badge } from '@/components/ui/badge';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
@@ -74,7 +74,11 @@ export default function ProductDetail({
 
     const submitReview = (e: React.FormEvent) => {
         e.preventDefault();
-        if (reviewRating === 0 || reviewSubmitting) return;
+
+        if (reviewRating === 0 || reviewSubmitting) {
+            return;
+        }
+
         setReviewSubmitting(true);
         router.post(
             route('product.reviews.store', product.slug),
@@ -122,7 +126,10 @@ export default function ProductDetail({
     const variants = product.variants ?? [];
 
     const selectedVariant = useMemo(() => {
-        if (variants.length === 0) return null;
+        if (variants.length === 0) {
+            return null;
+        }
+
         return (
             variants.find((variant) => {
                 return Object.entries(selectedAttributes).every(
@@ -140,8 +147,12 @@ export default function ProductDetail({
             const scoped = allMedia.filter(
                 (m) => m.variant_id === selectedVariant.id,
             );
-            if (scoped.length > 0) return scoped;
+
+            if (scoped.length > 0) {
+                return scoped;
+            }
         }
+
         return allMedia.filter((m) => !m.variant_id);
     }, [allMedia, selectedVariant]);
 
@@ -200,14 +211,43 @@ export default function ProductDetail({
     }, [selectedVariant?.id]);
 
     // Handlers
+    // When the clicked value combines with every other currently-selected
+    // attribute into a real variant, just update that one attribute as
+    // before. Otherwise — a sparse variant grid (e.g. only Red/XL and
+    // Blue/M exist, not Red/M or Blue/XL) — there's no way to reach that
+    // value by changing one attribute at a time, since the in-between
+    // combination doesn't exist either. Jump straight to a real variant
+    // that has this value instead, adopting its full attribute set, so the
+    // selector always lands on something actually purchasable.
     const handleAttributeSelect = (name: string, value: string) => {
-        setSelectedAttributes((prev) => ({ ...prev, [name]: value }));
+        const matchesCurrentSelection = variants.some(
+            (variant) =>
+                variant.attributes[name] === value &&
+                Object.entries(selectedAttributes).every(
+                    ([key, selectedValue]) =>
+                        key === name ||
+                        variant.attributes[key] === selectedValue,
+                ),
+        );
+
+        if (matchesCurrentSelection) {
+            setSelectedAttributes((prev) => ({ ...prev, [name]: value }));
+
+            return;
+        }
+
+        const fallbackVariant = variants.find(
+            (variant) => variant.attributes[name] === value,
+        );
+
+        if (fallbackVariant) {
+            setSelectedAttributes(fallbackVariant.attributes);
+        }
     };
 
-    // A value is pickable only if some variant has it *and* matches every
-    // other attribute currently selected — otherwise the product only sells
-    // a subset of the color/size grid (e.g. no Blue/XL) and this value would
-    // combine into a variant that doesn't exist.
+    // A value is pickable as long as some variant has it at all — which
+    // variant that is (and what it does to the other attributes) is
+    // resolved in handleAttributeSelect above.
     const isAttributeValueAvailable = (
         attrName: string,
         value: string,
@@ -217,18 +257,14 @@ export default function ProductDetail({
         }
 
         return variants.some(
-            (variant) =>
-                variant.attributes[attrName] === value &&
-                Object.entries(selectedAttributes).every(
-                    ([key, selectedValue]) =>
-                        key === attrName ||
-                        variant.attributes[key] === selectedValue,
-                ),
+            (variant) => variant.attributes[attrName] === value,
         );
     };
 
     const handleAddToCart = () => {
-        if (isOutOfStock) return;
+        if (isOutOfStock) {
+            return;
+        }
 
         addItem({
             product,
@@ -265,6 +301,7 @@ export default function ProductDetail({
 
     const shareProduct = (platform: 'facebook' | 'twitter' | 'copy') => {
         const url = window.location.href;
+
         if (platform === 'copy') {
             navigator.clipboard.writeText(url);
             addToast({ type: 'info', message: 'Link copied to clipboard!' });
@@ -1014,7 +1051,8 @@ export default function ProductDetail({
                                                     </div>
                                                     <span className="font-bold text-[var(--color-primary)]">
                                                         {formatCurrency(
-                                                            settings.shipping_rate_inside_dhaka ?? 60,
+                                                            settings.shipping_rate_inside_dhaka ??
+                                                                60,
                                                         )}
                                                     </span>
                                                 </div>
@@ -1029,7 +1067,8 @@ export default function ProductDetail({
                                                     </div>
                                                     <span className="font-bold text-[var(--color-primary)]">
                                                         {formatCurrency(
-                                                            settings.shipping_rate_outside_dhaka ?? 120,
+                                                            settings.shipping_rate_outside_dhaka ??
+                                                                120,
                                                         )}
                                                     </span>
                                                 </div>

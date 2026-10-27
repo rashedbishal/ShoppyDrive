@@ -1,16 +1,17 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ArrowRight, ShoppingCart, Trash2 } from 'lucide-react';
+import { ArrowRight, Package, ShoppingCart, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
-import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { EmptyState } from '@/components/ui/empty-state';
+import { QuantityStepper } from '@/components/ui/quantity-stepper';
+import { groupCartItems } from '@/lib/cart-bundles';
 import { formatCurrency } from '@/lib/utils';
+import cartRoutes from '@/routes/cart';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
-import type { SharedPageProps } from '@/types';
-import cartRoutes from '@/routes/cart';
+import type { CartItem, SharedPageProps } from '@/types';
 
 function calculateCouponDiscount(
     subtotal: number,
@@ -36,6 +37,10 @@ export default function CartDrawer(): React.JSX.Element {
     const tax = useCartStore((state) => state.tax);
     const updateQuantity = useCartStore((state) => state.updateQuantity);
     const removeItem = useCartStore((state) => state.removeItem);
+    const updateBundleQuantity = useCartStore(
+        (state) => state.updateBundleQuantity,
+    );
+    const removeBundle = useCartStore((state) => state.removeBundle);
 
     // Shared props: shipping cost (applies free-delivery rules) and the raw
     // location-based rate (ignores free-delivery rules, used as instant fallback).
@@ -49,12 +54,23 @@ export default function CartDrawer(): React.JSX.Element {
     // hydrateCart populates fresh product data on page load, so free_delivery_min_qty
     // is always a number or null (never undefined) by the time the user interacts.
     const allItemsFreeDelivery = useMemo(() => {
-        if (isEmpty) return false;
+        if (isEmpty) {
+            return false;
+        }
+
         return items.every((item) => {
             const p = item.product;
-            if (!p.free_delivery) return false;
+
+            if (!p.free_delivery) {
+                return false;
+            }
+
             const minQty = p.free_delivery_min_qty ?? null;
-            if (minQty !== null) return item.quantity >= minQty;
+
+            if (minQty !== null) {
+                return item.quantity >= minQty;
+            }
+
             return true;
         });
     }, [items, isEmpty]);
@@ -239,82 +255,174 @@ export default function CartDrawer(): React.JSX.Element {
                 />
             ) : (
                 <div className="space-y-3">
-                    {items.map((item) => (
-                        <div
-                            key={item.item_key}
-                            className="flex gap-4 rounded-2xl border border-[var(--color-border)] bg-surface p-4 shadow-[var(--shadow-card)]"
-                        >
-                            <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--color-surface-alt)]">
-                                {item.product.primary_image_url ? (
-                                    <img
-                                        src={item.product.primary_image_url}
-                                        alt={item.product.name}
-                                        className="size-full object-cover"
-                                        loading="lazy"
-                                    />
-                                ) : (
-                                    <ShoppingCart className="size-6 text-[var(--color-text-muted)]" />
-                                )}
-                            </div>
-
-                            <div className="min-w-0 flex-1 space-y-3">
-                                <div className="space-y-1">
-                                    <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
-                                        {item.product.name}
-                                    </p>
-                                    {item.variant && (
-                                        <p className="text-xs font-medium tracking-wide text-[var(--color-text-secondary)] uppercase">
-                                            {Object.entries(
-                                                item.variant.attributes,
-                                            )
-                                                .map(
-                                                    ([key, value]) =>
-                                                        `${key}: ${value}`,
+                    {groupCartItems(items).map((group) =>
+                        group.bundleId === null ? (
+                            <DrawerCartRow
+                                key={group.items[0].item_key}
+                                item={group.items[0]}
+                                onQuantityChange={(value) =>
+                                    updateQuantity(
+                                        group.items[0].item_key,
+                                        value,
+                                    )
+                                }
+                                onRemove={() =>
+                                    removeItem(group.items[0].item_key)
+                                }
+                            />
+                        ) : (
+                            <div
+                                key={`bundle-${group.bundleId}`}
+                                className="space-y-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)]/40 p-3 shadow-[var(--shadow-card)]"
+                            >
+                                <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                                    <div className="flex items-center gap-1.5 text-xs font-bold tracking-widest text-[var(--color-primary)] uppercase">
+                                        <Package size={14} />
+                                        {group.bundleName} (bundle)
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <QuantityStepper
+                                            value={
+                                                group.items[0]
+                                                    .bundle_unit_quantity
+                                                    ? group.items[0].quantity /
+                                                      group.items[0]
+                                                          .bundle_unit_quantity!
+                                                    : 1
+                                            }
+                                            onChange={(value) =>
+                                                updateBundleQuantity(
+                                                    group.bundleId!,
+                                                    value,
                                                 )
-                                                .join(' | ')}
-                                        </p>
-                                    )}
+                                            }
+                                            className="scale-90 rounded-lg"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                removeBundle(group.bundleId!)
+                                            }
+                                            aria-label={`Remove ${group.bundleName} bundle from cart`}
+                                            className="inline-flex size-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition hover:bg-[var(--color-primary-light)] hover:text-[var(--color-error)]"
+                                        >
+                                            <Trash2 className="size-4" />
+                                        </button>
+                                    </div>
                                 </div>
-
-                                <div className="flex items-center justify-between gap-3">
-                                    <QuantityStepper
-                                        value={item.quantity}
-                                        min={1}
-                                        max={
-                                            item.product.stock_quantity > 0
-                                                ? item.product.stock_quantity
-                                                : 99
-                                        }
-                                        onChange={(value) =>
-                                            updateQuantity(item.item_key, value)
-                                        }
-                                    />
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            removeItem(item.item_key)
-                                        }
-                                        aria-label={`Remove ${item.product.name} from cart`}
-                                        className="inline-flex size-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
-                                    >
-                                        <Trash2 className="size-4" />
-                                    </button>
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <Badge variant="secondary" size="sm">
-                                        {formatCurrency(item.price)}
-                                    </Badge>
-                                    <span className="font-mono text-sm font-semibold text-[var(--color-text-primary)]">
-                                        {formatCurrency(item.subtotal)}
-                                    </span>
+                                <div className="space-y-2">
+                                    {group.items.map((item) => (
+                                        <DrawerCartRow
+                                            key={item.item_key}
+                                            item={item}
+                                            compact
+                                        />
+                                    ))}
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ),
+                    )}
                 </div>
             )}
         </Drawer>
+    );
+}
+
+type DrawerCartRowProps = {
+    item: CartItem;
+    /** Omitted for a bundle's sub-rows — quantity/remove live on the bundle group header instead. */
+    onQuantityChange?: (value: number) => void;
+    onRemove?: () => void;
+    /** Tighter padding/sizing for a bundle's sub-rows nested under the group header. */
+    compact?: boolean;
+};
+
+function DrawerCartRow({
+    item,
+    onQuantityChange,
+    onRemove,
+    compact = false,
+}: DrawerCartRowProps): React.JSX.Element {
+    return (
+        <div
+            className={
+                compact
+                    ? 'flex gap-3 rounded-xl bg-surface p-3'
+                    : 'flex gap-4 rounded-2xl border border-[var(--color-border)] bg-surface p-4 shadow-[var(--shadow-card)]'
+            }
+        >
+            <div
+                className={
+                    compact
+                        ? 'flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--color-surface-alt)]'
+                        : 'flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--color-surface-alt)]'
+                }
+            >
+                {item.product.primary_image_url ? (
+                    <img
+                        src={item.product.primary_image_url}
+                        alt={item.product.name}
+                        className="size-full object-cover"
+                        loading="lazy"
+                    />
+                ) : (
+                    <ShoppingCart className="size-6 text-[var(--color-text-muted)]" />
+                )}
+            </div>
+
+            <div className="min-w-0 flex-1 space-y-2">
+                <div className="space-y-1">
+                    <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
+                        {item.product.name}
+                    </p>
+                    {item.variant && (
+                        <p className="text-xs font-medium tracking-wide text-[var(--color-text-secondary)] uppercase">
+                            {Object.entries(item.variant.attributes)
+                                .map(([key, value]) => `${key}: ${value}`)
+                                .join(' | ')}
+                        </p>
+                    )}
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                    {onQuantityChange ? (
+                        <QuantityStepper
+                            value={item.quantity}
+                            min={1}
+                            max={
+                                item.product.stock_quantity > 0
+                                    ? item.product.stock_quantity
+                                    : 99
+                            }
+                            onChange={onQuantityChange}
+                        />
+                    ) : (
+                        <span className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                            × {item.quantity}
+                        </span>
+                    )}
+
+                    {onRemove && (
+                        <button
+                            type="button"
+                            onClick={onRemove}
+                            aria-label={`Remove ${item.product.name} from cart`}
+                            className="inline-flex size-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
+                        >
+                            <Trash2 className="size-4" />
+                        </button>
+                    )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <Badge variant="secondary" size="sm">
+                        {formatCurrency(item.price)}
+                    </Badge>
+                    <span className="font-mono text-sm font-semibold text-[var(--color-text-primary)]">
+                        {formatCurrency(item.subtotal)}
+                    </span>
+                </div>
+            </div>
+        </div>
     );
 }

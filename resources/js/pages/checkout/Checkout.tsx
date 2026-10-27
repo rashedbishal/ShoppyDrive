@@ -4,6 +4,7 @@ import {
     Check,
     Lock,
     MapPin,
+    Package,
     ShoppingBag,
     ShieldCheck,
     AlertCircle,
@@ -27,6 +28,7 @@ import {
     DHAKA_CITY_OPTIONS,
     DISTRICT_OPTIONS,
 } from '@/lib/bangladesh-geography';
+import { groupCartItems } from '@/lib/cart-bundles';
 import { getXsrfToken } from '@/lib/csrf';
 import { formatCurrency } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
@@ -150,32 +152,30 @@ const OrderSummary = React.memo(function OrderSummary({
                             Your cart is empty.
                         </p>
                     ) : (
-                        items.map((item) => (
-                            <div key={item.item_key} className="flex gap-3">
-                                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)]">
-                                    <img
-                                        src={
-                                            item.variant?.image ||
-                                            item.product.primary_image_url ||
-                                            item.product.images[0]?.path
-                                        }
-                                        alt={item.product.name}
-                                        className="h-full w-full object-cover"
-                                    />
+                        groupCartItems(items).map((group) =>
+                            group.bundleId === null ? (
+                                <OrderSummaryRow
+                                    key={group.items[0].item_key}
+                                    item={group.items[0]}
+                                />
+                            ) : (
+                                <div
+                                    key={`bundle-${group.bundleId}`}
+                                    className="space-y-1.5 rounded-lg bg-[var(--color-surface-alt)]/50 p-2"
+                                >
+                                    <div className="flex items-center gap-1.5 px-1 text-[11px] font-bold tracking-widest text-[var(--color-primary)] uppercase">
+                                        <Package size={12} />
+                                        {group.bundleName} (bundle)
+                                    </div>
+                                    {group.items.map((item) => (
+                                        <OrderSummaryRow
+                                            key={item.item_key}
+                                            item={item}
+                                        />
+                                    ))}
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
-                                        {item.product.name}
-                                    </p>
-                                    <p className="text-xs text-[var(--color-text-muted)]">
-                                        Qty: {item.quantity}
-                                    </p>
-                                    <p className="text-sm font-bold text-[var(--color-primary)]">
-                                        {formatCurrency(item.subtotal)}
-                                    </p>
-                                </div>
-                            </div>
-                        ))
+                            ),
+                        )
                     )}
                 </div>
 
@@ -295,6 +295,35 @@ const OrderSummary = React.memo(function OrderSummary({
         </div>
     );
 });
+
+function OrderSummaryRow({ item }: { item: CartItem }): React.JSX.Element {
+    return (
+        <div className="flex gap-3">
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)]">
+                <img
+                    src={
+                        item.variant?.image ||
+                        item.product.primary_image_url ||
+                        item.product.images[0]?.path
+                    }
+                    alt={item.product.name}
+                    className="h-full w-full object-cover"
+                />
+            </div>
+            <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
+                    {item.product.name}
+                </p>
+                <p className="text-xs text-[var(--color-text-muted)]">
+                    Qty: {item.quantity}
+                </p>
+                <p className="text-sm font-bold text-[var(--color-primary)]">
+                    {formatCurrency(item.subtotal)}
+                </p>
+            </div>
+        </div>
+    );
+}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 interface CheckoutProps {
@@ -436,8 +465,8 @@ export default function Checkout({
         }
 
         return district === 'Dhaka' && city === 'Inside Dhaka City Corporation'
-            ? settings.shipping_rate_inside_dhaka ?? 60
-            : settings.shipping_rate_outside_dhaka ?? 120;
+            ? (settings.shipping_rate_inside_dhaka ?? 60)
+            : (settings.shipping_rate_outside_dhaka ?? 120);
     }
 
     const effectiveDistrict = selectedAddr?.state ?? form.data.state;

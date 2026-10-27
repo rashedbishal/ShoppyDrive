@@ -16,7 +16,7 @@ import { APP_NAME } from '@/lib/constants';
 import { STORAGE_KEYS } from '@/lib/constants';
 import { useCartStore } from '@/stores/cartStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
-import type { Cart, SharedPageProps } from '@/types';
+import type { BundleRecipe, Cart, SharedPageProps } from '@/types';
 import { Ziggy as ziggyConfig } from './ziggy';
 
 declare global {
@@ -87,6 +87,18 @@ function readInitialCart(): Cart | null {
     } catch {}
 
     return null;
+}
+
+function readInitialBundleRecipes(): BundleRecipe[] {
+    try {
+        const raw = document.getElementById('app')?.dataset.page;
+
+        if (raw) {
+            return JSON.parse(raw)?.props?.active_bundle_recipes ?? [];
+        }
+    } catch {}
+
+    return [];
 }
 
 let prevAuthUserId: number | null = null;
@@ -216,6 +228,7 @@ if (typeof window !== 'undefined') {
 
     const initialUserId = readInitialUserId();
     const initialCart = readInitialCart();
+    useCartStore.getState().setBundleRecipes(readInitialBundleRecipes());
     const storedLastUser = localStorage.getItem(LAST_USER_KEY);
 
     if (storedLastUser !== null && initialUserId === null) {
@@ -253,6 +266,7 @@ router.on('navigate', (event) => {
     const currentUserId = props.auth?.user?.id ?? null;
     const stored = localStorage.getItem(LAST_USER_KEY);
     const currentCart = props.cart ?? null;
+    useCartStore.getState().setBundleRecipes(props.active_bundle_recipes ?? []);
 
     if (stored !== null && currentUserId === null) {
         applyLogout();

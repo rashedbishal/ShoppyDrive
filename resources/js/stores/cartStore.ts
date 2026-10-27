@@ -2,9 +2,18 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { CART_ITEM_ADDED_EVENT } from '@/lib/add-to-cart-feedback';
 import type { CartItemAddedDetail } from '@/lib/add-to-cart-feedback';
+import { autoAssembleBundles } from '@/lib/cart-bundles';
 import { STORAGE_KEYS } from '@/lib/constants';
 import { formatCurrency } from '@/lib/utils';
-import type { Cart, CartItem, Coupon, Product, ProductVariant } from '@/types';
+import { useUiStore } from '@/stores/uiStore';
+import type {
+    BundleRecipe,
+    Cart,
+    CartItem,
+    Coupon,
+    Product,
+    ProductVariant,
+} from '@/types';
 
 type CartPayload = {
     product: Product;
@@ -20,6 +29,9 @@ type CartStoreState = {
     coupon: Coupon | null;
     shippingEstimate: number;
     tax: number;
+    /** Active bundle recipes, kept in sync with the `active_bundle_recipes` shared prop by app.tsx — not persisted, it's catalog data, not cart state. */
+    bundleRecipes: BundleRecipe[];
+    setBundleRecipes: (recipes: BundleRecipe[]) => void;
     addItem: (payload: CartPayload) => void;
     removeItem: (itemKey: string) => void;
     updateQuantity: (itemKey: string, quantity: number) => void;
@@ -98,6 +110,33 @@ function getItemPrice(
         : product.price;
 }
 
+/**
+ * Runs the client-side bundle auto-assemble pass and surfaces a toast for
+ * each recipe that was newly formed/extended this call, so adding the last
+ * product that completes a bundle recipe gives the same instant feedback
+ * as explicitly clicking "Add bundle to cart".
+ */
+function applyAutoAssemble(
+    items: CartItem[],
+    recipes: BundleRecipe[],
+): CartItem[] {
+    if (recipes.length === 0) {
+        return items;
+    }
+
+    const { items: nextItems, formed } = autoAssembleBundles(items, recipes);
+
+    for (const recipe of formed) {
+        useUiStore.getState().addToast({
+            type: 'success',
+            title: 'Bundle unlocked',
+            message: `${recipe.name} applied — you're getting the bundle price.`,
+        });
+    }
+
+    return nextItems;
+}
+
 function getCouponDiscount(coupon: Coupon | null, subtotal: number): number {
     if (coupon === null) {
         return 0;
@@ -121,6 +160,10 @@ export const useCartStore = create<CartStoreState>()(
             coupon: null,
             shippingEstimate: 0,
             tax: 0,
+            bundleRecipes: [],
+            setBundleRecipes: (recipes) => {
+                set({ bundleRecipes: recipes });
+            },
             addItem: (payload) => {
                 const itemKey = createItemKey(
                     payload.product,
@@ -139,45 +182,57 @@ export const useCartStore = create<CartStoreState>()(
                         (item) => item.item_key === itemKey,
                     );
 
+                    let nextItems: CartItem[];
+
                     if (existingItem !== undefined) {
                         const nextQuantity = existingItem.quantity + quantity;
 
-                        return {
-                            items: state.items.map((item) =>
-                                item.item_key === itemKey
-                                    ? {
-                                          ...item,
-                                          quantity: nextQuantity,
-                                          subtotal: price * nextQuantity,
-                                          formatted_price:
-                                              formatCurrency(price),
-                                          formatted_subtotal: formatCurrency(
-                                              price * nextQuantity,
-                                          ),
-                                      }
-                                    : item,
+                        nextItems = state.items.map((item) =>
+                            item.item_key === itemKey
+                                ? {
+                                      ...item,
+                                      quantity: nextQuantity,
+                                      subtotal: price * nextQuantity,
+                                      formatted_price: formatCurrency(price),
+                                      formatted_subtotal: formatCurrency(
+                                          price * nextQuantity,
+                                      ),
+                                  }
+                                : item,
+                        );
+                    } else {
+                        const nextItem: CartItem = {
+                            id: createItemId(),
+                            item_key: itemKey,
+                            product: payload.product,
+                            variant: payload.variant ?? null,
+                            bundle_id: payload.bundleId ?? null,
+                            bundle_unit_quantity:
+                                payload.bundleUnitQuantity ?? null,
+                            quantity,
+                            price,
+                            formatted_price: formatCurrency(price),
+                            subtotal: price * quantity,
+                            formatted_subtotal: formatCurrency(
+                                price * quantity,
                             ),
                         };
+
+                        nextItems = [...state.items, nextItem];
                     }
 
-                    const nextItem: CartItem = {
-                        id: createItemId(),
-                        item_key: itemKey,
-                        product: payload.product,
-                        variant: payload.variant ?? null,
-                        bundle_id: payload.bundleId ?? null,
-                        bundle_unit_quantity:
-                            payload.bundleUnitQuantity ?? null,
-                        quantity,
-                        price,
-                        formatted_price: formatCurrency(price),
-                        subtotal: price * quantity,
-                        formatted_subtotal: formatCurrency(price * quantity),
-                    };
+                    // Only plain (non-bundle) adds can newly complete a
+                    // bundle recipe — skip the pass entirely for an
+                    // explicit bundle add, which is already correctly
+                    // priced/tagged by the caller (`BundleCard`).
+                    if (payload.bundleId == null) {
+                        nextItems = applyAutoAssemble(
+                            nextItems,
+                            state.bundleRecipes,
+                        );
+                    }
 
-                    return {
-                        items: [...state.items, nextItem],
-                    };
+                    return { items: nextItems };
                 });
 
                 // Let UI feedback (fly-to-cart animation) react without the store knowing about it.
@@ -210,8 +265,8 @@ export const useCartStore = create<CartStoreState>()(
                     return;
                 }
 
-                set((state) => ({
-                    items: state.items.map((item) =>
+                set((state) => {
+                    const nextItems = state.items.map((item) =>
                         item.item_key === itemKey
                             ? {
                                   ...item,
@@ -222,8 +277,15 @@ export const useCartStore = create<CartStoreState>()(
                                   ),
                               }
                             : item,
-                    ),
-                }));
+                    );
+
+                    return {
+                        items: applyAutoAssemble(
+                            nextItems,
+                            state.bundleRecipes,
+                        ),
+                    };
+                });
             },
             updateBundleQuantity: (bundleId, multiplier) => {
                 const nextMultiplier = Math.max(1, multiplier);

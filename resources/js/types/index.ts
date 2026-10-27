@@ -237,6 +237,23 @@ export interface CartItemBundle {
     discount_type: 'fixed_price' | 'free_delivery';
 }
 
+/** A component of an active bundle's recipe — just enough to detect a match and prorate pricing, not full catalog data. */
+export interface BundleRecipeItem {
+    product_id: Id;
+    variant_id: Id | null;
+    quantity: number;
+    base_price: number;
+}
+
+/** Mirrors `BundleService::activeRecipes()` — shared globally so the cart store can recognize when separately-added plain items happen to satisfy a bundle. */
+export interface BundleRecipe {
+    id: Id;
+    name: string;
+    discount_type: 'fixed_price' | 'free_delivery';
+    bundle_price: number | null;
+    items: BundleRecipeItem[];
+}
+
 export interface CartItem {
     id: Id;
     item_key: string;
@@ -687,6 +704,7 @@ export interface SharedPageProps {
     appName: string;
     auth: Auth;
     cart: Cart | null;
+    active_bundle_recipes: BundleRecipe[];
     flash: {
         success?: string | null;
         error?: string | null;
