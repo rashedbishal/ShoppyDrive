@@ -126,7 +126,14 @@ export default function ProductDetail({
     const variants = product.variants ?? [];
 
     const selectedVariant = useMemo(() => {
-        if (variants.length === 0) {
+        // No attributes picked (e.g. a general gallery image was selected,
+        // clearing the selection) means no variant — not "every variant
+        // vacuously matches", which `Object.entries({}).every(...)` would
+        // otherwise resolve to the first one in the array.
+        if (
+            variants.length === 0 ||
+            Object.keys(selectedAttributes).length === 0
+        ) {
             return null;
         }
 
@@ -141,20 +148,9 @@ export default function ProductDetail({
         );
     }, [variants, selectedAttributes]);
 
-    // Prefer media tagged to the selected variant; fall back to general (untagged) media.
-    const media = useMemo(() => {
-        if (selectedVariant) {
-            const scoped = allMedia.filter(
-                (m) => m.variant_id === selectedVariant.id,
-            );
-
-            if (scoped.length > 0) {
-                return scoped;
-            }
-        }
-
-        return allMedia.filter((m) => !m.variant_id);
-    }, [allMedia, selectedVariant]);
+    // The gallery always shows every image — general shots plus every
+    // variant's — so switching variants never empties it down to one photo.
+    const media = allMedia;
 
     const primaryMedia = media.find((m) => m.is_primary) ?? media[0] ?? null;
     const currentMedia = media[currentImageIndex] ?? primaryMedia ?? null;
@@ -205,12 +201,45 @@ export default function ProductDetail({
         setRecentlyViewed(updatedRecentlyViewed);
     }, [product.id]);
 
-    // Reset to the first image whenever the selected variant's media set changes.
+    // Jump the main image to the selected variant's own photo (if it has
+    // one) without touching the rest of the gallery — the thumbnails for
+    // every other image/variant stay put.
     useEffect(() => {
-        setCurrentImageIndex(0);
-    }, [selectedVariant?.id]);
+        if (!selectedVariant) {
+            return;
+        }
+
+        const idx = media.findIndex((m) => m.variant_id === selectedVariant.id);
+
+        if (idx !== -1) {
+            setCurrentImageIndex(idx);
+        }
+    }, [selectedVariant?.id, media]);
 
     // Handlers
+    // Picking a thumbnail that belongs to a specific variant also selects
+    // that variant — the reverse of the effect above, which moves the main
+    // image when a variant is picked from the attribute swatches. Picking a
+    // general (untagged) image instead clears the variant selection, since
+    // that photo isn't tied to any one of them.
+    const handleThumbnailSelect = (idx: number) => {
+        setCurrentImageIndex(idx);
+
+        const item = media[idx];
+
+        if (!item?.variant_id) {
+            setSelectedAttributes({});
+
+            return;
+        }
+
+        const variant = variants.find((v) => v.id === item.variant_id);
+
+        if (variant) {
+            setSelectedAttributes(variant.attributes);
+        }
+    };
+
     // When the clicked value combines with every other currently-selected
     // attribute into a real variant, just update that one attribute as
     // before. Otherwise — a sparse variant grid (e.g. only Red/XL and
@@ -360,7 +389,7 @@ export default function ProductDetail({
                                     <button
                                         key={item.id}
                                         onClick={() =>
-                                            setCurrentImageIndex(idx)
+                                            handleThumbnailSelect(idx)
                                         }
                                         className={`relative aspect-[4/3] w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
                                             currentImageIndex === idx
@@ -1226,7 +1255,7 @@ export default function ProductDetail({
                             {media.map((item, idx) => (
                                 <button
                                     key={item.id}
-                                    onClick={() => setCurrentImageIndex(idx)}
+                                    onClick={() => handleThumbnailSelect(idx)}
                                     className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${currentImageIndex === idx ? 'border-[var(--color-primary)]' : 'border-white/20'}`}
                                 >
                                     {item.type === 'video' ? (

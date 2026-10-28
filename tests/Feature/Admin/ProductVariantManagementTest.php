@@ -7,6 +7,7 @@ use App\Models\AttributeValue;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Category;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\SubCategory;
@@ -272,6 +273,84 @@ test('removing a variant combo referenced by a live cart item freezes it instead
 
     // But Blue is no longer a selectable attribute for this product.
     expect($product->attributeValues()->pluck('attribute_values.id')->all())->toBe([$this->red->id]);
+});
+
+test('turning off a size variant that has an order-frozen combo detaches it from the selectable attributes (regression)', function () {
+    actingAs($this->admin, 'admin');
+
+    $product = Product::create([
+        'name' => 'Korra Product',
+        'slug' => 'korra-product',
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'price' => 1000,
+        'stock_quantity' => 10,
+        'has_color_variant' => true,
+        'has_size_variant' => true,
+    ]);
+
+    $blueXl = ProductVariant::create([
+        'product_id' => $product->id,
+        'color_value_id' => $this->blue->id,
+        'size_value_id' => $this->sizeXl->id,
+        'price' => 1000,
+        'stock_quantity' => 5,
+        'attributes' => ['Color' => 'Blue', 'Size' => 'XL'],
+        'is_default' => true,
+    ]);
+
+    $product->attributeValues()->sync([$this->blue->id, $this->sizeXl->id]);
+
+    $order = Order::create([
+        'order_number' => 'ORD-KORRA-'.$product->id,
+        'status' => 'delivered',
+        'payment_status' => 'paid',
+        'payment_method' => 'cod',
+        'subtotal' => 1000,
+        'shipping_cost' => 0,
+        'discount' => 0,
+        'tax' => 0,
+        'total' => 1000,
+        'shipping_address' => [],
+        'billing_address' => [],
+    ]);
+    $order->items()->create([
+        'product_id' => $product->id,
+        'variant_id' => $blueXl->id,
+        'product_name' => $product->name,
+        'price' => 1000,
+        'quantity' => 1,
+        'subtotal' => 1000,
+        'product_snapshot' => ['id' => $product->id, 'name' => $product->name],
+    ]);
+
+    // Admin turns the "Has Size Variant" toggle off, leaving only a blue, size-less variant.
+    $response = $this->put(route('admin.products.update', $product), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'has_size_variant' => false,
+        'price' => null,
+        'stock_quantity' => null,
+        'slug' => 'korra-product',
+        'variants' => [
+            // A stale row still carrying size_value_id, as a desynced variant
+            // manager could submit — the backend must ignore it regardless.
+            ['color_value_id' => $this->blue->id, 'size_value_id' => $this->sizeXl->id, 'price' => 1000, 'stock_quantity' => 5, 'is_default' => true],
+        ],
+    ]));
+
+    $response->assertRedirect(route('admin.products.index'));
+
+    // The order and its frozen variant survive untouched.
+    expect(ProductVariant::find($blueXl->id))->not->toBeNull();
+
+    // But Size/XL is no longer a selectable attribute for this product.
+    expect($product->attributeValues()->pluck('attribute_values.id')->all())->toBe([$this->blue->id]);
+
+    $newVariant = $product->variants()->whereNull('size_value_id')->first();
+    expect($newVariant)->not->toBeNull();
+    expect($newVariant->attributes)->not->toHaveKey('Size');
 });
 
 test('media can be tagged to a specific color variant', function () {
