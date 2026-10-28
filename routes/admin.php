@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\AttributeValueController;
+use App\Http\Controllers\Admin\AuditTrailController;
 use App\Http\Controllers\Admin\BlockedIpController;
 use App\Http\Controllers\Admin\BlogController;
 use App\Http\Controllers\Admin\BrandController;
@@ -181,6 +182,11 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     // see AdminSections's docblock. AdminController enforces its own
     // mother-only / self-only rules exactly as before this feature.
     Route::resource('admins', AdminController::class)->except(['show']);
+
+    // Clearing the log is deliberately NOT part of the permission matrix
+    // (AuditTrailController hardcodes mother-only) — only viewing is gated.
+    Route::get('audit-trail', [AuditTrailController::class, 'index'])->name('audit-trail.index')->middleware(AdminSections::middleware('audit_trail', 'view'));
+    Route::delete('audit-trail', [AuditTrailController::class, 'destroy'])->name('audit-trail.destroy');
 
     Route::patch('popular-keywords/bulk-status', [PopularKeywordController::class, 'updateStatusMany'])->name('popular-keywords.updateStatusMany')->middleware(AdminSections::middleware('search_keywords', 'update'));
     Route::delete('popular-keywords/bulk-delete', [PopularKeywordController::class, 'destroyMany'])->name('popular-keywords.destroyMany')->middleware(AdminSections::middleware('search_keywords', 'delete'));

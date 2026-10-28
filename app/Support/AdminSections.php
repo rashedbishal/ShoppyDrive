@@ -70,6 +70,9 @@ final class AdminSections
         // Security's own update stays mother-only regardless of this matrix
         // (SecuritySettingsController) — it only lists `view` here.
         'security' => ['label' => 'Security', 'group' => 'System', 'abilities' => []],
+        // Clearing the log stays mother-only regardless of this matrix
+        // (AuditTrailController::destroy()) — it only lists `view` here.
+        'audit_trail' => ['label' => 'Audit Trail', 'group' => 'System', 'abilities' => []],
     ];
 
     /**

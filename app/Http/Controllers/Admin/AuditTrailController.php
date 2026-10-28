@@ -31,8 +31,6 @@ class AuditTrailController extends Controller
 
     public function index(Request $request): Response
     {
-        $this->authorizeAccess();
-
         $logName = $request->string('log_name')->value();
         $logName = array_key_exists($logName, self::LOG_NAME_LABELS) ? $logName : null;
 
@@ -85,20 +83,6 @@ class AuditTrailController extends Controller
             ->log("Admin {$currentAdmin->name} ({$currentAdmin->email}) cleared the audit trail.");
 
         return redirect()->route('admin.audit-trail.index')->with('success', 'Audit trail cleared.');
-    }
-
-    /**
-     * Any admin may view the audit trail if the mother admin has granted
-     * them `can_view_audit_trail`; the mother admin always can, regardless
-     * of that flag — mirrors AdminController's authorization style.
-     */
-    private function authorizeAccess(): void
-    {
-        $currentAdmin = Auth::guard('admin')->user();
-
-        if (! $currentAdmin->is_mother && ! $currentAdmin->can_view_audit_trail) {
-            abort(403, 'You do not have access to the Audit Trail.');
-        }
     }
 
     /**

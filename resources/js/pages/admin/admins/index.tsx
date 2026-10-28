@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Edit, History, Plus, Shield, Trash2, User } from 'lucide-react';
+import { Edit, Plus, Shield, Trash2, User } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,7 +10,6 @@ type AdminUser = {
     name: string;
     email: string;
     is_mother: boolean;
-    can_view_audit_trail: boolean;
     created_at: string;
 };
 
@@ -127,16 +126,6 @@ export default function AdminsIndex({ admins }: Props) {
                                                 You
                                             </span>
                                         )}
-                                        {!admin.is_mother &&
-                                            admin.can_view_audit_trail && (
-                                                <span
-                                                    title="Can view Audit Trail"
-                                                    className="flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-600"
-                                                >
-                                                    <History className="size-2.5" />
-                                                    Audit Trail
-                                                </span>
-                                            )}
                                     </div>
                                     <p className="text-xs text-slate-400">
                                         {admin.email}

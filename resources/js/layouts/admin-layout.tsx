@@ -5,6 +5,7 @@ import {
     Folder,
     FolderTree,
     Gift,
+    History,
     Inbox,
     Info,
     LayoutDashboard,
@@ -281,6 +282,14 @@ const navSections: NavSection[] = [
                 icon: UserCog,
                 exact: false,
                 extraMatches: [] as string[],
+            },
+            {
+                label: 'Audit Trail',
+                href: '/admin/audit-trail',
+                icon: History,
+                exact: false,
+                extraMatches: [] as string[],
+                section: 'audit_trail',
             },
             {
                 label: 'Blocked IPs',

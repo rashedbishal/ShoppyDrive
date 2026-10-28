@@ -43,52 +43,38 @@ function minimalOrder(array $attributes = []): Order
     ], $attributes));
 }
 
-// ── Access control ───────────────────────────────────────────────────────────
+// ── Access control (App\Support\AdminSections's `audit_trail` entry) ───────
 
-test('a regular admin without can_view_audit_trail cannot view the audit trail', function () {
+test('a regular admin without the audit_trail permission cannot view the audit trail', function () {
     actingAs(regularAuditAdmin(), 'admin');
 
     $this->get(route('admin.audit-trail.index'))->assertStatus(403);
 });
 
-test('a regular admin granted can_view_audit_trail can view the audit trail', function () {
-    $admin = regularAuditAdmin();
-    $admin->forceFill(['can_view_audit_trail' => true])->save();
+test('a regular admin granted the audit_trail permission can view the audit trail', function () {
+    $admin = regularAuditAdmin(['permissions' => ['audit_trail' => ['view']]]);
     actingAs($admin, 'admin');
 
     $this->get(route('admin.audit-trail.index'))->assertOk();
 });
 
-test('the mother admin can always view the audit trail regardless of the flag', function () {
+test('the mother admin can always view the audit trail regardless of permissions', function () {
     actingAs(createMotherAdmin(), 'admin');
 
     $this->get(route('admin.audit-trail.index'))->assertOk();
 });
 
-test('a client cannot smuggle can_view_audit_trail into their own self-edit request', function () {
-    $regular = regularAuditAdmin(['email' => 'selfgrant@example.com']);
-    actingAs($regular, 'admin');
-
-    $this->put(route('admin.admins.update', $regular), [
-        'name' => $regular->name,
-        'email' => 'selfgrant@example.com',
-        'can_view_audit_trail' => true,
-    ]);
-
-    expect($regular->refresh()->can_view_audit_trail)->toBeFalse();
-});
-
-test('the mother admin can grant can_view_audit_trail to another admin', function () {
+test('the mother admin can grant the audit_trail permission to another admin', function () {
     actingAs(createMotherAdmin(), 'admin');
     $regular = regularAuditAdmin(['email' => 'grantee@example.com']);
 
     $this->put(route('admin.admins.update', $regular), [
         'name' => $regular->name,
         'email' => 'grantee@example.com',
-        'can_view_audit_trail' => true,
+        'permissions' => ['audit_trail' => ['view']],
     ]);
 
-    expect($regular->refresh()->can_view_audit_trail)->toBeTrue();
+    expect($regular->refresh()->permissions)->toBe(['audit_trail' => ['view']]);
 });
 
 // ── Admin CRUD logging ───────────────────────────────────────────────────────
@@ -182,8 +168,7 @@ test('an order update that does not touch status is not logged', function () {
 // ── Clearing the log ─────────────────────────────────────────────────────────
 
 test('a regular admin, even with view access, cannot clear the audit trail', function () {
-    $admin = regularAuditAdmin();
-    $admin->forceFill(['can_view_audit_trail' => true])->save();
+    $admin = regularAuditAdmin(['permissions' => ['audit_trail' => ['view']]]);
     actingAs($admin, 'admin');
 
     $this->delete(route('admin.audit-trail.destroy'), ['password' => 'password'])
