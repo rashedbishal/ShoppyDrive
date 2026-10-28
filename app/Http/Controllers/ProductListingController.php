@@ -152,6 +152,9 @@ class ProductListingController extends Controller
         // CatalogFilterCache (identical for every visitor and listing page).
         return Inertia::render('catalog/ProductListing', [
             'category' => $category ?? $subCategory,
+            // The banner's overlay colour: the category's own colour, or for a
+            // sub-category its parent's (sub-categories have no colour field).
+            'bannerColor' => $category?->color ?? $subCategory?->category?->color,
             'categories' => fn () => CatalogFilterCache::categories(),
             'brands' => fn () => CatalogFilterCache::brands(),
             'attributes' => fn () => CatalogFilterCache::attributes(),
