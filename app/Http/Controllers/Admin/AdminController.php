@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Support\AdminSections;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,7 +30,9 @@ class AdminController extends Controller
     {
         $this->authorizeMotherOnly('create new admin accounts');
 
-        return Inertia::render('admin/admins/create');
+        return Inertia::render('admin/admins/create', [
+            'sectionCatalog' => AdminSections::grouped(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -40,12 +43,14 @@ class AdminController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:admins,email'],
             'password' => ['required', 'confirmed', Password::min(8)],
+            'permissions' => ['nullable', 'array'],
         ]);
 
         Admin::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'permissions' => AdminSections::sanitize($request->input('permissions', [])),
         ]);
 
         return redirect()->route('admin.admins.index')->with('success', 'Admin account created successfully.');
@@ -56,7 +61,8 @@ class AdminController extends Controller
         $this->authorizeManageTarget($admin);
 
         return Inertia::render('admin/admins/edit', [
-            'adminUser' => $admin->only(['id', 'name', 'email', 'is_mother']),
+            'adminUser' => $admin->only(['id', 'name', 'email', 'is_mother', 'permissions']),
+            'sectionCatalog' => AdminSections::grouped(),
         ]);
     }
 
@@ -68,6 +74,7 @@ class AdminController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:admins,email,'.$admin->id],
             'password' => ['nullable', 'confirmed', Password::min(8)],
+            'permissions' => ['nullable', 'array'],
         ]);
 
         $data = [
@@ -77,6 +84,16 @@ class AdminController extends Controller
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
+        }
+
+        // Only the mother admin may change section permissions, and never
+        // the mother's own (which has no meaning — she always has full
+        // access) — so a non-mother editing their own account can never
+        // grant themselves access this way, mirroring is_mother's mass
+        // assignment protection.
+        $currentAdmin = Auth::guard('admin')->user();
+        if ($currentAdmin->is_mother && ! $admin->is_mother) {
+            $data['permissions'] = AdminSections::sanitize($request->input('permissions', []));
         }
 
         $admin->update($data);

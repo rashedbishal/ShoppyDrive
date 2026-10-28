@@ -43,7 +43,7 @@ function layoutTableQueriesDuring(Closure $request): array
 
 function layoutAdmin(): Admin
 {
-    return Admin::create(['name' => 'Admin', 'email' => 'layout-'.uniqid().'@example.com', 'password' => bcrypt('password')]);
+    return createAdmin(['name' => 'Admin', 'email' => 'layout-'.uniqid().'@example.com', 'password' => bcrypt('password')]);
 }
 
 test('a repeat page load reads the shared layout data from the cache, not the database', function () {

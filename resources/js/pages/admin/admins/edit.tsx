@@ -1,5 +1,6 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Shield } from 'lucide-react';
+import { PermissionMatrix } from '@/components/admin/PermissionMatrix';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
@@ -16,19 +17,39 @@ type AdminUser = {
     name: string;
     email: string;
     is_mother: boolean;
+    permissions: Record<string, string[]> | null;
+};
+
+type SectionGroup = {
+    group: string;
+    sections: { key: string; label: string; abilities: string[] }[];
+};
+
+type CurrentAdmin = {
+    id: number;
+    is_mother: boolean;
 };
 
 type Props = {
     adminUser: AdminUser;
+    sectionCatalog: SectionGroup[];
 };
 
-export default function AdminEdit({ adminUser }: Props) {
+export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
+    const { props } = usePage<any>();
+    const currentAdmin = props.auth.admin as CurrentAdmin;
+    // Mirrors AdminController's own rule: only the mother admin can grant
+    // permissions, and never the mother's own (she always has full access).
+    const canManagePermissions = currentAdmin.is_mother && !adminUser.is_mother;
+
     const { data, setData, put, processing, errors, setError, clearErrors } =
         useForm({
             name: adminUser.name,
             email: adminUser.email,
             password: '',
             password_confirmation: '',
+            permissions:
+                adminUser.permissions ?? ({} as Record<string, string[]>),
         });
 
     const inputClass =
@@ -64,23 +85,25 @@ export default function AdminEdit({ adminUser }: Props) {
                 title="Edit Admin"
                 description={adminUser.email}
                 returnTo={route('admin.admins.index')}
-                className="sm:max-w-lg"
+                className={
+                    canManagePermissions ? 'sm:max-w-2xl' : 'sm:max-w-lg'
+                }
             >
                 {adminUser.is_mother && (
-                    <span className="flex w-fit items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-700 uppercase">
+                    <span className="mb-4 flex w-fit items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-700 uppercase">
                         <Shield className="size-3" />
                         Mother Admin
                     </span>
                 )}
 
-                <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100 pb-4">
-                        <CardTitle className="text-sm font-semibold text-slate-700">
-                            Account Details
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-4">
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <Card className="shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
+                                Account Details
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-4">
                             <div>
                                 <label className="mb-1 block text-sm font-medium text-slate-700">
                                     Full Name
@@ -163,24 +186,48 @@ export default function AdminEdit({ adminUser }: Props) {
                                     </p>
                                 )}
                             </div>
+                        </CardContent>
+                    </Card>
 
-                            <div className="flex gap-2 pt-2">
-                                <Button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                                >
-                                    {processing ? 'Saving…' : 'Save Changes'}
-                                </Button>
-                                <Link href={route('admin.admins.index')}>
-                                    <Button type="button" variant="outline">
-                                        Cancel
-                                    </Button>
-                                </Link>
-                            </div>
-                        </form>
-                    </CardContent>
-                </Card>
+                    {canManagePermissions && (
+                        <Card className="mt-4 shadow-sm">
+                            <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardTitle className="text-sm font-semibold text-slate-700">
+                                    Permissions
+                                </CardTitle>
+                                <p className="text-xs text-slate-500">
+                                    Pick which sections this admin can see. Each
+                                    one defaults to view-only — check Create,
+                                    Update or Delete to grant more.
+                                </p>
+                            </CardHeader>
+                            <CardContent className="pt-4">
+                                <PermissionMatrix
+                                    catalog={sectionCatalog}
+                                    value={data.permissions}
+                                    onChange={(value) =>
+                                        setData('permissions', value)
+                                    }
+                                />
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                        >
+                            {processing ? 'Saving…' : 'Save Changes'}
+                        </Button>
+                        <Link href={route('admin.admins.index')}>
+                            <Button type="button" variant="outline">
+                                Cancel
+                            </Button>
+                        </Link>
+                    </div>
+                </form>
             </RouteModal>
         </>
     );

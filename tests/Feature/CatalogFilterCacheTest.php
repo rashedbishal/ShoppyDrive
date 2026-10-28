@@ -55,7 +55,7 @@ function filterQueriesDuring(Closure $request): int
 
 function catalogAdmin(): Admin
 {
-    return Admin::create(['name' => 'Admin', 'email' => 'catalog-'.uniqid().'@example.com', 'password' => bcrypt('password')]);
+    return createAdmin(['name' => 'Admin', 'email' => 'catalog-'.uniqid().'@example.com', 'password' => bcrypt('password')]);
 }
 
 function brandCount(array $props, Brand $brand): ?int

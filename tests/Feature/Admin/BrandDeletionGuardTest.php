@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\Admin;
 use App\Models\Brand;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -12,7 +11,7 @@ use function Pest\Laravel\actingAs;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->admin = Admin::create([
+    $this->admin = createAdmin([
         'name' => 'Admin User',
         'email' => 'admin-brand-guard@example.com',
         'password' => bcrypt('password'),

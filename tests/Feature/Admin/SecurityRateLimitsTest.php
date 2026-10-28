@@ -26,7 +26,7 @@ function lowestSecurityLimits(): array
 
 function plainAdmin(): Admin
 {
-    return Admin::create(['name' => 'Staff', 'email' => 'staff-'.uniqid().'@example.com', 'password' => bcrypt('password')]);
+    return createAdmin(['name' => 'Staff', 'email' => 'staff-'.uniqid().'@example.com', 'password' => bcrypt('password')]);
 }
 
 // ── Settings storage & guardrails ────────────────────────────────────────────

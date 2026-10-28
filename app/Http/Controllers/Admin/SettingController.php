@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,6 +20,46 @@ use RuntimeException;
 
 class SettingController extends Controller
 {
+    /**
+     * `update()` is one endpoint shared by six sidebar sections (each page
+     * posts only its own fields), so — unlike every other admin.can-gated
+     * route — permission has to be checked per field group here instead of
+     * at the route. Anything not listed falls back to the `settings` group.
+     *
+     * @var array<string, list<string>>
+     */
+    private const FIELD_GROUPS = [
+        'social_config' => [
+            'google_client_id', 'google_client_secret', 'google_redirect_uri',
+            'facebook_client_id', 'facebook_client_secret', 'facebook_redirect_uri',
+        ],
+        'courier_config' => [
+            'pathao_environment', 'pathao_client_id', 'pathao_client_secret',
+            'pathao_username', 'pathao_password', 'pathao_store_id',
+            'steadfast_api_key', 'steadfast_secret_key', 'steadfast_webhook_secret', 'steadfast_webhook_url',
+            'shipping_rate_inside_dhaka', 'shipping_rate_outside_dhaka',
+        ],
+        'about_page' => [
+            'about_hero_eyebrow', 'about_hero_title', 'about_hero_title_highlight', 'about_hero_description',
+            'about_stats', 'about_mission_eyebrow', 'about_mission_title', 'about_mission_body',
+            'about_mission_features', 'about_values', 'about_team', 'about_cta_title', 'about_cta_description',
+        ],
+        'contact_page' => [
+            'contact_page_hero_eyebrow', 'contact_page_hero_title', 'contact_page_hero_title_highlight',
+            'contact_page_hero_description', 'contact_page_support_hours',
+            'contact_phone', 'contact_email', 'contact_address',
+        ],
+        'referral_program' => [
+            'referral_enabled', 'referral_discount_type', 'referral_discount_value',
+            'referral_min_order_amount', 'referral_reward_points', 'referral_reward_delay_days',
+            'referral_unlock_order_count', 'referral_reward_cap_amount', 'referral_reward_cap_period',
+            'loyalty_earn_rate_bdt_per_point', 'loyalty_earn_delay_days',
+            'registration_bonus_points', 'review_bonus_points',
+            'daily_login_base_points', 'daily_login_cap_days',
+            'points_redeem_value_bdt', 'points_redeem_max_percent',
+        ],
+    ];
+
     public function __construct(
         private readonly PathaoCourierService $pathao,
         private readonly SteadfastCourierService $steadfast,
@@ -68,6 +109,8 @@ class SettingController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        $this->authorizeFieldGroups($request);
+
         $request->validate([
             'site_name' => ['nullable', 'string', 'max:255'],
             'contact_email' => ['nullable', 'email', 'max:255'],
@@ -215,6 +258,30 @@ class SettingController extends Controller
         }
 
         return back()->with('success', 'Settings saved.');
+    }
+
+    /**
+     * Checks that the admin has `update` on every section whose fields are
+     * actually present in this request — anything not listed in
+     * FIELD_GROUPS belongs to the main `settings` section.
+     */
+    private function authorizeFieldGroups(Request $request): void
+    {
+        $admin = Auth::guard('admin')->user();
+        $submitted = array_keys($request->all());
+        $accountedFor = [];
+
+        foreach (self::FIELD_GROUPS as $section => $fields) {
+            $accountedFor = [...$accountedFor, ...$fields];
+
+            if (array_intersect($fields, $submitted) !== [] && ! $admin->canAccess($section, 'update')) {
+                abort(403, "You don't have permission to update {$section}.");
+            }
+        }
+
+        if (array_diff($submitted, $accountedFor, ['_method']) !== [] && ! $admin->canAccess('settings', 'update')) {
+            abort(403, "You don't have permission to update settings.");
+        }
     }
 
     /**

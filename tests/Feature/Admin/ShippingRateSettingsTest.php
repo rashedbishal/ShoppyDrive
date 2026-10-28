@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\Admin;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -17,7 +16,7 @@ test('shipping rates fall back to the original hardcoded defaults when not confi
 });
 
 test('admin can configure the inside and outside dhaka delivery charges from the courier config page', function () {
-    $admin = Admin::create([
+    $admin = createAdmin([
         'name' => 'Admin User',
         'email' => 'admin-shipping@example.com',
         'password' => bcrypt('password'),
@@ -40,7 +39,7 @@ test('admin can configure the inside and outside dhaka delivery charges from the
 });
 
 test('a negative delivery charge is rejected', function () {
-    $admin = Admin::create([
+    $admin = createAdmin([
         'name' => 'Admin User',
         'email' => 'admin-shipping-invalid@example.com',
         'password' => bcrypt('password'),

@@ -53,9 +53,9 @@ Route::get('/newsletter/status', [NewsletterController::class, 'status'])->middl
 
 // Landing pages (public, guest-accessible)
 Route::get('/lp/{slug}', [LandingPageController::class, 'show'])->name('lp.show');
-Route::post('/lp/{slug}/order', [LandingPageController::class, 'placeOrder'])->middleware(['blocked-ip', 'throttle:place-order'])->name('lp.order');
+Route::post('/lp/{slug}/order', [LandingPageController::class, 'placeOrder'])->middleware('throttle:place-order')->name('lp.order');
 Route::get('/lp/{slug}/payment/{token}', [LandingPageController::class, 'payment'])->name('lp.payment');
-Route::post('/lp/{slug}/payment/{token}', [LandingPageController::class, 'submitPayment'])->middleware(['blocked-ip', 'throttle:payment-verify'])->name('lp.payment.submit');
+Route::post('/lp/{slug}/payment/{token}', [LandingPageController::class, 'submitPayment'])->middleware('throttle:payment-verify')->name('lp.payment.submit');
 Route::get('/lp/confirmation/{guestToken}', [LandingPageController::class, 'confirmation'])->name('lp.confirmation');
 Route::get('/lp/invoice/{guestToken}', [LandingPageController::class, 'downloadInvoice'])->middleware('throttle:invoice-download')->name('lp.invoice');
 

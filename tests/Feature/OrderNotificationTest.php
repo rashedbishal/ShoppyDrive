@@ -12,7 +12,6 @@ use App\Mail\OrderStatusUpdatedMail;
 use App\Mail\ReviewApprovedMail;
 use App\Mail\ShippedWithTrackingMail;
 use App\Mail\WelcomeMail;
-use App\Models\Admin;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
@@ -162,7 +161,7 @@ test('a guest order with no email on file sends no customer email but still aler
 
 test('status-change emails always use the order owner email, never the acting admins own address', function () {
     Mail::fake();
-    $admin = Admin::create(['name' => 'Acting Admin', 'email' => 'admin-acting@example.com', 'password' => bcrypt('x')]);
+    $admin = createAdmin(['name' => 'Acting Admin', 'email' => 'admin-acting@example.com', 'password' => bcrypt('x')]);
     $customer = User::factory()->create(['email' => 'real-customer@example.com']);
     $order = Order::create([
         'order_number' => 'ORD-NOTIFY-6', 'user_id' => $customer->id, 'status' => 'pending',
@@ -202,7 +201,7 @@ test('verifying an email address sends WelcomeMail exactly once', function () {
 test('approving a review sends ReviewApprovedMail once, not on a repeat approve', function () {
     Mail::fake();
     $user = User::factory()->create(['email' => 'reviewer@example.com']);
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => bcrypt('x')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => bcrypt('x')]);
     $product = Product::factory()->create();
     $review = Review::create([
         'product_id' => $product->id, 'user_id' => $user->id, 'rating' => 5,

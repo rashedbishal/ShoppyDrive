@@ -1,13 +1,12 @@
 <?php
 
-use App\Models\Admin;
 use App\Models\Category;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 
 beforeEach(function () {
-    $this->admin = Admin::create([
+    $this->admin = createAdmin([
         'name' => 'Admin',
         'email' => 'toast-admin@example.com',
         'password' => bcrypt('password'),

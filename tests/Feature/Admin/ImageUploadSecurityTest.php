@@ -14,7 +14,7 @@ use function Pest\Laravel\actingAs;
 
 function imageSecurityAdmin(): Admin
 {
-    return Admin::create(['name' => 'Admin', 'email' => 'image-security-'.uniqid().'@example.com', 'password' => bcrypt('x')]);
+    return createAdmin(['name' => 'Admin', 'email' => 'image-security-'.uniqid().'@example.com', 'password' => bcrypt('x')]);
 }
 
 // A real, valid SVG document — the point of these tests is that content

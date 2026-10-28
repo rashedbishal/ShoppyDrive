@@ -58,7 +58,7 @@ function homepageForm(): array
 
 function suggestionAdmin(): Admin
 {
-    return Admin::create(['name' => 'Admin', 'email' => 'suggest-'.uniqid().'@example.com', 'password' => bcrypt('password')]);
+    return createAdmin(['name' => 'Admin', 'email' => 'suggest-'.uniqid().'@example.com', 'password' => bcrypt('password')]);
 }
 
 // ── Caching itself ───────────────────────────────────────────────────────────

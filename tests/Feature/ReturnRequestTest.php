@@ -6,7 +6,6 @@ use App\Enums\OrderStatus;
 use App\Enums\ReturnStatus;
 use App\Mail\ReturnApprovedMail;
 use App\Mail\ReturnRejectedMail;
-use App\Models\Admin;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ReturnRequest;
@@ -236,7 +235,7 @@ test('a return request cannot reference an order item belonging to a different o
 
 test('admin can approve a pending return request and the customer is emailed', function () {
     Mail::fake();
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-returns@example.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-returns@example.com', 'password' => bcrypt('password')]);
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 500]);
     $order = createDeliveredOrder($user, $product);
@@ -257,7 +256,7 @@ test('admin can approve a pending return request and the customer is emailed', f
 
 test('admin can reject a pending return request with a note and the customer is emailed', function () {
     Mail::fake();
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-returns2@example.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-returns2@example.com', 'password' => bcrypt('password')]);
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 500]);
     $order = createDeliveredOrder($user, $product);
@@ -277,7 +276,7 @@ test('admin can reject a pending return request with a note and the customer is 
 });
 
 test('admin cannot approve or reject a return request that is not pending', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-returns3@example.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-returns3@example.com', 'password' => bcrypt('password')]);
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 500]);
     $order = createDeliveredOrder($user, $product);
@@ -294,7 +293,7 @@ test('admin cannot approve or reject a return request that is not pending', func
 });
 
 test('admin can record a manual refund for an approved return request', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-returns4@example.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-returns4@example.com', 'password' => bcrypt('password')]);
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 500]);
     $order = createDeliveredOrder($user, $product);
@@ -318,7 +317,7 @@ test('admin can record a manual refund for an approved return request', function
 });
 
 test('admin cannot mark a return as refunded before it has been approved', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-returns5@example.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-returns5@example.com', 'password' => bcrypt('password')]);
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 500]);
     $order = createDeliveredOrder($user, $product);
@@ -376,7 +375,7 @@ test('when an order has multiple historical return requests, the newest one is s
 
 test('approving a return request twice in a row only sends one approval email', function () {
     Mail::fake();
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-returns6@example.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-returns6@example.com', 'password' => bcrypt('password')]);
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 500]);
     $order = createDeliveredOrder($user, $product);
@@ -394,7 +393,7 @@ test('approving a return request twice in a row only sends one approval email', 
 });
 
 test('marking a return refunded twice in a row does not overwrite the recorded refund a second time', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-returns7@example.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-returns7@example.com', 'password' => bcrypt('password')]);
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 500]);
     $order = createDeliveredOrder($user, $product);
@@ -417,7 +416,7 @@ test('marking a return refunded twice in a row does not overwrite the recorded r
 });
 
 test('the refund amount cannot exceed the value of the returned items', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-returns8@example.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-returns8@example.com', 'password' => bcrypt('password')]);
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 500]);
     $order = createDeliveredOrder($user, $product, 2);
@@ -445,7 +444,7 @@ test('the refund amount cannot exceed the value of the returned items', function
 
 test('rejecting a return request twice in a row only sends one rejection email', function () {
     Mail::fake();
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-returns9@example.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-returns9@example.com', 'password' => bcrypt('password')]);
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 500]);
     $order = createDeliveredOrder($user, $product);
@@ -505,7 +504,7 @@ test('duplicate order_item_id lines sum their quantity instead of being checked 
 });
 
 test('the refund cap cannot be inflated by a duplicated or over-quantity stored item line', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-returns10@example.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-returns10@example.com', 'password' => bcrypt('password')]);
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 500]);
     // Ordered quantity is 3 (worth 1500 total), but the stored return

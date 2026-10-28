@@ -225,11 +225,14 @@ ShoppyDrive is a Bangladesh-focused ecommerce storefront + admin panel built on 
 ## Common Commands
 
 ```
+composer setup                            # first run: install, .env, key, migrate, ziggy:generate, npm build
 composer dev                              # server + queue + pail + Vite (also runs ziggy:generate)
+php artisan test --compact tests/Feature/FooTest.php   # single file; or --filter=testName
 composer test                             # config:clear + pint --test + full test suite
 composer ci:check                         # eslint + prettier + tsc, then `composer test`
 vendor/bin/pint --dirty --format agent    # run before finishing any PHP change
 npm run lint / npm run format / npm run types:check
+npm run build:ssr                         # client + SSR bundles
 ```
 
 GitHub Actions `tests.yml`/`lint.yml` are disabled (`if: false`), so nothing checks changes remotely — run `composer ci:check` locally. `deploy.yml` deploys to Hostinger over SSH.
@@ -258,7 +261,7 @@ GitHub Actions `tests.yml`/`lint.yml` are disabled (`if: false`), so nothing che
 
 **Rate limiting is admin-tunable from Admin › Security** (`SecuritySettingsController`, mother-only to save). `App\Support\SecurityRateLimits` holds every limit as a `*_times`/`*_minutes` pair with default/min/max, stored in one `Setting` row and clamped on read, so a bad value can never disable a limit. Named limiters are registered in `AppServiceProvider` and attached per route via `throttle:<name>`; Fortify's own routes (register, forgot-password, confirm-password, profile-information) get theirs via the `fortify.throttle` middleware (`ThrottleFortifyActions`, added to `config/fortify.php` `middleware`) because Fortify registers those routes itself — attach by route name, never by mutating routes at runtime (deploy runs `route:cache`). `SecurityRateLimits::tooManyAttempts()` picks the response: JSON 429 for fetch callers, the themed 429 page for GETs (never a redirect — that would loop), toast + `rate_limit` validation error for form posts. Logged-in customers are keyed by user id, not IP (Bangladeshi mobile networks share IPs). `admin-login`, `webhook` and `sms-forwarder` limits are deliberately hardcoded, not admin-tunable; `sms-forwarder` only counts wrong-token requests so the real bKash/Nagad forwarder phone is never throttled. `cart.sync` is deliberately unthrottled. No trusted proxies are configured, so all IP-based limits assume the app sees real client IPs.
 
-**Global middleware** (`bootstrap/app.php`): `RedirectToCanonicalDomain` (www → canonical), `TrackDailyVisit` (increments `DailyVisit` once per day per visitor via `sd_last_seen` cookie, skipping bots and `admin`/`api`/`storage`/`_boost`/`up`; feeds the admin dashboard chart, separate from consent-gated GA in `resources/js/lib/analytics.ts`), and `CaptureTrafficSource` (cookie that `Order::booted()` writes onto each order). The `blocked-ip` alias (`BlockBlockedIp`, `BlockedIp` model) is applied only to order-placement POSTs, never to payment/courier webhooks.
+**Global middleware** (`bootstrap/app.php`): `RedirectToCanonicalDomain` (www → canonical), `BlockBlockedIp` (aborts 403 for every `web`-group request from a blocked IP — every storefront, auth, account and checkout page, not just order placement — except `/admin*`, so the CMS that manages the block list can never lock itself out; payment/courier webhooks live under the separate `api` routing group and are unaffected, since they're server-to-server and don't carry the customer's own IP anyway; `BlockedIp::isBlocked()` caches the block list forever, flushed on create/delete), `TrackDailyVisit` (increments `DailyVisit` once per day per visitor via `sd_last_seen` cookie, skipping bots and `admin`/`api`/`storage`/`_boost`/`up`; feeds the admin dashboard chart, separate from consent-gated GA in `resources/js/lib/analytics.ts`), and `CaptureTrafficSource` (cookie that `Order::booted()` writes onto each order).
 
 **Payments**:
 - `ZiniPayService` — hosted gateway (invoice creation + `ZiniPayWebhookController`).

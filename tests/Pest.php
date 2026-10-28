@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Admin;
+use App\Support\AdminSections;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -68,4 +69,30 @@ function createMotherAdmin(array $attributes = []): Admin
     $admin->forceFill(['is_mother' => true])->save();
 
     return $admin;
+}
+
+/**
+ * A regular (non-mother) admin with every section fully granted. New admins
+ * default to no section access at all (see AdminSections) once the mother
+ * can hand-pick permissions, but almost every existing feature test here
+ * predates that and just needs "a logged-in admin who can do anything a
+ * non-mother admin is allowed to do" — tests that specifically exercise
+ * restricted access build their own Admin with a narrower `permissions`
+ * array instead of using this helper.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function createAdmin(array $attributes = []): Admin
+{
+    $permissions = collect(AdminSections::SECTIONS)
+        ->keys()
+        ->mapWithKeys(fn (string $section): array => [$section => AdminSections::abilitiesFor($section)])
+        ->all();
+
+    return Admin::create(array_merge([
+        'name' => 'Admin User',
+        'email' => 'admin-'.uniqid().'@example.com',
+        'password' => bcrypt('password'),
+        'permissions' => $permissions,
+    ], $attributes));
 }
