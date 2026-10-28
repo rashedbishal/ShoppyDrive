@@ -266,7 +266,15 @@ class ProductController extends Controller
                     'size_value_id' => $sizeId,
                 ],
                 [
-                    'sku' => $variant['sku'] ?? null,
+                    // Normalizes a blank/whitespace-only SKU to null,
+                    // matching ProductRequest's own validation-time
+                    // normalization — otherwise a literal '' saved here
+                    // would (a) collide with another blank SKU under a
+                    // future unique index, where multiple NULLs don't,
+                    // and (b) break every `$variant?->sku ?? $product->sku`
+                    // fallback elsewhere in the app, since `??` only
+                    // falls back on null, not on an empty string.
+                    'sku' => ($sku = trim((string) ($variant['sku'] ?? ''))) !== '' ? $sku : null,
                     'price' => $variant['price'],
                     'compare_price' => $variant['compare_price'] ?? null,
                     'cost_price' => $variant['cost_price'] ?? null,

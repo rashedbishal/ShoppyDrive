@@ -117,17 +117,41 @@ class ProductRequest extends FormRequest
                 // This guard stops new duplicates from being created from
                 // here on, both within one submission and across
                 // different products, without touching any existing row.
+                //
+                // A blank/whitespace-only SKU is treated as "no SKU" —
+                // skipped here, and normalized to null at persistence
+                // time (ProductController::syncVariants()) — so multiple
+                // blank entries are never flagged as duplicates, the same
+                // way multiple NULLs never collide under a unique index.
                 $sku = trim((string) ($variant['sku'] ?? ''));
                 if ($sku === '') {
                     continue;
                 }
 
-                if (isset($seenSkus[$sku])) {
+                // Keyed by a case-folded value: product_variants.sku's
+                // actual column collation is utf8mb4_unicode_ci (case-
+                // insensitive — confirmed against the live schema), so
+                // "ABC" and "abc" are the same value as far as MySQL is
+                // concerned. Without this, two variants in the *same*
+                // submission differing only by case would pass this
+                // in-PHP check yet still collide under a future unique
+                // index.
+                $normalizedSku = mb_strtolower($sku);
+                if (isset($seenSkus[$normalizedSku])) {
                     $validator->errors()->add("variants.{$index}.sku", 'Duplicate SKU — each variant must have its own unique SKU.');
                 }
-                $seenSkus[$sku] = true;
+                $seenSkus[$normalizedSku] = true;
 
-                $existsElsewhere = ProductVariant::where('sku', $sku)
+                // Explicit LOWER() comparison, not where('sku', $sku) —
+                // relying on the column's collation to make this
+                // case-insensitive would make the check's behavior
+                // silently depend on which database engine is running it
+                // (confirmed: this does NOT match case-insensitively
+                // under SQLite, which the test suite uses, even though it
+                // does under the real MySQL column's actual collation).
+                // Explicit LOWER() on both sides is deterministic on
+                // every engine this app runs on.
+                $existsElsewhere = ProductVariant::whereRaw('LOWER(sku) = ?', [$normalizedSku])
                     ->when($productId, fn ($q) => $q->where('product_id', '!=', $productId))
                     ->exists();
 

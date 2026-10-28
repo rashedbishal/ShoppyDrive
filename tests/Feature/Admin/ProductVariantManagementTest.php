@@ -213,6 +213,104 @@ test('duplicate SKU within the same submission is rejected', function () {
     expect(Product::where('slug', 'test-product')->exists())->toBeFalse();
 });
 
+test('case-only SKU difference within the same submission is still rejected', function () {
+    // product_variants.sku's actual column collation is
+    // utf8mb4_unicode_ci (case-insensitive) — "dup-sku" and "DUP-SKU"
+    // are the same value as far as MySQL is concerned, so the
+    // within-submission check must fold case too, not just do an exact
+    // PHP string comparison.
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            ['color_value_id' => $this->red->id, 'sku' => 'dup-sku', 'price' => 1200, 'stock_quantity' => 5, 'is_default' => true],
+            ['color_value_id' => $this->blue->id, 'sku' => 'DUP-SKU', 'price' => 1300, 'stock_quantity' => 3, 'is_default' => false],
+        ],
+    ]));
+
+    $response->assertInvalid();
+    expect(Product::where('slug', 'test-product')->exists())->toBeFalse();
+});
+
+test('a SKU already used by a variant on a different product is rejected case-insensitively', function () {
+    actingAs($this->admin, 'admin');
+
+    $otherProduct = Product::factory()->create(['category_id' => $this->category->id, 'sub_category_id' => $this->subCategory->id]);
+    ProductVariant::create([
+        'product_id' => $otherProduct->id, 'sku' => 'taken-sku', 'price' => 500, 'stock_quantity' => 5,
+        'attributes' => [], 'is_default' => true,
+    ]);
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            // Differs only by case from the other product's "taken-sku".
+            ['color_value_id' => $this->red->id, 'sku' => 'TAKEN-SKU', 'price' => 1200, 'stock_quantity' => 5, 'is_default' => true],
+        ],
+    ]));
+
+    $response->assertInvalid();
+    expect(Product::where('slug', 'test-product')->exists())->toBeFalse();
+});
+
+test('multiple blank SKUs in the same submission are not flagged as duplicates and are persisted as null', function () {
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            ['color_value_id' => $this->red->id, 'sku' => '', 'price' => 1200, 'stock_quantity' => 5, 'is_default' => true],
+            ['color_value_id' => $this->blue->id, 'sku' => '   ', 'price' => 1300, 'stock_quantity' => 3, 'is_default' => false],
+        ],
+    ]));
+
+    $response->assertRedirect(route('admin.products.index'));
+
+    $product = Product::where('slug', 'test-product')->first();
+    expect($product->variants)->toHaveCount(2);
+    foreach ($product->variants as $variant) {
+        expect($variant->sku)->toBeNull();
+    }
+});
+
+test('explicit null SKUs alongside ordinary distinct SKUs are all accepted', function () {
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'has_size_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            ['color_value_id' => $this->red->id, 'size_value_id' => $this->sizeM->id, 'sku' => null, 'price' => 500, 'stock_quantity' => 5, 'is_default' => true],
+            ['color_value_id' => $this->blue->id, 'size_value_id' => $this->sizeM->id, 'sku' => 'DISTINCT-ONE', 'price' => 500, 'stock_quantity' => 5, 'is_default' => false],
+            ['color_value_id' => $this->blue->id, 'size_value_id' => $this->sizeXl->id, 'sku' => 'DISTINCT-TWO', 'price' => 500, 'stock_quantity' => 5, 'is_default' => false],
+        ],
+    ]));
+
+    $response->assertRedirect(route('admin.products.index'));
+
+    $product = Product::where('slug', 'test-product')->first();
+    expect($product->variants)->toHaveCount(3);
+    $skus = $product->variants->pluck('sku')->all();
+    expect($skus)->toContain(null, 'DISTINCT-ONE', 'DISTINCT-TWO');
+});
+
 test('a SKU already used by a variant on a different product is rejected', function () {
     actingAs($this->admin, 'admin');
 
