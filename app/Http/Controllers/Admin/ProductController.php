@@ -242,8 +242,12 @@ class ProductController extends Controller
         $variantsByKey = [];
 
         foreach ($variants as $variant) {
-            $colorId = isset($variant['color_value_id']) ? (int) $variant['color_value_id'] : null;
-            $sizeId = isset($variant['size_value_id']) ? (int) $variant['size_value_id'] : null;
+            // Force-null a dimension the toggles disabled, no matter what the submitted
+            // row still carries — otherwise a stale frontend state (or a variant row left
+            // over from before a toggle was flipped off) can re-attach a disabled
+            // attribute to the pivot and keep it selectable on the storefront.
+            $colorId = $product->has_color_variant && isset($variant['color_value_id']) ? (int) $variant['color_value_id'] : null;
+            $sizeId = $product->has_size_variant && isset($variant['size_value_id']) ? (int) $variant['size_value_id'] : null;
             $key = $this->variantKey($colorId, $sizeId);
             $submittedKeys[] = $key;
 

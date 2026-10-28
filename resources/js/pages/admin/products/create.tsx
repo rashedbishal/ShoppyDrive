@@ -10,6 +10,7 @@ import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ComboboxField } from '@/components/ui/combobox';
 import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
@@ -519,61 +520,51 @@ export default function ProductCreate({
                                     label="Category *"
                                     error={errors.category_id}
                                 >
-                                    <Select
-                                        selectClassName={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${errors.category_id ? 'border-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
+                                    <ComboboxField
                                         value={data.category_id}
-                                        onChange={(e) => {
+                                        onChange={(value) => {
                                             setData((prev) => ({
                                                 ...prev,
-                                                category_id: e.target.value,
+                                                category_id: value,
                                                 sub_category_id: '',
                                             }));
                                         }}
-                                    >
-                                        <option value="">
-                                            — Select Category —
-                                        </option>
-                                        {categories.map((c) => (
-                                            <option key={c.id} value={c.id}>
-                                                {c.name}
-                                            </option>
-                                        ))}
-                                    </Select>
+                                        options={categories.map((c) => ({
+                                            value: String(c.id),
+                                            label: c.name,
+                                        }))}
+                                        error={errors.category_id}
+                                        placeholder="Search categories…"
+                                        emptyMessage="No categories match that search."
+                                        inputClassName="h-9"
+                                    />
                                 </Field>
 
                                 <Field
                                     label="Sub-category *"
                                     error={errors.sub_category_id}
                                 >
-                                    <Select
-                                        selectClassName={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${errors.sub_category_id ? 'border-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
+                                    <ComboboxField
                                         value={data.sub_category_id}
-                                        onChange={(e) =>
-                                            setData(
-                                                'sub_category_id',
-                                                e.target.value,
-                                            )
+                                        onChange={(value) =>
+                                            setData('sub_category_id', value)
                                         }
-                                        disabled={!data.category_id}
-                                    >
-                                        <option value="">
-                                            — Select Sub-category —
-                                        </option>
-                                        {subCategories
+                                        options={subCategories
                                             .filter(
                                                 (sc) =>
                                                     sc.category_id ===
                                                     Number(data.category_id),
                                             )
-                                            .map((sc) => (
-                                                <option
-                                                    key={sc.id}
-                                                    value={sc.id}
-                                                >
-                                                    {sc.name}
-                                                </option>
-                                            ))}
-                                    </Select>
+                                            .map((sc) => ({
+                                                value: String(sc.id),
+                                                label: sc.name,
+                                            }))}
+                                        error={errors.sub_category_id}
+                                        placeholder="Search sub-categories…"
+                                        emptyMessage="No sub-categories match that search."
+                                        disabled={!data.category_id}
+                                        inputClassName="h-9"
+                                    />
                                 </Field>
 
                                 <Field label="Brand" error={errors.brand_id}>
