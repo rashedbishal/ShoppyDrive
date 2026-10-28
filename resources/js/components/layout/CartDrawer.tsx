@@ -260,6 +260,7 @@ export default function CartDrawer(): React.JSX.Element {
                             <DrawerCartRow
                                 key={group.items[0].item_key}
                                 item={group.items[0]}
+                                onNavigate={closeCart}
                                 onQuantityChange={(value) =>
                                     updateQuantity(
                                         group.items[0].item_key,
@@ -315,6 +316,7 @@ export default function CartDrawer(): React.JSX.Element {
                                         <DrawerCartRow
                                             key={item.item_key}
                                             item={item}
+                                            onNavigate={closeCart}
                                             compact
                                         />
                                     ))}
@@ -330,6 +332,8 @@ export default function CartDrawer(): React.JSX.Element {
 
 type DrawerCartRowProps = {
     item: CartItem;
+    /** Closes the drawer when the product image/name is clicked through to its page. */
+    onNavigate?: () => void;
     /** Omitted for a bundle's sub-rows — quantity/remove live on the bundle group header instead. */
     onQuantityChange?: (value: number) => void;
     onRemove?: () => void;
@@ -339,6 +343,7 @@ type DrawerCartRowProps = {
 
 function DrawerCartRow({
     item,
+    onNavigate,
     onQuantityChange,
     onRemove,
     compact = false,
@@ -351,7 +356,9 @@ function DrawerCartRow({
                     : 'flex gap-4 rounded-2xl border border-[var(--color-border)] bg-surface p-4 shadow-[var(--shadow-card)]'
             }
         >
-            <div
+            <Link
+                href={route('product.show', item.product.slug)}
+                onClick={onNavigate}
                 className={
                     compact
                         ? 'flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--color-surface-alt)]'
@@ -368,13 +375,17 @@ function DrawerCartRow({
                 ) : (
                     <ShoppingCart className="size-6 text-[var(--color-text-muted)]" />
                 )}
-            </div>
+            </Link>
 
             <div className="min-w-0 flex-1 space-y-2">
                 <div className="space-y-1">
-                    <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
+                    <Link
+                        href={route('product.show', item.product.slug)}
+                        onClick={onNavigate}
+                        className="block truncate text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-primary)]"
+                    >
                         {item.product.name}
-                    </p>
+                    </Link>
                     {item.variant && (
                         <p className="text-xs font-medium tracking-wide text-[var(--color-text-secondary)] uppercase">
                             {Object.entries(item.variant.attributes)

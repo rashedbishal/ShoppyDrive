@@ -3,10 +3,13 @@ import {
     ArrowLeft,
     Ban,
     Globe,
+    MapPin,
     Package,
+    Pencil,
     RefreshCw,
     Trash2,
     Truck,
+    X,
     XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -14,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 
 type OrderItem = {
@@ -25,6 +29,7 @@ type OrderItem = {
     subtotal: number;
     product: { id: number; name: string; slug: string } | null;
     variant: { id: number; attributes: Record<string, string> } | null;
+    product_snapshot: { image?: string | null } | null;
 };
 
 type StatusHistory = {
@@ -127,6 +132,61 @@ export default function OrderShow({ order }: Props) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [deleteProcessing, setDeleteProcessing] = useState(false);
     const [blockingIp, setBlockingIp] = useState(false);
+
+    const [isEditingAddress, setIsEditingAddress] = useState(false);
+    const {
+        data: addressData,
+        setData: setAddressData,
+        patch: patchAddress,
+        processing: addressProcessing,
+        errors: addressErrors,
+        clearErrors: clearAddressErrors,
+    } = useForm({
+        phone: order.shipping_address.phone,
+        address_line1: order.shipping_address.address_line1,
+        address_line2: order.shipping_address.address_line2 ?? '',
+        city: order.shipping_address.city,
+        state: order.shipping_address.state,
+        postal_code: order.shipping_address.postal_code ?? '',
+        country: order.shipping_address.country,
+    });
+
+    // Re-seeds from the current (possibly just-saved) address rather than
+    // calling the form's reset() — that resets to the values captured when
+    // useForm first mounted, which goes stale after a successful save since
+    // this component never remounts.
+    const seedAddressForm = () => {
+        setAddressData({
+            phone: order.shipping_address.phone,
+            address_line1: order.shipping_address.address_line1,
+            address_line2: order.shipping_address.address_line2 ?? '',
+            city: order.shipping_address.city,
+            state: order.shipping_address.state,
+            postal_code: order.shipping_address.postal_code ?? '',
+            country: order.shipping_address.country,
+        });
+    };
+
+    const startEditingAddress = () => {
+        seedAddressForm();
+        clearAddressErrors();
+        setIsEditingAddress(true);
+    };
+
+    const cancelEditingAddress = () => {
+        seedAddressForm();
+        clearAddressErrors();
+        setIsEditingAddress(false);
+    };
+
+    const handleSaveAddress = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        patchAddress(route('admin.orders.updateShippingAddress', order.id), {
+            preserveScroll: true,
+            onSuccess: () => setIsEditingAddress(false),
+        });
+    };
 
     const handleBlockIp = () => {
         if (!order.ip_address) {
@@ -245,16 +305,16 @@ export default function OrderShow({ order }: Props) {
         <>
             <Head title={`Order ${order.order_number} — Admin`} />
             <div className="space-y-5">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                     <Link
                         href={route('admin.orders.index')}
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        className="mt-0.5 shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                     >
                         <ArrowLeft className="size-4" />
                     </Link>
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                            <h1 className="font-mono text-xl font-bold text-slate-900">
+                    <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h1 className="font-mono text-lg font-bold break-all text-slate-900 sm:text-xl">
                                 {order.order_number}
                             </h1>
                             <Badge
@@ -294,8 +354,17 @@ export default function OrderShow({ order }: Props) {
                                     {order.items.map((item) => (
                                         <div
                                             key={item.id}
-                                            className="flex items-center gap-4 px-4 py-3"
+                                            className="flex items-center gap-3 px-4 py-3"
                                         >
+                                            <img
+                                                src={
+                                                    item.product_snapshot
+                                                        ?.image ??
+                                                    '/placeholder.svg'
+                                                }
+                                                alt=""
+                                                className="size-12 shrink-0 rounded-lg border border-slate-100 object-cover"
+                                            />
                                             <div className="min-w-0 flex-1">
                                                 <p className="text-sm font-medium text-slate-800">
                                                     {item.product_name}
@@ -322,13 +391,15 @@ export default function OrderShow({ order }: Props) {
                                                     </p>
                                                 )}
                                             </div>
-                                            <p className="text-xs text-slate-500">
-                                                ×{item.quantity}
-                                            </p>
-                                            <p className="text-sm font-semibold text-slate-800">
-                                                ৳
-                                                {item.subtotal.toLocaleString()}
-                                            </p>
+                                            <div className="shrink-0 text-right">
+                                                <p className="text-sm font-semibold text-slate-800">
+                                                    ৳
+                                                    {item.subtotal.toLocaleString()}
+                                                </p>
+                                                <p className="text-xs text-slate-400">
+                                                    ×{item.quantity}
+                                                </p>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -555,28 +626,181 @@ export default function OrderShow({ order }: Props) {
                         </Card>
 
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
-                                <CardTitle className="text-sm font-semibold text-slate-700">
-                                    Shipping Address
+                            <CardHeader className="flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                                    <MapPin className="size-4" /> Shipping
+                                    Address
                                 </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-0.5 pt-4 text-sm text-slate-700">
-                                <p className="font-semibold">
-                                    {order.shipping_address.name}
-                                </p>
-                                <p>{order.shipping_address.phone}</p>
-                                <p>{order.shipping_address.address_line1}</p>
-                                {order.shipping_address.address_line2 && (
-                                    <p>
-                                        {order.shipping_address.address_line2}
-                                    </p>
+                                {!isEditingAddress && (
+                                    <button
+                                        type="button"
+                                        onClick={startEditingAddress}
+                                        className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                    >
+                                        <Pencil className="size-3.5" /> Edit
+                                    </button>
                                 )}
-                                <p>
-                                    {order.shipping_address.city},{' '}
-                                    {order.shipping_address.state}{' '}
-                                    {order.shipping_address.postal_code}
-                                </p>
-                                <p>{order.shipping_address.country}</p>
+                            </CardHeader>
+                            <CardContent className="pt-4">
+                                {isEditingAddress ? (
+                                    <form
+                                        onSubmit={handleSaveAddress}
+                                        className="space-y-3"
+                                    >
+                                        <div>
+                                            <p className="mb-1 text-xs font-medium text-slate-500">
+                                                Recipient name
+                                            </p>
+                                            <p className="text-sm font-semibold text-slate-800">
+                                                {order.shipping_address.name}
+                                            </p>
+                                            <p className="mt-0.5 text-xs text-slate-400">
+                                                Not editable here.
+                                            </p>
+                                        </div>
+                                        <Input
+                                            label="Phone"
+                                            value={addressData.phone}
+                                            onChange={(e) =>
+                                                setAddressData(
+                                                    'phone',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            error={addressErrors.phone}
+                                        />
+                                        <Input
+                                            label="Address line 1"
+                                            value={addressData.address_line1}
+                                            onChange={(e) =>
+                                                setAddressData(
+                                                    'address_line1',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            error={
+                                                addressErrors.address_line1
+                                            }
+                                        />
+                                        <Input
+                                            label="Address line 2"
+                                            value={addressData.address_line2}
+                                            onChange={(e) =>
+                                                setAddressData(
+                                                    'address_line2',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            error={
+                                                addressErrors.address_line2
+                                            }
+                                        />
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            <Input
+                                                label="City"
+                                                value={addressData.city}
+                                                onChange={(e) =>
+                                                    setAddressData(
+                                                        'city',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                error={addressErrors.city}
+                                            />
+                                            <Input
+                                                label="District / State"
+                                                value={addressData.state}
+                                                onChange={(e) =>
+                                                    setAddressData(
+                                                        'state',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                error={addressErrors.state}
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            <Input
+                                                label="Postal code"
+                                                value={
+                                                    addressData.postal_code
+                                                }
+                                                onChange={(e) =>
+                                                    setAddressData(
+                                                        'postal_code',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                error={
+                                                    addressErrors.postal_code
+                                                }
+                                            />
+                                            <Input
+                                                label="Country"
+                                                value={addressData.country}
+                                                onChange={(e) =>
+                                                    setAddressData(
+                                                        'country',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                error={addressErrors.country}
+                                            />
+                                        </div>
+                                        <div className="flex gap-2 pt-1">
+                                            <Button
+                                                type="submit"
+                                                disabled={addressProcessing}
+                                                className="flex-1 bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                            >
+                                                {addressProcessing
+                                                    ? 'Saving…'
+                                                    : 'Save address'}
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                disabled={addressProcessing}
+                                                onClick={cancelEditingAddress}
+                                            >
+                                                <X className="size-4" />
+                                            </Button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <div className="space-y-0.5 text-sm text-slate-700">
+                                        <p className="font-semibold">
+                                            {order.shipping_address.name}
+                                        </p>
+                                        <p>{order.shipping_address.phone}</p>
+                                        <p>
+                                            {
+                                                order.shipping_address
+                                                    .address_line1
+                                            }
+                                        </p>
+                                        {order.shipping_address
+                                            .address_line2 && (
+                                            <p>
+                                                {
+                                                    order.shipping_address
+                                                        .address_line2
+                                                }
+                                            </p>
+                                        )}
+                                        <p>
+                                            {order.shipping_address.city},{' '}
+                                            {order.shipping_address.state}{' '}
+                                            {
+                                                order.shipping_address
+                                                    .postal_code
+                                            }
+                                        </p>
+                                        <p>
+                                            {order.shipping_address.country}
+                                        </p>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 

@@ -8,6 +8,7 @@ use App\Enums\OrderStatus;
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CreateOrderRequest;
+use App\Http\Requests\Admin\UpdateOrderShippingAddressRequest;
 use App\Models\Address;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
@@ -286,6 +287,24 @@ class OrderController extends Controller
         ]);
 
         return back()->with('success', 'Order has been cancelled.');
+    }
+
+    /**
+     * The only part of a placed order an admin can edit — everything else
+     * (items, pricing, status) stays frozen once the order exists. Merges
+     * into the existing `shipping_address` JSON instead of replacing it, so
+     * an email key set at checkout (used by Order::booted() for the
+     * customer notification) survives an address-only edit — the same
+     * reason the recipient `name` is left out of the request's validated
+     * data: it's never in the merge, so it can never change here either.
+     */
+    public function updateShippingAddress(UpdateOrderShippingAddressRequest $request, Order $order): RedirectResponse
+    {
+        $order->update([
+            'shipping_address' => array_merge($order->shipping_address, $request->validated()),
+        ]);
+
+        return back()->with('success', 'Shipping address updated.');
     }
 
     public function sendToPathao(Order $order): RedirectResponse
