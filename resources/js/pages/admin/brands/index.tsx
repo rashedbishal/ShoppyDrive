@@ -48,6 +48,9 @@ function BrandCard({
     onToggle: () => void;
     onDelete: () => void;
 }) {
+    const [hasLogoError, setHasLogoError] = useState(false);
+    const showLogo = Boolean(brand.logo) && !hasLogoError;
+
     return (
         <div
             className={cn(
@@ -83,10 +86,11 @@ function BrandCard({
                     </button>
                 </div>
 
-                {brand.logo ? (
+                {showLogo ? (
                     <img
-                        src={brand.logo}
+                        src={brand.logo ?? ''}
                         alt={brand.name}
+                        onError={() => setHasLogoError(true)}
                         className="max-h-14 max-w-[70%] object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-105"
                     />
                 ) : (

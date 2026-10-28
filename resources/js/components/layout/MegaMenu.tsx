@@ -326,10 +326,19 @@ export default function MegaMenu({
                                                             </span>
                                                             {activeCategory.image && (
                                                                 <img
+                                                                    key={
+                                                                        activeCategory.id
+                                                                    }
                                                                     src={
                                                                         activeCategory.image
                                                                     }
                                                                     alt=""
+                                                                    onError={(
+                                                                        e,
+                                                                    ) => {
+                                                                        e.currentTarget.style.display =
+                                                                            'none';
+                                                                    }}
                                                                     className="size-11 shrink-0 rounded-xl border border-[var(--color-border)] bg-white object-contain p-1.5"
                                                                 />
                                                             )}

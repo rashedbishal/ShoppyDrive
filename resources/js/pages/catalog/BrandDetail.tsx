@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Award, Package, ShoppingBag } from 'lucide-react';
+import { useState } from 'react';
 import { ProductCard } from '@/components/shared/ProductCard';
 import { PageHero } from '@/components/shared/PageHero';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -36,6 +37,8 @@ function BrandDetailContent({
     products,
 }: BrandDetailPageProps): React.JSX.Element {
     const accent = BRAND_ACCENTS[brand.slug] ?? 'bg-gray-50 text-gray-700';
+    const [hasLogoError, setHasLogoError] = useState(false);
+    const showLogo = Boolean(brand.logo) && !hasLogoError;
 
     return (
         <>
@@ -69,10 +72,11 @@ function BrandDetailContent({
                                     accent,
                                 )}
                             >
-                                {brand.logo ? (
+                                {showLogo ? (
                                     <img
-                                        src={brand.logo}
+                                        src={brand.logo ?? ''}
                                         alt={`${brand.name} logo`}
+                                        onError={() => setHasLogoError(true)}
                                         className="size-12 object-contain lg:size-14"
                                     />
                                 ) : (
