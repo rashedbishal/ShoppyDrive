@@ -107,7 +107,16 @@ export function ProductCard({
             return;
         }
 
-        addItem({ product, quantity: 1 });
+        // A variant product always has exactly one default variant (enforced
+        // on save — see ProductVariantManagementTest). Quick-adding without
+        // resolving it would add a variant-less line that InventoryService
+        // rejects as out of stock at checkout, even when the default variant
+        // itself has plenty of stock.
+        const defaultVariant =
+            (product.variants ?? []).find((variant) => variant.is_default) ??
+            null;
+
+        addItem({ product, quantity: 1, variant: defaultVariant });
 
         if (openCartOnAdd) {
             openCart();

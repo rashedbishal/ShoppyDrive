@@ -23,7 +23,7 @@ class HomeController extends Controller
             // null and crash the frontend's product card rendering.
             'items' => static function ($query): void {
                 $query->whereHas('product', static fn ($productQuery) => $productQuery->active()->published())
-                    ->with(['product.brand', 'product.images']);
+                    ->with(['product.brand', 'product.images', 'product.variants']);
             },
         ])
             ->where('is_active', true)
@@ -38,7 +38,7 @@ class HomeController extends Controller
             }
         }
 
-        $productEagerLoads = ['brand', 'images', 'category'];
+        $productEagerLoads = ['brand', 'images', 'category', 'variants'];
 
         // Load CMS section settings for dynamic sections
         $sectionSettings = HomepageSetting::whereIn('section_key', ['new_arrivals', 'best_sellers', 'brands'])

@@ -32,7 +32,7 @@ class BrandController extends Controller
             ->active()
             ->published()
             ->where('brand_id', $brand->id)
-            ->with(['category', 'images'])
+            ->with(['category', 'images', 'variants'])
             ->withCount([
                 'reviews as reviews_count' => static fn ($query) => $query->where('is_approved', true),
             ])

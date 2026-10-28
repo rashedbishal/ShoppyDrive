@@ -135,7 +135,14 @@ export default function Compare({
                                             </Link>
                                             
                                             <Button 
-                                                onClick={() => { addItem({ product, quantity: 1 }); }}
+                                                onClick={() => {
+                                                    const defaultVariant =
+                                                        (product.variants ?? []).find(
+                                                            (variant) => variant.is_default,
+                                                        ) ?? null;
+
+                                                    addItem({ product, quantity: 1, variant: defaultVariant });
+                                                }}
                                                 className="w-full rounded-xl font-bold h-11"
                                             >
                                                 <ShoppingCart size={16} className="mr-2" />

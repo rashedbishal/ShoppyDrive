@@ -44,6 +44,7 @@ class ProductListingController extends Controller
                 'subCategory',
                 'brand',
                 'images',
+                'variants',
             ])
             ->withCount([
                 'reviews as reviews_count' => static fn ($reviewQuery) => $reviewQuery->where('is_approved', true),

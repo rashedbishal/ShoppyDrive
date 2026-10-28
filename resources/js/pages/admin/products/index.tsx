@@ -18,6 +18,7 @@ type Product = {
     cry_baby_enabled: boolean;
     category: { id: number; name: string } | null;
     brand: { id: number; name: string } | null;
+    primary_image_url: string | null;
 };
 
 type Paginated<T> = {
@@ -235,6 +236,14 @@ export default function ProductsIndex({
                                     key={p.id}
                                     className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
                                 >
+                                    <img
+                                        src={
+                                            p.primary_image_url ??
+                                            '/placeholder.svg'
+                                        }
+                                        alt=""
+                                        className="size-10 shrink-0 rounded-lg border border-slate-100 object-cover"
+                                    />
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-sm font-semibold text-slate-800">
                                             {p.name}

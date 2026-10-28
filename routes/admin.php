@@ -132,6 +132,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy')->middleware(AdminSections::middleware('orders', 'delete'));
     Route::patch('orders/{order}/restore', [OrderController::class, 'restore'])->name('orders.restore')->withTrashed()->middleware(AdminSections::middleware('trashed_orders', 'update'));
     Route::delete('orders/{order}/force', [OrderController::class, 'forceDelete'])->name('orders.forceDelete')->withTrashed()->middleware(AdminSections::middleware('trashed_orders', 'delete'));
+    Route::patch('orders/{order}/shipping-address', [OrderController::class, 'updateShippingAddress'])->name('orders.updateShippingAddress')->middleware(AdminSections::middleware('orders', 'update'));
     Route::patch('orders/{order}/refund', [OrderController::class, 'markRefunded'])->name('orders.markRefunded')->middleware(AdminSections::middleware('orders', 'update'));
     Route::patch('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel')->middleware(AdminSections::middleware('orders', 'update'));
     Route::post('orders/{order}/pathao/send', [OrderController::class, 'sendToPathao'])->name('orders.pathao.send')->middleware(AdminSections::middleware('orders', 'update'));

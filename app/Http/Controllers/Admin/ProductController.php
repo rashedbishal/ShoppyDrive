@@ -18,6 +18,7 @@ use App\Models\SubCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,7 +27,12 @@ class ProductController extends Controller
 {
     public function index(Request $request): Response
     {
-        $products = Product::with(['category:id,name', 'subCategory:id,name', 'brand:id,name'])
+        $products = Product::with([
+            'category:id,name',
+            'subCategory:id,name',
+            'brand:id,name',
+            'images' => fn ($q) => $q->select(['id', 'product_id', 'path', 'is_primary', 'sort_order'])->orderBy('sort_order'),
+        ])
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%")
                 ->orWhere('sku', 'like', "%{$request->search}%"))
             ->when($request->status === 'active', fn ($q) => $q->where('is_active', true))
@@ -36,6 +42,14 @@ class ProductController extends Controller
             ->latest()
             ->paginate(20)
             ->withQueryString();
+
+        $products->getCollection()->transform(function (Product $product) {
+            $primaryImage = $product->images->firstWhere('is_primary', true) ?? $product->images->first();
+
+            return array_merge(Arr::except($product->toArray(), 'images'), [
+                'primary_image_url' => $primaryImage?->path,
+            ]);
+        });
 
         return Inertia::render('admin/products/index', [
             'products' => $products,

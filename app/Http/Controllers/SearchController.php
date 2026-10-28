@@ -40,7 +40,7 @@ class SearchController extends Controller
         $products = Product::query()
             ->active()
             ->published()
-            ->with(['images', 'brand', 'category'])
+            ->with(['images', 'brand', 'category', 'variants'])
             ->withCount(['reviews as reviews_count' => fn ($q) => $q->where('is_approved', true)])
             ->withAvg(['reviews as average_rating' => fn ($q) => $q->where('is_approved', true)], 'rating')
             ->when($query !== '', fn ($q) => $q->where(fn ($sub) => ProductSearchQuery::apply($sub, $query)

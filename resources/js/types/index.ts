@@ -730,6 +730,7 @@ export interface SharedPageProps {
         wishlist_count: number;
         addresses_count: number;
     } | null;
+    unseen_orders_count: number | null;
 }
 
 export interface UiStateToast extends FlashToast {
