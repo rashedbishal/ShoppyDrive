@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
@@ -75,4 +76,24 @@ it('syncs status for active pathao orders and skips terminal/unsent ones', funct
     expect($active->refresh()->status->value)->toBe('shipped');
 
     Http::assertSentCount(1);
+});
+
+it('a connection failure on one order does not abort syncing the rest of the batch', function () {
+    $unreachable = makeCommandTestOrder('ORD-UNREACHABLE', 'processing', 'CONSIGN-UNREACHABLE');
+    $reachable = makeCommandTestOrder('ORD-REACHABLE', 'processing', 'CONSIGN-REACHABLE');
+
+    Http::fake([
+        '*/aladdin/api/v1/orders/CONSIGN-UNREACHABLE/info' => fn () => throw new ConnectionException('Connection timed out'),
+        '*/aladdin/api/v1/orders/CONSIGN-REACHABLE/info' => Http::response([
+            'type' => 'success',
+            'data' => ['order_status_slug' => 'in_transit'],
+        ]),
+    ]);
+
+    $this->artisan('pathao:sync-statuses')
+        ->expectsOutputToContain('Order ORD-UNREACHABLE: Connection timed out')
+        ->assertSuccessful();
+
+    expect($unreachable->refresh()->status->value)->toBe('processing');
+    expect($reachable->refresh()->status->value)->toBe('shipped');
 });

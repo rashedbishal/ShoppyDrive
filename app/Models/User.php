@@ -25,6 +25,12 @@ class User extends Authenticatable implements MustVerifyEmail
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
 
+    // role is deliberately excluded — no legitimate runtime path needs to
+    // mass-assign it (new users get the column's own 'customer' default; see
+    // database/migrations/2026_04_28_063542_update_users_table_for_ecommerce_features.php),
+    // so keeping it out of $fillable closes the door on a future form/
+    // controller change ever accidentally forwarding a client-supplied
+    // 'role' value through to a User::create()/update() call.
     protected $fillable = [
         'name',
         'email',
@@ -33,7 +39,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'has_password',
         'phone',
         'avatar',
-        'role',
         'referred_by_id',
     ];
 

@@ -11,6 +11,7 @@ use App\Services\PathaoCourierService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\ConnectionException;
 use RuntimeException;
 
 #[Signature('pathao:sync-statuses')]
@@ -34,7 +35,12 @@ class SyncPathaoOrderStatuses extends Command
         foreach ($orders as $order) {
             try {
                 $info = $pathao->getOrderInfo($order->pathao_consignment_id);
-            } catch (RuntimeException $e) {
+            } catch (RuntimeException|ConnectionException $e) {
+                // ConnectionException (timeout/DNS/refused) is a separate
+                // hierarchy from RuntimeException — without catching it
+                // here too, one unreachable request would abort this
+                // foreach entirely, skipping every other order in the
+                // batch rather than just the one that failed.
                 $this->warn("Order {$order->order_number}: {$e->getMessage()}");
 
                 continue;

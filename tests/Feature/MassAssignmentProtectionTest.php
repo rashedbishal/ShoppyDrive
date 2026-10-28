@@ -9,7 +9,13 @@ use App\Models\Review;
 use App\Models\User;
 
 test('a customer cannot escalate their own role or verification status through the profile update form', function () {
-    $user = User::factory()->create(['role' => UserRole::CUSTOMER, 'email_verified_at' => now()]);
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    // role is deliberately not in User::$fillable (see User.php) — set it
+    // the same way CreateMotherAdminCommand sets Admin::is_mother, via an
+    // explicit forceFill() rather than mass assignment, so this fixture
+    // doesn't rely on — or accidentally mask a regression in — the mass-
+    // assignment protection this very test exists to prove.
+    $user->forceFill(['role' => UserRole::CUSTOMER])->save();
 
     $this->actingAs($user)->patch(route('profile.update'), [
         'name' => 'Still Just A Customer',
@@ -23,6 +29,21 @@ test('a customer cannot escalate their own role or verification status through t
     expect($user->role)->toBe(UserRole::CUSTOMER);
     expect($user->has_password)->toBeTrue();
     expect($user->name)->toBe('Still Just A Customer');
+});
+
+test('role is not mass-assignable on the User model at all', function () {
+    $user = User::create([
+        'name' => 'New Customer',
+        'email' => 'new-customer@example.com',
+        'password' => 'hashed-password-value',
+        'role' => 'admin',
+    ]);
+
+    // create() doesn't re-SELECT the row — a column left out of the INSERT
+    // because it's guarded still only resolves to the database's own
+    // default once actually read back, not from create()'s in-memory
+    // model alone.
+    expect($user->refresh()->role)->toBe(UserRole::CUSTOMER);
 });
 
 test('a customer cannot submit a pre-approved or mis-attributed product review', function () {
