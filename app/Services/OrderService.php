@@ -102,7 +102,7 @@ class OrderService
             }
 
             if ($data['coupon_id'] !== null) {
-                $this->coupons->consume($data['coupon_id'], $order, $fresh->user_id, (float) $data['discount']);
+                $this->coupons->consume($data['coupon_id'], $order, $fresh->user_id, (float) $data['discount'], $data['shipping_address']['phone'] ?? null);
             }
 
             // Create payment record

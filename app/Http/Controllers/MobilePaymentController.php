@@ -197,7 +197,7 @@ class MobilePaymentController extends Controller
                 }
 
                 if ($data['coupon_id'] !== null) {
-                    $this->coupons->consume($data['coupon_id'], $order, $freshPending->user_id, (float) $data['discount']);
+                    $this->coupons->consume($data['coupon_id'], $order, $freshPending->user_id, (float) $data['discount'], $data['shipping_address']['phone'] ?? null);
                 }
 
                 Payment::create([

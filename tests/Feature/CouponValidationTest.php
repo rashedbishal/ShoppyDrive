@@ -147,6 +147,66 @@ test('the per-user usage limit is enforced independently of the global limit', f
     expect($coupon->refresh()->used_count)->toBe(2);
 });
 
+test('PROMO-001: a guest cannot reuse a per_user_limit coupon with the same checkout phone number', function () {
+    Setting::updateOrCreate(['key' => 'guest_checkout_enabled'], ['value' => true, 'group' => 'general']);
+    $coupon = Coupon::factory()->create(['per_user_limit' => 1, 'type' => 'fixed', 'value' => 10]);
+    $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
+
+    $this->post(route('checkout.store'), couponCheckoutPayload($product, 1, $coupon->code, ['phone' => '01711111111']))
+        ->assertRedirect();
+
+    expect($coupon->refresh()->used_count)->toBe(1);
+
+    // Same guest, same phone, tries again — must be blocked even though
+    // there is no account for per_user_limit to key off.
+    $response = $this->post(route('checkout.store'), couponCheckoutPayload($product, 1, $coupon->code, ['phone' => '01711111111']));
+
+    $response->assertSessionHasErrors('coupon_code');
+    expect($coupon->refresh()->used_count)->toBe(1);
+    expect(Order::where('coupon_id', $coupon->id)->count())->toBe(1);
+});
+
+test('PROMO-001: a different guest phone number can still use the same per_user_limit coupon', function () {
+    Setting::updateOrCreate(['key' => 'guest_checkout_enabled'], ['value' => true, 'group' => 'general']);
+    $coupon = Coupon::factory()->create(['per_user_limit' => 1, 'type' => 'fixed', 'value' => 10]);
+    $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
+
+    $this->post(route('checkout.store'), couponCheckoutPayload($product, 1, $coupon->code, ['phone' => '01711111111']))
+        ->assertRedirect();
+
+    $response = $this->post(route('checkout.store'), couponCheckoutPayload($product, 1, $coupon->code, ['phone' => '01722222222']));
+
+    $response->assertRedirect();
+    expect($coupon->refresh()->used_count)->toBe(2);
+});
+
+test('PROMO-001: a guest whose prior order was cancelled (coupon released) can redeem the coupon again', function () {
+    Setting::updateOrCreate(['key' => 'guest_checkout_enabled'], ['value' => true, 'group' => 'general']);
+    $coupon = Coupon::factory()->create(['per_user_limit' => 1, 'type' => 'fixed', 'value' => 10]);
+    $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'promo001-admin@example.com', 'password' => bcrypt('password')]);
+
+    $this->post(route('checkout.store'), couponCheckoutPayload($product, 1, $coupon->code, ['phone' => '01711111111']))
+        ->assertRedirect();
+
+    $order = Order::where('coupon_id', $coupon->id)->firstOrFail();
+    $this->actingAs($admin, 'admin')->patch(route('admin.orders.cancel', $order), ['reason' => 'test'])->assertRedirect();
+    expect($order->refresh()->coupon_released_at)->not->toBeNull();
+
+    // The admin session from the action above would otherwise persist and
+    // have RedirectAdminToDashboard intercept the next "guest" request
+    // before it ever reaches checkout.
+    auth('admin')->logout();
+
+    $response = $this->post(route('checkout.store'), couponCheckoutPayload($product, 1, $coupon->code, ['phone' => '01711111111']));
+
+    $response->assertRedirect();
+    // Released back to 0 by the cancellation above, then incremented once
+    // by this second, legitimate redemption — not 2, since release()
+    // decrements used_count exactly as it does for a logged-in customer.
+    expect($coupon->refresh()->used_count)->toBe(1);
+});
+
 test('a back-to-back attempt right at the global limit boundary is cleanly rejected, not double-counted', function () {
     // Sequential, not truly concurrent (SQLite is single-writer) — this
     // proves the locked re-check at consumption time correctly stops the
@@ -446,19 +506,26 @@ test('a coupon that gets exhausted by another order between mobile-banking initi
     expect(Order::where('user_id', $user->id)->exists())->toBeTrue();
 });
 
-test('a guest can use a per-user-limited coupon (no identity to track), but the global limit still applies', function () {
+test('a guest is blocked by the global usage limit even with a different phone number than the first use', function () {
+    // PROMO-001 follow-up: this test previously asserted guests had "no
+    // identity to track" and relied solely on the global max_uses limit
+    // — that was the bug. Guests are now tracked by checkout phone (see
+    // the PROMO-001 tests above), so this test is rewritten to isolate
+    // what it originally meant to prove: the *global* limit still
+    // applies on top of per-guest tracking, using a genuinely different
+    // phone for the second attempt so the per-guest check can't be what
+    // blocks it.
     Setting::updateOrCreate(['key' => 'guest_checkout_enabled'], ['value' => true, 'group' => 'general']);
     $coupon = Coupon::factory()->create(['max_uses' => 1, 'per_user_limit' => 1, 'type' => 'fixed', 'value' => 10]);
     $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
 
-    $this->post(route('checkout.store'), couponCheckoutPayload($product, 1, $coupon->code))
+    $this->post(route('checkout.store'), couponCheckoutPayload($product, 1, $coupon->code, ['phone' => '01711111111']))
         ->assertRedirect();
 
     expect($coupon->refresh()->used_count)->toBe(1);
-    expect(CouponUse::where('coupon_id', $coupon->id)->exists())->toBeFalse(); // no user_id to attribute it to
+    expect(CouponUse::where('coupon_id', $coupon->id)->exists())->toBeFalse(); // guests never get a CouponUse row
 
-    // The global limit still blocks a second guest (or anyone else).
-    $response = $this->post(route('checkout.store'), couponCheckoutPayload($product, 1, $coupon->code));
+    $response = $this->post(route('checkout.store'), couponCheckoutPayload($product, 1, $coupon->code, ['phone' => '01722222222']));
     $response->assertSessionHasErrors('coupon_code');
     expect($coupon->refresh()->used_count)->toBe(1);
 });

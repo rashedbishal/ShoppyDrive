@@ -71,7 +71,7 @@ class Coupon extends Model
      * at the moment of actual order creation, mirroring how flash-sale
      * stock caps are only authoritatively enforced at commit time.
      */
-    public function eligibilityError(float $subtotal, ?int $userId): ?string
+    public function eligibilityError(float $subtotal, ?int $userId, ?string $guestPhone = null): ?string
     {
         if (! $this->is_active) {
             return 'This coupon is not active.';
@@ -97,6 +97,40 @@ class Coupon extends Model
             return 'You have already used this coupon the maximum number of times.';
         }
 
+        // PROMO-001: guests have no account to key per_user_limit against,
+        // so per_user_limit was previously unenforceable for them at all —
+        // see guestRedemptionCount()'s docblock for how this is derived.
+        if ($userId === null && $guestPhone !== null && self::guestRedemptionCount($this->id, $guestPhone) >= $this->per_user_limit) {
+            return 'You have already used this coupon the maximum number of times.';
+        }
+
         return null;
+    }
+
+    /**
+     * Guest checkouts never create a CouponUse row (its user_id column is
+     * NOT NULL — there's no account to attach it to), so a guest's prior
+     * redemptions of this coupon are derived from completed Order rows
+     * instead: same coupon_id, no user_id, and the same phone number
+     * already stored on Order.shipping_address at checkout. An order
+     * whose coupon was released (cancellation/refund — Order's own
+     * coupon_released_at, set by CouponService::release()) is excluded,
+     * mirroring how a logged-in customer's CouponUse row is deleted on
+     * the same event — both paths agree on what still counts as "used."
+     *
+     * $excludeOrderId exists because every consume() call site creates
+     * the Order row (with coupon_id already set) *before* calling
+     * consume() — without excluding it, the order being created would
+     * count itself and reject the very first legitimate use.
+     */
+    public static function guestRedemptionCount(int $couponId, string $guestPhone, ?int $excludeOrderId = null, bool $lockForUpdate = false): int
+    {
+        return Order::where('coupon_id', $couponId)
+            ->whereNull('user_id')
+            ->whereNull('coupon_released_at')
+            ->where('shipping_address->phone', $guestPhone)
+            ->when($excludeOrderId !== null, fn ($q) => $q->where('id', '!=', $excludeOrderId))
+            ->when($lockForUpdate, fn ($q) => $q->lockForUpdate())
+            ->count();
     }
 }

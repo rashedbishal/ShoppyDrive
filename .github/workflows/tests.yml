@@ -1,11 +1,31 @@
 name: Run Tests
 
-# Disabled — re-enable by changing `if: false` to `if: true` on the job below.
 on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    if: false  # Skip all tests for now
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, gd, zip, bcmath, opcache
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # Pint (PHP style) runs as part of `composer test`'s `@lint:check`
+      # step, so this one command covers both PHP style and the full Pest
+      # suite — the test DB is SQLite in-memory per phpunit.xml, so no
+      # external database service is needed here.
+      - name: Run Pint and the full Pest suite
+        run: composer test

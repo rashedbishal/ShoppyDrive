@@ -192,6 +192,85 @@ test('duplicate color pair in the same submission is rejected', function () {
     expect(Product::where('slug', 'test-product')->exists())->toBeFalse();
 });
 
+test('duplicate SKU within the same submission is rejected', function () {
+    // DB-001/CAT-001 regression: no application-level guard previously
+    // stopped two variants in the same request from sharing a SKU.
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            ['color_value_id' => $this->red->id, 'sku' => 'DUP-SKU', 'price' => 1200, 'stock_quantity' => 5, 'is_default' => true],
+            ['color_value_id' => $this->blue->id, 'sku' => 'DUP-SKU', 'price' => 1300, 'stock_quantity' => 3, 'is_default' => false],
+        ],
+    ]));
+
+    $response->assertInvalid();
+    expect(Product::where('slug', 'test-product')->exists())->toBeFalse();
+});
+
+test('a SKU already used by a variant on a different product is rejected', function () {
+    actingAs($this->admin, 'admin');
+
+    $otherProduct = Product::factory()->create(['category_id' => $this->category->id, 'sub_category_id' => $this->subCategory->id]);
+    ProductVariant::create([
+        'product_id' => $otherProduct->id,
+        'sku' => 'TAKEN-SKU',
+        'price' => 500,
+        'stock_quantity' => 5,
+        'attributes' => [],
+        'is_default' => true,
+    ]);
+
+    $response = $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            ['color_value_id' => $this->red->id, 'sku' => 'TAKEN-SKU', 'price' => 1200, 'stock_quantity' => 5, 'is_default' => true],
+        ],
+    ]));
+
+    $response->assertInvalid();
+    expect(Product::where('slug', 'test-product')->exists())->toBeFalse();
+});
+
+test('a product can resubmit its own existing variant SKU without self-conflicting', function () {
+    actingAs($this->admin, 'admin');
+
+    $product = Product::create([
+        'name' => 'Self Sku Product', 'slug' => 'self-sku-product',
+        'category_id' => $this->category->id, 'sub_category_id' => $this->subCategory->id,
+        'price' => 1000, 'stock_quantity' => 10, 'has_color_variant' => true,
+    ]);
+    ProductVariant::create([
+        'product_id' => $product->id, 'color_value_id' => $this->red->id,
+        'sku' => 'KEEP-MINE', 'price' => 1000, 'stock_quantity' => 5,
+        'attributes' => ['Color' => 'Red'], 'is_default' => true,
+    ]);
+
+    $response = $this->put(route('admin.products.update', $product), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'slug' => 'self-sku-product',
+        'variants' => [
+            ['color_value_id' => $this->red->id, 'sku' => 'KEEP-MINE', 'price' => 1100, 'stock_quantity' => 6, 'is_default' => true],
+        ],
+    ]));
+
+    $response->assertRedirect(route('admin.products.index'));
+    expect(ProductVariant::where('product_id', $product->id)->first()->price)->toEqual(1100);
+});
+
 test('exactly one default variant is required', function () {
     actingAs($this->admin, 'admin');
 

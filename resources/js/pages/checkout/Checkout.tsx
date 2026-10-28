@@ -582,7 +582,7 @@ export default function Checkout({
                     'X-XSRF-TOKEN': getXsrfToken(),
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-                body: JSON.stringify({ code, subtotal }),
+                body: JSON.stringify({ code, subtotal, phone: form.data.phone || undefined }),
             });
             const data = await res.json();
 

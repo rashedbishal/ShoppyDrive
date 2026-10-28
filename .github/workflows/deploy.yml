@@ -6,8 +6,48 @@ on:
       - main
 
 jobs:
+  # OPS-001: deployment used to proceed unconditionally on every push to
+  # main, with no gate of any kind — tests.yml/lint.yml existed but were
+  # both disabled (`if: false`) and, even enabled, are separate workflow
+  # files that GitHub Actions has no mechanism to make this workflow
+  # `needs:` across files. This job runs the one check that's currently
+  # clean across the whole codebase (Pint + the full Pest suite, via the
+  # same `composer test` script CLAUDE.md already documents as the local
+  # quality gate) directly inside this workflow, and `deploy` below
+  # requires it to pass. The JS-side checks (ESLint/Prettier/tsc) are
+  # deliberately NOT included here yet: as of this commit they fail on
+  # hundreds of pre-existing, unrelated issues (see lint.yml, which runs
+  # them independently for visibility) — hard-gating deployment on them
+  # right now would block every future deploy until that separate cleanup
+  # happens. Add `- name: ...` / `run: npm ...` steps here (mirroring
+  # lint.yml) and they'll automatically gate `deploy` once that's done.
+  checks:
+    name: Required checks (Pint + Pest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, gd, zip, bcmath, opcache
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run Pint and the full Pest suite
+        run: composer test
+
   deploy:
     name: Build & Deploy
+    needs: checks
     runs-on: ubuntu-latest
 
     steps:

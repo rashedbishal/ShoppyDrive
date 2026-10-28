@@ -41,7 +41,7 @@ class CouponService
      *
      * @throws CouponUnavailableException
      */
-    public function consume(int $couponId, Order $order, ?int $userId, float $discountAmount): void
+    public function consume(int $couponId, Order $order, ?int $userId, float $discountAmount, ?string $guestPhone = null): void
     {
         $coupon = Coupon::whereKey($couponId)->lockForUpdate()->first();
 
@@ -53,7 +53,25 @@ class CouponService
             throw CouponUnavailableException::because('This coupon has just reached its usage limit.');
         }
 
-        if ($userId !== null && $coupon->uses()->where('user_id', $userId)->count() >= $coupon->per_user_limit) {
+        // lockForUpdate() here isn't just belt-and-suspenders: under
+        // InnoDB's default REPEATABLE READ, a plain (non-locking) read
+        // sees a snapshot taken when this transaction started, so two
+        // concurrent consume() calls for the same user could each see
+        // zero prior uses and both pass this check before either commits.
+        // A locking read bypasses the snapshot and reads/locks the latest
+        // committed rows, so the second caller either sees the first
+        // caller's row (if it already committed) or blocks until it does
+        // — the same correctness property Coupon::lockForUpdate() above
+        // already relies on for max_uses.
+        if ($userId !== null && $coupon->uses()->where('user_id', $userId)->lockForUpdate()->count() >= $coupon->per_user_limit) {
+            throw CouponUnavailableException::because('You have already used this coupon the maximum number of times.');
+        }
+
+        // PROMO-001: the guest equivalent of the check above — see
+        // Coupon::guestRedemptionCount()'s docblock for why this is
+        // derived from Order rows rather than a locked CouponUse count.
+        if ($userId === null && $guestPhone !== null
+            && Coupon::guestRedemptionCount($coupon->id, $guestPhone, excludeOrderId: $order->id, lockForUpdate: true) >= $coupon->per_user_limit) {
             throw CouponUnavailableException::because('You have already used this coupon the maximum number of times.');
         }
 

@@ -1,11 +1,43 @@
 name: Lint
 
-# Disabled — re-enable by changing `if: false` to `if: true` on the job below.
 on: [push, pull_request]
 
 jobs:
   lint:
     runs-on: ubuntu-latest
-    if: false  # Skip lint for now
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, gd, zip, bcmath, opcache
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      # app.tsx imports resources/js/ziggy.js, which is gitignored
+      # (generated build output, like Wayfinder's resources/js/actions) —
+      # it has to exist for ESLint/tsc to resolve the import at all.
+      - name: Generate Ziggy routes file
+        run: php artisan ziggy:generate
+
+      - name: ESLint
+        run: npm run lint:check
+
+      - name: Prettier
+        run: npm run format:check
+
+      - name: TypeScript
+        run: npm run types:check

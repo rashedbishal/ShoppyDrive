@@ -237,7 +237,7 @@ class CheckoutController extends Controller
                     }
 
                     if ($finalCouponId !== null) {
-                        $this->coupons->consume($finalCouponId, $order, auth()->id(), $discount);
+                        $this->coupons->consume($finalCouponId, $order, auth()->id(), $discount, $shippingAddress['phone'] ?? null);
                     }
 
                     if ($lockedUser) {
@@ -474,7 +474,7 @@ class CheckoutController extends Controller
             throw CouponUnavailableException::because('Invalid coupon code.');
         }
 
-        $error = $coupon->eligibilityError($subtotal, auth()->id());
+        $error = $coupon->eligibilityError($subtotal, auth()->id(), $request->phone);
 
         if ($error !== null) {
             throw CouponUnavailableException::because($error);

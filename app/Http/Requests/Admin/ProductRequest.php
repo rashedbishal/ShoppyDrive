@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\ProductVariant;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
@@ -92,6 +93,8 @@ class ProductRequest extends FormRequest
 
             $defaultCount = 0;
             $seenCombos = [];
+            $seenSkus = [];
+            $productId = $this->route('product')?->id;
 
             foreach ($variants as $index => $variant) {
                 $isDefault = filter_var($variant['is_default'] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -104,6 +107,33 @@ class ProductRequest extends FormRequest
                     $validator->errors()->add("variants.{$index}", 'Duplicate color/size combination — each pair must be unique.');
                 }
                 $seenCombos[$combo] = true;
+
+                // DB-001/CAT-001: product_variants.sku still has no
+                // uniqueness enforcement at the database level — the
+                // handful of duplicates that previously existed have
+                // since been resolved, but a DB-level unique index still
+                // can't be safely added purely from this validation
+                // change alone (that's a separate, deliberate migration).
+                // This guard stops new duplicates from being created from
+                // here on, both within one submission and across
+                // different products, without touching any existing row.
+                $sku = trim((string) ($variant['sku'] ?? ''));
+                if ($sku === '') {
+                    continue;
+                }
+
+                if (isset($seenSkus[$sku])) {
+                    $validator->errors()->add("variants.{$index}.sku", 'Duplicate SKU — each variant must have its own unique SKU.');
+                }
+                $seenSkus[$sku] = true;
+
+                $existsElsewhere = ProductVariant::where('sku', $sku)
+                    ->when($productId, fn ($q) => $q->where('product_id', '!=', $productId))
+                    ->exists();
+
+                if ($existsElsewhere) {
+                    $validator->errors()->add("variants.{$index}.sku", 'This SKU is already used by a variant on a different product.');
+                }
             }
 
             if ($defaultCount !== 1) {
