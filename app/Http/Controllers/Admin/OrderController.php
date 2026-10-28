@@ -198,6 +198,13 @@ class OrderController extends Controller
     {
         $order->load(['user:id,name,email,phone', 'items.product:id,name,slug', 'items.variant:id,attributes', 'statusHistories']);
 
+        // Viewing the order is what "seeing" it means for the unseen-orders
+        // sidebar badge — do this before building the response so it
+        // reflects `is_seen: true` immediately, not after a second visit.
+        if (! $order->is_seen) {
+            $order->update(['is_seen' => true, 'seen_at' => now()]);
+        }
+
         return Inertia::render('admin/orders/show', [
             'order' => array_merge($order->toArray(), [
                 'pathao_status_label' => $order->pathao_order_status

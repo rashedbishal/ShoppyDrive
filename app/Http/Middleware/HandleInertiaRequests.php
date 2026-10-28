@@ -168,6 +168,9 @@ class HandleInertiaRequests extends Middleware
             ] : null,
             'cart_shipping_cost' => fn () => $this->resolveCartShippingCost($request),
             'cart_base_shipping_rate' => fn () => $this->resolveBaseShippingRate($request),
+            'unseen_orders_count' => fn () => $request->user('admin')
+                ? Order::where('is_seen', false)->count()
+                : null,
         ];
     }
 

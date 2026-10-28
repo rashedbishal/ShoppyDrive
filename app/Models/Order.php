@@ -48,6 +48,8 @@ class Order extends Model
         'landing_page_id',
         'guest_token',
         'status',
+        'is_seen',
+        'seen_at',
         'payment_status',
         'payment_method',
         'subtotal',
@@ -83,6 +85,8 @@ class Order extends Model
     {
         return [
             'status' => OrderStatus::class,
+            'is_seen' => 'boolean',
+            'seen_at' => 'datetime',
             'payment_status' => PaymentStatus::class,
             'payment_method' => PaymentMethod::class,
             'shipping_address' => 'array',

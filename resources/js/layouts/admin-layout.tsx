@@ -392,11 +392,13 @@ function SidebarContent({
     currentUrl,
     logoUrl,
     admin,
+    unseenOrdersCount,
     onClose,
 }: {
     currentUrl: string;
     logoUrl?: string | null;
     admin?: CurrentAdmin;
+    unseenOrdersCount?: number | null;
     onClose?: () => void;
 }) {
     const mostSpecificMatch = findMostSpecificMatch(currentUrl);
@@ -465,6 +467,10 @@ function SidebarContent({
                                     currentUrl.startsWith(m),
                                 );
                             const Icon = item.icon;
+                            const unseenCount =
+                                item.href === '/admin/orders'
+                                    ? unseenOrdersCount ?? 0
+                                    : 0;
 
                             return (
                                 <Link
@@ -479,9 +485,18 @@ function SidebarContent({
                                 >
                                     <Icon className="size-4 shrink-0" />
                                     {item.label}
-                                    {isActive && (
-                                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#c8102e]" />
-                                    )}
+                                    <span className="ml-auto flex items-center gap-1.5">
+                                        {unseenCount > 0 && (
+                                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c8102e] px-1.5 text-[11px] font-bold text-white">
+                                                {unseenCount > 99
+                                                    ? '99+'
+                                                    : unseenCount}
+                                            </span>
+                                        )}
+                                        {isActive && (
+                                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#c8102e]" />
+                                        )}
+                                    </span>
                                 </Link>
                             );
                         })}
@@ -555,6 +570,7 @@ export default function AdminLayout({
 }) {
     const page = usePage<SharedPageProps>();
     const admin = page.props.auth?.admin as CurrentAdmin | null;
+    const unseenOrdersCount = page.props.unseen_orders_count;
     const currentUrl = page.url;
     const logoUrl = (page.props.settings as AppSettings)?.logo ?? null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -572,6 +588,7 @@ export default function AdminLayout({
                     currentUrl={currentUrl}
                     logoUrl={logoUrl}
                     admin={admin ?? undefined}
+                    unseenOrdersCount={unseenOrdersCount}
                 />
             </aside>
 
@@ -587,6 +604,7 @@ export default function AdminLayout({
                             currentUrl={currentUrl}
                             logoUrl={logoUrl}
                             admin={admin ?? undefined}
+                            unseenOrdersCount={unseenOrdersCount}
                             onClose={() => setSidebarOpen(false)}
                         />
                     </aside>

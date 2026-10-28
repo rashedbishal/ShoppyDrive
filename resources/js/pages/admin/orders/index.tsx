@@ -13,6 +13,7 @@ type Order = {
     order_number: string;
     status: string;
     payment_status: string;
+    is_seen: boolean;
     total: number;
     created_at: string;
     user: { id: number; name: string; email: string } | null;
@@ -167,12 +168,24 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
                                 <Link
                                     key={order.id}
                                     href={route('admin.orders.show', order.id)}
-                                    className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
+                                    className={`flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60 ${
+                                        order.is_seen ? '' : 'bg-red-50/40'
+                                    }`}
                                 >
                                     <div className="min-w-0 flex-1">
-                                        <p className="font-mono text-sm font-bold text-slate-800">
-                                            {order.order_number}
-                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-mono text-sm font-bold text-slate-800">
+                                                {order.order_number}
+                                            </p>
+                                            {!order.is_seen && (
+                                                <Badge
+                                                    variant="error"
+                                                    size="sm"
+                                                >
+                                                    New
+                                                </Badge>
+                                            )}
+                                        </div>
                                         <p className="text-xs text-slate-400">
                                             {order.user?.name ?? 'Guest'} ·{' '}
                                             {new Date(
