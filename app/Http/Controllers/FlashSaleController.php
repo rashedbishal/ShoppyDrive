@@ -25,7 +25,7 @@ class FlashSaleController extends Controller
                     $query->whereHas('product', static fn ($productQuery) => $productQuery->active()->published())
                         ->with([
                             'product' => static function ($productQuery): void {
-                                $productQuery->with(['brand', 'images'])
+                                $productQuery->with(['brand', 'images', 'variants'])
                                     ->withCount([
                                         'reviews as reviews_count' => static fn ($q) => $q->where('is_approved', true),
                                     ])
@@ -49,7 +49,7 @@ class FlashSaleController extends Controller
             ->active()
             ->published()
             ->featured()
-            ->with(['brand', 'images'])
+            ->with(['brand', 'images', 'variants'])
             ->withCount([
                 'reviews as reviews_count' => static fn ($q) => $q->where('is_approved', true),
             ])

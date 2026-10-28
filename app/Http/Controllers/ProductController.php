@@ -58,7 +58,7 @@ class ProductController extends Controller
             ->published()
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
-            ->with(['images', 'brand'])
+            ->with(['images', 'brand', 'variants'])
             ->withCount(['reviews as reviews_count' => fn ($q) => $q->where('is_approved', true)])
             ->withAvg(['reviews as average_rating' => fn ($q) => $q->where('is_approved', true)], 'rating')
             ->limit(8)

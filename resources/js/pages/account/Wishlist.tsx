@@ -24,7 +24,13 @@ export default function Wishlist({ wishlist = [] }: WishlistProps): React.JSX.El
     const addToast = useUiStore((state) => state.addToast);
 
     const handleAddToCart = (product: Product) => {
-        addItem({ product, quantity: 1 });
+        // A variant product always has exactly one default variant — see
+        // ProductCard's handleAddToCart for why this must be resolved here
+        // too, instead of adding a variant-less line.
+        const defaultVariant =
+            (product.variants ?? []).find((variant) => variant.is_default) ?? null;
+
+        addItem({ product, quantity: 1, variant: defaultVariant });
         addToast({ type: 'success', message: `${product.name} added to cart` });
     };
 

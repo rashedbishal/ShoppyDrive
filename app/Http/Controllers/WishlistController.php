@@ -19,7 +19,7 @@ class WishlistController extends Controller
     public function index(Request $request): Response
     {
         $items = Wishlist::where('user_id', $request->user()->id)
-            ->with(['product' => fn ($q) => $q->with(['images', 'brand', 'category'])])
+            ->with(['product' => fn ($q) => $q->with(['images', 'brand', 'category', 'variants'])])
             ->get();
 
         $currencySymbol = config('app.currency_symbol', '৳');
