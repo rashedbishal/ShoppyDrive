@@ -61,7 +61,9 @@ it('sends a database-queued mail and empties the queue when the worker runs', fu
     $this->assertDatabaseCount('jobs', 1);
     $this->assertDatabaseHas('jobs', ['queue' => 'default', 'attempts' => 0]);
 
-    $this->artisan('queue:work', ['connection' => 'database', '--queue' => 'default', '--stop-when-empty' => true, '--tries' => 3])
+    // The worker runs inside the suite's own process, so its default 128MB
+    // limit would measure the whole suite's memory and exit with code 12.
+    $this->artisan('queue:work', ['connection' => 'database', '--queue' => 'default', '--stop-when-empty' => true, '--tries' => 3, '--memory' => 1024])
         ->assertSuccessful();
 
     $this->assertDatabaseCount('jobs', 0);
@@ -77,7 +79,7 @@ it('does not touch jobs parked on another queue name', function () {
     Mail::to($user->email)->send(new WelcomeMail($user));
     DB::table('jobs')->update(['queue' => 'held-backlog']);
 
-    $this->artisan('queue:work', ['connection' => 'database', '--queue' => 'default', '--stop-when-empty' => true, '--tries' => 3])
+    $this->artisan('queue:work', ['connection' => 'database', '--queue' => 'default', '--stop-when-empty' => true, '--tries' => 3, '--memory' => 1024])
         ->assertSuccessful();
 
     $this->assertDatabaseCount('jobs', 1);
