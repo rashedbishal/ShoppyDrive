@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class HeroSlide extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'eyebrow',
         'title',

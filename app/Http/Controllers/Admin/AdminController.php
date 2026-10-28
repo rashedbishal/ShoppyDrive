@@ -18,7 +18,7 @@ class AdminController extends Controller
 {
     public function index(): Response
     {
-        $admins = Admin::orderByDesc('is_mother')->orderBy('created_at')->get(['id', 'name', 'email', 'is_mother', 'created_at']);
+        $admins = Admin::orderByDesc('is_mother')->orderBy('created_at')->get(['id', 'name', 'email', 'is_mother', 'can_view_audit_trail', 'created_at']);
 
         return Inertia::render('admin/admins/index', [
             'admins' => $admins,
@@ -42,11 +42,16 @@ class AdminController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
-        Admin::create([
+        $admin = Admin::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
+
+        // can_view_audit_trail is deliberately not $fillable (see Admin
+        // model) — set explicitly here, which only ever runs after
+        // authorizeMotherOnly() above, so only the mother admin can grant it.
+        $admin->forceFill(['can_view_audit_trail' => $request->boolean('can_view_audit_trail')])->save();
 
         return redirect()->route('admin.admins.index')->with('success', 'Admin account created successfully.');
     }
@@ -56,7 +61,7 @@ class AdminController extends Controller
         $this->authorizeManageTarget($admin);
 
         return Inertia::render('admin/admins/edit', [
-            'adminUser' => $admin->only(['id', 'name', 'email', 'is_mother']),
+            'adminUser' => $admin->only(['id', 'name', 'email', 'is_mother', 'can_view_audit_trail']),
         ]);
     }
 
@@ -80,6 +85,15 @@ class AdminController extends Controller
         }
 
         $admin->update($data);
+
+        // Only the mother admin can grant/revoke this (never self-editable
+        // — see Admin model's can_view_audit_trail note), so a non-mother
+        // editing their own account can't send this field through at all.
+        $currentAdmin = Auth::guard('admin')->user();
+
+        if ($currentAdmin->is_mother) {
+            $admin->forceFill(['can_view_audit_trail' => $request->boolean('can_view_audit_trail')])->save();
+        }
 
         return redirect()->route('admin.admins.index')->with('success', 'Admin account updated successfully.');
     }

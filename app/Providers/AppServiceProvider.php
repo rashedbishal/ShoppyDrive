@@ -8,6 +8,7 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -17,6 +18,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Inertia\ExceptionResponse;
 use Inertia\Inertia;
+use Spatie\Activitylog\Facades\CauserResolver;
 use Throwable;
 
 class AppServiceProvider extends ServiceProvider
@@ -39,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureFacebookSocialite();
         $this->configureErrorPages();
         $this->configureRateLimiting();
+        $this->configureActivityLogCauser();
 
         // Guard against double-registering on persistent-worker setups
         // (Octane, or a long-lived `artisan serve` process reusing the
@@ -127,6 +130,22 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perMinute(5)->by($throttleKey);
         });
+    }
+
+    /**
+     * The audit trail's activity log needs to attribute every entry to
+     * whichever of the app's two guards is actually authenticated — an
+     * admin acting in the back office, or a customer placing their own
+     * order on the storefront. Spatie's package only auto-resolves a
+     * single configured guard by default, so this overrides that
+     * resolution to check both, admin first since admin actions on a
+     * customer's own records (e.g. changing an order's status) should
+     * attribute to the admin, not whichever guard happens to be checked
+     * first by coincidence.
+     */
+    protected function configureActivityLogCauser(): void
+    {
+        CauserResolver::resolveUsing(fn () => Auth::guard('admin')->user() ?? Auth::guard('web')->user());
     }
 
     /**

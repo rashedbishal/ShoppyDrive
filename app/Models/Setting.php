@@ -6,10 +6,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Setting extends Model
 {
     use HasFactory;
+    use LogsActivity;
 
     protected $primaryKey = 'key';
 
@@ -28,6 +31,23 @@ class Setting extends Model
         return [
             'value' => 'array',
         ];
+    }
+
+    /**
+     * `value` is deliberately never logged — it's where API keys, webhook
+     * secrets, and other credentials live (courier/gateway/SMS-forwarder
+     * config), and any admin with Audit Trail access would otherwise be
+     * able to read them off the log. `key`/`group` alone aren't dirty on
+     * most saves (only `value` changes), so this skips `logOnlyDirty()`
+     * entirely — every real update produces one entry regardless, just
+     * without the actual value in it.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('admin')
+            ->logOnly(['key', 'group'])
+            ->setDescriptionForEvent(fn (string $eventName): string => "Setting {$eventName}: {$this->key}");
     }
 
     /**

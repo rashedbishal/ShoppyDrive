@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class HomepageSetting extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'section_key',
         'section_name',
@@ -26,4 +29,9 @@ class HomepageSetting extends Model
         'sort_order' => 'integer',
         'metadata' => 'json',
     ];
+
+    protected function auditLabel(): string
+    {
+        return $this->section_name ?: $this->section_key;
+    }
 }

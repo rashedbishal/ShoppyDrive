@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,14 @@ type AdminUser = {
     name: string;
     email: string;
     is_mother: boolean;
+    can_view_audit_trail: boolean;
+};
+
+type CurrentAdmin = {
+    id: number;
+    name: string;
+    email: string;
+    is_mother: boolean;
 };
 
 type Props = {
@@ -23,12 +31,17 @@ type Props = {
 };
 
 export default function AdminEdit({ adminUser }: Props) {
+    const { props } = usePage<any>();
+    const currentAdmin = props.auth.admin as CurrentAdmin;
+    const canManagePermissions = currentAdmin.is_mother && !adminUser.is_mother;
+
     const { data, setData, put, processing, errors, setError, clearErrors } =
         useForm({
             name: adminUser.name,
             email: adminUser.email,
             password: '',
             password_confirmation: '',
+            can_view_audit_trail: adminUser.can_view_audit_trail,
         });
 
     const inputClass =
@@ -163,6 +176,35 @@ export default function AdminEdit({ adminUser }: Props) {
                                     </p>
                                 )}
                             </div>
+
+                            {canManagePermissions && (
+                                <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+                                    <input
+                                        type="checkbox"
+                                        id="can_view_audit_trail"
+                                        className="mt-0.5 size-4 rounded border-slate-300 text-[#c8102e] focus:ring-[#c8102e]"
+                                        checked={data.can_view_audit_trail}
+                                        onChange={(e) =>
+                                            setData(
+                                                'can_view_audit_trail',
+                                                e.target.checked,
+                                            )
+                                        }
+                                    />
+                                    <label
+                                        htmlFor="can_view_audit_trail"
+                                        className="text-sm text-slate-600"
+                                    >
+                                        <span className="font-medium text-slate-700">
+                                            Grant Audit Trail access
+                                        </span>
+                                        <br />
+                                        Lets this admin view every admin and
+                                        order activity log. Only the mother
+                                        admin can clear logs.
+                                    </label>
+                                </div>
+                            )}
 
                             <div className="flex gap-2 pt-2">
                                 <Button

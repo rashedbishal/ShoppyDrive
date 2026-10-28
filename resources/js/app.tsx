@@ -29,18 +29,24 @@ declare global {
 }
 
 // Ziggy's route() needs its route/URL config available to resolve on the server —
-// there's no `window.Ziggy` there like the @routes Blade directive sets up in the
+// there's no `Ziggy` global there like the @routes Blade directive sets up in the
 // browser. This app reuses app.tsx for SSR (no separate ssr.tsx), so initializing
 // these globals here once covers every existing `route(...)` call — both the bare
 // global form and `import { route } from 'ziggy-js'` (which falls back to reading
 // the global `Ziggy` itself when no config is passed) — in both environments.
 //
-// In the browser, `window.Ziggy` is already set by the @routes Blade directive
-// with the live server's real url/port — it must win over the imported
-// `./ziggy` snapshot, which is a build-time file committed to the repo and can
-// go stale (e.g. still pointing at a local dev url/port) relative to prod.
-globalThis.Ziggy =
-    typeof window !== 'undefined' && window.Ziggy ? window.Ziggy : ziggyConfig;
+// In the browser, the @routes Blade directive's default output is
+// `<script>const Ziggy={...live route data...};{route.umd.js source}</script>`
+// — NOT `window.Ziggy = ...`. A top-level `const`/`let` in a classic script
+// creates a lexical binding shared across every script/module in the document,
+// not a `window` property, so `window.Ziggy` is always undefined here and must
+// never be checked — that bug silently fell back to the `./ziggy` snapshot
+// below on every single page load, no matter how current the live server's
+// route list was. Reading the bare `Ziggy` identifier (exactly how ziggy-js's
+// own bundled code resolves it — see its `"undefined"!=typeof Ziggy?Ziggy:...`
+// check) is what actually picks up the live data; the `./ziggy` snapshot is
+// now only ever used server-side during SSR, where no such script ran.
+globalThis.Ziggy = typeof Ziggy !== 'undefined' && Ziggy ? Ziggy : ziggyConfig;
 // Defaults every `route(...)` call (none in this app pass `absolute`
 // explicitly) to a relative path instead of Ziggy's own default of an
 // absolute URL built from the server's `APP_URL`. An absolute URL there

@@ -25,10 +25,22 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Order extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, LogsActivity, SoftDeletes;
+
+    /**
+     * Only these two fire into the audit trail — a customer placing an
+     * order, and its status changing afterward (by an admin or a courier
+     * webhook) — not soft-delete/restore, which isn't part of what this
+     * app's audit trail was scoped to cover for orders.
+     *
+     * @var array<int, string>
+     */
+    protected static array $recordEvents = ['created', 'updated'];
 
     protected $fillable = [
         'order_number',
@@ -92,6 +104,34 @@ class Order extends Model
             'shipped_at' => 'datetime',
             'delivered_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Only `status` is tracked as a loggable attribute — the "placed"
+     * entry's own context (order number, total) comes from the
+     * description below, read straight off `$this`, not from the logged
+     * attribute diff, so this stays narrow without losing readability.
+     * `getOriginal('status')` is still the pre-update value here: Eloquent
+     * doesn't call `syncOriginal()` until after the `updated` event (which
+     * is what triggers this) finishes dispatching.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('orders')
+            ->logOnly(['status'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(function (string $eventName): string {
+                if ($eventName === 'created') {
+                    return "Order {$this->order_number} was placed (total ৳".number_format((float) $this->total, 2).').';
+                }
+
+                $from = $this->getOriginal('status');
+                $from = $from instanceof OrderStatus ? $from->value : $from;
+
+                return "Order {$this->order_number} status changed from {$from} to {$this->status->value}.";
+            });
     }
 
     public function user(): BelongsTo

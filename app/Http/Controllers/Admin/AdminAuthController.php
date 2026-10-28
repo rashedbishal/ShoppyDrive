@@ -35,11 +35,25 @@ class AdminAuthController extends Controller
 
         $request->session()->regenerate();
 
+        $admin = Auth::guard('admin')->user();
+
+        activity('admin')
+            ->causedBy($admin)
+            ->event('login')
+            ->log("Admin {$admin->name} ({$admin->email}) logged in.");
+
         return redirect()->intended(route('admin.dashboard'));
     }
 
     public function logout(Request $request): RedirectResponse
     {
+        $admin = Auth::guard('admin')->user();
+
+        activity('admin')
+            ->causedBy($admin)
+            ->event('logout')
+            ->log("Admin {$admin->name} ({$admin->email}) logged out.");
+
         Auth::guard('admin')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

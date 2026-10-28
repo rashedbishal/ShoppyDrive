@@ -17,6 +17,7 @@ export default function AdminCreate() {
             email: '',
             password: '',
             password_confirmation: '',
+            can_view_audit_trail: false,
         });
 
     const inputClass =
@@ -145,6 +146,33 @@ export default function AdminCreate() {
                                         {errors.password_confirmation}
                                     </p>
                                 )}
+                            </div>
+
+                            <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+                                <input
+                                    type="checkbox"
+                                    id="can_view_audit_trail"
+                                    className="mt-0.5 size-4 rounded border-slate-300 text-[#c8102e] focus:ring-[#c8102e]"
+                                    checked={data.can_view_audit_trail}
+                                    onChange={(e) =>
+                                        setData(
+                                            'can_view_audit_trail',
+                                            e.target.checked,
+                                        )
+                                    }
+                                />
+                                <label
+                                    htmlFor="can_view_audit_trail"
+                                    className="text-sm text-slate-600"
+                                >
+                                    <span className="font-medium text-slate-700">
+                                        Grant Audit Trail access
+                                    </span>
+                                    <br />
+                                    Lets this admin view every admin and order
+                                    activity log. Only the mother admin can
+                                    clear logs.
+                                </label>
                             </div>
 
                             <div className="flex gap-2 pt-2">

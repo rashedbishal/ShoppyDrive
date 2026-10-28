@@ -5,6 +5,7 @@ import {
     Folder,
     FolderTree,
     Gift,
+    History,
     Inbox,
     Info,
     LayoutDashboard,
@@ -48,6 +49,8 @@ type NavItem = {
     icon: LucideIcon;
     exact?: boolean;
     extraMatches: string[];
+    /** Hidden unless the current admin is_mother or has can_view_audit_trail. */
+    requiresAuditPermission?: boolean;
 };
 
 type NavSection = {
@@ -256,6 +259,14 @@ const navSections: NavSection[] = [
                 extraMatches: [] as string[],
             },
             {
+                label: 'Audit Trail',
+                href: '/admin/audit-trail',
+                icon: History,
+                exact: false,
+                extraMatches: [] as string[],
+                requiresAuditPermission: true,
+            },
+            {
                 label: 'Blocked IPs',
                 href: '/admin/blocked-ips',
                 icon: Ban,
@@ -319,10 +330,12 @@ function findMostSpecificMatch(currentUrl: string): NavItem | undefined {
 function SidebarContent({
     currentUrl,
     logoUrl,
+    canViewAuditTrail,
     onClose,
 }: {
     currentUrl: string;
     logoUrl?: string | null;
+    canViewAuditTrail: boolean;
     onClose?: () => void;
 }) {
     const mostSpecificMatch = findMostSpecificMatch(currentUrl);
@@ -374,35 +387,42 @@ function SidebarContent({
                         <p className="mb-1.5 px-2 text-[10px] font-semibold tracking-widest text-slate-400 uppercase">
                             {section.label}
                         </p>
-                        {section.items.map((item) => {
-                            const isActive =
-                                (item.exact
-                                    ? currentUrl === item.href
-                                    : mostSpecificMatch?.href === item.href) ||
-                                item.extraMatches.some((m) =>
-                                    currentUrl.startsWith(m),
-                                );
-                            const Icon = item.icon;
+                        {section.items
+                            .filter(
+                                (item) =>
+                                    !item.requiresAuditPermission ||
+                                    canViewAuditTrail,
+                            )
+                            .map((item) => {
+                                const isActive =
+                                    (item.exact
+                                        ? currentUrl === item.href
+                                        : mostSpecificMatch?.href ===
+                                          item.href) ||
+                                    item.extraMatches.some((m) =>
+                                        currentUrl.startsWith(m),
+                                    );
+                                const Icon = item.icon;
 
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    onClick={onClose}
-                                    className={`mb-0.5 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
-                                        isActive
-                                            ? 'bg-[#c8102e]/8 text-[#c8102e]'
-                                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <Icon className="size-4 shrink-0" />
-                                    {item.label}
-                                    {isActive && (
-                                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#c8102e]" />
-                                    )}
-                                </Link>
-                            );
-                        })}
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={onClose}
+                                        className={`mb-0.5 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
+                                            isActive
+                                                ? 'bg-[#c8102e]/8 text-[#c8102e]'
+                                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        <Icon className="size-4 shrink-0" />
+                                        {item.label}
+                                        {isActive && (
+                                            <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#c8102e]" />
+                                        )}
+                                    </Link>
+                                );
+                            })}
                     </div>
                 ))}
             </nav>
@@ -473,6 +493,9 @@ export default function AdminLayout({
 }) {
     const page = usePage<SharedPageProps>();
     const admin = page.props.auth?.admin;
+    const canViewAuditTrail = Boolean(
+        admin?.is_mother || admin?.can_view_audit_trail,
+    );
     const currentUrl = page.url;
     const logoUrl = (page.props.settings as AppSettings)?.logo ?? null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -486,7 +509,11 @@ export default function AdminLayout({
         <div className="flex min-h-screen bg-slate-50">
             {/* Desktop sidebar */}
             <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
-                <SidebarContent currentUrl={currentUrl} logoUrl={logoUrl} />
+                <SidebarContent
+                    currentUrl={currentUrl}
+                    logoUrl={logoUrl}
+                    canViewAuditTrail={canViewAuditTrail}
+                />
             </aside>
 
             {/* Mobile sidebar overlay */}
@@ -500,6 +527,7 @@ export default function AdminLayout({
                         <SidebarContent
                             currentUrl={currentUrl}
                             logoUrl={logoUrl}
+                            canViewAuditTrail={canViewAuditTrail}
                             onClose={() => setSidebarOpen(false)}
                         />
                     </aside>

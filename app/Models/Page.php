@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Page extends Model
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     protected $fillable = [
         'title',
@@ -25,5 +26,11 @@ class Page extends Model
         return [
             'is_published' => 'boolean',
         ];
+    }
+
+    /** `content` is the full page body — too large to keep duplicating into every log row. */
+    protected function auditExcept(): array
+    {
+        return ['content', 'created_at', 'updated_at'];
     }
 }

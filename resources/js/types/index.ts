@@ -64,6 +64,9 @@ export interface User extends Timestamped {
     two_factor_enabled?: boolean;
     referral_code?: string;
     points_balance?: number;
+    /** Admin-only fields, present when this is `auth.admin` rather than `auth.user`. */
+    is_mother?: boolean;
+    can_view_audit_trail?: boolean;
 }
 
 export interface Auth {

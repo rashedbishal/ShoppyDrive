@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use App\Enums\CouponType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Coupon extends Model
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     protected $fillable = [
         'code',
@@ -37,6 +38,21 @@ class Coupon extends Model
             'expires_at' => 'datetime',
             'is_active' => 'boolean',
         ];
+    }
+
+    protected function auditLabel(): string
+    {
+        return "{$this->code} ({$this->name})";
+    }
+
+    /**
+     * `used_count` ticks up on every order that redeems this coupon — a
+     * checkout action, not an admin edit — so a solo bump shouldn't appear
+     * as an "admin" audit entry.
+     */
+    protected function auditIgnoreWhenOnlyChanged(): array
+    {
+        return ['used_count'];
     }
 
     public function uses(): HasMany

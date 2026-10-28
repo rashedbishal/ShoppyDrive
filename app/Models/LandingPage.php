@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LandingPage extends Model
 {
+    use Auditable;
+
     protected $fillable = ['title', 'slug', 'product_id', 'is_active', 'sections'];
 
     protected function casts(): array
@@ -18,6 +21,12 @@ class LandingPage extends Model
             'is_active' => 'boolean',
             'sections' => 'array',
         ];
+    }
+
+    /** `sections` is the full page-builder payload — too large to keep duplicating into every log row. */
+    protected function auditExcept(): array
+    {
+        return ['sections', 'created_at', 'updated_at'];
     }
 
     public function product(): BelongsTo

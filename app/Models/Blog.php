@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Blog extends Model
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     protected $fillable = [
         'title',
@@ -35,6 +36,12 @@ class Blog extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    /** `content`/`excerpt` are full post bodies — too large to keep duplicating into every log row. */
+    protected function auditExcept(): array
+    {
+        return ['content', 'excerpt', 'created_at', 'updated_at'];
     }
 
     public function scopePublished($query)
