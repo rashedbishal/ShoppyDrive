@@ -28,10 +28,29 @@ type SearchProduct = {
 };
 
 type SelectedItem = {
+    uid: string;
     product: SearchProduct;
     variant_id: string;
     quantity: string;
 };
+
+/**
+ * How many more times `product` could still be added as a distinct bundle
+ * component — a variant-less product tops out at 1 (a second row would be
+ * an exact duplicate); a product with variants tops out at its variant
+ * count, since each occurrence must pin a different one.
+ */
+function remainingCapacity(
+    product: SearchProduct,
+    selectedItems: SelectedItem[],
+): number {
+    const capacity = Math.max(product.variants.length, 1);
+    const used = selectedItems.filter(
+        (item) => item.product.id === product.id,
+    ).length;
+
+    return capacity - used;
+}
 
 function variantLabel(variant: SearchVariant): string {
     return [variant.color_value?.value, variant.size_value?.value]
@@ -127,13 +146,18 @@ export default function ProductBundleCreate() {
     };
 
     const addProduct = (product: SearchProduct) => {
-        if (selectedItems.some((item) => item.product.id === product.id)) {
+        if (remainingCapacity(product, selectedItems) <= 0) {
             return;
         }
 
         const next = [
             ...selectedItems,
-            { product, variant_id: '', quantity: '1' },
+            {
+                uid: crypto.randomUUID(),
+                product,
+                variant_id: '',
+                quantity: '1',
+            },
         ];
         setSelectedItems(next);
         syncItems(next);
@@ -141,21 +165,19 @@ export default function ProductBundleCreate() {
         setSearchResults([]);
     };
 
-    const removeProduct = (productId: number) => {
-        const next = selectedItems.filter(
-            (item) => item.product.id !== productId,
-        );
+    const removeItem = (uid: string) => {
+        const next = selectedItems.filter((item) => item.uid !== uid);
         setSelectedItems(next);
         syncItems(next);
     };
 
     const updateItem = (
-        productId: number,
+        uid: string,
         key: 'variant_id' | 'quantity',
         value: string,
     ) => {
         const next = selectedItems.map((item) =>
-            item.product.id === productId ? { ...item, [key]: value } : item,
+            item.uid === uid ? { ...item, [key]: value } : item,
         );
         setSelectedItems(next);
         syncItems(next);
@@ -187,6 +209,15 @@ export default function ProductBundleCreate() {
         if (needsVariant) {
             clientErrors.items =
                 'Pick a variant for every product that has one.';
+        }
+
+        const pairKeys = selectedItems.map(
+            (item) => `${item.product.id}|${item.variant_id || 'none'}`,
+        );
+
+        if (new Set(pairKeys).size !== pairKeys.length) {
+            clientErrors.items =
+                'The same product and variant combination cannot be added more than once.';
         }
 
         if (Object.keys(clientErrors).length > 0) {
@@ -328,26 +359,31 @@ export default function ProductBundleCreate() {
                                         )}
                                         {!searching &&
                                             searchResults.map((product) => {
-                                                const alreadyAdded =
-                                                    selectedItems.some(
+                                                const used =
+                                                    selectedItems.filter(
                                                         (item) =>
                                                             item.product.id ===
                                                             product.id,
-                                                    );
+                                                    ).length;
+                                                const exhausted =
+                                                    remainingCapacity(
+                                                        product,
+                                                        selectedItems,
+                                                    ) <= 0;
 
                                                 return (
                                                     <button
                                                         key={product.id}
                                                         type="button"
-                                                        disabled={alreadyAdded}
+                                                        disabled={exhausted}
                                                         className={cn(
                                                             'flex w-full items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5 text-left last:border-0',
-                                                            alreadyAdded
+                                                            exhausted
                                                                 ? 'cursor-not-allowed bg-slate-50 opacity-50'
                                                                 : 'group cursor-pointer hover:bg-slate-50',
                                                         )}
                                                         onClick={() =>
-                                                            !alreadyAdded &&
+                                                            !exhausted &&
                                                             addProduct(product)
                                                         }
                                                     >
@@ -357,9 +393,12 @@ export default function ProductBundleCreate() {
                                                             </p>
                                                             <p className="text-xs text-slate-500">
                                                                 ৳{product.price}
+                                                                {used > 0 &&
+                                                                    !exhausted &&
+                                                                    ` · added ×${used}, pick another variant`}
                                                             </p>
                                                         </div>
-                                                        {alreadyAdded ? (
+                                                        {exhausted ? (
                                                             <Check className="size-4 shrink-0 text-emerald-500" />
                                                         ) : (
                                                             <Plus className="size-4 shrink-0 text-slate-400 group-hover:text-slate-700" />
@@ -384,7 +423,9 @@ export default function ProductBundleCreate() {
                                         No products added yet.
                                     </p>
                                     <p className="text-xs text-slate-400">
-                                        Search and add at least two products.
+                                        Search and add at least two products —
+                                        or the same product twice with different
+                                        variants.
                                     </p>
                                 </div>
                             ) : (
@@ -393,10 +434,29 @@ export default function ProductBundleCreate() {
                                         const needsVariant =
                                             item.product.has_color_variant ||
                                             item.product.has_size_variant;
+                                        // Variants a sibling row already claimed for this same
+                                        // product can't be picked again — keeps every (product,
+                                        // variant) pair in the bundle unique by construction.
+                                        const usedBySiblings = selectedItems
+                                            .filter(
+                                                (other) =>
+                                                    other.uid !== item.uid &&
+                                                    other.product.id ===
+                                                        item.product.id &&
+                                                    other.variant_id,
+                                            )
+                                            .map((other) => other.variant_id);
+                                        const availableVariants =
+                                            item.product.variants.filter(
+                                                (variant) =>
+                                                    !usedBySiblings.includes(
+                                                        String(variant.id),
+                                                    ),
+                                            );
 
                                         return (
                                             <div
-                                                key={item.product.id}
+                                                key={item.uid}
                                                 className="flex items-end gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-3"
                                             >
                                                 <div className="flex-1">
@@ -419,8 +479,7 @@ export default function ProductBundleCreate() {
                                                             }
                                                             onChange={(e) =>
                                                                 updateItem(
-                                                                    item.product
-                                                                        .id,
+                                                                    item.uid,
                                                                     'variant_id',
                                                                     e.target
                                                                         .value,
@@ -430,7 +489,7 @@ export default function ProductBundleCreate() {
                                                             <option value="">
                                                                 — Select —
                                                             </option>
-                                                            {item.product.variants.map(
+                                                            {availableVariants.map(
                                                                 (variant) => (
                                                                     <option
                                                                         key={
@@ -460,7 +519,7 @@ export default function ProductBundleCreate() {
                                                         value={item.quantity}
                                                         onChange={(e) =>
                                                             updateItem(
-                                                                item.product.id,
+                                                                item.uid,
                                                                 'quantity',
                                                                 e.target.value,
                                                             )
@@ -470,9 +529,7 @@ export default function ProductBundleCreate() {
                                                 <button
                                                     type="button"
                                                     onClick={() =>
-                                                        removeProduct(
-                                                            item.product.id,
-                                                        )
+                                                        removeItem(item.uid)
                                                     }
                                                     className="mb-0.5 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
                                                 >

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\Product;
 use App\Models\ProductBundle;
 use App\Models\ProductBundleItem;
+use App\Models\ProductVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\actingAs;
@@ -79,6 +80,68 @@ test('a bundle requires at least two items', function () {
     ])->assertSessionHasErrors('items');
 
     expect(ProductBundle::query()->count())->toBe(0);
+});
+
+test('a bundle rejects the same product and variant combination added twice', function () {
+    $product = Product::factory()->create();
+
+    actingAs($this->admin, 'admin');
+
+    $this->post(route('admin.product-bundles.store'), [
+        'name' => 'Duplicate Combo',
+        'discount_type' => 'fixed_price',
+        'bundle_price' => 50,
+        'items' => [
+            ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
+            ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
+        ],
+    ])->assertSessionHasErrors('items');
+
+    expect(ProductBundle::query()->count())->toBe(0);
+});
+
+test('a bundle rejects the same product and the same variant pinned twice', function () {
+    $product = Product::factory()->create();
+    $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
+    $other = Product::factory()->create();
+
+    actingAs($this->admin, 'admin');
+
+    $this->post(route('admin.product-bundles.store'), [
+        'name' => 'Duplicate Variant Combo',
+        'discount_type' => 'fixed_price',
+        'bundle_price' => 50,
+        'items' => [
+            ['product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 1],
+            ['product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 1],
+            ['product_id' => $other->id, 'variant_id' => null, 'quantity' => 1],
+        ],
+    ])->assertSessionHasErrors('items');
+
+    expect(ProductBundle::query()->count())->toBe(0);
+});
+
+test('a single product with multiple variants can satisfy the two-item minimum on its own', function () {
+    $product = Product::factory()->create();
+    $small = ProductVariant::factory()->create(['product_id' => $product->id]);
+    $large = ProductVariant::factory()->create(['product_id' => $product->id]);
+
+    actingAs($this->admin, 'admin');
+
+    $this->post(route('admin.product-bundles.store'), [
+        'name' => 'Two Sizes Combo',
+        'discount_type' => 'fixed_price',
+        'bundle_price' => 50,
+        'items' => [
+            ['product_id' => $product->id, 'variant_id' => $small->id, 'quantity' => 1],
+            ['product_id' => $product->id, 'variant_id' => $large->id, 'quantity' => 1],
+        ],
+    ])->assertRedirect(route('admin.product-bundles.index'));
+
+    $bundle = ProductBundle::query()->where('name', 'Two Sizes Combo')->firstOrFail();
+    expect($bundle->items)->toHaveCount(2);
+    expect($bundle->items->pluck('variant_id')->sort()->values()->all())
+        ->toBe([$small->id, $large->id]);
 });
 
 test('a fixed-price bundle requires a bundle price', function () {

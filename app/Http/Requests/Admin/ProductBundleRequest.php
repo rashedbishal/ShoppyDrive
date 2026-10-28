@@ -25,7 +25,19 @@ class ProductBundleRequest extends FormRequest
             'discount_type' => ['required', 'string', 'in:fixed_price,free_delivery'],
             'bundle_price' => ['required_if:discount_type,fixed_price', 'nullable', 'numeric', 'min:0'],
             'is_active' => ['boolean'],
-            'items' => ['required', 'array', 'min:2'],
+            'items' => [
+                'required',
+                'array',
+                'min:2',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $pairs = collect($value)
+                        ->map(fn (array $item): string => ($item['product_id'] ?? '').'|'.($item['variant_id'] ?? 'none'));
+
+                    if ($pairs->count() !== $pairs->unique()->count()) {
+                        $fail('The same product and variant combination cannot be added to a bundle more than once.');
+                    }
+                },
+            ],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.variant_id' => [
                 'nullable',
