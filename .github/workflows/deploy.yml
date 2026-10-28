@@ -34,6 +34,12 @@ jobs:
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, gd, zip, bcmath, opcache
           coverage: none
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
@@ -41,6 +47,24 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate
+
+      # resources/js/app.tsx statically imports './ziggy' (gitignored, a
+      # build output like Wayfinder's resources/js/actions) — on a bare
+      # checkout the file doesn't exist, so npm run build fails outright,
+      # and several feature tests that render a real Inertia page (not
+      # just assert on JSON) need public/build/manifest.json to exist at
+      # all, independent of its content, or every one of them 500s with
+      # Illuminate\Foundation\ViteManifestNotFoundException. The real
+      # production URL doesn't matter here since this build is only
+      # exercised by the test suite, never served.
+      - name: Generate Ziggy routes file
+        run: php artisan ziggy:generate
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
 
       - name: Run Pint and the full Pest suite
         run: composer test
