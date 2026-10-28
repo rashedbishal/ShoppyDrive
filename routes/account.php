@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\OrderStatus;
+use App\Http\Controllers\AccountProfileController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ReturnRequestController;
@@ -104,7 +105,7 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
     Route::get('/profile', fn () => inertia('account/Profile'))->name('account.profile');
     Route::get('/password', fn () => inertia('account/ChangePassword'))->name('account.password');
 
-    Route::post('/profile', fn () => back())->middleware('throttle:account-action')->name('account.profile.update');
+    Route::post('/profile', [AccountProfileController::class, 'update'])->middleware('throttle:account-action')->name('account.profile.update');
 
     Route::patch('/orders/{order:order_number}/cancel', function (Order $order) {
         if ($order->user_id !== auth()->id()) {

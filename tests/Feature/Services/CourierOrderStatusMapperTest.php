@@ -112,6 +112,21 @@ it('never overwrites a cancelled order', function () {
     expect($order->steadfast_status)->toBe('delivered_parcels');
 });
 
+it('never regresses a delivered order back to an earlier status', function () {
+    // SHIP-001 regression: a late/out-of-order/corrective courier report
+    // must not demote an already-delivered order, the same way it can't
+    // resurrect a cancelled one.
+    $order = makeMapperTestOrder(['status' => 'delivered', 'payment_status' => 'paid']);
+    $order->forceFill(['delivered_at' => now()->subDay()])->save();
+
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'pending_parcels');
+
+    expect($order->status)->toBe(OrderStatus::DELIVERED);
+    expect($order->payment_status->value)->toBe('paid');
+    expect($order->steadfast_status)->toBe('pending_parcels');
+    expect($order->statusHistories()->latest()->first()->notes)->toContain('already delivered');
+});
+
 it('a late delivered webhook after cancellation does not resurrect the order or mark it paid', function () {
     $order = makeMapperTestOrder(['status' => 'shipped', 'payment_status' => 'unpaid']);
 

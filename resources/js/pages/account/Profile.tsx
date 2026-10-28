@@ -29,17 +29,28 @@ export default function Profile(): React.JSX.Element {
         email: user.email,
         phone: user.phone || '',
         avatar: null as File | null,
+        remove_avatar: false,
     });
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             form.setData('avatar', file);
+            form.setData('remove_avatar', false);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setAvatarPreview(reader.result as string);
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    const handleRemoveAvatar = () => {
+        form.setData('avatar', null);
+        form.setData('remove_avatar', true);
+        setAvatarPreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
     };
 
@@ -73,7 +84,7 @@ export default function Profile(): React.JSX.Element {
                             <div className="flex flex-col md:flex-row items-center gap-8 pb-8 border-b border-[var(--color-border)]">
                                 <div className="relative group">
                                     <Avatar className="h-32 w-32 border-4 border-white shadow-xl">
-                                        <AvatarImage src={avatarPreview || user.avatar || undefined} />
+                                        <AvatarImage src={avatarPreview || (form.data.remove_avatar ? undefined : user.avatar) || undefined} />
                                         <AvatarFallback className="bg-[var(--color-primary-light)] text-[var(--color-primary)] text-3xl font-bold">
                                             {getInitials(user.name)}
                                         </AvatarFallback>
@@ -107,8 +118,14 @@ export default function Profile(): React.JSX.Element {
                                         >
                                             Upload New
                                         </Button>
-                                        {user.avatar && (
-                                            <Button type="button" variant="ghost" size="sm" className="rounded-xl font-bold h-10 text-[var(--color-error)]">
+                                        {(avatarPreview || (user.avatar && !form.data.remove_avatar)) && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="rounded-xl font-bold h-10 text-[var(--color-error)]"
+                                                onClick={handleRemoveAvatar}
+                                            >
                                                 Remove
                                             </Button>
                                         )}
@@ -129,6 +146,7 @@ export default function Profile(): React.JSX.Element {
                                         />
                                         <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
                                     </div>
+                                    {form.errors.name && <p className="text-xs text-[var(--color-error)] font-bold">{form.errors.name}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Email Address</Label>
@@ -159,6 +177,8 @@ export default function Profile(): React.JSX.Element {
                                     />
                                     <Phone size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
                                 </div>
+                                {form.errors.phone && <p className="text-xs text-[var(--color-error)] font-bold">{form.errors.phone}</p>}
+                                {form.errors.avatar && <p className="text-xs text-[var(--color-error)] font-bold">{form.errors.avatar}</p>}
                             </div>
 
                             <div className="pt-6 border-t border-[var(--color-border)] flex justify-end">

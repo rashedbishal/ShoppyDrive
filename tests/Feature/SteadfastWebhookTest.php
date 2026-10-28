@@ -233,3 +233,24 @@ it('a late, validly-signed delivered_parcels webhook cannot resurrect a cancelle
     expect($order->refresh()->status->value)->toBe('cancelled');
     expect($order->payment_status->value)->toBe('unpaid');
 });
+
+it('a late, validly-signed webhook cannot regress a delivered order back to pending through the real controller', function () {
+    // SHIP-001: a corrective/out-of-order Steadfast report must not demote
+    // an already-delivered order — that would re-trigger stock-restore,
+    // coupon-release, and loyalty-reversal for a sale that was actually
+    // fulfilled, bypassing the deliberate admin-approved return flow.
+    $order = makeSteadfastOrder();
+    configureSteadfastWebhookSecret();
+    $order->update(['status' => 'delivered', 'payment_status' => 'paid', 'delivered_at' => now()->subDay()]);
+
+    $response = postSignedSteadfastWebhook([
+        'notification_type' => 'delivery_status',
+        'consignment_id' => 'CONSIGN-ABC',
+        'status' => 'pending_parcels',
+    ]);
+
+    $response->assertOk();
+    expect($order->refresh()->status->value)->toBe('delivered');
+    expect($order->payment_status->value)->toBe('paid');
+    expect($order->steadfast_status)->toBe('pending_parcels');
+});

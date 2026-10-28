@@ -85,16 +85,26 @@ class CourierOrderStatusMapper
 
     /**
      * Order statuses a courier-reported status is never allowed to move
-     * the order away from. Cancelled and refunded are both terminal
-     * outcomes already decided by the store (an admin cancellation, a
-     * refund) — a late or retried courier webhook (e.g. a "delivered"
-     * notification that arrives after the order was cancelled, or a
-     * duplicate/out-of-order delivery report) must never resurrect the
-     * order into an active status or mark it paid again.
+     * the order away from. Cancelled and refunded are terminal outcomes
+     * already decided by the store (an admin cancellation, a refund) — a
+     * late or retried courier webhook (e.g. a "delivered" notification
+     * that arrives after the order was cancelled, or a duplicate/out-of-
+     * order delivery report) must never resurrect the order into an
+     * active status or mark it paid again.
+     *
+     * Delivered is terminal in the other direction: once a courier has
+     * reported successful delivery, a later report (a correction, a
+     * return initiated with the courier, an out-of-order retry) must not
+     * regress the order back to pending/processing/cancelled either —
+     * that would re-trigger Order::booted()'s stock-restore/coupon-
+     * release/loyalty-reversal side effects for a sale that was actually
+     * fulfilled. A delivered order that genuinely needs to be reversed
+     * goes through the deliberate, admin-approved ReturnRequest workflow,
+     * not an automatic courier status sync.
      *
      * @var list<OrderStatus>
      */
-    private const TERMINAL_STATUSES = [OrderStatus::CANCELLED, OrderStatus::REFUNDED];
+    private const TERMINAL_STATUSES = [OrderStatus::CANCELLED, OrderStatus::REFUNDED, OrderStatus::DELIVERED];
 
     /**
      * Record a provider's raw status on the order and, when it maps to a

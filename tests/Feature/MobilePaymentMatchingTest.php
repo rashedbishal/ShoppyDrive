@@ -77,6 +77,27 @@ test('an incorrect amount is rejected and does not mark the order paid', functio
     expect($sms->refresh()->is_matched)->toBeFalse();
 });
 
+test('a matched transaction id with no parseable amount fails closed instead of verifying payment', function () {
+    // PAY-001 regression: a transaction ID alone must never be enough —
+    // if the SMS amount couldn't be parsed (null), the order must not be
+    // created/marked paid just because nothing contradicted the claim.
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
+    $pending = startMobileBankingCheckout($this, $user, $product);
+
+    $sms = ReceivedSms::create([
+        'sender' => '01799999999', 'provider' => 'bkash', 'content' => 'TrxID NOAMT001 (unparseable amount text)',
+        'received_at' => now(), 'parsed_transaction_id' => 'NOAMT001', 'parsed_amount' => null, 'is_matched' => false,
+    ]);
+
+    $this->actingAs($user)->post(route('payment.mobile.submit', $pending->token), [
+        'provider' => 'bkash', 'transaction_id' => 'NOAMT001',
+    ])->assertSessionHasErrors('transaction_id');
+
+    expect(Order::query()->count())->toBe(0);
+    expect($sms->refresh()->is_matched)->toBeFalse();
+});
+
 test('a transaction id recorded for a different provider cannot be claimed under the wrong provider', function () {
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
@@ -261,6 +282,84 @@ test('a transaction consumed by an order that is later cancelled still cannot be
 
     expect(Order::query()->count())->toBe(1);
     expect($sms->refresh()->matched_order_id)->toBe($order->id);
+});
+
+/**
+ * @return array{pending: PendingCheckout, slug: string}
+ */
+function startLandingPageCheckout(TestCase $test, string $provider = 'bkash'): array
+{
+    $product = Product::factory()->create([
+        'price' => 100, 'stock_quantity' => 10, 'is_active' => true, 'published_at' => now()->subDay(), 'free_delivery' => true,
+    ]);
+    $page = LandingPage::create([
+        'title' => 'LP Test', 'slug' => 'lp-test-'.Str::random(8), 'product_id' => $product->id, 'is_active' => true, 'sections' => [],
+    ]);
+
+    $test->post(route('lp.order', $page->slug), [
+        'name' => 'Guest Buyer', 'phone' => '01700000000',
+        'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka',
+        'quantity' => 1, 'payment_method' => 'mobile_banking', 'provider' => $provider,
+    ])->assertRedirect(route('lp.show', $page->slug));
+
+    $pending = PendingCheckout::query()->where('landing_page_id', $page->id)->latest('id')->firstOrFail();
+
+    return ['pending' => $pending, 'slug' => $page->slug];
+}
+
+test('a landing-page transaction id with the correct amount confirms the order and marks the SMS matched', function () {
+    [$pending, $slug] = array_values(startLandingPageCheckout($this));
+    $amount = (float) $pending->checkout_data['total'];
+
+    $sms = ReceivedSms::create([
+        'sender' => '01799999999', 'provider' => 'bkash', 'content' => 'TrxID LPOK0001',
+        'received_at' => now(), 'parsed_transaction_id' => 'LPOK0001', 'parsed_amount' => $amount, 'is_matched' => false,
+    ]);
+
+    $this->post(route('lp.payment.submit', [$slug, $pending->token]), [
+        'transaction_id' => 'LPOK0001',
+    ])->assertRedirect(route('lp.confirmation', $pending->fresh()->checkout_data['guest_token']));
+
+    expect(Order::query()->where('payment_status', 'paid')->count())->toBe(1);
+    expect($sms->refresh()->is_matched)->toBeTrue();
+});
+
+test('a landing-page transaction id with an incorrect amount is rejected and does not mark the order paid', function () {
+    [$pending, $slug] = array_values(startLandingPageCheckout($this));
+    $amount = (float) $pending->checkout_data['total'];
+
+    $sms = ReceivedSms::create([
+        'sender' => '01799999999', 'provider' => 'bkash', 'content' => 'TrxID LPBAD001',
+        'received_at' => now(), 'parsed_transaction_id' => 'LPBAD001', 'parsed_amount' => $amount - 50, 'is_matched' => false,
+    ]);
+
+    $this->post(route('lp.payment.submit', [$slug, $pending->token]), [
+        'transaction_id' => 'LPBAD001',
+    ])->assertSessionHasErrors('transaction_id');
+
+    expect(Order::query()->count())->toBe(0);
+    expect($sms->refresh()->is_matched)->toBeFalse();
+});
+
+test('a landing-page transaction id with no parseable amount fails closed instead of verifying payment', function () {
+    // PAY-001 regression (landing-page funnel): a matching transaction ID
+    // alone must never verify a payment — if the SMS amount couldn't be
+    // parsed (null), the order must not be created/marked paid just
+    // because nothing contradicted the claim. Mirrors the equivalent
+    // MobilePaymentController test above.
+    [$pending, $slug] = array_values(startLandingPageCheckout($this));
+
+    $sms = ReceivedSms::create([
+        'sender' => '01799999999', 'provider' => 'bkash', 'content' => 'TrxID LPNOAMT1 (unparseable amount text)',
+        'received_at' => now(), 'parsed_transaction_id' => 'LPNOAMT1', 'parsed_amount' => null, 'is_matched' => false,
+    ]);
+
+    $this->post(route('lp.payment.submit', [$slug, $pending->token]), [
+        'transaction_id' => 'LPNOAMT1',
+    ])->assertSessionHasErrors('transaction_id');
+
+    expect(Order::query()->count())->toBe(0);
+    expect($sms->refresh()->is_matched)->toBeFalse();
 });
 
 test('the landing-page guest checkout cannot reuse a transaction id already consumed by another order', function () {

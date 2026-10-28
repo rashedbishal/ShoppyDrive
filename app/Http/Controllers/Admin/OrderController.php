@@ -267,11 +267,29 @@ class OrderController extends Controller
         return redirect()->route('admin.orders.trashed')->with('success', 'Order permanently deleted.');
     }
 
+    /**
+     * Mirrors the condition the order-detail page already uses to hide the
+     * Cancel Order card (resources/js/pages/admin/orders/show.tsx) — once an
+     * order is delivered, refunded, or already cancelled, "cancelling" it
+     * here would still run the same stock-restore/coupon-release/loyalty-
+     * reversal side effects (Order::booted()) for a sale that was actually
+     * fulfilled, or that's already in its own terminal state. A delivered
+     * order that needs to come back belongs in the Return/Refund workflow,
+     * not this action.
+     *
+     * @var list<OrderStatus>
+     */
+    private const UNCANCELLABLE_STATUSES = [OrderStatus::CANCELLED, OrderStatus::REFUNDED, OrderStatus::DELIVERED];
+
     public function cancel(Request $request, Order $order): RedirectResponse
     {
         $request->validate([
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
+
+        if (in_array($order->status, self::UNCANCELLABLE_STATUSES, true)) {
+            return back()->with('error', "Orders that are already {$order->status->value} cannot be cancelled.");
+        }
 
         $old = $order->status->value;
         $order->update([

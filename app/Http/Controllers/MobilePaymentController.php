@@ -126,7 +126,16 @@ class MobilePaymentController extends Controller
                     throw new \RuntimeException($existsOtherProvider ? 'wrong_provider' : 'not_found');
                 }
 
-                if ($sms->parsed_amount !== null && abs($sms->parsed_amount - $expectedAmount) > 1) {
+                // A matching transaction ID alone is not proof of payment for
+                // the right amount — if the SMS text didn't parse to a usable
+                // amount (provider template drift, a forwarder reformatting
+                // the message, etc.), that must fail closed, not be treated
+                // as "nothing to contradict the claim."
+                if ($sms->parsed_amount === null) {
+                    throw new \RuntimeException('amount_unavailable');
+                }
+
+                if (abs($sms->parsed_amount - $expectedAmount) > 1) {
                     throw new \RuntimeException('amount_mismatch:'.$sms->parsed_amount);
                 }
 
@@ -258,6 +267,10 @@ class MobilePaymentController extends Controller
 
                 $msg === 'already_used' => back()->withErrors([
                     'transaction_id' => 'This Transaction ID has already been used to pay for another order.',
+                ]),
+
+                $msg === 'amount_unavailable' => back()->withErrors([
+                    'transaction_id' => "We couldn't automatically verify the amount for this transaction. Please contact support with your Transaction ID so we can confirm it manually.",
                 ]),
 
                 str_starts_with($msg, 'amount_mismatch:') => back()->withErrors([
