@@ -1,6 +1,22 @@
-import { Star, Trash2 } from 'lucide-react';
+import { Star, Trash2, Wand2 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+
+type BulkFields = {
+    price: string;
+    compare_price: string;
+    cost_price: string;
+    stock_quantity: string;
+    low_stock_threshold: string;
+};
+
+const BLANK_BULK_FIELDS: BulkFields = {
+    price: '',
+    compare_price: '',
+    cost_price: '',
+    stock_quantity: '',
+    low_stock_threshold: '',
+};
 
 export type VariantRow = {
     color_value_id: number | null;
@@ -111,6 +127,11 @@ export function ProductVariantManager({
     const [candidateSizeIds, setCandidateSizeIds] = useState<number[]>(() =>
         uniqueIds(variants, 'size_value_id'),
     );
+    // Not persisted onto `variants` — purely a scratch pad the admin fills
+    // in once, then applies to every row at once. SKU is deliberately not
+    // part of this: variants need distinct SKUs, so bulk-filling it would
+    // just hand every variant the same (wrong) code.
+    const [bulkFields, setBulkFields] = useState<BulkFields>(BLANK_BULK_FIELDS);
 
     const dualMode = hasColorVariant && hasSizeVariant;
 
@@ -281,6 +302,22 @@ export function ProductVariantManager({
 
     const removeRow = (index: number) => {
         onVariantsChange(ensureDefault(variants.filter((_, i) => i !== index)));
+    };
+
+    /** Only fields actually filled in the bulk panel are applied — a blank
+     *  bulk field leaves every variant's existing value for it untouched.
+     *  Filled ones overwrite every variant unconditionally, including ones
+     *  already customized — predictable over "smart" partial merging. */
+    const applyBulkFields = () => {
+        const patch = Object.fromEntries(
+            Object.entries(bulkFields).filter(([, value]) => value !== ''),
+        ) as Partial<VariantRow>;
+
+        if (Object.keys(patch).length === 0) {
+            return;
+        }
+
+        onVariantsChange(variants.map((row) => ({ ...row, ...patch })));
     };
 
     const valueLabel = (id: number | null, options: AttributeValueOption[]) =>
@@ -481,6 +518,108 @@ export function ProductVariantManager({
                         </div>
                     </div>
                 )}
+
+            {variants.length > 1 && (
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                    <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                        <Wand2 className="size-3.5" />
+                        Bulk-fill variants
+                    </div>
+                    <p className="mb-3 text-xs text-slate-400">
+                        Fill in whichever fields are the same across every
+                        variant, then apply — fields left blank here won't
+                        change anything. SKU is excluded since it needs to stay
+                        unique per variant.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        <VariantField label="Price (৳)">
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="Unchanged"
+                                className={fieldInputClass}
+                                value={bulkFields.price}
+                                onChange={(e) =>
+                                    setBulkFields({
+                                        ...bulkFields,
+                                        price: e.target.value,
+                                    })
+                                }
+                            />
+                        </VariantField>
+                        <VariantField label="Compare price (৳)">
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="Unchanged"
+                                className={fieldInputClass}
+                                value={bulkFields.compare_price}
+                                onChange={(e) =>
+                                    setBulkFields({
+                                        ...bulkFields,
+                                        compare_price: e.target.value,
+                                    })
+                                }
+                            />
+                        </VariantField>
+                        <VariantField label="Cost price (৳)">
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="Unchanged"
+                                className={fieldInputClass}
+                                value={bulkFields.cost_price}
+                                onChange={(e) =>
+                                    setBulkFields({
+                                        ...bulkFields,
+                                        cost_price: e.target.value,
+                                    })
+                                }
+                            />
+                        </VariantField>
+                        <VariantField label="Stock qty">
+                            <input
+                                type="number"
+                                min="0"
+                                placeholder="Unchanged"
+                                className={fieldInputClass}
+                                value={bulkFields.stock_quantity}
+                                onChange={(e) =>
+                                    setBulkFields({
+                                        ...bulkFields,
+                                        stock_quantity: e.target.value,
+                                    })
+                                }
+                            />
+                        </VariantField>
+                        <VariantField label="Low stock alert">
+                            <input
+                                type="number"
+                                min="0"
+                                placeholder="Unchanged"
+                                className={fieldInputClass}
+                                value={bulkFields.low_stock_threshold}
+                                onChange={(e) =>
+                                    setBulkFields({
+                                        ...bulkFields,
+                                        low_stock_threshold: e.target.value,
+                                    })
+                                }
+                            />
+                        </VariantField>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={applyBulkFields}
+                        className="mt-3 rounded-lg bg-[#c8102e] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#a50d25]"
+                    >
+                        Apply to all {variants.length} variants
+                    </button>
+                </div>
+            )}
 
             {variants.length > 0 && (
                 <div className="space-y-3">
