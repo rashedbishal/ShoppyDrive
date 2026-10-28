@@ -156,6 +156,20 @@ jobs:
             rm -rf public/storage
             ln -snf ../storage/app/public public/storage
 
+            # bootstrap/cache/*.php is excluded from the rsync above (so a
+            # mid-sync tree is never served from a half-updated cache), which
+            # means a stale cache here survives every deploy indefinitely —
+            # discovered when packages.php/services.php (regenerated only by
+            # composer, which never runs on this server) sat 5+ months stale
+            # and left spatie/laravel-activitylog unregistered, which crashed
+            # every single artisan command (including config:clear itself,
+            # since booting to run it already triggers the same crash) with
+            # 'Trying to access array offset on null' in CauserResolver.php.
+            # Deleting the cache files directly, before any artisan command
+            # runs, sidesteps that chicken-and-egg failure entirely.
+            rm -f bootstrap/cache/config.php bootstrap/cache/routes-v7.php bootstrap/cache/events.php bootstrap/cache/packages.php bootstrap/cache/services.php
+            php artisan package:discover --ansi
+
             php artisan config:clear
             php artisan route:clear
             php artisan view:clear
