@@ -223,6 +223,10 @@ Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `
 
 ShoppyDrive is a Bangladesh-focused ecommerce storefront + admin panel built on the Laravel React starter kit (Laravel 13, Inertia v3, React 19, Tailwind v4). It has two front ends sharing one Inertia app: a public storefront and an `/admin` back office, each with its own auth guard.
 
+## Session Handover
+
+If a previous Claude Code session left unfinished work (a pending push, an in-progress audit, migrations awaiting approval), check `docs/SESSION_HANDOVER.md` first — it records exact git state, pending commits, and the required approvals before any push/deploy/migration proceeds. Update it (don't just append) whenever a session ends with unresolved state; delete it once everything it describes has shipped and nothing is pending.
+
 ## Common Commands
 
 ```
@@ -236,7 +240,7 @@ npm run lint / npm run format / npm run types:check
 npm run build:ssr                         # client + SSR bundles
 ```
 
-GitHub Actions `tests.yml`/`lint.yml` are disabled (`if: false`), so nothing checks changes remotely — run `composer ci:check` locally. `deploy.yml` deploys to Hostinger over SSH.
+GitHub Actions `tests.yml` and `lint.yml` run on every push/PR (re-enabled; previously `if: false`). `deploy.yml` (triggers on push to `main`) runs a `checks` job (Pint + the full Pest suite) that `deploy` `needs:` — PHP checks failing blocks deployment. ESLint/Prettier/TypeScript run in `lint.yml` for visibility only; they do **not** gate `deploy.yml` (GitHub Actions has no cross-workflow `needs`), and as of this writing there's a real, pre-existing backlog of lint/type errors unrelated to any specific feature — don't assume a clean `lint.yml` run. `deploy.yml` deploys to **Hostinger shared hosting** (not a VPS) over SSH/rsync and runs `php artisan migrate --force` against production as part of the post-deploy script, with no manual approval gate between a passing `checks` job and that migration running. Still run `composer ci:check` locally before pushing.
 
 After adding or renaming any named route, regenerate the local Ziggy snapshot so SSR and the fallback path stay current:
 ```
