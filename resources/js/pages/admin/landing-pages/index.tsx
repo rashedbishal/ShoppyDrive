@@ -1,4 +1,4 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Edit, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { BulkActionBar } from '@/components/admin/bulk-action-bar';
@@ -28,10 +28,6 @@ export default function LandingPagesIndex({ pages }: Props) {
     const [deleting, setDeleting] = useState(false);
     const [bulkDeleting, setBulkDeleting] = useState(false);
     const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
-    const { props } = usePage<any>();
-    const flash = props.flash as
-        | { success?: string; error?: string }
-        | undefined;
 
     const bulk = useBulkSelect(pages.map((p) => p.id));
 
@@ -80,17 +76,6 @@ export default function LandingPagesIndex({ pages }: Props) {
                         </Button>
                     </Link>
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">
-                        {flash.error}
-                    </div>
-                )}
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     <BulkActionBar

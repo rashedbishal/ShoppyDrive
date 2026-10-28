@@ -37,6 +37,8 @@ class AttributeValueRequest extends FormRequest
         ];
 
         if ($isColor) {
+            $colorHexRules[] = 'regex:/^#[0-9a-fA-F]{6}$/';
+
             // Only enforced for the Color attribute itself: the add/edit form
             // always submits a color_hex value (even for Size, where it's
             // just an unused default), so checking uniqueness unconditionally
@@ -69,6 +71,7 @@ class AttributeValueRequest extends FormRequest
     {
         return [
             'value.unique' => 'This value already exists.',
+            'color_hex.regex' => 'The color code must be a hex value like #C8102E.',
             'color_hex.unique' => 'This color code is already used by another color.',
         ];
     }

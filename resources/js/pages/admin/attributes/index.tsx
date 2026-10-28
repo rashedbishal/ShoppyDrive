@@ -1,4 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import {
     Check,
     Edit,
@@ -15,7 +17,11 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { Modal } from '@/components/ui/modal';
+import {
+    dialogItem,
+    dialogOverlayMotion,
+    dialogPanel,
+} from '@/lib/dialog-motion';
 import { cn } from '@/lib/utils';
 import { maxLength, required, validate } from '@/lib/validate';
 
@@ -36,12 +42,47 @@ type Attribute = {
 
 type Props = { attributes: Attribute[] };
 
+/** Common apparel colors, grouped by hue family so the palette reads in order. */
+const COLOR_PRESETS = [
+    { name: 'Black', hex: '#111111' },
+    { name: 'Charcoal', hex: '#36454f' },
+    { name: 'Gray', hex: '#9ca3af' },
+    { name: 'Silver', hex: '#c0c0c0' },
+    { name: 'White', hex: '#ffffff' },
+    { name: 'Off-White', hex: '#faf9f6' },
+    { name: 'Cream', hex: '#fffdd0' },
+    { name: 'Beige', hex: '#e1c699' },
+    { name: 'Khaki', hex: '#c3b091' },
+    { name: 'Brown', hex: '#78350f' },
+    { name: 'Maroon', hex: '#800000' },
+    { name: 'Red', hex: '#c8102e' },
+    { name: 'Coral', hex: '#ff7f50' },
+    { name: 'Peach', hex: '#ffcba4' },
+    { name: 'Baby Pink', hex: '#f4c2c2' },
+    { name: 'Pink', hex: '#db2777' },
+    { name: 'Rust', hex: '#b7410e' },
+    { name: 'Orange', hex: '#ea580c' },
+    { name: 'Mustard', hex: '#e1ad01' },
+    { name: 'Gold', hex: '#d4af37' },
+    { name: 'Yellow', hex: '#facc15' },
+    { name: 'Olive', hex: '#708238' },
+    { name: 'Bottle Green', hex: '#006a4e' },
+    { name: 'Green', hex: '#16a34a' },
+    { name: 'Teal', hex: '#008080' },
+    { name: 'Turquoise', hex: '#40e0d0' },
+    { name: 'Sky Blue', hex: '#87ceeb' },
+    { name: 'Blue', hex: '#2563eb' },
+    { name: 'Navy', hex: '#1f2a44' },
+    { name: 'Lavender', hex: '#b497d6' },
+    { name: 'Purple', hex: '#7c3aed' },
+];
+
 /**
- * Accepts 3- or 6-digit hex (with or without "#"); returns null for
- * anything else rather than guessing, since this only ever feeds a
- * read-only label next to the swatch.
+ * Accepts 3- or 6-digit hex (with or without "#") and returns it as
+ * lowercase "#rrggbb" — the format the native color picker emits and the
+ * server stores — or null for anything else rather than guessing.
  */
-function hexToRgb(hex: string): string | null {
+function normalizeHex(hex: string): string | null {
     const normalized = hex.replace('#', '').trim();
     const full =
         normalized.length === 3
@@ -55,6 +96,17 @@ function hexToRgb(hex: string): string | null {
         return null;
     }
 
+    return `#${full.toLowerCase()}`;
+}
+
+function hexToRgb(hex: string): string | null {
+    const normalized = normalizeHex(hex);
+
+    if (!normalized) {
+        return null;
+    }
+
+    const full = normalized.slice(1);
     const r = parseInt(full.slice(0, 2), 16);
     const g = parseInt(full.slice(2, 4), 16);
     const b = parseInt(full.slice(4, 6), 16);
@@ -137,7 +189,7 @@ function ValueChip({
                 {attributeValue.value}
             </span>
             {isColor && attributeValue.color_hex && (
-                <span className="font-mono text-[10px] text-slate-400">
+                <span className="font-mono text-[10px] text-slate-600">
                     {attributeValue.color_hex.toUpperCase()}
                 </span>
             )}
@@ -145,7 +197,7 @@ function ValueChip({
                 <button
                     type="button"
                     onClick={onEdit}
-                    className="rounded-full p-1 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                    className="rounded-full p-1 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
                     title="Edit"
                 >
                     <Edit className="size-3.5" />
@@ -153,7 +205,7 @@ function ValueChip({
                 <button
                     type="button"
                     onClick={onDelete}
-                    className="rounded-full p-1 text-slate-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                    className="rounded-full p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600"
                     title="Delete"
                 >
                     <Trash2 className="size-3.5" />
@@ -354,6 +406,10 @@ export default function AttributesIndex({ attributes }: Props) {
     const [editingValue, setEditingValue] = useState<AttributeValue | null>(
         null,
     );
+    // What's typed in the hex field; only pushed into form.color_hex once it
+    // parses, so a half-typed value never desyncs the picker or gets saved.
+    const [hexDraft, setHexDraft] = useState('#C8102E');
+    const valueInputRef = useRef<HTMLInputElement>(null);
 
     const form = useForm({
         attribute_id: 0,
@@ -361,6 +417,30 @@ export default function AttributesIndex({ attributes }: Props) {
         color_hex: '#c8102e',
         sort_order: 0,
     });
+
+    const setColorHex = (hex: string) => {
+        form.setData('color_hex', hex);
+        setHexDraft(hex.toUpperCase());
+    };
+
+    /**
+     * Also names the color, but only when the name is blank or still a
+     * preset name — clicking through presets keeps the name in step, while
+     * a name the admin typed themselves is never overwritten.
+     */
+    const applyPreset = (preset: (typeof COLOR_PRESETS)[number]) => {
+        const currentName = form.data.value.trim();
+        const isNameReplaceable =
+            currentName === '' ||
+            COLOR_PRESETS.some((p) => p.name === currentName);
+
+        form.setData((data) => ({
+            ...data,
+            color_hex: preset.hex,
+            value: isNameReplaceable ? preset.name : data.value,
+        }));
+        setHexDraft(preset.hex.toUpperCase());
+    };
 
     const openAdd = (attribute: Attribute) => {
         setFormAttribute(attribute);
@@ -372,6 +452,7 @@ export default function AttributesIndex({ attributes }: Props) {
             color_hex: '#c8102e',
             sort_order: attribute.values.length,
         });
+        setHexDraft('#C8102E');
         setIsFormOpen(true);
     };
 
@@ -385,6 +466,7 @@ export default function AttributesIndex({ attributes }: Props) {
             color_hex: value.color_hex ?? '#c8102e',
             sort_order: value.sort_order,
         });
+        setHexDraft((value.color_hex ?? '#c8102e').toUpperCase());
         setIsFormOpen(true);
     };
 
@@ -483,81 +565,303 @@ export default function AttributesIndex({ attributes }: Props) {
                 </div>
             </div>
 
-            <Modal
-                isOpen={isFormOpen}
-                onClose={closeForm}
-                title={
-                    editingValue
-                        ? `Edit ${formAttribute?.name ?? ''} value`
-                        : `Add ${formAttribute?.name ?? ''} value`
-                }
-                size="sm"
-                footer={
-                    <div className="flex justify-end gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={closeForm}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="button"
-                            onClick={submitForm}
-                            loading={form.processing}
-                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                        >
-                            {editingValue ? 'Save changes' : 'Add value'}
-                        </Button>
-                    </div>
-                }
+            <DialogPrimitive.Root
+                open={isFormOpen}
+                onOpenChange={(open) => !open && closeForm()}
             >
-                <div className="space-y-4">
-                    <div>
-                        <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                            {isColor ? 'Color name' : 'Size label'}
-                        </label>
-                        <input
-                            autoFocus
-                            value={form.data.value}
-                            onChange={(e) =>
-                                form.setData('value', e.target.value)
-                            }
-                            onKeyDown={(e) => e.key === 'Enter' && submitForm()}
-                            placeholder={isColor ? 'e.g. Red' : 'e.g. XL'}
-                            className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
-                        />
-                    </div>
-                    {isColor && (
-                        <div>
-                            <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                                Swatch color
-                            </label>
-                            <div className="flex items-center gap-3">
-                                <input
-                                    type="color"
-                                    value={form.data.color_hex}
-                                    onChange={(e) =>
-                                        form.setData(
-                                            'color_hex',
-                                            e.target.value,
-                                        )
-                                    }
-                                    className="size-10 shrink-0 cursor-pointer rounded-lg border border-slate-200"
-                                />
-                                <div className="rounded-lg border border-slate-200 px-3 py-2 font-mono text-xs text-slate-500">
-                                    {form.data.color_hex.toUpperCase()}
-                                    {hexToRgb(form.data.color_hex) && (
-                                        <span className="ml-1.5 text-slate-400">
-                                            · {hexToRgb(form.data.color_hex)}
-                                        </span>
-                                    )}
+                <AnimatePresence>
+                    {isFormOpen && (
+                        <DialogPrimitive.Portal forceMount>
+                            <MotionConfig reducedMotion="user">
+                                <DialogPrimitive.Overlay asChild forceMount>
+                                    <motion.div
+                                        className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-[3px]"
+                                        {...dialogOverlayMotion}
+                                    />
+                                </DialogPrimitive.Overlay>
+                                <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
+                                    <DialogPrimitive.Content
+                                        asChild
+                                        forceMount
+                                        onOpenAutoFocus={(e) => {
+                                            e.preventDefault();
+                                            valueInputRef.current?.focus();
+                                        }}
+                                    >
+                                        <motion.div
+                                            variants={dialogPanel}
+                                            initial="hidden"
+                                            animate="visible"
+                                            exit="exit"
+                                            className="pointer-events-auto w-full max-w-[22rem] overflow-hidden rounded-2xl bg-white shadow-[0_24px_64px_-16px_rgba(15,23,42,0.35)] ring-1 ring-slate-900/5"
+                                        >
+                                            <motion.div
+                                                variants={dialogItem}
+                                                className="flex items-center gap-3 px-5 pt-5"
+                                            >
+                                                {isColor ? (
+                                                    <motion.span
+                                                        className="size-10 shrink-0 rounded-xl shadow-inner ring-1 ring-slate-900/10"
+                                                        initial={false}
+                                                        animate={{
+                                                            backgroundColor:
+                                                                form.data
+                                                                    .color_hex,
+                                                        }}
+                                                        transition={{
+                                                            duration: 0.25,
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#c8102e]/10 text-[#c8102e]">
+                                                        <Ruler className="size-5" />
+                                                    </span>
+                                                )}
+                                                <div className="min-w-0 flex-1">
+                                                    <DialogPrimitive.Title className="text-[15px] leading-tight font-semibold text-slate-900">
+                                                        {editingValue
+                                                            ? 'Edit'
+                                                            : 'Add'}{' '}
+                                                        {isColor
+                                                            ? 'color'
+                                                            : 'size'}
+                                                    </DialogPrimitive.Title>
+                                                    <DialogPrimitive.Description className="mt-0.5 truncate text-xs text-slate-500">
+                                                        {isColor
+                                                            ? 'Shown as a swatch on product pages.'
+                                                            : 'Shown as a size option on product pages.'}
+                                                    </DialogPrimitive.Description>
+                                                </div>
+                                                <DialogPrimitive.Close
+                                                    className="flex size-8 shrink-0 items-center justify-center self-start rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-[#c8102e] focus-visible:outline-none"
+                                                    aria-label="Close"
+                                                >
+                                                    <X className="size-4" />
+                                                </DialogPrimitive.Close>
+                                            </motion.div>
+
+                                            <div className="space-y-3.5 px-5 pt-4 pb-5">
+                                                <motion.div
+                                                    variants={dialogItem}
+                                                >
+                                                    <label
+                                                        htmlFor="attribute-value-name"
+                                                        className="mb-1.5 block text-[11px] font-semibold tracking-wider text-slate-500 uppercase"
+                                                    >
+                                                        {isColor
+                                                            ? 'Color name'
+                                                            : 'Size label'}
+                                                    </label>
+                                                    <input
+                                                        id="attribute-value-name"
+                                                        ref={valueInputRef}
+                                                        value={form.data.value}
+                                                        onChange={(e) =>
+                                                            form.setData(
+                                                                'value',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        onKeyDown={(e) =>
+                                                            e.key === 'Enter' &&
+                                                            submitForm()
+                                                        }
+                                                        placeholder={
+                                                            isColor
+                                                                ? 'e.g. Red'
+                                                                : 'e.g. XL'
+                                                        }
+                                                        className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus:border-[#c8102e] focus:bg-white focus:ring-2 focus:ring-[#c8102e]/15 focus:outline-none"
+                                                    />
+                                                </motion.div>
+
+                                                {isColor && (
+                                                    <motion.div
+                                                        variants={dialogItem}
+                                                    >
+                                                        <label
+                                                            htmlFor="attribute-value-hex"
+                                                            className="mb-1.5 block text-[11px] font-semibold tracking-wider text-slate-500 uppercase"
+                                                        >
+                                                            Color
+                                                        </label>
+                                                        <div
+                                                            className={cn(
+                                                                'flex h-9 items-center gap-2 rounded-lg border bg-slate-50 pr-3 pl-1 transition-colors focus-within:bg-white focus-within:ring-2',
+                                                                normalizeHex(
+                                                                    hexDraft,
+                                                                )
+                                                                    ? 'border-slate-200 focus-within:border-[#c8102e] focus-within:ring-[#c8102e]/15'
+                                                                    : 'border-red-400 focus-within:border-red-500 focus-within:ring-red-500/15',
+                                                            )}
+                                                        >
+                                                            <label
+                                                                className="relative size-7 shrink-0 cursor-pointer overflow-hidden rounded-md shadow-inner ring-1 ring-slate-900/10"
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        form
+                                                                            .data
+                                                                            .color_hex,
+                                                                }}
+                                                                title="Open color picker"
+                                                            >
+                                                                <input
+                                                                    type="color"
+                                                                    value={
+                                                                        form
+                                                                            .data
+                                                                            .color_hex
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        setColorHex(
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        )
+                                                                    }
+                                                                    aria-label="Open color picker"
+                                                                    className="absolute inset-0 size-full cursor-pointer opacity-0"
+                                                                />
+                                                            </label>
+                                                            <input
+                                                                id="attribute-value-hex"
+                                                                value={hexDraft}
+                                                                onChange={(
+                                                                    e,
+                                                                ) => {
+                                                                    setHexDraft(
+                                                                        e.target
+                                                                            .value,
+                                                                    );
+                                                                    const parsed =
+                                                                        normalizeHex(
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        );
+
+                                                                    if (
+                                                                        parsed
+                                                                    ) {
+                                                                        form.setData(
+                                                                            'color_hex',
+                                                                            parsed,
+                                                                        );
+                                                                    }
+                                                                }}
+                                                                onBlur={() =>
+                                                                    setHexDraft(
+                                                                        form.data.color_hex.toUpperCase(),
+                                                                    )
+                                                                }
+                                                                onKeyDown={(
+                                                                    e,
+                                                                ) =>
+                                                                    e.key ===
+                                                                        'Enter' &&
+                                                                    submitForm()
+                                                                }
+                                                                maxLength={7}
+                                                                spellCheck={
+                                                                    false
+                                                                }
+                                                                placeholder="#C8102E"
+                                                                className="h-full min-w-0 flex-1 bg-transparent font-mono text-sm text-slate-900 uppercase focus:outline-none"
+                                                            />
+                                                            {hexToRgb(
+                                                                form.data
+                                                                    .color_hex,
+                                                            ) && (
+                                                                <span className="shrink-0 font-mono text-[11px] text-slate-500">
+                                                                    {hexToRgb(
+                                                                        form
+                                                                            .data
+                                                                            .color_hex,
+                                                                    )?.replace(
+                                                                        /^rgb\((.*)\)$/,
+                                                                        '$1',
+                                                                    )}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="mt-2.5 flex flex-wrap gap-1.5">
+                                                            {COLOR_PRESETS.map(
+                                                                (preset) => (
+                                                                    <motion.button
+                                                                        key={
+                                                                            preset.hex
+                                                                        }
+                                                                        type="button"
+                                                                        title={`${preset.name} (${preset.hex.toUpperCase()})`}
+                                                                        aria-label={`Use ${preset.name}`}
+                                                                        onClick={() =>
+                                                                            applyPreset(
+                                                                                preset,
+                                                                            )
+                                                                        }
+                                                                        whileHover={{
+                                                                            scale: 1.15,
+                                                                        }}
+                                                                        whileTap={{
+                                                                            scale: 0.9,
+                                                                        }}
+                                                                        className={cn(
+                                                                            'size-5 rounded-full ring-1 ring-slate-900/10 transition-shadow',
+                                                                            form
+                                                                                .data
+                                                                                .color_hex ===
+                                                                                preset.hex &&
+                                                                                'ring-2 ring-slate-900 ring-offset-2',
+                                                                        )}
+                                                                        style={{
+                                                                            backgroundColor:
+                                                                                preset.hex,
+                                                                        }}
+                                                                    />
+                                                                ),
+                                                            )}
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </div>
+
+                                            <motion.div
+                                                variants={dialogItem}
+                                                className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-3"
+                                            >
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={closeForm}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    onClick={submitForm}
+                                                    loading={form.processing}
+                                                    loadingText="Saving…"
+                                                    className="bg-[#c8102e] text-white shadow-sm shadow-[#c8102e]/25 hover:bg-[#a50d25]"
+                                                >
+                                                    {editingValue
+                                                        ? 'Save changes'
+                                                        : isColor
+                                                          ? 'Add color'
+                                                          : 'Add size'}
+                                                </Button>
+                                            </motion.div>
+                                        </motion.div>
+                                    </DialogPrimitive.Content>
                                 </div>
-                            </div>
-                        </div>
+                            </MotionConfig>
+                        </DialogPrimitive.Portal>
                     )}
-                </div>
-            </Modal>
+                </AnimatePresence>
+            </DialogPrimitive.Root>
 
             <ConfirmDialog
                 open={deleteTargetId !== null}

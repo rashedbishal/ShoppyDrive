@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\Admin;
 use App\Models\Cart;
 use App\Models\FlashSale;
 use App\Models\FlashSaleItem;
@@ -210,7 +209,7 @@ test('the flash-sale cap limits the discount, not the product: it is tracked ind
 });
 
 test('admin cancelling an order restores the stock it consumed', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => bcrypt('password')]);
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
 
@@ -332,7 +331,7 @@ test('confirming a mobile-banking payment decrements stock and rejects if stock 
 });
 
 test('marking an order refunded restores its stock', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-refund@example.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-refund@example.com', 'password' => bcrypt('password')]);
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
 

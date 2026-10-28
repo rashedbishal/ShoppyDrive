@@ -120,6 +120,8 @@ export default function BrandCreate() {
                                     onChange={(file) => setData('logo', file)}
                                     error={errors.logo}
                                     previewClassName="h-32 object-contain"
+                                    maxSizeMb={1}
+                                    hint="Transparent PNG or WebP. Square logos: 500×500 px. Wide or tall logos: 500 px on the long side (e.g. 500×250). Crop away empty space around the logo."
                                 />
                             </Field>
                             <Field

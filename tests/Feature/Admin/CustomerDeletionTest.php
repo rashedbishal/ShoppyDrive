@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Admin;
 use App\Models\Order;
 use App\Models\SocialAccount;
 use App\Models\User;
@@ -17,7 +16,7 @@ beforeEach(function () {
         'password' => bcrypt('mother-secret'),
     ]);
 
-    $this->admin = Admin::create([
+    $this->admin = createAdmin([
         'name' => 'Staff Admin',
         'email' => 'staff@example.com',
         'password' => bcrypt('password'),

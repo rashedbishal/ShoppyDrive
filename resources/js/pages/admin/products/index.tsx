@@ -1,4 +1,4 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Baby, Edit, Plus, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
@@ -51,8 +51,6 @@ export default function ProductsIndex({
         null,
     );
     const [updatingCryBaby, setUpdatingCryBaby] = useState(false);
-    const { props } = usePage<any>();
-    const flash = props.flash as { success?: string } | undefined;
 
     const applyFilters = (overrides: Record<string, string>) => {
         if (
@@ -139,12 +137,6 @@ export default function ProductsIndex({
                         </Link>
                     </Button>
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
 
                 <Card className="flex flex-col gap-3 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-start gap-3">

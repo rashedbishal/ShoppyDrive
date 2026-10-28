@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Support\AdminSections;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,7 @@ class AdminController extends Controller
 {
     public function index(): Response
     {
-        $admins = Admin::orderByDesc('is_mother')->orderBy('created_at')->get(['id', 'name', 'email', 'is_mother', 'can_view_audit_trail', 'created_at']);
+        $admins = Admin::orderByDesc('is_mother')->orderBy('created_at')->get(['id', 'name', 'email', 'is_mother', 'created_at']);
 
         return Inertia::render('admin/admins/index', [
             'admins' => $admins,
@@ -29,7 +30,9 @@ class AdminController extends Controller
     {
         $this->authorizeMotherOnly('create new admin accounts');
 
-        return Inertia::render('admin/admins/create');
+        return Inertia::render('admin/admins/create', [
+            'sectionCatalog' => AdminSections::grouped(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -40,18 +43,15 @@ class AdminController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:admins,email'],
             'password' => ['required', 'confirmed', Password::min(8)],
+            'permissions' => ['nullable', 'array'],
         ]);
 
-        $admin = Admin::create([
+        Admin::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'permissions' => AdminSections::sanitize($request->input('permissions', [])),
         ]);
-
-        // can_view_audit_trail is deliberately not $fillable (see Admin
-        // model) — set explicitly here, which only ever runs after
-        // authorizeMotherOnly() above, so only the mother admin can grant it.
-        $admin->forceFill(['can_view_audit_trail' => $request->boolean('can_view_audit_trail')])->save();
 
         return redirect()->route('admin.admins.index')->with('success', 'Admin account created successfully.');
     }
@@ -61,7 +61,8 @@ class AdminController extends Controller
         $this->authorizeManageTarget($admin);
 
         return Inertia::render('admin/admins/edit', [
-            'adminUser' => $admin->only(['id', 'name', 'email', 'is_mother', 'can_view_audit_trail']),
+            'adminUser' => $admin->only(['id', 'name', 'email', 'is_mother', 'permissions']),
+            'sectionCatalog' => AdminSections::grouped(),
         ]);
     }
 
@@ -73,6 +74,7 @@ class AdminController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:admins,email,'.$admin->id],
             'password' => ['nullable', 'confirmed', Password::min(8)],
+            'permissions' => ['nullable', 'array'],
         ]);
 
         $data = [
@@ -84,16 +86,17 @@ class AdminController extends Controller
             $data['password'] = Hash::make($request->password);
         }
 
-        $admin->update($data);
-
-        // Only the mother admin can grant/revoke this (never self-editable
-        // — see Admin model's can_view_audit_trail note), so a non-mother
-        // editing their own account can't send this field through at all.
+        // Only the mother admin may change section permissions, and never
+        // the mother's own (which has no meaning — she always has full
+        // access) — so a non-mother editing their own account can never
+        // grant themselves access this way, mirroring is_mother's mass
+        // assignment protection.
         $currentAdmin = Auth::guard('admin')->user();
-
-        if ($currentAdmin->is_mother) {
-            $admin->forceFill(['can_view_audit_trail' => $request->boolean('can_view_audit_trail')])->save();
+        if ($currentAdmin->is_mother && ! $admin->is_mother) {
+            $data['permissions'] = AdminSections::sanitize($request->input('permissions', []));
         }
+
+        $admin->update($data);
 
         return redirect()->route('admin.admins.index')->with('success', 'Admin account updated successfully.');
     }

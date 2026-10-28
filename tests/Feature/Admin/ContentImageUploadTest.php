@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Admin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -10,7 +9,7 @@ use function Pest\Laravel\actingAs;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->admin = Admin::create([
+    $this->admin = createAdmin([
         'name' => 'Admin User',
         'email' => 'admin@example.com',
         'password' => bcrypt('password'),

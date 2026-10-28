@@ -69,7 +69,7 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
         ]);
     })->name('account.orders.show');
 
-    Route::post('/orders/{order:order_number}/return', [ReturnRequestController::class, 'store'])->name('account.orders.return.store');
+    Route::post('/orders/{order:order_number}/return', [ReturnRequestController::class, 'store'])->middleware('throttle:account-action')->name('account.orders.return.store');
 
     Route::get('/orders/{order:order_number}/invoice', function (Order $order) {
         if ($order->user_id !== auth()->id()) {
@@ -92,19 +92,19 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
         $pdf = Pdf::loadView('invoices.order', ['order' => $order]);
 
         return $pdf->download("invoice-{$order->order_number}.pdf");
-    })->name('account.orders.invoice');
+    })->middleware('throttle:invoice-download')->name('account.orders.invoice');
     Route::get('/referral', [ReferralController::class, 'index'])->name('account.referral');
-    Route::post('/referral/daily-login', [ReferralController::class, 'claimDailyLogin'])->name('account.referral.daily-login');
+    Route::post('/referral/daily-login', [ReferralController::class, 'claimDailyLogin'])->middleware('throttle:account-action')->name('account.referral.daily-login');
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('account.wishlist');
     Route::get('/addresses', [AddressController::class, 'index'])->name('account.addresses');
-    Route::post('/addresses', [AddressController::class, 'store'])->name('account.addresses.store');
-    Route::put('/addresses/{address}', [AddressController::class, 'update'])->name('account.addresses.update');
-    Route::delete('/addresses/{address}', [AddressController::class, 'destroy'])->name('account.addresses.destroy');
-    Route::patch('/addresses/{address}/default', [AddressController::class, 'setDefault'])->name('account.addresses.default');
+    Route::post('/addresses', [AddressController::class, 'store'])->middleware('throttle:account-action')->name('account.addresses.store');
+    Route::put('/addresses/{address}', [AddressController::class, 'update'])->middleware('throttle:account-action')->name('account.addresses.update');
+    Route::delete('/addresses/{address}', [AddressController::class, 'destroy'])->middleware('throttle:account-action')->name('account.addresses.destroy');
+    Route::patch('/addresses/{address}/default', [AddressController::class, 'setDefault'])->middleware('throttle:account-action')->name('account.addresses.default');
     Route::get('/profile', fn () => inertia('account/Profile'))->name('account.profile');
     Route::get('/password', fn () => inertia('account/ChangePassword'))->name('account.password');
 
-    Route::post('/profile', fn () => back())->name('account.profile.update');
+    Route::post('/profile', fn () => back())->middleware('throttle:account-action')->name('account.profile.update');
 
     Route::patch('/orders/{order:order_number}/cancel', function (Order $order) {
         if ($order->user_id !== auth()->id()) {
@@ -124,13 +124,13 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
         ]);
 
         return back()->with('success', 'Your order has been cancelled.');
-    })->name('account.orders.cancel');
+    })->middleware('throttle:account-action')->name('account.orders.cancel');
 });
 
 // Wishlist mutations — only auth required, no email verification needed
 Route::middleware(['auth'])->prefix('account')->group(function () {
-    Route::post('/wishlist/sync', [WishlistController::class, 'sync'])->name('wishlist.sync');
-    Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
-    Route::post('/wishlist/clear', [WishlistController::class, 'clear'])->name('wishlist.clear');
-    Route::post('/wishlist/add-all-to-cart', [WishlistController::class, 'addAllToCart'])->name('wishlist.add-all-to-cart');
+    Route::post('/wishlist/sync', [WishlistController::class, 'sync'])->middleware('throttle:account-action')->name('wishlist.sync');
+    Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->middleware('throttle:account-action')->name('wishlist.toggle');
+    Route::post('/wishlist/clear', [WishlistController::class, 'clear'])->middleware('throttle:account-action')->name('wishlist.clear');
+    Route::post('/wishlist/add-all-to-cart', [WishlistController::class, 'addAllToCart'])->middleware('throttle:account-action')->name('wishlist.add-all-to-cart');
 });

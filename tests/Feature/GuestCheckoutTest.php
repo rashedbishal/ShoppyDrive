@@ -163,7 +163,7 @@ test('the mobile banking payment page is reachable by a guest when guest checkou
 });
 
 test('admin can toggle guest checkout on and the value round-trips as a real boolean', function () {
-    $admin = Admin::create([
+    $admin = createAdmin([
         'name' => 'Admin User',
         'email' => 'admin@example.com',
         'password' => bcrypt('password'),

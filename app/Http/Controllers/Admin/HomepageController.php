@@ -9,6 +9,9 @@ use App\Http\Requests\Admin\HomepageSectionRequest;
 use App\Models\Brand;
 use App\Models\HomepageSetting;
 use App\Models\Product;
+use App\Support\CatalogFilterCache;
+use App\Support\LayoutCache;
+use App\Support\SearchSuggestionCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -84,6 +87,10 @@ class HomepageController extends Controller
             if (! empty($productIds)) {
                 Product::whereIn('id', $productIds)->update(['is_featured' => true]);
             }
+
+            // Bulk update() fires no model events; featured products rank
+            // first in search suggestions.
+            SearchSuggestionCache::flush();
         }
 
         if ($setting->section_key === 'new_arrivals' || $setting->section_key === 'best_sellers') {
@@ -116,6 +123,11 @@ class HomepageController extends Controller
             if (! empty($brandIds)) {
                 Brand::whereIn('id', $brandIds)->update(['is_active' => true]);
             }
+
+            // Bulk update() fires no model events; only active brands are
+            // suggested in search or offered as listing filters.
+            SearchSuggestionCache::flush();
+            CatalogFilterCache::flush();
         }
 
         return redirect()->route('admin.homepage.index')->with('success', 'Homepage section updated.');
@@ -131,6 +143,9 @@ class HomepageController extends Controller
         foreach ($ids as $index => $id) {
             HomepageSetting::whereKey($id)->update(['sort_order' => $index]);
         }
+
+        // Bulk update() fires no model events, so clear the cache here.
+        LayoutCache::forget(...HomepageSetting::LAYOUT_CACHE_KEYS);
 
         return redirect()->route('admin.homepage.index');
     }

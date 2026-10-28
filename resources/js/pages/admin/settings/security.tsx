@@ -1,0 +1,546 @@
+import { Head, useForm } from '@inertiajs/react';
+import { Info, Lock, ShieldCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+type LimitField =
+    | 'orders_per_network_times'
+    | 'orders_per_network_minutes'
+    | 'orders_per_phone_times'
+    | 'orders_per_phone_minutes'
+    | 'payment_per_order_times'
+    | 'payment_per_order_minutes'
+    | 'payment_per_network_times'
+    | 'payment_per_network_minutes'
+    | 'signups_per_network_times'
+    | 'signups_per_network_minutes'
+    | 'password_reset_per_network_times'
+    | 'password_reset_per_network_minutes'
+    | 'password_reset_per_email_times'
+    | 'password_reset_per_email_minutes'
+    | 'coupon_checks_times'
+    | 'coupon_checks_minutes'
+    | 'sign_in_per_network_times'
+    | 'sign_in_per_network_minutes'
+    | 'contact_messages_times'
+    | 'contact_messages_minutes'
+    | 'newsletter_signups_times'
+    | 'newsletter_signups_minutes'
+    | 'newsletter_checks_times'
+    | 'newsletter_checks_minutes'
+    | 'checkout_tracking_times'
+    | 'checkout_tracking_minutes'
+    | 'order_tracking_times'
+    | 'order_tracking_minutes'
+    | 'search_suggestions_times'
+    | 'search_suggestions_minutes'
+    | 'product_browsing_times'
+    | 'product_browsing_minutes'
+    | 'invoice_downloads_times'
+    | 'invoice_downloads_minutes'
+    | 'reviews_times'
+    | 'reviews_minutes'
+    | 'password_checks_times'
+    | 'password_checks_minutes'
+    | 'account_actions_times'
+    | 'account_actions_minutes';
+
+type Limits = Record<LimitField, number>;
+
+type Props = {
+    limits: Limits;
+    bounds: Record<LimitField, { default: number; min: number; max: number }>;
+    canEdit: boolean;
+    visitorIp: string;
+};
+
+type LimitRule = {
+    label: string;
+    noun: string;
+    times: LimitField;
+    minutes: LimitField;
+};
+
+type LimitSection = {
+    title: string;
+    why: string;
+    rules: LimitRule[];
+};
+
+const SECTIONS: LimitSection[] = [
+    {
+        title: 'Placing orders',
+        why: 'Stops fake orders that use up your stock and send order emails to strangers. Covers the normal checkout and landing pages.',
+        rules: [
+            {
+                label: 'From the same device or internet connection',
+                noun: 'orders',
+                times: 'orders_per_network_times',
+                minutes: 'orders_per_network_minutes',
+            },
+            {
+                label: 'Using the same phone number',
+                noun: 'orders',
+                times: 'orders_per_phone_times',
+                minutes: 'orders_per_phone_minutes',
+            },
+        ],
+    },
+    {
+        title: 'bKash / Nagad payment checks',
+        why: "Stops people from guessing transaction IDs to claim someone else's payment.",
+        rules: [
+            {
+                label: 'For the same order',
+                noun: 'tries',
+                times: 'payment_per_order_times',
+                minutes: 'payment_per_order_minutes',
+            },
+            {
+                label: 'From the same device or internet connection',
+                noun: 'tries',
+                times: 'payment_per_network_times',
+                minutes: 'payment_per_network_minutes',
+            },
+        ],
+    },
+    {
+        title: 'New customer accounts',
+        why: 'Stops mass fake sign-ups. Each sign-up also sends a verification email, so this protects your email reputation too.',
+        rules: [
+            {
+                label: 'From the same internet connection',
+                noun: 'new accounts',
+                times: 'signups_per_network_times',
+                minutes: 'signups_per_network_minutes',
+            },
+        ],
+    },
+    {
+        title: 'Password reset emails',
+        why: "Stops someone using your site to flood people's inboxes with reset emails.",
+        rules: [
+            {
+                label: 'From the same internet connection',
+                noun: 'requests',
+                times: 'password_reset_per_network_times',
+                minutes: 'password_reset_per_network_minutes',
+            },
+            {
+                label: 'For the same email address',
+                noun: 'requests',
+                times: 'password_reset_per_email_times',
+                minutes: 'password_reset_per_email_minutes',
+            },
+        ],
+    },
+    {
+        title: 'Coupon codes',
+        why: 'Stops people from guessing coupon codes by trying lots of them.',
+        rules: [
+            {
+                label: 'For the same shopper',
+                noun: 'tries',
+                times: 'coupon_checks_times',
+                minutes: 'coupon_checks_minutes',
+            },
+        ],
+    },
+    {
+        title: 'Customer sign-in',
+        why: 'Stops one connection from trying passwords on many different accounts. Each account also has its own fixed limit of 5 tries per minute.',
+        rules: [
+            {
+                label: 'From the same internet connection',
+                noun: 'tries',
+                times: 'sign_in_per_network_times',
+                minutes: 'sign_in_per_network_minutes',
+            },
+        ],
+    },
+];
+
+const EXTRA_SECTIONS: LimitSection[] = [
+    {
+        title: 'Contact form',
+        why: 'Stops spam messages from flooding your contact inbox.',
+        rules: [
+            {
+                label: 'For the same shopper',
+                noun: 'messages',
+                times: 'contact_messages_times',
+                minutes: 'contact_messages_minutes',
+            },
+        ],
+    },
+    {
+        title: 'Newsletter',
+        why: 'Stops spam sign-ups, and stops someone from removing lots of other people from your list.',
+        rules: [
+            {
+                label: 'Joining or leaving, for the same shopper',
+                noun: 'requests',
+                times: 'newsletter_signups_times',
+                minutes: 'newsletter_signups_minutes',
+            },
+            {
+                label: 'Checking if an email is already subscribed (happens automatically while typing)',
+                noun: 'checks',
+                times: 'newsletter_checks_times',
+                minutes: 'newsletter_checks_minutes',
+            },
+        ],
+    },
+    {
+        title: 'Unfinished checkout saving',
+        why: 'While customers fill in checkout, the site quietly saves their details so you can follow up on orders they never finished. This stops bots from filling that list with junk.',
+        rules: [
+            {
+                label: 'For the same shopper',
+                noun: 'saves',
+                times: 'checkout_tracking_times',
+                minutes: 'checkout_tracking_minutes',
+            },
+        ],
+    },
+    {
+        title: 'Order tracking',
+        why: "Stops people from guessing the phone number or email of someone else's order to see its details.",
+        rules: [
+            {
+                label: 'For the same shopper',
+                noun: 'lookups',
+                times: 'order_tracking_times',
+                minutes: 'order_tracking_minutes',
+            },
+        ],
+    },
+    {
+        title: 'Search and browsing',
+        why: 'Stops copying tools from overloading your site by loading huge numbers of pages very fast.',
+        rules: [
+            {
+                label: 'Search suggestions while typing',
+                noun: 'suggestions',
+                times: 'search_suggestions_times',
+                minutes: 'search_suggestions_minutes',
+            },
+            {
+                label: 'Product list, category and search result pages',
+                noun: 'pages',
+                times: 'product_browsing_times',
+                minutes: 'product_browsing_minutes',
+            },
+        ],
+    },
+    {
+        title: 'Invoice downloads',
+        why: 'Making a PDF invoice is heavy work for the server. This stops repeated downloads from slowing your site down.',
+        rules: [
+            {
+                label: 'For the same shopper',
+                noun: 'downloads',
+                times: 'invoice_downloads_times',
+                minutes: 'invoice_downloads_minutes',
+            },
+        ],
+    },
+    {
+        title: 'Product reviews',
+        why: 'Stops one customer account from posting lots of reviews in a short time.',
+        rules: [
+            {
+                label: 'For the same customer',
+                noun: 'reviews',
+                times: 'reviews_times',
+                minutes: 'reviews_minutes',
+            },
+        ],
+    },
+    {
+        title: 'Password confirmation',
+        why: 'Before sensitive account changes, customers re-enter their password. This stops someone at an unattended, signed-in computer from guessing it.',
+        rules: [
+            {
+                label: 'For the same customer',
+                noun: 'tries',
+                times: 'password_checks_times',
+                minutes: 'password_checks_minutes',
+            },
+        ],
+    },
+    {
+        title: 'Account actions',
+        why: "A safety net for everything customers do inside their account — saving addresses, wishlist, editing their profile, cancelling or returning orders. Only stops runaway scripts; a real customer won't come close.",
+        rules: [
+            {
+                label: 'For the same customer',
+                noun: 'actions',
+                times: 'account_actions_times',
+                minutes: 'account_actions_minutes',
+            },
+        ],
+    },
+];
+
+function SectionCards({
+    sections,
+    data,
+    bounds,
+    errors,
+    disabled,
+    setValue,
+}: {
+    sections: LimitSection[];
+    data: Limits;
+    bounds: Props['bounds'];
+    errors: Partial<Record<LimitField, string>>;
+    disabled: boolean;
+    setValue: (field: LimitField, value: number) => void;
+}) {
+    return sections.map((section) => (
+        <Card key={section.title} className="shadow-sm">
+            <CardHeader className="border-b border-slate-100 pb-4">
+                <CardTitle className="text-sm font-semibold text-slate-900">
+                    {section.title}
+                </CardTitle>
+                <p className="text-xs text-slate-600">{section.why}</p>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-4">
+                {section.rules.map((rule) => (
+                    <RuleRow
+                        key={rule.times}
+                        rule={rule}
+                        data={data}
+                        bounds={bounds}
+                        errors={errors}
+                        disabled={disabled}
+                        setValue={setValue}
+                    />
+                ))}
+            </CardContent>
+        </Card>
+    ));
+}
+
+const numberInputClass =
+    'h-9 w-20 rounded-lg border bg-white px-2.5 text-center text-sm font-semibold text-slate-900 focus:ring-2 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500';
+
+function NumberBox({
+    field,
+    value,
+    bounds,
+    error,
+    disabled,
+    onChange,
+}: {
+    field: LimitField;
+    value: number;
+    bounds: { min: number; max: number };
+    error?: string;
+    disabled: boolean;
+    onChange: (value: number) => void;
+}) {
+    return (
+        <input
+            id={field}
+            type="number"
+            inputMode="numeric"
+            min={bounds.min}
+            max={bounds.max}
+            step={1}
+            value={Number.isNaN(value) ? '' : value}
+            disabled={disabled}
+            onChange={(e) => onChange(e.target.valueAsNumber)}
+            title={`Between ${bounds.min} and ${bounds.max}`}
+            className={`${numberInputClass} ${
+                error
+                    ? 'border-red-400 focus:ring-red-500/20'
+                    : 'border-slate-300 focus:border-[#c8102e] focus:ring-[#c8102e]/15'
+            }`}
+        />
+    );
+}
+
+function RuleRow({
+    rule,
+    data,
+    bounds,
+    errors,
+    disabled,
+    setValue,
+}: {
+    rule: LimitRule;
+    data: Limits;
+    bounds: Props['bounds'];
+    errors: Partial<Record<LimitField, string>>;
+    disabled: boolean;
+    setValue: (field: LimitField, value: number) => void;
+}) {
+    const fieldErrors = [errors[rule.times], errors[rule.minutes]].filter(
+        Boolean,
+    );
+
+    return (
+        <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5">
+            <p className="mb-2.5 text-sm font-semibold text-slate-800">
+                {rule.label}
+            </p>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                <span>Allow</span>
+                <NumberBox
+                    field={rule.times}
+                    value={data[rule.times]}
+                    bounds={bounds[rule.times]}
+                    error={errors[rule.times]}
+                    disabled={disabled}
+                    onChange={(value) => setValue(rule.times, value)}
+                />
+                <span>{rule.noun} every</span>
+                <NumberBox
+                    field={rule.minutes}
+                    value={data[rule.minutes]}
+                    bounds={bounds[rule.minutes]}
+                    error={errors[rule.minutes]}
+                    disabled={disabled}
+                    onChange={(value) => setValue(rule.minutes, value)}
+                />
+                <span>minutes</span>
+            </div>
+            <p className="mt-2 text-xs text-slate-600">
+                Allowed: {bounds[rule.times].min}–{bounds[rule.times].max}{' '}
+                {rule.noun}, over {bounds[rule.minutes].min}–
+                {bounds[rule.minutes].max} minutes. Recommended:{' '}
+                {bounds[rule.times].default} every{' '}
+                {bounds[rule.minutes].default} minutes.
+            </p>
+            {fieldErrors.map((message) => (
+                <p
+                    key={message}
+                    className="mt-1 text-xs font-medium text-red-600"
+                >
+                    {message}
+                </p>
+            ))}
+        </div>
+    );
+}
+
+export default function SecuritySettings({
+    limits,
+    bounds,
+    canEdit,
+    visitorIp,
+}: Props) {
+    const { data, setData, put, processing, errors } = useForm<Limits>(limits);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        put(route('admin.settings.security.update'), { preserveScroll: true });
+    };
+
+    const resetToRecommended = () => {
+        setData(
+            Object.fromEntries(
+                Object.entries(bounds).map(([field, b]) => [field, b.default]),
+            ) as Limits,
+        );
+    };
+
+    return (
+        <>
+            <Head title="Security — Admin" />
+            <div className="max-w-2xl space-y-5">
+                <div className="flex items-start gap-3">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#c8102e]/10 text-[#c8102e]">
+                        <ShieldCheck className="size-5" />
+                    </span>
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-900">
+                            Security
+                        </h1>
+                        <p className="text-sm text-slate-600">
+                            Protect your shop from bots by limiting how often
+                            the same person can repeat an action. Real customers
+                            almost never reach these limits. If they do, they
+                            simply see a message asking them to wait a little.
+                        </p>
+                    </div>
+                </div>
+
+                {!canEdit && (
+                    <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        <Lock className="mt-0.5 size-4 shrink-0" />
+                        Only the main (mother) admin can change these settings.
+                        You can view them here.
+                    </div>
+                )}
+
+                <div className="flex items-start gap-2.5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+                    <Info className="mt-0.5 size-4 shrink-0" />
+                    <p>
+                        Your internet address, as this site sees it:{' '}
+                        <span className="font-mono font-semibold">
+                            {visitorIp}
+                        </span>
+                        . If every visitor shows the same address (for example
+                        your hosting company's), tell your developer before
+                        lowering these numbers — otherwise real customers could
+                        end up sharing one limit.
+                    </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <h2 className="pt-1 text-xs font-bold tracking-wider text-slate-700 uppercase">
+                        Most important
+                    </h2>
+                    <SectionCards
+                        sections={SECTIONS}
+                        data={data}
+                        bounds={bounds}
+                        errors={errors}
+                        disabled={!canEdit}
+                        setValue={(field, value) => setData(field, value)}
+                    />
+
+                    <h2 className="pt-3 text-xs font-bold tracking-wider text-slate-700 uppercase">
+                        Extra protection
+                    </h2>
+                    <SectionCards
+                        sections={EXTRA_SECTIONS}
+                        data={data}
+                        bounds={bounds}
+                        errors={errors}
+                        disabled={!canEdit}
+                        setValue={(field, value) => setData(field, value)}
+                    />
+
+                    <p className="text-xs text-slate-600">
+                        Admin sign-in has its own fixed protection that can't be
+                        changed here, so these settings can never make this page
+                        easier to break into.
+                    </p>
+
+                    {canEdit && (
+                        <div className="flex flex-wrap items-center gap-3">
+                            <Button
+                                type="submit"
+                                disabled={processing}
+                                className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                            >
+                                {processing ? 'Saving…' : 'Save'}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={resetToRecommended}
+                            >
+                                Use recommended values
+                            </Button>
+                        </div>
+                    )}
+                </form>
+            </div>
+        </>
+    );
+}

@@ -14,7 +14,7 @@ use function Pest\Laravel\actingAs;
 
 function imageSecurityAdmin(): Admin
 {
-    return Admin::create(['name' => 'Admin', 'email' => 'image-security-'.uniqid().'@example.com', 'password' => bcrypt('x')]);
+    return createAdmin(['name' => 'Admin', 'email' => 'image-security-'.uniqid().'@example.com', 'password' => bcrypt('x')]);
 }
 
 // A real, valid SVG document — the point of these tests is that content
@@ -59,6 +59,56 @@ test('a brand logo upload accepts a valid JPEG', function () {
     $response->assertRedirect(route('admin.brands.index'));
     $brand = Brand::where('slug', 'acme')->firstOrFail();
     expect($brand->logo)->toStartWith('/storage/brands/');
+});
+
+test('creating a brand flashes a success toast instead of a session message', function () {
+    $admin = imageSecurityAdmin();
+    actingAs($admin, 'admin');
+
+    $response = $this->post(route('admin.brands.store'), [
+        'name' => 'Acme', 'slug' => 'acme',
+    ]);
+
+    $response->assertSessionHas('inertia.flash_data.toast', ['type' => 'success', 'message' => 'Brand created.'])
+        ->assertSessionMissing('success');
+});
+
+test('a brand logo upload of exactly 1MB is accepted', function () {
+    $admin = imageSecurityAdmin();
+    actingAs($admin, 'admin');
+
+    $response = $this->post(route('admin.brands.store'), [
+        'name' => 'Acme', 'slug' => 'acme',
+        'logo' => UploadedFile::fake()->image('logo.png')->size(1024),
+    ]);
+
+    $response->assertRedirect(route('admin.brands.index'));
+    expect(Brand::where('slug', 'acme')->exists())->toBeTrue();
+});
+
+test('a brand logo upload larger than 1MB is rejected', function () {
+    $admin = imageSecurityAdmin();
+    actingAs($admin, 'admin');
+
+    $response = $this->post(route('admin.brands.store'), [
+        'name' => 'Acme', 'slug' => 'acme',
+        'logo' => UploadedFile::fake()->image('logo.png')->size(1025),
+    ]);
+
+    $response->assertSessionHasErrors(['logo' => 'The logo must be 1MB or smaller.']);
+    expect(Brand::where('slug', 'acme')->exists())->toBeFalse();
+});
+
+test('editing a brand without a new logo keeps the stored path valid', function () {
+    $admin = imageSecurityAdmin();
+    actingAs($admin, 'admin');
+    $brand = Brand::create(['name' => 'Acme', 'slug' => 'acme', 'logo' => '/storage/brands/'.str_repeat('a', 1100).'.png']);
+
+    $response = $this->put(route('admin.brands.update', $brand), [
+        'name' => 'Acme', 'slug' => 'acme', 'logo' => $brand->logo,
+    ]);
+
+    $response->assertSessionHasNoErrors();
 });
 
 test('a brand logo upload rejects an honest SVG file', function () {

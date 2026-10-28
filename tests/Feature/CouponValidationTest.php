@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Enums\OrderStatus;
-use App\Models\Admin;
 use App\Models\Cart;
 use App\Models\Coupon;
 use App\Models\CouponUse;
@@ -276,7 +275,7 @@ test('a duplicate/retried payment confirmation never consumes usage twice', func
 });
 
 test('cancelling an order releases its coupon usage exactly once', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-coupon@example.com', 'password' => bcrypt('x')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-coupon@example.com', 'password' => bcrypt('x')]);
     $user = User::factory()->create();
     $coupon = Coupon::factory()->create(['type' => 'fixed', 'value' => 10]);
     $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
@@ -298,7 +297,7 @@ test('cancelling an order releases its coupon usage exactly once', function () {
 });
 
 test('an order with no coupon is unaffected by cancellation release logic', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-nocoupon@example.com', 'password' => bcrypt('x')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-nocoupon@example.com', 'password' => bcrypt('x')]);
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
 
@@ -339,7 +338,7 @@ test('a coupon discount stacks correctly on top of an already flash-sale-discoun
 });
 
 test('marking an order refunded (not just cancelled) also releases its coupon usage', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-refund-coupon@example.com', 'password' => bcrypt('x')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-refund-coupon@example.com', 'password' => bcrypt('x')]);
     $user = User::factory()->create();
     $coupon = Coupon::factory()->create(['type' => 'fixed', 'value' => 10]);
     $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);

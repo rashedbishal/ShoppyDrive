@@ -89,7 +89,7 @@ function collectOptions(children: ReactNode): ResolvedOption[] {
 const SCROLL_CLOSE_THRESHOLD_PX = 4;
 
 /** Marks the floating options panel so `CloseOnScroll` can tell its own internal scrolling apart from the page/modal scrolling underneath it. */
-const OPTIONS_PANEL_ATTR = "data-select-options-panel";
+export const OPTIONS_PANEL_ATTR = "data-select-options-panel";
 
 /**
  * Close the open list once any scroll (page, admin content pane, modal…)

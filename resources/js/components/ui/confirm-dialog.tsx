@@ -35,7 +35,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps): React.JSX.Element {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent appearance="premium" className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     {description && (

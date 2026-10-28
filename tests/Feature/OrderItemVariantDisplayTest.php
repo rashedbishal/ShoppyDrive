@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Enums\OrderStatus;
-use App\Models\Admin;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -58,7 +57,7 @@ test('the account order detail page includes the ordered item\'s variant attribu
 });
 
 test('the admin order detail page includes the ordered item\'s variant attributes', function () {
-    $admin = Admin::create([
+    $admin = createAdmin([
         'name' => 'Admin User',
         'email' => 'admin-order-variant@example.com',
         'password' => bcrypt('password'),

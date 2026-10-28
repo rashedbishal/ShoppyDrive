@@ -1,6 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import {
-    Banknote,
     Check,
     ChevronDown,
     ChevronLeft,
@@ -8,22 +7,12 @@ import {
     Filter,
     LayoutGrid,
     List,
-    Package,
     Search,
-    ShieldCheck,
     SlidersHorizontal,
-    Truck,
 } from 'lucide-react';
-import {
-    useEffect,
-    useMemo,
-    useState
-    
-    
-} from 'react';
-import type {FormEvent, ReactNode} from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { route } from 'ziggy-js';
-import { PageHero } from '@/components/shared/PageHero';
 import {
     ProductCard,
     ProductCardSkeleton,
@@ -84,6 +73,8 @@ type ProductListingPageProps = {
     title: string;
     description: string;
     category: Category | null;
+    /** The category's chosen colour (a sub-category uses its parent's); null = theme colour. */
+    bannerColor: string | null;
     categories: ListingCategory[];
     brands: ListingBrand[];
     attributes: ListingAttribute[];
@@ -420,6 +411,7 @@ function ProductListingPage({
     title,
     description,
     category,
+    bannerColor,
     categories,
     brands,
     attributes,
@@ -856,126 +848,73 @@ function ProductListingPage({
             <Head title={title} />
 
             <div className="space-y-6 py-6 lg:py-8">
-                <PageHero
-                    badge={{
-                        icon: SlidersHorizontal,
-                        label: 'Catalog filters',
-                    }}
-                    eyebrow={
-                        filters.banner_id
-                            ? 'Collection'
-                            : category
-                              ? 'Category browse'
-                              : 'All products'
-                    }
-                    title={title}
-                    description={description}
-                    wideAside
-                    media={
-                        category?.image ? (
-                            <div className="flex h-full items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
-                                <img
-                                    src={category.image}
-                                    alt={category.name}
-                                    className="max-h-24 w-full object-contain"
-                                />
+                <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {/* The inline colour overrides the class; if it's missing or not
+                        a colour the browser understands, the theme colour remains. */}
+                    <div
+                        className="relative isolate overflow-hidden rounded-[1.75rem] bg-[var(--color-primary)] px-5 py-10 text-center shadow-[var(--shadow-card)] sm:px-10 sm:py-12"
+                        style={
+                            bannerColor
+                                ? { backgroundColor: bannerColor }
+                                : undefined
+                        }
+                    >
+                        {category?.image ? (
+                            <img
+                                src={category.image}
+                                alt=""
+                                aria-hidden="true"
+                                className="absolute inset-0 -z-20 size-full object-cover"
+                            />
+                        ) : null}
+                        {/* Category-colour overlay: lets the photo show through, while
+                            the dark scrim below keeps white text readable on any
+                            photo and with any category colour (incl. light ones). */}
+                        {category?.image ? (
+                            <span
+                                aria-hidden="true"
+                                className="pointer-events-none absolute inset-0 -z-10 bg-[var(--color-primary)] opacity-75"
+                                style={
+                                    bannerColor
+                                        ? { backgroundColor: bannerColor }
+                                        : undefined
+                                }
+                            />
+                        ) : null}
+                        <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-black/15 via-black/25 to-black/50"
+                        />
+                        <span
+                            aria-hidden="true"
+                            className="pointer-events-none absolute -top-24 left-1/2 -z-10 size-80 -translate-x-1/2 rounded-full bg-white opacity-10 blur-3xl"
+                        />
+
+                        <div className="mx-auto flex max-w-3xl flex-col items-center">
+                            <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5">
+                                <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+                                    <SlidersHorizontal className="size-3" />
+                                    Catalog filters
+                                </span>
+                                <span className="text-[11px] font-semibold tracking-[0.22em] text-white/80 uppercase">
+                                    {filters.banner_id
+                                        ? 'Collection'
+                                        : category
+                                          ? 'Category browse'
+                                          : 'All products'}
+                                </span>
                             </div>
-                        ) : undefined
-                    }
-                    aside={
-                        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-stretch sm:gap-3">
-                            {/* Moved out of the left column to keep the hero compact; sits beside
-                                the stat grid, in the same row, instead of its own full-width row. */}
-                            <div className="flex flex-row gap-2 sm:h-auto sm:w-44 sm:shrink-0 sm:flex-col">
-                                <div className="group relative isolate flex flex-1 items-center gap-2 overflow-hidden rounded-xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] to-[color-mix(in_srgb,var(--color-success)_8%,var(--color-surface))] px-3 py-2 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--color-success)_35%,transparent)] hover:shadow-[var(--shadow-card-hover)]">
-                                    <span className="pointer-events-none absolute -top-4 -right-4 -z-10 size-16 rounded-full bg-[var(--color-success)] opacity-[0.08] blur-xl transition-opacity duration-300 group-hover:opacity-[0.16]" />
-                                    <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--color-success)_14%,transparent)] text-[var(--color-success)] ring-1 ring-[color-mix(in_srgb,var(--color-success)_20%,transparent)]">
-                                        <ShieldCheck className="size-3.5" />
-                                    </span>
-                                    <span className="truncate text-xs font-semibold text-[var(--color-text-primary)]">
-                                        Secure checkout
-                                    </span>
-                                </div>
-                                <div className="group relative isolate flex flex-1 items-center gap-2 overflow-hidden rounded-xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] to-[color-mix(in_srgb,var(--color-primary)_8%,var(--color-surface))] px-3 py-2 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--color-primary)_35%,transparent)] hover:shadow-[var(--shadow-card-hover)]">
-                                    <span className="pointer-events-none absolute -top-4 -right-4 -z-10 size-16 rounded-full bg-[var(--color-primary)] opacity-[0.08] blur-xl transition-opacity duration-300 group-hover:opacity-[0.16]" />
-                                    <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--color-primary)_14%,transparent)] text-[var(--color-primary)] ring-1 ring-[color-mix(in_srgb,var(--color-primary)_20%,transparent)]">
-                                        <Truck className="size-3.5" />
-                                    </span>
-                                    <span className="truncate text-xs font-semibold text-[var(--color-text-primary)]">
-                                        Nationwide delivery
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="grid flex-1 grid-cols-3 gap-2.5 sm:gap-3">
-                                {[
-                                    {
-                                        label: 'Result count',
-                                        value: products.total.toLocaleString(),
-                                        detail:
-                                            products.total === 1
-                                                ? 'item'
-                                                : 'items',
-                                        icon: Package,
-                                        color: 'var(--color-primary)',
-                                    },
-                                    {
-                                        label: 'Current view',
-                                        value:
-                                            draftFilters.view === 'grid'
-                                                ? 'Grid'
-                                                : 'List',
-                                        detail: 'layout',
-                                        icon:
-                                            draftFilters.view === 'grid'
-                                                ? LayoutGrid
-                                                : List,
-                                        color: '#2563eb',
-                                    },
-                                    {
-                                        label: 'Currency',
-                                        value: '৳ BDT',
-                                        detail: 'Bangladeshi taka',
-                                        icon: Banknote,
-                                        color: 'var(--color-success)',
-                                    },
-                                ].map(
-                                    ({
-                                        label,
-                                        value,
-                                        detail,
-                                        icon: Icon,
-                                        color,
-                                    }) => (
-                                        <div
-                                            key={label}
-                                            style={
-                                                {
-                                                    '--stat-color': color,
-                                                } as React.CSSProperties
-                                            }
-                                            className="group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-surface)] to-[color-mix(in_srgb,var(--stat-color)_6%,var(--color-surface))] p-3 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--stat-color)_35%,transparent)] hover:shadow-[var(--shadow-card-hover)]"
-                                        >
-                                            {/* Soft corner glow in the stat's accent colour */}
-                                            <span className="pointer-events-none absolute -top-8 -right-8 -z-10 size-24 rounded-full bg-[var(--stat-color)] opacity-[0.08] blur-2xl transition-opacity duration-300 group-hover:opacity-[0.16]" />
-                                            <span className="flex size-8 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--stat-color)_12%,transparent)] text-[var(--stat-color)] ring-1 ring-[color-mix(in_srgb,var(--stat-color)_18%,transparent)] sm:size-9">
-                                                <Icon className="size-4 sm:size-5" />
-                                            </span>
-                                            <p className="mt-2.5 truncate font-display text-lg leading-none font-bold tracking-tight text-[var(--color-text-primary)] sm:text-xl">
-                                                {value}
-                                            </p>
-                                            <p className="mt-1 truncate text-[11px] text-[var(--color-text-secondary)] sm:text-xs">
-                                                {detail}
-                                            </p>
-                                            <p className="mt-2 truncate border-t border-dashed border-[var(--color-border)] pt-1.5 text-[10px] font-semibold tracking-[0.16em] text-[var(--color-text-muted)] uppercase">
-                                                {label}
-                                            </p>
-                                        </div>
-                                    ),
-                                )}
-                            </div>
+                            <h1 className="mt-3 line-clamp-2 font-display text-3xl leading-tight font-semibold tracking-tight break-words text-white drop-shadow-sm sm:text-4xl">
+                                {title}
+                            </h1>
+                            {description ? (
+                                <p className="mt-2 line-clamp-2 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">
+                                    {description}
+                                </p>
+                            ) : null}
                         </div>
-                    }
-                />
+                    </div>
+                </section>
 
                 <section
                     className={cn(

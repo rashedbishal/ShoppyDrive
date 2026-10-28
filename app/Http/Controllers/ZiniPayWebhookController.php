@@ -10,6 +10,7 @@ use App\Services\ZiniPayService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ZiniPayWebhookController extends Controller
 {
@@ -26,7 +27,13 @@ class ZiniPayWebhookController extends Controller
     public function handle(Request $request): JsonResponse
     {
         $payload = $request->all();
-        Log::info('[ZiniPay] Webhook received', ['payload' => $payload]);
+        // Only the identifiers (each truncated), not the whole request — anyone
+        // can hit this URL, so logging arbitrary payloads would let junk
+        // traffic fill the log file.
+        Log::info('[ZiniPay] Webhook received', [
+            'val_id' => Str::limit((string) ($payload['val_id'] ?? ''), 100),
+            'invoice_id' => Str::limit((string) ($payload['invoice_id'] ?? $payload['invoiceId'] ?? ''), 100),
+        ]);
 
         $token = $payload['val_id'] ?? null;
 

@@ -19,6 +19,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Rate Limiter Cache Store
+    |--------------------------------------------------------------------------
+    |
+    | Rate-limit counters stay in the database even when the default store is
+    | `file`: the file store's increment() isn't atomic, so simultaneous
+    | requests could undercount and let bots slip past a limit. Database
+    | increments are locked and exact.
+    |
+    */
+
+    'limiter' => env('CACHE_LIMITER_STORE', 'database'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Cache Stores
     |--------------------------------------------------------------------------
     |

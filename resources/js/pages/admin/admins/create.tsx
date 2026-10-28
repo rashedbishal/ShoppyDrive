@@ -1,4 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { PermissionMatrix } from '@/components/admin/PermissionMatrix';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
@@ -10,14 +11,23 @@ import {
     validate,
 } from '@/lib/validate';
 
-export default function AdminCreate() {
+type SectionGroup = {
+    group: string;
+    sections: { key: string; label: string; abilities: string[] }[];
+};
+
+type Props = {
+    sectionCatalog: SectionGroup[];
+};
+
+export default function AdminCreate({ sectionCatalog }: Props) {
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
             name: '',
             email: '',
             password: '',
             password_confirmation: '',
-            can_view_audit_trail: false,
+            permissions: {} as Record<string, string[]>,
         });
 
     const inputClass =
@@ -56,16 +66,16 @@ export default function AdminCreate() {
             <RouteModal
                 title="New Admin Account"
                 returnTo={route('admin.admins.index')}
-                className="sm:max-w-lg"
+                className="sm:max-w-2xl"
             >
-                <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100 pb-4">
-                        <CardTitle className="text-sm font-semibold text-slate-700">
-                            Account Details
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-4">
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <Card className="shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
+                                Account Details
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-4">
                             <div>
                                 <label className="mb-1 block text-sm font-medium text-slate-700">
                                     Full Name
@@ -147,51 +157,46 @@ export default function AdminCreate() {
                                     </p>
                                 )}
                             </div>
+                        </CardContent>
+                    </Card>
 
-                            <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
-                                <input
-                                    type="checkbox"
-                                    id="can_view_audit_trail"
-                                    className="mt-0.5 size-4 rounded border-slate-300 text-[#c8102e] focus:ring-[#c8102e]"
-                                    checked={data.can_view_audit_trail}
-                                    onChange={(e) =>
-                                        setData(
-                                            'can_view_audit_trail',
-                                            e.target.checked,
-                                        )
-                                    }
-                                />
-                                <label
-                                    htmlFor="can_view_audit_trail"
-                                    className="text-sm text-slate-600"
-                                >
-                                    <span className="font-medium text-slate-700">
-                                        Grant Audit Trail access
-                                    </span>
-                                    <br />
-                                    Lets this admin view every admin and order
-                                    activity log. Only the mother admin can
-                                    clear logs.
-                                </label>
-                            </div>
+                    <Card className="mt-4 shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
+                                Permissions
+                            </CardTitle>
+                            <p className="text-xs text-slate-500">
+                                Pick which sections this admin can see. Each one
+                                defaults to view-only — check Create, Update or
+                                Delete to grant more.
+                            </p>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <PermissionMatrix
+                                catalog={sectionCatalog}
+                                value={data.permissions}
+                                onChange={(value) =>
+                                    setData('permissions', value)
+                                }
+                            />
+                        </CardContent>
+                    </Card>
 
-                            <div className="flex gap-2 pt-2">
-                                <Button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                                >
-                                    {processing ? 'Creating…' : 'Create Admin'}
-                                </Button>
-                                <Link href={route('admin.admins.index')}>
-                                    <Button type="button" variant="outline">
-                                        Cancel
-                                    </Button>
-                                </Link>
-                            </div>
-                        </form>
-                    </CardContent>
-                </Card>
+                    <div className="flex gap-2 pt-2">
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                        >
+                            {processing ? 'Creating…' : 'Create Admin'}
+                        </Button>
+                        <Link href={route('admin.admins.index')}>
+                            <Button type="button" variant="outline">
+                                Cancel
+                            </Button>
+                        </Link>
+                    </div>
+                </form>
             </RouteModal>
         </>
     );

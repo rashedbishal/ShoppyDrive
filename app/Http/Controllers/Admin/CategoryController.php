@@ -4,19 +4,25 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\FlashesDeletionBlockedByProducts;
 use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CategoryRequest;
 use App\Models\Category;
+use App\Models\Product;
+use App\Models\SubCategory;
+use App\Support\CatalogFilterCache;
+use App\Support\LayoutCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class CategoryController extends Controller
 {
-    use UpdatesStatusInBulk;
+    use FlashesDeletionBlockedByProducts, UpdatesStatusInBulk;
 
     public function index(Request $request): Response
     {
@@ -82,6 +88,20 @@ class CategoryController extends Controller
 
     public function destroy(Category $category): RedirectResponse
     {
+        // Deleting a category would also delete (hide) every product in it
+        // and its sub-categories, so refuse while it still has any — they
+        // must be moved or deleted first.
+        $products = $this->productsUsingCategories([$category->id]);
+
+        if ($products->isNotEmpty()) {
+            $this->flashDeletionBlockedByProducts(
+                "Can't delete \"{$category->name}\" — it's used by {$products->count()} product(s). Move or delete those products first.",
+                $products,
+            );
+
+            return redirect()->route('admin.categories.index');
+        }
+
         $category->delete();
 
         return redirect()->route('admin.categories.index')->with('success', 'Category deleted.');
@@ -101,6 +121,25 @@ class CategoryController extends Controller
             'ids.*' => ['integer', 'distinct', 'exists:categories,id'],
         ])['ids'];
 
+        $products = $this->productsUsingCategories($ids);
+
+        // All-or-nothing, like brands: any category still in use blocks the
+        // whole batch rather than silently skipping it.
+        if ($products->isNotEmpty()) {
+            $blockedCount = $products->pluck('category_id')
+                ->merge(SubCategory::whereIn('id', $products->pluck('sub_category_id')->filter())->pluck('category_id'))
+                ->intersect($ids)
+                ->unique()
+                ->count();
+
+            $this->flashDeletionBlockedByProducts(
+                "Can't delete — {$blockedCount} of the selected category(ies) are used by {$products->count()} product(s). Move or delete those products first.",
+                $products,
+            );
+
+            return redirect()->route('admin.categories.index');
+        }
+
         Category::whereIn('id', $ids)->get()->each(fn (Category $category) => $category->delete());
 
         return redirect()->route('admin.categories.index')->with('success', count($ids).' category(ies) deleted.');
@@ -117,6 +156,30 @@ class CategoryController extends Controller
             Category::whereKey($id)->update(['sort_order' => $index]);
         }
 
+        // Bulk update() fires no model events, so clear the menu cache and
+        // the product-listing filters (which list categories in this order).
+        LayoutCache::forget(...Category::LAYOUT_CACHE_KEYS);
+        CatalogFilterCache::flush();
+
         return redirect()->route('admin.categories.index');
+    }
+
+    /**
+     * Products filed directly under any of these categories or under one of
+     * their sub-categories (a product's category_id isn't guaranteed to match
+     * its sub-category's parent, so both are checked).
+     *
+     * @param  array<int, int>  $categoryIds
+     * @return Collection<int, Product>
+     */
+    private function productsUsingCategories(array $categoryIds): Collection
+    {
+        $subCategoryIds = SubCategory::whereIn('category_id', $categoryIds)->pluck('id');
+
+        return Product::query()
+            ->where(fn ($query) => $query
+                ->whereIn('category_id', $categoryIds)
+                ->orWhereIn('sub_category_id', $subCategoryIds))
+            ->get(['id', 'name', 'slug', 'category_id', 'sub_category_id']);
     }
 }

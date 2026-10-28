@@ -1,4 +1,4 @@
-import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { GripVertical, Plus, Save, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { BulkActionBar } from '@/components/admin/bulk-action-bar';
@@ -157,8 +157,6 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
     const [deleting, setDeleting] = useState(false);
     const [bulkDeleting, setBulkDeleting] = useState(false);
     const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
-    const { props } = usePage<any>();
-    const flash = props.flash as { success?: string } | undefined;
 
     const bulk = useBulkSelect(keywords.map((k) => k.id));
 
@@ -238,12 +236,6 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                         </p>
                     </div>
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
 
                 {/* Add keyword */}
                 <Card className="p-4 shadow-sm">

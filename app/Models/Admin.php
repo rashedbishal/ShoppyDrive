@@ -6,21 +6,22 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class Admin extends Authenticatable
 {
-    use LogsActivity;
     use Notifiable;
 
-    // is_mother and can_view_audit_trail are deliberately excluded — both
-    // must only ever be set via forceFill() (is_mother: see
-    // CreateMotherAdminCommand; can_view_audit_trail: see AdminController,
-    // only when the mother admin is the one filling the request), never
-    // through mass assignment, so no request path (now or in the future)
-    // can self-promote an admin to super-admin or grant itself audit access.
-    protected $fillable = ['name', 'email', 'password'];
+    // is_mother is deliberately excluded — it must only ever be set via
+    // forceFill() (see CreateMotherAdminCommand, the only legitimate place
+    // it's assigned), never through mass assignment, so no request path
+    // (now or in the future) can self-promote an admin to super-admin.
+    //
+    // permissions IS mass-assignable: AdminController is the only place
+    // that sets it, always through AdminSections::sanitize() and always
+    // gated to the mother admin acting on a non-mother target (see
+    // AdminController::store()/update()) — so this doesn't open a
+    // self-escalation path the way is_mother would.
+    protected $fillable = ['name', 'email', 'password', 'permissions'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -29,29 +30,23 @@ class Admin extends Authenticatable
         return [
             'password' => 'hashed',
             'is_mother' => 'boolean',
-            'can_view_audit_trail' => 'boolean',
+            'permissions' => 'array',
         ];
     }
 
     /**
-     * Logged explicitly rather than via the shared `Auditable::logFillable()`
-     * default — `can_view_audit_trail` (like `is_mother`) is deliberately
-     * not in $fillable, but a permission grant/revoke is exactly the kind
-     * of admin-account change this audit trail exists to catch, so it's
-     * named here instead of relying on fillable attributes alone.
+     * The mother admin bypasses this entirely — every other admin starts
+     * with no section access (`permissions` is null) until the mother
+     * grants some via Admin > Admins. See AdminSections for the section
+     * catalog and which abilities (beyond the always-implied `view`) each
+     * one supports.
      */
-    public function getActivitylogOptions(): LogOptions
+    public function canAccess(string $section, string $ability = 'view'): bool
     {
-        return LogOptions::defaults()
-            ->useLogName('admin')
-            ->logOnly(['name', 'email', 'can_view_audit_trail'])
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn (string $eventName): string => sprintf(
-                'Admin account %s: %s (%s)',
-                $eventName,
-                $this->name,
-                $this->email,
-            ));
+        if ($this->is_mother) {
+            return true;
+        }
+
+        return in_array($ability, $this->permissions[$section] ?? [], true);
     }
 }

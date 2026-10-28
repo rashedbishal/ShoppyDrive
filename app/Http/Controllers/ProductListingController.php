@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Models\Attribute;
-use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\PromotionalBanner;
 use App\Models\Review;
 use App\Models\SubCategory;
+use App\Support\CatalogFilterCache;
 use App\Support\ProductSearchQuery;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -149,45 +148,19 @@ class ProductListingController extends Controller
         // partial reload — which only asks for `products`/`filters`, see
         // Filters sidebar's `onApply`/`router.get(..., { only: [...] })` — never
         // re-runs these queries at all, instead of just trimming them from the
-        // response. They're still resolved normally on the first full page load.
+        // response. On a full page load the filter options come from
+        // CatalogFilterCache (identical for every visitor and listing page).
         return Inertia::render('catalog/ProductListing', [
             'category' => $category ?? $subCategory,
-            'categories' => fn () => Category::query()
-                ->active()
-                ->withCount([
-                    'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
-                ])
-                ->with([
-                    'subCategories' => static function ($childQuery): void {
-                        $childQuery
-                            ->active()
-                            ->orderBy('sort_order')
-                            ->withCount([
-                                'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
-                            ]);
-                    },
-                ])
-                ->orderBy('sort_order')
-                ->get(),
-            'brands' => fn () => Brand::query()
-                ->active()
-                ->withCount([
-                    'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
-                ])
-                ->orderBy('name')
-                ->get(),
-            'attributes' => fn () => Attribute::query()
-                ->with([
-                    'values' => static fn ($valueQuery) => $valueQuery->orderBy('sort_order'),
-                ])
-                ->orderBy('name')
-                ->get(),
+            // The banner's overlay colour: the category's own colour, or for a
+            // sub-category its parent's (sub-categories have no colour field).
+            'bannerColor' => $category?->color ?? $subCategory?->category?->color,
+            'categories' => fn () => CatalogFilterCache::categories(),
+            'brands' => fn () => CatalogFilterCache::brands(),
+            'attributes' => fn () => CatalogFilterCache::attributes(),
             'products' => $products,
             'listingUrl' => $listingUrl,
-            'maxPrice' => fn () => (int) (Product::query()
-                ->active()
-                ->published()
-                ->max('price') ?? 0),
+            'maxPrice' => fn () => CatalogFilterCache::maxPrice(),
             'filters' => [
                 'q' => $search,
                 'brand' => $brandSlugs,

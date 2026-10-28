@@ -10,6 +10,7 @@ use App\Http\Responses\RegisterResponse;
 use App\Models\User;
 use App\Services\ReferralService;
 use App\Support\CartManager;
+use App\Support\SecurityRateLimits;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -145,7 +146,15 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
-            return Limit::perMinute(5)->by($throttleKey);
+            $limits = SecurityRateLimits::all();
+
+            return [
+                Limit::perMinute(5)->by($throttleKey),
+                // One network trying many different accounts (Admin > Security).
+                Limit::perMinutes($limits['sign_in_per_network_minutes'], $limits['sign_in_per_network_times'])
+                    ->by('ip:'.$request->ip())
+                    ->response(SecurityRateLimits::tooManyAttempts('Too many sign-in attempts from your network. Please wait a minute and try again.')),
+            ];
         });
 
         // Requesting a new verification code (resend button + the unused

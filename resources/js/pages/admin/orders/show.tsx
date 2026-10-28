@@ -1,4 +1,4 @@
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     ArrowLeft,
     Ban,
@@ -114,9 +114,6 @@ const statusVariant: Record<
 };
 
 export default function OrderShow({ order }: Props) {
-    const { props } = usePage<any>();
-    const flash = props.flash as { success?: string } | undefined;
-
     const {
         data: cancelData,
         setData: setCancelData,
@@ -282,12 +279,6 @@ export default function OrderShow({ order }: Props) {
                         </p>
                     </div>
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
 
                 <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
                     <div className="space-y-5">

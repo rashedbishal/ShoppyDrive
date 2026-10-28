@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Admin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -28,7 +27,7 @@ test('a missing model renders the themed 404 page', function () {
 });
 
 test('unknown admin urls render the 404 page flagged as the admin area', function () {
-    $admin = Admin::create([
+    $admin = createAdmin([
         'name' => 'Admin User',
         'email' => 'admin@example.com',
         'password' => bcrypt('password'),

@@ -12,21 +12,21 @@ uses(RefreshDatabase::class);
 // --- Admin logged in → blocked from storefront pages ---
 
 test('logged-in admin visiting the homepage is redirected to admin dashboard', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
     actingAs($admin, 'admin');
 
     get(route('home'))->assertRedirect(route('admin.dashboard'));
 });
 
 test('logged-in admin visiting a customer auth page is redirected to admin dashboard', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
     actingAs($admin, 'admin');
 
     get(route('login'))->assertRedirect(route('admin.dashboard'));
 });
 
 test('logged-in admin visiting a storefront page is redirected to admin dashboard', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
     actingAs($admin, 'admin');
 
     get(route('products.index'))->assertRedirect(route('admin.dashboard'));
@@ -51,7 +51,7 @@ test('logged-in customer visiting admin dashboard is redirected to home', functi
 // --- Admin logged in → can still visit landing pages ---
 
 test('logged-in admin can visit a landing page', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
     actingAs($admin, 'admin');
 
     // /lp/* routes should NOT redirect admins
@@ -75,7 +75,7 @@ test('guest visiting bare admin path is redirected to admin login', function () 
 });
 
 test('logged-in admin visiting bare admin path is redirected to admin dashboard', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password')]);
     actingAs($admin, 'admin');
 
     get(route('admin.index'))->assertRedirect(route('admin.dashboard'));

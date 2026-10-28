@@ -20,16 +20,16 @@ Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
 // either way.
 Route::middleware(['checkout.access'])->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('blocked-ip')->name('checkout.store');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:place-order')->name('checkout.store');
 
     // Mobile banking (Bkash / Nagad)
     Route::get('/payment/mobile/{token}', [MobilePaymentController::class, 'show'])->name('payment.mobile.show');
-    Route::post('/payment/mobile/{token}', [MobilePaymentController::class, 'submit'])->middleware('blocked-ip')->name('payment.mobile.submit');
+    Route::post('/payment/mobile/{token}', [MobilePaymentController::class, 'submit'])->middleware('throttle:payment-verify')->name('payment.mobile.submit');
 
     // Fires from the checkout page once a valid phone number + items are
     // present, so admins can follow up on abandoned checkouts — see
     // Admin\IncompleteOrderController.
-    Route::post('/checkout/track-incomplete', [IncompleteOrderController::class, 'store'])->name('checkout.track-incomplete');
+    Route::post('/checkout/track-incomplete', [IncompleteOrderController::class, 'store'])->middleware('throttle:checkout-tracking')->name('checkout.track-incomplete');
 });
 
 Route::middleware(['auth'])->group(function () {
@@ -39,8 +39,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/payment/callback/{token}', [PaymentController::class, 'callback'])->name('payment.callback');
     Route::get('/payment/cancel/{token}', [PaymentController::class, 'cancel'])->name('payment.cancel');
 });
-Route::get('/order/track', [OrderTrackingController::class, 'show'])->name('order.track');
-Route::get('/order/track/check', [OrderTrackingController::class, 'checkRequirements'])->name('order.track.check');
+Route::get('/order/track', [OrderTrackingController::class, 'show'])->middleware('throttle:order-tracking')->name('order.track');
+Route::get('/order/track/check', [OrderTrackingController::class, 'checkRequirements'])->middleware('throttle:order-tracking')->name('order.track.check');
 Route::get('/order/{order:order_number}/confirmation', function (Order $order) {
     return inertia('order/OrderConfirmation', [
         'order' => $order->load('items.product'),
@@ -69,7 +69,7 @@ Route::post('/coupon/validate', function (Request $request) {
     }
 
     return response()->json(['coupon' => $coupon]);
-})->name('coupon.validate');
+})->middleware('throttle:coupon-check')->name('coupon.validate');
 
 Route::get('/wishlist', fn () => inertia('account/Wishlist'))->name('wishlist.index');
 Route::get('/compare', fn () => inertia('compare/Compare'))->name('compare');

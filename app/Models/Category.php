@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Concerns\Auditable;
+use App\Concerns\FlushesCatalogFilters;
+use App\Concerns\FlushesLayoutCache;
+use App\Concerns\FlushesSearchSuggestions;
+use App\Support\LayoutCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,7 +16,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Category extends Model
 {
-    use Auditable, HasFactory, SoftDeletes;
+    use Auditable, FlushesCatalogFilters, FlushesLayoutCache, FlushesSearchSuggestions, HasFactory, SoftDeletes;
+
+    /** Any change affects the product-listing filter options (see FlushesCatalogFilters). */
+    public const CATALOG_FILTER_FIELDS = null;
+
+    /** Columns the search-bar suggestions depend on (see FlushesSearchSuggestions). */
+    public const SEARCH_SUGGESTION_FIELDS = ['name', 'slug', 'is_active'];
+
+    /** LayoutCache entries built from this table (see FlushesLayoutCache). */
+    public const LAYOUT_CACHE_KEYS = [LayoutCache::NAV_CATEGORIES];
 
     protected $fillable = [
         'name',

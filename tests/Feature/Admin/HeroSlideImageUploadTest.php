@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Admin;
 use App\Models\HeroSlide;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -11,7 +10,7 @@ use function Pest\Laravel\actingAs;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->admin = Admin::create([
+    $this->admin = createAdmin([
         'name' => 'Admin User',
         'email' => 'admin@example.com',
         'password' => bcrypt('password'),

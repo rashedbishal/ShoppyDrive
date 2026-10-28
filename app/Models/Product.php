@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Concerns\Auditable;
+use App\Concerns\FlushesCatalogFilters;
+use App\Concerns\FlushesSearchSuggestions;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +16,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use Auditable, HasFactory, SoftDeletes;
+    use Auditable, FlushesCatalogFilters, FlushesSearchSuggestions, HasFactory, SoftDeletes;
+
+    /** Columns the product-listing filter options depend on (see FlushesCatalogFilters). */
+    public const CATALOG_FILTER_FIELDS = ['is_active', 'published_at', 'category_id', 'sub_category_id', 'brand_id', 'price'];
+
+    /** Columns the search-bar suggestions depend on (see FlushesSearchSuggestions). */
+    public const SEARCH_SUGGESTION_FIELDS = ['name', 'sku', 'slug', 'price', 'compare_price', 'is_featured', 'is_active', 'published_at'];
 
     protected $fillable = [
         'name',

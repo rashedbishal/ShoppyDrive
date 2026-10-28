@@ -220,7 +220,7 @@ test('resubmitting the same confirmed transaction id is idempotent and does not 
 test('a transaction consumed by an order that is later cancelled still cannot be reused for a new order', function () {
     $userA = User::factory()->create();
     $userB = User::factory()->create();
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin-cancel-sms@example.com', 'password' => bcrypt('password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-cancel-sms@example.com', 'password' => bcrypt('password')]);
     $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
 
     $pendingA = startMobileBankingCheckout($this, $userA, $product);

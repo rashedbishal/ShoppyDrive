@@ -1,4 +1,4 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Mail, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
@@ -28,8 +28,6 @@ type Props = {
 
 export default function ContactMessagesIndex({ messages, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
-    const { props } = usePage<any>();
-    const flash = props.flash as { success?: string } | undefined;
 
     const applyFilters = () => {
         if (search === (filters.search ?? '')) {
@@ -102,12 +100,6 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                         </button>
                     )}
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     <div className="flex flex-col gap-2 border-b border-slate-100 p-4 sm:flex-row">

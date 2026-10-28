@@ -5,7 +5,6 @@ import {
     Folder,
     FolderTree,
     Gift,
-    History,
     Inbox,
     Info,
     LayoutDashboard,
@@ -23,6 +22,7 @@ import {
     Search,
     Settings,
     Share2,
+    ShieldCheck,
     ShoppingCart,
     Smartphone,
     Star,
@@ -49,8 +49,8 @@ type NavItem = {
     icon: LucideIcon;
     exact?: boolean;
     extraMatches: string[];
-    /** Hidden unless the current admin is_mother or has can_view_audit_trail. */
-    requiresAuditPermission?: boolean;
+    /** Omitted for items every admin can always see (Dashboard, Admins). */
+    section?: string;
 };
 
 type NavSection = {
@@ -78,30 +78,35 @@ const navSections: NavSection[] = [
                 href: '/admin/products',
                 icon: Package,
                 extraMatches: [] as string[],
+                section: 'products',
             },
             {
                 label: 'Categories',
                 href: '/admin/categories',
                 icon: Folder,
                 extraMatches: [] as string[],
+                section: 'categories',
             },
             {
                 label: 'Sub-categories',
                 href: '/admin/sub-categories',
                 icon: FolderTree,
                 extraMatches: [] as string[],
+                section: 'sub_categories',
             },
             {
                 label: 'Brands',
                 href: '/admin/brands',
                 icon: Award,
                 extraMatches: [] as string[],
+                section: 'brands',
             },
             {
                 label: 'Attributes',
                 href: '/admin/attributes',
                 icon: Palette,
                 extraMatches: [] as string[],
+                section: 'attributes',
             },
         ],
     },
@@ -113,54 +118,63 @@ const navSections: NavSection[] = [
                 href: '/admin/orders',
                 icon: ShoppingCart,
                 extraMatches: [] as string[],
+                section: 'orders',
             },
             {
                 label: 'Trashed Orders',
                 href: '/admin/orders/trashed',
                 icon: Trash2,
                 extraMatches: [] as string[],
+                section: 'trashed_orders',
             },
             {
                 label: 'Incomplete Orders',
                 href: '/admin/orders/incomplete',
                 icon: PhoneMissed,
                 extraMatches: [] as string[],
+                section: 'incomplete_orders',
             },
             {
                 label: 'Returns',
                 href: '/admin/returns',
                 icon: Undo2,
                 extraMatches: [] as string[],
+                section: 'returns',
             },
             {
                 label: 'Coupons',
                 href: '/admin/coupons',
                 icon: Tag,
                 extraMatches: [] as string[],
+                section: 'coupons',
             },
             {
                 label: 'Flash Sales',
                 href: '/admin/flash-sales',
                 icon: Zap,
                 extraMatches: [] as string[],
+                section: 'flash_sales',
             },
             {
                 label: 'Bundles',
                 href: '/admin/product-bundles',
                 icon: PackagePlus,
                 extraMatches: [] as string[],
+                section: 'bundles',
             },
             {
                 label: 'Received SMS',
                 href: '/admin/received-sms',
                 icon: MessageSquare,
                 extraMatches: [] as string[],
+                section: 'received_sms',
             },
             {
                 label: 'SMS Patterns',
                 href: '/admin/sms-patterns',
                 icon: Settings,
                 extraMatches: [] as string[],
+                section: 'sms_patterns',
             },
         ],
     },
@@ -176,6 +190,7 @@ const navSections: NavSection[] = [
                     '/admin/hero-slides',
                     '/admin/promotional-banners',
                 ],
+                section: 'homepage',
             },
             {
                 label: 'About Page',
@@ -183,6 +198,7 @@ const navSections: NavSection[] = [
                 icon: Info,
                 exact: false,
                 extraMatches: [] as string[],
+                section: 'about_page',
             },
             {
                 label: 'Contact Page',
@@ -190,6 +206,7 @@ const navSections: NavSection[] = [
                 icon: MessageSquare,
                 exact: false,
                 extraMatches: [] as string[],
+                section: 'contact_page',
             },
             {
                 label: 'Landing Pages',
@@ -197,6 +214,7 @@ const navSections: NavSection[] = [
                 icon: MonitorPlay,
                 exact: false,
                 extraMatches: [] as string[],
+                section: 'landing_pages',
             },
             {
                 label: 'Blog',
@@ -204,6 +222,7 @@ const navSections: NavSection[] = [
                 icon: Newspaper,
                 exact: false,
                 extraMatches: [] as string[],
+                section: 'blog',
             },
             {
                 label: 'Search Keywords',
@@ -211,6 +230,7 @@ const navSections: NavSection[] = [
                 icon: Search,
                 exact: false,
                 extraMatches: [] as string[],
+                section: 'search_keywords',
             },
         ],
     },
@@ -222,18 +242,21 @@ const navSections: NavSection[] = [
                 href: '/admin/customers',
                 icon: Users,
                 extraMatches: [] as string[],
+                section: 'customers',
             },
             {
                 label: 'Reviews',
                 href: '/admin/reviews',
                 icon: Star,
                 extraMatches: [] as string[],
+                section: 'reviews',
             },
             {
                 label: 'Contact Messages',
                 href: '/admin/contact-messages',
                 icon: Inbox,
                 extraMatches: [] as string[],
+                section: 'contact_messages',
             },
         ],
     },
@@ -245,6 +268,7 @@ const navSections: NavSection[] = [
                 href: '/admin/newsletter',
                 icon: Mail,
                 extraMatches: ['/admin/newsletter/compose'] as string[],
+                section: 'newsletter',
             },
         ],
     },
@@ -259,18 +283,11 @@ const navSections: NavSection[] = [
                 extraMatches: [] as string[],
             },
             {
-                label: 'Audit Trail',
-                href: '/admin/audit-trail',
-                icon: History,
-                exact: false,
-                extraMatches: [] as string[],
-                requiresAuditPermission: true,
-            },
-            {
                 label: 'Blocked IPs',
                 href: '/admin/blocked-ips',
                 icon: Ban,
                 extraMatches: [] as string[],
+                section: 'blocked_ips',
             },
             {
                 label: 'Settings',
@@ -278,6 +295,7 @@ const navSections: NavSection[] = [
                 icon: Settings,
                 exact: true,
                 extraMatches: [] as string[],
+                section: 'settings',
             },
             {
                 label: 'Social Config',
@@ -285,6 +303,7 @@ const navSections: NavSection[] = [
                 icon: Share2,
                 exact: false,
                 extraMatches: [] as string[],
+                section: 'social_config',
             },
             {
                 label: 'Courier Config',
@@ -292,6 +311,7 @@ const navSections: NavSection[] = [
                 icon: Truck,
                 exact: false,
                 extraMatches: [] as string[],
+                section: 'courier_config',
             },
             {
                 label: 'SMS Forwarder',
@@ -299,6 +319,7 @@ const navSections: NavSection[] = [
                 icon: Smartphone,
                 exact: false,
                 extraMatches: [] as string[],
+                section: 'sms_forwarder',
             },
             {
                 label: 'Referral Program',
@@ -306,6 +327,15 @@ const navSections: NavSection[] = [
                 icon: Gift,
                 exact: false,
                 extraMatches: [] as string[],
+                section: 'referral_program',
+            },
+            {
+                label: 'Security',
+                href: '/admin/settings/security',
+                icon: ShieldCheck,
+                exact: false,
+                extraMatches: [] as string[],
+                section: 'security',
             },
         ],
     },
@@ -327,18 +357,48 @@ function findMostSpecificMatch(currentUrl: string): NavItem | undefined {
         .sort((a, b) => b.href.length - a.href.length)[0];
 }
 
+type CurrentAdmin = {
+    name: string;
+    is_mother: boolean;
+    permissions: Record<string, string[]> | null;
+};
+
+/** Items with no `section` (Dashboard, Admins) are always visible. */
+function canViewSection(admin: CurrentAdmin | undefined, section?: string) {
+    if (!section) {
+        return true;
+    }
+
+    if (!admin) {
+        return false;
+    }
+
+    return (
+        admin.is_mother ||
+        (admin.permissions?.[section]?.includes('view') ?? false)
+    );
+}
+
 function SidebarContent({
     currentUrl,
     logoUrl,
-    canViewAuditTrail,
+    admin,
     onClose,
 }: {
     currentUrl: string;
     logoUrl?: string | null;
-    canViewAuditTrail: boolean;
+    admin?: CurrentAdmin;
     onClose?: () => void;
 }) {
     const mostSpecificMatch = findMostSpecificMatch(currentUrl);
+    const visibleNavSections = navSections
+        .map((section) => ({
+            ...section,
+            items: section.items.filter((item) =>
+                canViewSection(admin, item.section),
+            ),
+        }))
+        .filter((section) => section.items.length > 0);
 
     return (
         <div className="flex h-full flex-col">
@@ -382,47 +442,40 @@ function SidebarContent({
 
             {/* Nav */}
             <nav className="flex-1 overflow-y-auto px-3 py-4">
-                {navSections.map((section) => (
+                {visibleNavSections.map((section) => (
                     <div key={section.label} className="mb-5">
                         <p className="mb-1.5 px-2 text-[10px] font-semibold tracking-widest text-slate-400 uppercase">
                             {section.label}
                         </p>
-                        {section.items
-                            .filter(
-                                (item) =>
-                                    !item.requiresAuditPermission ||
-                                    canViewAuditTrail,
-                            )
-                            .map((item) => {
-                                const isActive =
-                                    (item.exact
-                                        ? currentUrl === item.href
-                                        : mostSpecificMatch?.href ===
-                                          item.href) ||
-                                    item.extraMatches.some((m) =>
-                                        currentUrl.startsWith(m),
-                                    );
-                                const Icon = item.icon;
-
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        onClick={onClose}
-                                        className={`mb-0.5 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
-                                            isActive
-                                                ? 'bg-[#c8102e]/8 text-[#c8102e]'
-                                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                                        }`}
-                                    >
-                                        <Icon className="size-4 shrink-0" />
-                                        {item.label}
-                                        {isActive && (
-                                            <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#c8102e]" />
-                                        )}
-                                    </Link>
+                        {section.items.map((item) => {
+                            const isActive =
+                                (item.exact
+                                    ? currentUrl === item.href
+                                    : mostSpecificMatch?.href === item.href) ||
+                                item.extraMatches.some((m) =>
+                                    currentUrl.startsWith(m),
                                 );
-                            })}
+                            const Icon = item.icon;
+
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    onClick={onClose}
+                                    className={`mb-0.5 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
+                                        isActive
+                                            ? 'bg-[#c8102e]/8 text-[#c8102e]'
+                                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                    }`}
+                                >
+                                    <Icon className="size-4 shrink-0" />
+                                    {item.label}
+                                    {isActive && (
+                                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#c8102e]" />
+                                    )}
+                                </Link>
+                            );
+                        })}
                     </div>
                 ))}
             </nav>
@@ -492,10 +545,7 @@ export default function AdminLayout({
     children: React.ReactNode;
 }) {
     const page = usePage<SharedPageProps>();
-    const admin = page.props.auth?.admin;
-    const canViewAuditTrail = Boolean(
-        admin?.is_mother || admin?.can_view_audit_trail,
-    );
+    const admin = page.props.auth?.admin as CurrentAdmin | null;
     const currentUrl = page.url;
     const logoUrl = (page.props.settings as AppSettings)?.logo ?? null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -512,7 +562,7 @@ export default function AdminLayout({
                 <SidebarContent
                     currentUrl={currentUrl}
                     logoUrl={logoUrl}
-                    canViewAuditTrail={canViewAuditTrail}
+                    admin={admin ?? undefined}
                 />
             </aside>
 
@@ -527,7 +577,7 @@ export default function AdminLayout({
                         <SidebarContent
                             currentUrl={currentUrl}
                             logoUrl={logoUrl}
-                            canViewAuditTrail={canViewAuditTrail}
+                            admin={admin ?? undefined}
                             onClose={() => setSidebarOpen(false)}
                         />
                     </aside>

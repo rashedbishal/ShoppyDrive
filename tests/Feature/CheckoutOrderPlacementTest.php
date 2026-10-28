@@ -47,7 +47,10 @@ test('authenticated user can place an order from checkout using submitted cart i
         'user_id' => $user->id,
         'payment_method' => 'cod',
         'subtotal' => 598.00,
-        'total' => 598.00,
+        // City "Dhaka" is outside Dhaka City Corporation, so the default
+        // outside-Dhaka delivery charge applies (see Setting::shippingRateFor()).
+        'shipping_cost' => 120.00,
+        'total' => 718.00,
     ]);
 
     $this->assertDatabaseHas('order_items', [

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\Models\Admin;
 
 test('a correct password logs the admin in normally, under the throttle', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => bcrypt('correct-password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => bcrypt('correct-password')]);
 
     $this->post(route('admin.login.submit'), ['email' => $admin->email, 'password' => 'correct-password'])
         ->assertRedirect(route('admin.dashboard'));
@@ -30,8 +30,8 @@ test('the mother/super-admin is throttled exactly like any other admin', functio
 });
 
 test('throttling is keyed per email+IP, not globally — a different admin account is unaffected', function () {
-    $victim = Admin::create(['name' => 'Victim', 'email' => 'victim@example.com', 'password' => bcrypt('correct-password')]);
-    $other = Admin::create(['name' => 'Other', 'email' => 'other@example.com', 'password' => bcrypt('correct-password')]);
+    $victim = createAdmin(['name' => 'Victim', 'email' => 'victim@example.com', 'password' => bcrypt('correct-password')]);
+    $other = createAdmin(['name' => 'Other', 'email' => 'other@example.com', 'password' => bcrypt('correct-password')]);
 
     for ($i = 0; $i < 6; $i++) {
         $this->post(route('admin.login.submit'), ['email' => $victim->email, 'password' => 'wrong']);
@@ -47,7 +47,7 @@ test('throttling is keyed per email+IP, not globally — a different admin accou
 });
 
 test('a throttled admin can log in again once the one-minute window passes', function () {
-    $admin = Admin::create(['name' => 'Admin', 'email' => 'admin2@example.com', 'password' => bcrypt('correct-password')]);
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin2@example.com', 'password' => bcrypt('correct-password')]);
 
     for ($i = 0; $i < 6; $i++) {
         $this->post(route('admin.login.submit'), ['email' => $admin->email, 'password' => 'wrong']);

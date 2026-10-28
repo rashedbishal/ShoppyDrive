@@ -1,4 +1,4 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { ArrowRight, PhoneMissed, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
@@ -51,10 +51,6 @@ export default function IncompleteOrdersIndex({
     const [deleting, setDeleting] = useState(false);
     const [deletingAll, setDeletingAll] = useState(false);
     const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
-    const { props } = usePage<any>();
-    const flash = props.flash as
-        | { success?: string; error?: string }
-        | undefined;
 
     const applySearch = () => {
         if (search === (filters.search ?? '')) {
@@ -129,17 +125,6 @@ export default function IncompleteOrdersIndex({
                         </button>
                     )}
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">
-                        {flash.error}
-                    </div>
-                )}
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     <div className="flex gap-2 border-b border-slate-100 p-4">

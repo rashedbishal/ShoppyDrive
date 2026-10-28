@@ -28,15 +28,22 @@ function DialogClose({
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
 }
 
+type DialogAppearance = "default" | "premium"
+
 function DialogOverlay({
   className,
+  appearance = "default",
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+}: React.ComponentProps<typeof DialogPrimitive.Overlay> & {
+  appearance?: DialogAppearance
+}) {
   return (
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/80",
+        appearance === "premium"
+          ? "dialog-premium-overlay fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-[3px]"
+          : "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/80",
         className
       )}
       {...props}
@@ -60,20 +67,31 @@ function useDialogPortalTarget(): React.RefObject<HTMLDivElement | null> | null 
   return React.useContext(DialogPortalTargetContext)
 }
 
+/**
+ * `appearance="premium"` is the compact admin look (tighter padding, soft
+ * shadow, spring/blur enter + cascading sections, see `.dialog-premium` in
+ * app.css). It's purely visual — behavior is identical to the default.
+ */
 function DialogContent({
   className,
   children,
+  appearance = "default",
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>) {
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  appearance?: DialogAppearance
+}) {
   const portalTargetRef = React.useRef<HTMLDivElement>(null)
+  const isPremium = appearance === "premium"
 
   return (
     <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay />
+      <DialogOverlay appearance={appearance} />
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-background backdrop-blur-[var(--ui-blur)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          isPremium
+            ? "dialog-premium fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-3.5 rounded-2xl bg-white p-5 text-slate-900 shadow-[0_24px_64px_-16px_rgba(15,23,42,0.35)] ring-1 ring-slate-900/5 sm:max-w-lg"
+            : "bg-background backdrop-blur-[var(--ui-blur)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
           className
         )}
         {...props}
@@ -98,7 +116,13 @@ function DialogContent({
         <div ref={portalTargetRef} className="pointer-events-none absolute inset-0">
           <span className="hidden" aria-hidden="true" />
         </div>
-        <DialogPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
+        <DialogPrimitive.Close
+          className={
+            isPremium
+              ? "absolute top-3.5 right-3.5 flex size-8 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-[#c8102e] focus-visible:outline-none disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+              : "ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+          }
+        >
           <XIcon />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>

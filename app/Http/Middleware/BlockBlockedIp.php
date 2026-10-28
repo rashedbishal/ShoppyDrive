@@ -10,10 +10,17 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Applied to the customer-initiated order-placement routes only (checkout
- * submission, mobile-payment submission, landing-page buy-now) — never to
- * the ZiniPay callback/webhook routes, since those are server-to-server and
- * don't carry the customer's own IP.
+ * Registered globally on the `web` middleware group (bootstrap/app.php), so
+ * a blocked IP is declined on every storefront, auth, account and checkout
+ * page/route — not just order placement. Two deliberate exceptions:
+ *
+ *  - `/admin*` is skipped so the CMS that manages the block list can never
+ *    lock itself out (an admin's own network IP could otherwise collide
+ *    with a blocked customer IP).
+ *  - Payment/courier webhooks (ZiniPay, Steadfast, SMS forwarder) live under
+ *    the separate `api` routing group, which this middleware is never
+ *    attached to — they're server-to-server and don't carry the customer's
+ *    own IP anyway.
  */
 class BlockBlockedIp
 {
@@ -22,14 +29,12 @@ class BlockBlockedIp
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (BlockedIp::isBlocked($request->ip())) {
-            $message = 'Your IP address has been blocked from placing orders. Please contact support if you believe this is a mistake.';
+        if ($request->is('admin') || $request->is('admin/*')) {
+            return $next($request);
+        }
 
-            // Set both channels: checkout/mobile-payment pages read the
-            // "error" flash message, landing-page order/payment forms read
-            // the validation errors bag — this covers all four routes this
-            // middleware guards without needing per-route branching.
-            return back()->with('error', $message)->withErrors(['ip' => $message]);
+        if (BlockedIp::isBlocked($request->ip())) {
+            abort(403, 'Your IP address has been restricted from accessing this site. Please contact support if you believe this is a mistake.');
         }
 
         return $next($request);

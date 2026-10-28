@@ -526,7 +526,7 @@ test('a qualifying order placed via mobile banking still only rewards the referr
 // ── Admin settings ───────────────────────────────────────────────────────────
 
 test('admin can update referral and loyalty settings', function () {
-    $admin = Admin::create([
+    $admin = createAdmin([
         'name' => 'Admin User',
         'email' => 'admin-'.Str::random(6).'@example.com',
         'password' => bcrypt('password'),

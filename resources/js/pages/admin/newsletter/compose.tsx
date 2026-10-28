@@ -1,4 +1,5 @@
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import {
     AlertTriangle,
     ArrowLeft,
@@ -14,6 +15,11 @@ import type { FormEvent } from 'react';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
+import {
+    dialogItem,
+    dialogOverlayMotion,
+    dialogPanel,
+} from '@/lib/dialog-motion';
 import { maxLength, required, validate } from '@/lib/validate';
 
 type ProductMedia = {
@@ -43,11 +49,6 @@ export default function NewsletterCompose({
     products,
     active_subscribers_count,
 }: Props) {
-    const { props } = usePage<any>();
-    const flash = props.flash as
-        | { success?: string; error?: string }
-        | undefined;
-
     const [emailType, setEmailType] = useState<EmailType>(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [selectedProductId, setSelectedProductId] = useState<number | null>(
@@ -237,57 +238,82 @@ export default function NewsletterCompose({
             <Head title="Compose Newsletter — Admin" />
 
             {/* Confirmation modal */}
-            {showConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                    <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
-                        <div className="flex items-center gap-3">
-                            <div className="flex size-10 items-center justify-center rounded-full bg-[#c8102e]/10">
-                                <Send className="size-5 text-[#c8102e]" />
-                            </div>
-                            <div>
-                                <p className="font-semibold text-slate-900">
-                                    Confirm Send
-                                </p>
-                                <p className="text-sm text-slate-500">
-                                    This will send to{' '}
-                                    <strong>{active_subscribers_count}</strong>{' '}
-                                    subscribers via BCC.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="mt-4 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                            <p>
-                                <strong>Type:</strong>{' '}
-                                {emailType === 'custom'
-                                    ? 'Custom Email'
-                                    : 'Product Promotion'}
-                            </p>
-                            <p>
-                                <strong>Subject:</strong>{' '}
-                                {emailType === 'custom'
-                                    ? customForm.data.subject
-                                    : productForm.data.subject}
-                            </p>
-                        </div>
-                        <div className="mt-5 flex gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setShowConfirm(false)}
-                                className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            <MotionConfig reducedMotion="user">
+                <AnimatePresence>
+                    {showConfirm && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <motion.div
+                                className="absolute inset-0 bg-slate-950/40 backdrop-blur-[3px]"
+                                {...dialogOverlayMotion}
+                            />
+                            <motion.div
+                                variants={dialogPanel}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-[0_24px_64px_-16px_rgba(15,23,42,0.35)] ring-1 ring-slate-900/5"
                             >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={confirmSend}
-                                className="flex-1 rounded-lg bg-[#c8102e] py-2 text-sm font-semibold text-white transition hover:bg-[#a50d25]"
-                            >
-                                Send Now
-                            </button>
+                                <motion.div
+                                    variants={dialogItem}
+                                    className="flex items-center gap-3"
+                                >
+                                    <div className="flex size-10 items-center justify-center rounded-full bg-[#c8102e]/10">
+                                        <Send className="size-5 text-[#c8102e]" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[15px] font-semibold text-slate-900">
+                                            Confirm Send
+                                        </p>
+                                        <p className="text-[13px] text-slate-500">
+                                            This will send to{' '}
+                                            <strong>
+                                                {active_subscribers_count}
+                                            </strong>{' '}
+                                            subscribers via BCC.
+                                        </p>
+                                    </div>
+                                </motion.div>
+                                <motion.div
+                                    variants={dialogItem}
+                                    className="mt-3.5 rounded-lg bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700"
+                                >
+                                    <p>
+                                        <strong>Type:</strong>{' '}
+                                        {emailType === 'custom'
+                                            ? 'Custom Email'
+                                            : 'Product Promotion'}
+                                    </p>
+                                    <p>
+                                        <strong>Subject:</strong>{' '}
+                                        {emailType === 'custom'
+                                            ? customForm.data.subject
+                                            : productForm.data.subject}
+                                    </p>
+                                </motion.div>
+                                <motion.div
+                                    variants={dialogItem}
+                                    className="-mx-5 mt-4 -mb-5 flex gap-2 rounded-b-2xl border-t border-slate-100 bg-slate-50/80 px-5 py-3"
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirm(false)}
+                                        className="flex-1 rounded-lg border border-slate-200 bg-white py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={confirmSend}
+                                        className="flex-1 rounded-lg bg-[#c8102e] py-2 text-sm font-semibold text-white transition hover:bg-[#a50d25]"
+                                    >
+                                        Send Now
+                                    </button>
+                                </motion.div>
+                            </motion.div>
                         </div>
-                    </div>
-                </div>
-            )}
+                    )}
+                </AnimatePresence>
+            </MotionConfig>
 
             <div className="space-y-5">
                 {/* Header */}
@@ -312,17 +338,6 @@ export default function NewsletterCompose({
                         </p>
                     </div>
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
-                {flash?.error && (
-                    <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">
-                        {flash.error}
-                    </div>
-                )}
 
                 {/* CUSTOM EMAIL FORM */}
                 {emailType === 'custom' && (

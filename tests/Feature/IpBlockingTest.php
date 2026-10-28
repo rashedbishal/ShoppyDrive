@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia as Assert;
 
 test('a blocked ip address cannot place an order via checkout', function () {
     BlockedIp::create(['ip_address' => '203.0.113.5', 'reason' => 'Chargeback abuse']);
@@ -33,9 +34,7 @@ test('a blocked ip address cannot place an order via checkout', function () {
             ],
         ]);
 
-    $response->assertRedirect();
-    $response->assertSessionHasErrors('ip');
-    $response->assertSessionHas('error');
+    $response->assertForbidden();
     expect(Order::query()->count())->toBe(0);
 });
 
@@ -51,8 +50,7 @@ test('a blocked ip address cannot submit a mobile banking payment', function () 
             'transaction_id' => 'ABC12345',
         ]);
 
-    $response->assertRedirect();
-    $response->assertSessionHasErrors('ip');
+    $response->assertForbidden();
     expect(Order::query()->count())->toBe(0);
 });
 
@@ -77,8 +75,7 @@ test('a blocked ip address cannot place a landing-page order', function () {
             'payment_method' => 'cod',
         ]);
 
-    $response->assertRedirect();
-    $response->assertSessionHasErrors('ip');
+    $response->assertForbidden();
     expect(Order::query()->count())->toBe(0);
 });
 
@@ -90,9 +87,41 @@ test('a blocked ip address cannot submit a landing-page payment', function () {
             'transaction_id' => 'ABC12345',
         ]);
 
-    $response->assertRedirect();
-    $response->assertSessionHasErrors('ip');
+    $response->assertForbidden();
     expect(Order::query()->count())->toBe(0);
+});
+
+test('a blocked ip address is declined on every storefront and auth page, not just order placement', function () {
+    BlockedIp::create(['ip_address' => '203.0.113.9']);
+
+    $blocked = $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.9']);
+
+    $blocked->get('/')->assertForbidden()->assertInertia(fn (Assert $page) => $page
+        ->component('errors/ErrorPage')
+        ->where('status', 403));
+
+    $blocked->get(route('login'))->assertForbidden();
+    $blocked->get(route('cart.index'))->assertForbidden();
+});
+
+test('a blocked ip address can still reach the admin area, which manages the block list', function () {
+    BlockedIp::create(['ip_address' => '203.0.113.10']);
+
+    $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])
+        ->get(route('admin.login'))
+        ->assertOk();
+});
+
+test('unblocking an ip address immediately restores access', function () {
+    $blockedIp = BlockedIp::create(['ip_address' => '203.0.113.11']);
+
+    $visitor = $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.11']);
+
+    $visitor->get('/')->assertForbidden();
+
+    $blockedIp->delete();
+
+    $visitor->get('/')->assertOk();
 });
 
 test('an order records the ip address and user agent of the request that created it', function () {

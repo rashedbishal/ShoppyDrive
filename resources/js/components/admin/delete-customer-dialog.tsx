@@ -56,7 +56,7 @@ export function DeleteCustomerDialog({ customer, onOpenChange }: Props) {
 
     return (
         <Dialog open onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent appearance="premium" className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Delete customer?</DialogTitle>
                     <DialogDescription>

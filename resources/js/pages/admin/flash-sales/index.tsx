@@ -1,4 +1,4 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Edit, Plus, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { BulkActionBar } from '@/components/admin/bulk-action-bar';
@@ -42,8 +42,6 @@ export default function FlashSalesIndex({ flashSales, filters }: Props) {
     const [deleting, setDeleting] = useState(false);
     const [bulkDeleting, setBulkDeleting] = useState(false);
     const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
-    const { props } = usePage<any>();
-    const flash = props.flash as { success?: string } | undefined;
 
     const bulk = useBulkSelect(flashSales.data.map((s) => s.id));
 
@@ -127,12 +125,6 @@ export default function FlashSalesIndex({ flashSales, filters }: Props) {
                         </Link>
                     </Button>
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     <div className="flex gap-2 border-b border-slate-100 p-4">

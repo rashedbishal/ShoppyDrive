@@ -8,7 +8,7 @@ import {
 } from '@headlessui/react';
 import { ChevronDown } from 'lucide-react';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
-import { CloseOnEscapeInsideDialog, CloseOnScroll } from '@/components/ui/select';
+import { CloseOnEscapeInsideDialog, CloseOnScroll, OPTIONS_PANEL_ATTR } from '@/components/ui/select';
 import { useDialogPortalTarget } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
@@ -110,11 +110,19 @@ export function ComboboxField<T extends ComboboxItem>({
 
                 const panel = (
                     <ComboboxOptions
+                        // Marks the list so CloseOnScroll ignores scrolling inside it
+                        // (same as Select), instead of closing mid-scroll.
+                        {...{ [OPTIONS_PANEL_ATTR]: '' }}
                         anchor={{ to: 'bottom start', gap: 6, padding: 12 }}
                         modal={false}
                         transition
+                        // pointer-events-auto: inside a dialog this panel is portaled into
+                        // a pointer-events-none container (see dialog.tsx DialogContent);
+                        // without it the wheel and clicks pass through to the modal behind.
+                        // overscroll-contain: reaching the end of the list doesn't hand
+                        // the scroll on to the modal (which would also close the list).
                         className={cn(
-                            'z-20 max-h-[min(var(--anchor-max-height),20rem)] min-w-[max(var(--button-width),14rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg outline-none transition duration-150 ease-out [--anchor-max-height:20rem] data-closed:-translate-y-1 data-closed:scale-[0.98] data-closed:opacity-0',
+                            'pointer-events-auto overscroll-contain z-20 max-h-[min(var(--anchor-max-height),20rem)] min-w-[max(var(--button-width),14rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg outline-none transition duration-150 ease-out [--anchor-max-height:20rem] data-closed:-translate-y-1 data-closed:scale-[0.98] data-closed:opacity-0',
                             optionsClassName,
                         )}
                     >

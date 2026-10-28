@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Admin;
 use App\Models\Attribute;
 use App\Models\AttributeValue;
 use App\Models\Product;
@@ -11,7 +10,7 @@ use function Pest\Laravel\actingAs;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->admin = Admin::create([
+    $this->admin = createAdmin([
         'name' => 'Admin User',
         'email' => 'admin@example.com',
         'password' => bcrypt('password'),
@@ -60,6 +59,18 @@ test('color value requires a hex code', function () {
 
     $response->assertInvalid(['color_hex']);
 });
+
+test('color value rejects a malformed hex code', function (string $colorHex) {
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.attribute-values.store'), [
+        'attribute_id' => $this->colorAttribute->id,
+        'value' => 'Navy Blue',
+        'color_hex' => $colorHex,
+    ]);
+
+    $response->assertInvalid(['color_hex']);
+})->with(['001f54', '#00f', '#00gg54', 'red']);
 
 test('size value does not require a hex code', function () {
     actingAs($this->admin, 'admin');

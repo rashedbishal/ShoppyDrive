@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\FlushesSearchSuggestions;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductMedia extends Model
 {
-    use HasFactory;
+    use FlushesSearchSuggestions, HasFactory;
+
+    /** Any change to a product image affects search-bar suggestions (see FlushesSearchSuggestions). */
+    public const SEARCH_SUGGESTION_FIELDS = null;
 
     protected $table = 'product_media';
 

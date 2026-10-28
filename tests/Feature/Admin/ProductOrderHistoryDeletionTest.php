@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\Admin;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -14,7 +13,7 @@ use function Pest\Laravel\actingAs;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->admin = Admin::create([
+    $this->admin = createAdmin([
         'name' => 'Admin User',
         'email' => 'admin@example.com',
         'password' => bcrypt('password'),

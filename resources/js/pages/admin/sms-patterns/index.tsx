@@ -1,4 +1,4 @@
-import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { Edit2, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { BulkActionBar } from '@/components/admin/bulk-action-bar';
@@ -46,9 +46,6 @@ const providerColor = {
 };
 
 export default function SmsPatternsIndex({ patterns }: Props) {
-    const { props } = usePage<any>();
-    const flash = props.flash as { success?: string } | undefined;
-
     const [editingId, setEditingId] = useState<number | 'new' | null>(null);
     const [bulkDeleting, setBulkDeleting] = useState(false);
     const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
@@ -170,12 +167,6 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                         </Button>
                     )}
                 </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
 
                 {editingId !== null && (
                     <Card className="border-[#c8102e]/20 shadow-sm">

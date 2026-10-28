@@ -1,4 +1,4 @@
-import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { Ban, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -19,12 +19,18 @@ const inputClass =
     'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
 
 export default function BlockedIpsIndex({ blockedIps }: Props) {
-    const { props } = usePage<any>();
-    const flash = props.flash as { success?: string } | undefined;
-
     const [formOpen, setFormOpen] = useState(false);
 
-    const { data, setData, post, processing, errors, reset, setError, clearErrors } = useForm({
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        errors,
+        reset,
+        setError,
+        clearErrors,
+    } = useForm({
         ip_address: '',
         reason: '',
     });
@@ -91,12 +97,6 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                     )}
                 </div>
 
-                {flash?.success && (
-                    <div className="rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">
-                        {flash.success}
-                    </div>
-                )}
-
                 {formOpen && (
                     <Card className="border-[#c8102e]/20 shadow-sm">
                         <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
@@ -121,7 +121,10 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                                         className={`${inputClass} font-mono`}
                                         value={data.ip_address}
                                         onChange={(e) =>
-                                            setData('ip_address', e.target.value)
+                                            setData(
+                                                'ip_address',
+                                                e.target.value,
+                                            )
                                         }
                                         placeholder="e.g. 203.0.113.5"
                                         required
