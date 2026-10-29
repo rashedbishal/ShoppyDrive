@@ -1,7 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type Props = {
     maskedToken: string;
@@ -27,14 +27,17 @@ export default function SmsForwarderSettings({
         ) {
             return;
         }
+
         router.post(route('admin.settings.sms-forwarder.regenerate'));
     };
 
     const copyToClipboard = (text: string) => {
         if (navigator.clipboard) {
             navigator.clipboard.writeText(text);
+
             return;
         }
+
         const el = document.createElement('textarea');
         el.value = text;
         el.style.position = 'fixed';

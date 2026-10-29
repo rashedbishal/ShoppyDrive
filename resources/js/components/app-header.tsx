@@ -1,8 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Menu, Search, ShoppingCart, Heart } from 'lucide-react';
+import { LayoutGrid, Menu, Search, ShoppingCart, Heart } from 'lucide-react';
 import { useState } from 'react';
 import AppLogo from '@/components/app-logo';
-import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { SearchOverlay } from '@/components/shared/SearchOverlay';
@@ -14,27 +13,15 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-    NavigationMenu,
-    NavigationMenuItem,
-    NavigationMenuList,
-    navigationMenuTriggerStyle,
-} from '@/components/ui/navigation-menu';
-import {
     Sheet,
     SheetContent,
     SheetHeader,
-    SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
-import { cn, toUrl } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
@@ -57,35 +44,24 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
-const rightNavItems: NavItem[] = [
-    {
-        title: 'Track Order',
-        href: route('order.track'),
-        icon: Folder,
-    },
-];
-
-const activeItemStyles =
-    'text-[var(--color-primary)] font-bold';
-
 export function AppHeader({ breadcrumbs = [] }: Props) {
     const page = usePage();
     const { auth } = page.props;
     const getInitials = useInitials();
-    const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
-    
+    const { isCurrentUrl } = useCurrentUrl();
+
     const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
-    
+
     const cartCount = useCartStore((state) => state.getItemCount());
-    const wishlistCount = useWishlistStore((state) => state.items?.length || 0);
+    const wishlistCount = useWishlistStore((state) => state.productIds.length);
     const openCart = useUiStore((state) => state.openCart);
 
     return (
         <>
-            <div className="sticky top-0 z-[100] bg-white/95 backdrop-blur-md border-b border-[var(--color-border)] shadow-sm">
+            <div className="sticky top-0 z-[100] border-b border-[var(--color-border)] bg-white/95 shadow-sm backdrop-blur-md">
                 <div className="mx-auto flex h-20 items-center px-4 md:max-w-7xl">
                     {/* Mobile Menu Trigger */}
-                    <div className="lg:hidden flex items-center">
+                    <div className="flex items-center lg:hidden">
                         <Sheet>
                             <SheetTrigger asChild>
                                 <Button
@@ -98,15 +74,15 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             </SheetTrigger>
                             {/* Mobile Sidebar Content - Simplified for now */}
                             <SheetContent side="left" className="w-80 p-0">
-                                <SheetHeader className="p-6 border-b border-[var(--color-border)]">
+                                <SheetHeader className="border-b border-[var(--color-border)] p-6">
                                     <AppLogo />
                                 </SheetHeader>
-                                <div className="p-4 space-y-2">
+                                <div className="space-y-2 p-4">
                                     {mainNavItems.map((item) => (
                                         <Link
                                             key={item.title}
                                             href={item.href}
-                                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--color-surface-alt)] font-bold text-[var(--color-text-primary)]"
+                                            className="flex items-center gap-3 rounded-xl p-3 font-bold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-alt)]"
                                         >
                                             <span>{item.title}</span>
                                         </Link>
@@ -116,22 +92,20 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         </Sheet>
                     </div>
 
-                    <Link
-                        href={route('home')}
-                        className="flex items-center"
-                    >
-                        <AppLogo className="h-10 w-auto" />
+                    <Link href={route('home')} className="flex items-center">
+                        <AppLogo />
                     </Link>
 
                     {/* Desktop Navigation */}
-                    <nav className="ml-10 hidden lg:flex items-center space-x-8">
+                    <nav className="ml-10 hidden items-center space-x-8 lg:flex">
                         {mainNavItems.map((item) => (
                             <Link
                                 key={item.title}
                                 href={item.href}
                                 className={cn(
-                                    "text-sm font-bold text-[var(--color-text-primary)] hover:text-[var(--color-primary)] transition-colors",
-                                    isCurrentUrl(item.href) && "text-[var(--color-primary)]"
+                                    'text-sm font-bold text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-primary)]',
+                                    isCurrentUrl(item.href) &&
+                                        'text-[var(--color-primary)]',
                                 )}
                             >
                                 {item.title}
@@ -140,8 +114,8 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </nav>
 
                     {/* Search Bar - Desktop */}
-                    <div className="hidden lg:flex flex-1 justify-center px-10">
-                        <SearchBar className="max-w-md w-full" />
+                    <div className="hidden flex-1 justify-center px-10 lg:flex">
+                        <SearchBar className="w-full max-w-md" />
                     </div>
 
                     {/* Right Actions */}
@@ -150,7 +124,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="lg:hidden h-10 w-10 text-[var(--color-text-primary)]"
+                            className="h-10 w-10 text-[var(--color-text-primary)] lg:hidden"
                             onClick={() => setIsSearchOverlayOpen(true)}
                             aria-label="Search products"
                         >
@@ -162,12 +136,12 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="relative h-10 w-10 text-[var(--color-text-primary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary-light)] rounded-xl"
+                                className="relative h-10 w-10 rounded-xl text-[var(--color-text-primary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
                                 aria-label={`Wishlist (${wishlistCount} items)`}
                             >
                                 <Heart className="h-5 w-5" />
                                 {wishlistCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold text-white border-2 border-white">
+                                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-[var(--color-primary)] text-[10px] font-bold text-white">
                                         {wishlistCount}
                                     </span>
                                 )}
@@ -179,12 +153,12 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             variant="ghost"
                             size="icon"
                             onClick={openCart}
-                            className="relative h-10 w-10 text-[var(--color-text-primary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary-light)] rounded-xl"
+                            className="relative h-10 w-10 rounded-xl text-[var(--color-text-primary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
                             aria-label={`Shopping Cart (${cartCount} items)`}
                         >
                             <ShoppingCart className="h-5 w-5" />
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold text-white border-2 border-white">
+                                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-[var(--color-primary)] text-[10px] font-bold text-white">
                                     {cartCount}
                                 </span>
                             )}
@@ -200,25 +174,41 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 >
                                     <Avatar className="h-8 w-8">
                                         <AvatarImage
-                                            src={(auth.admin?.avatar ?? auth.user?.avatar) ?? undefined}
-                                            alt={auth.admin?.name ?? auth.user?.name}
+                                            src={
+                                                auth.admin?.avatar ??
+                                                auth.user?.avatar ??
+                                                undefined
+                                            }
+                                            alt={
+                                                auth.admin?.name ??
+                                                auth.user?.name
+                                            }
                                         />
-                                        <AvatarFallback className="bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold">
-                                            {getInitials(auth.admin?.name ?? auth.user?.name ?? '')}
+                                        <AvatarFallback className="bg-[var(--color-primary-light)] font-bold text-[var(--color-primary)]">
+                                            {getInitials(
+                                                auth.admin?.name ??
+                                                    auth.user?.name ??
+                                                    '',
+                                            )}
                                         </AvatarFallback>
                                     </Avatar>
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-64 rounded-2xl p-2 shadow-[var(--shadow-dropdown)]" align="end">
+                            <DropdownMenuContent
+                                className="w-64 rounded-2xl p-2 shadow-[var(--shadow-dropdown)]"
+                                align="end"
+                            >
                                 {auth.admin || auth.user ? (
-                                    <UserMenuContent 
-                                        user={(auth.admin ?? auth.user)!} 
+                                    <UserMenuContent
+                                        user={(auth.admin ?? auth.user)!}
                                         isAdmin={!!auth.admin}
                                     />
                                 ) : (
                                     <div className="p-2">
                                         <Link href={route('login')}>
-                                            <Button className="w-full justify-start font-bold rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]">Login</Button>
+                                            <Button className="w-full justify-start rounded-xl bg-[var(--color-primary)] font-bold text-white hover:bg-[var(--color-primary-hover)]">
+                                                Login
+                                            </Button>
                                         </Link>
                                     </div>
                                 )}
@@ -228,13 +218,13 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                 </div>
             </div>
 
-            <SearchOverlay 
-                isOpen={isSearchOverlayOpen} 
-                onClose={() => setIsSearchOverlayOpen(false)} 
+            <SearchOverlay
+                isOpen={isSearchOverlayOpen}
+                onClose={() => setIsSearchOverlayOpen(false)}
             />
 
             {breadcrumbs.length > 1 && (
-                <div className="bg-white border-b border-[var(--color-border)]">
+                <div className="border-b border-[var(--color-border)] bg-white">
                     <div className="mx-auto flex h-12 w-full items-center justify-start px-4 md:max-w-7xl">
                         <Breadcrumbs breadcrumbs={breadcrumbs} />
                     </div>
@@ -243,4 +233,3 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
         </>
     );
 }
-

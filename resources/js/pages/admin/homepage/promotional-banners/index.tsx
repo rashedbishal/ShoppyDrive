@@ -1,10 +1,10 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Pencil, Trash2, ArrowLeft, Megaphone } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import type { PromotionalBanner } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import type { PromotionalBanner } from '@/types';
 
 type Props = {
     banners: PromotionalBanner[];
@@ -22,18 +22,27 @@ export default function PromotionalBannersIndex({ banners }: Props) {
             <Head title="Promotional Banners — Admin" />
             <div className="space-y-6">
                 <div className="flex items-center gap-4">
-                    <Button asChild variant="ghost" size="icon" className="rounded-full">
+                    <Button
+                        asChild
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full"
+                    >
                         <Link href={route('admin.homepage.index')}>
                             <ArrowLeft className="size-5" />
                         </Link>
                     </Button>
                     <div className="flex-1">
-                        <h1 className="text-2xl font-bold text-slate-900">Promotional Banners</h1>
-                        <p className="text-sm text-slate-500">Wide visual banners shown between product sections.</p>
+                        <h1 className="text-2xl font-bold text-slate-900">
+                            Promotional Banners
+                        </h1>
+                        <p className="text-sm text-slate-500">
+                            Wide visual banners shown between product sections.
+                        </p>
                     </div>
                     <Button asChild>
                         <Link href={route('admin.promotional-banners.create')}>
-                            <Plus className="size-4 mr-2" />
+                            <Plus className="mr-2 size-4" />
                             Add New Banner
                         </Link>
                     </Button>
@@ -41,56 +50,83 @@ export default function PromotionalBannersIndex({ banners }: Props) {
 
                 <div className="grid gap-6">
                     {banners.length === 0 ? (
-                        <Card className="py-12 flex flex-col items-center justify-center text-slate-400">
+                        <Card className="flex flex-col items-center justify-center py-12 text-slate-400">
                             <p>No promotional banners created yet.</p>
                         </Card>
                     ) : (
                         banners.map((banner) => (
                             <Card key={banner.id} className="overflow-hidden">
                                 <div className="flex flex-col md:flex-row">
-                                    <div className="w-full md:w-80 h-40 md:h-auto relative shrink-0">
-                                        <img 
-                                            src={banner.image} 
-                                            alt={banner.title} 
-                                            className="w-full h-full object-cover"
+                                    <div className="relative h-40 w-full shrink-0 md:h-auto md:w-80">
+                                        <img
+                                            src={banner.image}
+                                            alt={banner.title}
+                                            className="h-full w-full object-cover"
                                         />
-                                        <div className={cn('absolute inset-0 bg-gradient-to-r opacity-60', banner.accent)} />
+                                        <div
+                                            className={cn(
+                                                'absolute inset-0 bg-gradient-to-r opacity-60',
+                                                banner.accent,
+                                            )}
+                                        />
                                         {!banner.is_active && (
-                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                                <span className="bg-white/90 text-[10px] font-bold px-2 py-1 rounded">INACTIVE</span>
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                                                <span className="rounded bg-white/90 px-2 py-1 text-[10px] font-bold">
+                                                    INACTIVE
+                                                </span>
                                             </div>
                                         )}
                                     </div>
-                                    <CardContent className="flex-1 p-6 flex flex-col justify-between">
+                                    <CardContent className="flex flex-1 flex-col justify-between p-6">
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    <Badge className="bg-primary/10 text-primary border-none hover:bg-primary/20 text-[10px] uppercase font-bold">
+                                                    <Badge className="border-none bg-primary/10 text-[10px] font-bold text-primary uppercase hover:bg-primary/20">
                                                         {banner.badge}
                                                     </Badge>
-                                                    <span className="text-xs text-slate-400">Order: {banner.sort_order}</span>
+                                                    <span className="text-xs text-slate-400">
+                                                        Order:{' '}
+                                                        {banner.sort_order}
+                                                    </span>
                                                 </div>
                                             </div>
-                                            <h3 className="text-lg font-bold text-slate-800">{banner.title}</h3>
-                                            <p className="text-sm text-slate-500 line-clamp-2">{banner.description}</p>
+                                            <h3 className="text-lg font-bold text-slate-800">
+                                                {banner.title}
+                                            </h3>
+                                            <p className="line-clamp-2 text-sm text-slate-500">
+                                                {banner.description}
+                                            </p>
                                             {banner.href && (
-                                                <p className="text-[10px] font-mono text-slate-400 truncate">Link: {banner.href}</p>
+                                                <p className="truncate font-mono text-[10px] text-slate-400">
+                                                    Link: {banner.href}
+                                                </p>
                                             )}
                                         </div>
-                                        <div className="flex items-center justify-end gap-2 mt-4">
-                                            <Button asChild variant="outline" size="sm">
-                                                <Link href={route('admin.promotional-banners.edit', banner.id)}>
-                                                    <Pencil className="size-3.5 mr-2" />
+                                        <div className="mt-4 flex items-center justify-end gap-2">
+                                            <Button
+                                                asChild
+                                                variant="outline"
+                                                size="sm"
+                                            >
+                                                <Link
+                                                    href={route(
+                                                        'admin.promotional-banners.edit',
+                                                        banner.id,
+                                                    )}
+                                                >
+                                                    <Pencil className="mr-2 size-3.5" />
                                                     Edit
                                                 </Link>
                                             </Button>
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100"
-                                                onClick={() => handleDelete(banner.id)}
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600"
+                                                onClick={() =>
+                                                    handleDelete(banner.id)
+                                                }
                                             >
-                                                <Trash2 className="size-3.5 mr-2" />
+                                                <Trash2 className="mr-2 size-3.5" />
                                                 Delete
                                             </Button>
                                         </div>

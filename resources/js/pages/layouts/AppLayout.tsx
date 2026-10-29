@@ -6,7 +6,5 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
-    return (
-        <StorefrontLayout>{children}</StorefrontLayout>
-    );
+    return <StorefrontLayout>{children}</StorefrontLayout>;
 }

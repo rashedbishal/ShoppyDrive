@@ -15,7 +15,10 @@ const listeners = new Set<() => void>();
 let currentTheme: SiteTheme = 'default';
 
 const isSiteTheme = (value: string | null): value is SiteTheme =>
-    value === 'default' || value === 'neomorphism' || value === 'glassmorphism' || value === 'aurora';
+    value === 'default' ||
+    value === 'neomorphism' ||
+    value === 'glassmorphism' ||
+    value === 'aurora';
 
 const getStoredTheme = (): SiteTheme => {
     if (typeof window === 'undefined') {
@@ -52,7 +55,10 @@ export function initializeSiteTheme(): void {
     currentTheme = getStoredTheme();
 }
 
-export function useSiteTheme(): { theme: SiteTheme; setTheme: (theme: SiteTheme) => void } {
+export function useSiteTheme(): {
+    theme: SiteTheme;
+    setTheme: (theme: SiteTheme) => void;
+} {
     const theme: SiteTheme = useSyncExternalStore(
         subscribe,
         () => currentTheme,

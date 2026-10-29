@@ -14,10 +14,20 @@ export function SearchOverlay({
     isOpen,
     onClose,
 }: SearchOverlayProps): React.JSX.Element {
-    const popularKeywords = (usePage().props as any).popular_keywords as string[] | undefined;
-    const popular = popularKeywords && popularKeywords.length > 0
-        ? popularKeywords
-        : ['Smartphone', 'Headphones', 'Laptops', 'Watches', 'Speakers', 'Accessories'];
+    const popularKeywords = (usePage().props as any).popular_keywords as
+        | string[]
+        | undefined;
+    const popular =
+        popularKeywords && popularKeywords.length > 0
+            ? popularKeywords
+            : [
+                  'Smartphone',
+                  'Headphones',
+                  'Laptops',
+                  'Watches',
+                  'Speakers',
+                  'Accessories',
+              ];
 
     // Prevent scrolling when open
     React.useEffect(() => {
@@ -26,6 +36,7 @@ export function SearchOverlay({
         } else {
             document.body.style.overflow = 'unset';
         }
+
         return () => {
             document.body.style.overflow = 'unset';
         };
@@ -38,19 +49,21 @@ export function SearchOverlay({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[200] bg-white flex flex-col"
+                    className="fixed inset-0 z-[200] flex flex-col bg-white"
                 >
-                    <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
-                        <span className="text-lg font-bold text-[var(--color-text-primary)]">Search Products</span>
-                        <button 
+                    <div className="flex items-center justify-between border-b border-[var(--color-border)] p-4">
+                        <span className="text-lg font-bold text-[var(--color-text-primary)]">
+                            Search Products
+                        </span>
+                        <button
                             onClick={onClose}
-                            className="p-2 rounded-full hover:bg-[var(--color-surface-alt)] transition-colors"
+                            className="rounded-full p-2 transition-colors hover:bg-[var(--color-surface-alt)]"
                         >
                             <X size={24} />
                         </button>
                     </div>
 
-                    <div className="p-4 flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto p-4">
                         <div className="mb-8">
                             <SearchBar isMobile className="max-w-none" />
                         </div>
@@ -58,14 +71,14 @@ export function SearchOverlay({
                         {/* Popular Searches / Suggestions */}
                         <div className="space-y-6">
                             <div>
-                                <h3 className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-4">
+                                <h3 className="mb-4 text-xs font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
                                     Popular Searches
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
                                     {popular.map((term) => (
                                         <button
                                             key={term}
-                                            className="px-4 py-2 rounded-full bg-[var(--color-surface-alt)] text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)] transition-all"
+                                            className="rounded-full bg-[var(--color-surface-alt)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition-all hover:bg-[var(--color-primary-light)] hover:text-[var(--color-primary)]"
                                         >
                                             {term}
                                         </button>
@@ -74,7 +87,7 @@ export function SearchOverlay({
                             </div>
 
                             <div>
-                                <h3 className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-widest mb-4">
+                                <h3 className="mb-4 text-xs font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
                                     Recent Views
                                 </h3>
                                 <div className="grid grid-cols-2 gap-4">

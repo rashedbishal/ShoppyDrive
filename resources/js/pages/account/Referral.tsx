@@ -163,8 +163,8 @@ export default function Referral({
                     </div>
                     <p className="mb-4 text-sm text-[var(--color-text-secondary)]">
                         Claim a bonus once a day. Each day in a row is worth
-                        more — up to day {dailyLoginCapDays} — but missing a
-                        day resets you back to day 1.
+                        more — up to day {dailyLoginCapDays} — but missing a day
+                        resets you back to day 1.
                     </p>
                     <div className="flex flex-wrap items-center gap-4">
                         <div>
@@ -207,8 +207,8 @@ export default function Referral({
                                 {formatCurrency(referralMinOrderAmount)} or
                                 more. You earn {pointsPerReferral} points{' '}
                                 {referralRewardDelayDays} day
-                                {referralRewardDelayDays === 1 ? '' : 's'}{' '}
-                                after that order is delivered — as long as it
+                                {referralRewardDelayDays === 1 ? '' : 's'} after
+                                that order is delivered — as long as it
                                 isn&apos;t cancelled or returned.
                             </p>
                             <div className="flex flex-col gap-2 sm:flex-row">

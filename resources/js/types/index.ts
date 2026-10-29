@@ -13,7 +13,7 @@ export type OrderStatus =
     | 'cancelled'
     | 'refunded';
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
-export type PaymentMethod = 'cod';
+export type PaymentMethod = 'cod' | 'zinipay' | 'mobile_banking';
 export type InventoryType =
     | 'in'
     | 'out'
@@ -145,6 +145,7 @@ export interface Brand extends Timestamped {
     logo?: string | null;
     description?: string | null;
     is_active: boolean;
+    products_count?: number;
 }
 
 export interface AttributeValue extends Timestamped {
@@ -492,7 +493,7 @@ export interface Review extends Timestamped, SoftDeletable {
     helpful_count?: number;
     not_helpful_count?: number;
     user_voted?: boolean | null;
-    user: Pick<User, 'name' | 'avatar'>;
+    user: Pick<User, 'id' | 'name' | 'avatar'>;
 }
 
 export interface ReviewVote extends Timestamped {

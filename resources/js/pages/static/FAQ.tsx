@@ -26,7 +26,9 @@ interface PageProps {
 }
 
 function parseHtmlToGroups(html: string): FaqGroup[] {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') {
+        return [];
+    }
 
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const groups: FaqGroup[] = [];
@@ -74,8 +76,10 @@ function AccordionItem({
                 className="flex w-full items-center justify-between gap-6 px-6 py-5 text-left"
             >
                 <span
-                    className={`text-sm font-semibold leading-snug transition-colors sm:text-base ${
-                        isOpen ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-primary)]'
+                    className={`text-sm leading-snug font-semibold transition-colors sm:text-base ${
+                        isOpen
+                            ? 'text-[var(--color-primary)]'
+                            : 'text-[var(--color-text-primary)]'
                     }`}
                 >
                     {question}
@@ -103,11 +107,7 @@ function AccordionItem({
                         transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
                     >
                         <div
-                            className="border-t border-[var(--color-border)] px-6 py-5 text-sm leading-7 text-[var(--color-text-secondary)]
-                                [&_a]:font-semibold [&_a]:text-[var(--color-primary)] [&_a:hover]:underline
-                                [&_strong]:font-semibold [&_strong]:text-[var(--color-text-primary)]
-                                [&_ul]:mt-2 [&_ul]:space-y-1.5 [&_ul]:pl-4
-                                [&_li]:leading-6 [&_li::marker]:text-[var(--color-primary)]"
+                            className="border-t border-[var(--color-border)] px-6 py-5 text-sm leading-7 text-[var(--color-text-secondary)] [&_a]:font-semibold [&_a]:text-[var(--color-primary)] [&_a:hover]:underline [&_li]:leading-6 [&_li::marker]:text-[var(--color-primary)] [&_strong]:font-semibold [&_strong]:text-[var(--color-text-primary)] [&_ul]:mt-2 [&_ul]:space-y-1.5 [&_ul]:pl-4"
                             dangerouslySetInnerHTML={{ __html: answer }}
                         />
                     </motion.div>
@@ -123,12 +123,17 @@ export default function FAQ({ page }: PageProps): React.JSX.Element {
     const [query, setQuery] = useState('');
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- reads browser-only APIs after mount so SSR markup matches hydration
         setGroups(parseHtmlToGroups(page.content));
     }, [page.content]);
 
     const filtered = useMemo(() => {
-        if (!query.trim()) return groups;
+        if (!query.trim()) {
+            return groups;
+        }
+
         const q = query.toLowerCase();
+
         return groups
             .map((g) => ({
                 ...g,
@@ -150,7 +155,10 @@ export default function FAQ({ page }: PageProps): React.JSX.Element {
 
     return (
         <div className="min-h-screen bg-[var(--color-surface)]">
-            <PageMeta title={page.meta_title || page.title} description={page.meta_description} />
+            <PageMeta
+                title={page.meta_title || page.title}
+                description={page.meta_description}
+            />
 
             {/* Hero */}
             <div className="pt-6 lg:pt-8">
@@ -160,35 +168,46 @@ export default function FAQ({ page }: PageProps): React.JSX.Element {
                     title={
                         <>
                             Frequently Asked{' '}
-                            <span className="text-[var(--color-primary)]">Questions</span>
+                            <span className="text-[var(--color-primary)]">
+                                Questions
+                            </span>
                         </>
                     }
                     description={
                         <>
-                            Everything you need to know about shopping, delivery, and returns. Can't find an answer?{' '}
-                            <Link href="/contact" className="text-[var(--color-primary)] hover:underline">
+                            Everything you need to know about shopping,
+                            delivery, and returns. Can't find an answer?{' '}
+                            <Link
+                                href="/contact"
+                                className="text-[var(--color-primary)] hover:underline"
+                            >
                                 Contact our team
                             </Link>
                             .
                         </>
                     }
-                    chips={[{ icon: MessageCircle, label: `${totalQuestions} answered questions` }]}
+                    chips={[
+                        {
+                            icon: MessageCircle,
+                            label: `${totalQuestions} answered questions`,
+                        },
+                    ]}
                     aside={
                         <div className="relative">
-                            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
+                            <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
                             <input
                                 type="text"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 placeholder={`Search ${totalQuestions} questions…`}
                                 aria-label="Search questions"
-                                className="h-11 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] pl-11 pr-16 text-sm text-[var(--color-text-primary)] shadow-sm placeholder:text-[var(--color-text-muted)] transition focus:border-[var(--color-primary)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/15"
+                                className="h-11 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] pr-16 pl-11 text-sm text-[var(--color-text-primary)] shadow-sm transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)]/40 focus:ring-2 focus:ring-[var(--color-primary)]/15 focus:outline-none"
                             />
                             {query && (
                                 <button
                                     type="button"
                                     onClick={() => setQuery('')}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[var(--color-text-muted)] transition hover:text-[var(--color-text-primary)]"
+                                    className="absolute top-1/2 right-4 -translate-y-1/2 text-xs text-[var(--color-text-muted)] transition hover:text-[var(--color-text-primary)]"
                                 >
                                     Clear
                                 </button>
@@ -210,7 +229,10 @@ export default function FAQ({ page }: PageProps): React.JSX.Element {
                         </p>
                         <p className="text-sm text-[var(--color-text-secondary)]">
                             Try a different search term or{' '}
-                            <Link href="/contact" className="text-[var(--color-primary)] hover:underline">
+                            <Link
+                                href="/contact"
+                                className="text-[var(--color-primary)] hover:underline"
+                            >
                                 contact us
                             </Link>{' '}
                             directly.
@@ -245,8 +267,14 @@ export default function FAQ({ page }: PageProps): React.JSX.Element {
                                             key={i}
                                             question={item.question}
                                             answer={item.answer}
-                                            isOpen={!!openItems[`${group.title}-${i}`]}
-                                            onToggle={() => toggle(group.title, i)}
+                                            isOpen={
+                                                !!openItems[
+                                                    `${group.title}-${i}`
+                                                ]
+                                            }
+                                            onToggle={() =>
+                                                toggle(group.title, i)
+                                            }
                                         />
                                     ))}
                                 </div>
@@ -265,7 +293,8 @@ export default function FAQ({ page }: PageProps): React.JSX.Element {
                             Still have questions?
                         </h3>
                         <p className="text-sm text-[var(--color-text-secondary)]">
-                            Our support team is available every day from 9 AM to 9 PM (BST).
+                            Our support team is available every day from 9 AM to
+                            9 PM (BST).
                         </p>
                     </div>
                     <Link

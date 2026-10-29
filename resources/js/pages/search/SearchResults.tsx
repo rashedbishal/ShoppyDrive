@@ -1,10 +1,21 @@
 import { Head, router } from '@inertiajs/react';
-import { Filter, LayoutGrid, List, Package, Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import {
+    Filter,
+    LayoutGrid,
+    List,
+    Package,
+    Search as SearchIcon,
+    X,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { route } from 'ziggy-js';
 
 import { PageHero } from '@/components/shared/PageHero';
-import { ProductCard, ProductCardSkeleton } from '@/components/shared/ProductCard';
+import {
+    ProductCard,
+    ProductCardSkeleton,
+} from '@/components/shared/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Drawer } from '@/components/ui/drawer';
@@ -12,8 +23,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
 import { SIDEBAR_LAYOUT_CLASS } from '@/lib/constants';
-import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
+import { cn } from '@/lib/utils';
 import type { Brand, Category, PaginatedData, Product } from '@/types';
 
 type SearchFilters = {
@@ -50,7 +61,9 @@ const SORT_OPTIONS = [
 
 // ── Price Range Filter ─────────────────────────────────────────────────────────
 function PriceRangeFilter({
-    lo, hi, cap,
+    lo,
+    hi,
+    cap,
     onChange,
 }: {
     lo: number;
@@ -61,7 +74,9 @@ function PriceRangeFilter({
     const [inputLo, setInputLo] = useState(String(lo));
     const [inputHi, setInputHi] = useState(String(hi));
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
     useEffect(() => setInputLo(String(lo)), [lo]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
     useEffect(() => setInputHi(String(hi)), [hi]);
 
     const loPercent = cap > 0 ? (lo / cap) * 100 : 0;
@@ -69,11 +84,17 @@ function PriceRangeFilter({
     const minOnTop = loPercent > 95;
 
     const commitLo = (raw: string) => {
-        const v = Math.max(0, Math.min(Math.round(Number(raw) / 10) * 10, hi - 10));
+        const v = Math.max(
+            0,
+            Math.min(Math.round(Number(raw) / 10) * 10, hi - 10),
+        );
         onChange(isNaN(v) ? 0 : v, hi);
     };
     const commitHi = (raw: string) => {
-        const v = Math.max(lo + 10, Math.min(Math.round(Number(raw) / 10) * 10, cap));
+        const v = Math.max(
+            lo + 10,
+            Math.min(Math.round(Number(raw) / 10) * 10, cap),
+        );
         onChange(lo, isNaN(v) ? cap : v);
     };
 
@@ -81,21 +102,34 @@ function PriceRangeFilter({
         <div className="space-y-5">
             <div className="flex items-stretch gap-2">
                 <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 py-2">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Min</span>
-                    <span className="text-sm font-bold text-[var(--color-primary)]">৳{lo.toLocaleString('en-BD')}</span>
+                    <span className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                        Min
+                    </span>
+                    <span className="text-sm font-bold text-[var(--color-primary)]">
+                        ৳{lo.toLocaleString('en-BD')}
+                    </span>
                 </div>
-                <div className="flex items-center text-sm text-[var(--color-text-muted)]">—</div>
+                <div className="flex items-center text-sm text-[var(--color-text-muted)]">
+                    —
+                </div>
                 <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 py-2">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Max</span>
-                    <span className="text-sm font-bold text-[var(--color-primary)]">৳{hi.toLocaleString('en-BD')}</span>
+                    <span className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                        Max
+                    </span>
+                    <span className="text-sm font-bold text-[var(--color-primary)]">
+                        ৳{hi.toLocaleString('en-BD')}
+                    </span>
                 </div>
             </div>
 
             <div className="relative mx-1.5 py-3">
-                <div className="absolute top-1/2 left-0 right-0 h-2 -translate-y-1/2 rounded-full bg-[var(--color-surface-alt)] shadow-inner" />
+                <div className="absolute top-1/2 right-0 left-0 h-2 -translate-y-1/2 rounded-full bg-[var(--color-surface-alt)] shadow-inner" />
                 <div
                     className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-[var(--color-primary)] transition-[left,width] duration-75"
-                    style={{ left: `${loPercent}%`, width: `${Math.max(0, hiPercent - loPercent)}%` }}
+                    style={{
+                        left: `${loPercent}%`,
+                        width: `${Math.max(0, hiPercent - loPercent)}%`,
+                    }}
                 />
                 <div
                     className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[var(--color-primary)] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-[left] duration-75"
@@ -106,16 +140,28 @@ function PriceRangeFilter({
                     style={{ left: `${hiPercent}%` }}
                 />
                 <input
-                    type="range" min={0} max={cap} step={10} value={lo}
-                    onChange={(e) => onChange(Math.min(Number(e.target.value), hi - 10), hi)}
+                    type="range"
+                    min={0}
+                    max={cap}
+                    step={10}
+                    value={lo}
+                    onChange={(e) =>
+                        onChange(Math.min(Number(e.target.value), hi - 10), hi)
+                    }
                     className={cn(
                         'absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent opacity-0',
                         minOnTop ? 'z-30' : 'z-20',
                     )}
                 />
                 <input
-                    type="range" min={10} max={cap} step={10} value={hi}
-                    onChange={(e) => onChange(lo, Math.max(Number(e.target.value), lo + 10))}
+                    type="range"
+                    min={10}
+                    max={cap}
+                    step={10}
+                    value={hi}
+                    onChange={(e) =>
+                        onChange(lo, Math.max(Number(e.target.value), lo + 10))
+                    }
                     className={cn(
                         'absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent opacity-0',
                         minOnTop ? 'z-20' : 'z-30',
@@ -125,30 +171,46 @@ function PriceRangeFilter({
 
             <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Min price</label>
+                    <label className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                        Min price
+                    </label>
                     <div className="relative">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--color-text-muted)]">৳</span>
+                        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-bold text-[var(--color-text-muted)]">
+                            ৳
+                        </span>
                         <input
-                            type="number" min={0} step={10}
+                            type="number"
+                            min={0}
+                            step={10}
                             value={inputLo}
                             onChange={(e) => setInputLo(e.target.value)}
                             onBlur={() => commitLo(inputLo)}
-                            onKeyDown={(e) => e.key === 'Enter' && commitLo(inputLo)}
-                            className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-white pl-7 pr-2 text-sm font-medium transition focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                            onKeyDown={(e) =>
+                                e.key === 'Enter' && commitLo(inputLo)
+                            }
+                            className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-white pr-2 pl-7 text-sm font-medium transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:outline-none"
                         />
                     </div>
                 </div>
                 <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Max price</label>
+                    <label className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                        Max price
+                    </label>
                     <div className="relative">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--color-text-muted)]">৳</span>
+                        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-bold text-[var(--color-text-muted)]">
+                            ৳
+                        </span>
                         <input
-                            type="number" min={10} step={10}
+                            type="number"
+                            min={10}
+                            step={10}
                             value={inputHi}
                             onChange={(e) => setInputHi(e.target.value)}
                             onBlur={() => commitHi(inputHi)}
-                            onKeyDown={(e) => e.key === 'Enter' && commitHi(inputHi)}
-                            className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-white pl-7 pr-2 text-sm font-medium transition focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                            onKeyDown={(e) =>
+                                e.key === 'Enter' && commitHi(inputHi)
+                            }
+                            className="h-10 w-full rounded-xl border border-[var(--color-border)] bg-white pr-2 pl-7 text-sm font-medium transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:outline-none"
                         />
                     </div>
                 </div>
@@ -158,11 +220,21 @@ function PriceRangeFilter({
 }
 
 // ── Filter Group ───────────────────────────────────────────────────────────────
-function FilterGroup({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }): React.JSX.Element {
+function FilterGroup({
+    title,
+    children,
+    action,
+}: {
+    title: string;
+    children: ReactNode;
+    action?: ReactNode;
+}): React.JSX.Element {
     return (
         <div className="space-y-4 border-b border-[var(--color-border)] pb-6 last:border-b-0 last:pb-0">
             <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--color-text-primary)]">{title}</h3>
+                <h3 className="text-sm font-semibold tracking-[0.2em] text-[var(--color-text-primary)] uppercase">
+                    {title}
+                </h3>
                 {action}
             </div>
             {children}
@@ -178,12 +250,31 @@ function buildQuery(f: SearchFilters): Record<string, QueryValue> {
         view: f.view,
         page: f.page,
     };
-    if (f.category) q.category = f.category;
-    if (f.brand.length > 0) q.brand = f.brand;
-    if (f.min_price !== null) q.min_price = f.min_price;
-    if (f.max_price !== null) q.max_price = f.max_price;
-    if (f.rating !== null) q.rating = f.rating;
-    if (f.in_stock) q.in_stock = true;
+
+    if (f.category) {
+        q.category = f.category;
+    }
+
+    if (f.brand.length > 0) {
+        q.brand = f.brand;
+    }
+
+    if (f.min_price !== null) {
+        q.min_price = f.min_price;
+    }
+
+    if (f.max_price !== null) {
+        q.max_price = f.max_price;
+    }
+
+    if (f.rating !== null) {
+        q.rating = f.rating;
+    }
+
+    if (f.in_stock) {
+        q.in_stock = true;
+    }
+
     return q;
 }
 
@@ -202,6 +293,7 @@ export default function SearchResults({
     const [draft, setDraft] = useState<SearchFilters>(filters);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
         setDraft(filters);
         setIsLoading(false);
     }, [filters]);
@@ -219,10 +311,16 @@ export default function SearchResults({
         });
     };
 
-    const applyChange = (updater: (c: SearchFilters) => SearchFilters): void => {
+    const applyChange = (
+        updater: (c: SearchFilters) => SearchFilters,
+    ): void => {
         setDraft((c) => {
             const next = updater(c);
-            if (isDesktop) submitFilters(next);
+
+            if (isDesktop) {
+                submitFilters(next);
+            }
+
             return next;
         });
     };
@@ -259,36 +357,54 @@ export default function SearchResults({
         chips.push({
             key: 'category',
             label: `Category: ${cat?.name ?? draft.category}`,
-            onRemove: () => applyChange((c) => ({ ...c, category: null, page: 1 })),
+            onRemove: () =>
+                applyChange((c) => ({ ...c, category: null, page: 1 })),
         });
     }
+
     draft.brand.forEach((slug) => {
         const b = brands.find((x) => x.slug === slug);
         chips.push({
             key: `brand-${slug}`,
             label: `Brand: ${b?.name ?? slug}`,
-            onRemove: () => applyChange((c) => ({ ...c, brand: c.brand.filter((s) => s !== slug), page: 1 })),
+            onRemove: () =>
+                applyChange((c) => ({
+                    ...c,
+                    brand: c.brand.filter((s) => s !== slug),
+                    page: 1,
+                })),
         });
     });
+
     if (draft.min_price !== null || draft.max_price !== null) {
         chips.push({
             key: 'price',
             label: `Price: ৳${(draft.min_price ?? 0).toLocaleString('en-BD')} – ৳${(draft.max_price ?? maxPrice).toLocaleString('en-BD')}`,
-            onRemove: () => applyChange((c) => ({ ...c, min_price: null, max_price: null, page: 1 })),
+            onRemove: () =>
+                applyChange((c) => ({
+                    ...c,
+                    min_price: null,
+                    max_price: null,
+                    page: 1,
+                })),
         });
     }
+
     if (draft.rating !== null) {
         chips.push({
             key: 'rating',
             label: `${draft.rating}★ & up`,
-            onRemove: () => applyChange((c) => ({ ...c, rating: null, page: 1 })),
+            onRemove: () =>
+                applyChange((c) => ({ ...c, rating: null, page: 1 })),
         });
     }
+
     if (draft.in_stock) {
         chips.push({
             key: 'stock',
             label: 'In stock only',
-            onRemove: () => applyChange((c) => ({ ...c, in_stock: false, page: 1 })),
+            onRemove: () =>
+                applyChange((c) => ({ ...c, in_stock: false, page: 1 })),
         });
     }
 
@@ -305,7 +421,10 @@ export default function SearchResults({
                                 onChange={() =>
                                     applyChange((c) => ({
                                         ...c,
-                                        category: c.category === cat.slug ? null : cat.slug,
+                                        category:
+                                            c.category === cat.slug
+                                                ? null
+                                                : cat.slug,
                                         page: 1,
                                     }))
                                 }
@@ -321,7 +440,12 @@ export default function SearchResults({
                     hi={draft.max_price ?? Math.max(1000, maxPrice)}
                     cap={Math.max(1000, maxPrice)}
                     onChange={(lo, hi) =>
-                        applyChange((c) => ({ ...c, min_price: lo, max_price: hi, page: 1 }))
+                        applyChange((c) => ({
+                            ...c,
+                            min_price: lo,
+                            max_price: hi,
+                            page: 1,
+                        }))
                     }
                 />
             </FilterGroup>
@@ -338,7 +462,9 @@ export default function SearchResults({
                                     applyChange((c) => ({
                                         ...c,
                                         brand: c.brand.includes(brand.slug)
-                                            ? c.brand.filter((s) => s !== brand.slug)
+                                            ? c.brand.filter(
+                                                  (s) => s !== brand.slug,
+                                              )
                                             : [...c.brand, brand.slug],
                                         page: 1,
                                     }))
@@ -353,7 +479,13 @@ export default function SearchResults({
                 <Checkbox
                     label="In stock only"
                     checked={draft.in_stock}
-                    onChange={() => applyChange((c) => ({ ...c, in_stock: !c.in_stock, page: 1 }))}
+                    onChange={() =>
+                        applyChange((c) => ({
+                            ...c,
+                            in_stock: !c.in_stock,
+                            page: 1,
+                        }))
+                    }
                 />
             </FilterGroup>
         </div>
@@ -388,14 +520,25 @@ export default function SearchResults({
                 />
 
                 {/* Sidebar + Grid */}
-                <section className={cn(SIDEBAR_LAYOUT_CLASS, 'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8')}>
+                <section
+                    className={cn(
+                        SIDEBAR_LAYOUT_CLASS,
+                        'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8',
+                    )}
+                >
                     {/* Desktop Sidebar */}
                     <aside className="hidden lg:block">
                         <div className="sticky top-28 space-y-6 rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-sm">
                             <div className="flex items-center justify-between">
-                                <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Filters</h2>
+                                <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                                    Filters
+                                </h2>
                                 {chips.length > 0 && (
-                                    <Button variant="ghost" className="px-0 text-[var(--color-primary)]" onClick={handleClearAll}>
+                                    <Button
+                                        variant="ghost"
+                                        className="px-0 text-[var(--color-primary)]"
+                                        onClick={handleClearAll}
+                                    >
                                         Clear All
                                     </Button>
                                 )}
@@ -427,40 +570,58 @@ export default function SearchResults({
                                     <Select
                                         value={draft.sort}
                                         onChange={(e) => {
-                                            const next = { ...draft, sort: e.target.value, page: 1 };
+                                            const next = {
+                                                ...draft,
+                                                sort: e.target.value,
+                                                page: 1,
+                                            };
                                             setDraft(next);
                                             submitFilters(next);
                                         }}
-                                        options={SORT_OPTIONS.map((o) => ({ label: o.label, value: o.value }))}
+                                        options={SORT_OPTIONS.map((o) => ({
+                                            label: o.label,
+                                            value: o.value,
+                                        }))}
                                         selectClassName="min-w-48"
                                     />
                                 </div>
 
                                 <div className="flex items-center gap-3">
                                     <p className="hidden text-sm text-[var(--color-text-secondary)] sm:block">
-                                        {products.from ?? 0}–{products.to ?? 0} of {products.total}
+                                        {products.from ?? 0}–{products.to ?? 0}{' '}
+                                        of {products.total}
                                     </p>
                                     <div className="inline-flex overflow-hidden rounded-xl border border-[var(--color-border)]">
-                                        {(['grid', 'list'] as const).map((v) => (
-                                            <button
-                                                key={v}
-                                                type="button"
-                                                onClick={() => {
-                                                    const next = { ...draft, view: v, page: 1 };
-                                                    setDraft(next);
-                                                    submitFilters(next);
-                                                }}
-                                                aria-label={`${v} view`}
-                                                className={cn(
-                                                    'inline-flex size-11 items-center justify-center transition',
-                                                    draft.view === v
-                                                        ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]'
-                                                        : 'bg-white text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]',
-                                                )}
-                                            >
-                                                {v === 'grid' ? <LayoutGrid className="size-4" /> : <List className="size-4" />}
-                                            </button>
-                                        ))}
+                                        {(['grid', 'list'] as const).map(
+                                            (v) => (
+                                                <button
+                                                    key={v}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const next = {
+                                                            ...draft,
+                                                            view: v,
+                                                            page: 1,
+                                                        };
+                                                        setDraft(next);
+                                                        submitFilters(next);
+                                                    }}
+                                                    aria-label={`${v} view`}
+                                                    className={cn(
+                                                        'inline-flex size-11 items-center justify-center transition',
+                                                        draft.view === v
+                                                            ? 'bg-[var(--color-primary-light)] text-[var(--color-primary)]'
+                                                            : 'bg-white text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]',
+                                                    )}
+                                                >
+                                                    {v === 'grid' ? (
+                                                        <LayoutGrid className="size-4" />
+                                                    ) : (
+                                                        <List className="size-4" />
+                                                    )}
+                                                </button>
+                                            ),
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -485,21 +646,37 @@ export default function SearchResults({
 
                         {/* Product Grid / Skeletons / Empty */}
                         {isLoading ? (
-                            <div className={cn(
-                                'grid gap-3 md:gap-4',
-                                draft.view === 'list' ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3',
-                            )}>
+                            <div
+                                className={cn(
+                                    'grid gap-3 md:gap-4',
+                                    draft.view === 'list'
+                                        ? 'grid-cols-1'
+                                        : 'grid-cols-2 sm:grid-cols-3',
+                                )}
+                            >
                                 {Array.from({ length: 12 }, (_, i) => (
-                                    <ProductCardSkeleton key={i} view={draft.view} />
+                                    <ProductCardSkeleton
+                                        key={i}
+                                        view={draft.view}
+                                    />
                                 ))}
                             </div>
                         ) : products.data.length > 0 ? (
-                            <div className={cn(
-                                'grid gap-3 md:gap-4',
-                                draft.view === 'list' ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3',
-                            )}>
+                            <div
+                                className={cn(
+                                    'grid gap-3 md:gap-4',
+                                    draft.view === 'list'
+                                        ? 'grid-cols-1'
+                                        : 'grid-cols-2 sm:grid-cols-3',
+                                )}
+                            >
                                 {products.data.map((product, index) => (
-                                    <ProductCard key={product.id} product={product} index={index} view={draft.view} />
+                                    <ProductCard
+                                        key={product.id}
+                                        product={product}
+                                        index={index}
+                                        view={draft.view}
+                                    />
                                 ))}
                             </div>
                         ) : (
@@ -513,13 +690,23 @@ export default function SearchResults({
                                 }
                                 action={
                                     chips.length > 0
-                                        ? { label: 'Clear filters', onClick: handleClearAll }
-                                        : { label: 'Browse all products', href: route('products.index') }
+                                        ? {
+                                              label: 'Clear filters',
+                                              onClick: handleClearAll,
+                                          }
+                                        : {
+                                              label: 'Browse all products',
+                                              href: route('products.index'),
+                                          }
                                 }
                             />
                         )}
 
-                        <Pagination data={products} onPageChange={handlePageChange} className="pt-2" />
+                        <Pagination
+                            data={products}
+                            onPageChange={handlePageChange}
+                            className="pt-2"
+                        />
                     </div>
                 </section>
             </div>

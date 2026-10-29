@@ -5,4 +5,3 @@ declare module '@inertiajs/core' {
         sharedPageProps: SharedPageProps;
     }
 }
-

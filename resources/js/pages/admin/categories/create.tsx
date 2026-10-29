@@ -7,6 +7,29 @@ import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { maxLength, required, validate } from '@/lib/validate';
 
+function Field({
+    label,
+    hint,
+    error,
+    children,
+}: {
+    label: string;
+    hint?: string;
+    error?: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+                {label}
+            </label>
+            {hint && <p className="mb-1.5 text-xs text-slate-400">{hint}</p>}
+            {children}
+            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+        </div>
+    );
+}
+
 export default function CategoryCreate() {
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
@@ -42,27 +65,6 @@ export default function CategoryCreate() {
 
         post(route('admin.categories.store'));
     };
-
-    const Field = ({
-        label,
-        hint,
-        error,
-        children,
-    }: {
-        label: string;
-        hint?: string;
-        error?: string;
-        children: React.ReactNode;
-    }) => (
-        <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-                {label}
-            </label>
-            {hint && <p className="mb-1.5 text-xs text-slate-400">{hint}</p>}
-            {children}
-            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-        </div>
-    );
 
     const inputClass = (err?: string) =>
         `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;

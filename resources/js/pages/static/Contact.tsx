@@ -1,7 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { PageHero } from '@/components/shared/PageHero';
 import {
-    ArrowRight,
     Clock,
     Facebook,
     Instagram,
@@ -10,11 +8,11 @@ import {
     MessageSquare,
     Phone,
     Send,
-    Twitter,
     Youtube,
 } from 'lucide-react';
-import InputError from '@/components/input-error';
 import { TikTokLogo, XLogo } from '@/components/icons/brand-icons';
+import InputError from '@/components/input-error';
+import { PageHero } from '@/components/shared/PageHero';
 
 type ContactContentProps = {
     hero_eyebrow: string;

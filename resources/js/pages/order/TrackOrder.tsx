@@ -1,4 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Truck,
     Package,
@@ -9,10 +10,9 @@ import {
     Loader2,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 
-import { OrderTimeline } from '@/components/shared/OrderTimeline';
 import { OrderStatusBadge } from '@/components/shared/OrderStatusBadge';
+import { OrderTimeline } from '@/components/shared/OrderTimeline';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,6 +50,7 @@ export default function TrackOrder({
         const orderNumber = form.data.order_number.trim();
 
         if (!orderNumber) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- clears results at once when the query is emptied; fetched results are set asynchronously
             setRequires(null);
             setChecking(false);
 
@@ -184,8 +185,8 @@ export default function TrackOrder({
                         Track Your Order
                     </h1>
                     <p className="mx-auto max-w-md text-[var(--color-text-secondary)]">
-                        Start typing your order number — we'll show you
-                        exactly what's needed to verify it.
+                        Start typing your order number — we'll show you exactly
+                        what's needed to verify it.
                     </p>
                 </div>
 
@@ -221,83 +222,76 @@ export default function TrackOrder({
                         </div>
 
                         <AnimatePresence>
-                            {requires &&
-                                (requires.email || requires.phone) && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -8 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -8 }}
-                                        transition={{ duration: 0.2 }}
+                            {requires && (requires.email || requires.phone) && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -8 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <div
+                                        className={`grid grid-cols-1 gap-4 pt-1 ${requires.email && requires.phone ? 'sm:grid-cols-2' : ''}`}
                                     >
-                                        <div
-                                            className={`grid grid-cols-1 gap-4 pt-1 ${requires.email && requires.phone ? 'sm:grid-cols-2' : ''}`}
-                                        >
-                                            {requires.email && (
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="email">
-                                                        Email Address
-                                                    </Label>
-                                                    <div className="relative">
-                                                        <Input
-                                                            id="email"
-                                                            type="email"
-                                                            value={
-                                                                form.data.email
-                                                            }
-                                                            onChange={(e) =>
-                                                                form.setData(
-                                                                    'email',
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            placeholder="your@email.com"
-                                                            className="h-14 rounded-2xl pl-12"
-                                                        />
-                                                        <Mail
-                                                            size={20}
-                                                            className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
-                                                        />
-                                                    </div>
+                                        {requires.email && (
+                                            <div className="space-y-2">
+                                                <Label htmlFor="email">
+                                                    Email Address
+                                                </Label>
+                                                <div className="relative">
+                                                    <Input
+                                                        id="email"
+                                                        type="email"
+                                                        value={form.data.email}
+                                                        onChange={(e) =>
+                                                            form.setData(
+                                                                'email',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="your@email.com"
+                                                        className="h-14 rounded-2xl pl-12"
+                                                    />
+                                                    <Mail
+                                                        size={20}
+                                                        className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
+                                                    />
                                                 </div>
-                                            )}
-                                            {requires.phone && (
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="phone">
-                                                        Phone Number
-                                                    </Label>
-                                                    <div className="relative">
-                                                        <Input
-                                                            id="phone"
-                                                            value={
-                                                                form.data.phone
-                                                            }
-                                                            onChange={(e) =>
-                                                                form.setData(
-                                                                    'phone',
-                                                                    e.target
-                                                                        .value,
-                                                                )
-                                                            }
-                                                            placeholder="01XXXXXXXXX"
-                                                            className="h-14 rounded-2xl pl-12"
-                                                        />
-                                                        <Phone
-                                                            size={20}
-                                                            className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
-                                                        />
-                                                    </div>
+                                            </div>
+                                        )}
+                                        {requires.phone && (
+                                            <div className="space-y-2">
+                                                <Label htmlFor="phone">
+                                                    Phone Number
+                                                </Label>
+                                                <div className="relative">
+                                                    <Input
+                                                        id="phone"
+                                                        value={form.data.phone}
+                                                        onChange={(e) =>
+                                                            form.setData(
+                                                                'phone',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="01XXXXXXXXX"
+                                                        className="h-14 rounded-2xl pl-12"
+                                                    />
+                                                    <Phone
+                                                        size={20}
+                                                        className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
+                                                    />
                                                 </div>
-                                            )}
-                                        </div>
-                                    </motion.div>
-                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
                         </AnimatePresence>
 
                         <Button
                             type="submit"
                             disabled={form.processing || checking}
-                            className="h-14 w-full rounded-2xl font-bold shadow-lg shadow-[var(--color-primary)]/20"
+                            className="h-14 w-full rounded-2xl font-bold shadow-[var(--color-primary)]/20 shadow-lg"
                         >
                             {form.processing || checking
                                 ? 'Searching…'

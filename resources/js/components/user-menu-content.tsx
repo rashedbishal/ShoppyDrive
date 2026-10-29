@@ -36,14 +36,22 @@ export function UserMenuContent({ user, isAdmin = false }: Props) {
             <DropdownMenuGroup>
                 {isAdmin && (
                     <DropdownMenuItem asChild>
-                        <a className="flex w-full cursor-pointer items-center" href="/admin">
+                        <a
+                            className="flex w-full cursor-pointer items-center"
+                            href="/admin"
+                        >
                             <LayoutDashboard className="mr-2 h-4 w-4" />
                             CMS Dashboard
                         </a>
                     </DropdownMenuItem>
                 )}
                 <DropdownMenuItem asChild>
-                    <Link className="flex w-full cursor-pointer items-center" href={route('profile.edit')} prefetch onClick={cleanup}>
+                    <Link
+                        className="flex w-full cursor-pointer items-center"
+                        href={route('profile.edit')}
+                        prefetch
+                        onClick={cleanup}
+                    >
                         <Settings className="mr-2 h-4 w-4" />
                         Settings
                     </Link>

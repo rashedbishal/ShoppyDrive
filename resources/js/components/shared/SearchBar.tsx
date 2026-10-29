@@ -1,6 +1,14 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Layers, LayoutGrid, Search as SearchIcon, Tag, TrendingUp, X } from 'lucide-react';
+import {
+    ArrowRight,
+    Layers,
+    LayoutGrid,
+    Search as SearchIcon,
+    Tag,
+    TrendingUp,
+    X,
+} from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useDebounce } from '@/lib/hooks/useDebounce';
@@ -42,7 +50,14 @@ type FlatItem =
     | { kind: 'subcategory'; slug: string }
     | { kind: 'seeAll' };
 
-const POPULAR_FALLBACK = ['Smartphone', 'Headphones', 'Laptop', 'Watch', 'Speaker', 'Accessories'];
+const POPULAR_FALLBACK = [
+    'Smartphone',
+    'Headphones',
+    'Laptop',
+    'Watch',
+    'Speaker',
+    'Accessories',
+];
 
 interface SearchBarProps {
     className?: string;
@@ -51,14 +66,25 @@ interface SearchBarProps {
     autoFocus?: boolean;
 }
 
-export function SearchBar({ className, isMobile = false, onSearch, autoFocus = false }: SearchBarProps): React.JSX.Element {
-    const popularKeywords = (usePage().props as any).popular_keywords as string[] | undefined;
-    const popular = popularKeywords && popularKeywords.length > 0 ? popularKeywords : POPULAR_FALLBACK;
+export function SearchBar({
+    className,
+    onSearch,
+    autoFocus = false,
+}: SearchBarProps): React.JSX.Element {
+    const popularKeywords = (usePage().props as any).popular_keywords as
+        | string[]
+        | undefined;
+    const popular =
+        popularKeywords && popularKeywords.length > 0
+            ? popularKeywords
+            : POPULAR_FALLBACK;
     const [query, setQuery] = useState('');
     const [products, setProducts] = useState<SuggestionProduct[]>([]);
     const [brands, setBrands] = useState<SuggestionBrand[]>([]);
     const [categories, setCategories] = useState<SuggestionCategory[]>([]);
-    const [subcategories, setSubcategories] = useState<SuggestionSubCategory[]>([]);
+    const [subcategories, setSubcategories] = useState<SuggestionSubCategory[]>(
+        [],
+    );
     const [isLoading, setIsLoading] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const [activeIndex, setActiveIndex] = useState(-1);
@@ -67,32 +93,53 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
     const inputRef = useRef<HTMLInputElement>(null);
     const debouncedQuery = useDebounce(query, 280);
 
-    const hasResults = products.length > 0 || brands.length > 0 || categories.length > 0 || subcategories.length > 0;
-    const showPanel = isFocused && (query.trim().length >= 2 || query.trim().length === 0);
+    const hasResults =
+        products.length > 0 ||
+        brands.length > 0 ||
+        categories.length > 0 ||
+        subcategories.length > 0;
+    const showPanel =
+        isFocused && (query.trim().length >= 2 || query.trim().length === 0);
 
     // Build flat navigable list for keyboard nav
     const flatItems: FlatItem[] = [
         ...products.map((p): FlatItem => ({ kind: 'product', slug: p.slug })),
         ...brands.map((b): FlatItem => ({ kind: 'brand', slug: b.slug })),
-        ...categories.map((c): FlatItem => ({ kind: 'category', slug: c.slug })),
-        ...subcategories.map((s): FlatItem => ({ kind: 'subcategory', slug: s.slug })),
+        ...categories.map(
+            (c): FlatItem => ({ kind: 'category', slug: c.slug }),
+        ),
+        ...subcategories.map(
+            (s): FlatItem => ({ kind: 'subcategory', slug: s.slug }),
+        ),
         ...(hasResults ? [{ kind: 'seeAll' } as FlatItem] : []),
     ];
 
     // Fetch suggestions
     useEffect(() => {
         if (debouncedQuery.trim().length < 2) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- clears results at once when the query is emptied; fetched results are set asynchronously
             setProducts([]);
             setBrands([]);
             setCategories([]);
             setSubcategories([]);
             setIsLoading(false);
+
             return;
         }
+
         setIsLoading(true);
         fetch(`/api/search/suggestions?q=${encodeURIComponent(debouncedQuery)}`)
-            .then(r => (r.ok ? r.json() : { products: [], brands: [], categories: [], subcategories: [] }))
-            .then(data => {
+            .then((r) =>
+                r.ok
+                    ? r.json()
+                    : {
+                          products: [],
+                          brands: [],
+                          categories: [],
+                          subcategories: [],
+                      },
+            )
+            .then((data) => {
                 setProducts(data.products ?? []);
                 setBrands(data.brands ?? []);
                 setCategories(data.categories ?? []);
@@ -110,17 +157,24 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
     // Close on outside click
     useEffect(() => {
         const handler = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+            if (
+                containerRef.current &&
+                !containerRef.current.contains(e.target as Node)
+            ) {
                 setIsFocused(false);
             }
         };
         document.addEventListener('mousedown', handler);
+
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
     const navigateToQuery = useCallback(
         (q: string) => {
-            if (!q.trim()) return;
+            if (!q.trim()) {
+                return;
+            }
+
             setIsFocused(false);
             onSearch?.();
             router.get(route('search'), { q: q.trim() });
@@ -132,6 +186,7 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
         (item: FlatItem) => {
             setIsFocused(false);
             onSearch?.();
+
             if (item.kind === 'seeAll') {
                 router.get(route('search'), { q: query.trim() });
             } else if (item.kind === 'product') {
@@ -152,14 +207,18 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (!showPanel) return;
+        if (!showPanel) {
+            return;
+        }
+
         const total = flatItems.length;
+
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setActiveIndex(i => (i < total - 1 ? i + 1 : 0));
+            setActiveIndex((i) => (i < total - 1 ? i + 1 : 0));
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            setActiveIndex(i => (i > 0 ? i - 1 : total - 1));
+            setActiveIndex((i) => (i > 0 ? i - 1 : total - 1));
         } else if (e.key === 'Enter') {
             if (activeIndex >= 0 && activeIndex < flatItems.length) {
                 navigateToItem(flatItems[activeIndex]);
@@ -172,7 +231,8 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
         }
     };
 
-    const imgSrc = (p: SuggestionProduct) => p.primary_image_url || p.images?.[0]?.path || null;
+    const imgSrc = (p: SuggestionProduct) =>
+        p.primary_image_url || p.images?.[0]?.path || null;
 
     // Compute per-section starting indices for activeIndex highlighting
     const productStart = 0;
@@ -199,7 +259,7 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
                     value={query}
                     autoFocus={autoFocus}
                     autoComplete="off"
-                    onChange={e => {
+                    onChange={(e) => {
                         setQuery(e.target.value);
                         setActiveIndex(-1);
                     }}
@@ -242,13 +302,16 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 4, scale: 0.98 }}
                         transition={{ duration: 0.15, ease: 'easeOut' }}
-                        className="absolute left-0 right-0 top-[calc(100%+8px)] z-[200] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl shadow-gray-200/80"
+                        className="absolute top-[calc(100%+8px)] right-0 left-0 z-[200] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl shadow-gray-200/80"
                     >
                         {/* Loading skeleton */}
                         {isLoading && (
                             <div className="space-y-1 p-2">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="flex items-center gap-3 rounded-xl p-2.5">
+                                {[1, 2, 3].map((i) => (
+                                    <div
+                                        key={i}
+                                        className="flex items-center gap-3 rounded-xl p-2.5"
+                                    >
                                         <div className="size-10 shrink-0 animate-pulse rounded-xl bg-gray-100" />
                                         <div className="flex-1 space-y-1.5">
                                             <div className="h-3.5 w-3/4 animate-pulse rounded bg-gray-100" />
@@ -269,17 +332,31 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
                                             {products.map((product, i) => (
                                                 <li key={product.id}>
                                                     <Link
-                                                        href={route('product.show', product.slug)}
-                                                        onClick={() => setIsFocused(false)}
+                                                        href={route(
+                                                            'product.show',
+                                                            product.slug,
+                                                        )}
+                                                        onClick={() =>
+                                                            setIsFocused(false)
+                                                        }
                                                         className={`flex items-center gap-3 rounded-xl p-2.5 transition-colors ${
-                                                            activeIndex === productStart + i ? 'bg-gray-50' : 'hover:bg-gray-50'
+                                                            activeIndex ===
+                                                            productStart + i
+                                                                ? 'bg-gray-50'
+                                                                : 'hover:bg-gray-50'
                                                         }`}
                                                     >
                                                         <div className="size-11 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
                                                             {imgSrc(product) ? (
                                                                 <img
-                                                                    src={imgSrc(product)!}
-                                                                    alt={product.name}
+                                                                    src={
+                                                                        imgSrc(
+                                                                            product,
+                                                                        )!
+                                                                    }
+                                                                    alt={
+                                                                        product.name
+                                                                    }
                                                                     className="size-full object-cover"
                                                                 />
                                                             ) : (
@@ -294,12 +371,17 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
                                                             </p>
                                                             <div className="mt-0.5 flex items-center gap-1.5">
                                                                 <span className="text-sm font-bold text-[#c8102e]">
-                                                                    {formatCurrency(product.price)}
+                                                                    {formatCurrency(
+                                                                        product.price,
+                                                                    )}
                                                                 </span>
                                                                 {product.compare_price &&
-                                                                    product.compare_price > product.price && (
+                                                                    product.compare_price >
+                                                                        product.price && (
                                                                         <span className="text-xs text-gray-400 line-through">
-                                                                            {formatCurrency(product.compare_price)}
+                                                                            {formatCurrency(
+                                                                                product.compare_price,
+                                                                            )}
                                                                         </span>
                                                                     )}
                                                             </div>
@@ -315,15 +397,26 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
                                 {/* Brands */}
                                 {brands.length > 0 && (
                                     <>
-                                        <SectionHeader label="Brands" border={products.length > 0} />
+                                        <SectionHeader
+                                            label="Brands"
+                                            border={products.length > 0}
+                                        />
                                         <ul className="px-2 pb-1">
                                             {brands.map((brand, i) => (
                                                 <li key={brand.id}>
                                                     <Link
-                                                        href={route('brand.show', brand.slug)}
-                                                        onClick={() => setIsFocused(false)}
+                                                        href={route(
+                                                            'brand.show',
+                                                            brand.slug,
+                                                        )}
+                                                        onClick={() =>
+                                                            setIsFocused(false)
+                                                        }
                                                         className={`flex items-center gap-3 rounded-xl px-3 py-2 transition-colors ${
-                                                            activeIndex === brandStart + i ? 'bg-gray-50' : 'hover:bg-gray-50'
+                                                            activeIndex ===
+                                                            brandStart + i
+                                                                ? 'bg-gray-50'
+                                                                : 'hover:bg-gray-50'
                                                         }`}
                                                     >
                                                         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-500">
@@ -345,16 +438,27 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
                                     <>
                                         <SectionHeader
                                             label="Categories"
-                                            border={products.length > 0 || brands.length > 0}
+                                            border={
+                                                products.length > 0 ||
+                                                brands.length > 0
+                                            }
                                         />
                                         <ul className="px-2 pb-1">
                                             {categories.map((cat, i) => (
                                                 <li key={cat.id}>
                                                     <Link
-                                                        href={route('category.show', cat.slug)}
-                                                        onClick={() => setIsFocused(false)}
+                                                        href={route(
+                                                            'category.show',
+                                                            cat.slug,
+                                                        )}
+                                                        onClick={() =>
+                                                            setIsFocused(false)
+                                                        }
                                                         className={`flex items-center gap-3 rounded-xl px-3 py-2 transition-colors ${
-                                                            activeIndex === categoryStart + i ? 'bg-gray-50' : 'hover:bg-gray-50'
+                                                            activeIndex ===
+                                                            categoryStart + i
+                                                                ? 'bg-gray-50'
+                                                                : 'hover:bg-gray-50'
                                                         }`}
                                                     >
                                                         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-500">
@@ -377,17 +481,25 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
                                         <SectionHeader
                                             label="Subcategories"
                                             border={
-                                                products.length > 0 || brands.length > 0 || categories.length > 0
+                                                products.length > 0 ||
+                                                brands.length > 0 ||
+                                                categories.length > 0
                                             }
                                         />
                                         <ul className="px-2 pb-1">
                                             {subcategories.map((sub, i) => (
                                                 <li key={sub.id}>
                                                     <Link
-                                                        href={route('category.show', sub.slug)}
-                                                        onClick={() => setIsFocused(false)}
+                                                        href={route(
+                                                            'category.show',
+                                                            sub.slug,
+                                                        )}
+                                                        onClick={() =>
+                                                            setIsFocused(false)
+                                                        }
                                                         className={`flex items-center gap-3 rounded-xl px-3 py-2 transition-colors ${
-                                                            activeIndex === subcategoryStart + i
+                                                            activeIndex ===
+                                                            subcategoryStart + i
                                                                 ? 'bg-gray-50'
                                                                 : 'hover:bg-gray-50'
                                                         }`}
@@ -401,7 +513,10 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
                                                             </p>
                                                             {sub.category_name && (
                                                                 <p className="text-xs text-gray-400">
-                                                                    in {sub.category_name}
+                                                                    in{' '}
+                                                                    {
+                                                                        sub.category_name
+                                                                    }
                                                                 </p>
                                                             )}
                                                         </div>
@@ -417,14 +532,18 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
                                 <div className="border-t border-gray-100 p-2">
                                     <button
                                         onClick={() => navigateToQuery(query)}
-                                        onMouseEnter={() => setActiveIndex(seeAllIndex)}
+                                        onMouseEnter={() =>
+                                            setActiveIndex(seeAllIndex)
+                                        }
                                         className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
                                             activeIndex === seeAllIndex
                                                 ? 'bg-red-50 text-[#c8102e]'
                                                 : 'text-[#c8102e] hover:bg-red-50'
                                         }`}
                                     >
-                                        <span>See all results for "{query}"</span>
+                                        <span>
+                                            See all results for "{query}"
+                                        </span>
                                         <ArrowRight className="size-4" />
                                     </button>
                                 </div>
@@ -432,32 +551,36 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
                         )}
 
                         {/* No results */}
-                        {!isLoading && !hasResults && query.trim().length >= 2 && (
-                            <div className="px-4 py-6 text-center">
-                                <p className="text-sm text-gray-500">
-                                    No results found for{' '}
-                                    <span className="font-semibold text-gray-800">"{query}"</span>
-                                </p>
-                                <button
-                                    onClick={() => navigateToQuery(query)}
-                                    className="mt-3 text-sm font-semibold text-[#c8102e] hover:underline"
-                                >
-                                    Search anyway →
-                                </button>
-                            </div>
-                        )}
+                        {!isLoading &&
+                            !hasResults &&
+                            query.trim().length >= 2 && (
+                                <div className="px-4 py-6 text-center">
+                                    <p className="text-sm text-gray-500">
+                                        No results found for{' '}
+                                        <span className="font-semibold text-gray-800">
+                                            "{query}"
+                                        </span>
+                                    </p>
+                                    <button
+                                        onClick={() => navigateToQuery(query)}
+                                        className="mt-3 text-sm font-semibold text-[#c8102e] hover:underline"
+                                    >
+                                        Search anyway →
+                                    </button>
+                                </div>
+                            )}
 
                         {/* Popular searches */}
                         {!isLoading && query.trim().length < 2 && (
                             <div className="p-4">
                                 <div className="mb-3 flex items-center gap-2">
                                     <TrendingUp className="size-4 text-gray-400" />
-                                    <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
+                                    <p className="text-[11px] font-bold tracking-widest text-gray-400 uppercase">
                                         Popular searches
                                     </p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    {popular.map(term => (
+                                    {popular.map((term) => (
                                         <button
                                             key={term}
                                             onClick={() => {
@@ -479,10 +602,20 @@ export function SearchBar({ className, isMobile = false, onSearch, autoFocus = f
     );
 }
 
-function SectionHeader({ label, border = false }: { label: string; border?: boolean }) {
+function SectionHeader({
+    label,
+    border = false,
+}: {
+    label: string;
+    border?: boolean;
+}) {
     return (
-        <div className={`px-4 pb-1 pt-3 ${border ? 'border-t border-gray-100' : ''}`}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</p>
+        <div
+            className={`px-4 pt-3 pb-1 ${border ? 'border-t border-gray-100' : ''}`}
+        >
+            <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+                {label}
+            </p>
         </div>
     );
 }

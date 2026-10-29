@@ -1,4 +1,4 @@
-import { Check, Clock, Package, Truck, CheckCircle2, XCircle } from 'lucide-react';
+import { Clock, Package, Truck, CheckCircle2, XCircle } from 'lucide-react';
 import React from 'react';
 
 import { formatDate } from '@/lib/utils';
@@ -8,7 +8,9 @@ interface OrderTimelineProps {
     histories: OrderStatusHistory[];
 }
 
-export function OrderTimeline({ histories = [] }: OrderTimelineProps): React.JSX.Element {
+export function OrderTimeline({
+    histories = [],
+}: OrderTimelineProps): React.JSX.Element {
     const statusIcons: Record<OrderStatus, any> = {
         pending: Clock,
         processing: Package,
@@ -28,37 +30,57 @@ export function OrderTimeline({ histories = [] }: OrderTimelineProps): React.JSX
     };
 
     return (
-        <div className="relative pl-8 space-y-4 before:absolute before:inset-0 before:left-[15px] before:w-0.5 before:bg-[var(--color-border)] before:z-0">
+        <div className="relative space-y-4 pl-8 before:absolute before:inset-0 before:left-[15px] before:z-0 before:w-0.5 before:bg-[var(--color-border)]">
             {histories.map((item, idx) => {
                 const Icon = statusIcons[item.status] || Clock;
                 const isLatest = idx === histories.length - 1;
-                
+
                 // Extract primary color from statusColors (e.g. 'text-amber-500')
-                const statusTextColor = statusColors[item.status]?.split(' ')[0] || 'text-[var(--color-primary)]';
-                const statusBgColor = statusColors[item.status]?.split(' ')[1] || 'bg-[var(--color-primary)]';
-                const statusBorderColor = statusColors[item.status]?.split(' ')[2] || 'border-[var(--color-primary)]';
+                const statusTextColor =
+                    statusColors[item.status]?.split(' ')[0] ||
+                    'text-[var(--color-primary)]';
+                const statusBgColor =
+                    statusColors[item.status]?.split(' ')[1] ||
+                    'bg-[var(--color-primary)]';
+                const statusBorderColor =
+                    statusColors[item.status]?.split(' ')[2] ||
+                    'border-[var(--color-primary)]';
 
                 return (
-                    <div key={item.id} className="relative z-10 group">
-                        <div className={`absolute -left-10 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center shadow-sm transition-all ${
-                            isLatest ? `${statusBgColor} ${statusTextColor} scale-110 ring-4 ring-[var(--color-primary-light)]` : 'bg-white text-[var(--color-text-muted)]'
-                        }`}>
-                            {isLatest ? <Icon size={14} strokeWidth={3} /> : <div className="w-1.5 h-1.5 rounded-full bg-current" />}
+                    <div key={item.id} className="group relative z-10">
+                        <div
+                            className={`absolute -left-10 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white shadow-sm transition-all ${
+                                isLatest
+                                    ? `${statusBgColor} ${statusTextColor} scale-110 ring-4 ring-[var(--color-primary-light)]`
+                                    : 'bg-white text-[var(--color-text-muted)]'
+                            }`}
+                        >
+                            {isLatest ? (
+                                <Icon size={14} strokeWidth={3} />
+                            ) : (
+                                <div className="h-1.5 w-1.5 rounded-full bg-current" />
+                            )}
                         </div>
-                        
-                        <div className={`p-4 rounded-xl border transition-all ${
-                            isLatest ? `bg-white ${statusBorderColor} shadow-md` : 'bg-[var(--color-surface-alt)] border-[var(--color-border)]'
-                        }`}>
-                            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                                <h4 className={`text-sm font-bold uppercase tracking-wider ${isLatest ? statusTextColor : 'text-[var(--color-text-primary)]'}`}>
+
+                        <div
+                            className={`rounded-xl border p-4 transition-all ${
+                                isLatest
+                                    ? `bg-white ${statusBorderColor} shadow-md`
+                                    : 'border-[var(--color-border)] bg-[var(--color-surface-alt)]'
+                            }`}
+                        >
+                            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                <h4
+                                    className={`text-sm font-bold tracking-wider uppercase ${isLatest ? statusTextColor : 'text-[var(--color-text-primary)]'}`}
+                                >
                                     {item.status.replace('_', ' ')}
                                 </h4>
-                                <span className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-tighter">
+                                <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-muted)] uppercase">
                                     {formatDate(item.created_at, 'full')}
                                 </span>
                             </div>
                             {item.notes && (
-                                <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                                <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">
                                     {item.notes}
                                 </p>
                             )}

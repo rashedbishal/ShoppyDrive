@@ -7,8 +7,14 @@ import type { SharedPageProps } from '@/types';
 function readInitialLogo(): string | null {
     try {
         const raw = document.getElementById('app')?.dataset.page;
-        if (raw) return JSON.parse(raw)?.props?.settings?.logo ?? null;
-    } catch {}
+
+        if (raw) {
+            return JSON.parse(raw)?.props?.settings?.logo ?? null;
+        }
+    } catch {
+        // Missing or malformed page data: fall through to the default below.
+    }
+
     return null;
 }
 
@@ -66,7 +72,11 @@ export default function PageLoadingOverlay(): React.JSX.Element {
                     <motion.span
                         style={{ perspective: 600 }}
                         animate={{ rotateY: 360 }}
-                        transition={{ duration: 1.1, repeat: Infinity, ease: 'linear' }}
+                        transition={{
+                            duration: 1.1,
+                            repeat: Infinity,
+                            ease: 'linear',
+                        }}
                     >
                         {logo ? (
                             <img

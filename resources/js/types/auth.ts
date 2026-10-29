@@ -1,1 +1,6 @@
-export type { Auth, TwoFactorSecretKey, TwoFactorSetupData, User } from './index';
+export type {
+    Auth,
+    TwoFactorSecretKey,
+    TwoFactorSetupData,
+    User,
+} from './index';

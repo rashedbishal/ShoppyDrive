@@ -16,6 +16,7 @@ export function useMediaQuery(query: string): boolean {
             setMatches(event.matches);
         };
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- reads browser-only APIs after mount so SSR markup matches hydration
         setMatches(mediaQuery.matches);
         mediaQuery.addEventListener('change', onChange);
 
@@ -26,4 +27,3 @@ export function useMediaQuery(query: string): boolean {
 
     return matches;
 }
-

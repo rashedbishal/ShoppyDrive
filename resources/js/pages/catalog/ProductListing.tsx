@@ -91,8 +91,6 @@ type QueryValue =
     | Array<string | number>
     | Record<string, number[]>;
 
-type DraftFilters = ProductListingFilters;
-
 const SORT_OPTIONS = [
     { label: 'Relevance', value: 'relevance' },
     { label: 'Price: Low to High', value: 'price_asc' },
@@ -132,7 +130,9 @@ function PriceRangeFilter({
     const [inputLo, setInputLo] = useState(String(lo));
     const [inputHi, setInputHi] = useState(String(hi));
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
     useEffect(() => setInputLo(String(lo)), [lo]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
     useEffect(() => setInputHi(String(hi)), [hi]);
 
     const apply = (): void => {
@@ -430,6 +430,7 @@ function ProductListingPage({
     const [showAllBrands, setShowAllBrands] = useState(false);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
         setDraftFilters(filters);
         setSearchInput(filters.q);
         setIsLoading(false);

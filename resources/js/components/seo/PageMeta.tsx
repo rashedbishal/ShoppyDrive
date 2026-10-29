@@ -20,17 +20,21 @@ export function PageMeta({
 }: PageMetaProps): React.JSX.Element {
     const siteName = 'ShoppyDrive';
     const fullTitle = title ? `${title} | ${siteName}` : siteName;
-    const defaultDescription = 'Premium e-commerce destination in Bangladesh for electronics, lifestyle, and more.';
+    const defaultDescription =
+        'Premium e-commerce destination in Bangladesh for electronics, lifestyle, and more.';
     const metaDescription = description || defaultDescription;
     const metaImage = image || '/og-image.webp'; // Replace with actual default OG image path
-    const url = canonicalUrl || typeof window !== 'undefined' ? window.location.href : '';
+    const url =
+        canonicalUrl || typeof window !== 'undefined'
+            ? window.location.href
+            : '';
 
     return (
         <Head>
             <title>{fullTitle}</title>
             <meta name="description" content={metaDescription} />
             {noIndex && <meta name="robots" content="noindex, nofollow" />}
-            
+
             {/* Open Graph */}
             <meta property="og:title" content={fullTitle} />
             <meta property="og:description" content={metaDescription} />

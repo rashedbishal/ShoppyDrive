@@ -32,7 +32,10 @@ interface CategoryShowProps {
     };
 }
 
-export default function CategoryShow({ category, products }: CategoryShowProps) {
+export default function CategoryShow({
+    category,
+    products,
+}: CategoryShowProps) {
     const formatCurrency = new Intl.NumberFormat('en-BD', {
         style: 'currency',
         currency: 'BDT',
@@ -111,7 +114,9 @@ export default function CategoryShow({ category, products }: CategoryShowProps) 
                                 Product detail
                             </div>
                             <Button asChild size="sm">
-                                <Link href={route('product.show', product.slug)}>
+                                <Link
+                                    href={route('product.show', product.slug)}
+                                >
                                     View
                                     <ArrowRight className="size-4" />
                                 </Link>

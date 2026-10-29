@@ -34,7 +34,9 @@ export default function ThemeSwitcher(): React.JSX.Element {
                         className="flex items-center justify-between"
                     >
                         {option.label}
-                        {theme === option.value ? <Check className="size-4" /> : null}
+                        {theme === option.value ? (
+                            <Check className="size-4" />
+                        ) : null}
                     </DropdownMenuItem>
                 ))}
             </DropdownMenuContent>

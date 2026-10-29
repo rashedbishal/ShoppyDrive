@@ -9,17 +9,15 @@ export default function AppHeaderLayout({
 }: AppLayoutProps) {
     return (
         <AppShell variant="header">
-            <a 
-                href="#main-content" 
-                className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[1000] focus:px-6 focus:py-3 focus:bg-[var(--color-primary)] focus:text-white focus:rounded-xl focus:font-bold focus:shadow-2xl transition-all"
+            <a
+                href="#main-content"
+                className="sr-only transition-all focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[1000] focus:rounded-xl focus:bg-[var(--color-primary)] focus:px-6 focus:py-3 focus:font-bold focus:text-white focus:shadow-2xl"
             >
                 Skip to main content
             </a>
             <AppHeader breadcrumbs={breadcrumbs} />
             <AppContent variant="header">
-                <div id="main-content">
-                    {children}
-                </div>
+                <div id="main-content">{children}</div>
             </AppContent>
         </AppShell>
     );

@@ -7,11 +7,9 @@ import {
     Package,
     Paperclip,
     Send,
-    Users,
     X,
 } from 'lucide-react';
 import { useState } from 'react';
-import type { FormEvent } from 'react';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';

@@ -7,7 +7,6 @@ import {
     MapPin,
     Phone,
     Shield,
-    ShoppingBag,
     Star,
     Truck,
     Youtube,
@@ -19,7 +18,6 @@ import { TikTokLogo, XLogo } from '@/components/icons/brand-icons';
 import {
     footerCustomerLinks,
     footerQuickLinks,
-    storeCategories,
 } from '@/components/layout/navigation';
 import type { SharedPageProps } from '@/types';
 
@@ -64,11 +62,16 @@ export default function Footer(): React.JSX.Element {
     ].filter((s) => typeof s.href === 'string' && s.href.length > 0);
 
     const checkStatus = (email: string): void => {
-        if (checkTimeout.current) clearTimeout(checkTimeout.current);
+        if (checkTimeout.current) {
+            clearTimeout(checkTimeout.current);
+        }
+
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             setIsSubscribed(false);
+
             return;
         }
+
         checkTimeout.current = setTimeout(() => {
             fetch(`/newsletter/status?email=${encodeURIComponent(email)}`)
                 .then((r) => r.json())
@@ -81,6 +84,7 @@ export default function Footer(): React.JSX.Element {
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
         e.preventDefault();
+
         if (isSubscribed) {
             form.post('/newsletter/unsubscribe', {
                 preserveScroll: true,

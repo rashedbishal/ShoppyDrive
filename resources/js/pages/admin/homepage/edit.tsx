@@ -11,14 +11,14 @@ import {
     Star,
     Trash2,
 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import type { HomepageSetting, Product } from '@/types';
-import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import type { HomepageSetting, Product } from '@/types';
 
 type SimpleProduct = {
     id: number;
@@ -42,7 +42,6 @@ type Props = {
 
 export default function HomepageEdit({
     section,
-    products: initialProducts,
     featuredProducts,
     sectionProducts,
     sectionBrands,
@@ -102,6 +101,7 @@ export default function HomepageEdit({
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
+
         return () =>
             document.removeEventListener('mousedown', handleClickOutside);
     }, []);
@@ -116,19 +116,23 @@ export default function HomepageEdit({
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
+
         return () =>
             document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     useEffect(() => {
         if (!searchQuery.trim()) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- clears results at once when the query is emptied; fetched results are set asynchronously
             setSearchResults([]);
+
             return;
         }
 
         const controller = new AbortController();
         const timeoutId = setTimeout(async () => {
             setSearching(true);
+
             try {
                 const res = await fetch(
                     `/admin/homepage/products/search?q=${encodeURIComponent(searchQuery)}`,
@@ -140,7 +144,10 @@ export default function HomepageEdit({
                         },
                     },
                 );
-                if (res.ok) setSearchResults(await res.json());
+
+                if (res.ok) {
+                    setSearchResults(await res.json());
+                }
             } catch {
                 // aborted or network error — leave results as-is
             } finally {
@@ -156,12 +163,16 @@ export default function HomepageEdit({
 
     useEffect(() => {
         if (!brandQuery.trim()) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- clears results at once when the query is emptied; fetched results are set asynchronously
             setBrandResults([]);
+
             return;
         }
+
         const controller = new AbortController();
         const timeoutId = setTimeout(async () => {
             setSearchingBrands(true);
+
             try {
                 const res = await fetch(
                     `/admin/homepage/brands/search?q=${encodeURIComponent(brandQuery)}`,
@@ -173,13 +184,17 @@ export default function HomepageEdit({
                         },
                     },
                 );
-                if (res.ok) setBrandResults(await res.json());
+
+                if (res.ok) {
+                    setBrandResults(await res.json());
+                }
             } catch {
                 // aborted
             } finally {
                 setSearchingBrands(false);
             }
         }, 300);
+
         return () => {
             clearTimeout(timeoutId);
             controller.abort();
@@ -187,7 +202,10 @@ export default function HomepageEdit({
     }, [brandQuery]);
 
     const addFeaturedProduct = (product: Product) => {
-        if (data.featured_products.some((p) => p.id === product.id)) return;
+        if (data.featured_products.some((p) => p.id === product.id)) {
+            return;
+        }
+
         setData('featured_products', [
             ...data.featured_products,
             { id: product.id, name: product.name, price: product.price },
@@ -204,7 +222,10 @@ export default function HomepageEdit({
     };
 
     const addSectionProduct = (product: Product) => {
-        if (data.section_products.some((p) => p.id === product.id)) return;
+        if (data.section_products.some((p) => p.id === product.id)) {
+            return;
+        }
+
         setData('section_products', [
             ...data.section_products,
             { id: product.id, name: product.name, price: product.price },
@@ -221,7 +242,10 @@ export default function HomepageEdit({
     };
 
     const addSectionBrand = (brand: SimpleBrand) => {
-        if (data.section_brands.some((b) => b.id === brand.id)) return;
+        if (data.section_brands.some((b) => b.id === brand.id)) {
+            return;
+        }
+
         setData('section_brands', [
             ...data.section_brands,
             { id: brand.id, name: brand.name, logo: brand.logo },
@@ -562,6 +586,7 @@ export default function HomepageEdit({
                                                                             p.id ===
                                                                             product.id,
                                                                     );
+
                                                                 return (
                                                                     <button
                                                                         key={
@@ -728,6 +753,7 @@ export default function HomepageEdit({
                                                                             p.id ===
                                                                             product.id,
                                                                     );
+
                                                                 return (
                                                                     <button
                                                                         key={
@@ -887,6 +913,7 @@ export default function HomepageEdit({
                                                                             b.id ===
                                                                             brand.id,
                                                                     );
+
                                                                 return (
                                                                     <button
                                                                         key={

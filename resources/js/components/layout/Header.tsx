@@ -1,4 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
     Heart,
     LogIn,
@@ -7,11 +8,9 @@ import {
     Package,
     Search,
     ShoppingBag,
-    User,
     UserCircle2,
     X,
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import MegaMenu from '@/components/layout/MegaMenu';
@@ -19,8 +18,6 @@ import MobileMenu from '@/components/layout/MobileMenu';
 import ThemeSwitcher from '@/components/layout/ThemeSwitcher';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -83,8 +80,12 @@ export default function Header(): React.JSX.Element {
     const navPillKey = hoveredNavKey ?? (isMegaMenuOpen ? 'categories' : null);
     const currentPath = page.url.split('?')[0];
     const isNavLinkActive = (href: string): boolean =>
-        href === '/' ? currentPath === '/' : currentPath === href || currentPath.startsWith(`${href}/`);
-    const megaMenuCloseTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+        href === '/'
+            ? currentPath === '/'
+            : currentPath === href || currentPath.startsWith(`${href}/`);
+    const megaMenuCloseTimeout = useRef<ReturnType<typeof setTimeout> | null>(
+        null,
+    );
 
     const openMegaMenu = () => {
         if (megaMenuCloseTimeout.current) {
@@ -98,7 +99,10 @@ export default function Header(): React.JSX.Element {
     const scheduleMegaMenuClose = () => {
         // Small grace period so moving the cursor through the gap between the
         // button and the dropdown panel below it doesn't close the menu.
-        megaMenuCloseTimeout.current = setTimeout(() => setIsMegaMenuOpen(false), 150);
+        megaMenuCloseTimeout.current = setTimeout(
+            () => setIsMegaMenuOpen(false),
+            150,
+        );
     };
 
     useEffect(() => {
@@ -112,7 +116,12 @@ export default function Header(): React.JSX.Element {
     // Items still flying into the cart aren't counted until they land.
     const pendingCartArrivals = usePendingCartArrivals();
     const itemCount = useMemo(
-        () => Math.max(0, cartItems.reduce((count, item) => count + item.quantity, 0) - pendingCartArrivals),
+        () =>
+            Math.max(
+                0,
+                cartItems.reduce((count, item) => count + item.quantity, 0) -
+                    pendingCartArrivals,
+            ),
         [cartItems, pendingCartArrivals],
     );
 
@@ -141,17 +150,27 @@ export default function Header(): React.JSX.Element {
         };
         handleScroll();
         window.addEventListener('scroll', handleScroll, { passive: true });
+
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
         setMobileSearchOpen(false);
     }, [page.url]);
 
     useEffect(() => {
-        if (!mobileSearchOpen) return;
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileSearchOpen(false); };
+        if (!mobileSearchOpen) {
+            return;
+        }
+
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setMobileSearchOpen(false);
+            }
+        };
         document.addEventListener('keydown', onKey);
+
         return () => document.removeEventListener('keydown', onKey);
     }, [mobileSearchOpen]);
 
@@ -168,45 +187,45 @@ export default function Header(): React.JSX.Element {
             >
                 {/* Top utility bar */}
                 {announcementBar?.is_visible !== false && (
-                <div className="hidden bg-[var(--color-secondary)] text-white lg:block">
-                    <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 text-xs sm:px-6 lg:px-8">
-                        <div className="flex items-center gap-5">
-                            {announcementBar?.title ? (
-                                <span className="flex items-center gap-1.5 text-white/70">
-                                    <Package className="size-3.5" />
-                                    {announcementBar.title}
-                                </span>
-                            ) : null}
-                            {announcementBar?.metadata?.phone ? (
-                                <a
-                                    href={`tel:${announcementBar.metadata.phone}`}
-                                    className="text-white/70 transition hover:text-[var(--color-accent)]"
-                                >
-                                    {announcementBar.metadata.phone}
-                                </a>
-                            ) : null}
-                        </div>
-                        <div className="flex items-center gap-5">
-                            {supportItems.map((item) => (
-                                <Link
-                                    key={item.label}
-                                    href={item.href}
-                                    className="text-white/70 transition hover:text-white"
-                                >
-                                    {item.label}
-                                </Link>
-                            ))}
-                            {announcementBar?.metadata?.email ? (
-                                <a
-                                    href={`mailto:${announcementBar.metadata.email}`}
-                                    className="text-white/70 transition hover:text-white"
-                                >
-                                    {announcementBar.metadata.email}
-                                </a>
-                            ) : null}
+                    <div className="hidden bg-[var(--color-secondary)] text-white lg:block">
+                        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 text-xs sm:px-6 lg:px-8">
+                            <div className="flex items-center gap-5">
+                                {announcementBar?.title ? (
+                                    <span className="flex items-center gap-1.5 text-white/70">
+                                        <Package className="size-3.5" />
+                                        {announcementBar.title}
+                                    </span>
+                                ) : null}
+                                {announcementBar?.metadata?.phone ? (
+                                    <a
+                                        href={`tel:${announcementBar.metadata.phone}`}
+                                        className="text-white/70 transition hover:text-[var(--color-accent)]"
+                                    >
+                                        {announcementBar.metadata.phone}
+                                    </a>
+                                ) : null}
+                            </div>
+                            <div className="flex items-center gap-5">
+                                {supportItems.map((item) => (
+                                    <Link
+                                        key={item.label}
+                                        href={item.href}
+                                        className="text-white/70 transition hover:text-white"
+                                    >
+                                        {item.label}
+                                    </Link>
+                                ))}
+                                {announcementBar?.metadata?.email ? (
+                                    <a
+                                        href={`mailto:${announcementBar.metadata.email}`}
+                                        className="text-white/70 transition hover:text-white"
+                                    >
+                                        {announcementBar.metadata.email}
+                                    </a>
+                                ) : null}
+                            </div>
                         </div>
                     </div>
-                </div>
                 )}
 
                 {/* Main header bar */}
@@ -225,7 +244,10 @@ export default function Header(): React.JSX.Element {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                                    transition={{
+                                        duration: 0.22,
+                                        ease: [0.4, 0, 0.2, 1],
+                                    }}
                                     className="absolute inset-0 z-20 flex items-center gap-2 bg-white px-4 sm:px-6 lg:hidden"
                                 >
                                     {/* Search bar slides in from the right */}
@@ -234,22 +256,47 @@ export default function Header(): React.JSX.Element {
                                         initial={{ opacity: 0, x: 32 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         exit={{ opacity: 0, x: 32 }}
-                                        transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.05 }}
+                                        transition={{
+                                            duration: 0.28,
+                                            ease: [0.25, 0.46, 0.45, 0.94],
+                                            delay: 0.05,
+                                        }}
                                     >
                                         <SearchBar
                                             autoFocus
-                                            onSearch={() => setMobileSearchOpen(false)}
+                                            onSearch={() =>
+                                                setMobileSearchOpen(false)
+                                            }
                                         />
                                     </motion.div>
 
                                     {/* Close button springs in with rotation */}
                                     <motion.button
                                         type="button"
-                                        initial={{ scale: 0, opacity: 0, rotate: -90 }}
-                                        animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                                        exit={{ scale: 0, opacity: 0, rotate: 90 }}
-                                        transition={{ type: 'spring', stiffness: 500, damping: 26, delay: 0.1 }}
-                                        onClick={() => setMobileSearchOpen(false)}
+                                        initial={{
+                                            scale: 0,
+                                            opacity: 0,
+                                            rotate: -90,
+                                        }}
+                                        animate={{
+                                            scale: 1,
+                                            opacity: 1,
+                                            rotate: 0,
+                                        }}
+                                        exit={{
+                                            scale: 0,
+                                            opacity: 0,
+                                            rotate: 90,
+                                        }}
+                                        transition={{
+                                            type: 'spring',
+                                            stiffness: 500,
+                                            damping: 26,
+                                            delay: 0.1,
+                                        }}
+                                        onClick={() =>
+                                            setMobileSearchOpen(false)
+                                        }
                                         className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)]"
                                         aria-label="Close search"
                                     >
@@ -269,7 +316,10 @@ export default function Header(): React.JSX.Element {
                         </button>
 
                         {/* Logo */}
-                        <Link href="/" className="flex shrink-0 items-center gap-3">
+                        <Link
+                            href="/"
+                            className="flex shrink-0 items-center gap-3"
+                        >
                             {settings?.logo ? (
                                 <img
                                     src={settings.logo}
@@ -319,8 +369,10 @@ export default function Header(): React.JSX.Element {
                             >
                                 <Heart className="size-5" />
                                 {wishlistCount > 0 ? (
-                                    <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold text-white">
-                                        {wishlistCount > 9 ? '9+' : wishlistCount}
+                                    <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold text-white">
+                                        {wishlistCount > 9
+                                            ? '9+'
+                                            : wishlistCount}
                                     </span>
                                 ) : null}
                             </Link>
@@ -335,7 +387,10 @@ export default function Header(): React.JSX.Element {
                             >
                                 <ShoppingBag className="size-5" />
                                 {itemCount > 0 ? (
-                                    <span data-cart-count className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold text-white">
+                                    <span
+                                        data-cart-count
+                                        className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--color-primary)] text-[10px] font-bold text-white"
+                                    >
                                         {itemCount > 9 ? '9+' : itemCount}
                                     </span>
                                 ) : null}
@@ -350,7 +405,12 @@ export default function Header(): React.JSX.Element {
                                             className="ml-1 flex items-center gap-2.5 rounded-2xl border border-[var(--color-border)] bg-white px-2.5 py-1.5 transition hover:border-[var(--color-primary)] hover:shadow-sm"
                                         >
                                             <Avatar className="size-8">
-                                                <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
+                                                <AvatarImage
+                                                    src={
+                                                        user.avatar ?? undefined
+                                                    }
+                                                    alt={user.name}
+                                                />
                                                 <AvatarFallback className="bg-[var(--color-secondary)] text-[11px] text-white">
                                                     {getInitials(user.name)}
                                                 </AvatarFallback>
@@ -365,21 +425,34 @@ export default function Header(): React.JSX.Element {
                                             </span>
                                         </button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 shadow-[var(--shadow-dropdown)]">
+                                    <DropdownMenuContent
+                                        align="end"
+                                        className="w-56 rounded-2xl p-2 shadow-[var(--shadow-dropdown)]"
+                                    >
                                         <DropdownMenuLabel className="px-3 py-2">
-                                            <p className="text-sm font-semibold text-[var(--color-text-primary)]">{user.name}</p>
-                                            <p className="text-xs text-[var(--color-text-muted)]">{user.email}</p>
+                                            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                                                {user.name}
+                                            </p>
+                                            <p className="text-xs text-[var(--color-text-muted)]">
+                                                {user.email}
+                                            </p>
                                         </DropdownMenuLabel>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
-                                            onSelect={(e) => { e.preventDefault(); router.get('/account'); }}
+                                            onSelect={(e) => {
+                                                e.preventDefault();
+                                                router.get('/account');
+                                            }}
                                             className="cursor-pointer rounded-xl px-3 py-2.5"
                                         >
                                             <UserCircle2 className="size-4" />
                                             My account
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
-                                            onSelect={(e) => { e.preventDefault(); router.get('/account/orders'); }}
+                                            onSelect={(e) => {
+                                                e.preventDefault();
+                                                router.get('/account/orders');
+                                            }}
                                             className="cursor-pointer rounded-xl px-3 py-2.5"
                                         >
                                             <Package className="size-4" />
@@ -387,7 +460,10 @@ export default function Header(): React.JSX.Element {
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
-                                            onSelect={(e) => { e.preventDefault(); router.post(route('logout')); }}
+                                            onSelect={(e) => {
+                                                e.preventDefault();
+                                                router.post(route('logout'));
+                                            }}
                                             className="cursor-pointer rounded-xl px-3 py-2.5 text-[var(--color-primary)]"
                                         >
                                             <LogOut className="size-4" />
@@ -426,7 +502,9 @@ export default function Header(): React.JSX.Element {
                         >
                             <button
                                 type="button"
-                                onClick={() => setIsMegaMenuOpen((prev) => !prev)}
+                                onClick={() =>
+                                    setIsMegaMenuOpen((prev) => !prev)
+                                }
                                 aria-expanded={isMegaMenuOpen}
                                 className={cn(
                                     'relative flex h-9 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors duration-200',
@@ -435,16 +513,23 @@ export default function Header(): React.JSX.Element {
                                         : 'text-[var(--color-text-primary)]',
                                 )}
                             >
-                                {navPillKey === 'categories' && <NavHoverPill />}
+                                {navPillKey === 'categories' && (
+                                    <NavHoverPill />
+                                )}
                                 <Menu
                                     className={cn(
                                         'relative z-10 size-4 transition-transform duration-300',
                                         isMegaMenuOpen && 'rotate-90',
                                     )}
                                 />
-                                <span className="relative z-10">All Categories</span>
+                                <span className="relative z-10">
+                                    All Categories
+                                </span>
                             </button>
-                            <MegaMenu isOpen={isMegaMenuOpen} onClose={() => setIsMegaMenuOpen(false)} />
+                            <MegaMenu
+                                isOpen={isMegaMenuOpen}
+                                onClose={() => setIsMegaMenuOpen(false)}
+                            />
                         </div>
                         <div className="mx-2 h-5 w-px bg-[var(--color-border)]" />
                         {primaryNavLinks.map((item) => {
@@ -454,7 +539,9 @@ export default function Header(): React.JSX.Element {
                                 <Link
                                     key={item.label}
                                     href={item.href}
-                                    onMouseEnter={() => setHoveredNavKey(item.href)}
+                                    onMouseEnter={() =>
+                                        setHoveredNavKey(item.href)
+                                    }
                                     onFocus={() => setHoveredNavKey(item.href)}
                                     onBlur={() => setHoveredNavKey(null)}
                                     className={cn(
@@ -464,13 +551,21 @@ export default function Header(): React.JSX.Element {
                                             : 'text-[var(--color-text-secondary)]',
                                     )}
                                 >
-                                    {navPillKey === item.href && <NavHoverPill />}
-                                    <span className="relative z-10">{item.label}</span>
+                                    {navPillKey === item.href && (
+                                        <NavHoverPill />
+                                    )}
+                                    <span className="relative z-10">
+                                        {item.label}
+                                    </span>
                                     {isActive && (
                                         <motion.span
                                             layoutId="nav-active-indicator"
                                             className="absolute inset-x-4 -bottom-[7px] h-0.5 rounded-full bg-[var(--color-primary)]"
-                                            transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                                            transition={{
+                                                type: 'spring',
+                                                stiffness: 500,
+                                                damping: 40,
+                                            }}
                                         />
                                     )}
                                 </Link>

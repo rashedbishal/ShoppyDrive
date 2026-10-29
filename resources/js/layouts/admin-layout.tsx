@@ -469,7 +469,7 @@ function SidebarContent({
                             const Icon = item.icon;
                             const unseenCount =
                                 item.href === '/admin/orders'
-                                    ? unseenOrdersCount ?? 0
+                                    ? (unseenOrdersCount ?? 0)
                                     : 0;
 
                             return (

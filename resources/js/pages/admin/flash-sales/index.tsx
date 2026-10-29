@@ -93,6 +93,7 @@ export default function FlashSalesIndex({ flashSales, filters }: Props) {
     };
 
     const isLive = (sale: FlashSale) => {
+        // eslint-disable-next-line react-hooks/purity -- live status is intentionally evaluated against the current time on each render
         const now = Date.now();
 
         return (
