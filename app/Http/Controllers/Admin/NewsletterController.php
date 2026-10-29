@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
+use Mews\Purifier\Facades\Purifier;
 
 class NewsletterController extends Controller
 {
@@ -81,7 +82,7 @@ class NewsletterController extends Controller
                 ->bcc($activeEmails)
                 ->send(new NewsletterCustomMail(
                     emailSubject: $data['subject'],
-                    body: $data['body'],
+                    body: Purifier::clean($data['body']),
                     attachmentPaths: $attachmentPaths,
                 ));
         } else {

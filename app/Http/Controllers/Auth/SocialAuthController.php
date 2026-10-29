@@ -65,7 +65,24 @@ class SocialAuthController extends Controller
 
             $user = User::where('email', $socialUser->getEmail())->first();
 
-            if (! $user) {
+            if ($user) {
+                // An existing account matched purely by email, with no prior
+                // link to this exact provider identity — the email itself is
+                // the only thing being trusted here (SEC-01). Google exposes
+                // an explicit `email_verified` claim in its raw payload (not
+                // surfaced by any SocialiteUser contract method, so it has to
+                // be read from getRaw() directly); when Google itself says
+                // the email is unverified, that is not enough proof of
+                // ownership to auto-link an existing account. Facebook
+                // exposes no equivalent claim at all, so this check is
+                // deliberately Google-only. A missing/null claim (every
+                // provider other than Google, and Google responses that
+                // simply don't include it) is never treated as proof either
+                // way — only an explicit `false` blocks the link.
+                if ($provider === 'google' && ($socialUser->getRaw()['email_verified'] ?? null) === false) {
+                    return null;
+                }
+            } else {
                 $user = User::create([
                     'name' => $socialUser->getName() ?? $socialUser->getNickname(),
                     'email' => $socialUser->getEmail(),
@@ -88,6 +105,12 @@ class SocialAuthController extends Controller
 
             return $user;
         });
+
+        if ($user === null) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'An account with this email already exists. Please log in with your password or an already-connected provider, then connect Google from your account settings.',
+            ]);
+        }
 
         session()->forget('pending_referral_code');
 

@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 use function Pest\Laravel\actingAs;
@@ -84,6 +85,21 @@ test('admin can send an order to steadfast for pickup', function () {
     expect($this->order->steadfast_status)->toBe('in_review');
     expect($this->order->tracking_number)->toBe('TRK-1');
     expect($this->order->statusHistories()->latest()->first()->notes)->toContain('CONSIGN-ABC');
+});
+
+test('a connection failure while sending to steadfast shows a clean error instead of a 500', function () {
+    actingAs($this->admin, 'admin');
+
+    Http::fake([
+        '*/create_order' => fn () => throw new ConnectionException('Connection timed out'),
+    ]);
+
+    $response = $this->post(route('admin.orders.steadfast.send', $this->order->id));
+
+    $response->assertRedirect();
+    $response->assertSessionHas('error');
+    expect(session('error'))->toContain('Steadfast');
+    expect($this->order->refresh()->steadfast_consignment_id)->toBeNull();
 });
 
 test('sending to steadfast twice is rejected', function () {

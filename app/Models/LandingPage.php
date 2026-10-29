@@ -8,6 +8,7 @@ use App\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Mews\Purifier\Facades\Purifier;
 
 class LandingPage extends Model
 {
@@ -21,6 +22,26 @@ class LandingPage extends Model
             'is_active' => 'boolean',
             'sections' => 'array',
         ];
+    }
+
+    /**
+     * Purifies only `sections.description.custom_content` in place — every
+     * other key in this same JSON blob (hero, benefits, gallery,
+     * testimonials, faq, footer, and the rest of `description` itself)
+     * must survive untouched, since they're unrelated fields sharing one
+     * column with this one rich-text value.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (LandingPage $landingPage): void {
+            $sections = $landingPage->sections;
+            $customContent = $sections['description']['custom_content'] ?? null;
+
+            if (is_array($sections) && is_string($customContent)) {
+                $sections['description']['custom_content'] = Purifier::clean($customContent);
+                $landingPage->sections = $sections;
+            }
+        });
     }
 
     /** `sections` is the full page-builder payload — too large to keep duplicating into every log row. */

@@ -78,6 +78,7 @@ class LandingPageController extends Controller
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'is_active' => ['boolean'],
             'sections' => ['nullable', 'array'],
+            'sections.description.custom_content' => ['nullable', 'string', 'max:20000'],
         ]);
 
         $landingPage->update([

@@ -76,6 +76,75 @@ test('admin can update a blog post', function () {
     expect($blog->refresh()->title)->toBe('New Title');
 });
 
+test('creating a blog post strips malicious HTML from content', function () {
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.blogs.store'), [
+        'title' => 'Shopping Tips',
+        'slug' => 'shopping-tips',
+        'content' => '<p>Great tips</p><script>alert(1)</script><svg onload="alert(1)"><script>alert(2)</script></svg><iframe src="https://evil.com"></iframe>',
+    ]);
+
+    $response->assertRedirect(route('admin.blogs.index'));
+
+    $blog = Blog::where('slug', 'shopping-tips')->first();
+
+    expect($blog->content)->not->toContain('<script');
+    expect($blog->content)->not->toContain('<svg');
+    expect($blog->content)->not->toContain('<iframe');
+    expect($blog->content)->not->toContain('onload');
+    expect($blog->content)->toContain('Great tips');
+});
+
+test('creating a blog post strips a javascript: link href while keeping the link text', function () {
+    actingAs($this->admin, 'admin');
+
+    $this->post(route('admin.blogs.store'), [
+        'title' => 'Shopping Tips',
+        'slug' => 'shopping-tips',
+        'content' => '<a href="javascript:alert(1)">click me</a>',
+    ]);
+
+    $content = Blog::where('slug', 'shopping-tips')->first()->content;
+
+    expect($content)->not->toContain('javascript:');
+    expect($content)->toContain('click me');
+});
+
+test('updating a blog post preserves legitimate formatting in content', function () {
+    actingAs($this->admin, 'admin');
+
+    $blog = Blog::factory()->create();
+
+    $this->put(route('admin.blogs.update', $blog), [
+        'title' => $blog->title,
+        'slug' => $blog->slug,
+        'is_published' => $blog->is_published,
+        'content' => '<h1>Big Sale</h1><p>Check our <b>new</b> <a href="https://example.com">collection</a>.</p><ul><li>Item one</li></ul>',
+    ]);
+
+    $content = $blog->refresh()->content;
+
+    expect($content)
+        ->toContain('<h1>Big Sale</h1>')
+        ->toContain('<b>new</b>')
+        ->toContain('href="https://example.com"')
+        ->toContain('<ul><li>Item one</li></ul>');
+});
+
+test('a relative uploaded image URL in blog content survives sanitization', function () {
+    actingAs($this->admin, 'admin');
+
+    $this->post(route('admin.blogs.store'), [
+        'title' => 'Shopping Tips',
+        'slug' => 'shopping-tips',
+        'content' => '<p>See below.</p><img src="/storage/content-images/sample.webp" alt="sample">',
+    ]);
+
+    expect(Blog::where('slug', 'shopping-tips')->first()->content)
+        ->toContain('/storage/content-images/sample.webp');
+});
+
 test('admin can delete a blog post', function () {
     actingAs($this->admin, 'admin');
 

@@ -21,6 +21,7 @@ type Props = {
     siteName: string;
     siteLogo: string | null;
     pendingPayment: PendingPayment | null;
+    orderToken: string;
 };
 
 const BD_DISTRICTS = [
@@ -127,7 +128,7 @@ function InlinePayment({ pending, slug, bkashNumber, nagadNumber }: { pending: P
     );
 }
 
-function OrderForm({ product, slug, bkashNumber, nagadNumber }: { product: Props['product']; slug: string; bkashNumber: string | null; nagadNumber: string | null }) {
+function OrderForm({ product, slug, bkashNumber, nagadNumber, orderToken }: { product: Props['product']; slug: string; bkashNumber: string | null; nagadNumber: string | null; orderToken: string }) {
     const { settings } = usePage<SharedPageProps>().props;
     const insideDhakaRate = settings.shipping_rate_inside_dhaka ?? 60;
     const outsideDhakaRate = settings.shipping_rate_outside_dhaka ?? 120;
@@ -153,6 +154,7 @@ function OrderForm({ product, slug, bkashNumber, nagadNumber }: { product: Props
         quantity: 1,
         payment_method: 'cod' as 'cod' | 'mobile_banking',
         provider: '' as '' | 'bkash' | 'nagad',
+        order_token: orderToken,
     });
 
     const updateState = (v: string) => { setState(v); setData('state', v); };
@@ -278,7 +280,7 @@ function OrderForm({ product, slug, bkashNumber, nagadNumber }: { product: Props
     );
 }
 
-export default function LandingPageShow({ page, product, bkashNumber, nagadNumber, siteName, siteLogo, pendingPayment }: Props) {
+export default function LandingPageShow({ page, product, bkashNumber, nagadNumber, siteName, siteLogo, pendingPayment, orderToken }: Props) {
     const sec = page.sections;
     const { settings } = usePage<SharedPageProps>().props;
     const insideDhakaRate = settings.shipping_rate_inside_dhaka ?? 60;
@@ -481,7 +483,7 @@ export default function LandingPageShow({ page, product, bkashNumber, nagadNumbe
                                     nagadNumber={nagadNumber}
                                 />
                             ) : (
-                                <OrderForm product={product} slug={page.slug} bkashNumber={bkashNumber} nagadNumber={nagadNumber} />
+                                <OrderForm product={product} slug={page.slug} bkashNumber={bkashNumber} nagadNumber={nagadNumber} orderToken={orderToken} />
                             )}
                         </div>
                     </div>

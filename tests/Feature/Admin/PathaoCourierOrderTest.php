@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 use function Pest\Laravel\actingAs;
@@ -92,6 +93,24 @@ test('admin can send an order to pathao for pickup', function () {
     expect($this->order->pathao_delivery_fee)->toBe(65.0);
     expect($this->order->tracking_number)->toBe('CONSIGN-ABC');
     expect($this->order->statusHistories()->latest()->first()->notes)->toContain('CONSIGN-ABC');
+});
+
+test('a connection failure while sending to pathao shows a clean error instead of a 500', function () {
+    actingAs($this->admin, 'admin');
+
+    Http::fake([
+        '*/aladdin/api/v1/issue-token' => Http::response([
+            'access_token' => 'tok', 'refresh_token' => 'ref', 'expires_in' => 432000,
+        ]),
+        '*/aladdin/api/v1/orders' => fn () => throw new ConnectionException('Connection timed out'),
+    ]);
+
+    $response = $this->post(route('admin.orders.pathao.send', $this->order->id));
+
+    $response->assertRedirect();
+    $response->assertSessionHas('error');
+    expect(session('error'))->toContain('Pathao');
+    expect($this->order->refresh()->pathao_consignment_id)->toBeNull();
 });
 
 test('sending to pathao twice is rejected', function () {

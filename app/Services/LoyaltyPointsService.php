@@ -12,6 +12,7 @@ use App\Models\Review;
 use App\Models\Setting;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The general points ledger: earning (orders, registration, reviews, daily
@@ -130,29 +131,47 @@ class LoyaltyPointsService
         $this->refundRedeemedPointsIfApplicable($order);
     }
 
+    /**
+     * Wrapped in its own transaction with the order re-fetched and locked
+     * fresh inside it — `$order` as passed in may have been loaded before a
+     * concurrent transition already refunded it, so the idempotency check
+     * must run against the locked row, not the caller's in-memory copy.
+     * `lockForUpdate()` only actually blocks a concurrent caller while held
+     * inside an open transaction; calling it standalone acquires and
+     * releases the row lock within its own implicit autocommit, protecting
+     * nothing.
+     */
     private function refundRedeemedPointsIfApplicable(Order $order): void
     {
-        if (! $order->points_redeemed || $order->points_refunded_at !== null || $order->user_id === null) {
+        if (! $order->points_redeemed || $order->user_id === null) {
             return;
         }
 
-        $purchaser = User::whereKey($order->user_id)->lockForUpdate()->first();
+        DB::transaction(function () use ($order): void {
+            $locked = Order::whereKey($order->id)->lockForUpdate()->first();
 
-        if ($purchaser === null) {
-            return;
-        }
+            if ($locked === null || ! $locked->points_redeemed || $locked->points_refunded_at !== null || $locked->user_id === null) {
+                return;
+            }
 
-        $purchaser->increment('points_balance', $order->points_redeemed);
+            $purchaser = User::whereKey($locked->user_id)->lockForUpdate()->first();
 
-        ReferralPointTransaction::create([
-            'user_id' => $purchaser->id,
-            'order_id' => $order->id,
-            'type' => PointTransactionType::REFUND,
-            'points' => $order->points_redeemed,
-            'note' => 'Order '.$order->order_number.' was cancelled/refunded — redeemed points refunded.',
-        ]);
+            if ($purchaser === null) {
+                return;
+            }
 
-        $order->forceFill(['points_refunded_at' => now()])->saveQuietly();
+            $purchaser->increment('points_balance', $locked->points_redeemed);
+
+            ReferralPointTransaction::create([
+                'user_id' => $purchaser->id,
+                'order_id' => $locked->id,
+                'type' => PointTransactionType::REFUND,
+                'points' => $locked->points_redeemed,
+                'note' => 'Order '.$locked->order_number.' was cancelled/refunded — redeemed points refunded.',
+            ]);
+
+            $locked->forceFill(['points_refunded_at' => now()])->saveQuietly();
+        });
     }
 
     /**
@@ -191,6 +210,12 @@ class LoyaltyPointsService
      * approved, and linked to an order that actually delivered the reviewed
      * product to this reviewer. Safe to call on every save (submit,
      * re-approve, admin edit) — only ever grants once per review.
+     *
+     * Wrapped in its own transaction with the review re-fetched and locked
+     * fresh inside it — e.g. an admin double-clicking "Approve" produces
+     * two independently-loaded `$review` instances, both showing
+     * `points_awarded_at === null`; a bare `lockForUpdate()` outside a
+     * transaction wouldn't stop both from granting (see LOYALTY-01).
      */
     public function grantReviewBonus(Review $review): void
     {
@@ -204,23 +229,31 @@ class LoyaltyPointsService
             return;
         }
 
-        $user = User::whereKey($review->user_id)->lockForUpdate()->first();
+        DB::transaction(function () use ($review, $points): void {
+            $locked = Review::whereKey($review->id)->lockForUpdate()->first();
 
-        if ($user === null) {
-            return;
-        }
+            if ($locked === null || ! $locked->is_approved || $locked->order_id === null || $locked->points_awarded_at !== null) {
+                return;
+            }
 
-        $user->increment('points_balance', $points);
+            $user = User::whereKey($locked->user_id)->lockForUpdate()->first();
 
-        ReferralPointTransaction::create([
-            'user_id' => $user->id,
-            'order_id' => $review->order_id,
-            'type' => PointTransactionType::EARN_REVIEW,
-            'points' => $points,
-            'note' => 'Verified review bonus.',
-        ]);
+            if ($user === null) {
+                return;
+            }
 
-        $review->forceFill(['points_awarded_at' => now()])->saveQuietly();
+            $user->increment('points_balance', $points);
+
+            ReferralPointTransaction::create([
+                'user_id' => $user->id,
+                'order_id' => $locked->order_id,
+                'type' => PointTransactionType::EARN_REVIEW,
+                'points' => $points,
+                'note' => 'Verified review bonus.',
+            ]);
+
+            $locked->forceFill(['points_awarded_at' => now()])->saveQuietly();
+        });
     }
 
     public function earnDelayDays(): int
@@ -240,6 +273,12 @@ class LoyaltyPointsService
      * of the order's subtotal (product spend only — shipping is a separate
      * column and never included), rounded UP so any order earns at least 1
      * point. Intended to run on a schedule; see `rewards:grant-due`.
+     *
+     * The query below is only a candidate pre-filter — `withoutOverlapping()`
+     * on the scheduled command guards against the scheduler itself double-
+     * dispatching, but not a manually-run invocation overlapping it, so each
+     * candidate order is re-verified against a freshly locked row inside
+     * its own transaction before anything is actually granted.
      */
     public function grantDueOrderEarnPoints(): int
     {
@@ -262,26 +301,35 @@ class LoyaltyPointsService
         $granted = 0;
 
         foreach ($dueOrders as $order) {
-            $spend = max(0.0, (float) $order->subtotal - (float) $order->discount);
-            $points = $spend > 0 ? (int) ceil($spend / $rate) : 0;
+            DB::transaction(function () use ($order, $rate): void {
+                $locked = Order::whereKey($order->id)->lockForUpdate()->first();
 
-            if ($points > 0) {
-                $user = User::whereKey($order->user_id)->lockForUpdate()->first();
-
-                if ($user !== null) {
-                    $user->increment('points_balance', $points);
-
-                    ReferralPointTransaction::create([
-                        'user_id' => $user->id,
-                        'order_id' => $order->id,
-                        'type' => PointTransactionType::EARN_ORDER,
-                        'points' => $points,
-                        'note' => 'Earned from order '.$order->order_number.'.',
-                    ]);
+                if ($locked === null || $locked->status !== OrderStatus::DELIVERED || $locked->loyalty_points_granted_at !== null || $locked->user_id === null) {
+                    return;
                 }
-            }
 
-            $order->forceFill(['loyalty_points_granted_at' => now()])->saveQuietly();
+                $spend = max(0.0, (float) $locked->subtotal - (float) $locked->discount);
+                $points = $spend > 0 ? (int) ceil($spend / $rate) : 0;
+
+                if ($points > 0) {
+                    $user = User::whereKey($locked->user_id)->lockForUpdate()->first();
+
+                    if ($user !== null) {
+                        $user->increment('points_balance', $points);
+
+                        ReferralPointTransaction::create([
+                            'user_id' => $user->id,
+                            'order_id' => $locked->id,
+                            'type' => PointTransactionType::EARN_ORDER,
+                            'points' => $points,
+                            'note' => 'Earned from order '.$locked->order_number.'.',
+                        ]);
+                    }
+                }
+
+                $locked->forceFill(['loyalty_points_granted_at' => now()])->saveQuietly();
+            });
+
             $granted++;
         }
 
@@ -326,47 +374,55 @@ class LoyaltyPointsService
      * rather than erroring, since the frontend's own disabled-button state
      * can't fully prevent a double-submit.
      *
+     * Wrapped in a real transaction so `lockForUpdate()` actually serializes
+     * two near-simultaneous claims (e.g. a double-submit from two tabs) —
+     * calling it outside a transaction only acquires and releases the row
+     * lock within MySQL's own implicit per-statement autocommit, which
+     * can't block a second, genuinely concurrent caller (see LOYALTY-01).
+     *
      * @return array{streakDay: int, claimedToday: bool, points: int, awarded: bool}
      */
     public function claimDailyLogin(User $user): array
     {
-        $locked = User::whereKey($user->id)->lockForUpdate()->first();
+        return DB::transaction(function () use ($user): array {
+            $locked = User::whereKey($user->id)->lockForUpdate()->first();
 
-        if ($locked === null) {
-            return ['streakDay' => 1, 'claimedToday' => false, 'points' => 0, 'awarded' => false];
-        }
+            if ($locked === null) {
+                return ['streakDay' => 1, 'claimedToday' => false, 'points' => 0, 'awarded' => false];
+            }
 
-        $today = CarbonImmutable::now(self::DHAKA_TIMEZONE)->toDateString();
+            $today = CarbonImmutable::now(self::DHAKA_TIMEZONE)->toDateString();
 
-        if ($locked->login_streak_date?->toDateString() === $today) {
-            return [
-                'streakDay' => max(1, $locked->login_streak_count),
-                'claimedToday' => true,
-                'points' => $this->pointsForStreakDay(max(1, $locked->login_streak_count)),
-                'awarded' => false,
-            ];
-        }
+            if ($locked->login_streak_date?->toDateString() === $today) {
+                return [
+                    'streakDay' => max(1, $locked->login_streak_count),
+                    'claimedToday' => true,
+                    'points' => $this->pointsForStreakDay(max(1, $locked->login_streak_count)),
+                    'awarded' => false,
+                ];
+            }
 
-        $streakDay = $this->nextStreakDay($locked, $today);
-        $points = $this->pointsForStreakDay($streakDay);
+            $streakDay = $this->nextStreakDay($locked, $today);
+            $points = $this->pointsForStreakDay($streakDay);
 
-        $locked->forceFill([
-            'login_streak_count' => $streakDay,
-            'login_streak_date' => $today,
-        ])->save();
+            $locked->forceFill([
+                'login_streak_count' => $streakDay,
+                'login_streak_date' => $today,
+            ])->save();
 
-        if ($points > 0) {
-            $locked->increment('points_balance', $points);
+            if ($points > 0) {
+                $locked->increment('points_balance', $points);
 
-            ReferralPointTransaction::create([
-                'user_id' => $locked->id,
-                'type' => PointTransactionType::EARN_DAILY_LOGIN,
-                'points' => $points,
-                'note' => "Daily login bonus — day {$streakDay}.",
-            ]);
-        }
+                ReferralPointTransaction::create([
+                    'user_id' => $locked->id,
+                    'type' => PointTransactionType::EARN_DAILY_LOGIN,
+                    'points' => $points,
+                    'note' => "Daily login bonus — day {$streakDay}.",
+                ]);
+            }
 
-        return ['streakDay' => $streakDay, 'claimedToday' => true, 'points' => $points, 'awarded' => true];
+            return ['streakDay' => $streakDay, 'claimedToday' => true, 'points' => $points, 'awarded' => true];
+        });
     }
 
     /**
