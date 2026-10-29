@@ -33,6 +33,14 @@ jobs:
       - name: Generate Ziggy routes file
         run: php artisan ziggy:generate
 
+      # resources/js/actions and resources/js/routes are gitignored too, and
+      # normally only appear when `npm run build` runs the Wayfinder Vite
+      # plugin. Without them ESLint can't resolve `@/actions`/`@/routes`
+      # imports, so import/order sorts them differently than everywhere else
+      # and tsc can't type-check them. Same flags as the Vite plugin.
+      - name: Generate Wayfinder routes and actions
+        run: php artisan wayfinder:generate --with-form
+
       - name: ESLint
         run: npm run lint:check
 
