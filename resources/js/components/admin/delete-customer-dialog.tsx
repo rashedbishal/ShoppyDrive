@@ -61,12 +61,11 @@ export function DeleteCustomerDialog({ customer, onOpenChange }: Props) {
                     <DialogTitle>Anonymize this customer?</DialogTitle>
                     <DialogDescription>
                         This will replace &quot;{customer.name}&quot;&apos;s
-                        personal information (name, phone, address, avatar)
-                        with anonymized placeholders and permanently revoke
-                        their account access. Their email stays unchanged,
-                        and their orders, payments, reviews, coupon usage,
-                        and loyalty history are all preserved — this cannot
-                        be undone.
+                        personal information (name, phone, address, avatar) with
+                        anonymized placeholders and permanently revoke their
+                        account access. Their email stays unchanged, and their
+                        orders, payments, reviews, coupon usage, and loyalty
+                        history are all preserved — this cannot be undone.
                     </DialogDescription>
                 </DialogHeader>
 
