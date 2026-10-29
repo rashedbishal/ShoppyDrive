@@ -300,6 +300,7 @@ function startLandingPageCheckout(TestCase $test, string $provider = 'bkash'): a
         'name' => 'Guest Buyer', 'phone' => '01700000000',
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka',
         'quantity' => 1, 'payment_method' => 'mobile_banking', 'provider' => $provider,
+        'order_token' => (string) Str::uuid(),
     ])->assertRedirect(route('lp.show', $page->slug));
 
     $pending = PendingCheckout::query()->where('landing_page_id', $page->id)->latest('id')->firstOrFail();
@@ -370,10 +371,15 @@ test('the landing-page guest checkout cannot reuse a transaction id already cons
         'title' => 'LP Test', 'slug' => 'lp-test-'.Str::random(8), 'product_id' => $product->id, 'is_active' => true, 'sections' => [],
     ]);
 
+    // Each call is a genuinely separate purchase attempt (two distinct
+    // PendingCheckout rows are the point of this test), so each gets its
+    // own idempotency token — reusing the same token would dedupe the
+    // second call against the first (CART-01).
     $placeOrder = fn () => $this->post(route('lp.order', $page->slug), [
         'name' => 'Guest Buyer', 'phone' => '01700000000',
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka',
         'quantity' => 1, 'payment_method' => 'mobile_banking', 'provider' => 'bkash',
+        'order_token' => (string) Str::uuid(),
     ])->assertRedirect(route('lp.show', $page->slug));
 
     $placeOrder();

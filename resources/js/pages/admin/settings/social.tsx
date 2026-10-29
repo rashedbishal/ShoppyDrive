@@ -61,10 +61,7 @@ function GoogleLoginCard({ settings }: Props) {
                             className={settingsInputClass}
                             value={data.google_client_secret}
                             onChange={(e) =>
-                                setData(
-                                    'google_client_secret',
-                                    e.target.value,
-                                )
+                                setData('google_client_secret', e.target.value)
                             }
                             placeholder="GOCSPX-..."
                         />
@@ -77,10 +74,7 @@ function GoogleLoginCard({ settings }: Props) {
                             className={settingsInputClass}
                             value={data.google_redirect_uri}
                             onChange={(e) =>
-                                setData(
-                                    'google_redirect_uri',
-                                    e.target.value,
-                                )
+                                setData('google_redirect_uri', e.target.value)
                             }
                             placeholder={`${window.location.origin}/auth/google/callback`}
                         />
@@ -110,8 +104,7 @@ function FacebookLoginCard({ settings }: Props) {
         facebook_client_id: (settings.facebook_client_id as string) ?? '',
         facebook_client_secret:
             (settings.facebook_client_secret as string) ?? '',
-        facebook_redirect_uri:
-            (settings.facebook_redirect_uri as string) ?? '',
+        facebook_redirect_uri: (settings.facebook_redirect_uri as string) ?? '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -174,10 +167,7 @@ function FacebookLoginCard({ settings }: Props) {
                             className={settingsInputClass}
                             value={data.facebook_redirect_uri}
                             onChange={(e) =>
-                                setData(
-                                    'facebook_redirect_uri',
-                                    e.target.value,
-                                )
+                                setData('facebook_redirect_uri', e.target.value)
                             }
                             placeholder={`${window.location.origin}/auth/facebook/callback`}
                         />

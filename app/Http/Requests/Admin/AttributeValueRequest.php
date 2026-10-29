@@ -54,7 +54,7 @@ class AttributeValueRequest extends FormRequest
                 'sometimes', 'integer', 'exists:attributes,id',
             ],
             'value' => [
-                'required', 'string', 'max:100',
+                'required', 'string', 'max:20',
                 // Scoped per attribute, not globally — "M" must be unique
                 // among sizes and "Red" among colors, but they don't
                 // collide with each other.

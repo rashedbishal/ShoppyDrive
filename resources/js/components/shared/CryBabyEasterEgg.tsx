@@ -74,14 +74,19 @@ function isProductInCart(items: CartItem[], productId: Id): boolean {
 }
 
 function prefersReducedMotion(): boolean {
-    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    return (
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+    );
 }
 
 /**
  * Size and place the GIF so the baby's fingertip rests on the button's right
  * end, scaled down on narrow buttons so it never covers the label.
  */
-function measurePlacement(button: HTMLButtonElement, layer: HTMLElement): Placement | null {
+function measurePlacement(
+    button: HTMLButtonElement,
+    layer: HTMLElement,
+): Placement | null {
     const buttonRect = button.getBoundingClientRect();
     const layerRect = layer.getBoundingClientRect();
 
@@ -92,13 +97,27 @@ function measurePlacement(button: HTMLButtonElement, layer: HTMLElement): Placem
     const labelRange = document.createRange();
     labelRange.selectNodeContents(button);
     const labelRect = labelRange.getBoundingClientRect();
-    const labelRight = labelRect.width > 0 ? labelRect.right - buttonRect.left : buttonRect.width / 2;
+    const labelRight =
+        labelRect.width > 0
+            ? labelRect.right - buttonRect.left
+            : buttonRect.width / 2;
 
-    const availableWidth = buttonRect.width + OVERHANG_PX - labelRight - LABEL_CLEARANCE_PX;
-    const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, availableWidth / FINGERTIP_TO_BODY_RIGHT));
+    const availableWidth =
+        buttonRect.width + OVERHANG_PX - labelRight - LABEL_CLEARANCE_PX;
+    const scale = Math.min(
+        MAX_SCALE,
+        Math.max(MIN_SCALE, availableWidth / FINGERTIP_TO_BODY_RIGHT),
+    );
 
-    const fingertipX = buttonRect.right - layerRect.left + OVERHANG_PX - FINGERTIP_TO_BODY_RIGHT * scale;
-    const fingertipY = buttonRect.top - layerRect.top + buttonRect.height * FINGERTIP_HEIGHT_RATIO;
+    const fingertipX =
+        buttonRect.right -
+        layerRect.left +
+        OVERHANG_PX -
+        FINGERTIP_TO_BODY_RIGHT * scale;
+    const fingertipY =
+        buttonRect.top -
+        layerRect.top +
+        buttonRect.height * FINGERTIP_HEIGHT_RATIO;
 
     return {
         left: fingertipX - FINGERTIP.x * scale,
@@ -114,7 +133,10 @@ function measurePlacement(button: HTMLButtonElement, layer: HTMLElement): Placem
  * it never intercepts clicks. Render it inside a `relative` container whose
  * Add to Cart button carries the `data-cry-baby-target` attribute.
  */
-export function CryBabyEasterEgg({ productId, enabled }: CryBabyEasterEggProps): React.JSX.Element | null {
+export function CryBabyEasterEgg({
+    productId,
+    enabled,
+}: CryBabyEasterEggProps): React.JSX.Element | null {
     const layerRef = useRef<HTMLSpanElement>(null);
     const [placement, setPlacement] = useState<Placement | null>(null);
     const [playback, setPlayback] = useState<Playback | null>(null);
@@ -151,7 +173,11 @@ export function CryBabyEasterEgg({ productId, enabled }: CryBabyEasterEggProps):
     }, []);
 
     const startPlayback = useCallback(async (): Promise<void> => {
-        if (isStartingRef.current || playbackRef.current || prefersReducedMotion()) {
+        if (
+            isStartingRef.current ||
+            playbackRef.current ||
+            prefersReducedMotion()
+        ) {
             return;
         }
 
@@ -161,15 +187,26 @@ export function CryBabyEasterEgg({ productId, enabled }: CryBabyEasterEggProps):
 
         try {
             const blob = await loadGifBlob();
-            next = { id: Date.now(), src: URL.createObjectURL(blob), isObjectUrl: true };
+            next = {
+                id: Date.now(),
+                src: URL.createObjectURL(blob),
+                isObjectUrl: true,
+            };
         } catch {
-            next = { id: Date.now(), src: `${GIF_URL}?play=${Date.now()}`, isObjectUrl: false };
+            next = {
+                id: Date.now(),
+                src: `${GIF_URL}?play=${Date.now()}`,
+                isObjectUrl: false,
+            };
         }
 
         isStartingRef.current = false;
 
         // The shopper may have added the product (or left) while the GIF was loading.
-        if (!isMountedRef.current || isProductInCart(useCartStore.getState().items, productId)) {
+        if (
+            !isMountedRef.current ||
+            isProductInCart(useCartStore.getState().items, productId)
+        ) {
             if (next.isObjectUrl) {
                 URL.revokeObjectURL(next.src);
             }
@@ -189,7 +226,10 @@ export function CryBabyEasterEgg({ productId, enabled }: CryBabyEasterEggProps):
 
         const timers: ReturnType<typeof setTimeout>[] = [];
         let pendingVisibilityListener: (() => void) | null = null;
-        let wasInCart = isProductInCart(useCartStore.getState().items, productId);
+        let wasInCart = isProductInCart(
+            useCartStore.getState().items,
+            productId,
+        );
 
         const requestPlay = (): void => {
             if (!document.hidden) {
@@ -205,11 +245,17 @@ export function CryBabyEasterEgg({ productId, enabled }: CryBabyEasterEggProps):
                         return;
                     }
 
-                    document.removeEventListener('visibilitychange', pendingVisibilityListener!);
+                    document.removeEventListener(
+                        'visibilitychange',
+                        pendingVisibilityListener!,
+                    );
                     pendingVisibilityListener = null;
                     void startPlayback();
                 };
-                document.addEventListener('visibilitychange', pendingVisibilityListener);
+                document.addEventListener(
+                    'visibilitychange',
+                    pendingVisibilityListener,
+                );
             }
         };
 
@@ -227,16 +273,25 @@ export function CryBabyEasterEgg({ productId, enabled }: CryBabyEasterEggProps):
         const unsubscribeUi = useUiStore.subscribe((state, previousState) => {
             const didCloseCart = previousState.cartOpen && !state.cartOpen;
 
-            if (didCloseCart && wasInCart && !isProductInCart(useCartStore.getState().items, productId)) {
+            if (
+                didCloseCart &&
+                wasInCart &&
+                !isProductInCart(useCartStore.getState().items, productId)
+            ) {
                 wasInCart = false;
                 timers.push(setTimeout(requestPlay, CART_CLOSE_DELAY_MS));
             }
         });
 
-        timers.push(setTimeout(prefetchGif, IDLE_TRIGGER_MS - IDLE_PREFETCH_LEAD_MS));
+        timers.push(
+            setTimeout(prefetchGif, IDLE_TRIGGER_MS - IDLE_PREFETCH_LEAD_MS),
+        );
         timers.push(
             setTimeout(() => {
-                if (!wasInCart && !isProductInCart(useCartStore.getState().items, productId)) {
+                if (
+                    !wasInCart &&
+                    !isProductInCart(useCartStore.getState().items, productId)
+                ) {
                     requestPlay();
                 }
             }, IDLE_TRIGGER_MS),
@@ -248,7 +303,10 @@ export function CryBabyEasterEgg({ productId, enabled }: CryBabyEasterEggProps):
             timers.forEach(clearTimeout);
 
             if (pendingVisibilityListener) {
-                document.removeEventListener('visibilitychange', pendingVisibilityListener);
+                document.removeEventListener(
+                    'visibilitychange',
+                    pendingVisibilityListener,
+                );
             }
 
             stop();
@@ -269,13 +327,17 @@ export function CryBabyEasterEgg({ productId, enabled }: CryBabyEasterEggProps):
     // Keep the baby glued to the button through resizes and layout shifts.
     useEffect(() => {
         const layer = layerRef.current;
-        const button = layer?.parentElement?.querySelector<HTMLButtonElement>(TARGET_SELECTOR);
+        const button =
+            layer?.parentElement?.querySelector<HTMLButtonElement>(
+                TARGET_SELECTOR,
+            );
 
         if (!enabled || !layer || !button) {
             return;
         }
 
-        const update = (): void => setPlacement(measurePlacement(button, layer));
+        const update = (): void =>
+            setPlacement(measurePlacement(button, layer));
         const observer = new ResizeObserver(update);
         observer.observe(button);
         observer.observe(layer);
@@ -292,7 +354,11 @@ export function CryBabyEasterEgg({ productId, enabled }: CryBabyEasterEggProps):
     }
 
     return (
-        <span ref={layerRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-20">
+        <span
+            ref={layerRef}
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-20"
+        >
             <AnimatePresence>
                 {playback && placement ? (
                     <motion.img
@@ -310,7 +376,10 @@ export function CryBabyEasterEgg({ productId, enabled }: CryBabyEasterEggProps):
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: FADE_MS / 1000, ease: 'easeOut' }}
+                        transition={{
+                            duration: FADE_MS / 1000,
+                            ease: 'easeOut',
+                        }}
                     />
                 ) : null}
             </AnimatePresence>

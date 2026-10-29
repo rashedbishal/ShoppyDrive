@@ -678,9 +678,7 @@ export default function OrderShow({ order }: Props) {
                                                     e.target.value,
                                                 )
                                             }
-                                            error={
-                                                addressErrors.address_line1
-                                            }
+                                            error={addressErrors.address_line1}
                                         />
                                         <Input
                                             label="Address line 2"
@@ -691,9 +689,7 @@ export default function OrderShow({ order }: Props) {
                                                     e.target.value,
                                                 )
                                             }
-                                            error={
-                                                addressErrors.address_line2
-                                            }
+                                            error={addressErrors.address_line2}
                                         />
                                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                             <Input
@@ -722,9 +718,7 @@ export default function OrderShow({ order }: Props) {
                                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                             <Input
                                                 label="Postal code"
-                                                value={
-                                                    addressData.postal_code
-                                                }
+                                                value={addressData.postal_code}
                                                 onChange={(e) =>
                                                     setAddressData(
                                                         'postal_code',
@@ -791,14 +785,9 @@ export default function OrderShow({ order }: Props) {
                                         <p>
                                             {order.shipping_address.city},{' '}
                                             {order.shipping_address.state}{' '}
-                                            {
-                                                order.shipping_address
-                                                    .postal_code
-                                            }
+                                            {order.shipping_address.postal_code}
                                         </p>
-                                        <p>
-                                            {order.shipping_address.country}
-                                        </p>
+                                        <p>{order.shipping_address.country}</p>
                                     </div>
                                 )}
                             </CardContent>

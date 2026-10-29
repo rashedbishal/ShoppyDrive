@@ -8,6 +8,7 @@ use App\Concerns\FlushesLayoutCache;
 use App\Support\LayoutCache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Mews\Purifier\Facades\Purifier;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -17,6 +18,15 @@ class Setting extends Model
 
     /** LayoutCache entries built from this table (see FlushesLayoutCache). */
     public const LAYOUT_CACHE_KEYS = [LayoutCache::SETTINGS];
+
+    /**
+     * Keys in this generic key-value table whose `value` is rich-text HTML
+     * and must be purified before saving. Deliberately an explicit
+     * allow-list, not a content-shape heuristic — this same table holds
+     * courier/gateway/webhook secrets in the same `value` column, and a
+     * heuristic could wrongly touch one of those.
+     */
+    private const RICH_TEXT_KEYS = ['about_mission_body'];
 
     protected $primaryKey = 'key';
 
@@ -35,6 +45,15 @@ class Setting extends Model
         return [
             'value' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Setting $setting): void {
+            if (in_array($setting->key, self::RICH_TEXT_KEYS, true) && is_string($setting->value)) {
+                $setting->value = Purifier::clean($setting->value);
+            }
+        });
     }
 
     /**

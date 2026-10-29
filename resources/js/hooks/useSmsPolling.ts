@@ -17,19 +17,24 @@ export function useSmsPolling() {
     // true after the first successful response — prevents toasting stale SMS on startup
     const initializedRef = useRef(false);
 
-    const dismiss = (key: number) => setToasts((prev) => prev.filter((t) => t.key !== key));
+    const dismiss = (key: number) =>
+        setToasts((prev) => prev.filter((t) => t.key !== key));
 
     useEffect(() => {
         let mounted = true;
 
         const poll = async () => {
-            const lastId = parseInt(localStorage.getItem(STORAGE_KEY) ?? '0', 10);
+            const lastId = parseInt(
+                localStorage.getItem(STORAGE_KEY) ?? '0',
+                10,
+            );
 
             let res: Response;
+
             try {
                 res = await fetch(`/admin/sms/poll?after=${lastId}`, {
                     headers: {
-                        'Accept': 'application/json',
+                        Accept: 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                     credentials: 'same-origin',
@@ -39,18 +44,24 @@ export function useSmsPolling() {
             }
 
             // Guard: non-JSON response (e.g. redirect to login page)
-            if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) {
+            if (
+                !res.ok ||
+                !res.headers.get('content-type')?.includes('application/json')
+            ) {
                 return;
             }
 
             let data: { sms: Omit<SmsToast, 'key'>[] };
+
             try {
                 data = await res.json();
             } catch {
                 return;
             }
 
-            if (!mounted) return;
+            if (!mounted) {
+                return;
+            }
 
             const isFirstPoll = !initializedRef.current;
             // Mark as initialized on the FIRST successful response,
@@ -58,14 +69,19 @@ export function useSmsPolling() {
             initializedRef.current = true;
 
             const { sms } = data;
-            if (!sms.length) return;
+
+            if (!sms.length) {
+                return;
+            }
 
             // Advance the cursor
             const maxId = Math.max(...sms.map((s) => s.id));
             localStorage.setItem(STORAGE_KEY, String(maxId));
 
             // Never toast on the first poll — those are existing SMS, not new arrivals
-            if (isFirstPoll) return;
+            if (isFirstPoll) {
+                return;
+            }
 
             setToasts((prev) => [
                 ...prev,
@@ -75,6 +91,7 @@ export function useSmsPolling() {
 
         poll();
         const id = setInterval(poll, POLL_INTERVAL);
+
         return () => {
             mounted = false;
             clearInterval(id);

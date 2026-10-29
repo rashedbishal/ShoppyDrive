@@ -7,12 +7,14 @@ namespace App\Models;
 use App\Concerns\Auditable;
 use App\Concerns\FlushesCatalogFilters;
 use App\Concerns\FlushesSearchSuggestions;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Mews\Purifier\Facades\Purifier;
 
 class Product extends Model
 {
@@ -70,6 +72,13 @@ class Product extends Model
             'weight' => 'float',
             'published_at' => 'datetime',
         ];
+    }
+
+    protected function description(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => $value === null ? null : Purifier::clean($value),
+        );
     }
 
     protected static function booted(): void

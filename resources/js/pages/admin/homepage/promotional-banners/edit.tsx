@@ -74,6 +74,7 @@ export default function PromotionalBannerEdit({
 
     useEffect(() => {
         if (!searchQuery.trim()) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- clears results at once when the query is emptied; fetched results are set asynchronously
             setSearchResults([]);
 
             return;

@@ -1,17 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
+import { ArrowRight, Star } from 'lucide-react';
 import { PageHero } from '@/components/shared/PageHero';
-import {
-    ArrowRight,
-    Award,
-    Globe,
-    Heart,
-    Package,
-    ShieldCheck,
-    Star,
-    Truck,
-    Users,
-    Zap,
-} from 'lucide-react';
 import { CategoryIcon } from '@/lib/category-icons';
 
 type AboutStat = { value: string; label: string };

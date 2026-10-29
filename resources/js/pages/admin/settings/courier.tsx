@@ -132,10 +132,7 @@ function PathaoCourierCard({ settings }: Props) {
                             className={settingsInputClass}
                             value={data.pathao_client_secret}
                             onChange={(e) =>
-                                setData(
-                                    'pathao_client_secret',
-                                    e.target.value,
-                                )
+                                setData('pathao_client_secret', e.target.value)
                             }
                             placeholder="Pathao Client Secret"
                         />
@@ -204,8 +201,8 @@ function PathaoCourierCard({ settings }: Props) {
                                     <span className="font-mono">
                                         {data.pathao_store_id}
                                     </span>
-                                    . Click below to load your stores and
-                                    change it.
+                                    . Click below to load your stores and change
+                                    it.
                                 </p>
                             ) : (
                                 <p className="text-xs text-slate-400">
@@ -291,9 +288,7 @@ function ShippingRateCard({
                             step="0.01"
                             className={settingsInputClass}
                             value={data[zoneKey]}
-                            onChange={(e) =>
-                                setData(zoneKey, e.target.value)
-                            }
+                            onChange={(e) => setData(zoneKey, e.target.value)}
                         />
                     </SettingsField>
                 </CardContent>
@@ -382,8 +377,8 @@ function SteadfastCourierCard({ settings }: Props) {
                         >
                             Steadfast's merchant portal
                         </a>
-                        . Used to send Cash-on-Delivery orders to Steadfast
-                        for pickup and delivery from the order detail page.
+                        . Used to send Cash-on-Delivery orders to Steadfast for
+                        pickup and delivery from the order detail page.
                     </p>
                     <SettingsField label="Api Key">
                         <input
@@ -402,10 +397,7 @@ function SteadfastCourierCard({ settings }: Props) {
                             className={settingsInputClass}
                             value={data.steadfast_secret_key}
                             onChange={(e) =>
-                                setData(
-                                    'steadfast_secret_key',
-                                    e.target.value,
-                                )
+                                setData('steadfast_secret_key', e.target.value)
                             }
                             placeholder="Steadfast Secret Key"
                         />
@@ -435,10 +427,7 @@ function SteadfastCourierCard({ settings }: Props) {
                             className={settingsInputClass}
                             value={data.steadfast_webhook_url}
                             onChange={(e) =>
-                                setData(
-                                    'steadfast_webhook_url',
-                                    e.target.value,
-                                )
+                                setData('steadfast_webhook_url', e.target.value)
                             }
                             onFocus={(e) => e.target.select()}
                             placeholder={`${window.location.origin}/api/steadfast/webhook`}

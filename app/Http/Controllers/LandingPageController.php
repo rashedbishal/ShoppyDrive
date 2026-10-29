@@ -17,9 +17,11 @@ use App\Models\Setting;
 use App\Services\InventoryService;
 use App\Support\CartManager;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -60,8 +62,31 @@ class LandingPageController extends Controller
             'siteLogo' => Setting::find('logo')?->value,
             // Populated after mobile banking order submission
             'pendingPayment' => session('lp_pending_payment'),
+            // A fresh, unguessable per-render token the order form submits
+            // back — see placeOrder()'s idempotency handling (CART-01). A
+            // page reload issues a new one; only a retry of this exact
+            // render's form carries the same token.
+            'orderToken' => (string) Str::uuid(),
         ]);
     }
+
+    /**
+     * How long a successful submission's outcome (which order/payment
+     * session it produced) stays cached, so a retry of the same form
+     * render — arriving after the original request already finished — is
+     * redirected to that same destination instead of creating anything
+     * new. Matches `PendingCheckout`'s own existing 2-hour expiry
+     * convention rather than inventing a new window.
+     */
+    private const ORDER_TOKEN_RESULT_TTL_HOURS = 2;
+
+    /**
+     * How long a request will wait for a lock held by a concurrent
+     * submission of the exact same token before giving up and reporting
+     * "still processing" rather than guessing. COD/mobile-banking order
+     * creation here is a handful of queries — well under this.
+     */
+    private const ORDER_TOKEN_LOCK_WAIT_SECONDS = 10;
 
     public function placeOrder(Request $request, string $slug): RedirectResponse
     {
@@ -84,8 +109,59 @@ class LandingPageController extends Controller
             'quantity' => ['required', 'integer', 'min:1', 'max:100'],
             'payment_method' => ['required', 'in:cod,mobile_banking'],
             'provider' => ['required_if:payment_method,mobile_banking', 'nullable', 'in:bkash,nagad'],
+            // Missing/malformed must fail validation here, never silently
+            // skip the idempotency check below (CART-01).
+            'order_token' => ['required', 'uuid'],
         ]);
 
+        $orderToken = $request->string('order_token')->toString();
+        $resultKey = "lp-order-result:{$orderToken}";
+
+        if (($cached = Cache::get($resultKey)) !== null) {
+            return $this->redirectForCachedLandingOrder($cached, $slug);
+        }
+
+        $lock = Cache::lock("lp-order-lock:{$orderToken}", self::ORDER_TOKEN_LOCK_WAIT_SECONDS * 3);
+
+        try {
+            return $lock->block(self::ORDER_TOKEN_LOCK_WAIT_SECONDS, function () use ($request, $page, $product, $slug, $resultKey) {
+                // The other holder may have finished and released between
+                // our first check above and actually acquiring the lock.
+                if (($cached = Cache::get($resultKey)) !== null) {
+                    return $this->redirectForCachedLandingOrder($cached, $slug);
+                }
+
+                return $this->completeLandingPageOrder($request, $page, $product, $slug, $resultKey);
+            });
+        } catch (LockTimeoutException) {
+            // Someone else is actively processing this exact submission and
+            // hasn't finished yet — never fall through to creating a second
+            // order/PendingCheckout; ask the customer to wait rather than
+            // guess at what happened.
+            return back()
+                ->withErrors(['order_token' => 'Your order is still being processed. Please wait a moment and try again.'])
+                ->withInput();
+        }
+    }
+
+    private function redirectForCachedLandingOrder(array $cached, string $slug): RedirectResponse
+    {
+        if ($cached['type'] === 'cod') {
+            return redirect()->route('lp.confirmation', $cached['guest_token']);
+        }
+
+        session()->flash('lp_pending_payment', [
+            'token' => $cached['pending_token'],
+            'amount' => $cached['amount'],
+            'order_number' => $cached['order_number'],
+            'provider' => $cached['provider'],
+        ]);
+
+        return redirect()->route('lp.show', $slug);
+    }
+
+    private function completeLandingPageOrder(Request $request, LandingPage $page, mixed $product, string $slug, string $resultKey): RedirectResponse
+    {
         $qty = (int) $request->quantity;
         $price = $this->cartManager->resolvePrice($product->id, null);
         $subtotal = round($price * $qty, 2);
@@ -153,8 +229,13 @@ class LandingPageController extends Controller
                     return $order;
                 });
             } catch (InsufficientStockException $e) {
+                // Not cached as a result — a failed attempt must not poison
+                // this token; the customer (or a genuine retry of it) can
+                // still try again once stock is available.
                 return back()->withErrors(['quantity' => $e->getMessage()])->withInput();
             }
+
+            Cache::put($resultKey, ['type' => 'cod', 'guest_token' => $guestToken], now()->addHours(self::ORDER_TOKEN_RESULT_TTL_HOURS));
 
             return redirect()->route('lp.confirmation', $guestToken);
         }
@@ -186,6 +267,14 @@ class LandingPageController extends Controller
             ],
             'expires_at' => now()->addHours(2),
         ]);
+
+        Cache::put($resultKey, [
+            'type' => 'mobile_banking',
+            'pending_token' => $pendingToken,
+            'amount' => $total,
+            'order_number' => $orderNumber,
+            'provider' => $request->provider,
+        ], now()->addHours(self::ORDER_TOKEN_RESULT_TTL_HOURS));
 
         // Flash payment context and return to the same landing page
         // so the TxnID step happens inline without leaving the page.

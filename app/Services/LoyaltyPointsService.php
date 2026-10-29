@@ -162,7 +162,7 @@ class LoyaltyPointsService
         DB::transaction(function () use ($order): void {
             $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->first();
 
-            if ($lockedOrder === null || ! $lockedOrder->points_redeemed || $lockedOrder->points_refunded_at !== null) {
+            if ($lockedOrder === null || ! $lockedOrder->points_redeemed || $lockedOrder->points_refunded_at !== null || $lockedOrder->user_id === null) {
                 return;
             }
 
@@ -246,6 +246,10 @@ class LoyaltyPointsService
      * re-checks the marker on that locked row before locking the user,
      * mirroring the Order-before-user pattern used everywhere else in
      * this file, with Review playing the same role Order does elsewhere.
+     * A bare `lockForUpdate()` outside a transaction wouldn't actually stop
+     * two independently-loaded, stale copies of the same review (e.g. an
+     * admin double-clicking "Approve") from both granting — the lock only
+     * does anything useful while held inside an open transaction.
      */
     public function grantReviewBonus(Review $review): void
     {
@@ -307,13 +311,17 @@ class LoyaltyPointsService
      * column and never included), rounded UP so any order earns at least 1
      * point. Intended to run on a schedule; see `rewards:grant-due`.
      *
-     * Each order is re-fetched and locked fresh inside its own per-order
-     * transaction (retried up to 3 times on deadlock), re-checking
-     * `loyalty_points_granted_at` on that locked row before touching the
-     * user — Order-before-user, consistent with every other method here.
-     * This guards against a concurrent/retried run of the same scheduled
-     * command reprocessing an order whose marker was only read once, at
-     * the top of the batch.
+     * The query above is only a candidate pre-filter — `withoutOverlapping()`
+     * on the scheduled command guards against the scheduler itself double-
+     * dispatching, but not a manually-run invocation overlapping it, so each
+     * order is re-fetched and locked fresh inside its own per-order
+     * transaction (retried up to 3 times on deadlock), re-checking both
+     * `status === DELIVERED` and `loyalty_points_granted_at` on that locked
+     * row before touching the user — Order-before-user, consistent with
+     * every other method here. This guards against a concurrent/retried run
+     * of the same scheduled command reprocessing an order whose status or
+     * marker was only read once, at the top of the batch (e.g. the order
+     * was cancelled in the meantime).
      */
     public function grantDueOrderEarnPoints(): int
     {
@@ -339,7 +347,10 @@ class LoyaltyPointsService
             DB::transaction(function () use ($orderId, $rate): void {
                 $order = Order::whereKey($orderId)->lockForUpdate()->first();
 
-                if ($order === null || $order->loyalty_points_granted_at !== null) {
+                if ($order === null
+                    || $order->status !== OrderStatus::DELIVERED
+                    || $order->loyalty_points_granted_at !== null
+                    || $order->user_id === null) {
                     return;
                 }
 
@@ -369,7 +380,7 @@ class LoyaltyPointsService
 
                 $points = $spend > 0 ? (int) ceil($spend / $rate) : 0;
 
-                if ($points > 0 && $order->user_id !== null) {
+                if ($points > 0) {
                     $user = User::whereKey($order->user_id)->lockForUpdate()->first();
 
                     if ($user !== null) {
@@ -433,9 +444,12 @@ class LoyaltyPointsService
      * can't fully prevent a double-submit.
      *
      * Wrapped in a transaction (retried up to 3 times on deadlock) around
-     * the existing user-row lock and locked-instance date check, which
-     * were already correct — the lock was a no-op without the enclosing
-     * transaction.
+     * the existing user-row lock and locked-instance date check, which were
+     * already correct — `lockForUpdate()` only actually serializes two
+     * near-simultaneous claims (e.g. a double-submit from two tabs) while
+     * held inside an open transaction; calling it standalone just acquires
+     * and releases the row lock within MySQL's own implicit per-statement
+     * autocommit, which can't block a second, genuinely concurrent caller.
      *
      * @return array{streakDay: int, claimedToday: bool, points: int, awarded: bool}
      */

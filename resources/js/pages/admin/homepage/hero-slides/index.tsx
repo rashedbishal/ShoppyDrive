@@ -1,16 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
-import {
-    Plus,
-    Pencil,
-    Trash2,
-    GripVertical,
-    Eye,
-    EyeOff,
-    ArrowLeft,
-    Film,
-} from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowLeft, Film } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { isVideoUrl } from '@/lib/utils';
 import type { HeroSlide } from '@/types';
 type Props = {

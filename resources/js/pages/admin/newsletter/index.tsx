@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Mail, Plus, Search, Trash2, Users } from 'lucide-react';
+import { Mail, Search, Trash2, Users } from 'lucide-react';
 import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Card } from '@/components/ui/card';

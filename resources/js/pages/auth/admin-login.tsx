@@ -16,7 +16,9 @@ export default function AdminLogin(): React.JSX.Element {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('admin.login.submit'), { onFinish: () => reset('password') });
+        post(route('admin.login.submit'), {
+            onFinish: () => reset('password'),
+        });
     };
 
     return (
@@ -24,13 +26,14 @@ export default function AdminLogin(): React.JSX.Element {
             <Head title="Admin Login — ShoppyDrive" />
 
             {/* Left decorative panel */}
-            <div className="relative hidden w-[44%] overflow-hidden lg:flex lg:flex-col lg:justify-between bg-gradient-to-br from-gray-900 via-gray-950 to-black">
-                <div className="pointer-events-none absolute -left-10 top-20 h-72 w-72 rounded-full bg-[#c8102e] opacity-[0.07] blur-3xl" />
-                <div className="pointer-events-none absolute bottom-20 right-0 h-56 w-56 rounded-full bg-[#c8102e] opacity-[0.05] blur-3xl" />
+            <div className="relative hidden w-[44%] overflow-hidden bg-gradient-to-br from-gray-900 via-gray-950 to-black lg:flex lg:flex-col lg:justify-between">
+                <div className="pointer-events-none absolute top-20 -left-10 h-72 w-72 rounded-full bg-[#c8102e] opacity-[0.07] blur-3xl" />
+                <div className="pointer-events-none absolute right-0 bottom-20 h-56 w-56 rounded-full bg-[#c8102e] opacity-[0.05] blur-3xl" />
                 <div
                     className="pointer-events-none absolute inset-0 opacity-[0.04]"
                     style={{
-                        backgroundImage: 'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+                        backgroundImage:
+                            'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
                         backgroundSize: '40px 40px',
                     }}
                 />
@@ -38,14 +41,20 @@ export default function AdminLogin(): React.JSX.Element {
                 <div className="relative z-10 p-10">
                     <div className="flex items-center gap-3">
                         {settings.logo ? (
-                            <img src={settings.logo} alt={settings.site_name} className="h-10 w-auto object-contain" />
+                            <img
+                                src={settings.logo}
+                                alt={settings.site_name}
+                                className="h-10 w-auto object-contain"
+                            />
                         ) : (
                             <span className="flex size-10 items-center justify-center rounded-xl bg-[#c8102e]">
                                 <AppLogoIcon className="size-5 fill-current text-white" />
                             </span>
                         )}
                         <div>
-                            <p className="text-base font-bold text-white">{settings.site_name}</p>
+                            <p className="text-base font-bold text-white">
+                                {settings.site_name}
+                            </p>
                             <p className="text-xs text-gray-500">Admin Panel</p>
                         </div>
                     </div>
@@ -57,11 +66,12 @@ export default function AdminLogin(): React.JSX.Element {
                             <ShieldCheck className="size-3.5" />
                             Restricted Access
                         </div>
-                        <h2 className="text-3xl font-bold leading-tight text-white">
+                        <h2 className="text-3xl leading-tight font-bold text-white">
                             Admin Dashboard
                         </h2>
                         <p className="max-w-sm text-sm leading-7 text-gray-500">
-                            Manage products, orders, customers, and store settings from one place.
+                            Manage products, orders, customers, and store
+                            settings from one place.
                         </p>
                     </div>
 
@@ -75,7 +85,9 @@ export default function AdminLogin(): React.JSX.Element {
                             <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#c8102e]/15">
                                 <span className="size-1.5 rounded-full bg-[#c8102e]" />
                             </span>
-                            <span className="text-sm text-gray-400">{item}</span>
+                            <span className="text-sm text-gray-400">
+                                {item}
+                            </span>
                         </div>
                     ))}
                 </div>
@@ -87,37 +99,54 @@ export default function AdminLogin(): React.JSX.Element {
                     {/* Mobile logo */}
                     <div className="mb-8 flex items-center gap-3 lg:hidden">
                         {settings.logo ? (
-                            <img src={settings.logo} alt={settings.site_name} className="h-9 w-auto object-contain" />
+                            <img
+                                src={settings.logo}
+                                alt={settings.site_name}
+                                className="h-9 w-auto object-contain"
+                            />
                         ) : (
                             <span className="flex size-9 items-center justify-center rounded-xl bg-[#c8102e]">
                                 <AppLogoIcon className="size-4 fill-current text-white" />
                             </span>
                         )}
                         <div>
-                            <p className="text-sm font-bold text-white">{settings.site_name}</p>
+                            <p className="text-sm font-bold text-white">
+                                {settings.site_name}
+                            </p>
                             <p className="text-xs text-gray-600">Admin Panel</p>
                         </div>
                     </div>
 
                     <div className="rounded-2xl border border-gray-800 bg-gray-900 p-8">
                         <div className="mb-7 space-y-1">
-                            <h1 className="text-xl font-bold text-white">Admin Sign In</h1>
-                            <p className="text-sm text-gray-500">Authorised personnel only.</p>
+                            <h1 className="text-xl font-bold text-white">
+                                Admin Sign In
+                            </h1>
+                            <p className="text-sm text-gray-500">
+                                Authorised personnel only.
+                            </p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-1.5">
-                                <label htmlFor="email" className="text-sm font-medium text-gray-300">Email address</label>
+                                <label
+                                    htmlFor="email"
+                                    className="text-sm font-medium text-gray-300"
+                                >
+                                    Email address
+                                </label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-gray-600" />
+                                    <Mail className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-600" />
                                     <input
                                         id="email"
                                         type="email"
                                         autoComplete="email"
                                         value={data.email}
-                                        onChange={e => setData('email', e.target.value)}
+                                        onChange={(e) =>
+                                            setData('email', e.target.value)
+                                        }
                                         placeholder="admin@example.com"
-                                        className="h-11 w-full rounded-xl border border-gray-700 bg-gray-800 pl-10 pr-4 text-sm text-white placeholder:text-gray-600 transition focus:border-[#c8102e] focus:outline-none focus:ring-1 focus:ring-[#c8102e]"
+                                        className="h-11 w-full rounded-xl border border-gray-700 bg-gray-800 pr-4 pl-10 text-sm text-white transition placeholder:text-gray-600 focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                         required
                                     />
                                 </div>
@@ -125,21 +154,40 @@ export default function AdminLogin(): React.JSX.Element {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label htmlFor="password" className="text-sm font-medium text-gray-300">Password</label>
+                                <label
+                                    htmlFor="password"
+                                    className="text-sm font-medium text-gray-300"
+                                >
+                                    Password
+                                </label>
                                 <div className="relative">
-                                    <Lock className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-gray-600" />
+                                    <Lock className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-600" />
                                     <input
                                         id="password"
-                                        type={showPassword ? 'text' : 'password'}
+                                        type={
+                                            showPassword ? 'text' : 'password'
+                                        }
                                         autoComplete="current-password"
                                         value={data.password}
-                                        onChange={e => setData('password', e.target.value)}
+                                        onChange={(e) =>
+                                            setData('password', e.target.value)
+                                        }
                                         placeholder="••••••••"
-                                        className="h-11 w-full rounded-xl border border-gray-700 bg-gray-800 pl-10 pr-12 text-sm text-white placeholder:text-gray-600 transition focus:border-[#c8102e] focus:outline-none focus:ring-1 focus:ring-[#c8102e]"
+                                        className="h-11 w-full rounded-xl border border-gray-700 bg-gray-800 pr-12 pl-10 text-sm text-white transition placeholder:text-gray-600 focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                         required
                                     />
-                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400">
-                                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setShowPassword(!showPassword)
+                                        }
+                                        className="absolute top-1/2 right-3.5 -translate-y-1/2 text-gray-600 hover:text-gray-400"
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="size-4" />
+                                        ) : (
+                                            <Eye className="size-4" />
+                                        )}
                                     </button>
                                 </div>
                                 <InputError message={errors.password} />
@@ -149,10 +197,14 @@ export default function AdminLogin(): React.JSX.Element {
                                 <input
                                     type="checkbox"
                                     checked={data.remember}
-                                    onChange={e => setData('remember', e.target.checked)}
+                                    onChange={(e) =>
+                                        setData('remember', e.target.checked)
+                                    }
                                     className="size-4 rounded border-gray-700 accent-[#c8102e]"
                                 />
-                                <span className="text-sm text-gray-400">Keep me signed in</span>
+                                <span className="text-sm text-gray-400">
+                                    Keep me signed in
+                                </span>
                             </label>
 
                             <button
@@ -160,17 +212,24 @@ export default function AdminLogin(): React.JSX.Element {
                                 disabled={processing}
                                 className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c8102e] text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:opacity-60"
                             >
-                                {processing
-                                    ? <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                    : <><span>Sign In to Admin</span><ArrowRight className="size-4" /></>
-                                }
+                                {processing ? (
+                                    <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                ) : (
+                                    <>
+                                        <span>Sign In to Admin</span>
+                                        <ArrowRight className="size-4" />
+                                    </>
+                                )}
                             </button>
                         </form>
                     </div>
 
                     <p className="mt-5 text-center text-xs text-gray-700">
                         Not an admin?{' '}
-                        <a href="/" className="text-gray-500 hover:text-gray-300 transition">
+                        <a
+                            href="/"
+                            className="text-gray-500 transition hover:text-gray-300"
+                        >
                             Go to storefront →
                         </a>
                     </p>

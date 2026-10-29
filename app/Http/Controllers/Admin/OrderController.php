@@ -19,6 +19,7 @@ use App\Services\CourierOrderStatusMapper;
 use App\Services\InventoryService;
 use App\Services\PathaoCourierService;
 use App\Services\SteadfastCourierService;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -340,7 +341,7 @@ class OrderController extends Controller
 
         try {
             $result = $this->pathao->createOrder($order);
-        } catch (RuntimeException $e) {
+        } catch (RuntimeException|ConnectionException $e) {
             return back()->with('error', 'Pathao: '.$e->getMessage());
         }
 
@@ -388,7 +389,7 @@ class OrderController extends Controller
 
         try {
             $result = $this->steadfast->createOrder($order);
-        } catch (RuntimeException $e) {
+        } catch (RuntimeException|ConnectionException $e) {
             return back()->with('error', 'Steadfast: '.$e->getMessage());
         }
 

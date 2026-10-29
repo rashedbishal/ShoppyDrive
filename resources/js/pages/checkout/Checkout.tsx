@@ -582,7 +582,11 @@ export default function Checkout({
                     'X-XSRF-TOKEN': getXsrfToken(),
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-                body: JSON.stringify({ code, subtotal, phone: form.data.phone || undefined }),
+                body: JSON.stringify({
+                    code,
+                    subtotal,
+                    phone: form.data.phone || undefined,
+                }),
             });
             const data = await res.json();
 
@@ -1444,7 +1448,10 @@ export default function Checkout({
                         total={total}
                         submitting={submitting}
                         paymentMethod={form.data.payment_method}
-                        itemsError={form.errors.items}
+                        itemsError={
+                            (form.errors as Partial<Record<string, string>>)
+                                .items
+                        }
                     />
                 </div>
             </form>

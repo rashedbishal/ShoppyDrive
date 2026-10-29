@@ -1,7 +1,14 @@
-import React, { useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { CheckCircle2, Package, Truck, ArrowRight, Download, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
+import {
+    CheckCircle2,
+    Package,
+    Truck,
+    ArrowRight,
+    Download,
+    Home,
+} from 'lucide-react';
+import React, { useEffect } from 'react';
 
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import { Button } from '@/components/ui/button';
@@ -22,12 +29,20 @@ interface OrderConfirmationProps {
     order: Order;
 }
 
-export default function OrderConfirmation({ order }: OrderConfirmationProps): React.JSX.Element {
+export default function OrderConfirmation({
+    order,
+}: OrderConfirmationProps): React.JSX.Element {
     const clearCart = useCartStore((state) => state.clearCart);
 
     const canDownloadInvoice = (() => {
-        if (order.status === 'cancelled' || order.status === 'refunded') return false;
-        if (order.payment_method === 'cod') return order.status === 'delivered';
+        if (order.status === 'cancelled' || order.status === 'refunded') {
+            return false;
+        }
+
+        if (order.payment_method === 'cod') {
+            return order.status === 'delivered';
+        }
+
         return true;
     })();
 
@@ -39,13 +54,17 @@ export default function OrderConfirmation({ order }: OrderConfirmationProps): Re
     return (
         <CheckoutLayout>
             <Head title="Order Confirmed" />
-            
+
             <div className="mx-auto max-w-4xl">
                 <div className="mb-12 text-center">
                     <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        transition={{ type: 'spring', damping: 12, stiffness: 200 }}
+                        transition={{
+                            type: 'spring',
+                            damping: 12,
+                            stiffness: 200,
+                        }}
                         className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--color-success)] text-white shadow-xl shadow-green-100"
                     >
                         <CheckCircle2 size={40} />
@@ -66,8 +85,8 @@ export default function OrderConfirmation({ order }: OrderConfirmationProps): Re
                         transition={{ delay: 0.3 }}
                         className="mx-auto max-w-lg text-[var(--color-text-secondary)]"
                     >
-                        We've received your order and we're getting it ready
-                        for shipment.
+                        We've received your order and we're getting it ready for
+                        shipment.
                         {order.shipping_address.email && (
                             <>
                                 {' '}
@@ -81,69 +100,102 @@ export default function OrderConfirmation({ order }: OrderConfirmationProps): Re
                     </motion.p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-2">
                     {/* Order Info */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.4 }}
-                        className="bg-white rounded-3xl p-8 border border-[var(--color-border)] shadow-sm"
+                        className="rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-sm"
                     >
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-alt)] flex items-center justify-center text-[var(--color-primary)]">
+                        <div className="mb-6 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-surface-alt)] text-[var(--color-primary)]">
                                 <Package size={20} />
                             </div>
                             <div>
-                                <h3 className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Order Number</h3>
-                                <p className="text-lg font-mono font-bold text-[var(--color-text-primary)]">{order.order_number}</p>
+                                <h3 className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                    Order Number
+                                </h3>
+                                <p className="font-mono text-lg font-bold text-[var(--color-text-primary)]">
+                                    {order.order_number}
+                                </p>
                             </div>
                         </div>
 
                         <div className="space-y-4">
                             <div className="flex justify-between text-sm">
-                                <span className="text-[var(--color-text-secondary)]">Date</span>
-                                <span className="font-bold text-[var(--color-text-primary)]">{new Date(order.created_at).toLocaleDateString()}</span>
+                                <span className="text-[var(--color-text-secondary)]">
+                                    Date
+                                </span>
+                                <span className="font-bold text-[var(--color-text-primary)]">
+                                    {new Date(
+                                        order.created_at,
+                                    ).toLocaleDateString()}
+                                </span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-[var(--color-text-secondary)]">Payment Method</span>
-                                <span className="font-bold text-[var(--color-text-primary)] uppercase">{order.payment_method}</span>
+                                <span className="text-[var(--color-text-secondary)]">
+                                    Payment Method
+                                </span>
+                                <span className="font-bold text-[var(--color-text-primary)] uppercase">
+                                    {order.payment_method}
+                                </span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span className="text-[var(--color-text-secondary)]">Shipping Method</span>
-                                <span className="font-bold text-[var(--color-text-primary)]">Standard Delivery</span>
+                                <span className="text-[var(--color-text-secondary)]">
+                                    Shipping Method
+                                </span>
+                                <span className="font-bold text-[var(--color-text-primary)]">
+                                    Standard Delivery
+                                </span>
                             </div>
-                            <div className="pt-4 border-t border-[var(--color-border)] flex justify-between items-center">
-                                <span className="font-bold text-[var(--color-text-primary)]">Total Paid</span>
-                                <span className="text-xl font-bold text-[var(--color-primary)]">{formatCurrency(order.total)}</span>
+                            <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-4">
+                                <span className="font-bold text-[var(--color-text-primary)]">
+                                    Total Paid
+                                </span>
+                                <span className="text-xl font-bold text-[var(--color-primary)]">
+                                    {formatCurrency(order.total)}
+                                </span>
                             </div>
                         </div>
                     </motion.div>
 
                     {/* Delivery Info */}
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.5 }}
-                        className="bg-white rounded-3xl p-8 border border-[var(--color-border)] shadow-sm"
+                        className="rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-sm"
                     >
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-alt)] flex items-center justify-center text-[var(--color-primary)]">
+                        <div className="mb-6 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-surface-alt)] text-[var(--color-primary)]">
                                 <Truck size={20} />
                             </div>
                             <div>
-                                <h3 className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest">Shipping To</h3>
-                                <p className="text-sm font-bold text-[var(--color-text-primary)] truncate">{order.shipping_address.name}</p>
+                                <h3 className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                    Shipping To
+                                </h3>
+                                <p className="truncate text-sm font-bold text-[var(--color-text-primary)]">
+                                    {order.shipping_address.name}
+                                </p>
                             </div>
                         </div>
 
-                        <div className="space-y-4 text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                        <div className="space-y-4 text-sm leading-relaxed text-[var(--color-text-secondary)]">
                             <p>{order.shipping_address.address_line1}</p>
-                            <p>{order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.postal_code}</p>
+                            <p>
+                                {order.shipping_address.city},{' '}
+                                {order.shipping_address.state}{' '}
+                                {order.shipping_address.postal_code}
+                            </p>
                             <p>Bangladesh</p>
-                            <div className="pt-4 border-t border-[var(--color-border)]">
-                                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex gap-3">
-                                    <CheckCircle2 size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                                    <p className="text-[10px] font-bold text-amber-800 uppercase tracking-tight">
+                            <div className="border-t border-[var(--color-border)] pt-4">
+                                <div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                                    <CheckCircle2
+                                        size={16}
+                                        className="mt-0.5 shrink-0 text-amber-600"
+                                    />
+                                    <p className="text-[10px] font-bold tracking-tight text-amber-800 uppercase">
                                         Estimated Delivery:{' '}
                                         {addDays(
                                             order.created_at,
@@ -162,27 +214,50 @@ export default function OrderConfirmation({ order }: OrderConfirmationProps): Re
                 </div>
 
                 {/* Actions */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
-                    className="flex flex-col sm:flex-row gap-4 justify-center"
+                    className="flex flex-col justify-center gap-4 sm:flex-row"
                 >
-                    <Button asChild size="lg" className="rounded-2xl px-10 font-bold h-14 shadow-lg shadow-[var(--color-primary)]/20">
-                        <Link href={route('order.track') + `?order_number=${order.order_number}`}>
+                    <Button
+                        asChild
+                        size="lg"
+                        className="h-14 rounded-2xl px-10 font-bold shadow-[var(--color-primary)]/20 shadow-lg"
+                    >
+                        <Link
+                            href={
+                                route('order.track') +
+                                `?order_number=${order.order_number}`
+                            }
+                        >
                             Track Your Order
                             <ArrowRight size={18} className="ml-2" />
                         </Link>
                     </Button>
-                    <Button variant="outline" asChild size="lg" className="rounded-2xl px-10 font-bold h-14 bg-white border-[var(--color-border)] text-[var(--color-text-primary)]">
+                    <Button
+                        variant="outline"
+                        asChild
+                        size="lg"
+                        className="h-14 rounded-2xl border-[var(--color-border)] bg-white px-10 font-bold text-[var(--color-text-primary)]"
+                    >
                         <Link href={route('home')}>
                             <Home size={18} className="mr-2" />
                             Return Home
                         </Link>
                     </Button>
                     {canDownloadInvoice && (
-                        <Button variant="ghost" asChild className="rounded-2xl h-14 font-bold text-[var(--color-text-muted)]">
-                            <a href={route('account.orders.invoice', order.order_number)}>
+                        <Button
+                            variant="ghost"
+                            asChild
+                            className="h-14 rounded-2xl font-bold text-[var(--color-text-muted)]"
+                        >
+                            <a
+                                href={route(
+                                    'account.orders.invoice',
+                                    order.order_number,
+                                )}
+                            >
                                 <Download size={18} className="mr-2" />
                                 Download Invoice
                             </a>
@@ -190,14 +265,20 @@ export default function OrderConfirmation({ order }: OrderConfirmationProps): Re
                     )}
                 </motion.div>
 
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1 }}
                     className="mt-20 text-center"
                 >
-                    <p className="text-xs text-[var(--color-text-muted)] font-medium">
-                        Need help with your order? <Link href={route('contact')} className="text-[var(--color-primary)] font-bold hover:underline">Contact our support team</Link>
+                    <p className="text-xs font-medium text-[var(--color-text-muted)]">
+                        Need help with your order?{' '}
+                        <Link
+                            href={route('contact')}
+                            className="font-bold text-[var(--color-primary)] hover:underline"
+                        >
+                            Contact our support team
+                        </Link>
                     </p>
                 </motion.div>
             </div>

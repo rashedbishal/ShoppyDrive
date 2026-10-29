@@ -192,19 +192,21 @@ class ReferralService
      * for this run and reconsidered on the next one, once the period rolls
      * over — the reward is deferred, never forfeited.
      *
-     * Each order is re-fetched and locked fresh inside its own transaction
-     * (Order locked first, re-checking `referral_reward_granted_at` on
-     * that locked row; retried up to 3 times on deadlock). The referrer's
-     * id is discovered via a plain read on `referred_by_id` — safe
-     * because that column is immutable once set at registration (see
-     * `handleOrderCancelledOrRefunded()`), so this lookup isn't racy —
-     * then both user rows are locked together in a single
-     * ascending-id-ordered statement. Locking by ascending id, rather
-     * than a fixed "referred, then referrer" role order, matters because
-     * it can never deadlock against `handleOrderCancelledOrRefunded()`
-     * processing a *different* order where the same two people hold the
-     * opposite roles (a mutual referral: A referred B on one order, B
-     * referred A on another).
+     * The query above is only a candidate pre-filter — `withoutOverlapping()`
+     * on the scheduled command guards the scheduler's own dispatch, not a
+     * manually-run invocation overlapping it, so each order is re-fetched
+     * and locked fresh inside its own transaction (retried up to 3 times on
+     * deadlock), re-checking `status === DELIVERED`, `used_referral_discount`,
+     * and `referral_reward_granted_at` on that locked row before anything is
+     * granted. The referrer's id is discovered via a plain read on
+     * `referred_by_id` — safe because that column is immutable once set at
+     * registration (see `handleOrderCancelledOrRefunded()`), so this lookup
+     * isn't racy — then both user rows are locked together in a single
+     * ascending-id-ordered statement. Locking by ascending id, rather than a
+     * fixed "referred, then referrer" role order, matters because it can
+     * never deadlock against `handleOrderCancelledOrRefunded()` processing a
+     * *different* order where the same two people hold the opposite roles (a
+     * mutual referral: A referred B on one order, B referred A on another).
      */
     public function grantDueReferralRewards(): int
     {
@@ -235,35 +237,45 @@ class ReferralService
         $granted = 0;
 
         foreach ($dueOrderIds as $orderId) {
-            $granted += DB::transaction(function () use ($orderId, $points, $pointsValue, $capAmount, $capPeriod): int {
+            $outcome = DB::transaction(function () use ($orderId, $points, $pointsValue, $capAmount, $capPeriod): string {
                 $order = Order::whereKey($orderId)->lockForUpdate()->first();
 
-                if ($order === null || $order->referral_reward_granted_at !== null) {
-                    return 0;
+                if ($order === null
+                    || $order->status !== OrderStatus::DELIVERED
+                    || ! $order->used_referral_discount
+                    || $order->referral_reward_granted_at !== null
+                    || $order->user_id === null) {
+                    return 'skip';
                 }
 
                 $referredUserId = $order->user_id;
-                $referrerId = User::whereKey($referredUserId)->value('referred_by_id');
+                $preliminaryReferrerId = User::whereKey($referredUserId)->value('referred_by_id');
 
-                $idsToLock = $referrerId !== null ? [$referredUserId, $referrerId] : [$referredUserId];
-                sort($idsToLock);
-                $locked = User::whereIn('id', $idsToLock)->lockForUpdate()->get()->keyBy('id');
+                $lockIds = array_unique(array_filter([$referredUserId, $preliminaryReferrerId]));
+                sort($lockIds);
 
-                $referredUser = $locked->get($referredUserId);
+                $lockedUsers = User::whereIn('id', $lockIds)->lockForUpdate()->get()->keyBy('id');
+
+                $referredUser = $lockedUsers->get($referredUserId);
 
                 if ($referredUser === null || $referredUser->referred_by_id === null) {
                     // No referrer to reward — mark it done so it's never reconsidered.
                     $order->forceFill(['referral_reward_granted_at' => now()])->saveQuietly();
 
-                    return 0;
+                    return 'marked_no_referrer';
                 }
 
-                $referrer = $locked->get($referredUser->referred_by_id);
+                // $referredUser->referred_by_id is effectively write-once, so it
+                // should already be among $lockedUsers from the preliminary peek
+                // above — this fallback only matters if that somehow changed
+                // between the peek and the lock.
+                $referrer = $lockedUsers->get($referredUser->referred_by_id)
+                    ?? User::whereKey($referredUser->referred_by_id)->lockForUpdate()->first();
 
                 if ($referrer === null) {
                     $order->forceFill(['referral_reward_granted_at' => now()])->saveQuietly();
 
-                    return 0;
+                    return 'marked_no_referrer';
                 }
 
                 $rewardValue = round($points * $pointsValue, 2);
@@ -272,7 +284,7 @@ class ReferralService
                     // Second-pass review finding: the referrer's row is already
                     // locked above, but *this* query is a plain read — and by
                     // this point in the transaction, the earlier plain read
-                    // (discovering $referrerId via ->value('referred_by_id'))
+                    // (discovering the referrer id via ->value('referred_by_id'))
                     // already established this transaction's REPEATABLE READ
                     // snapshot, before the user-row lock above was even
                     // contended. A concurrent transaction processing a
@@ -295,7 +307,7 @@ class ReferralService
 
                     if ($alreadyEarned + $rewardValue > $capAmount) {
                         // Cap reached for this period — leave ungranted, retry on a later run.
-                        return 0;
+                        return 'cap_reached';
                     }
                 }
 
@@ -313,8 +325,12 @@ class ReferralService
 
                 $order->forceFill(['referral_reward_granted_at' => now()])->saveQuietly();
 
-                return 1;
+                return 'granted';
             }, 3);
+
+            if ($outcome === 'granted') {
+                $granted++;
+            }
         }
 
         return $granted;
@@ -336,16 +352,20 @@ class ReferralService
      * locking the Order row first — a real mutex against
      * `grantDueReferralRewards()` processing the same order — then both
      * user rows together in a single ascending-id-ordered statement. The
-     * referrer's id is read via a plain lookup on `referred_by_id`, which
-     * is safe because that column is immutable once set at registration
-     * — no code path updates it after `resolveReferrerId()` establishes
-     * it for a new account, so a plain read here is never racy. See the
-     * comment on `grantDueReferralRewards()` for why ascending-id locking
-     * (rather than a fixed role order) matters here too.
+     * referrer's id is read via a plain lookup on `referred_by_id`, which is
+     * safe because that column is immutable once set at registration — no
+     * code path updates it after `resolveReferrerId()` establishes it for a
+     * new account, so a plain read here is never racy. See the comment on
+     * `grantDueReferralRewards()` for why ascending-id locking (rather than
+     * a fixed role order) matters here too. A bare `lockForUpdate()` outside
+     * a transaction (the pre-fix shape) can't actually serialize two
+     * concurrent callers — e.g. a courier webhook racing an admin
+     * cancellation — since the lock only does anything useful while held
+     * inside an open transaction.
      */
     public function handleOrderCancelledOrRefunded(Order $order): void
     {
-        if (! $order->used_referral_discount) {
+        if (! $order->used_referral_discount || $order->user_id === null) {
             return;
         }
 
@@ -357,13 +377,14 @@ class ReferralService
             }
 
             $referredUserId = $lockedOrder->user_id;
-            $referrerId = User::whereKey($referredUserId)->value('referred_by_id');
+            $preliminaryReferrerId = User::whereKey($referredUserId)->value('referred_by_id');
 
-            $idsToLock = $referrerId !== null ? [$referredUserId, $referrerId] : [$referredUserId];
-            sort($idsToLock);
-            $locked = User::whereIn('id', $idsToLock)->lockForUpdate()->get()->keyBy('id');
+            $lockIds = array_unique(array_filter([$referredUserId, $preliminaryReferrerId]));
+            sort($lockIds);
 
-            $referredUser = $locked->get($referredUserId);
+            $lockedUsers = User::whereIn('id', $lockIds)->lockForUpdate()->get()->keyBy('id');
+
+            $referredUser = $lockedUsers->get($referredUserId);
 
             if ($referredUser === null || $referredUser->referral_discount_used_order_id !== $lockedOrder->id) {
                 // Already reverted, or this order never actually ended up being
@@ -373,11 +394,16 @@ class ReferralService
 
             $referredUser->forceFill(['referral_discount_used_order_id' => null])->save();
 
-            if ($lockedOrder->referral_reward_granted_at === null || $referrerId === null) {
+            if ($lockedOrder->referral_reward_granted_at === null || $referredUser->referred_by_id === null) {
                 return;
             }
 
-            $referrer = $locked->get($referrerId);
+            // $referredUser->referred_by_id is effectively write-once, so it
+            // should already be among $lockedUsers from the preliminary peek
+            // above — this fallback only matters if that somehow changed
+            // between the peek and the lock.
+            $referrer = $lockedUsers->get($referredUser->referred_by_id)
+                ?? User::whereKey($referredUser->referred_by_id)->lockForUpdate()->first();
 
             if ($referrer === null) {
                 return;

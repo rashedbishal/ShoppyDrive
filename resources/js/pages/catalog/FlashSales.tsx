@@ -37,12 +37,14 @@ function CountdownTimer({ endsAt }: { endsAt: string }): React.JSX.Element {
 
     useEffect(() => {
         const id = window.setInterval(() => setNow(new Date()), 1000);
+
         return () => window.clearInterval(id);
     }, []);
 
     const remaining = useMemo(() => {
         const diff = Math.max(0, new Date(endsAt).getTime() - now.getTime());
         const total = Math.floor(diff / 1000);
+
         return {
             diff,
             days: Math.floor(total / 86_400),
@@ -53,7 +55,11 @@ function CountdownTimer({ endsAt }: { endsAt: string }): React.JSX.Element {
     }, [endsAt, now]);
 
     if (remaining.diff <= 0) {
-        return <span className="font-mono text-base font-semibold text-[var(--color-accent)]">Sale ended</span>;
+        return (
+            <span className="font-mono text-base font-semibold text-[var(--color-accent)]">
+                Sale ended
+            </span>
+        );
     }
 
     const segments = [
@@ -70,8 +76,12 @@ function CountdownTimer({ endsAt }: { endsAt: string }): React.JSX.Element {
                     key={seg.label}
                     className="flex min-w-[3.5rem] flex-col items-center rounded-xl bg-[var(--color-secondary)] px-2.5 py-1.5 text-center shadow-sm"
                 >
-                    <span className="text-xl font-bold text-white">{String(seg.value).padStart(2, '0')}</span>
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-white/70">{seg.label}</span>
+                    <span className="text-xl font-bold text-white">
+                        {String(seg.value).padStart(2, '0')}
+                    </span>
+                    <span className="text-[10px] tracking-[0.2em] text-white/70 uppercase">
+                        {seg.label}
+                    </span>
                 </div>
             ))}
         </div>
@@ -79,10 +89,16 @@ function CountdownTimer({ endsAt }: { endsAt: string }): React.JSX.Element {
 }
 
 function getSoldPercent(item: FlashSaleItem): number {
-    return item.stock_limit > 0 ? Math.min(100, Math.round((item.sold_count / item.stock_limit) * 100)) : 0;
+    return item.stock_limit > 0
+        ? Math.min(100, Math.round((item.sold_count / item.stock_limit) * 100))
+        : 0;
 }
 
-function FlashSalesContent({ activeSale, upcomingSales, featuredProducts }: FlashSalesPageProps): React.JSX.Element {
+function FlashSalesContent({
+    activeSale,
+    upcomingSales,
+    featuredProducts,
+}: FlashSalesPageProps): React.JSX.Element {
     return (
         <>
             <Head title="Flash Sale | ShoppyDrive" />
@@ -104,10 +120,12 @@ function FlashSalesContent({ activeSale, upcomingSales, featuredProducts }: Flas
                             ]}
                             aside={
                                 <div className="space-y-2 lg:justify-self-end">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                                    <p className="text-xs font-semibold tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
                                         Ends in
                                     </p>
-                                    <CountdownTimer endsAt={activeSale.ends_at} />
+                                    <CountdownTimer
+                                        endsAt={activeSale.ends_at}
+                                    />
                                 </div>
                             }
                         />
@@ -119,7 +137,12 @@ function FlashSalesContent({ activeSale, upcomingSales, featuredProducts }: Flas
                                         <ProductCard
                                             key={item.id}
                                             index={index}
-                                            product={{ ...item.product, in_flash_sale: true, flash_sale_price: item.sale_price }}
+                                            product={{
+                                                ...item.product,
+                                                in_flash_sale: true,
+                                                flash_sale_price:
+                                                    item.sale_price,
+                                            }}
                                             saleProgress={getSoldPercent(item)}
                                             saleProgressLabel={`${item.sold_count} sold`}
                                         />
@@ -153,7 +176,7 @@ function FlashSalesContent({ activeSale, upcomingSales, featuredProducts }: Flas
                 {upcomingSales.length > 0 ? (
                     <section className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                         <div className="space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
+                            <p className="text-xs font-semibold tracking-[0.24em] text-[var(--color-text-muted)] uppercase">
                                 Coming up
                             </p>
                             <h2 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-3xl">
@@ -162,16 +185,30 @@ function FlashSalesContent({ activeSale, upcomingSales, featuredProducts }: Flas
                         </div>
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {upcomingSales.map((sale) => (
-                                <Card key={sale.id} className="border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]">
+                                <Card
+                                    key={sale.id}
+                                    className="border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]"
+                                >
                                     <CardContent className="p-5">
                                         <div className="flex items-center gap-3">
                                             <div className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-accent-light)] text-[var(--color-accent)]">
                                                 <Zap className="size-5" />
                                             </div>
                                             <div>
-                                                <p className="font-semibold text-[var(--color-text-primary)]">{sale.name}</p>
+                                                <p className="font-semibold text-[var(--color-text-primary)]">
+                                                    {sale.name}
+                                                </p>
                                                 <p className="text-sm text-[var(--color-text-secondary)]">
-                                                    Starts {new Date(sale.starts_at).toLocaleDateString('en-BD', { month: 'short', day: 'numeric' })}
+                                                    Starts{' '}
+                                                    {new Date(
+                                                        sale.starts_at,
+                                                    ).toLocaleDateString(
+                                                        'en-BD',
+                                                        {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                        },
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>
@@ -186,14 +223,18 @@ function FlashSalesContent({ activeSale, upcomingSales, featuredProducts }: Flas
                     <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                             <div className="space-y-2">
-                                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
+                                <p className="text-xs font-semibold tracking-[0.24em] text-[var(--color-text-muted)] uppercase">
                                     Deals
                                 </p>
                                 <h2 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-3xl">
                                     Featured deals
                                 </h2>
                             </div>
-                            <Button asChild variant="ghost" className="w-fit px-0 text-[var(--color-primary)] hover:bg-transparent">
+                            <Button
+                                asChild
+                                variant="ghost"
+                                className="w-fit px-0 text-[var(--color-primary)] hover:bg-transparent"
+                            >
                                 <Link href="/products?sort=popular">
                                     View all products
                                     <ArrowRight className="size-4" />
@@ -202,7 +243,11 @@ function FlashSalesContent({ activeSale, upcomingSales, featuredProducts }: Flas
                         </div>
                         <div className={PRODUCT_GRID_CLASS}>
                             {featuredProducts.map((product, index) => (
-                                <ProductCard key={product.id} product={product} index={index} />
+                                <ProductCard
+                                    key={product.id}
+                                    product={product}
+                                    index={index}
+                                />
                             ))}
                         </div>
                     </section>
@@ -212,8 +257,8 @@ function FlashSalesContent({ activeSale, upcomingSales, featuredProducts }: Flas
     );
 }
 
-export default function FlashSales(props: FlashSalesPageProps): React.JSX.Element {
-    return (
-        <FlashSalesContent {...props} />
-    );
+export default function FlashSales(
+    props: FlashSalesPageProps,
+): React.JSX.Element {
+    return <FlashSalesContent {...props} />;
 }

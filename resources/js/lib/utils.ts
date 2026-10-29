@@ -7,7 +7,7 @@ import {
     CURRENCY_LOCALE,
     CURRENCY_SYMBOL,
 } from '@/lib/constants';
-import type { Product, ProductVariant, StockStatus } from '@/types';
+import type { Product, StockStatus } from '@/types';
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -111,6 +111,7 @@ export function debounce<T extends (...args: unknown[]) => void>(
 
         timeoutId = setTimeout(() => {
             timeoutId = undefined;
+
             if (lastArgs !== undefined) {
                 fn(...lastArgs);
             }
@@ -122,6 +123,7 @@ export function debounce<T extends (...args: unknown[]) => void>(
             clearTimeout(timeoutId);
             timeoutId = undefined;
         }
+
         lastArgs = undefined;
     };
 

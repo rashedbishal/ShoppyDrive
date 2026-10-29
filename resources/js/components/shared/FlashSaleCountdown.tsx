@@ -21,7 +21,7 @@ export function FlashSaleCountdown({
     useEffect(() => {
         const calculateTimeLeft = () => {
             const difference = +new Date(ends_at) - +new Date();
-            
+
             if (difference > 0) {
                 setTimeLeft({
                     days: Math.floor(difference / (1000 * 60 * 60 * 24)),
@@ -42,7 +42,9 @@ export function FlashSaleCountdown({
 
     if (!timeLeft) {
         return (
-            <div className={`text-[var(--color-error)] font-bold font-mono ${className}`}>
+            <div
+                className={`font-mono font-bold text-[var(--color-error)] ${className}`}
+            >
                 SALE ENDED
             </div>
         );
@@ -55,38 +57,52 @@ export function FlashSaleCountdown({
             {timeLeft.days > 0 && (
                 <>
                     <div className="flex flex-col items-center">
-                        <span className="bg-[var(--color-secondary)] text-white px-2 py-1 rounded text-lg font-bold min-w-[36px] text-center">
+                        <span className="min-w-[36px] rounded bg-[var(--color-secondary)] px-2 py-1 text-center text-lg font-bold text-white">
                             {formatNumber(timeLeft.days)}
                         </span>
-                        <span className="text-[10px] uppercase font-sans font-bold mt-1 text-[var(--color-text-muted)]">Days</span>
+                        <span className="mt-1 font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase">
+                            Days
+                        </span>
                     </div>
-                    <span className="text-xl font-bold text-[var(--color-secondary)] self-start mt-1">:</span>
+                    <span className="mt-1 self-start text-xl font-bold text-[var(--color-secondary)]">
+                        :
+                    </span>
                 </>
             )}
-            
+
             <div className="flex flex-col items-center">
-                <span className="bg-[var(--color-secondary)] text-white px-2 py-1 rounded text-lg font-bold min-w-[36px] text-center">
+                <span className="min-w-[36px] rounded bg-[var(--color-secondary)] px-2 py-1 text-center text-lg font-bold text-white">
                     {formatNumber(timeLeft.hours)}
                 </span>
-                <span className="text-[10px] uppercase font-sans font-bold mt-1 text-[var(--color-text-muted)]">Hrs</span>
+                <span className="mt-1 font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase">
+                    Hrs
+                </span>
             </div>
-            
-            <span className="text-xl font-bold text-[var(--color-secondary)] self-start mt-1">:</span>
-            
+
+            <span className="mt-1 self-start text-xl font-bold text-[var(--color-secondary)]">
+                :
+            </span>
+
             <div className="flex flex-col items-center">
-                <span className="bg-[var(--color-secondary)] text-white px-2 py-1 rounded text-lg font-bold min-w-[36px] text-center">
+                <span className="min-w-[36px] rounded bg-[var(--color-secondary)] px-2 py-1 text-center text-lg font-bold text-white">
                     {formatNumber(timeLeft.minutes)}
                 </span>
-                <span className="text-[10px] uppercase font-sans font-bold mt-1 text-[var(--color-text-muted)]">Min</span>
+                <span className="mt-1 font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase">
+                    Min
+                </span>
             </div>
-            
-            <span className="text-xl font-bold text-[var(--color-secondary)] self-start mt-1">:</span>
-            
+
+            <span className="mt-1 self-start text-xl font-bold text-[var(--color-secondary)]">
+                :
+            </span>
+
             <div className="flex flex-col items-center">
-                <span className="bg-[var(--color-primary)] text-white px-2 py-1 rounded text-lg font-bold min-w-[36px] text-center animate-pulse">
+                <span className="min-w-[36px] animate-pulse rounded bg-[var(--color-primary)] px-2 py-1 text-center text-lg font-bold text-white">
                     {formatNumber(timeLeft.seconds)}
                 </span>
-                <span className="text-[10px] uppercase font-sans font-bold mt-1 text-[var(--color-text-muted)]">Sec</span>
+                <span className="mt-1 font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase">
+                    Sec
+                </span>
             </div>
         </div>
     );

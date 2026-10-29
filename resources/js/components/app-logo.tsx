@@ -7,7 +7,7 @@ export default function AppLogo() {
                 <AppLogoIcon className="size-6 fill-current text-white" />
             </div>
             <div className="grid flex-1 text-left">
-                <span className="truncate text-sm font-semibold leading-tight text-[var(--color-text-primary)]">
+                <span className="truncate text-sm leading-tight font-semibold text-[var(--color-text-primary)]">
                     ShoppyDrive
                 </span>
                 <span className="truncate text-xs text-[var(--color-text-secondary)]">

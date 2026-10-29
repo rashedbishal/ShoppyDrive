@@ -30,7 +30,9 @@ function slugify(text: string): string {
 }
 
 function parseContent(html: string): Section[] {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') {
+        return [];
+    }
 
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const sections: Section[] = [];
@@ -40,7 +42,12 @@ function parseContent(html: string): Section[] {
         if (el.tagName === 'H2') {
             const heading = el.textContent ?? '';
             const id = slugify(heading) || `section-${sections.length + 1}`;
-            current = { id, heading, number: sections.length + 1, bodyHtml: '' };
+            current = {
+                id,
+                heading,
+                number: sections.length + 1,
+                bodyHtml: '',
+            };
             sections.push(current);
         } else if (current) {
             current.bodyHtml += el.outerHTML;
@@ -59,22 +66,32 @@ export default function Page({ page }: PageProps): React.JSX.Element {
 
     useEffect(() => {
         const parsed = parseContent(page.content);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- reads browser-only APIs after mount so SSR markup matches hydration
         setSections(parsed);
-        if (parsed.length > 0) setActiveId(parsed[0].id);
+
+        if (parsed.length > 0) {
+            setActiveId(parsed[0].id);
+        }
     }, [page.content]);
 
     useEffect(() => {
         const measure = () => {
             const header = document.querySelector('header');
-            if (header) setSidebarTop(header.offsetHeight + 16);
+
+            if (header) {
+                setSidebarTop(header.offsetHeight + 16);
+            }
         };
         measure();
         window.addEventListener('resize', measure);
+
         return () => window.removeEventListener('resize', measure);
     }, []);
 
     useEffect(() => {
-        if (sections.length === 0) return;
+        if (sections.length === 0) {
+            return;
+        }
 
         const onScroll = () => {
             const scrollY = window.scrollY + SCROLL_OFFSET;
@@ -82,6 +99,7 @@ export default function Page({ page }: PageProps): React.JSX.Element {
 
             for (const { id } of sections) {
                 const el = document.getElementById(id);
+
                 if (el && el.offsetTop <= scrollY) {
                     current = id;
                 }
@@ -92,26 +110,38 @@ export default function Page({ page }: PageProps): React.JSX.Element {
 
         window.addEventListener('scroll', onScroll, { passive: true });
         onScroll();
+
         return () => window.removeEventListener('scroll', onScroll);
     }, [sections]);
 
     const scrollTo = (id: string) => {
         const el = document.getElementById(id);
-        if (!el) return;
-        const top = el.getBoundingClientRect().top + window.scrollY - SCROLL_OFFSET + 8;
+
+        if (!el) {
+            return;
+        }
+
+        const top =
+            el.getBoundingClientRect().top + window.scrollY - SCROLL_OFFSET + 8;
         window.scrollTo({ top, behavior: 'smooth' });
         setActiveId(id);
     };
 
-    const formattedDate = new Date(page.updated_at).toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-    });
+    const formattedDate = new Date(page.updated_at).toLocaleDateString(
+        'en-GB',
+        {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        },
+    );
 
     return (
         <div className="min-h-screen bg-[var(--color-surface)]">
-            <PageMeta title={page.meta_title || page.title} description={page.meta_description} />
+            <PageMeta
+                title={page.meta_title || page.title}
+                description={page.meta_description}
+            />
 
             {/* Hero */}
             <div className="pt-6 lg:pt-8">
@@ -131,14 +161,13 @@ export default function Page({ page }: PageProps): React.JSX.Element {
             {/* Body */}
             <div className="mx-auto max-w-7xl px-4 pt-8 pb-14 sm:px-6 lg:px-8 lg:pt-10 lg:pb-20">
                 <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-14 xl:grid-cols-[300px_1fr]">
-
                     {/* Sticky sidebar */}
                     {sections.length > 0 && (
                         <aside
                             className="hidden lg:sticky lg:block lg:self-start"
                             style={{ top: sidebarTop }}
                         >
-                            <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--color-text-muted)]">
+                            <p className="mb-4 text-[10px] font-bold tracking-[0.25em] text-[var(--color-text-muted)] uppercase">
                                 Contents
                             </p>
 
@@ -146,6 +175,7 @@ export default function Page({ page }: PageProps): React.JSX.Element {
                                 <div className="space-y-1">
                                     {sections.map(({ id, heading, number }) => {
                                         const active = activeId === id;
+
                                         return (
                                             <button
                                                 key={id}
@@ -159,13 +189,15 @@ export default function Page({ page }: PageProps): React.JSX.Element {
                                                 <span
                                                     className={`inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold transition-all ${
                                                         active
-                                                            ? 'bg-[var(--color-primary)] text-white shadow-sm shadow-[var(--color-primary)]/30'
+                                                            ? 'bg-[var(--color-primary)] text-white shadow-[var(--color-primary)]/30 shadow-sm'
                                                             : 'bg-[var(--color-surface-alt)] text-[var(--color-text-muted)] group-hover:bg-[var(--color-border)]'
                                                     }`}
                                                 >
                                                     {number}
                                                 </span>
-                                                <span className="leading-snug">{heading}</span>
+                                                <span className="leading-snug">
+                                                    {heading}
+                                                </span>
                                             </button>
                                         );
                                     })}
@@ -175,9 +207,12 @@ export default function Page({ page }: PageProps): React.JSX.Element {
                                     <div className="mb-3 flex size-9 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
                                         <MessageCircle className="size-4 text-[var(--color-primary)]" />
                                     </div>
-                                    <p className="text-sm font-semibold text-[var(--color-text-primary)]">Have a question?</p>
+                                    <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                                        Have a question?
+                                    </p>
                                     <p className="mt-1 text-xs leading-5 text-[var(--color-text-secondary)]">
-                                        Our support team can clarify anything in this document.
+                                        Our support team can clarify anything in
+                                        this document.
                                     </p>
                                     <Link
                                         href="/contact"
@@ -200,7 +235,7 @@ export default function Page({ page }: PageProps): React.JSX.Element {
                             >
                                 {/* Section heading row */}
                                 <div className="mb-8 flex items-center gap-4">
-                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-bold text-white shadow-sm shadow-[var(--color-primary)]/20">
+                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-bold text-white shadow-[var(--color-primary)]/20 shadow-sm">
                                         {section.number}
                                     </span>
                                     <h2 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)] sm:text-2xl">
@@ -210,16 +245,10 @@ export default function Page({ page }: PageProps): React.JSX.Element {
 
                                 {/* Section body */}
                                 <div
-                                    className="prose prose-base max-w-none
-                                        prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-[var(--color-text-primary)]
-                                        prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-base prose-h3:font-semibold
-                                        prose-p:mt-0 prose-p:mb-5 prose-p:text-[var(--color-text-secondary)] prose-p:leading-8
-                                        prose-a:text-[var(--color-primary)] prose-a:no-underline prose-a:font-semibold hover:prose-a:underline
-                                        prose-strong:text-[var(--color-text-primary)] prose-strong:font-semibold
-                                        prose-ul:mt-4 prose-ul:mb-5 prose-ul:space-y-2
-                                        prose-li:text-[var(--color-text-secondary)] prose-li:leading-7
-                                        [&_li::marker]:text-[var(--color-primary)]"
-                                    dangerouslySetInnerHTML={{ __html: section.bodyHtml }}
+                                    className="prose prose-base max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-[var(--color-text-primary)] prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-base prose-h3:font-semibold prose-p:mt-0 prose-p:mb-5 prose-p:leading-8 prose-p:text-[var(--color-text-secondary)] prose-a:font-semibold prose-a:text-[var(--color-primary)] prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-strong:text-[var(--color-text-primary)] prose-ul:mt-4 prose-ul:mb-5 prose-ul:space-y-2 prose-li:leading-7 prose-li:text-[var(--color-text-secondary)] [&_li::marker]:text-[var(--color-primary)]"
+                                    dangerouslySetInnerHTML={{
+                                        __html: section.bodyHtml,
+                                    }}
                                 />
                             </div>
                         ))}

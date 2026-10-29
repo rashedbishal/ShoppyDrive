@@ -36,20 +36,14 @@ export default function ReferralConfig({ settings }: Props) {
         loyalty_earn_rate_bdt_per_point: Number(
             settings.loyalty_earn_rate_bdt_per_point ?? 0,
         ),
-        loyalty_earn_delay_days: Number(
-            settings.loyalty_earn_delay_days ?? 0,
-        ),
+        loyalty_earn_delay_days: Number(settings.loyalty_earn_delay_days ?? 0),
         registration_bonus_points: Number(
             settings.registration_bonus_points ?? 0,
         ),
         review_bonus_points: Number(settings.review_bonus_points ?? 0),
-        daily_login_base_points: Number(
-            settings.daily_login_base_points ?? 0,
-        ),
+        daily_login_base_points: Number(settings.daily_login_base_points ?? 0),
         daily_login_cap_days: Number(settings.daily_login_cap_days ?? 0),
-        points_redeem_value_bdt: Number(
-            settings.points_redeem_value_bdt ?? 0,
-        ),
+        points_redeem_value_bdt: Number(settings.points_redeem_value_bdt ?? 0),
         points_redeem_max_percent: Number(
             settings.points_redeem_max_percent ?? 0,
         ),
@@ -258,9 +252,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     min={0.01}
                                     step="0.01"
                                     className={`${settingsInputClass} max-w-[160px]`}
-                                    value={
-                                        data.loyalty_earn_rate_bdt_per_point
-                                    }
+                                    value={data.loyalty_earn_rate_bdt_per_point}
                                     onChange={(e) =>
                                         setData(
                                             'loyalty_earn_rate_bdt_per_point',

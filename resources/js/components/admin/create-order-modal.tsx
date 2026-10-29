@@ -118,7 +118,9 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
     );
     const total = Math.max(
         0,
-        subtotal - (Number(form.data.discount) || 0) + (Number(form.data.shipping_cost) || 0),
+        subtotal -
+            (Number(form.data.discount) || 0) +
+            (Number(form.data.shipping_cost) || 0),
     );
 
     // ── Auto-calculated shipping, same formula the storefront uses ───────────
@@ -142,8 +144,8 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
         const rate =
             form.data.state === 'Dhaka' &&
             form.data.city === 'Inside Dhaka City Corporation'
-                ? settings.shipping_rate_inside_dhaka ?? 60
-                : settings.shipping_rate_outside_dhaka ?? 120;
+                ? (settings.shipping_rate_inside_dhaka ?? 60)
+                : (settings.shipping_rate_outside_dhaka ?? 120);
 
         form.setData('shipping_cost', rate);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -517,9 +519,8 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                     !searchingCustomers &&
                                     customerResults.length === 0 && (
                                         <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-center text-xs text-slate-400 shadow-lg">
-                                            No matching customer — fill in
-                                            the fields below for a guest
-                                            order.
+                                            No matching customer — fill in the
+                                            fields below for a guest order.
                                         </div>
                                     )}
                             </div>
@@ -576,10 +577,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                             id="co-address1"
                             value={form.data.address_line1}
                             onChange={(e) =>
-                                form.setData(
-                                    'address_line1',
-                                    e.target.value,
-                                )
+                                form.setData('address_line1', e.target.value)
                             }
                             placeholder="Street address, house number"
                             error={form.errors.address_line1}
@@ -592,10 +590,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                             id="co-address2"
                             value={form.data.address_line2}
                             onChange={(e) =>
-                                form.setData(
-                                    'address_line2',
-                                    e.target.value,
-                                )
+                                form.setData('address_line2', e.target.value)
                             }
                         />
                     </div>
@@ -658,10 +653,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                 id="co-postal"
                                 value={form.data.postal_code}
                                 onChange={(e) =>
-                                    form.setData(
-                                        'postal_code',
-                                        e.target.value,
-                                    )
+                                    form.setData('postal_code', e.target.value)
                                 }
                             />
                         </div>
@@ -757,9 +749,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                 key={product.id}
                                                 type="button"
                                                 onClick={() =>
-                                                    handleSelectProduct(
-                                                        product,
-                                                    )
+                                                    handleSelectProduct(product)
                                                 }
                                                 className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50"
                                             >
@@ -770,8 +760,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                         <span className="ml-1.5 text-xs text-slate-400">
                                                             (
                                                             {
-                                                                product
-                                                                    .variants
+                                                                product.variants
                                                                     .length
                                                             }{' '}
                                                             variants)
@@ -841,8 +830,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                     updateLine(index, {
                                                         price:
                                                             parseFloat(
-                                                                e.target
-                                                                    .value,
+                                                                e.target.value,
                                                             ) || 0,
                                                     })
                                                 }
@@ -933,7 +921,8 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                             <div className="flex justify-between text-emerald-600">
                                 <span>Discount</span>
                                 <span>
-                                    -{formatCurrency(Number(form.data.discount))}
+                                    -
+                                    {formatCurrency(Number(form.data.discount))}
                                 </span>
                             </div>
                         )}

@@ -137,6 +137,54 @@ test('a review bonus is only granted for an approved, verified-purchase review',
     expect(ReferralPointTransaction::where('type', PointTransactionType::EARN_REVIEW)->count())->toBe(1);
 });
 
+test('approving a review via two independently loaded stale copies does not double-credit the bonus', function () {
+    setLoyaltySettings();
+    $user = User::factory()->create(['points_balance' => 0]);
+    $product = Product::factory()->create();
+
+    $order = makeDeliveredOrder($user, 1000);
+    OrderItem::create([
+        'order_id' => $order->id,
+        'product_id' => $product->id,
+        'product_name' => $product->name,
+        'sku' => $product->sku,
+        'price' => 1000,
+        'quantity' => 1,
+        'subtotal' => 1000,
+        'product_snapshot' => ['id' => $product->id, 'name' => $product->name],
+    ]);
+
+    $review = Review::create([
+        'product_id' => $product->id,
+        'user_id' => $user->id,
+        'order_id' => $order->id,
+        'rating' => 5,
+        'body' => 'Great product, highly recommend it to everyone.',
+        'is_approved' => false,
+    ]);
+
+    $review->update(['is_approved' => true]);
+
+    // Two separate Eloquent instances, both loaded while points_awarded_at
+    // is still null — simulating an admin double-clicking "Approve" so two
+    // requests each read the review before either had written the award
+    // marker.
+    $staleCopyOne = Review::find($review->id);
+    $staleCopyTwo = Review::find($review->id);
+
+    $loyalty = app(LoyaltyPointsService::class);
+    $loyalty->grantReviewBonus($staleCopyOne);
+    expect($user->refresh()->points_balance)->toBe(15);
+
+    // $staleCopyTwo still has points_awarded_at === null in memory. Before
+    // the fix, acting on this stale value would double-credit; the fix
+    // re-checks a freshly locked read instead.
+    $loyalty->grantReviewBonus($staleCopyTwo);
+    expect($user->refresh()->points_balance)->toBe(15);
+
+    expect(ReferralPointTransaction::where('type', PointTransactionType::EARN_REVIEW)->count())->toBe(1);
+});
+
 test('submitting a review through the controller resolves verified-purchase status automatically', function () {
     setLoyaltySettings();
     $user = User::factory()->create(['points_balance' => 0]);
@@ -283,6 +331,51 @@ test('cancelling a delivered order after its spend points were granted does not 
     expect($user->refresh()->points_balance)->toBe($balanceAfterGrant);
 });
 
+// ── Redeemed-points refund idempotency (LOYALTY-01) ─────────────────────────
+
+test('refunding redeemed points via two independently loaded stale order copies does not double-credit', function () {
+    setLoyaltySettings();
+    $user = User::factory()->create(['points_balance' => 40]);
+
+    $order = Order::create([
+        'order_number' => 'ORD-LOYALTY-'.uniqid(),
+        'user_id' => $user->id,
+        'status' => OrderStatus::PENDING,
+        'payment_status' => 'unpaid',
+        'payment_method' => 'cod',
+        'subtotal' => 1000,
+        'shipping_cost' => 120,
+        'discount' => 60,
+        'tax' => 0,
+        'total' => 1060,
+        'points_redeemed' => 60,
+        'shipping_address' => ['name' => 'Test', 'phone' => '01700000000'],
+        'billing_address' => [],
+    ]);
+
+    // Two separate Eloquent instances, both loaded while points_refunded_at
+    // is still null — simulating two processes (e.g. a courier webhook
+    // racing an admin cancellation) that each read the order before either
+    // one had written the refund guard.
+    $staleCopyOne = Order::find($order->id);
+    $staleCopyTwo = Order::find($order->id);
+
+    $staleCopyOne->update(['status' => OrderStatus::CANCELLED]);
+    expect($user->refresh()->points_balance)->toBe(100);
+
+    // $staleCopyTwo still has points_refunded_at === null in memory. Before
+    // the LOYALTY-01 fix, acting on this stale in-memory value would
+    // double-credit; the fix re-checks a freshly locked read instead.
+    $staleCopyTwo->update(['status' => OrderStatus::REFUNDED]);
+    expect($user->refresh()->points_balance)->toBe(100);
+
+    expect(
+        ReferralPointTransaction::where('order_id', $order->id)
+            ->where('type', PointTransactionType::REFUND)
+            ->count()
+    )->toBe(1);
+});
+
 // ── Daily login streak ───────────────────────────────────────────────────────
 
 test('the daily login streak increments on consecutive days and resets after a missed day', function () {
@@ -308,6 +401,35 @@ test('the daily login streak increments on consecutive days and resets after a m
     $user->forceFill(['login_streak_date' => now('Asia/Dhaka')->subDays(2)->toDateString()])->save();
     $day3 = $loyalty->claimDailyLogin($user->refresh());
     expect($day3)->toMatchArray(['streakDay' => 1, 'points' => 2, 'awarded' => true]);
+});
+
+test('repeated claims for the same eligible day award the daily login bonus only once', function () {
+    // Unlike LOYALTY-01's refund/reversal methods, claimDailyLogin() always
+    // re-fetched the user fresh by id for its idempotency check — even
+    // before this fix, the check never ran on a caller-supplied stale
+    // attribute. So this test, run sequentially under sqlite, cannot by
+    // itself distinguish the fixed code from the pre-fix code; it proves
+    // the literal requirement (repeated claims award once), while the
+    // transaction wrapper's actual new protection — a second, genuinely
+    // concurrent claim blocking on the first's lock rather than racing it
+    // — can only be verified against real MySQL (see report).
+    setLoyaltySettings(['daily_login_base_points' => 2, 'daily_login_cap_days' => 30]);
+    $user = User::factory()->create(['points_balance' => 0, 'login_streak_count' => 0, 'login_streak_date' => null]);
+    $loyalty = app(LoyaltyPointsService::class);
+
+    $first = $loyalty->claimDailyLogin($user);
+    expect($first)->toMatchArray(['streakDay' => 1, 'claimedToday' => true, 'points' => 2, 'awarded' => true]);
+    expect($user->refresh()->points_balance)->toBe(2);
+
+    $second = $loyalty->claimDailyLogin($user);
+    expect($second)->toMatchArray(['streakDay' => 1, 'claimedToday' => true, 'awarded' => false]);
+    expect($user->refresh()->points_balance)->toBe(2);
+
+    $third = $loyalty->claimDailyLogin($user);
+    expect($third)->toMatchArray(['streakDay' => 1, 'claimedToday' => true, 'awarded' => false]);
+    expect($user->refresh()->points_balance)->toBe(2);
+
+    expect(ReferralPointTransaction::where('type', PointTransactionType::EARN_DAILY_LOGIN)->count())->toBe(1);
 });
 
 test('the daily login reward stops growing past the streak cap', function () {

@@ -1,5 +1,5 @@
-import { createJSONStorage, persist } from 'zustand/middleware';
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { STORAGE_KEYS } from '@/lib/constants';
 
 type WishlistStoreState = {
@@ -44,6 +44,7 @@ function normalizeProductIds(productIds: number[]): number[] {
 
 function getXsrfToken(): string {
     const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+
     return match ? decodeURIComponent(match[1]) : '';
 }
 
@@ -67,7 +68,7 @@ export const useWishlistStore = create<WishlistStoreState>()(
                     credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json',
+                        Accept: 'application/json',
                         'X-XSRF-TOKEN': getXsrfToken(),
                         'X-Requested-With': 'XMLHttpRequest',
                     },
@@ -80,7 +81,11 @@ export const useWishlistStore = create<WishlistStoreState>()(
                     })
                     .then((data) => {
                         if (data?.wishlist_ids) {
-                            set({ productIds: normalizeProductIds(data.wishlist_ids) });
+                            set({
+                                productIds: normalizeProductIds(
+                                    data.wishlist_ids,
+                                ),
+                            });
                         }
                     })
                     .catch(() => {
@@ -89,12 +94,17 @@ export const useWishlistStore = create<WishlistStoreState>()(
             },
             addWishlist: (productId) => {
                 set((state) => ({
-                    productIds: normalizeProductIds([...state.productIds, productId]),
+                    productIds: normalizeProductIds([
+                        ...state.productIds,
+                        productId,
+                    ]),
                 }));
             },
             removeWishlist: (productId) => {
                 set((state) => ({
-                    productIds: state.productIds.filter((id) => id !== productId),
+                    productIds: state.productIds.filter(
+                        (id) => id !== productId,
+                    ),
                 }));
             },
             clearWishlist: () => {

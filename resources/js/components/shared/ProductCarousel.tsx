@@ -22,10 +22,12 @@ export function ProductCarousel({
 
     const checkScroll = useCallback(() => {
         const container = scrollContainerRef.current;
+
         if (container) {
             setCanScrollLeft(container.scrollLeft > 0);
             setCanScrollRight(
-                container.scrollLeft < container.scrollWidth - container.clientWidth - 10
+                container.scrollLeft <
+                    container.scrollWidth - container.clientWidth - 10,
             );
         }
     }, []);
@@ -33,11 +35,13 @@ export function ProductCarousel({
     useEffect(() => {
         checkScroll();
         window.addEventListener('resize', checkScroll);
+
         return () => window.removeEventListener('resize', checkScroll);
     }, [checkScroll, products]);
 
     const scroll = (direction: 'left' | 'right') => {
         const container = scrollContainerRef.current;
+
         if (container) {
             const scrollAmount = container.clientWidth * 0.8;
             container.scrollBy({
@@ -47,24 +51,26 @@ export function ProductCarousel({
         }
     };
 
-    if (products.length === 0) return <></>;
+    if (products.length === 0) {
+        return <></>;
+    }
 
     return (
         <section className={`py-12 ${className}`}>
-            <div className="flex items-center justify-between mb-8">
+            <div className="mb-8 flex items-center justify-between">
                 {title && (
-                    <h2 className="text-2xl md:text-3xl font-serif font-bold text-[var(--color-text-primary)]">
+                    <h2 className="font-serif text-2xl font-bold text-[var(--color-text-primary)] md:text-3xl">
                         {title}
                     </h2>
                 )}
-                
+
                 <div className="flex gap-2">
                     <Button
                         variant="outline"
                         size="icon"
                         onClick={() => scroll('left')}
                         disabled={!canScrollLeft}
-                        className="rounded-full h-10 w-10 border-[var(--color-border)] disabled:opacity-30"
+                        className="h-10 w-10 rounded-full border-[var(--color-border)] disabled:opacity-30"
                         aria-label="Scroll left"
                     >
                         <ChevronLeft size={20} />
@@ -74,7 +80,7 @@ export function ProductCarousel({
                         size="icon"
                         onClick={() => scroll('right')}
                         disabled={!canScrollRight}
-                        className="rounded-full h-10 w-10 border-[var(--color-border)] disabled:opacity-30"
+                        className="h-10 w-10 rounded-full border-[var(--color-border)] disabled:opacity-30"
                         aria-label="Scroll right"
                     >
                         <ChevronRight size={20} />
@@ -82,10 +88,10 @@ export function ProductCarousel({
                 </div>
             </div>
 
-            <div 
+            <div
                 ref={scrollContainerRef}
                 onScroll={checkScroll}
-                className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4"
+                className="scrollbar-hide flex snap-x snap-mandatory gap-3 overflow-x-auto pb-4 md:gap-4"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {/* 2 cards per view on mobile, 3 on tablet, 4 on desktop — same sizing as other product rows */}

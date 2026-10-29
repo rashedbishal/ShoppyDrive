@@ -67,14 +67,22 @@ class SocialAuthController extends Controller
         // nothing outside the transaction is touched (no mail/queue/HTTP
         // side effects), so a retried attempt can't double up or desync
         // anything it created.
-        $user = DB::transaction(function () use ($socialUser, $provider) {
+        //
+        // Returns a {status, user} pair rather than a bare User|null: two
+        // independent failure modes can end this closure early (an
+        // anonymized account, or Google's own unverified-email claim on
+        // SEC-01 below) and each needs its own distinct, correct error
+        // message outside the transaction — collapsing both to `null`
+        // would make them indistinguishable by the time control returns
+        // here.
+        $result = DB::transaction(function () use ($socialUser, $provider): array {
             $account = SocialAccount::where('provider', $provider)
                 ->where('provider_id', $socialUser->getId())
                 ->first();
 
             if ($account) {
                 if ($account->user) {
-                    return $account->user;
+                    return ['status' => 'ok', 'user' => $account->user];
                 }
 
                 // Stale link left behind by a deleted account — drop it and
@@ -84,11 +92,28 @@ class SocialAuthController extends Controller
 
             $user = User::where('email', $socialUser->getEmail())->first();
 
-            if ($user && $user->anonymized_at !== null) {
-                return null;
-            }
+            if ($user) {
+                if ($user->anonymized_at !== null) {
+                    return ['status' => 'anonymized', 'user' => null];
+                }
 
-            if (! $user) {
+                // An existing account matched purely by email, with no prior
+                // link to this exact provider identity — the email itself is
+                // the only thing being trusted here (SEC-01). Google exposes
+                // an explicit `email_verified` claim in its raw payload (not
+                // surfaced by any SocialiteUser contract method, so it has to
+                // be read from getRaw() directly); when Google itself says
+                // the email is unverified, that is not enough proof of
+                // ownership to auto-link an existing account. Facebook
+                // exposes no equivalent claim at all, so this check is
+                // deliberately Google-only. A missing/null claim (every
+                // provider other than Google, and Google responses that
+                // simply don't include it) is never treated as proof either
+                // way — only an explicit `false` blocks the link.
+                if ($provider === 'google' && ($socialUser->getRaw()['email_verified'] ?? null) === false) {
+                    return ['status' => 'unverified_email', 'user' => null];
+                }
+            } else {
                 $user = User::create([
                     'name' => $socialUser->getName() ?? $socialUser->getNickname(),
                     'email' => $socialUser->getEmail(),
@@ -109,16 +134,22 @@ class SocialAuthController extends Controller
                 'token_expires_at' => $socialUser->expiresIn ? now()->addSeconds($socialUser->expiresIn) : null,
             ]);
 
-            return $user;
+            return ['status' => 'ok', 'user' => $user];
         }, 3);
 
         session()->forget('pending_referral_code');
 
-        if (! $user) {
+        if ($result['status'] === 'anonymized') {
             return redirect()->route('login')->withErrors(['email' => 'This account is no longer active.']);
         }
 
-        Auth::login($user);
+        if ($result['status'] === 'unverified_email') {
+            return redirect()->route('login')->withErrors([
+                'email' => 'An account with this email already exists. Please log in with your password or an already-connected provider, then connect Google from your account settings.',
+            ]);
+        }
+
+        Auth::login($result['user']);
 
         return redirect(config('fortify.home'));
     }

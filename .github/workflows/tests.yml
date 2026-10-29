@@ -15,6 +15,12 @@ jobs:
           extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_sqlite, gd, zip, bcmath, opcache
           coverage: none
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
@@ -22,6 +28,19 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate
+
+      # Same as deploy.yml's checks job: feature tests that render a real
+      # Inertia page need public/build/manifest.json, or they all fail with
+      # ViteManifestNotFoundException. The build needs the gitignored
+      # resources/js/ziggy.js, so generate that first.
+      - name: Generate Ziggy routes file
+        run: php artisan ziggy:generate
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
 
       # Pint (PHP style) runs as part of `composer test`'s `@lint:check`
       # step, so this one command covers both PHP style and the full Pest

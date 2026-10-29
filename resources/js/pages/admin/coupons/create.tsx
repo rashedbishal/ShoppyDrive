@@ -5,6 +5,26 @@ import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
 import { maxLength, minValue, required, validate } from '@/lib/validate';
 
+function Field({
+    label,
+    error,
+    children,
+}: {
+    label: string;
+    error?: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+                {label}
+            </label>
+            {children}
+            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+        </div>
+    );
+}
+
 export default function CouponCreate() {
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
@@ -50,24 +70,6 @@ export default function CouponCreate() {
 
         post(route('admin.coupons.store'));
     };
-
-    const Field = ({
-        label,
-        error,
-        children,
-    }: {
-        label: string;
-        error?: string;
-        children: React.ReactNode;
-    }) => (
-        <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-                {label}
-            </label>
-            {children}
-            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-        </div>
-    );
 
     const inputClass = (err?: string) =>
         `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;

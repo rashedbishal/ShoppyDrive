@@ -9,7 +9,6 @@ import { initializeTheme } from '@/hooks/use-appearance';
 import { initializeSiteTheme } from '@/hooks/use-theme';
 import AdminLayout from '@/layouts/admin-layout';
 import AppLayout from '@/layouts/app-layout';
-import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { initAddToCartFeedback } from '@/lib/add-to-cart-feedback';
 import { APP_NAME } from '@/lib/constants';
@@ -59,8 +58,8 @@ globalThis.route = ((
     absolute?: boolean,
     config?: typeof ziggyConfig,
 ) =>
-    // @ts-expect-error — delegating to Ziggy's overloaded signature via a single concrete implementation
-    ziggyRoute(
+    // Delegates to Ziggy's overloaded signature through one concrete call.
+    (ziggyRoute as (...args: unknown[]) => unknown)(
         name,
         params,
         absolute ?? false,
@@ -78,7 +77,9 @@ function readInitialUserId(): number | null {
         if (raw) {
             return JSON.parse(raw)?.props?.auth?.user?.id ?? null;
         }
-    } catch {}
+    } catch {
+        // Missing or malformed page data: fall through to the default below.
+    }
 
     return null;
 }
@@ -90,7 +91,9 @@ function readInitialCart(): Cart | null {
         if (raw) {
             return JSON.parse(raw)?.props?.cart ?? null;
         }
-    } catch {}
+    } catch {
+        // Missing or malformed page data: fall through to the default below.
+    }
 
     return null;
 }
@@ -102,7 +105,9 @@ function readInitialBundleRecipes(): BundleRecipe[] {
         if (raw) {
             return JSON.parse(raw)?.props?.active_bundle_recipes ?? [];
         }
-    } catch {}
+    } catch {
+        // Missing or malformed page data: fall through to the default below.
+    }
 
     return [];
 }
@@ -268,7 +273,7 @@ router.on('navigate', (event) => {
     // Inertia preserves the original document between visits, so Blade only
     // writes this attribute on the initial load. Keep it in sync with the
     // server-resolved CMS theme after every subsequent visit as well.
-    document.documentElement.dataset.theme = props.theme;
+    document.documentElement.dataset.theme = props.theme as string | undefined;
     const currentUserId = props.auth?.user?.id ?? null;
     const stored = localStorage.getItem(LAST_USER_KEY);
     const currentCart = props.cart ?? null;

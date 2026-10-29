@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
 import { Link } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BarChart3, Megaphone, ShieldCheck, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { STORAGE_KEYS } from '@/lib/constants';
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
@@ -27,6 +27,7 @@ export default function CookieConsent(): React.JSX.Element {
             return;
         }
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
         setAnalyticsEnabled(consent.analytics);
         setMarketingEnabled(consent.marketing);
     }, [consent]);

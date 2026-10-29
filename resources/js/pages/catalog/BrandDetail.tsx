@@ -1,8 +1,8 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Award, Package, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
-import { ProductCard } from '@/components/shared/ProductCard';
 import { PageHero } from '@/components/shared/PageHero';
+import { ProductCard } from '@/components/shared/ProductCard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Pagination } from '@/components/ui/pagination';
 import { PRODUCT_GRID_CLASS } from '@/lib/constants';
@@ -111,11 +111,13 @@ function BrandDetailContent({
                             </div>
                             {products.last_page > 1 ? (
                                 <Pagination
-                                    currentPage={products.current_page}
-                                    lastPage={products.last_page}
-                                    total={products.total}
-                                    perPage={products.per_page}
-                                    links={products.links}
+                                    data={products}
+                                    onPageChange={(page) =>
+                                        router.get(
+                                            route('brand.show', brand.slug),
+                                            { page },
+                                        )
+                                    }
                                 />
                             ) : null}
                         </div>

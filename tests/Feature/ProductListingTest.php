@@ -24,6 +24,16 @@ it('renders the product listing page', function (): void {
         );
 });
 
+it('reports price and rating filters as unset when absent from the query', function (): void {
+    $this->get(route('products.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.min_price', null)
+            ->where('filters.max_price', null)
+            ->where('filters.rating', null)
+        );
+});
+
 it('renders a category listing page', function (): void {
     $category = Category::query()->create([
         'name' => 'Electronics',

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Concerns\Auditable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Mews\Purifier\Facades\Purifier;
 
 class Blog extends Model
 {
@@ -36,6 +38,13 @@ class Blog extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    protected function content(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => $value === null ? null : Purifier::clean($value),
+        );
     }
 
     /** `content`/`excerpt` are full post bodies — too large to keep duplicating into every log row. */

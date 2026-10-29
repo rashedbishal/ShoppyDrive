@@ -14,13 +14,7 @@ import {
     Undo2,
     Check,
     X,
-    Minus,
-    Plus,
-    Facebook,
-    Twitter,
-    Link as LinkIcon,
     Film,
-    Play,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
@@ -41,13 +35,7 @@ import { formatCurrency, getDiscountPercent } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
-import type {
-    Product,
-    ProductVariant,
-    Review,
-    AttributeValue,
-    SharedPageProps,
-} from '@/types';
+import type { Product, Review, AttributeValue, SharedPageProps } from '@/types';
 
 interface ProductDetailProps {
     product: Product;
@@ -68,6 +56,11 @@ export default function ProductDetail({
 
     // Review form
     const reviewForm = useForm({ title: '', body: '' });
+    // The review endpoint also validates `rating` and `review`, which aren't
+    // fields of this form, so its errors are wider than the form's own type.
+    const reviewErrors = reviewForm.errors as Partial<
+        Record<'title' | 'body' | 'rating' | 'review', string>
+    >;
     const [reviewRating, setReviewRating] = useState(0);
     const [reviewSubmitting, setReviewSubmitting] = useState(false);
     const hasReviewed = reviews.some((r) => r.user?.id === auth.user?.id);
@@ -101,7 +94,6 @@ export default function ProductDetail({
 
     // Stores
     const addItem = useCartStore((state) => state.addItem);
-    const openCart = useUiStore((state) => state.openCart);
     const addToast = useUiStore((state) => state.addToast);
     const toggleWishlist = useWishlistStore((state) => state.toggleWishlist);
     const isWishlisted = useWishlistStore((state) =>
@@ -182,6 +174,7 @@ export default function ProductDetail({
         const defaultVariant = variants.find((v) => v.is_default);
 
         if (defaultVariant) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
             setSelectedAttributes(defaultVariant.attributes);
         } else if (attributes.length > 0) {
             const defaults: Record<string, string> = {};
@@ -212,6 +205,7 @@ export default function ProductDetail({
         const idx = media.findIndex((m) => m.variant_id === selectedVariant.id);
 
         if (idx !== -1) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
             setCurrentImageIndex(idx);
         }
     }, [selectedVariant?.id, media]);
@@ -489,6 +483,7 @@ export default function ProductDetail({
                                             </p>
                                             <FlashSaleCountdown
                                                 ends_at={new Date(
+                                                    // eslint-disable-next-line react-hooks/purity -- existing placeholder countdown; the page has no real flash-sale end time yet
                                                     Date.now() + 86400000,
                                                 ).toISOString()}
                                             />
@@ -897,13 +892,10 @@ export default function ProductDetail({
                                                             setReviewRating
                                                         }
                                                     />
-                                                    {reviewForm.errors
-                                                        .rating && (
+                                                    {reviewErrors.rating && (
                                                         <p className="text-xs text-red-500">
                                                             {
-                                                                reviewForm
-                                                                    .errors
-                                                                    .rating
+                                                                reviewErrors.rating
                                                             }
                                                         </p>
                                                     )}
@@ -961,13 +953,10 @@ export default function ProductDetail({
                                                             }
                                                         </p>
                                                     )}
-                                                    {reviewForm.errors
-                                                        .review && (
+                                                    {reviewErrors.review && (
                                                         <p className="text-xs text-red-500">
                                                             {
-                                                                reviewForm
-                                                                    .errors
-                                                                    .review
+                                                                reviewErrors.review
                                                             }
                                                         </p>
                                                     )}

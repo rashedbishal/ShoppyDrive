@@ -423,6 +423,42 @@ test('cancelling a qualifying order after its reward was already granted revokes
     expect($referrer->points_balance)->toBe(0);
 });
 
+test('reversing a referral reward via two independently loaded stale order copies does not double-revoke', function () {
+    enableReferralProgram();
+    $referrer = User::factory()->create(['points_balance' => 0]);
+    $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
+
+    $order = placeAndDeliverQualifyingOrder($referred, $product, daysAgo: 1);
+    artisan('rewards:grant-due');
+    expect($referrer->refresh()->points_balance)->toBe(50);
+
+    // Two separate Eloquent instances, both loaded while the referral
+    // discount/reward reversal flags are still in their pre-cancellation
+    // state — simulating two processes (e.g. a courier webhook racing an
+    // admin cancellation) that each read the order before either one had
+    // written the reversal.
+    $staleCopyOne = Order::find($order->id);
+    $staleCopyTwo = Order::find($order->id);
+
+    $staleCopyOne->update(['status' => OrderStatus::CANCELLED]);
+    expect($referrer->refresh()->points_balance)->toBe(0);
+    expect($referred->refresh()->referral_discount_used_order_id)->toBeNull();
+
+    // $staleCopyTwo still reflects the pre-reversal state in memory. Before
+    // the LOYALTY-01 fix, acting on this stale copy would attempt (and,
+    // depending on balance, could appear to) revoke a second time; the fix
+    // re-checks a freshly locked read instead.
+    $staleCopyTwo->update(['status' => OrderStatus::REFUNDED]);
+    expect($referrer->refresh()->points_balance)->toBe(0);
+
+    expect(
+        ReferralPointTransaction::where('order_id', $order->id)
+            ->where('type', PointTransactionType::REVOKE)
+            ->count()
+    )->toBe(1);
+});
+
 // ── Points redemption ────────────────────────────────────────────────────────
 
 test('a customer can redeem points at checkout, and cancelling that order refunds the points', function () {

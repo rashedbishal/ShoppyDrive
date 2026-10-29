@@ -7,14 +7,21 @@ interface CookieConsent {
 }
 
 function getConsent(): CookieConsent | null {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
     const consent = localStorage.getItem('cookie_consent');
+
     return consent ? JSON.parse(consent) : null;
 }
 
 export function trackPageView(url: string): void {
     const consent = getConsent();
-    if (!consent?.analytics) return;
+
+    if (!consent?.analytics) {
+        return;
+    }
 
     if (typeof window.gtag === 'function') {
         window.gtag('config', window.GA_ID, {
@@ -25,7 +32,10 @@ export function trackPageView(url: string): void {
 
 export function trackAddToCart(product: Product, quantity: number): void {
     const consent = getConsent();
-    if (!consent?.analytics) return;
+
+    if (!consent?.analytics) {
+        return;
+    }
 
     if (typeof window.gtag === 'function') {
         window.gtag('event', 'add_to_cart', {
@@ -47,7 +57,10 @@ export function trackAddToCart(product: Product, quantity: number): void {
 
 export function trackViewItem(product: Product): void {
     const consent = getConsent();
-    if (!consent?.analytics) return;
+
+    if (!consent?.analytics) {
+        return;
+    }
 
     if (typeof window.gtag === 'function') {
         window.gtag('event', 'view_item', {
@@ -68,7 +81,10 @@ export function trackViewItem(product: Product): void {
 
 export function trackBeginCheckout(cart: Cart): void {
     const consent = getConsent();
-    if (!consent?.analytics) return;
+
+    if (!consent?.analytics) {
+        return;
+    }
 
     if (typeof window.gtag === 'function') {
         window.gtag('event', 'begin_checkout', {
@@ -88,7 +104,10 @@ export function trackBeginCheckout(cart: Cart): void {
 
 export function trackPurchase(order: Order): void {
     const consent = getConsent();
-    if (!consent?.analytics) return;
+
+    if (!consent?.analytics) {
+        return;
+    }
 
     if (typeof window.gtag === 'function') {
         window.gtag('event', 'purchase', {
