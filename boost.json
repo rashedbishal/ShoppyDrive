@@ -4,15 +4,18 @@
         "codex",
         "gemini"
     ],
+    "cloud": true,
     "guidelines": true,
     "mcp": true,
     "nightwatch_mcp": false,
     "skills": [
+        "infer-conventions",
+        "deploying-to-cloud",
         "fortify-development",
         "laravel-best-practices",
+        "testing-best-practices",
         "socialite-development",
         "wayfinder-development",
-        "pest-testing",
         "inertia-react-development",
         "tailwindcss-development"
     ]
