@@ -474,7 +474,7 @@ export default function AttributesIndex({ attributes }: Props) {
 
     const submitForm = () => {
         const clientErrors = validate(form.data, {
-            value: [required(), maxLength(100)],
+            value: [required(), maxLength(20)],
         });
 
         if (Object.keys(clientErrors).length > 0) {
@@ -671,6 +671,7 @@ export default function AttributesIndex({ attributes }: Props) {
                                                                 ? 'e.g. Red'
                                                                 : 'e.g. XL'
                                                         }
+                                                        maxLength={20}
                                                         className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus:border-[#c8102e] focus:bg-white focus:ring-2 focus:ring-[#c8102e]/15 focus:outline-none"
                                                     />
                                                 </motion.div>

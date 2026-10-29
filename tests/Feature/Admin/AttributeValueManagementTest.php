@@ -288,6 +288,31 @@ test('adding a second size value is not blocked by the shared default color_hex'
     expect(AttributeValue::where('attribute_id', $this->sizeAttribute->id)->where('value', 'L')->exists())->toBeTrue();
 });
 
+test('an attribute value longer than 20 characters is rejected', function () {
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.attribute-values.store'), [
+        'attribute_id' => $this->sizeAttribute->id,
+        'value' => str_repeat('a', 21),
+    ]);
+
+    $response->assertInvalid(['value']);
+});
+
+test('an attribute value of exactly 20 characters is accepted', function () {
+    actingAs($this->admin, 'admin');
+
+    $value = str_repeat('a', 20);
+
+    $response = $this->post(route('admin.attribute-values.store'), [
+        'attribute_id' => $this->sizeAttribute->id,
+        'value' => $value,
+    ]);
+
+    $response->assertRedirect(route('admin.attributes.index'));
+    expect(AttributeValue::where('value', $value)->exists())->toBeTrue();
+});
+
 test('editing a color to reuse its own current hex code is not rejected as a duplicate', function () {
     actingAs($this->admin, 'admin');
 
