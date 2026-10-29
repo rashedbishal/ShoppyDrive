@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\OrderStatus;
 use App\Enums\ReturnStatus;
 use App\Http\Controllers\Controller;
 use App\Mail\ReturnApprovedMail;
 use App\Mail\ReturnRejectedMail;
+use App\Models\Order;
 use App\Models\ReturnRequest;
+use App\Services\InventoryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -34,18 +37,42 @@ class ReturnController extends Controller
         ]);
     }
 
+    /**
+     * PAY-RETURN-001: locks the parent Order *before* the ReturnRequest —
+     * matching ReturnRequestController::store()'s existing Order-first
+     * convention, and required so this action can never deadlock against
+     * markRefunded()'s full-return check, which (while already holding
+     * this same Order lock) locks every sibling ReturnRequest row for the
+     * order, potentially including the very row this action also locks.
+     * If every return-processing action locks Order first, two such
+     * actions on the same order simply serialize on that lock instead of
+     * racing for each other's rows in opposite order.
+     *
+     * Approving restocks the exact returned quantities (see
+     * InventoryService::restoreForReturnRequest()) — a return can no
+     * longer be approved once its parent order has itself already been
+     * cancelled or refunded directly (the admin's whole-order path),
+     * since restocking against a dead order has nothing meaningful left
+     * to reconcile and would only confuse the admin UI.
+     */
     public function approve(ReturnRequest $returnRequest): RedirectResponse
     {
         // Locked read-then-write inside a transaction: two admins clicking
         // Approve on the same request at the same moment must not both
-        // succeed (which would queue the approval email twice). The second
-        // request blocks on the lock, then re-reads the now-committed
-        // status once the first finishes and correctly bails out below.
-        $approved = DB::transaction(function () use ($returnRequest): bool {
+        // succeed (which would queue the approval email twice, or
+        // double-restock). The second request blocks on the lock, then
+        // re-reads the now-committed status once the first finishes and
+        // correctly bails out below.
+        $result = DB::transaction(function () use ($returnRequest): string {
+            $lockedOrder = Order::whereKey($returnRequest->order_id)->lockForUpdate()->first();
             $fresh = ReturnRequest::whereKey($returnRequest->id)->lockForUpdate()->first();
 
             if ($fresh === null || $fresh->status !== ReturnStatus::PENDING) {
-                return false;
+                return 'invalid';
+            }
+
+            if ($lockedOrder === null || in_array($lockedOrder->status, [OrderStatus::CANCELLED, OrderStatus::REFUNDED], true)) {
+                return 'order_closed';
             }
 
             $fresh->update([
@@ -53,18 +80,20 @@ class ReturnController extends Controller
                 'resolved_at' => now(),
             ]);
 
+            app(InventoryService::class)->restoreForReturnRequest($fresh);
+
             if ($fresh->user?->email) {
                 Mail::to($fresh->user->email)->send((new ReturnApprovedMail($fresh))->afterCommit());
             }
 
-            return true;
-        });
+            return 'approved';
+        }, 3);
 
-        if (! $approved) {
-            return back()->with('error', 'Only a pending return request can be approved.');
-        }
-
-        return back()->with('success', 'Return request approved.');
+        return match ($result) {
+            'approved' => back()->with('success', 'Return request approved.'),
+            'order_closed' => back()->with('error', 'This order has already been cancelled or refunded — this return request can no longer be approved.'),
+            default => back()->with('error', 'Only a pending return request can be approved.'),
+        };
     }
 
     public function reject(Request $request, ReturnRequest $returnRequest): RedirectResponse
@@ -74,6 +103,12 @@ class ReturnController extends Controller
         ]);
 
         $rejected = DB::transaction(function () use ($returnRequest, $validated): bool {
+            // PAY-RETURN-001: locks Order first purely for lock-order
+            // consistency with approve()/markRefunded() — this action
+            // doesn't read or act on Order state, but keeping every
+            // return-processing action on the same Order-then-ReturnRequest
+            // order means none of them can ever deadlock against the others.
+            Order::whereKey($returnRequest->order_id)->lockForUpdate()->first();
             $fresh = ReturnRequest::whereKey($returnRequest->id)->lockForUpdate()->first();
 
             if ($fresh === null || $fresh->status !== ReturnStatus::PENDING) {
@@ -130,9 +165,15 @@ class ReturnController extends Controller
         ]);
 
         $refunded = DB::transaction(function () use ($returnRequest, $validated): bool {
+            // PAY-RETURN-001: Order locked first (see approve()'s
+            // docblock) — this is what makes the full-return check below,
+            // and the possible Order.status transition that follows it,
+            // race-safe against a sibling ReturnRequest being refunded
+            // concurrently on the same order.
+            $lockedOrder = Order::whereKey($returnRequest->order_id)->lockForUpdate()->first();
             $fresh = ReturnRequest::whereKey($returnRequest->id)->lockForUpdate()->first();
 
-            if ($fresh === null || $fresh->status !== ReturnStatus::APPROVED) {
+            if ($fresh === null || $fresh->status !== ReturnStatus::APPROVED || $lockedOrder === null) {
                 return false;
             }
 
@@ -143,8 +184,19 @@ class ReturnController extends Controller
                 'resolved_at' => now(),
             ]);
 
+            // PAY-RETURN-001: once every purchased unit on the order is
+            // refunded (across every return request, not just this one),
+            // transition the order itself to REFUNDED — never for a
+            // partial return. The existing Order::booted() listener then
+            // handles coupon release, referral-reward revocation, and
+            // redeemed-points refund on its own; none of that is
+            // duplicated here.
+            if (ReturnRequest::isOrderFullyReturned($lockedOrder)) {
+                $lockedOrder->update(['status' => OrderStatus::REFUNDED]);
+            }
+
             return true;
-        });
+        }, 3);
 
         if (! $refunded) {
             return back()->with('error', 'Only an approved return request can be marked as refunded.');

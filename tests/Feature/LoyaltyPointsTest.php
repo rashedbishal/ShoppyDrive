@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use App\Enums\OrderStatus;
 use App\Enums\PointTransactionType;
+use App\Enums\ReturnStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ReferralPointTransaction;
+use App\Models\ReturnRequest;
 use App\Models\Review;
 use App\Models\Setting;
 use App\Models\User;
@@ -191,6 +193,78 @@ test('spend-based points round up and exclude both delivery charge and discount'
     artisan('rewards:grant-due');
 
     expect($user->refresh()->points_balance)->toBe(1);
+});
+
+// ── PAY-RETURN-001: scheduled spend-reward reduction for refunded returns ────
+
+test('a refunded return request reduces the eligible spend before granting, prorating the discount correctly', function () {
+    setLoyaltySettings(['loyalty_earn_rate_bdt_per_point' => 150]);
+    $user = User::factory()->create(['points_balance' => 0]);
+
+    // subtotal 1000, discount 200 -> net spend before any return = 800.
+    $order = makeDeliveredOrder($user, 1000, discount: 200);
+
+    // Half the order (by gross value) is refunded via a return.
+    ReturnRequest::create([
+        'order_id' => $order->id,
+        'user_id' => $user->id,
+        'reason' => 'Defective',
+        'status' => ReturnStatus::REFUNDED,
+        'items' => [],
+        'refund_amount' => 500,
+        'refund_method' => 'bKash',
+    ]);
+
+    artisan('rewards:grant-due');
+
+    // reducedSpend = (1000-200) * (1 - 500/1000) = 800 * 0.5 = 400 -> ceil(400/150) = 3.
+    // The naive, unfixed formula (subtotal - discount - refundedValue =
+    // 1000-200-500 = 300 -> ceil(300/150)=2) would have under-credited the
+    // customer by double-subtracting the discount's share of the refund.
+    expect($user->refresh()->points_balance)->toBe(3);
+});
+
+test('a pending or approved-but-unrefunded return does not reduce scheduled spend points', function () {
+    setLoyaltySettings(['loyalty_earn_rate_bdt_per_point' => 150]);
+    $user = User::factory()->create(['points_balance' => 0]);
+
+    $order = makeDeliveredOrder($user, 1000, discount: 0);
+
+    ReturnRequest::create([
+        'order_id' => $order->id,
+        'user_id' => $user->id,
+        'reason' => 'Defective',
+        'status' => ReturnStatus::APPROVED,
+        'items' => [],
+        'refund_amount' => 500,
+        'refund_method' => 'bKash',
+    ]);
+
+    artisan('rewards:grant-due');
+
+    // Not yet refunded -> full net spend still earns: ceil(1000/150) = 7.
+    expect($user->refresh()->points_balance)->toBe(7);
+});
+
+test('a fully refunded order earns zero scheduled spend points', function () {
+    setLoyaltySettings(['loyalty_earn_rate_bdt_per_point' => 150]);
+    $user = User::factory()->create(['points_balance' => 0]);
+
+    $order = makeDeliveredOrder($user, 1000, discount: 0);
+
+    ReturnRequest::create([
+        'order_id' => $order->id,
+        'user_id' => $user->id,
+        'reason' => 'Defective',
+        'status' => ReturnStatus::REFUNDED,
+        'items' => [],
+        'refund_amount' => 1000,
+        'refund_method' => 'bKash',
+    ]);
+
+    artisan('rewards:grant-due');
+
+    expect($user->refresh()->points_balance)->toBe(0);
 });
 
 test('cancelling a delivered order after its spend points were granted does not revoke them', function () {

@@ -78,4 +78,52 @@ class ReturnRequest extends Model
             ->map(fn ($group) => (int) $group->sum('quantity'))
             ->all();
     }
+
+    /**
+     * Sum, per order_item_id, how many units have actually been refunded
+     * (status REFUNDED only — PENDING/APPROVED/REJECTED never count, even
+     * though APPROVED already consumes quantity for eligibility purposes
+     * via `committedQuantitiesByOrderItem()` above). This is the basis for
+     * both full-return detection and the scheduled reward reduction.
+     *
+     * PAY-RETURN-001: pass `lockForUpdate: true` when called from a
+     * race-sensitive caller (currently only `Admin\ReturnController::
+     * markRefunded()`, which locks the parent Order first) — a locking
+     * read bypasses this transaction's REPEATABLE READ snapshot and
+     * always reads the latest committed sibling rows, regardless of
+     * statement ordering, the same reasoning already applied to the
+     * referral monthly-cap check in PROMO-LOY-001.
+     *
+     * @return array<int, int> order_item_id => refunded quantity
+     */
+    public static function refundedQuantitiesByOrderItem(Order $order, bool $lockForUpdate = false): array
+    {
+        $query = $order->returnRequests()->where('status', ReturnStatus::REFUNDED);
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->get()
+            ->flatMap(fn (self $returnRequest) => $returnRequest->items)
+            ->groupBy('order_item_id')
+            ->map(fn ($group) => (int) $group->sum('quantity'))
+            ->all();
+    }
+
+    /**
+     * Whether every unit of every item on this order has been returned and
+     * refunded. Always uses the locking variant of
+     * `refundedQuantitiesByOrderItem()` — must only be called with the
+     * parent Order already locked by the caller (see that method's
+     * docblock).
+     */
+    public static function isOrderFullyReturned(Order $order): bool
+    {
+        $refunded = self::refundedQuantitiesByOrderItem($order, lockForUpdate: true);
+
+        return $order->items->every(
+            fn (OrderItem $item) => ($refunded[$item->id] ?? 0) >= $item->quantity
+        );
+    }
 }

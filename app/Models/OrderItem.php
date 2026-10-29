@@ -22,6 +22,7 @@ class OrderItem extends Model
         'sku',
         'price',
         'quantity',
+        'restocked_quantity',
         'subtotal',
         'product_snapshot',
     ];

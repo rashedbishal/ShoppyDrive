@@ -6,8 +6,10 @@ namespace App\Services;
 
 use App\Enums\OrderStatus;
 use App\Enums\PointTransactionType;
+use App\Enums\ReturnStatus;
 use App\Models\Order;
 use App\Models\ReferralPointTransaction;
+use App\Models\ReturnRequest;
 use App\Models\Review;
 use App\Models\Setting;
 use App\Models\User;
@@ -342,6 +344,29 @@ class LoyaltyPointsService
                 }
 
                 $spend = max(0.0, (float) $order->subtotal - (float) $order->discount);
+
+                // PAY-RETURN-001: exclude the value of any fully-REFUNDED
+                // return requests from the earn basis before granting —
+                // $refundedValue and $order->subtotal are both on the same
+                // gross (pre-discount) basis (ReturnRequest.refund_amount
+                // is built from OrderItem.price × quantity, exactly like
+                // subtotal itself; Order.discount is a separate, order-
+                // level figure layered on afterward), so the discount is
+                // prorated onto the refunded share rather than subtracted
+                // a second time. PENDING/APPROVED-but-unrefunded requests
+                // are deliberately excluded (filtered to REFUNDED only) —
+                // they must never reduce what an order is still eligible
+                // to earn. Already-granted points are never revoked after
+                // the fact; this only affects orders not yet granted.
+                $refundedValue = (float) ReturnRequest::where('order_id', $order->id)
+                    ->where('status', ReturnStatus::REFUNDED)
+                    ->sum('refund_amount');
+
+                if ($refundedValue > 0 && $order->subtotal > 0) {
+                    $ratio = min(1.0, $refundedValue / (float) $order->subtotal);
+                    $spend = max(0.0, $spend * (1 - $ratio));
+                }
+
                 $points = $spend > 0 ? (int) ceil($spend / $rate) : 0;
 
                 if ($points > 0 && $order->user_id !== null) {

@@ -11,8 +11,10 @@ use App\Models\Admin;
 use App\Models\FlashSaleItem;
 use App\Models\InventoryLog;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\ReturnRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -111,6 +113,16 @@ class InventoryService
      * the stock_restored_at check-then-set below would not be atomic
      * across two concurrent cancel/refund requests for the same order.
      * Nests safely (via a savepoint) if a caller ever does wrap it too.
+     *
+     * PAY-RETURN-001: restocks only each item's *remaining* quantity
+     * (`quantity - restocked_quantity`), not its full original quantity —
+     * some or all of it may have already been restored by an earlier
+     * return-request approval via `restoreForReturnRequest()`. Each
+     * `OrderItem` is freshly re-fetched and locked here (never trusted
+     * from the `$order` parameter's possibly-stale, pre-loaded `items`
+     * relation), and both this method and `restoreForReturnRequest()`
+     * process items in the same ascending-id order, so the two can never
+     * deadlock against each other when they race for the same order.
      */
     public function restoreForOrder(Order $order): void
     {
@@ -121,29 +133,115 @@ class InventoryService
                 return;
             }
 
-            foreach ($order->items as $item) {
+            $orderItemIds = $order->items()->orderBy('id')->pluck('id');
+
+            foreach ($orderItemIds as $orderItemId) {
+                $item = OrderItem::whereKey($orderItemId)->lockForUpdate()->first();
+
+                if ($item === null) {
+                    continue;
+                }
+
+                $remaining = max(0, $item->quantity - $item->restocked_quantity);
+
+                if ($remaining <= 0) {
+                    continue;
+                }
+
                 if ($item->variant_id !== null) {
-                    ProductVariant::whereKey($item->variant_id)->lockForUpdate()->increment('stock_quantity', $item->quantity);
+                    ProductVariant::whereKey($item->variant_id)->lockForUpdate()->increment('stock_quantity', $remaining);
                 } else {
-                    Product::whereKey($item->product_id)->lockForUpdate()->increment('stock_quantity', $item->quantity);
+                    Product::whereKey($item->product_id)->lockForUpdate()->increment('stock_quantity', $remaining);
                 }
 
                 InventoryLog::create([
                     'product_id' => $item->product_id,
                     'variant_id' => $item->variant_id,
                     'type' => InventoryType::RELEASE,
-                    'quantity' => $item->quantity,
+                    'quantity' => $remaining,
                     'reference_type' => Order::class,
                     'reference_id' => $order->id,
                     'note' => "Order {$order->order_number} {$order->status->value} — stock restored.",
                 ]);
 
                 if ($item->flash_sale_item_id !== null) {
-                    FlashSaleItem::whereKey($item->flash_sale_item_id)->lockForUpdate()->decrement('sold_count', $item->quantity);
+                    FlashSaleItem::whereKey($item->flash_sale_item_id)->lockForUpdate()->decrement('sold_count', $remaining);
                 }
+
+                $item->forceFill(['restocked_quantity' => $item->restocked_quantity + $remaining])->saveQuietly();
             }
 
             $locked->forceFill(['stock_restored_at' => now()])->saveQuietly();
+        });
+    }
+
+    /**
+     * Restores stock (and any flash-sale sold_count) for exactly the
+     * quantities listed on one approved return request — never the
+     * item's full order quantity. Called from
+     * `Admin\ReturnController::approve()`, inside that action's own
+     * transaction (this method's own `DB::transaction()` therefore always
+     * runs as a nested savepoint in practice, matching
+     * `restoreForOrder()`'s identical self-wrapping convention).
+     *
+     * PAY-RETURN-001: `$returnRequest->items` is deliberately aggregated
+     * by `order_item_id` first — the same defensive concern as
+     * `Admin\ReturnController::eligibleRefundAmount()` — so a malformed or
+     * duplicated line can never cause the same `OrderItem` to be locked
+     * and restocked twice within this one transaction. Each `OrderItem`
+     * is freshly re-fetched and locked (never trusted from any pre-loaded
+     * relation), processed in ascending `order_item_id` order to match
+     * `restoreForOrder()`'s own ordering, and the actual restock amount is
+     * capped at `quantity - restocked_quantity` so this can never restock
+     * more than genuinely remains outstanding for that item — safe
+     * regardless of whether a whole-order cancellation already restocked
+     * some or all of it first.
+     */
+    public function restoreForReturnRequest(ReturnRequest $returnRequest): void
+    {
+        DB::transaction(function () use ($returnRequest) {
+            $quantityByOrderItemId = collect($returnRequest->items)
+                ->filter(fn (array $line) => isset($line['order_item_id'], $line['quantity']))
+                ->groupBy('order_item_id')
+                ->map(fn ($group) => (int) $group->sum('quantity'))
+                ->sortKeys();
+
+            foreach ($quantityByOrderItemId as $orderItemId => $requestedQuantity) {
+                $item = OrderItem::whereKey($orderItemId)->lockForUpdate()->first();
+
+                if ($item === null || $item->order_id !== $returnRequest->order_id) {
+                    continue;
+                }
+
+                $remaining = max(0, $item->quantity - $item->restocked_quantity);
+                $restockNow = min($requestedQuantity, $remaining);
+
+                if ($restockNow <= 0) {
+                    continue;
+                }
+
+                if ($item->variant_id !== null) {
+                    ProductVariant::whereKey($item->variant_id)->lockForUpdate()->increment('stock_quantity', $restockNow);
+                } else {
+                    Product::whereKey($item->product_id)->lockForUpdate()->increment('stock_quantity', $restockNow);
+                }
+
+                InventoryLog::create([
+                    'product_id' => $item->product_id,
+                    'variant_id' => $item->variant_id,
+                    'type' => InventoryType::RELEASE,
+                    'quantity' => $restockNow,
+                    'reference_type' => ReturnRequest::class,
+                    'reference_id' => $returnRequest->id,
+                    'note' => "Return request #{$returnRequest->id} (order #{$returnRequest->order_id}) approved — stock restored.",
+                ]);
+
+                if ($item->flash_sale_item_id !== null) {
+                    FlashSaleItem::whereKey($item->flash_sale_item_id)->lockForUpdate()->decrement('sold_count', $restockNow);
+                }
+
+                $item->forceFill(['restocked_quantity' => $item->restocked_quantity + $restockNow])->saveQuietly();
+            }
         });
     }
 

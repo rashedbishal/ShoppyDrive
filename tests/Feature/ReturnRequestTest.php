@@ -3,11 +3,19 @@
 declare(strict_types=1);
 
 use App\Enums\OrderStatus;
+use App\Enums\PointTransactionType;
 use App\Enums\ReturnStatus;
 use App\Mail\ReturnApprovedMail;
 use App\Mail\ReturnRejectedMail;
+use App\Models\Coupon;
+use App\Models\CouponUse;
+use App\Models\FlashSale;
+use App\Models\FlashSaleItem;
+use App\Models\InventoryLog;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\ReferralPointTransaction;
 use App\Models\ReturnRequest;
 use App\Models\User;
 use Carbon\CarbonInterface;
@@ -537,4 +545,319 @@ test('the refund cap cannot be inflated by a duplicated or over-quantity stored 
         ->assertSessionDoesntHaveErrors();
 
     expect($returnRequest->refresh()->status)->toBe(ReturnStatus::REFUNDED);
+});
+
+// ── PAY-RETURN-001: inventory, coupon, loyalty/referral, order-status wiring ──
+
+test('approving a return request restocks exactly the returned quantity, not the full order quantity', function () {
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-restock1@example.com', 'password' => bcrypt('password')]);
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 10]);
+    $order = createDeliveredOrder($user, $product, 3);
+    $item = $order->items->first();
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $user->id, 'reason' => 'Defective',
+        'status' => ReturnStatus::PENDING, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 2]],
+    ]);
+
+    $this->actingAs($admin, 'admin')->patch(route('admin.returns.approve', $returnRequest))->assertRedirect();
+
+    expect($product->refresh()->stock_quantity)->toBe(12); // 10 + 2, not +3
+    expect($item->refresh()->restocked_quantity)->toBe(2);
+    expect(InventoryLog::where('reference_type', ReturnRequest::class)->where('reference_id', $returnRequest->id)->first())
+        ->not->toBeNull();
+});
+
+test('approving a return request twice in a row does not double-restock', function () {
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-restock2@example.com', 'password' => bcrypt('password')]);
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 10]);
+    $order = createDeliveredOrder($user, $product, 2);
+    $item = $order->items->first();
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $user->id, 'reason' => 'Defective',
+        'status' => ReturnStatus::PENDING, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 2]],
+    ]);
+
+    $this->actingAs($admin, 'admin')->patch(route('admin.returns.approve', $returnRequest))->assertRedirect();
+    $this->actingAs($admin, 'admin')->patch(route('admin.returns.approve', $returnRequest))->assertRedirect();
+
+    expect($product->refresh()->stock_quantity)->toBe(12);
+    expect($item->refresh()->restocked_quantity)->toBe(2);
+});
+
+test('a return request with a duplicated order_item_id line restocks only the deduplicated, capped quantity once', function () {
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-restock3@example.com', 'password' => bcrypt('password')]);
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 10]);
+    $order = createDeliveredOrder($user, $product, 3);
+    $item = $order->items->first();
+    // Malformed/duplicated data, as if bypassing the customer controller
+    // entirely (mirrors the existing refund-cap dedup test's scenario).
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $user->id, 'reason' => 'Malformed stored data',
+        'status' => ReturnStatus::PENDING,
+        'items' => [
+            ['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 3],
+            ['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 3],
+        ],
+    ]);
+
+    $this->actingAs($admin, 'admin')->patch(route('admin.returns.approve', $returnRequest))->assertRedirect();
+
+    // Naive (unfixed) double-counting would restock 6; the real purchased
+    // quantity is only 3.
+    expect($product->refresh()->stock_quantity)->toBe(13);
+    expect($item->refresh()->restocked_quantity)->toBe(3);
+});
+
+test('a return request cannot be approved once its parent order has already been cancelled', function () {
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-closed1@example.com', 'password' => bcrypt('password')]);
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 10]);
+    $order = createDeliveredOrder($user, $product, 2);
+    $item = $order->items->first();
+    // Cancelling the order itself already restocks it in full via the
+    // existing whole-order path (restocked_quantity -> 2) — the point of
+    // this test is that the blocked approval attempt below does not
+    // restock it a second time on top of that.
+    $order->update(['status' => OrderStatus::CANCELLED]);
+    $restockedAfterCancel = $item->refresh()->restocked_quantity;
+    expect($restockedAfterCancel)->toBe(2);
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $user->id, 'reason' => 'Defective',
+        'status' => ReturnStatus::PENDING, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 2]],
+    ]);
+
+    $response = $this->actingAs($admin, 'admin')->patch(route('admin.returns.approve', $returnRequest));
+
+    $response->assertRedirect();
+    expect(session('error'))->toContain('already been cancelled or refunded');
+    expect($returnRequest->refresh()->status)->toBe(ReturnStatus::PENDING);
+    expect($item->refresh()->restocked_quantity)->toBe($restockedAfterCancel);
+});
+
+test('a return request cannot be approved once its parent order has already been refunded', function () {
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-closed2@example.com', 'password' => bcrypt('password')]);
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 10]);
+    $order = createDeliveredOrder($user, $product, 2);
+    $item = $order->items->first();
+    $order->update(['status' => OrderStatus::REFUNDED]);
+    $restockedAfterRefund = $item->refresh()->restocked_quantity;
+    expect($restockedAfterRefund)->toBe(2);
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $user->id, 'reason' => 'Defective',
+        'status' => ReturnStatus::PENDING, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 2]],
+    ]);
+
+    $response = $this->actingAs($admin, 'admin')->patch(route('admin.returns.approve', $returnRequest));
+
+    $response->assertRedirect();
+    expect($returnRequest->refresh()->status)->toBe(ReturnStatus::PENDING);
+    expect($item->refresh()->restocked_quantity)->toBe($restockedAfterRefund);
+});
+
+test('two separate partial return requests on the same order item each restock only their own quantity', function () {
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-restock4@example.com', 'password' => bcrypt('password')]);
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 10]);
+    $order = createDeliveredOrder($user, $product, 3);
+    $item = $order->items->first();
+    $returnA = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $user->id, 'reason' => 'First batch',
+        'status' => ReturnStatus::PENDING, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 2]],
+    ]);
+    $returnB = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $user->id, 'reason' => 'Second batch',
+        'status' => ReturnStatus::PENDING, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 1]],
+    ]);
+
+    $this->actingAs($admin, 'admin')->patch(route('admin.returns.approve', $returnA))->assertRedirect();
+    $this->actingAs($admin, 'admin')->patch(route('admin.returns.approve', $returnB))->assertRedirect();
+
+    expect($product->refresh()->stock_quantity)->toBe(13); // 10 + 2 + 1
+    expect($item->refresh()->restocked_quantity)->toBe(3);
+});
+
+test('restocking via a return approval leaves a later whole-order refund from double-restocking the same units', function () {
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-restock5@example.com', 'password' => bcrypt('password')]);
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 10]);
+    $order = createDeliveredOrder($user, $product, 3);
+    $item = $order->items->first();
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $user->id, 'reason' => 'Defective',
+        'status' => ReturnStatus::PENDING, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 2]],
+    ]);
+    $this->actingAs($admin, 'admin')->patch(route('admin.returns.approve', $returnRequest))->assertRedirect();
+    expect($product->refresh()->stock_quantity)->toBe(12); // 2 restocked via the return
+
+    // The remaining 1 unit (never returned) is still restocked by the
+    // existing whole-order refund path; the already-returned 2 must not
+    // be restocked a second time.
+    $this->actingAs($admin, 'admin')->patch(route('admin.orders.markRefunded', $order->id))->assertRedirect();
+
+    expect($product->refresh()->stock_quantity)->toBe(13); // +1 only, not +3
+    expect($item->refresh()->restocked_quantity)->toBe(3);
+});
+
+test('a flash-sale item\'s sold_count is decremented when its return is approved', function () {
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-flash1@example.com', 'password' => bcrypt('password')]);
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 80, 'stock_quantity' => 10]);
+    $flashSale = FlashSale::factory()->create();
+    $flashItem = FlashSaleItem::factory()->create([
+        'flash_sale_id' => $flashSale->id, 'product_id' => $product->id, 'variant_id' => null,
+        'sale_price' => 80, 'stock_limit' => 10, 'sold_count' => 2,
+    ]);
+    $order = createDeliveredOrder($user, $product, 2);
+    $item = $order->items->first();
+    $item->update(['flash_sale_item_id' => $flashItem->id]);
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $user->id, 'reason' => 'Defective',
+        'status' => ReturnStatus::PENDING, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 2]],
+    ]);
+
+    $this->actingAs($admin, 'admin')->patch(route('admin.returns.approve', $returnRequest))->assertRedirect();
+
+    expect($flashItem->refresh()->sold_count)->toBe(0);
+    expect($product->refresh()->stock_quantity)->toBe(12);
+});
+
+test('a return request restocks variant stock independently of the product\'s own stock', function () {
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-variant1@example.com', 'password' => bcrypt('password')]);
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 999]);
+    $variant = ProductVariant::factory()->create(['product_id' => $product->id, 'price' => 500, 'stock_quantity' => 5]);
+    $order = Order::create([
+        'order_number' => 'ORD-VARIANT-'.uniqid(), 'user_id' => $user->id, 'status' => OrderStatus::DELIVERED,
+        'payment_status' => 'paid', 'payment_method' => 'cod', 'subtotal' => 1000, 'shipping_cost' => 0,
+        'discount' => 0, 'tax' => 0, 'total' => 1000,
+        'shipping_address' => ['name' => $user->name, 'phone' => '01700000000', 'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh'],
+        'billing_address' => [], 'delivered_at' => now()->subDay(),
+    ]);
+    $item = $order->items()->create([
+        'product_id' => $product->id, 'variant_id' => $variant->id, 'product_name' => $product->name,
+        'price' => 500, 'quantity' => 2, 'subtotal' => 1000, 'product_snapshot' => [],
+    ]);
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $user->id, 'reason' => 'Defective',
+        'status' => ReturnStatus::PENDING, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 1]],
+    ]);
+
+    $this->actingAs($admin, 'admin')->patch(route('admin.returns.approve', $returnRequest))->assertRedirect();
+
+    expect($variant->refresh()->stock_quantity)->toBe(6);
+    expect($product->refresh()->stock_quantity)->toBe(999);
+});
+
+test('a return that fully returns and refunds every unit on the order transitions it to refunded and releases the coupon', function () {
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-full1@example.com', 'password' => bcrypt('password')]);
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 10]);
+    $order = createDeliveredOrder($user, $product, 2);
+    $coupon = Coupon::factory()->create(['used_count' => 1]);
+    $order->update(['coupon_id' => $coupon->id, 'discount' => 100]);
+    CouponUse::create(['coupon_id' => $coupon->id, 'user_id' => $user->id, 'order_id' => $order->id, 'discount_amount' => 100]);
+    $item = $order->items->first();
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $user->id, 'reason' => 'Defective',
+        'status' => ReturnStatus::APPROVED, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 2]],
+    ]);
+
+    $this->actingAs($admin, 'admin')
+        ->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 1000, 'refund_method' => 'bKash'])
+        ->assertRedirect();
+
+    expect($returnRequest->refresh()->status)->toBe(ReturnStatus::REFUNDED);
+    expect($order->refresh()->status)->toBe(OrderStatus::REFUNDED);
+    expect($coupon->refresh()->used_count)->toBe(0);
+    expect(CouponUse::where('order_id', $order->id)->exists())->toBeFalse();
+});
+
+test('a partial return does not release the coupon or change the order status', function () {
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-partial1@example.com', 'password' => bcrypt('password')]);
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 10]);
+    $order = createDeliveredOrder($user, $product, 3);
+    $coupon = Coupon::factory()->create(['used_count' => 1]);
+    $order->update(['coupon_id' => $coupon->id, 'discount' => 100]);
+    CouponUse::create(['coupon_id' => $coupon->id, 'user_id' => $user->id, 'order_id' => $order->id, 'discount_amount' => 100]);
+    $item = $order->items->first();
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $user->id, 'reason' => 'Defective',
+        // Only 2 of the 3 purchased units are being returned — not a full return.
+        'status' => ReturnStatus::APPROVED, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 2]],
+    ]);
+
+    $this->actingAs($admin, 'admin')
+        ->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 1000, 'refund_method' => 'bKash'])
+        ->assertRedirect();
+
+    expect($returnRequest->refresh()->status)->toBe(ReturnStatus::REFUNDED);
+    expect($order->refresh()->status)->toBe(OrderStatus::DELIVERED);
+    expect($coupon->refresh()->used_count)->toBe(1);
+    expect(CouponUse::where('order_id', $order->id)->exists())->toBeTrue();
+});
+
+test('a return that fully returns and refunds every unit revokes the referrer\'s already-granted reward', function () {
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-full2@example.com', 'password' => bcrypt('password')]);
+    $referrer = User::factory()->create(['points_balance' => 50]);
+    $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
+    $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 10]);
+    $order = createDeliveredOrder($referred, $product, 1);
+    $order->update(['used_referral_discount' => true]);
+    $order->forceFill(['referral_reward_granted_at' => now()])->save();
+    $referred->forceFill(['referral_discount_used_order_id' => $order->id])->save();
+    ReferralPointTransaction::create([
+        'user_id' => $referrer->id, 'referred_user_id' => $referred->id, 'order_id' => $order->id,
+        'type' => PointTransactionType::EARN_REFERRAL, 'points' => 50, 'currency_amount' => 50,
+        'note' => 'Referral bonus.',
+    ]);
+    $item = $order->items->first();
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $referred->id, 'reason' => 'Defective',
+        'status' => ReturnStatus::APPROVED, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 1]],
+    ]);
+
+    $this->actingAs($admin, 'admin')
+        ->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 500, 'refund_method' => 'bKash'])
+        ->assertRedirect();
+
+    expect($order->refresh()->status)->toBe(OrderStatus::REFUNDED);
+    expect($referrer->refresh()->points_balance)->toBe(0);
+    expect($referred->refresh()->referral_discount_used_order_id)->toBeNull();
+    $this->assertDatabaseHas('referral_point_transactions', [
+        'order_id' => $order->id, 'type' => PointTransactionType::REVOKE->value, 'points' => -50,
+    ]);
+});
+
+test('a partial return does not revoke any part of the referrer\'s reward', function () {
+    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-partial2@example.com', 'password' => bcrypt('password')]);
+    $referrer = User::factory()->create(['points_balance' => 50]);
+    $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
+    $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 10]);
+    $order = createDeliveredOrder($referred, $product, 3);
+    $order->update(['used_referral_discount' => true]);
+    $order->forceFill(['referral_reward_granted_at' => now()])->save();
+    $referred->forceFill(['referral_discount_used_order_id' => $order->id])->save();
+    ReferralPointTransaction::create([
+        'user_id' => $referrer->id, 'referred_user_id' => $referred->id, 'order_id' => $order->id,
+        'type' => PointTransactionType::EARN_REFERRAL, 'points' => 50, 'currency_amount' => 50,
+        'note' => 'Referral bonus.',
+    ]);
+    $item = $order->items->first();
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id, 'user_id' => $referred->id, 'reason' => 'Defective',
+        'status' => ReturnStatus::APPROVED, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 2]],
+    ]);
+
+    $this->actingAs($admin, 'admin')
+        ->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 1000, 'refund_method' => 'bKash'])
+        ->assertRedirect();
+
+    expect($order->refresh()->status)->toBe(OrderStatus::DELIVERED);
+    expect($referrer->refresh()->points_balance)->toBe(50);
+    expect($referred->refresh()->referral_discount_used_order_id)->toBe($order->id);
 });
