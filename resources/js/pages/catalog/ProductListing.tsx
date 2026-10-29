@@ -386,17 +386,17 @@ function FilterCheckboxRow({
 }): React.JSX.Element {
     return (
         <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-1.5 py-1.5 text-sm transition hover:bg-[var(--color-surface-alt)]">
-            <span className="flex items-center gap-2.5 text-[var(--color-text-secondary)]">
+            <span className="flex min-w-0 items-center gap-2.5 text-[var(--color-text-secondary)]">
                 <input
                     type="checkbox"
                     checked={checked}
                     onChange={onChange}
-                    className="size-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                    className="size-4 shrink-0 rounded border-[var(--color-border)] text-[var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                 />
-                {label}
+                <span className="min-w-0 break-words">{label}</span>
             </span>
             {typeof count === 'number' ? (
-                <span className="text-xs text-[var(--color-text-muted)]">
+                <span className="shrink-0 text-xs text-[var(--color-text-muted)]">
                     {count}
                 </span>
             ) : null}
@@ -429,9 +429,9 @@ function CategoryRow({
                     : 'text-[var(--color-text-secondary)]',
             )}
         >
-            <span className="px-1.5">{label}</span>
+            <span className="min-w-0 px-1.5 break-words">{label}</span>
             {typeof count === 'number' ? (
-                <span className="px-1.5 text-xs text-[var(--color-text-muted)]">
+                <span className="shrink-0 px-1.5 text-xs text-[var(--color-text-muted)]">
                     {count}
                 </span>
             ) : null}
@@ -984,7 +984,7 @@ function ProductListingPage({
                                     </button>
                                 ) : null}
                             </div>
-                            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-3 [scrollbar-width:thin]">
+                            <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pr-3 [scrollbar-width:thin]">
                                 {sidebarControls}
                             </div>
                         </div>
