@@ -12,6 +12,7 @@ use App\Models\ReferralPointTransaction;
 use App\Models\Setting;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 class ReferralService
 {
@@ -190,6 +191,20 @@ class ReferralService
      * A referrer who has already hit their per-period reward cap is skipped
      * for this run and reconsidered on the next one, once the period rolls
      * over — the reward is deferred, never forfeited.
+     *
+     * Each order is re-fetched and locked fresh inside its own transaction
+     * (Order locked first, re-checking `referral_reward_granted_at` on
+     * that locked row; retried up to 3 times on deadlock). The referrer's
+     * id is discovered via a plain read on `referred_by_id` — safe
+     * because that column is immutable once set at registration (see
+     * `handleOrderCancelledOrRefunded()`), so this lookup isn't racy —
+     * then both user rows are locked together in a single
+     * ascending-id-ordered statement. Locking by ascending id, rather
+     * than a fixed "referred, then referrer" role order, matters because
+     * it can never deadlock against `handleOrderCancelledOrRefunded()`
+     * processing a *different* order where the same two people hold the
+     * opposite roles (a mutual referral: A referred B on one order, B
+     * referred A on another).
      */
     public function grantDueReferralRewards(): int
     {
@@ -209,62 +224,97 @@ class ReferralService
         $capAmount = $this->rewardCapAmount();
         $capPeriod = $this->rewardCapPeriod();
 
-        $dueOrders = Order::where('used_referral_discount', true)
+        $dueOrderIds = Order::where('used_referral_discount', true)
             ->where('status', OrderStatus::DELIVERED)
             ->whereNotNull('delivered_at')
             ->whereNull('referral_reward_granted_at')
             ->where('delivered_at', '<=', $cutoff)
             ->orderBy('delivered_at')
-            ->get();
+            ->pluck('id');
 
         $granted = 0;
 
-        foreach ($dueOrders as $order) {
-            $referredUser = User::whereKey($order->user_id)->lockForUpdate()->first();
+        foreach ($dueOrderIds as $orderId) {
+            $granted += DB::transaction(function () use ($orderId, $points, $pointsValue, $capAmount, $capPeriod): int {
+                $order = Order::whereKey($orderId)->lockForUpdate()->first();
 
-            if ($referredUser === null || $referredUser->referred_by_id === null) {
-                // No referrer to reward — mark it done so it's never reconsidered.
-                $order->forceFill(['referral_reward_granted_at' => now()])->saveQuietly();
-
-                continue;
-            }
-
-            $referrer = User::whereKey($referredUser->referred_by_id)->lockForUpdate()->first();
-
-            if ($referrer === null) {
-                $order->forceFill(['referral_reward_granted_at' => now()])->saveQuietly();
-
-                continue;
-            }
-
-            $rewardValue = round($points * $pointsValue, 2);
-
-            if ($capAmount > 0 && $rewardValue > 0) {
-                $alreadyEarned = (float) ReferralPointTransaction::where('user_id', $referrer->id)
-                    ->where('type', PointTransactionType::EARN_REFERRAL)
-                    ->where('created_at', '>=', $this->periodStart($capPeriod))
-                    ->sum('currency_amount');
-
-                if ($alreadyEarned + $rewardValue > $capAmount) {
-                    // Cap reached for this period — leave ungranted, retry on a later run.
-                    continue;
+                if ($order === null || $order->referral_reward_granted_at !== null) {
+                    return 0;
                 }
-            }
 
-            $referrer->increment('points_balance', $points);
+                $referredUserId = $order->user_id;
+                $referrerId = User::whereKey($referredUserId)->value('referred_by_id');
 
-            ReferralPointTransaction::create([
-                'user_id' => $referrer->id,
-                'referred_user_id' => $referredUser->id,
-                'order_id' => $order->id,
-                'type' => PointTransactionType::EARN_REFERRAL,
-                'points' => $points,
-                'currency_amount' => $rewardValue,
-                'note' => 'Referral bonus for '.$referredUser->name."'s order {$order->order_number}.",
-            ]);
+                $idsToLock = $referrerId !== null ? [$referredUserId, $referrerId] : [$referredUserId];
+                sort($idsToLock);
+                $locked = User::whereIn('id', $idsToLock)->lockForUpdate()->get()->keyBy('id');
 
-            $order->forceFill(['referral_reward_granted_at' => now()])->saveQuietly();
-            $granted++;
+                $referredUser = $locked->get($referredUserId);
+
+                if ($referredUser === null || $referredUser->referred_by_id === null) {
+                    // No referrer to reward — mark it done so it's never reconsidered.
+                    $order->forceFill(['referral_reward_granted_at' => now()])->saveQuietly();
+
+                    return 0;
+                }
+
+                $referrer = $locked->get($referredUser->referred_by_id);
+
+                if ($referrer === null) {
+                    $order->forceFill(['referral_reward_granted_at' => now()])->saveQuietly();
+
+                    return 0;
+                }
+
+                $rewardValue = round($points * $pointsValue, 2);
+
+                if ($capAmount > 0 && $rewardValue > 0) {
+                    // Second-pass review finding: the referrer's row is already
+                    // locked above, but *this* query is a plain read — and by
+                    // this point in the transaction, the earlier plain read
+                    // (discovering $referrerId via ->value('referred_by_id'))
+                    // already established this transaction's REPEATABLE READ
+                    // snapshot, before the user-row lock above was even
+                    // contended. A concurrent transaction processing a
+                    // *different* order for this same referrer, serialized
+                    // behind that same lock, could therefore still see a
+                    // stale "already earned" figure here once unblocked.
+                    // ->lockForUpdate() makes this a locking ("current") read,
+                    // which InnoDB always resolves against the latest
+                    // committed data regardless of snapshot timing — the same
+                    // property that makes every other locking read in this
+                    // file correct. The user-row lock already acquired above
+                    // provides the actual mutual exclusion between two such
+                    // transactions; this only fixes what the second one sees
+                    // once that exclusion lets it proceed.
+                    $alreadyEarned = (float) ReferralPointTransaction::where('user_id', $referrer->id)
+                        ->where('type', PointTransactionType::EARN_REFERRAL)
+                        ->where('created_at', '>=', $this->periodStart($capPeriod))
+                        ->lockForUpdate()
+                        ->sum('currency_amount');
+
+                    if ($alreadyEarned + $rewardValue > $capAmount) {
+                        // Cap reached for this period — leave ungranted, retry on a later run.
+                        return 0;
+                    }
+                }
+
+                $referrer->increment('points_balance', $points);
+
+                ReferralPointTransaction::create([
+                    'user_id' => $referrer->id,
+                    'referred_user_id' => $referredUser->id,
+                    'order_id' => $order->id,
+                    'type' => PointTransactionType::EARN_REFERRAL,
+                    'points' => $points,
+                    'currency_amount' => $rewardValue,
+                    'note' => 'Referral bonus for '.$referredUser->name."'s order {$order->order_number}.",
+                ]);
+
+                $order->forceFill(['referral_reward_granted_at' => now()])->saveQuietly();
+
+                return 1;
+            }, 3);
         }
 
         return $granted;
@@ -281,6 +331,17 @@ class ReferralService
      * use it again on a future order. If the referrer's points had already
      * been granted for this order (the return happened after the reward
      * delay had already elapsed), revoke them too.
+     *
+     * Runs inside one transaction (retried up to 3 times on deadlock),
+     * locking the Order row first — a real mutex against
+     * `grantDueReferralRewards()` processing the same order — then both
+     * user rows together in a single ascending-id-ordered statement. The
+     * referrer's id is read via a plain lookup on `referred_by_id`, which
+     * is safe because that column is immutable once set at registration
+     * — no code path updates it after `resolveReferrerId()` establishes
+     * it for a new account, so a plain read here is never racy. See the
+     * comment on `grantDueReferralRewards()` for why ascending-id locking
+     * (rather than a fixed role order) matters here too.
      */
     public function handleOrderCancelledOrRefunded(Order $order): void
     {
@@ -288,50 +349,60 @@ class ReferralService
             return;
         }
 
-        $referredUser = User::whereKey($order->user_id)->lockForUpdate()->first();
+        DB::transaction(function () use ($order): void {
+            $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->first();
 
-        if ($referredUser === null || $referredUser->referral_discount_used_order_id !== $order->id) {
-            // Already reverted, or this order never actually ended up being
-            // the one on record (defensive no-op — keeps this idempotent).
-            return;
-        }
+            if ($lockedOrder === null) {
+                return;
+            }
 
-        $referredUser->forceFill(['referral_discount_used_order_id' => null])->save();
+            $referredUserId = $lockedOrder->user_id;
+            $referrerId = User::whereKey($referredUserId)->value('referred_by_id');
 
-        // Re-read rather than trust `$order`'s in-memory attribute: the Eloquent
-        // instance that triggered this (from `Order::booted()`) may have been
-        // fetched before `grantDueReferralRewards()` last touched this column.
-        $rewardGranted = Order::whereKey($order->id)->value('referral_reward_granted_at') !== null;
+            $idsToLock = $referrerId !== null ? [$referredUserId, $referrerId] : [$referredUserId];
+            sort($idsToLock);
+            $locked = User::whereIn('id', $idsToLock)->lockForUpdate()->get()->keyBy('id');
 
-        if (! $rewardGranted || $referredUser->referred_by_id === null) {
-            return;
-        }
+            $referredUser = $locked->get($referredUserId);
 
-        $earned = ReferralPointTransaction::where('order_id', $order->id)
-            ->where('type', PointTransactionType::EARN_REFERRAL)
-            ->sum('points');
+            if ($referredUser === null || $referredUser->referral_discount_used_order_id !== $lockedOrder->id) {
+                // Already reverted, or this order never actually ended up being
+                // the one on record (defensive no-op — keeps this idempotent).
+                return;
+            }
 
-        if ($earned <= 0) {
-            return;
-        }
+            $referredUser->forceFill(['referral_discount_used_order_id' => null])->save();
 
-        $referrer = User::whereKey($referredUser->referred_by_id)->lockForUpdate()->first();
+            if ($lockedOrder->referral_reward_granted_at === null || $referrerId === null) {
+                return;
+            }
 
-        if ($referrer === null) {
-            return;
-        }
+            $referrer = $locked->get($referrerId);
 
-        $toRevoke = min($earned, $referrer->points_balance);
-        $referrer->decrement('points_balance', $toRevoke);
+            if ($referrer === null) {
+                return;
+            }
 
-        ReferralPointTransaction::create([
-            'user_id' => $referrer->id,
-            'referred_user_id' => $referredUser->id,
-            'order_id' => $order->id,
-            'type' => PointTransactionType::REVOKE,
-            'points' => -$toRevoke,
-            'note' => 'Order '.$order->order_number.' was cancelled/refunded — referral bonus reversed.',
-        ]);
+            $earned = ReferralPointTransaction::where('order_id', $lockedOrder->id)
+                ->where('type', PointTransactionType::EARN_REFERRAL)
+                ->sum('points');
+
+            if ($earned <= 0) {
+                return;
+            }
+
+            $toRevoke = min($earned, $referrer->points_balance);
+            $referrer->decrement('points_balance', $toRevoke);
+
+            ReferralPointTransaction::create([
+                'user_id' => $referrer->id,
+                'referred_user_id' => $referredUser->id,
+                'order_id' => $lockedOrder->id,
+                'type' => PointTransactionType::REVOKE,
+                'points' => -$toRevoke,
+                'note' => 'Order '.$lockedOrder->order_number.' was cancelled/refunded — referral bonus reversed.',
+            ]);
+        }, 3);
     }
 
     /** Asia/Dhaka calendar start of the current reward-cap period. */

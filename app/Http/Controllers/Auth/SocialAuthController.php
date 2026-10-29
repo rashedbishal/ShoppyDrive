@@ -48,6 +48,25 @@ class SocialAuthController extends Controller
             ]);
         }
 
+        // PROMO-LOY-001 follow-up: this closure calls
+        // `LoyaltyPointsService::grantRegistrationBonus()`, which runs its
+        // own `DB::transaction($callback, 3)`. Since that call executes
+        // nested inside this one, Laravel's own transaction manager
+        // (`Connection::handleTransactionException()`) recognizes the
+        // nesting and refuses to retry at that inner level on a real
+        // concurrency error — it decrements the transaction counter and
+        // immediately rethrows instead, because a deadlock/lock-wait
+        // rolls back the *entire* underlying transaction, not just the
+        // innermost savepoint, so retrying only the inner closure could
+        // otherwise resume on a connection the database had already fully
+        // rolled back out from under. That rethrow lands here, so the
+        // retry has to happen at this, the outermost and only truly
+        // retryable, transaction boundary. The whole closure is safe to
+        // re-run from scratch: every read inside it (`SocialAccount`/
+        // `User` lookups) is naturally repeated after a full rollback and
+        // nothing outside the transaction is touched (no mail/queue/HTTP
+        // side effects), so a retried attempt can't double up or desync
+        // anything it created.
         $user = DB::transaction(function () use ($socialUser, $provider) {
             $account = SocialAccount::where('provider', $provider)
                 ->where('provider_id', $socialUser->getId())
@@ -91,7 +110,7 @@ class SocialAuthController extends Controller
             ]);
 
             return $user;
-        });
+        }, 3);
 
         session()->forget('pending_referral_code');
 
