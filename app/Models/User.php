@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -64,6 +65,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'has_password' => 'boolean',
             'role' => UserRole::class,
             'login_streak_date' => 'date',
+            'anonymized_at' => 'datetime',
         ];
     }
 
@@ -150,6 +152,59 @@ class User extends Authenticatable implements MustVerifyEmail
     public function pointTransactions(): HasMany
     {
         return $this->hasMany(ReferralPointTransaction::class);
+    }
+
+    /**
+     * Redact personal information in place and revoke account access, while
+     * preserving the row itself and every order/payment/review/coupon/
+     * loyalty record that references it — approved as the Option A
+     * remediation for DB-001 (customer hard-delete destroying financial
+     * history). The email is deliberately left untouched per that approval.
+     *
+     * Returns false (no-op) if this account was already anonymized, so a
+     * repeated admin request can't double-log or re-randomize the already
+     * anonymized fields.
+     */
+    public function anonymize(Admin $causer): bool
+    {
+        return DB::transaction(function () use ($causer): bool {
+            $locked = self::whereKey($this->id)->lockForUpdate()->first();
+
+            if ($locked->anonymized_at !== null) {
+                return false;
+            }
+
+            $locked->socialAccounts()->delete();
+
+            $locked->addresses()->update([
+                'name' => '[redacted]',
+                'phone' => '[redacted]',
+                'address_line1' => '[redacted]',
+                'address_line2' => null,
+                'city' => '[redacted]',
+                'state' => '[redacted]',
+                'postal_code' => null,
+            ]);
+
+            $locked->forceFill([
+                'name' => "Deleted Customer #{$locked->id}",
+                'phone' => null,
+                'avatar' => null,
+                'password' => Hash::make(Str::password(24)),
+                'remember_token' => Str::random(60),
+                'anonymized_at' => now(),
+            ])->save();
+
+            DB::table('sessions')->where('user_id', $locked->id)->delete();
+
+            activity('admin')
+                ->causedBy($causer)
+                ->performedOn($locked)
+                ->event('customer.anonymized')
+                ->log("Admin {$causer->name} ({$causer->email}) anonymized customer #{$locked->id}.");
+
+            return true;
+        });
     }
 
     protected static function booted(): void

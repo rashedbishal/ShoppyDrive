@@ -13,7 +13,7 @@ Route::get('/products', [ProductListingController::class, 'index'])->middleware(
 Route::get('/category/{slug}', [ProductListingController::class, 'category'])->middleware('throttle:product-browsing')->name('category.show');
 Route::get('/product/{product:slug}', [ProductController::class, 'show'])->name('product.show');
 Route::post('/product/{product:slug}/reviews', [ReviewController::class, 'store'])
-    ->middleware(['auth', 'throttle:review'])
+    ->middleware(['auth', 'throttle:review', 'auth.session', 'account.active'])
     ->name('product.reviews.store');
 
 Route::get('/search', [SearchController::class, 'index'])->middleware('throttle:product-browsing')->name('search');

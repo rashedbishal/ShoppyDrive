@@ -28,6 +28,7 @@ type Customer = {
     created_at: string;
     orders_count: number;
     social_accounts: SocialAccount[];
+    anonymized_at: string | null;
 };
 
 type Props = {
@@ -75,9 +76,19 @@ export default function CustomerShow({ customer, orders }: Props) {
                                 </div>
                             )}
                             <div>
-                                <h1 className="text-xl font-bold text-slate-900">
-                                    {customer.name}
-                                </h1>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-xl font-bold text-slate-900">
+                                        {customer.name}
+                                    </h1>
+                                    {customer.anonymized_at && (
+                                        <Badge variant="default" size="sm">
+                                            Anonymized{' '}
+                                            {new Date(
+                                                customer.anonymized_at,
+                                            ).toLocaleDateString()}
+                                        </Badge>
+                                    )}
+                                </div>
                                 <p className="text-sm text-slate-500">
                                     {customer.email}
                                 </p>
@@ -85,14 +96,16 @@ export default function CustomerShow({ customer, orders }: Props) {
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={() => setDeleteTarget(customer)}
-                        className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
-                    >
-                        <Trash2 className="size-3.5" />
-                        Delete Customer
-                    </button>
+                    {!customer.anonymized_at && (
+                        <button
+                            type="button"
+                            onClick={() => setDeleteTarget(customer)}
+                            className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                        >
+                            <Trash2 className="size-3.5" />
+                            Anonymize Customer
+                        </button>
+                    )}
                 </div>
 
                 <div className="grid gap-5 lg:grid-cols-[1fr_280px]">

@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\BlockBlockedIp;
 use App\Http\Middleware\CaptureTrafficSource;
+use App\Http\Middleware\EnsureAccountNotAnonymized;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureAdminPermission;
 use App\Http\Middleware\EnsureCheckoutAccess;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'redirect-customer-from-admin' => RedirectCustomerFromAdmin::class,
             'checkout.access' => EnsureCheckoutAccess::class,
             'fortify.throttle' => ThrottleFortifyActions::class,
+            'account.active' => EnsureAccountNotAnonymized::class,
         ]);
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 

@@ -13,5 +13,5 @@ Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'
     ->name('social.callback');
 
 Route::post('/email/verify-code', [EmailVerificationCodeController::class, 'store'])
-    ->middleware(['auth', 'throttle:verification-code'])
+    ->middleware(['auth', 'throttle:verification-code', 'auth.session', 'account.active'])
     ->name('verification.verify-code');

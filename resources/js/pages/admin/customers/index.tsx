@@ -12,6 +12,7 @@ type Customer = {
     phone: string | null;
     orders_count: number;
     created_at: string;
+    anonymized_at: string | null;
 };
 
 type Paginated<T> = {
@@ -134,16 +135,18 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                         >
                                             <Eye className="size-4" />
                                         </Link>
-                                        <button
-                                            type="button"
-                                            title="Delete"
-                                            onClick={() =>
-                                                setDeleteTarget(customer)
-                                            }
-                                            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </button>
+                                        {!customer.anonymized_at && (
+                                            <button
+                                                type="button"
+                                                title="Anonymize"
+                                                onClick={() =>
+                                                    setDeleteTarget(customer)
+                                                }
+                                                className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))

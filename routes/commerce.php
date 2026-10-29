@@ -18,7 +18,7 @@ Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
 // Checkout" is enabled in Admin > Settings (see EnsureCheckoutAccess); a
 // logged-in-but-unverified customer is still sent to verify their email
 // either way.
-Route::middleware(['checkout.access'])->group(function () {
+Route::middleware(['checkout.access', 'auth.session', 'account.active'])->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:place-order')->name('checkout.store');
 
@@ -32,7 +32,7 @@ Route::middleware(['checkout.access'])->group(function () {
     Route::post('/checkout/track-incomplete', [IncompleteOrderController::class, 'store'])->middleware('throttle:checkout-tracking')->name('checkout.track-incomplete');
 });
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'auth.session', 'account.active'])->group(function () {
     Route::post('/cart/sync', [CartController::class, 'sync'])->name('cart.sync');
 
     // ZiniPay payment return routes (kept for historical pending checkouts)

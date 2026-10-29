@@ -14,7 +14,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
+Route::middleware(['auth', 'verified', 'auth.session', 'account.active'])->prefix('account')->group(function () {
     Route::get('/', function (Request $request) {
         $user = $request->user();
 
@@ -129,7 +129,7 @@ Route::middleware(['auth', 'verified'])->prefix('account')->group(function () {
 });
 
 // Wishlist mutations — only auth required, no email verification needed
-Route::middleware(['auth'])->prefix('account')->group(function () {
+Route::middleware(['auth', 'auth.session', 'account.active'])->prefix('account')->group(function () {
     Route::post('/wishlist/sync', [WishlistController::class, 'sync'])->middleware('throttle:account-action')->name('wishlist.sync');
     Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->middleware('throttle:account-action')->name('wishlist.toggle');
     Route::post('/wishlist/clear', [WishlistController::class, 'clear'])->middleware('throttle:account-action')->name('wishlist.clear');

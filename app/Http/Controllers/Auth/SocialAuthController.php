@@ -65,6 +65,10 @@ class SocialAuthController extends Controller
 
             $user = User::where('email', $socialUser->getEmail())->first();
 
+            if ($user && $user->anonymized_at !== null) {
+                return null;
+            }
+
             if (! $user) {
                 $user = User::create([
                     'name' => $socialUser->getName() ?? $socialUser->getNickname(),
@@ -91,6 +95,10 @@ class SocialAuthController extends Controller
 
         session()->forget('pending_referral_code');
 
+        if (! $user) {
+            return redirect()->route('login')->withErrors(['email' => 'This account is no longer active.']);
+        }
+
         Auth::login($user);
 
         return redirect(config('fortify.home'));
@@ -103,6 +111,14 @@ class SocialAuthController extends Controller
     private function connectToCurrentUser(string $provider, SocialiteUser $socialUser): RedirectResponse
     {
         $user = Auth::user();
+
+        if ($user instanceof User && $user->anonymized_at !== null) {
+            Auth::logout();
+            session()->invalidate();
+            session()->regenerateToken();
+
+            return redirect()->route('login')->withErrors(['email' => 'This account is no longer active.']);
+        }
 
         $existing = SocialAccount::where('provider', $provider)
             ->where('provider_id', $socialUser->getId())

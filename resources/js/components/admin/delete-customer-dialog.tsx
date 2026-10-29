@@ -58,21 +58,17 @@ export function DeleteCustomerDialog({ customer, onOpenChange }: Props) {
         <Dialog open onOpenChange={onOpenChange}>
             <DialogContent appearance="premium" className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Delete customer?</DialogTitle>
+                    <DialogTitle>Anonymize this customer?</DialogTitle>
                     <DialogDescription>
-                        This will permanently delete &quot;{customer.name}
-                        &quot;&apos;s account. This cannot be undone.
+                        This will replace &quot;{customer.name}&quot;&apos;s
+                        personal information (name, phone, address, avatar)
+                        with anonymized placeholders and permanently revoke
+                        their account access. Their email stays unchanged,
+                        and their orders, payments, reviews, coupon usage,
+                        and loyalty history are all preserved — this cannot
+                        be undone.
                     </DialogDescription>
                 </DialogHeader>
-
-                {customer.orders_count > 0 && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
-                        This customer has{' '}
-                        <strong>{customer.orders_count}</strong> order
-                        {customer.orders_count === 1 ? '' : 's'}. Deleting this
-                        customer will also delete all of their orders.
-                    </div>
-                )}
 
                 <div className="space-y-1.5">
                     <label
@@ -92,7 +88,7 @@ export function DeleteCustomerDialog({ customer, onOpenChange }: Props) {
                         }
                         onKeyDown={(e) => e.key === 'Enter' && submit()}
                         className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:border-[#c8102e] focus:outline-none"
-                        placeholder="Required to confirm this deletion"
+                        placeholder="Required to confirm this action"
                     />
                     {errors.mother_password && (
                         <p className="text-xs text-red-600">
@@ -115,7 +111,7 @@ export function DeleteCustomerDialog({ customer, onOpenChange }: Props) {
                         onClick={submit}
                         className="bg-red-600 text-white hover:bg-red-700"
                     >
-                        {processing ? 'Deleting…' : 'Delete Customer'}
+                        {processing ? 'Anonymizing…' : 'Anonymize Customer'}
                     </Button>
                 </DialogFooter>
             </DialogContent>
