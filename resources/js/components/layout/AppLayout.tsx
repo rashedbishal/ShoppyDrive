@@ -97,7 +97,16 @@ export default function AppLayout({
 
             <AnimatePresence mode="wait" initial={false}>
                 <motion.main
-                    key={page.url}
+                    // Keyed by pathname only: query-string changes (filters,
+                    // sort, pagination) must update in place, not remount and
+                    // re-animate the whole page. The product listing shares
+                    // one key across /products and /category/* so switching
+                    // category or clearing filters only refreshes the grid.
+                    key={
+                        page.component === 'catalog/ProductListing'
+                            ? page.component
+                            : page.url.split('?')[0]
+                    }
                     className="flex-1"
                     initial={{ opacity: 0, y: MOTION.page?.distance ?? 8 }}
                     animate={{ opacity: 1, y: 0 }}

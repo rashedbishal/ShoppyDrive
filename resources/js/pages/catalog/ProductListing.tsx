@@ -3,14 +3,13 @@ import {
     Check,
     ChevronDown,
     ChevronLeft,
-    ChevronRight,
     Filter,
     LayoutGrid,
     List,
     Search,
     SlidersHorizontal,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { route } from 'ziggy-js';
 import {
@@ -135,14 +134,41 @@ function PriceRangeFilter({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
     useEffect(() => setInputHi(String(hi)), [hi]);
 
-    const apply = (): void => {
-        const parsedLo = Math.max(0, Math.min(Number(inputLo) || 0, cap));
-        const parsedHi = Math.max(
-            parsedLo,
-            Math.min(Number(inputHi) || cap, cap),
-        );
-        onApply(parsedLo, parsedHi);
+    const onApplyRef = useRef(onApply);
+    useEffect(() => {
+        onApplyRef.current = onApply;
+    }, [onApply]);
+
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+        undefined,
+    );
+    const pendingRef = useRef<[number, number] | undefined>(undefined);
+
+    const debouncedApply = (lo: number, hi: number): void => {
+        pendingRef.current = [lo, hi];
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+            if (pendingRef.current) {
+                onApplyRef.current(...pendingRef.current);
+                pendingRef.current = undefined;
+            }
+        }, 350);
     };
+    debouncedApply.flush = (): void => {
+        clearTimeout(timeoutRef.current);
+
+        if (pendingRef.current) {
+            onApplyRef.current(...pendingRef.current);
+            pendingRef.current = undefined;
+        }
+    };
+
+    useEffect(() => () => clearTimeout(timeoutRef.current), []);
+
+    const parseLo = (raw: string): number =>
+        Math.max(0, Math.min(Number(raw) || 0, cap));
+    const parseHi = (raw: string, loValue: number): number =>
+        Math.max(loValue, Math.min(raw === '' ? cap : Number(raw) || cap, cap));
 
     // Slider mirrors the (possibly half-typed) inputs, clamped to a valid range.
     const sliderLo = Math.max(0, Math.min(Number(inputLo) || 0, cap));
@@ -155,7 +181,7 @@ function PriceRangeFilter({
     // When both handles meet, keep the one that can still move on top.
     const isLoOnTop = loPercent > 50;
 
-    const commitSlider = (): void => onApply(sliderLo, sliderHi);
+    const commitSlider = (): void => debouncedApply.flush();
     const isCommitKey = (key: string): boolean =>
         [
             'ArrowLeft',
@@ -187,9 +213,15 @@ function PriceRangeFilter({
                             min={0}
                             inputMode="numeric"
                             value={inputLo}
-                            onChange={(e) => setInputLo(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && apply()}
-                            onBlur={apply}
+                            onChange={(e) => {
+                                const { value } = e.target;
+                                setInputLo(value);
+                                const parsedLo = parseLo(value);
+                                debouncedApply(
+                                    parsedLo,
+                                    parseHi(inputHi, parsedLo),
+                                );
+                            }}
                             className={cn(
                                 'h-9 w-full rounded-xl border border-[var(--color-border)] bg-white py-0 pr-2 pl-5 text-sm font-medium text-[var(--color-text-primary)] shadow-sm transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/15 focus:outline-none',
                                 noSpinnerClass,
@@ -211,9 +243,15 @@ function PriceRangeFilter({
                             min={0}
                             inputMode="numeric"
                             value={inputHi}
-                            onChange={(e) => setInputHi(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && apply()}
-                            onBlur={apply}
+                            onChange={(e) => {
+                                const { value } = e.target;
+                                setInputHi(value);
+                                const parsedLo = parseLo(inputLo);
+                                debouncedApply(
+                                    parsedLo,
+                                    parseHi(value, parsedLo),
+                                );
+                            }}
                             className={cn(
                                 'h-9 w-full rounded-xl border border-[var(--color-border)] bg-white py-0 pr-2 pl-5 text-sm font-medium text-[var(--color-text-primary)] shadow-sm transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/15 focus:outline-none',
                                 noSpinnerClass,
@@ -221,20 +259,12 @@ function PriceRangeFilter({
                         />
                     </div>
                 </div>
-                <button
-                    type="button"
-                    onClick={apply}
-                    aria-label="Apply price range"
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-white p-0 text-[var(--color-text-secondary)] shadow-sm transition hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white"
-                >
-                    <ChevronRight className="size-3.5" />
-                </button>
             </div>
 
             {/* Dual-handle slider. The native range inputs are invisible and ignore
                 pointer events except on their own thumb, so each handle is only
-                draggable where it is; dragging updates the inputs live and the
-                filter applies on release. */}
+                draggable where it is; the filter applies (debounced) as it's
+                dragged, and immediately on release/keyboard commit. */}
             <div className="px-1 pt-1">
                 <div className="relative mx-2.5 h-6">
                     <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-[var(--color-border)]" />
@@ -252,13 +282,14 @@ function PriceRangeFilter({
                         step={PRICE_SLIDER_STEP}
                         value={sliderLo}
                         aria-label="Minimum price"
-                        onChange={(e) =>
-                            setInputLo(
-                                String(
-                                    Math.min(Number(e.target.value), sliderHi),
-                                ),
-                            )
-                        }
+                        onChange={(e) => {
+                            const nextLo = Math.min(
+                                Number(e.target.value),
+                                sliderHi,
+                            );
+                            setInputLo(String(nextLo));
+                            debouncedApply(nextLo, sliderHi);
+                        }}
                         onPointerUp={commitSlider}
                         onKeyUp={(e) => isCommitKey(e.key) && commitSlider()}
                         className={cn(
@@ -278,13 +309,14 @@ function PriceRangeFilter({
                         step={PRICE_SLIDER_STEP}
                         value={sliderHi}
                         aria-label="Maximum price"
-                        onChange={(e) =>
-                            setInputHi(
-                                String(
-                                    Math.max(Number(e.target.value), sliderLo),
-                                ),
-                            )
-                        }
+                        onChange={(e) => {
+                            const nextHi = Math.max(
+                                Number(e.target.value),
+                                sliderLo,
+                            );
+                            setInputHi(String(nextHi));
+                            debouncedApply(sliderLo, nextHi);
+                        }}
                         onPointerUp={commitSlider}
                         onKeyUp={(e) => isCommitKey(e.key) && commitSlider()}
                         className={cn(
@@ -440,6 +472,7 @@ function ProductListingPage({
 
     const hasActiveFilters = useMemo(() => {
         return Boolean(
+            category ||
             filters.q ||
             filters.brand.length > 0 ||
             filters.min_price !== null ||
@@ -448,10 +481,11 @@ function ProductListingPage({
             filters.in_stock ||
             Object.values(filters.attributes).some((value) => value.length > 0),
         );
-    }, [filters]);
+    }, [filters, category]);
 
     const activeFilterCount = useMemo(() => {
         return (
+            (category ? 1 : 0) +
             filters.brand.length +
             (filters.min_price !== null || filters.max_price !== null ? 1 : 0) +
             (filters.rating !== null ? 1 : 0) +
@@ -461,7 +495,7 @@ function ProductListingPage({
                 0,
             )
         );
-    }, [filters]);
+    }, [filters, category]);
 
     const submitFilters = (
         nextFilters: ProductListingFilters,
@@ -486,6 +520,11 @@ function ProductListingPage({
             preserveScroll: true,
             preserveState: true,
             replace: true,
+            // The product grid shows its own inline loading state (dimmed
+            // cards/skeletons) for these scoped reloads, so the global
+            // full-screen PageLoadingOverlay would otherwise cover the
+            // header/sidebar/footer too and look like a full page reload.
+            showProgress: false,
             ...(isSameContext ? { only: ['products', 'filters'] } : {}),
             onFinish: () => {
                 setIsLoading(false);
@@ -543,7 +582,7 @@ function ProductListingPage({
 
         setDraftFilters(next);
         setSearchInput('');
-        submitFilters(next, category === null ? '/products' : listingUrl);
+        submitFilters(next, route('products.index'));
     };
 
     const handlePageChange = (pageNumber: number): void => {
@@ -594,7 +633,7 @@ function ProductListingPage({
 
     const sidebarControls = (
         <div>
-            <FilterSection title="Category">
+            <FilterSection title="Category" defaultOpen={false}>
                 <div className="space-y-0.5">
                     {category ? (
                         <>
@@ -1070,41 +1109,35 @@ function ProductListingPage({
                             </p>
                         </div>
 
-                        {isLoading ? (
+                        {products.data.length > 0 || isLoading ? (
                             <div
-                                className={
+                                className={cn(
                                     draftFilters.view === 'list'
                                         ? 'grid grid-cols-1 gap-3 md:gap-4'
-                                        : PRODUCT_GRID_BESIDE_SIDEBAR_CLASS
-                                }
-                            >
-                                {Array.from(
-                                    { length: DEFAULT_GRID_COUNT },
-                                    (_, index) => (
-                                        <ProductCardSkeleton
-                                            key={index}
-                                            view={draftFilters.view}
-                                        />
-                                    ),
+                                        : PRODUCT_GRID_BESIDE_SIDEBAR_CLASS,
+                                    isLoading &&
+                                        'pointer-events-none opacity-50 transition-opacity',
                                 )}
-                            </div>
-                        ) : products.data.length > 0 ? (
-                            <div
-                                className={
-                                    draftFilters.view === 'list'
-                                        ? 'grid grid-cols-1 gap-3 md:gap-4'
-                                        : PRODUCT_GRID_BESIDE_SIDEBAR_CLASS
-                                }
                             >
-                                {products.data.map((product, index) => (
-                                    <ProductCard
-                                        key={product.id}
-                                        product={product}
-                                        index={index}
-                                        view={draftFilters.view}
-                                        openCartOnAdd
-                                    />
-                                ))}
+                                {products.data.length > 0
+                                    ? products.data.map((product, index) => (
+                                          <ProductCard
+                                              key={product.id}
+                                              product={product}
+                                              index={index}
+                                              view={draftFilters.view}
+                                              openCartOnAdd
+                                          />
+                                      ))
+                                    : Array.from(
+                                          { length: DEFAULT_GRID_COUNT },
+                                          (_, index) => (
+                                              <ProductCardSkeleton
+                                                  key={index}
+                                                  view={draftFilters.view}
+                                              />
+                                          ),
+                                      )}
                             </div>
                         ) : (
                             <EmptyState

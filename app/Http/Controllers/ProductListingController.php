@@ -88,7 +88,7 @@ class ProductListingController extends Controller
             });
         }
 
-        $minPrice = $request->integer('min_price');
+        $minPrice = $request->filled('min_price') ? $request->integer('min_price') : null;
         if ($minPrice !== null) {
             $query->where('price', '>=', $minPrice);
         }
@@ -102,7 +102,7 @@ class ProductListingController extends Controller
             $query->where('stock_quantity', '>', 0);
         }
 
-        $minimumRating = $request->integer('rating');
+        $minimumRating = $request->integer('rating') ?: null;
         if ($minimumRating !== null && $minimumRating > 0) {
             $query->whereIn(
                 'products.id',
