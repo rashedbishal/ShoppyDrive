@@ -25,6 +25,7 @@ use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
 use App\Support\CartManager;
+use App\Support\OrderNumberGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -192,7 +193,7 @@ class CheckoutController extends Controller
                     $total = max(0, $subtotal - $discount + $shippingCost);
 
                     $order = Order::create([
-                        'order_number' => $this->generateOrderNumber(),
+                        'order_number' => OrderNumberGenerator::generate(),
                         'user_id' => auth()->id(),
                         'status' => 'pending',
                         'payment_status' => 'unpaid',
@@ -369,7 +370,7 @@ class CheckoutController extends Controller
         })->all();
 
         $token = (string) Str::uuid();
-        $orderNumber = $this->generateOrderNumber();
+        $orderNumber = OrderNumberGenerator::generate();
 
         $this->maybeAutoSaveAddress($request, $shippingAddress);
 
@@ -485,15 +486,6 @@ class CheckoutController extends Controller
             : min($subtotal, $coupon->value);
 
         return [$coupon->id, $coupon->code, round($discount, 2)];
-    }
-
-    private function generateOrderNumber(): string
-    {
-        do {
-            $number = 'ORD-'.date('Ymd').'-'.strtoupper(Str::random(6));
-        } while (Order::where('order_number', $number)->exists());
-
-        return $number;
     }
 
     private function resolveShippingAddress(PlaceOrderRequest $request): array

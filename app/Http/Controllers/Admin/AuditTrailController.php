@@ -7,10 +7,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\User;
+use App\Support\MotherPasswordGate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
@@ -71,7 +71,12 @@ class AuditTrailController extends Controller
 
         $request->validate(['password' => ['required', 'string']]);
 
-        if (! Hash::check($request->password, $currentAdmin->password)) {
+        // DB-001: same mother-password brute-force lock as permanent order deletion.
+        if (MotherPasswordGate::isLocked($currentAdmin)) {
+            return back()->withErrors(['password' => MotherPasswordGate::lockedMessage($currentAdmin)]);
+        }
+
+        if (! MotherPasswordGate::verify($currentAdmin, (string) $request->password)) {
             return back()->withErrors(['password' => 'Incorrect password.']);
         }
 

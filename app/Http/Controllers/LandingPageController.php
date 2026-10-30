@@ -16,6 +16,7 @@ use App\Models\ReceivedSms;
 use App\Models\Setting;
 use App\Services\InventoryService;
 use App\Support\CartManager;
+use App\Support\OrderNumberGenerator;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
@@ -200,7 +201,7 @@ class LandingPageController extends Controller
 
         if ($request->payment_method === 'cod') {
             $guestToken = Str::random(40);
-            $orderNumber = $this->generateOrderNumber();
+            $orderNumber = OrderNumberGenerator::generate();
 
             try {
                 $order = DB::transaction(function () use ($page, $shippingAddress, $itemData, $subtotal, $shippingCost, $total, $guestToken, $orderNumber) {
@@ -242,7 +243,7 @@ class LandingPageController extends Controller
 
         // Mobile banking
         $guestToken = Str::random(40);
-        $orderNumber = $this->generateOrderNumber();
+        $orderNumber = OrderNumberGenerator::generate();
         $pendingToken = (string) Str::uuid();
 
         PendingCheckout::create([
@@ -509,15 +510,6 @@ class LandingPageController extends Controller
         }
 
         return Setting::shippingRateFor($state, $city);
-    }
-
-    private function generateOrderNumber(): string
-    {
-        do {
-            $number = 'ORD-'.date('Ymd').'-'.strtoupper(Str::random(6));
-        } while (Order::where('order_number', $number)->exists());
-
-        return $number;
     }
 
     private function serializeProduct(mixed $product): array

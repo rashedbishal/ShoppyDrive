@@ -9,10 +9,12 @@ use App\Enums\CouponType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use RuntimeException;
 
 class Coupon extends Model
 {
-    use Auditable, HasFactory;
+    use Auditable, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'code',
@@ -53,6 +55,19 @@ class Coupon extends Model
     protected function auditIgnoreWhenOnlyChanged(): array
     {
         return ['used_count'];
+    }
+
+    /**
+     * DB-001 (L2): deleting a coupon is a soft delete; one that was ever used
+     * can never be permanently deleted (coupon_uses.coupon_id is RESTRICT too).
+     */
+    protected static function booted(): void
+    {
+        static::forceDeleting(function (self $coupon): void {
+            if ($coupon->uses()->exists() || Order::withTrashed()->where('coupon_id', $coupon->id)->exists()) {
+                throw new RuntimeException("Coupon {$coupon->code} has usage history and cannot be permanently deleted.");
+            }
+        });
     }
 
     public function uses(): HasMany

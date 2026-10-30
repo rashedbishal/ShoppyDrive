@@ -9,6 +9,7 @@ use App\Exceptions\CourierSubmissionBlockedException;
 use App\Exceptions\CourierSubmissionException;
 use App\Exceptions\CourierSubmissionFinalizationException;
 use App\Exceptions\InsufficientStockException;
+use App\Exceptions\PermanentDeletionRefusedException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ConfirmCourierNotCreatedRequest;
 use App\Http\Requests\Admin\ConfirmReturnedConsignmentRequest;
@@ -25,15 +26,17 @@ use App\Models\User;
 use App\Services\CourierOrderStatusMapper;
 use App\Services\CourierSubmissionService;
 use App\Services\InventoryService;
+use App\Services\OrderDeletionEligibility;
+use App\Services\OrderPermanentDeletionService;
 use App\Services\PathaoCourierService;
 use App\Services\SteadfastCourierService;
+use App\Support\OrderNumberGenerator;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
@@ -45,6 +48,8 @@ class OrderController extends Controller
         private readonly SteadfastCourierService $steadfast,
         private readonly InventoryService $inventory,
         private readonly CourierSubmissionService $courierSubmissions,
+        private readonly OrderDeletionEligibility $deletionEligibility,
+        private readonly OrderPermanentDeletionService $permanentDeletion,
     ) {}
 
     public function index(Request $request): Response
@@ -141,7 +146,7 @@ class OrderController extends Controller
         try {
             $order = DB::transaction(function () use ($request, $shippingAddress, $items, $subtotal, $shippingCost, $discount, $total, $isPaid): Order {
                 $order = Order::create([
-                    'order_number' => $this->generateOrderNumber(),
+                    'order_number' => OrderNumberGenerator::generate(),
                     'user_id' => $request->customer_id,
                     'status' => 'pending',
                     'payment_status' => $isPaid ? 'paid' : 'unpaid',
@@ -315,9 +320,22 @@ class OrderController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        // DB-001: only the mother admin sees permanent deletion at all, with
+        // the reasons an order can't be deleted and any pending first step.
+        $admin = Auth::guard('admin')->user();
+        $isMother = (bool) $admin?->is_mother;
+
+        if ($isMother) {
+            $orders->getCollection()->each(function (Order $order): void {
+                $order->setAttribute('deletion_blockers', $this->deletionEligibility->check($order->id));
+            });
+        }
+
         return Inertia::render('admin/orders/trashed', [
             'orders' => $orders,
             'filters' => $request->only(['search']),
+            'canPermanentlyDelete' => $isMother,
+            'pendingPermanentDeletion' => $isMother ? $this->permanentDeletion->pendingConfirmation($request, $admin) : null,
         ]);
     }
 
@@ -328,11 +346,42 @@ class OrderController extends Controller
         return back()->with('success', 'Order restored.');
     }
 
-    public function forceDelete(Order $order): RedirectResponse
+    /**
+     * DB-001 step 1 of permanent deletion (mother admin only — enforced by
+     * the route middleware and again in the service).
+     */
+    public function confirmPermanentDelete(Request $request, Order $order): RedirectResponse
     {
-        $order->forceDelete();
+        try {
+            $this->permanentDeletion->confirm($request, Auth::guard('admin')->user(), $order, (string) $request->input('password', ''));
+        } catch (PermanentDeletionRefusedException $e) {
+            return back()->withErrors([$e->field => $e->getMessage()]);
+        }
 
-        return redirect()->route('admin.orders.trashed')->with('success', 'Order permanently deleted.');
+        return back()->with('success', 'Password confirmed. Within '.(OrderPermanentDeletionService::MARKER_TTL_SECONDS / 60).' minutes, enter your password again and the order number to permanently delete it.');
+    }
+
+    /**
+     * DB-001 step 2: password again plus the typed order number, against a
+     * valid step-1 confirmation for this order and this admin.
+     */
+    public function forceDelete(Request $request, Order $order): RedirectResponse
+    {
+        $orderNumber = $order->order_number;
+
+        try {
+            $this->permanentDeletion->delete(
+                $request,
+                Auth::guard('admin')->user(),
+                $order,
+                (string) $request->input('password', ''),
+                (string) $request->input('order_number', ''),
+            );
+        } catch (PermanentDeletionRefusedException $e) {
+            return back()->withErrors([$e->field => $e->getMessage()]);
+        }
+
+        return redirect()->route('admin.orders.trashed')->with('success', "Order {$orderNumber} was permanently deleted.");
     }
 
     /**
@@ -562,14 +611,5 @@ class OrderController extends Controller
         }
 
         return back()->with('success', 'Recorded as not created. The order can be sent to a courier again.');
-    }
-
-    private function generateOrderNumber(): string
-    {
-        do {
-            $number = 'ORD-'.date('Ymd').'-'.strtoupper(Str::random(6));
-        } while (Order::where('order_number', $number)->exists());
-
-        return $number;
     }
 }

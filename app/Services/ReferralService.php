@@ -76,7 +76,9 @@ class ReferralService
 
     public function deliveredOrderCount(User $user): int
     {
-        return Order::where('user_id', $user->id)
+        // DB-001 (L6): trashed orders still count, so soft deletion can never
+        // make a customer look like they have fewer qualifying orders.
+        return Order::withTrashed()->where('user_id', $user->id)
             ->where('status', OrderStatus::DELIVERED)
             ->count();
     }

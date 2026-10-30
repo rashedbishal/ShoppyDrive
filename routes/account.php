@@ -42,8 +42,11 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active'])->prefi
             'totalSpent' => (float) $totalSpent,
         ]);
     })->name('account.dashboard');
+    // DB-001 (L5): a customer still sees their own orders after an admin
+    // moved them to trash (only cancelled orders can be trashed). Read-only:
+    // the return route below keeps the default binding, so trashed orders 404 there.
     Route::get('/orders', function (Request $request) {
-        $orders = Order::where('user_id', $request->user()->id)
+        $orders = Order::withTrashed()->where('user_id', $request->user()->id)
             ->with(['items.product'])
             ->when($request->search, function ($query, $search) {
                 $query->where('order_number', 'like', "%{$search}%");
@@ -68,7 +71,7 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active'])->prefi
         return inertia('account/OrderDetail', [
             'order' => $order,
         ]);
-    })->name('account.orders.show');
+    })->withTrashed()->name('account.orders.show');
 
     Route::post('/orders/{order:order_number}/return', [ReturnRequestController::class, 'store'])->middleware('throttle:account-action')->name('account.orders.return.store');
 

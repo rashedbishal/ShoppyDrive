@@ -131,7 +131,10 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show')->middleware(AdminSections::middleware('orders', 'view'));
     Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy')->middleware(AdminSections::middleware('orders', 'delete'));
     Route::patch('orders/{order}/restore', [OrderController::class, 'restore'])->name('orders.restore')->withTrashed()->middleware(AdminSections::middleware('trashed_orders', 'update'));
-    Route::delete('orders/{order}/force', [OrderController::class, 'forceDelete'])->name('orders.forceDelete')->withTrashed()->middleware(AdminSections::middleware('trashed_orders', 'delete'));
+    // DB-001: permanent deletion is mother-admin only (no section permission
+    // is enough) and takes two password-verified requests.
+    Route::post('orders/{order}/permanent-delete/confirm', [OrderController::class, 'confirmPermanentDelete'])->name('orders.permanentDelete.confirm')->withTrashed()->middleware(['admin.mother', 'throttle:mother-actions'])->block(10, 10);
+    Route::delete('orders/{order}/force', [OrderController::class, 'forceDelete'])->name('orders.forceDelete')->withTrashed()->middleware(['admin.mother', 'throttle:mother-actions'])->block(10, 10);
     Route::patch('orders/{order}/shipping-address', [OrderController::class, 'updateShippingAddress'])->name('orders.updateShippingAddress')->middleware(AdminSections::middleware('orders', 'update'));
     Route::patch('orders/{order}/refund', [OrderController::class, 'markRefunded'])->name('orders.markRefunded')->middleware(AdminSections::middleware('orders', 'update'));
     Route::patch('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel')->middleware(AdminSections::middleware('orders', 'update'));
@@ -190,7 +193,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     // Clearing the log is deliberately NOT part of the permission matrix
     // (AuditTrailController hardcodes mother-only) — only viewing is gated.
     Route::get('audit-trail', [AuditTrailController::class, 'index'])->name('audit-trail.index')->middleware(AdminSections::middleware('audit_trail', 'view'));
-    Route::delete('audit-trail', [AuditTrailController::class, 'destroy'])->name('audit-trail.destroy');
+    Route::delete('audit-trail', [AuditTrailController::class, 'destroy'])->name('audit-trail.destroy')->middleware(['admin.mother', 'throttle:mother-actions']);
 
     Route::patch('popular-keywords/bulk-status', [PopularKeywordController::class, 'updateStatusMany'])->name('popular-keywords.updateStatusMany')->middleware(AdminSections::middleware('search_keywords', 'update'));
     Route::delete('popular-keywords/bulk-delete', [PopularKeywordController::class, 'destroyMany'])->name('popular-keywords.destroyMany')->middleware(AdminSections::middleware('search_keywords', 'delete'));

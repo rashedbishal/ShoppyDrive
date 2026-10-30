@@ -13,11 +13,11 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Setting;
+use App\Support\OrderNumberGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -170,7 +170,7 @@ class IncompleteOrderController extends Controller
 
         $order = DB::transaction(function () use ($shippingAddress, $resolvedItems, $subtotal, $shippingCost, $total, $incompleteOrder): Order {
             $order = Order::create([
-                'order_number' => $this->generateOrderNumber(),
+                'order_number' => OrderNumberGenerator::generate(),
                 'user_id' => $incompleteOrder->user_id,
                 'status' => 'pending',
                 'payment_status' => 'unpaid',
@@ -211,14 +211,5 @@ class IncompleteOrderController extends Controller
         }
 
         return Setting::shippingRateFor($shippingAddress['state'] ?? null, $shippingAddress['city'] ?? null);
-    }
-
-    private function generateOrderNumber(): string
-    {
-        do {
-            $number = 'ORD-'.date('Ymd').'-'.strtoupper(Str::random(6));
-        } while (Order::where('order_number', $number)->exists());
-
-        return $number;
     }
 }

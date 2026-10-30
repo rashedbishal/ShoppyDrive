@@ -162,7 +162,7 @@ class HandleInertiaRequests extends Middleware
                 ? Wishlist::where('user_id', $request->user()->id)->pluck('product_id')->toArray()
                 : [],
             'account_stats' => fn () => $request->user() ? [
-                'orders_count' => Order::where('user_id', $request->user()->id)->count(),
+                'orders_count' => Order::withTrashed()->where('user_id', $request->user()->id)->count(),
                 'wishlist_count' => Wishlist::where('user_id', $request->user()->id)->count(),
                 'addresses_count' => Address::where('user_id', $request->user()->id)->count(),
             ] : null,

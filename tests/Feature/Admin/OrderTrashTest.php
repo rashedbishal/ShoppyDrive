@@ -103,17 +103,19 @@ test('a trashed order can be restored', function () {
     expect(Order::find($order->id)->trashed())->toBeFalse();
 });
 
-test('a trashed order can be permanently deleted, cascading its items', function () {
+// DB-001: permanent deletion is mother-admin only, with two password
+// confirmations — see OrderPermanentDeletionTest. An ordinary admin, even
+// with every section permission, is refused before anything happens.
+test('an ordinary admin cannot permanently delete a trashed order', function () {
     actingAs($this->admin, 'admin');
     $order = makeTrashTestOrder('ORD-FORCE-1', 'cancelled');
     $orderId = $order->id;
     $order->delete();
 
-    $response = $this->delete(route('admin.orders.forceDelete', $orderId));
+    $this->delete(route('admin.orders.forceDelete', $orderId))->assertForbidden();
 
-    $response->assertRedirect(route('admin.orders.trashed'));
-    expect(Order::withTrashed()->find($orderId))->toBeNull();
-    expect(OrderItem::where('order_id', $orderId)->count())->toBe(0);
+    expect(Order::withTrashed()->find($orderId))->not->toBeNull();
+    expect(OrderItem::where('order_id', $orderId)->count())->toBe(1);
 });
 
 test('guests cannot access any order trash routes', function () {

@@ -145,7 +145,8 @@ class Order extends Model
 
     public function coupon(): BelongsTo
     {
-        return $this->belongsTo(Coupon::class);
+        // A soft-deleted coupon is still the one this order used (DB-001).
+        return $this->belongsTo(Coupon::class)->withTrashed();
     }
 
     public function items(): HasMany
@@ -205,6 +206,25 @@ class Order extends Model
         static::created(function (self $order): void {
             static::dispatchMail(OrderPlacedMail::class, $order);
             static::dispatchAdminMail(NewOrderAlertMail::class, $order);
+        });
+
+        // DB-001: every trash / restore / permanent delete is in the audit
+        // trail, whichever code path did it (the `status`-only activity
+        // options above don't cover these events).
+        static::deleted(function (self $order): void {
+            activity('orders')
+                ->performedOn($order)
+                ->event($order->isForceDeleting() ? 'force_deleted' : 'trashed')
+                ->log($order->isForceDeleting()
+                    ? "Order {$order->order_number} was permanently deleted."
+                    : "Order {$order->order_number} was moved to trash.");
+        });
+
+        static::restored(function (self $order): void {
+            activity('orders')
+                ->performedOn($order)
+                ->event('restored')
+                ->log("Order {$order->order_number} was restored from trash.");
         });
 
         static::updated(function (self $order): void {

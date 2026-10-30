@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Admin;
+use App\Models\Order;
 use App\Models\Setting;
+use App\Services\OrderPermanentDeletionService;
 use App\Support\SecurityRateLimits;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Registered;
@@ -136,6 +139,31 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(5)->by($throttleKey),
                 Limit::perMinute(20)->by('ip:'.$request->ip()),
             ];
+        });
+
+        // DB-001: request cap on the mother-admin password actions (both
+        // permanent-deletion steps; clearing the audit trail) — generous on
+        // purpose. Brute force is bounded separately and much more tightly
+        // by App\Support\MotherPasswordGate (5 wrong passwords per 15 min,
+        // per admin). A refused order-deletion request is still audited.
+        RateLimiter::for('mother-actions', function (Request $request) {
+            return Limit::perMinutes(15, 30)
+                ->by('mother-actions:'.(Auth::guard('admin')->id() ?? 'ip:'.$request->ip()))
+                ->response(function (Request $request, array $headers) {
+                    $admin = Auth::guard('admin')->user();
+                    // Throttling runs before route-model binding, so this is
+                    // usually still the raw id.
+                    $order = $request->route('order');
+                    $order = $order instanceof Order ? $order : Order::withTrashed()->find((int) $order);
+
+                    if ($admin instanceof Admin && $order instanceof Order) {
+                        app(OrderPermanentDeletionService::class)->recordRateLimited($request, $admin, $order, $request->isMethod('delete') ? 'delete' : 'confirm');
+                    }
+
+                    $minutes = max(1, (int) ceil(((int) ($headers['Retry-After'] ?? 60)) / 60));
+
+                    return back()->withErrors(['password' => "Too many requests. Try again in {$minutes} minute(s)."], 'default');
+                });
         });
 
         // Payment/courier/SMS notifications. Every caller is already

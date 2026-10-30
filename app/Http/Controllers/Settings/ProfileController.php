@@ -44,7 +44,10 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's profile.
+     * Delete the user's profile. DB-001 (L4): an account with orders or other
+     * retained business history is anonymized instead of deleted, so order,
+     * payment, loyalty, coupon and return records stay intact; only an
+     * account with none of that is permanently deleted.
      */
     public function destroy(ProfileDeleteRequest $request): RedirectResponse
     {
@@ -52,7 +55,11 @@ class ProfileController extends Controller
 
         Auth::logout();
 
-        $user->forceDelete();
+        if ($user->hasRetainedHistory()) {
+            $user->anonymize();
+        } else {
+            $user->forceDelete();
+        }
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

@@ -2,9 +2,9 @@ import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, RotateCcw, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
+import PermanentOrderDeleteDialog from '@/components/admin/PermanentOrderDeleteDialog';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 type Order = {
     id: number;
@@ -14,6 +14,8 @@ type Order = {
     total: number;
     deleted_at: string;
     user: { id: number; name: string; email: string } | null;
+    /** Mother admin only: why permanent deletion is unavailable (empty = allowed). */
+    deletion_blockers?: { code: string; message: string }[];
 };
 
 type Paginated<T> = {
@@ -27,13 +29,19 @@ type Paginated<T> = {
 type Props = {
     orders: Paginated<Order>;
     filters: { search?: string };
+    canPermanentlyDelete: boolean;
+    pendingPermanentDeletion: { order_id: number; expires_at: number } | null;
 };
 
-export default function TrashedOrders({ orders, filters }: Props) {
+export default function TrashedOrders({
+    orders,
+    filters,
+    canPermanentlyDelete,
+    pendingPermanentDeletion,
+}: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [restoringId, setRestoringId] = useState<number | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
-    const [deleting, setDeleting] = useState(false);
 
     const applySearch = () => {
         if (search === (filters.search ?? '')) {
@@ -65,20 +73,6 @@ export default function TrashedOrders({ orders, filters }: Props) {
                 onFinish: () => setRestoringId(null),
             },
         );
-    };
-
-    const confirmForceDelete = () => {
-        if (!deleteTarget) {
-            return;
-        }
-
-        setDeleting(true);
-        router.delete(route('admin.orders.forceDelete', deleteTarget.id), {
-            onFinish: () => {
-                setDeleting(false);
-                setDeleteTarget(null);
-            },
-        });
     };
 
     return (
@@ -164,16 +158,32 @@ export default function TrashedOrders({ orders, filters }: Props) {
                                                 ? 'Restoring…'
                                                 : 'Restore'}
                                         </button>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setDeleteTarget(order)
-                                            }
-                                            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                                            title="Permanently delete"
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </button>
+                                        {canPermanentlyDelete &&
+                                            ((order.deletion_blockers ?? [])
+                                                .length === 0 ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setDeleteTarget(order)
+                                                    }
+                                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                                    title="Permanently delete"
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </button>
+                                            ) : (
+                                                <span
+                                                    className="cursor-help rounded-lg p-1.5 text-slate-300"
+                                                    title={`Can't be permanently deleted: ${(
+                                                        order.deletion_blockers ??
+                                                        []
+                                                    )
+                                                        .map((b) => b.message)
+                                                        .join(' ')}`}
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </span>
+                                            ))}
                                     </div>
                                 </div>
                             ))
@@ -212,19 +222,16 @@ export default function TrashedOrders({ orders, filters }: Props) {
                 </Card>
             </div>
 
-            <ConfirmDialog
-                open={deleteTarget !== null}
-                onOpenChange={(open) => !open && setDeleteTarget(null)}
-                title="Permanently delete this order?"
-                description={
-                    deleteTarget
-                        ? `This will permanently delete order "${deleteTarget.order_number}" and all its items and history. This cannot be undone.`
-                        : undefined
-                }
-                confirmLabel="Delete Permanently"
-                onConfirm={confirmForceDelete}
-                processing={deleting}
-            />
+            {canPermanentlyDelete && (
+                <PermanentOrderDeleteDialog
+                    order={deleteTarget}
+                    confirmedForThisOrder={
+                        deleteTarget !== null &&
+                        pendingPermanentDeletion?.order_id === deleteTarget.id
+                    }
+                    onClose={() => setDeleteTarget(null)}
+                />
+            )}
         </>
     );
 }

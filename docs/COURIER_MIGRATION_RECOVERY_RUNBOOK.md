@@ -162,3 +162,56 @@ make a rollback pass can hide a live parcel and break later reconciliation.
 If a rollback is genuinely required, export the table first, get explicit
 approval, and change the guard deliberately in a reviewed commit — never by
 editing data in production.
+
+## 7. DB-001: `2026_10_30_134851_protect_order_history_foreign_keys`
+
+This migration replaces 14 foreign keys, one table at a time (drop the key,
+re-add it with the new rule), so on MySQL/MariaDB it can stop part-way just
+like §3/§4. No data is changed by any step. Target rules after a full run:
+
+| Table.column | Rule |
+|---|---|
+| `orders.user_id` | RESTRICT |
+| `orders.coupon_id` | SET NULL |
+| `payments.order_id` | RESTRICT |
+| `return_requests.order_id`, `return_requests.user_id` | RESTRICT |
+| `coupon_uses.order_id`, `coupon_uses.user_id`, `coupon_uses.coupon_id` | RESTRICT |
+| `referral_point_transactions.user_id` | RESTRICT |
+| `users.referral_discount_used_order_id`, `users.referred_by_id` | RESTRICT |
+| `order_status_histories.created_by`, `inventory_logs.created_by`, `product_questions.answered_by` | SET NULL |
+
+```sql
+-- READ-ONLY: current rule of every key this migration manages (missing row = key missing)
+SELECT k.TABLE_NAME, k.COLUMN_NAME, k.CONSTRAINT_NAME, r.DELETE_RULE
+FROM information_schema.KEY_COLUMN_USAGE k
+JOIN information_schema.REFERENTIAL_CONSTRAINTS r
+  ON r.CONSTRAINT_SCHEMA = k.CONSTRAINT_SCHEMA AND r.CONSTRAINT_NAME = k.CONSTRAINT_NAME
+WHERE k.TABLE_SCHEMA = DATABASE() AND (k.TABLE_NAME, k.COLUMN_NAME) IN (
+  ('orders','user_id'),('orders','coupon_id'),('payments','order_id'),
+  ('return_requests','order_id'),('return_requests','user_id'),
+  ('coupon_uses','order_id'),('coupon_uses','user_id'),('coupon_uses','coupon_id'),
+  ('referral_point_transactions','user_id'),('users','referral_discount_used_order_id'),('users','referred_by_id'),
+  ('order_status_histories','created_by'),('inventory_logs','created_by'),('product_questions','answered_by'));
+```
+
+Each key ends up either in its **old** rule (not reached yet), its **new**
+rule (done) or **missing** (the run stopped between the drop and the re-add).
+Re-running the migration drops and re-adds every key, so old or new rules are
+both fine. A **missing** key would make that drop fail, so re-create just the
+missing ones first, with their target rule, then re-run:
+
+```sql
+-- SCHEMA-CHANGING, only for a key the query above shows as missing; name = <table>_<column>_foreign
+ALTER TABLE payments ADD CONSTRAINT payments_order_id_foreign
+    FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE RESTRICT;
+-- e.g. SET NULL instead for orders.coupon_id / *.created_by / product_questions.answered_by
+```
+```bash
+php artisan migrate --force   # SCHEMA-CHANGING: re-runs the migration; it is then recorded
+```
+
+Rolling it back (`down()`) refuses while any order or customer exists:
+restoring the old cascades would re-open silent deletion of order, payment
+and loyalty history. The `coupons.deleted_at` and `order_deletion_audits`
+migrations likewise refuse to roll back while soft-deleted coupons or audit
+records exist.

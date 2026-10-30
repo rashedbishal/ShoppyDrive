@@ -10,6 +10,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\CourierSubmissionService;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -275,7 +276,10 @@ describe('M3: courier history survives deletion and rollback', function () {
         $submission = CourierSubmission::factory()->forOrder($order)->create(['state' => CourierSubmissionState::SENT, 'active_order_id' => null, 'consignment_id' => 'SF-KEPT', 'resolution_note' => 'History to keep.']);
 
         actingAs($this->admin, 'admin')->delete(route('admin.orders.destroy', $order))->assertSessionHas('success');
-        actingAs($this->admin, 'admin')->delete(route('admin.orders.forceDelete', $order->id))->assertSessionHas('success');
+        // DB-001: the admin flow now refuses to permanently delete an order
+        // with courier history; this checks the database rule itself (SET
+        // NULL), which still applies to any permanent delete that happens.
+        $order->forceDelete();
 
         expect(Order::withTrashed()->find($order->id))->toBeNull();
         $submission->refresh();
@@ -285,15 +289,16 @@ describe('M3: courier history survives deletion and rollback', function () {
             ->and($submission->resolution_note)->toBe('History to keep.');
     });
 
-    test('a customer deleting their account keeps the courier history of their orders', function () {
+    test('a customer with orders cannot be hard-deleted, so the courier history of their orders stays attached', function () {
+        // DB-001 (L4): orders.user_id is RESTRICT; such customers are anonymized instead.
         $customer = User::factory()->create();
         $order = hardeningOrder(['user_id' => $customer->id, 'pathao_consignment_id' => 'PA-KEPT']);
         $submission = CourierSubmission::factory()->forOrder($order)->create(['courier' => 'pathao', 'state' => CourierSubmissionState::SENT, 'active_order_id' => null, 'consignment_id' => 'PA-KEPT']);
 
-        $customer->forceDelete();
+        expect(fn () => $customer->forceDelete())->toThrow(QueryException::class);
 
-        expect(Order::withTrashed()->find($order->id))->toBeNull();
-        expect($submission->refresh()->order_id)->toBeNull()
+        expect(Order::find($order->id))->not->toBeNull();
+        expect($submission->refresh()->order_id)->toBe($order->id)
             ->and($submission->consignment_id)->toBe('PA-KEPT');
     });
 

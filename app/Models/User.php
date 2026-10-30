@@ -155,17 +155,38 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * DB-001 (L4): whether deleting this account would destroy history the
+     * business keeps — orders (trashed included), money/loyalty/coupon/return
+     * records, reviews, or other customers' referral links to it. Such
+     * accounts are anonymized, never hard-deleted; the RESTRICT foreign keys
+     * make the database refuse it as well.
+     */
+    public function hasRetainedHistory(): bool
+    {
+        return Order::withTrashed()->where('user_id', $this->id)->exists()
+            || ReferralPointTransaction::where('user_id', $this->id)->exists()
+            || CouponUse::where('user_id', $this->id)->exists()
+            || ReturnRequest::where('user_id', $this->id)->exists()
+            || Review::withTrashed()->where('user_id', $this->id)->exists()
+            // Customers they referred keep their referral link (and pending
+            // referral discount) — deleting this account would clear it.
+            || self::withTrashed()->where('referred_by_id', $this->id)->exists();
+    }
+
+    /**
      * Redact personal information in place and revoke account access, while
      * preserving the row itself and every order/payment/review/coupon/
      * loyalty record that references it — approved as the Option A
      * remediation for DB-001 (customer hard-delete destroying financial
      * history). The email is deliberately left untouched per that approval.
+     * `$causer` is the admin who did it, or null when customers delete their
+     * own account (DB-001, L4).
      *
      * Returns false (no-op) if this account was already anonymized, so a
      * repeated admin request can't double-log or re-randomize the already
      * anonymized fields.
      */
-    public function anonymize(Admin $causer): bool
+    public function anonymize(?Admin $causer = null): bool
     {
         return DB::transaction(function () use ($causer): bool {
             $locked = self::whereKey($this->id)->lockForUpdate()->first();
@@ -197,11 +218,19 @@ class User extends Authenticatable implements MustVerifyEmail
 
             DB::table('sessions')->where('user_id', $locked->id)->delete();
 
-            activity('admin')
-                ->causedBy($causer)
-                ->performedOn($locked)
-                ->event('customer.anonymized')
-                ->log("Admin {$causer->name} ({$causer->email}) anonymized customer #{$locked->id}.");
+            if ($causer !== null) {
+                activity('admin')
+                    ->causedBy($causer)
+                    ->performedOn($locked)
+                    ->event('customer.anonymized')
+                    ->log("Admin {$causer->name} ({$causer->email}) anonymized customer #{$locked->id}.");
+            } else {
+                activity('customer')
+                    ->causedBy($locked)
+                    ->performedOn($locked)
+                    ->event('customer.self_anonymized')
+                    ->log("Customer #{$locked->id} deleted their account; it was anonymized because it has order or financial history.");
+            }
 
             return true;
         });

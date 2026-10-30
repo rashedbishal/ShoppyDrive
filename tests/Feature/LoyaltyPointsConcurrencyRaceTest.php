@@ -163,6 +163,11 @@ it('does not double-refund redeemed points when two cancellation triggers race u
         $transactionCount = (int) $connA->query("SELECT COUNT(*) FROM referral_point_transactions WHERE order_id = {$order->id} AND type = 'refund'")->fetchColumn();
         expect($transactionCount)->toBe(1);
     } finally {
+        // DB-001: referral_point_transactions.user_id is RESTRICT, so this
+        // test's own ledger rows go first.
+        if ($user !== null) {
+            ReferralPointTransaction::where('user_id', $user->id)->delete();
+        }
         $order?->forceDelete();
         $user?->forceDelete();
     }
@@ -214,6 +219,9 @@ it('does not double-grant the registration bonus when two triggers race under re
         $finalBalance = (int) $connA->query("SELECT points_balance FROM users WHERE id = {$user->id}")->fetchColumn();
         expect($finalBalance)->toBe(20); // credited exactly once, not twice
     } finally {
+        if ($user !== null) {
+            ReferralPointTransaction::where('user_id', $user->id)->delete();
+        }
         $user?->forceDelete();
     }
 })->skip(fn () => DB::connection()->getDriverName() !== 'mysql', 'requires a real MySQL connection to exercise InnoDB locking-read semantics');
