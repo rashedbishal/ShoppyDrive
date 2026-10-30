@@ -405,7 +405,7 @@ class OrderController extends Controller
 
         try {
             $info = $this->pathao->getOrderInfo($order->pathao_consignment_id);
-        } catch (RuntimeException $e) {
+        } catch (RuntimeException|ConnectionException $e) {
             return back()->with('error', 'Pathao: '.$e->getMessage());
         }
 
@@ -453,7 +453,7 @@ class OrderController extends Controller
 
         try {
             $info = $this->steadfast->getOrderInfo($order->steadfast_consignment_id);
-        } catch (RuntimeException $e) {
+        } catch (RuntimeException|ConnectionException $e) {
             return back()->with('error', 'Steadfast: '.$e->getMessage());
         }
 
