@@ -54,22 +54,50 @@ class SteadfastWebhookController extends Controller
         return response()->json(['status' => 'success']);
     }
 
-    /** @param  array<string, mixed>  $payload */
+    /**
+     * COURIER-SEND-RACE-001: match on the exact consignment ID only. An
+     * invoice match is never enough — a duplicate consignment booked for the
+     * same invoice (and never recorded on the order) would otherwise move
+     * the real order's status. No consignment ID, no match, more than one
+     * match, or an invoice that contradicts the matched order → the order is
+     * left alone (the webhook is still acknowledged). Whether Steadfast always
+     * includes `consignment_id` in delivery_status webhooks is unverified.
+     *
+     * @param  array<string, mixed>  $payload
+     */
     private function findOrder(array $payload): ?Order
     {
-        if (! empty($payload['invoice'])) {
-            $order = Order::where('order_number', $payload['invoice'])->first();
+        $consignmentId = isset($payload['consignment_id']) ? trim((string) $payload['consignment_id']) : '';
 
-            if ($order) {
-                return $order;
-            }
+        if ($consignmentId === '') {
+            Log::warning('[Steadfast] Webhook ignored: no consignment_id to match on.', ['invoice' => $payload['invoice'] ?? null]);
+
+            return null;
         }
 
-        if (! empty($payload['consignment_id'])) {
-            return Order::where('steadfast_consignment_id', (string) $payload['consignment_id'])->first();
+        $matches = Order::withTrashed()->where('steadfast_consignment_id', $consignmentId)->limit(2)->get();
+
+        if ($matches->count() !== 1) {
+            Log::warning('[Steadfast] Webhook ignored: consignment_id did not match exactly one order.', ['consignment_id' => $consignmentId, 'matches' => $matches->count()]);
+
+            return null;
         }
 
-        return null;
+        $order = $matches->first();
+
+        // Trashed orders are counted above (so they still make a match
+        // ambiguous) but, as before, never updated.
+        if ($order->trashed()) {
+            return null;
+        }
+
+        if (! empty($payload['invoice']) && (string) $payload['invoice'] !== $order->order_number) {
+            Log::warning('[Steadfast] Webhook ignored: invoice does not match the order holding this consignment.', ['consignment_id' => $consignmentId, 'invoice' => $payload['invoice'], 'order_number' => $order->order_number]);
+
+            return null;
+        }
+
+        return $order;
     }
 
     private function verifySignature(Request $request): bool

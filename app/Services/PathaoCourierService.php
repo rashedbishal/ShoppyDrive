@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exceptions\CourierSubmissionException;
 use App\Models\Order;
 use App\Models\Setting;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use Throwable;
 
 class PathaoCourierService
 {
@@ -33,40 +36,77 @@ class PathaoCourierService
     /**
      * Create a Pathao order for an existing ShoppyDrive order.
      *
+     * Everything that can fail before the create request is sent (settings,
+     * the access-token request) is a definite "not sent" failure; failures of
+     * the create request itself are classified by whether Pathao may have
+     * created the order anyway (see CourierSubmissionException).
+     *
      * @return array{consignment_id: string, merchant_order_id: string|null, order_status: string, delivery_fee: float}
      *
-     * @throws RuntimeException
+     * @throws CourierSubmissionException
      */
     public function createOrder(Order $order): array
     {
-        $order->loadMissing('items.product:id,weight');
+        try {
+            $order->loadMissing('items.product:id,weight');
 
-        $address = $order->shipping_address;
-        $storeId = $this->requireSetting('pathao_store_id');
+            $address = $order->shipping_address;
+            $storeId = $this->requireSetting('pathao_store_id');
 
-        $payload = [
-            'store_id' => (int) $storeId,
-            'merchant_order_id' => $order->order_number,
-            'recipient_name' => $address['name'] ?? 'Customer',
-            'recipient_phone' => $this->normalizePhone($address['phone'] ?? ''),
-            'recipient_address' => $this->formatAddress($address),
-            'delivery_type' => config('pathao.delivery_type_normal'),
-            'item_type' => config('pathao.item_type_parcel'),
-            'special_instruction' => $order->notes,
-            'item_quantity' => max(1, (int) $order->items->sum('quantity')),
-            'item_weight' => $this->estimateWeight($order),
-            'item_description' => $this->describeItems($order),
-            'amount_to_collect' => $order->payment_status->value === 'paid' ? 0 : (int) round($order->total),
-        ];
+            $payload = [
+                'store_id' => (int) $storeId,
+                'merchant_order_id' => $order->order_number,
+                'recipient_name' => $address['name'] ?? 'Customer',
+                'recipient_phone' => $this->normalizePhone($address['phone'] ?? ''),
+                'recipient_address' => $this->formatAddress($address),
+                'delivery_type' => config('pathao.delivery_type_normal'),
+                'item_type' => config('pathao.item_type_parcel'),
+                'special_instruction' => $order->notes,
+                'item_quantity' => max(1, (int) $order->items->sum('quantity')),
+                'item_weight' => $this->estimateWeight($order),
+                'item_description' => $this->describeItems($order),
+                'amount_to_collect' => $order->payment_status->value === 'paid' ? 0 : (int) round($order->total),
+            ];
 
-        $response = $this->client()->post('/aladdin/api/v1/orders', $payload);
+            $client = $this->client();
+        } catch (Throwable $e) {
+            throw CourierSubmissionException::notSent($e->getMessage(), $e);
+        }
 
-        $json = $this->handleResponse($response, 'Create order');
+        try {
+            $response = $client->post('/aladdin/api/v1/orders', $payload);
+        } catch (ConnectionException $e) {
+            throw CourierSubmissionException::fromConnectionException('Pathao', $e);
+        }
+
+        if ($response->failed()) {
+            Log::error('[Pathao] Create order failed', [
+                'http_status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            $message = $response->json('message');
+
+            throw CourierSubmissionException::fromHttpError($response, is_string($message) ? $message : "Pathao Create order failed with HTTP {$response->status()}.");
+        }
+
+        $json = $response->json() ?? [];
+
+        if (($json['type'] ?? 'success') !== 'success') {
+            Log::error('[Pathao] Create order returned an error payload', ['response' => $json]);
+
+            throw CourierSubmissionException::unknown('error_payload', $json['message'] ?? 'Pathao Create order failed.', $response->status());
+        }
 
         $data = $json['data'] ?? [];
+        $consignmentId = (string) ($data['consignment_id'] ?? '');
+
+        if ($consignmentId === '') {
+            throw CourierSubmissionException::unknown('missing_consignment_id', 'Pathao reported success without a consignment ID.', $response->status());
+        }
 
         return [
-            'consignment_id' => (string) ($data['consignment_id'] ?? ''),
+            'consignment_id' => $consignmentId,
             'merchant_order_id' => $data['merchant_order_id'] ?? null,
             'order_status' => $data['order_status'] ?? 'Pending',
             'delivery_fee' => (float) ($data['delivery_fee'] ?? 0),

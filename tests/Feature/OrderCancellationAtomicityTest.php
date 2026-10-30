@@ -267,6 +267,7 @@ test('a steadfast cancellation webhook whose refund fails returns 500, persists 
     $order = atomicityOrder($this->customer, ['steadfast_consignment_id' => 'SF-ATOMIC-1']);
     $payload = [
         'notification_type' => 'delivery_status',
+        'consignment_id' => 'SF-ATOMIC-1',
         'invoice' => $order->order_number,
         'status' => 'cancelled_parcells',
         'tracking_message' => 'Parcel cancelled.',

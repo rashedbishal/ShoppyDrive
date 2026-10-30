@@ -153,6 +153,11 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function courierSubmissions(): HasMany
+    {
+        return $this->hasMany(CourierSubmission::class);
+    }
+
     public function statusHistories(): HasMany
     {
         return $this->hasMany(OrderStatusHistory::class);
