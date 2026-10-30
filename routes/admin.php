@@ -139,6 +139,9 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::post('orders/{order}/pathao/refresh', [OrderController::class, 'refreshPathaoStatus'])->name('orders.pathao.refresh')->middleware(AdminSections::middleware('orders', 'update'));
     Route::post('orders/{order}/steadfast/send', [OrderController::class, 'sendToSteadfast'])->name('orders.steadfast.send')->middleware(AdminSections::middleware('orders', 'update'));
     Route::post('orders/{order}/steadfast/refresh', [OrderController::class, 'refreshSteadfastStatus'])->name('orders.steadfast.refresh')->middleware(AdminSections::middleware('orders', 'update'));
+    Route::post('orders/{order}/courier-submissions/{courierSubmission}/record-consignment', [OrderController::class, 'recordCourierConsignment'])->name('orders.courier.recordConsignment')->middleware(AdminSections::middleware('orders', 'update'))->scopeBindings();
+    Route::post('orders/{order}/courier-submissions/{courierSubmission}/confirm-returned-consignment', [OrderController::class, 'confirmReturnedCourierConsignment'])->name('orders.courier.confirmReturnedConsignment')->middleware(AdminSections::middleware('orders', 'update'))->scopeBindings();
+    Route::post('orders/{order}/courier-submissions/{courierSubmission}/confirm-not-created', [OrderController::class, 'confirmCourierNotCreated'])->name('orders.courier.confirmNotCreated')->middleware(AdminSections::middleware('orders', 'update'))->scopeBindings();
 
     Route::get('returns', [ReturnController::class, 'index'])->name('returns.index')->middleware(AdminSections::middleware('returns', 'view'));
     Route::patch('returns/{returnRequest}/approve', [ReturnController::class, 'approve'])->name('returns.approve')->middleware(AdminSections::middleware('returns', 'update'));

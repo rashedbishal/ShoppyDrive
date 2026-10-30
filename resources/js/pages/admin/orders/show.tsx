@@ -13,6 +13,8 @@ import {
     XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
+import CourierSubmissionPanel from '@/components/admin/CourierSubmissionPanel';
+import type { CourierSubmission } from '@/components/admin/CourierSubmissionPanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,6 +87,7 @@ type Order = {
 
 type Props = {
     order: Order;
+    courierSubmission: CourierSubmission | null;
 };
 
 const trafficSourceLabel: Record<string, string> = {
@@ -118,7 +121,15 @@ const statusVariant: Record<
     refunded: 'default',
 };
 
-export default function OrderShow({ order }: Props) {
+export default function OrderShow({ order, courierSubmission }: Props) {
+    // COURIER-SEND-RACE-002 (L2/L3): mirrors the server-side guards, which
+    // remain the real boundary — these only avoid offering a refused action.
+    const courierUnresolved =
+        courierSubmission?.state === 'submitting' ||
+        courierSubmission?.state === 'unknown';
+    const courierUnresolvedNote =
+        'Unavailable while a courier submission is in progress or unresolved — resolve it in the Courier panel first.';
+
     const {
         data: cancelData,
         setData: setCancelData,
@@ -505,16 +516,26 @@ export default function OrderShow({ order }: Props) {
                                 </p>
                                 {order.payment_status === 'paid' &&
                                     order.status !== 'refunded' && (
-                                        <Button
-                                            variant="outline"
-                                            className="w-full border-slate-300 text-slate-700 hover:bg-slate-50"
-                                            disabled={refundProcessing}
-                                            onClick={handleMarkRefunded}
-                                        >
-                                            {refundProcessing
-                                                ? 'Updating…'
-                                                : 'Mark as Refunded'}
-                                        </Button>
+                                        <>
+                                            <Button
+                                                variant="outline"
+                                                className="w-full border-slate-300 text-slate-700 hover:bg-slate-50"
+                                                disabled={
+                                                    refundProcessing ||
+                                                    courierUnresolved
+                                                }
+                                                onClick={handleMarkRefunded}
+                                            >
+                                                {refundProcessing
+                                                    ? 'Updating…'
+                                                    : 'Mark as Refunded'}
+                                            </Button>
+                                            {courierUnresolved && (
+                                                <p className="text-xs text-amber-700">
+                                                    {courierUnresolvedNote}
+                                                </p>
+                                            )}
+                                        </>
                                     )}
                             </CardContent>
                         </Card>
@@ -548,13 +569,21 @@ export default function OrderShow({ order }: Props) {
                                             />
                                             <Button
                                                 type="submit"
-                                                disabled={cancelProcessing}
+                                                disabled={
+                                                    cancelProcessing ||
+                                                    courierUnresolved
+                                                }
                                                 className="w-full bg-red-600 text-white hover:bg-red-700"
                                             >
                                                 {cancelProcessing
                                                     ? 'Cancelling…'
                                                     : 'Cancel This Order'}
                                             </Button>
+                                            {courierUnresolved && (
+                                                <p className="text-xs text-amber-700">
+                                                    {courierUnresolvedNote}
+                                                </p>
+                                            )}
                                         </form>
                                     </CardContent>
                                 </Card>
@@ -635,7 +664,13 @@ export default function OrderShow({ order }: Props) {
                                     <button
                                         type="button"
                                         onClick={startEditingAddress}
-                                        className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                        disabled={courierUnresolved}
+                                        title={
+                                            courierUnresolved
+                                                ? courierUnresolvedNote
+                                                : undefined
+                                        }
+                                        className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         <Pencil className="size-3.5" /> Edit
                                     </button>
@@ -887,7 +922,14 @@ export default function OrderShow({ order }: Props) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3 pt-4">
-                                {order.pathao_consignment_id ? (
+                                {courierSubmission &&
+                                (courierSubmission.state === 'submitting' ||
+                                    courierSubmission.state === 'unknown') ? (
+                                    <CourierSubmissionPanel
+                                        orderId={order.id}
+                                        submission={courierSubmission}
+                                    />
+                                ) : order.pathao_consignment_id ? (
                                     <>
                                         <div className="space-y-1 text-sm text-slate-700">
                                             <div className="flex justify-between">
@@ -1005,6 +1047,22 @@ export default function OrderShow({ order }: Props) {
                                     </>
                                 ) : (
                                     <>
+                                        {courierSubmission?.state ===
+                                            'failed' &&
+                                            courierSubmission.resolution ===
+                                                null && (
+                                                <p className="rounded-lg border border-red-200 bg-red-50 p-2 text-xs break-words text-red-700">
+                                                    Last{' '}
+                                                    {
+                                                        courierSubmission.courier_label
+                                                    }{' '}
+                                                    attempt failed and was not
+                                                    created:{' '}
+                                                    {
+                                                        courierSubmission.error_message
+                                                    }
+                                                </p>
+                                            )}
                                         <p className="text-xs text-slate-500">
                                             Not sent to a courier yet. This
                                             books a pickup from the selected
@@ -1034,7 +1092,11 @@ export default function OrderShow({ order }: Props) {
                                             className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25]"
                                             disabled={
                                                 courierSending ||
-                                                order.status === 'cancelled'
+                                                [
+                                                    'cancelled',
+                                                    'refunded',
+                                                    'delivered',
+                                                ].includes(order.status)
                                             }
                                             onClick={handleSendToCourier}
                                         >

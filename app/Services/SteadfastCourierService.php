@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exceptions\CourierSubmissionException;
 use App\Models\Order;
 use App\Models\Setting;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use Throwable;
 
 class SteadfastCourierService
 {
@@ -22,34 +25,71 @@ class SteadfastCourierService
     /**
      * Book a Steadfast parcel for an existing ShoppyDrive order.
      *
+     * Building the request (settings) is a definite "not sent" failure;
+     * failures of the create request itself are classified by whether
+     * Steadfast may have created the parcel anyway (see
+     * CourierSubmissionException).
+     *
      * @return array{consignment_id: string, tracking_code: string|null, status: string}
      *
-     * @throws RuntimeException
+     * @throws CourierSubmissionException
      */
     public function createOrder(Order $order): array
     {
-        $address = $order->shipping_address;
+        try {
+            $address = $order->shipping_address;
 
-        $payload = [
-            'invoice' => $this->truncate($order->order_number, 100),
-            'recipient_name' => $this->truncate($address['name'] ?? 'Customer', 100),
-            'recipient_phone' => $this->truncate($this->normalizePhone($address['phone'] ?? ''), 40),
-            'recipient_address' => $this->truncate($this->formatAddress($address), 490),
-            'cod_amount' => $order->payment_status->value === 'paid' ? 0 : (int) round($order->total),
-        ];
+            $payload = [
+                'invoice' => $this->truncate($order->order_number, 100),
+                'recipient_name' => $this->truncate($address['name'] ?? 'Customer', 100),
+                'recipient_phone' => $this->truncate($this->normalizePhone($address['phone'] ?? ''), 40),
+                'recipient_address' => $this->truncate($this->formatAddress($address), 490),
+                'cod_amount' => $order->payment_status->value === 'paid' ? 0 : (int) round($order->total),
+            ];
 
-        if ($order->notes) {
-            $payload['note'] = $this->truncate($order->notes, 480);
+            if ($order->notes) {
+                $payload['note'] = $this->truncate($order->notes, 480);
+            }
+
+            $client = $this->client();
+        } catch (Throwable $e) {
+            throw CourierSubmissionException::notSent($e->getMessage(), $e);
         }
 
-        $response = $this->client()->post('/create_order', $payload);
+        try {
+            $response = $client->post('/create_order', $payload);
+        } catch (ConnectionException $e) {
+            throw CourierSubmissionException::fromConnectionException('Steadfast', $e);
+        }
 
-        $json = $this->handleResponse($response, 'Create order');
+        $json = $response->json() ?? [];
+
+        if ($response->failed()) {
+            Log::error('[Steadfast] Create order failed', [
+                'http_status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            throw CourierSubmissionException::fromHttpError($response, $this->firstErrorMessage($json) ?? "Steadfast Create order failed with HTTP {$response->status()}.");
+        }
+
+        $status = $json['status'] ?? null;
+
+        if ($status !== null && ! in_array((int) $status, [200, 201], true)) {
+            Log::error('[Steadfast] Create order returned an error payload', ['response' => $json]);
+
+            throw CourierSubmissionException::unknown('error_payload', $this->firstErrorMessage($json) ?? 'Steadfast Create order failed.', $response->status());
+        }
 
         $consignment = $json['consignment'] ?? [];
+        $consignmentId = (string) ($consignment['consignment_id'] ?? '');
+
+        if ($consignmentId === '') {
+            throw CourierSubmissionException::unknown('missing_consignment_id', 'Steadfast reported success without a consignment ID.', $response->status());
+        }
 
         return [
-            'consignment_id' => (string) ($consignment['consignment_id'] ?? ''),
+            'consignment_id' => $consignmentId,
             'tracking_code' => $consignment['tracking_code'] ?? null,
             'status' => $consignment['status'] ?? 'in_review',
         ];

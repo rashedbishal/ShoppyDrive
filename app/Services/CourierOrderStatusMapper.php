@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
+use Illuminate\Support\Facades\DB;
 
 class CourierOrderStatusMapper
 {
@@ -119,49 +120,73 @@ class CourierOrderStatusMapper
      */
     public static function sync(Order $order, string $provider, string $rawStatus, ?string $extraNote = null): void
     {
-        $statusField = $provider === 'pathao' ? 'pathao_order_status' : 'steadfast_status';
+        // The raw-status write, the status change, its history row and every
+        // financial side effect Order::booted() runs for a cancellation
+        // (redeemed-points refund, referral reversal, stock restore, coupon
+        // release) commit or roll back together, and everything below reads
+        // the locked row rather than the caller's possibly-stale copy — so a
+        // webhook retry racing a scheduled poll or an admin action can't
+        // record the same report twice. withTrashed() keeps the pre-existing
+        // behavior of recording reports for a trashed order too.
+        $found = DB::transaction(function () use ($order, $provider, $rawStatus, $extraNote): bool {
+            $lockedOrder = Order::withTrashed()->whereKey($order->id)->lockForUpdate()->first();
 
-        if ($order->{$statusField} === $rawStatus) {
-            return;
-        }
-
-        $mapped = $provider === 'pathao' ? self::forPathao($rawStatus) : self::forSteadfast($rawStatus);
-        $statusChanged = $mapped !== null
-            && $mapped !== $order->status
-            && ! in_array($order->status, self::TERMINAL_STATUSES, true);
-
-        $updates = [$statusField => $rawStatus];
-
-        if ($statusChanged) {
-            $updates['status'] = $mapped;
-
-            if ($mapped === OrderStatus::DELIVERED) {
-                $updates['delivered_at'] = now();
-                $updates['payment_status'] = PaymentStatus::PAID;
+            if ($lockedOrder === null) {
+                return false;
             }
+
+            $statusField = $provider === 'pathao' ? 'pathao_order_status' : 'steadfast_status';
+
+            if ($lockedOrder->{$statusField} === $rawStatus) {
+                return true;
+            }
+
+            $mapped = $provider === 'pathao' ? self::forPathao($rawStatus) : self::forSteadfast($rawStatus);
+            $statusChanged = $mapped !== null
+                && $mapped !== $lockedOrder->status
+                && ! in_array($lockedOrder->status, self::TERMINAL_STATUSES, true);
+
+            $updates = [$statusField => $rawStatus];
+
+            if ($statusChanged) {
+                $updates['status'] = $mapped;
+
+                if ($mapped === OrderStatus::DELIVERED) {
+                    $updates['delivered_at'] = now();
+                    $updates['payment_status'] = PaymentStatus::PAID;
+                }
+            }
+
+            $lockedOrder->update($updates);
+
+            $ignoredAsTerminal = ! $statusChanged
+                && $mapped !== null
+                && $mapped !== $lockedOrder->status
+                && in_array($lockedOrder->status, self::TERMINAL_STATUSES, true);
+
+            $note = ucfirst($provider).' reported "'.self::label($rawStatus).'"'.match (true) {
+                $statusChanged => ' — order status updated to '.$mapped->value.'.',
+                $ignoredAsTerminal => " — order is already {$lockedOrder->status->value}; status left unchanged.",
+                default => '.',
+            };
+
+            if ($extraNote) {
+                $note .= ' '.$extraNote;
+            }
+
+            $lockedOrder->statusHistories()->create([
+                'status' => $lockedOrder->status->value,
+                'notes' => $note,
+            ]);
+
+            return true;
+        }, 3);
+
+        // Callers keep using the instance they passed in, so bring it up to
+        // date with what was just committed.
+        if ($found) {
+            $order->refresh();
         }
-
-        $order->update($updates);
-
-        $ignoredAsTerminal = ! $statusChanged
-            && $mapped !== null
-            && $mapped !== $order->status
-            && in_array($order->status, self::TERMINAL_STATUSES, true);
-
-        $note = ucfirst($provider).' reported "'.self::label($rawStatus).'"'.match (true) {
-            $statusChanged => ' — order status updated to '.$mapped->value.'.',
-            $ignoredAsTerminal => " — order is already {$order->status->value}; status left unchanged.",
-            default => '.',
-        };
-
-        if ($extraNote) {
-            $note .= ' '.$extraNote;
-        }
-
-        $order->statusHistories()->create([
-            'status' => $order->status->value,
-            'notes' => $note,
-        ]);
     }
 
     private static function normalize(string $rawStatus): string

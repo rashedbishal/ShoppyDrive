@@ -3,6 +3,7 @@
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
 beforeEach(function () {
@@ -62,6 +63,18 @@ test('password can be reset with valid token', function () {
 
         return true;
     });
+});
+
+test('reset password page only calls registered route names', function () {
+    $source = file_get_contents(resource_path('js/pages/auth/reset-password.tsx'));
+
+    preg_match_all("/\broute\(\s*'([^']+)'/", $source, $matches);
+
+    expect($matches[1])->toContain('password.update');
+
+    foreach ($matches[1] as $routeName) {
+        expect(Route::has($routeName))->toBeTrue("Route [{$routeName}] is not registered.");
+    }
 });
 
 test('password cannot be reset with invalid token', function () {

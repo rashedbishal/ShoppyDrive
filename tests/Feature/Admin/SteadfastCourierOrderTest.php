@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderStatusHistory;
 use App\Models\Product;
+use App\Models\ReferralPointTransaction;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -132,6 +135,40 @@ test('admin can refresh steadfast order status', function () {
 
     $response->assertRedirect();
     expect($this->order->refresh()->steadfast_status)->toBe('delivered');
+});
+
+test('a connection failure while refreshing steadfast status shows a clean error and changes nothing', function () {
+    actingAs($this->admin, 'admin');
+
+    $customer = User::factory()->create();
+    $customer->forceFill(['points_balance' => 40])->save();
+
+    $this->order->update([
+        'user_id' => $customer->id,
+        'status' => 'processing',
+        'points_redeemed' => 60,
+        'steadfast_consignment_id' => 'CONSIGN-ABC',
+        'steadfast_status' => 'in_review',
+    ]);
+    $historyCount = OrderStatusHistory::where('order_id', $this->order->id)->count();
+
+    Http::fake([
+        '*/status_by_cid/CONSIGN-ABC' => fn () => throw new ConnectionException('Connection timed out'),
+    ]);
+
+    $response = $this->post(route('admin.orders.steadfast.refresh', $this->order->id));
+
+    $response->assertRedirect();
+    $response->assertSessionHas('error');
+    expect(session('error'))->toContain('Steadfast');
+
+    $this->order->refresh();
+    expect($this->order->status->value)->toBe('processing')
+        ->and($this->order->steadfast_status)->toBe('in_review')
+        ->and($this->order->points_refunded_at)->toBeNull();
+    expect(OrderStatusHistory::where('order_id', $this->order->id)->count())->toBe($historyCount);
+    expect(ReferralPointTransaction::where('order_id', $this->order->id)->count())->toBe(0);
+    expect($customer->refresh()->points_balance)->toBe(40);
 });
 
 test('refreshing status before sending to steadfast is rejected', function () {

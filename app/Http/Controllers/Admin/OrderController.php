@@ -5,17 +5,25 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\OrderStatus;
+use App\Exceptions\CourierSubmissionBlockedException;
+use App\Exceptions\CourierSubmissionException;
+use App\Exceptions\CourierSubmissionFinalizationException;
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ConfirmCourierNotCreatedRequest;
+use App\Http\Requests\Admin\ConfirmReturnedConsignmentRequest;
 use App\Http\Requests\Admin\CreateOrderRequest;
+use App\Http\Requests\Admin\RecordCourierConsignmentRequest;
 use App\Http\Requests\Admin\UpdateOrderShippingAddressRequest;
 use App\Models\Address;
+use App\Models\CourierSubmission;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Services\CourierOrderStatusMapper;
+use App\Services\CourierSubmissionService;
 use App\Services\InventoryService;
 use App\Services\PathaoCourierService;
 use App\Services\SteadfastCourierService;
@@ -23,6 +31,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -35,6 +44,7 @@ class OrderController extends Controller
         private readonly PathaoCourierService $pathao,
         private readonly SteadfastCourierService $steadfast,
         private readonly InventoryService $inventory,
+        private readonly CourierSubmissionService $courierSubmissions,
     ) {}
 
     public function index(Request $request): Response
@@ -206,7 +216,31 @@ class OrderController extends Controller
             $order->update(['is_seen' => true, 'seen_at' => now()]);
         }
 
+        // So an attempt whose process died shows (and can be resolved) as
+        // unknown rather than "sending" forever.
+        $this->courierSubmissions->expireStaleSubmissions($order->id);
+
+        $latestSubmission = $order->courierSubmissions()->with('resolvedBy:id,name')->latest('id')->first();
+
         return Inertia::render('admin/orders/show', [
+            'courierSubmission' => $latestSubmission === null ? null : [
+                'id' => $latestSubmission->id,
+                'courier' => $latestSubmission->courier,
+                'courier_label' => $latestSubmission->courierLabel(),
+                'state' => $latestSubmission->state->value,
+                'reference' => $latestSubmission->reference,
+                'failure_kind' => $latestSubmission->failure_kind,
+                'error_message' => $latestSubmission->error_message,
+                'returned_consignment_id' => $latestSubmission->returned_consignment_id,
+                'returned_tracking_code' => $latestSubmission->returned_tracking_code,
+                'returned_at' => $latestSubmission->returned_at?->toIso8601String(),
+                'claimed_at' => $latestSubmission->claimed_at?->toIso8601String(),
+                'finished_at' => $latestSubmission->finished_at?->toIso8601String(),
+                'resolution' => $latestSubmission->resolution,
+                'resolved_by' => $latestSubmission->resolvedBy?->name,
+                'resolved_at' => $latestSubmission->resolved_at?->toIso8601String(),
+                'can_record_consignment' => $latestSubmission->courier === 'steadfast',
+            ],
             'order' => array_merge($order->toArray(), [
                 'pathao_status_label' => $order->pathao_order_status
                     ? CourierOrderStatusMapper::label($order->pathao_order_status)
@@ -218,20 +252,45 @@ class OrderController extends Controller
         ]);
     }
 
+    /**
+     * The status change, its history row and every financial side effect
+     * Order::booted() runs for it (redeemed-points refund, referral
+     * reversal, stock restore, coupon release) commit or roll back as one
+     * transaction — a failing side effect can't leave the order REFUNDED
+     * with the customer's points never returned. The status is re-checked
+     * on the locked row, so two concurrent clicks can't both transition it
+     * (and double the history row and customer email).
+     */
     public function markRefunded(Order $order): RedirectResponse
     {
-        if ($order->status === OrderStatus::REFUNDED) {
-            return back()->with('error', 'This order is already marked as refunded.');
+        $error = DB::transaction(function () use ($order): ?string {
+            $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->first();
+
+            if ($lockedOrder === null || $lockedOrder->status === OrderStatus::REFUNDED) {
+                return 'This order is already marked as refunded.';
+            }
+
+            // COURIER-SEND-RACE-001: a parcel may exist (or be about to) at the
+            // courier — nothing changes until that attempt is resolved.
+            if ($this->courierSubmissions->hasUnresolvedSubmission($lockedOrder->id)) {
+                return $this->courierSubmissions->unresolvedMessage('marked refunded');
+            }
+
+            $old = $lockedOrder->status->value;
+            $lockedOrder->update(['status' => OrderStatus::REFUNDED]);
+
+            OrderStatusHistory::create([
+                'order_id' => $lockedOrder->id,
+                'status' => OrderStatus::REFUNDED->value,
+                'notes' => "Marked as refunded by admin (was: {$old}).",
+            ]);
+
+            return null;
+        }, 3);
+
+        if ($error !== null) {
+            return back()->with('error', $error);
         }
-
-        $old = $order->status->value;
-        $order->update(['status' => OrderStatus::REFUNDED]);
-
-        OrderStatusHistory::create([
-            'order_id' => $order->id,
-            'status' => OrderStatus::REFUNDED->value,
-            'notes' => "Marked as refunded by admin (was: {$old}).",
-        ]);
 
         return back()->with('success', 'Order marked as refunded.');
     }
@@ -296,21 +355,38 @@ class OrderController extends Controller
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
 
-        if (in_array($order->status, self::UNCANCELLABLE_STATUSES, true)) {
-            return back()->with('error', "Orders that are already {$order->status->value} cannot be cancelled.");
+        // Same single-transaction, locked re-check shape as markRefunded().
+        $error = DB::transaction(function () use ($request, $order): ?string {
+            $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->first();
+            $status = $lockedOrder?->status ?? $order->status;
+
+            if ($lockedOrder === null || in_array($lockedOrder->status, self::UNCANCELLABLE_STATUSES, true)) {
+                return "Orders that are already {$status->value} cannot be cancelled.";
+            }
+
+            // COURIER-SEND-RACE-001: same guard as markRefunded().
+            if ($this->courierSubmissions->hasUnresolvedSubmission($lockedOrder->id)) {
+                return $this->courierSubmissions->unresolvedMessage('cancelled');
+            }
+
+            $old = $lockedOrder->status->value;
+            $lockedOrder->update([
+                'status' => OrderStatus::CANCELLED,
+                'cancellation_reason' => $request->reason,
+            ]);
+
+            OrderStatusHistory::create([
+                'order_id' => $lockedOrder->id,
+                'status' => OrderStatus::CANCELLED->value,
+                'notes' => $request->reason ?? "Order cancelled by admin (was: {$old}).",
+            ]);
+
+            return null;
+        }, 3);
+
+        if ($error !== null) {
+            return back()->with('error', $error);
         }
-
-        $old = $order->status->value;
-        $order->update([
-            'status' => OrderStatus::CANCELLED,
-            'cancellation_reason' => $request->reason,
-        ]);
-
-        OrderStatusHistory::create([
-            'order_id' => $order->id,
-            'status' => OrderStatus::CANCELLED->value,
-            'notes' => $request->reason ?? "Order cancelled by admin (was: {$old}).",
-        ]);
 
         return back()->with('success', 'Order has been cancelled.');
     }
@@ -326,41 +402,37 @@ class OrderController extends Controller
      */
     public function updateShippingAddress(UpdateOrderShippingAddressRequest $request, Order $order): RedirectResponse
     {
-        $order->update([
-            'shipping_address' => array_merge($order->shipping_address, $request->validated()),
-        ]);
+        // COURIER-SEND-RACE-002 (L3): while a courier booking is in flight or
+        // unresolved, the courier may hold the address as it was when sent —
+        // changing it here would make the order and the parcel disagree.
+        $error = DB::transaction(function () use ($request, $order): ?string {
+            $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->first();
+
+            if ($lockedOrder === null) {
+                return 'This order no longer exists.';
+            }
+
+            if ($this->courierSubmissions->hasUnresolvedSubmission($lockedOrder->id)) {
+                return "The shipping address can't be changed while a courier submission is in progress or its outcome is unresolved. Resolve it in the Courier panel first.";
+            }
+
+            $lockedOrder->update([
+                'shipping_address' => array_merge($lockedOrder->shipping_address, $request->validated()),
+            ]);
+
+            return null;
+        }, 3);
+
+        if ($error !== null) {
+            return back()->with('error', $error);
+        }
 
         return back()->with('success', 'Shipping address updated.');
     }
 
     public function sendToPathao(Order $order): RedirectResponse
     {
-        if ($order->pathao_consignment_id !== null) {
-            return back()->with('error', 'This order has already been sent to Pathao.');
-        }
-
-        try {
-            $result = $this->pathao->createOrder($order);
-        } catch (RuntimeException|ConnectionException $e) {
-            return back()->with('error', 'Pathao: '.$e->getMessage());
-        }
-
-        $order->update([
-            'pathao_consignment_id' => $result['consignment_id'],
-            'pathao_delivery_fee' => $result['delivery_fee'],
-            'pathao_sent_at' => now(),
-            'tracking_number' => $order->tracking_number ?? $result['consignment_id'],
-        ]);
-
-        OrderStatusHistory::create([
-            'order_id' => $order->id,
-            'status' => $order->status->value,
-            'notes' => "Sent to Pathao courier. Consignment ID: {$result['consignment_id']}.",
-        ]);
-
-        CourierOrderStatusMapper::sync($order, 'pathao', $result['order_status']);
-
-        return back()->with('success', 'Order sent to Pathao for pickup.');
+        return $this->sendToCourier($order, 'pathao');
     }
 
     public function refreshPathaoStatus(Order $order): RedirectResponse
@@ -371,7 +443,7 @@ class OrderController extends Controller
 
         try {
             $info = $this->pathao->getOrderInfo($order->pathao_consignment_id);
-        } catch (RuntimeException $e) {
+        } catch (RuntimeException|ConnectionException $e) {
             return back()->with('error', 'Pathao: '.$e->getMessage());
         }
 
@@ -383,32 +455,7 @@ class OrderController extends Controller
 
     public function sendToSteadfast(Order $order): RedirectResponse
     {
-        if ($order->steadfast_consignment_id !== null) {
-            return back()->with('error', 'This order has already been sent to Steadfast.');
-        }
-
-        try {
-            $result = $this->steadfast->createOrder($order);
-        } catch (RuntimeException|ConnectionException $e) {
-            return back()->with('error', 'Steadfast: '.$e->getMessage());
-        }
-
-        $order->update([
-            'steadfast_consignment_id' => $result['consignment_id'],
-            'steadfast_tracking_code' => $result['tracking_code'],
-            'steadfast_sent_at' => now(),
-            'tracking_number' => $order->tracking_number ?? ($result['tracking_code'] ?? $result['consignment_id']),
-        ]);
-
-        OrderStatusHistory::create([
-            'order_id' => $order->id,
-            'status' => $order->status->value,
-            'notes' => "Sent to Steadfast courier. Consignment ID: {$result['consignment_id']}.",
-        ]);
-
-        CourierOrderStatusMapper::sync($order, 'steadfast', $result['status']);
-
-        return back()->with('success', 'Order sent to Steadfast for pickup.');
+        return $this->sendToCourier($order, 'steadfast');
     }
 
     public function refreshSteadfastStatus(Order $order): RedirectResponse
@@ -419,13 +466,102 @@ class OrderController extends Controller
 
         try {
             $info = $this->steadfast->getOrderInfo($order->steadfast_consignment_id);
-        } catch (RuntimeException $e) {
+        } catch (RuntimeException|ConnectionException $e) {
             return back()->with('error', 'Steadfast: '.$e->getMessage());
         }
 
         CourierOrderStatusMapper::sync($order, 'steadfast', $info['status']);
 
         return back()->with('success', 'Steadfast status: '.CourierOrderStatusMapper::label($info['status']).'.');
+    }
+
+    /**
+     * COURIER-SEND-RACE-001: claim the order (atomically, across both
+     * couriers), call the courier with no lock held, record the outcome.
+     * An outcome that may have created a parcel keeps the claim until an
+     * admin reconciles it — it is never retried automatically.
+     */
+    private function sendToCourier(Order $order, string $courier): RedirectResponse
+    {
+        $label = $courier === 'pathao' ? 'Pathao' : 'Steadfast';
+
+        try {
+            $submission = $this->courierSubmissions->claim($order, $courier, Auth::guard('admin')->user());
+        } catch (CourierSubmissionBlockedException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        try {
+            $result = $this->courierSubmissions->submit($submission, $order->fresh());
+        } catch (CourierSubmissionFinalizationException $e) {
+            return back()->with('error', "{$label} created consignment {$e->consignmentId}, but it could not be saved to this order. The ID has been kept on the submission — link it in the Courier panel. The order won't be sent again until then.");
+        } catch (CourierSubmissionException $e) {
+            if ($e->isOutcomeUnknown()) {
+                return back()->with('error', "{$label} did not confirm this booking, so it may or may not have been created. Check the {$label} portal for invoice {$order->order_number}, then resolve it in the Courier panel. It won't be sent again until then.");
+            }
+
+            return back()->with('error', str_starts_with($e->getMessage(), $label) ? $e->getMessage() : "{$label}: {$e->getMessage()}");
+        }
+
+        $order->refresh();
+
+        if ($order->{"{$courier}_consignment_id"} !== $result['consignment_id']) {
+            return back()->with('error', "{$label} returned consignment {$result['consignment_id']}, but this submission had already been resolved — see the order history.");
+        }
+
+        CourierOrderStatusMapper::sync($order, $courier, $courier === 'pathao' ? $result['order_status'] : $result['status']);
+
+        return back()->with('success', "Order sent to {$label} for pickup.");
+    }
+
+    public function recordCourierConsignment(RecordCourierConsignmentRequest $request, Order $order, CourierSubmission $courierSubmission): RedirectResponse
+    {
+        try {
+            $this->courierSubmissions->recordConsignment(
+                $courierSubmission,
+                Auth::guard('admin')->user(),
+                $request->validated('consignment_id'),
+                $request->validated('tracking_code'),
+                $request->validated('note'),
+            );
+        } catch (CourierSubmissionBlockedException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        $order->refresh();
+
+        if ($order->steadfast_consignment_id !== null) {
+            try {
+                $info = $this->steadfast->getOrderInfo($order->steadfast_consignment_id);
+                CourierOrderStatusMapper::sync($order, 'steadfast', $info['status']);
+            } catch (RuntimeException|ConnectionException) {
+                // The consignment is recorded; its status catches up on the next refresh or webhook.
+            }
+        }
+
+        return back()->with('success', 'Consignment recorded. The order is now linked to it.');
+    }
+
+    public function confirmReturnedCourierConsignment(ConfirmReturnedConsignmentRequest $request, Order $order, CourierSubmission $courierSubmission): RedirectResponse
+    {
+        try {
+            $this->courierSubmissions->confirmReturnedConsignment($courierSubmission, Auth::guard('admin')->user(), $request->validated('note'));
+        } catch (CourierSubmissionBlockedException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'The order is now linked to the consignment the courier returned.');
+    }
+
+    public function confirmCourierNotCreated(ConfirmCourierNotCreatedRequest $request, Order $order, CourierSubmission $courierSubmission): RedirectResponse
+    {
+        try {
+            $this->courierSubmissions->confirmNotCreated($courierSubmission, Auth::guard('admin')->user(), $request->validated('note'));
+        } catch (CourierSubmissionBlockedException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Recorded as not created. The order can be sent to a courier again.');
     }
 
     private function generateOrderNumber(): string

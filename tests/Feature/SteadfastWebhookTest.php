@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 
 uses(RefreshDatabase::class);
@@ -254,3 +255,78 @@ it('a late, validly-signed webhook cannot regress a delivered order back to pend
     expect($order->payment_status->value)->toBe('paid');
     expect($order->steadfast_status)->toBe('pending_parcels');
 });
+
+it('ignores an invoice-only webhook instead of matching the order by invoice', function () {
+    $order = makeSteadfastOrder();
+    configureSteadfastWebhookSecret();
+
+    postSignedSteadfastWebhook([
+        'notification_type' => 'delivery_status',
+        'invoice' => 'ORD-WEBHOOK-1',
+        'status' => 'cancelled',
+    ])->assertOk();
+
+    expect($order->refresh()->steadfast_status)->toBe('in_review')
+        ->and($order->status->value)->toBe('pending');
+    expect($order->statusHistories()->count())->toBe(0);
+});
+
+it('ignores a webhook for a consignment no order holds, even when its invoice matches an order', function () {
+    $order = makeSteadfastOrder();
+    configureSteadfastWebhookSecret();
+
+    // An orphaned duplicate consignment booked for the same invoice.
+    postSignedSteadfastWebhook([
+        'notification_type' => 'delivery_status',
+        'consignment_id' => 'CONSIGN-ORPHAN',
+        'invoice' => 'ORD-WEBHOOK-1',
+        'status' => 'cancelled',
+    ])->assertOk();
+
+    expect($order->refresh()->steadfast_status)->toBe('in_review')
+        ->and($order->status->value)->toBe('pending');
+});
+
+it('ignores a webhook whose invoice contradicts the order holding the consignment', function () {
+    $order = makeSteadfastOrder();
+    configureSteadfastWebhookSecret();
+
+    postSignedSteadfastWebhook([
+        'notification_type' => 'delivery_status',
+        'consignment_id' => 'CONSIGN-ABC',
+        'invoice' => 'ORD-SOMEONE-ELSE',
+        'status' => 'cancelled',
+    ])->assertOk();
+
+    expect($order->refresh()->steadfast_status)->toBe('in_review');
+});
+
+it('ignores a webhook whose consignment is recorded on more than one order', function () {
+    // COURIER-SEND-RACE-002 made consignment IDs unique, so this data can only
+    // exist where that migration could not run (its duplicate preflight
+    // refused) — exactly when this defensive check still matters.
+    (require database_path('migrations/2026_10_30_085859_add_unique_consignment_indexes_to_orders_table.php'))->down();
+
+    $order = makeSteadfastOrder();
+    $twin = Order::create([
+        ...collect($order->getAttributes())->only(['status', 'payment_status', 'payment_method', 'subtotal', 'shipping_cost', 'discount', 'tax', 'total'])->all(),
+        'order_number' => 'ORD-WEBHOOK-2',
+        'shipping_address' => ['name' => 'Twin', 'phone' => '01712345678'],
+        'billing_address' => [],
+        'steadfast_consignment_id' => 'CONSIGN-ABC',
+        'steadfast_status' => 'in_review',
+    ]);
+    configureSteadfastWebhookSecret();
+
+    postSignedSteadfastWebhook([
+        'notification_type' => 'delivery_status',
+        'consignment_id' => 'CONSIGN-ABC',
+        'status' => 'cancelled',
+    ])->assertOk();
+
+    expect($order->refresh()->steadfast_status)->toBe('in_review');
+    expect($twin->refresh()->steadfast_status)->toBe('in_review');
+})->skip(
+    fn () => DB::connection()->getDriverName() !== 'sqlite',
+    'drops the unique consignment indexes inside the test transaction — only reverted afterwards on SQLite (MySQL/MariaDB DDL commits immediately)',
+);
