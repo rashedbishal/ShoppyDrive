@@ -218,20 +218,39 @@ class OrderController extends Controller
         ]);
     }
 
+    /**
+     * The status change, its history row and every financial side effect
+     * Order::booted() runs for it (redeemed-points refund, referral
+     * reversal, stock restore, coupon release) commit or roll back as one
+     * transaction — a failing side effect can't leave the order REFUNDED
+     * with the customer's points never returned. The status is re-checked
+     * on the locked row, so two concurrent clicks can't both transition it
+     * (and double the history row and customer email).
+     */
     public function markRefunded(Order $order): RedirectResponse
     {
-        if ($order->status === OrderStatus::REFUNDED) {
+        $marked = DB::transaction(function () use ($order): bool {
+            $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->first();
+
+            if ($lockedOrder === null || $lockedOrder->status === OrderStatus::REFUNDED) {
+                return false;
+            }
+
+            $old = $lockedOrder->status->value;
+            $lockedOrder->update(['status' => OrderStatus::REFUNDED]);
+
+            OrderStatusHistory::create([
+                'order_id' => $lockedOrder->id,
+                'status' => OrderStatus::REFUNDED->value,
+                'notes' => "Marked as refunded by admin (was: {$old}).",
+            ]);
+
+            return true;
+        }, 3);
+
+        if (! $marked) {
             return back()->with('error', 'This order is already marked as refunded.');
         }
-
-        $old = $order->status->value;
-        $order->update(['status' => OrderStatus::REFUNDED]);
-
-        OrderStatusHistory::create([
-            'order_id' => $order->id,
-            'status' => OrderStatus::REFUNDED->value,
-            'notes' => "Marked as refunded by admin (was: {$old}).",
-        ]);
 
         return back()->with('success', 'Order marked as refunded.');
     }
@@ -296,21 +315,36 @@ class OrderController extends Controller
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
 
-        if (in_array($order->status, self::UNCANCELLABLE_STATUSES, true)) {
-            return back()->with('error', "Orders that are already {$order->status->value} cannot be cancelled.");
+        // Same single-transaction, locked re-check shape as markRefunded().
+        $blockingStatus = DB::transaction(function () use ($request, $order): ?OrderStatus {
+            $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->first();
+
+            if ($lockedOrder === null) {
+                return $order->status;
+            }
+
+            if (in_array($lockedOrder->status, self::UNCANCELLABLE_STATUSES, true)) {
+                return $lockedOrder->status;
+            }
+
+            $old = $lockedOrder->status->value;
+            $lockedOrder->update([
+                'status' => OrderStatus::CANCELLED,
+                'cancellation_reason' => $request->reason,
+            ]);
+
+            OrderStatusHistory::create([
+                'order_id' => $lockedOrder->id,
+                'status' => OrderStatus::CANCELLED->value,
+                'notes' => $request->reason ?? "Order cancelled by admin (was: {$old}).",
+            ]);
+
+            return null;
+        }, 3);
+
+        if ($blockingStatus !== null) {
+            return back()->with('error', "Orders that are already {$blockingStatus->value} cannot be cancelled.");
         }
-
-        $old = $order->status->value;
-        $order->update([
-            'status' => OrderStatus::CANCELLED,
-            'cancellation_reason' => $request->reason,
-        ]);
-
-        OrderStatusHistory::create([
-            'order_id' => $order->id,
-            'status' => OrderStatus::CANCELLED->value,
-            'notes' => $request->reason ?? "Order cancelled by admin (was: {$old}).",
-        ]);
 
         return back()->with('success', 'Order has been cancelled.');
     }

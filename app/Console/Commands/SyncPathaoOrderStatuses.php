@@ -13,6 +13,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\ConnectionException;
 use RuntimeException;
+use Throwable;
 
 #[Signature('pathao:sync-statuses')]
 #[Description('Poll Pathao for status updates on orders with an active consignment and sync order status accordingly.')]
@@ -46,7 +47,16 @@ class SyncPathaoOrderStatuses extends Command
                 continue;
             }
 
-            CourierOrderStatusMapper::sync($order, 'pathao', $info['order_status_slug'] ?? $info['order_status']);
+            try {
+                CourierOrderStatusMapper::sync($order, 'pathao', $info['order_status_slug'] ?? $info['order_status']);
+            } catch (Throwable $e) {
+                // sync() rolls the whole status change back when one of its
+                // financial side effects fails, so the order is retried on
+                // the next run — but an order that keeps failing must not
+                // abort this foreach and starve every order after it.
+                report($e);
+                $this->warn("Order {$order->order_number}: sync failed and was rolled back — {$e->getMessage()}");
+            }
         }
 
         $this->info("Synced {$orders->count()} Pathao order(s).");
