@@ -72,7 +72,7 @@ export default function ResetPassword({
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();
-                            post(route('password.store'), {
+                            post(route('password.update'), {
                                 onFinish: () =>
                                     reset('password', 'password_confirmation'),
                             });
