@@ -21,6 +21,8 @@ use Illuminate\Process\InvokedProcess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
 
+use function Pest\Laravel\actingAs;
+
 /**
  * COURIER-SEND-RACE-001 regression tests against real MySQL/InnoDB.
  *
@@ -387,6 +389,12 @@ it('refuses to cancel or mark refunded an order whose courier booking is in flig
     }
 
     $order = raceOrder();
+    // markRefunded() now resolves the acting admin from the admin guard
+    // (RefundService::recordOrderRefund() requires a real Admin, not null)
+    // to attribute the refund ledger row — authenticate one the same way
+    // the rest of this file does (e.g. the admin created at line 354).
+    $admin = Admin::create(['name' => 'Race Admin', 'email' => 'race-admin-'.uniqid().'@example.com', 'password' => bcrypt('irrelevant')]);
+    actingAs($admin, 'admin');
     $courier = new FakeCourier([$order->order_number => [['delay' => 4]]]);
 
     try {

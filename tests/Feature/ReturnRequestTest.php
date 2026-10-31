@@ -62,6 +62,29 @@ function createDeliveredOrder(User $user, Product $product, int $quantity = 1, ?
     return $order->refresh();
 }
 
+/**
+ * MySQL's native JSON column type does not preserve object-key insertion
+ * order on read (it reorders members by key length, then alphabetically),
+ * unlike SQLite's plain-text JSON. Sorting both sides' keys recursively
+ * before a strict `toBe()` comparison makes the assertion driver-agnostic
+ * while still catching any missing, extra, or mismatched key/value/type.
+ *
+ * @param  array<int|string, mixed>  $array
+ * @return array<int|string, mixed>
+ */
+function sortKeysRecursively(array $array): array
+{
+    foreach ($array as &$value) {
+        if (is_array($value)) {
+            $value = sortKeysRecursively($value);
+        }
+    }
+
+    ksort($array);
+
+    return $array;
+}
+
 test('a customer can request a return for their own delivered order within the window', function () {
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 500]);
@@ -77,9 +100,9 @@ test('a customer can request a return for their own delivered order within the w
     expect($returnRequest->order_id)->toBe($order->id);
     expect($returnRequest->user_id)->toBe($user->id);
     expect($returnRequest->status)->toBe(ReturnStatus::PENDING);
-    expect($returnRequest->items)->toBe([
+    expect(sortKeysRecursively($returnRequest->items))->toBe(sortKeysRecursively([
         ['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 1, 'reason' => null],
-    ]);
+    ]));
 });
 
 test('a customer cannot request a return for another customer\'s order', function () {

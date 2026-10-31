@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\OrderStatus;
 use App\Enums\PointTransactionType;
 use App\Http\Controllers\Admin\OrderController;
+use App\Models\Admin;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
@@ -16,6 +17,8 @@ use Illuminate\Http\Request;
 use Illuminate\Process\ProcessResult;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
+
+use function Pest\Laravel\actingAs;
 
 /**
  * PROMO-LOY-001 regression: `LoyaltyPointsService::refundRedeemedPointsIfApplicable()`
@@ -248,6 +251,14 @@ if (preg_match('/^shoppydrive_test_[a-z0-9_]+$/', $database) !== 1) {
 }
 
 $order = App\Models\Order::findOrFail((int) $argv[1]);
+// markRefunded() resolves the acting admin from the admin guard
+// (RefundService::recordOrderRefund() requires a real Admin, not null).
+// This subprocess has no Pest/TestCase session to inherit one from, so it
+// authenticates explicitly using the admin ID the parent process passed as
+// $argv[3] — harmless for the 'cancel'/'steadfast-cancelled' branches below,
+// which never read the admin guard.
+$admin = App\Models\Admin::findOrFail((int) $argv[3]);
+Illuminate\Support\Facades\Auth::guard('admin')->setUser($admin);
 $controller = $app->make(App\Http\Controllers\Admin\OrderController::class);
 
 match ($argv[2]) {
@@ -263,6 +274,12 @@ PHP;
 
 function createRedeemedPointsRaceOrder(): array
 {
+    $admin = Admin::create([
+        'name' => 'Loyalty Race Admin',
+        'email' => 'loyalty-race-admin-'.uniqid().'@example.com',
+        'password' => bcrypt('irrelevant'),
+    ]);
+
     $user = User::create([
         'name' => 'Loyalty Atomicity Race Test',
         'email' => 'loyalty-atomicity-race-'.uniqid().'@example.com',
@@ -290,7 +307,7 @@ function createRedeemedPointsRaceOrder(): array
         'billing_address' => [],
     ]);
 
-    return [$user, $order];
+    return [$user, $order, $admin];
 }
 
 /**
@@ -298,9 +315,16 @@ function createRedeemedPointsRaceOrder(): array
  * $contenderAction from a second process against it, and returns the
  * contender's finished process result.
  */
-function raceAdminActions(PDO $monitor, Order $order, Closure $firstAction, string $contenderAction): ProcessResult
+function raceAdminActions(PDO $monitor, Order $order, Admin $admin, Closure $firstAction, string $contenderAction): ProcessResult
 {
     $database = DB::connection()->getDatabaseName();
+
+    // markRefunded() (whether called as $firstAction here, or inside the
+    // contender subprocess started below) requires a real authenticated
+    // Admin — see the note on LOYALTY_RACE_CONTENDER_SCRIPT. Authenticating
+    // unconditionally is harmless for cancel()/steadfast-cancelled, which
+    // never read the admin guard.
+    actingAs($admin, 'admin');
 
     DB::beginTransaction();
 
@@ -318,7 +342,7 @@ function raceAdminActions(PDO $monitor, Order $order, Closure $firstAction, stri
                 'SESSION_DRIVER' => 'array',
             ])
             ->timeout(60)
-            ->start(['php', '-r', LOYALTY_RACE_CONTENDER_SCRIPT, (string) $order->id, $contenderAction]);
+            ->start(['php', '-r', LOYALTY_RACE_CONTENDER_SCRIPT, (string) $order->id, $contenderAction, (string) $admin->id]);
 
         $blocked = false;
 
@@ -354,9 +378,9 @@ it('rejects a duplicate admin cancellation that was blocked behind the first one
         return;
     }
 
-    [$user, $order] = createRedeemedPointsRaceOrder();
+    [$user, $order, $admin] = createRedeemedPointsRaceOrder();
 
-    raceAdminActions($conns[0], $order, fn () => controllerUnderRace()->cancel(Request::create('/', 'PATCH'), $order), 'cancel');
+    raceAdminActions($conns[0], $order, $admin, fn () => controllerUnderRace()->cancel(Request::create('/', 'PATCH'), $order), 'cancel');
 
     expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED);
     expect(OrderStatusHistory::where('order_id', $order->id)->count())->toBe(1);
@@ -369,9 +393,9 @@ it('rejects a duplicate mark-refunded that was blocked behind the first one unde
         return;
     }
 
-    [$user, $order] = createRedeemedPointsRaceOrder();
+    [$user, $order, $admin] = createRedeemedPointsRaceOrder();
 
-    raceAdminActions($conns[0], $order, fn () => controllerUnderRace()->markRefunded(
+    raceAdminActions($conns[0], $order, $admin, fn () => controllerUnderRace()->markRefunded(
         Request::create('/', 'PATCH', ['refund_amount' => 940, 'refund_method' => 'bkash']),
         $order,
         app(RefundService::class),
@@ -402,9 +426,9 @@ it('rejects a mark-refunded that was blocked behind a committed cancellation und
         return;
     }
 
-    [$user, $order] = createRedeemedPointsRaceOrder();
+    [$user, $order, $admin] = createRedeemedPointsRaceOrder();
 
-    $result = raceAdminActions($conns[0], $order, fn () => controllerUnderRace()->cancel(Request::create('/', 'PATCH'), $order), 'refund');
+    $result = raceAdminActions($conns[0], $order, $admin, fn () => controllerUnderRace()->cancel(Request::create('/', 'PATCH'), $order), 'refund');
 
     expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED);
     expect(OrderStatusHistory::where('order_id', $order->id)->count())->toBe(1);
@@ -420,9 +444,9 @@ it('leaves an admin-cancelled order alone when a courier cancellation report rac
         return;
     }
 
-    [$user, $order] = createRedeemedPointsRaceOrder();
+    [$user, $order, $admin] = createRedeemedPointsRaceOrder();
 
-    raceAdminActions($conns[0], $order, fn () => controllerUnderRace()->cancel(Request::create('/', 'PATCH'), $order), 'steadfast-cancelled');
+    raceAdminActions($conns[0], $order, $admin, fn () => controllerUnderRace()->cancel(Request::create('/', 'PATCH'), $order), 'steadfast-cancelled');
 
     $order->refresh();
     expect($order->status)->toBe(OrderStatus::CANCELLED)
@@ -441,13 +465,15 @@ it('rolls back the status change, history and refund together under real MySQL w
         return;
     }
 
-    [$user, $order] = createRedeemedPointsRaceOrder();
+    [$user, $order, $admin] = createRedeemedPointsRaceOrder();
 
     ReferralPointTransaction::creating(function (ReferralPointTransaction $transaction): void {
         if ($transaction->type === PointTransactionType::REFUND) {
             throw new RuntimeException('Simulated REFUND ledger failure.');
         }
     });
+
+    actingAs($admin, 'admin');
 
     expect(fn () => controllerUnderRace()->markRefunded(
         Request::create('/', 'PATCH', ['refund_amount' => 940, 'refund_method' => 'bkash']),
@@ -473,7 +499,7 @@ it('retries mark-refunded after a real InnoDB deadlock without duplicating any s
     }
 
     [$monitor, $rival] = $conns;
-    [$user, $order] = createRedeemedPointsRaceOrder();
+    [$user, $order, $admin] = createRedeemedPointsRaceOrder();
 
     $product = Product::factory()->create(['stock_quantity' => 10]);
     OrderItem::create([
@@ -511,7 +537,7 @@ it('retries mark-refunded after a real InnoDB deadlock without duplicating any s
             'SESSION_DRIVER' => 'array',
         ])
         ->timeout(60)
-        ->start(['php', '-r', LOYALTY_RACE_CONTENDER_SCRIPT, (string) $order->id, 'refund']);
+        ->start(['php', '-r', LOYALTY_RACE_CONTENDER_SCRIPT, (string) $order->id, 'refund', (string) $admin->id]);
 
     // Wait until markRefunded() holds the Order row and is blocked on the
     // customer row inside the redeemed-points refund (a nested transaction).
