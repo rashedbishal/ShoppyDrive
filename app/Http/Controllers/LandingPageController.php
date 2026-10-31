@@ -166,7 +166,7 @@ class LandingPageController extends Controller
         $qty = (int) $request->quantity;
         $price = $this->cartManager->resolvePrice($product->id, null);
         $subtotal = round($price * $qty, 2);
-        $shippingCost = $this->calculateShipping($product, $request->state, $request->city, $subtotal);
+        $shippingCost = $this->calculateShipping($product, $qty, $request->state, $request->city, $subtotal);
         $total = $subtotal + $shippingCost;
 
         $shippingAddress = [
@@ -496,7 +496,14 @@ class LandingPageController extends Controller
         return $pdf->download("invoice-{$order->order_number}.pdf");
     }
 
-    private function calculateShipping(mixed $product, string $state, string $city, float $subtotal): float
+    /**
+     * SHIP-DUP-001: mirrors CheckoutController::calculateShippingCost()'s
+     * per-item free-delivery rule, which this method was previously missing
+     * — it checked `free_delivery` but never the ordered quantity, so a
+     * product configured with `free_delivery_min_qty` shipped free here
+     * regardless of how many units were actually ordered.
+     */
+    private function calculateShipping(mixed $product, int $quantity, string $state, string $city, float $subtotal): float
     {
         $bar = HomepageSetting::where('section_key', 'announcement_bar')->first();
         $threshold = (float) ($bar?->metadata['free_delivery_amount'] ?? 0);
@@ -505,7 +512,7 @@ class LandingPageController extends Controller
             return 0.0;
         }
 
-        if ($product->free_delivery) {
+        if ($product->free_delivery && ($product->free_delivery_min_qty === null || $quantity >= $product->free_delivery_min_qty)) {
             return 0.0;
         }
 

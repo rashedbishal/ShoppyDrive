@@ -17,6 +17,7 @@ use App\Support\OrderNumberGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -153,6 +154,8 @@ class IncompleteOrderController extends Controller
                     'price' => $price,
                     'quantity' => $quantity,
                     'subtotal' => $price * $quantity,
+                    'free_delivery' => $product->free_delivery,
+                    'free_delivery_min_qty' => $product->free_delivery_min_qty,
                     'product_snapshot' => [
                         'id' => $product->id,
                         'name' => $product->name,
@@ -165,7 +168,7 @@ class IncompleteOrderController extends Controller
             });
 
         $subtotal = $resolvedItems->sum('subtotal');
-        $shippingCost = $this->calculateShippingCost($shippingAddress, $subtotal);
+        $shippingCost = $this->calculateShippingCost($shippingAddress, $resolvedItems, $subtotal);
         $total = max(0, $subtotal + $shippingCost);
 
         $order = DB::transaction(function () use ($shippingAddress, $resolvedItems, $subtotal, $shippingCost, $total, $incompleteOrder): Order {
@@ -190,7 +193,7 @@ class IncompleteOrderController extends Controller
             ]);
 
             foreach ($resolvedItems as $item) {
-                $order->items()->create($item);
+                $order->items()->create(collect($item)->except(['free_delivery', 'free_delivery_min_qty'])->all());
             }
 
             $incompleteOrder->delete();
@@ -202,11 +205,35 @@ class IncompleteOrderController extends Controller
             ->with('success', "Order {$order->order_number} created from the incomplete order.");
     }
 
-    private function calculateShippingCost(array $shippingAddress, float $subtotal): float
+    /**
+     * SHIP-DUP-001: mirrors CheckoutController::calculateShippingCost()'s
+     * per-item free-delivery rule, which this method was previously missing
+     * entirely — an admin-converted order was always charged the standard
+     * rate even when the identical cart would have shipped free at normal
+     * checkout. Bundle eligibility (CheckoutController's other free-delivery
+     * path, via BundleService::itemQualifiesForFreeDelivery()) does not
+     * apply here: ConvertIncompleteOrderRequest never collects a bundle_id,
+     * so an admin-converted order can never be a bundle in the first place.
+     *
+     * @param  Collection<int, array{quantity: int, free_delivery: bool, free_delivery_min_qty: ?int}>  $items
+     */
+    private function calculateShippingCost(array $shippingAddress, Collection $items, float $subtotal): float
     {
         $threshold = (float) (HomepageSetting::where('section_key', 'announcement_bar')->first()?->metadata['free_delivery_amount'] ?? 0);
 
         if ($threshold > 0 && $subtotal >= $threshold) {
+            return 0.0;
+        }
+
+        $allFree = $items->isNotEmpty() && $items->every(function (array $item): bool {
+            if (! $item['free_delivery']) {
+                return false;
+            }
+
+            return $item['free_delivery_min_qty'] === null || $item['quantity'] >= $item['free_delivery_min_qty'];
+        });
+
+        if ($allFree) {
             return 0.0;
         }
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\HomepageSetting;
 use App\Models\IncompleteOrder;
 use App\Models\Order;
 use App\Models\Product;
@@ -95,6 +96,105 @@ test('an admin can convert an incomplete order into a real cash-on-delivery orde
 
     // Converting removes the incomplete-order row — it's a real order now.
     expect(IncompleteOrder::find($incomplete->id))->toBeNull();
+});
+
+/**
+ * SHIP-DUP-001: these mirror the free-delivery rule CheckoutController
+ * already enforces at normal checkout — see the docblock on
+ * IncompleteOrderController::calculateShippingCost().
+ */
+function convertIncompleteOrderPayload(IncompleteOrder $incomplete, array $items): array
+{
+    return [
+        'name' => 'Abandoned Customer',
+        'phone' => '01712345678',
+        'address_line1' => 'House 5, Road 2',
+        'city' => 'Inside Dhaka City Corporation',
+        'state' => 'Dhaka',
+        'items' => $items,
+    ];
+}
+
+test('converting an order for an eligible free-delivery product charges no shipping', function () {
+    actingAs($this->admin, 'admin');
+    $product = Product::factory()->create(['price' => 450, 'free_delivery' => true, 'free_delivery_min_qty' => null]);
+    $incomplete = IncompleteOrder::factory()->create();
+
+    $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
+        ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
+    ]));
+
+    expect(Order::query()->firstOrFail()->shipping_cost)->toBe(0.0);
+});
+
+test('converting an order below the free-delivery minimum quantity still charges standard shipping', function () {
+    actingAs($this->admin, 'admin');
+    $product = Product::factory()->create(['price' => 450, 'free_delivery' => true, 'free_delivery_min_qty' => 3]);
+    $incomplete = IncompleteOrder::factory()->create();
+
+    $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
+        ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 2],
+    ]));
+
+    expect(Order::query()->firstOrFail()->shipping_cost)->toBe(60.0);
+});
+
+test('converting an order at the free-delivery minimum quantity charges no shipping', function () {
+    actingAs($this->admin, 'admin');
+    $product = Product::factory()->create(['price' => 450, 'free_delivery' => true, 'free_delivery_min_qty' => 3]);
+    $incomplete = IncompleteOrder::factory()->create();
+
+    $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
+        ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 3],
+    ]));
+
+    expect(Order::query()->firstOrFail()->shipping_cost)->toBe(0.0);
+});
+
+test('converting a mixed cart with one non-free-delivery item still charges standard shipping', function () {
+    actingAs($this->admin, 'admin');
+    $freeProduct = Product::factory()->create(['price' => 450, 'free_delivery' => true, 'free_delivery_min_qty' => null]);
+    $paidProduct = Product::factory()->create(['price' => 200, 'free_delivery' => false]);
+    $incomplete = IncompleteOrder::factory()->create();
+
+    $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
+        ['product_id' => $freeProduct->id, 'variant_id' => null, 'quantity' => 1],
+        ['product_id' => $paidProduct->id, 'variant_id' => null, 'quantity' => 1],
+    ]));
+
+    // CheckoutController requires EVERY cart item to qualify before waiving
+    // shipping — one non-qualifying item must still charge the standard rate.
+    expect(Order::query()->firstOrFail()->shipping_cost)->toBe(60.0);
+});
+
+test('a product that would have qualified as part of a bundle is not treated as free delivery when converted individually', function () {
+    actingAs($this->admin, 'admin');
+    // Admin conversion has no concept of a bundle (ConvertIncompleteOrderRequest
+    // never collects a bundle_id), so a plain, non-free-delivery product must
+    // charge standard shipping here even if it would have been part of a
+    // free-delivery bundle at normal checkout — bundle eligibility cannot
+    // leak through a flow that never carries bundle data.
+    $product = Product::factory()->create(['price' => 450, 'free_delivery' => false]);
+    $incomplete = IncompleteOrder::factory()->create();
+
+    $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
+        ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
+    ]));
+
+    expect(Order::query()->firstOrFail()->shipping_cost)->toBe(60.0);
+});
+
+test('converting an order above the sitewide free-delivery threshold charges no shipping regardless of product rules', function () {
+    actingAs($this->admin, 'admin');
+    HomepageSetting::updateOrCreate(['section_key' => 'announcement_bar'], ['section_name' => 'Bar', 'metadata' => ['free_delivery_amount' => 1000]]);
+    $product = Product::factory()->create(['price' => 1200, 'free_delivery' => false]);
+    $incomplete = IncompleteOrder::factory()->create();
+
+    $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
+        ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
+    ]));
+
+    expect(Order::query()->firstOrFail()->shipping_cost)->toBe(0.0);
 });
 
 test('guests cannot access any incomplete order routes', function () {
