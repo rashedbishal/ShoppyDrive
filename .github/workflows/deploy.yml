@@ -73,6 +73,15 @@ jobs:
     name: Build & Deploy
     needs: checks
     runs-on: ubuntu-latest
+    # DEPLOY-SAFETY-001 (Tier 1): requires the "production" GitHub Environment
+    # to exist with required reviewers configured (repo Settings > Environments)
+    # — every run pauses here for manual approval before touching the server.
+    environment: production
+    # Queues a second concurrent push instead of racing two deploys against
+    # the same server/database; never cancels a deploy already in progress.
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
 
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────────
@@ -119,9 +128,21 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      # DEPLOY-SAFETY-001 (Tier 1): pins the server's host key instead of
+      # trusting whatever key is presented on connection (StrictHostKeyChecking=no),
+      # which would accept an impostor host silently. SSH_KNOWN_HOSTS must hold
+      # the exact `known_hosts`-format line(s) for this host, captured out of
+      # band (e.g. `ssh-keyscan -p <port> <host>`, verified against hPanel).
+      - name: Add pinned SSH known host
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
       - name: Sync files to server
         env:
-          RSYNC_RSH: ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }}
+          RSYNC_RSH: ssh -o StrictHostKeyChecking=yes -p ${{ secrets.SSH_PORT }}
         run: |
           rsync -azP \
             --delete \
@@ -140,7 +161,7 @@ jobs:
       # ── 7. Post-deploy artisan commands ──────────────────────────────────────
       - name: Run post-deploy tasks on server
         run: |
-          ssh -o StrictHostKeyChecking=no \
+          ssh -o StrictHostKeyChecking=yes \
             -p ${{ secrets.SSH_PORT }} \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "set -e
@@ -151,8 +172,22 @@ jobs:
               exit 1
             fi
 
+            # DEPLOY-SAFETY-001 (Tier 1): existence alone doesn't catch a
+            # stale/incomplete .env — check each required key has a non-empty
+            # value without ever printing it (grep -q only reports match/no
+            # match, never the matched line).
+            for key in APP_KEY DB_CONNECTION DB_DATABASE DB_USERNAME DB_PASSWORD; do
+              if ! grep -Eq \"^\$key=.+\" .env; then
+                echo \"❌ ERROR: \$key is missing or empty in .env.\"
+                exit 1
+              fi
+            done
+
             mkdir -p bootstrap/cache storage/framework/{sessions,views,cache/data} storage/logs
-            chmod -R 775 bootstrap/cache storage || true
+            # DEPLOY-SAFETY-001 (Tier 1): no longer swallowed with `|| true` —
+            # set -e above now stops the deploy if this genuinely fails,
+            # rather than silently continuing with wrong permissions.
+            chmod -R 775 bootstrap/cache storage
             rm -rf public/storage
             ln -snf ../storage/app/public public/storage
 
@@ -180,3 +215,22 @@ jobs:
             php artisan route:cache
             php artisan view:cache
             php artisan event:cache"
+
+      # ── 8. Post-deploy health check ──────────────────────────────────────────
+      # DEPLOY-SAFETY-001 (Tier 1): confirms the app actually boots after the
+      # deploy, rather than only trusting that the SSH script exited 0. Note:
+      # Laravel's /up has no DiagnosingHealth listener registered in this app,
+      # so this proves the PHP/Laravel boot succeeds, not that the database is
+      # reachable or correct — a known, accepted limitation of Tier 1.
+      - name: Verify deployment health
+        run: |
+          for attempt in $(seq 1 10); do
+            if curl -fsS --max-time 10 https://shoppydrive.com/up > /dev/null; then
+              echo "✅ Health check passed on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt} failed, retrying in 5s..."
+            sleep 5
+          done
+          echo "❌ Health check failed after 10 attempts — deployment is live but the application is not responding healthily."
+          exit 1
