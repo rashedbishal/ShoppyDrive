@@ -128,21 +128,16 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # DEPLOY-SAFETY-001 (Tier 1): pins the server's host key instead of
-      # trusting whatever key is presented on connection (StrictHostKeyChecking=no),
-      # which would accept an impostor host silently. SSH_KNOWN_HOSTS must hold
-      # the exact `known_hosts`-format line(s) for this host, captured out of
-      # band (e.g. `ssh-keyscan -p <port> <host>`, verified against hPanel).
-      - name: Add pinned SSH known host
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-
+      # DEPLOY-SAFETY-001 (Tier 1): SSH host-key pinning was added then
+      # explicitly reverted the same day by user decision after it correctly
+      # failed closed (no verified SSH_KNOWN_HOSTS secret was configured),
+      # blocking a deploy. StrictHostKeyChecking=no accepts whatever key the
+      # server presents with no verification — a known, accepted risk (M1 in
+      # the DEPLOY-SAFETY-001 audit) — rather than require the known_hosts
+      # setup before every future deploy can proceed.
       - name: Sync files to server
         env:
-          RSYNC_RSH: ssh -o StrictHostKeyChecking=yes -p ${{ secrets.SSH_PORT }}
+          RSYNC_RSH: ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }}
         run: |
           rsync -azP \
             --delete \
@@ -161,7 +156,7 @@ jobs:
       # ── 7. Post-deploy artisan commands ──────────────────────────────────────
       - name: Run post-deploy tasks on server
         run: |
-          ssh -o StrictHostKeyChecking=yes \
+          ssh -o StrictHostKeyChecking=no \
             -p ${{ secrets.SSH_PORT }} \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "set -e
