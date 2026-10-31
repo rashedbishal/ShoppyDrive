@@ -16,4 +16,10 @@ enum PointTransactionType: string
     case REFUND = 'refund';
     // PAY-RETURN-001: order-earned points reversed after a product refund.
     case REVOKE_ORDER = 'revoke_order';
+    // PAY-RETURN-001-BATCH-2: redeemed points restored proportionally to a
+    // partial return's refunded amount. Distinct from REFUND (full-order
+    // refund/cancellation, 100% restored in one row via a different,
+    // marker-based idempotency mechanism — see
+    // LoyaltyPointsService::refundRedeemedPointsIfApplicable()).
+    case REFUND_PARTIAL = 'refund_partial';
 }

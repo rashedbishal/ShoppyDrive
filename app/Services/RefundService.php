@@ -81,6 +81,10 @@ class RefundService
 
             if (! $fullyReturned) {
                 $this->loyalty->reconcileEarnedPointsAfterRefund($order);
+                // PAY-RETURN-001-BATCH-2: mirrors the call above — only
+                // needed here because a fully-returned order already gets
+                // this via Order::booted()'s REFUNDED-transition hook.
+                $this->loyalty->reconcileRedeemedPointsAfterRefund($order);
             }
 
             return $refund;

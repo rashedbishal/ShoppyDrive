@@ -229,6 +229,84 @@ class LoyaltyPointsService
     }
 
     /**
+     * PAY-RETURN-001-BATCH-2: restore redeemed points proportionally to the
+     * product money refunded by a *partial* return — the mirror image of
+     * `reconcileEarnedPointsAfterRefund()` above, same idempotent
+     * recompute-the-target-then-apply-the-delta shape, same lock order.
+     *
+     * `points_redeemed` is fixed once at checkout and never changes, so
+     * (unlike earned points, which can be granted at different times with
+     * different spend bases) there is only ever one basis to track: the
+     * order's own product-net value. target = points_redeemed × (refunded
+     * ÷ productNet), floored; once refunded reaches productNet the target
+     * is exactly points_redeemed (integer division of a value by itself),
+     * so the final partial return in a sequence always lands on the exact
+     * original total — no remainder is ever lost across a split.
+     *
+     * Deliberately NOT called when a return fully closes the order —
+     * `RefundService::recordReturnRefund()` only calls this in its partial
+     * branch. A fully-returned order's status flips to REFUNDED, which
+     * already triggers the existing, unconditional, marker-based full
+     * reversal in `refundRedeemedPointsIfApplicable()` via
+     * `Order::booted()` — untouched by this method, so full-order
+     * refund/cancellation behavior is unchanged.
+     */
+    public function reconcileRedeemedPointsAfterRefund(Order $order): void
+    {
+        if ($order->user_id === null || ! $order->points_redeemed) {
+            return;
+        }
+
+        DB::transaction(function () use ($order): void {
+            $locked = Order::withTrashed()->whereKey($order->id)->lockForUpdate()->first();
+
+            if ($locked === null || $locked->user_id === null || ! $locked->points_redeemed) {
+                return;
+            }
+
+            $redeemed = $locked->points_redeemed;
+
+            $alreadyRestored = (int) ReferralPointTransaction::where('order_id', $locked->id)
+                ->where('user_id', $locked->user_id)
+                ->where('type', PointTransactionType::REFUND_PARTIAL)
+                ->lockForUpdate()
+                ->sum('points');
+
+            $productNet = $this->refunds->productNetPaisa($locked);
+
+            if ($productNet <= 0) {
+                return;
+            }
+
+            $refunded = min($this->refunds->refundedPaisa($locked, lock: true), $productNet);
+            $target = intdiv($redeemed * $refunded, $productNet);
+
+            $delta = $target - $alreadyRestored;
+
+            if ($delta <= 0) {
+                return;
+            }
+
+            $customer = User::whereKey($locked->user_id)->lockForUpdate()->first();
+
+            if ($customer === null) {
+                return;
+            }
+
+            $customer->increment('points_balance', $delta);
+
+            ReferralPointTransaction::create([
+                'user_id' => $customer->id,
+                'order_id' => $locked->id,
+                'type' => PointTransactionType::REFUND_PARTIAL,
+                'points' => $delta,
+                'currency_amount' => RefundCalculator::toTaka($refunded),
+                'note' => 'Order '.$locked->order_number.' partial return — redeemed points restored proportionally to the refunded amount.',
+            ]);
+        }, 3);
+    }
+
+    /**
      * PROMO-LOY-001: previously locked only the User row with no enclosing
      * transaction, so the lock was released the instant that one statement
      * completed (MySQL autocommit) — and the idempotency check read
@@ -267,15 +345,32 @@ class LoyaltyPointsService
                 return;
             }
 
-            $purchaser->increment('points_balance', $lockedOrder->points_redeemed);
+            // PAY-RETURN-001-BATCH-2: a sequence of partial returns can land
+            // on a fully-returned order (every unit eventually refunded)
+            // without ever going through this method — each one already
+            // restored its own proportional share via REFUND_PARTIAL. Only
+            // the remainder needed to reach points_redeemed exactly is owed
+            // here; in the common case (no prior partial restorations) this
+            // is the full amount, unchanged from before.
+            $alreadyRestored = (int) ReferralPointTransaction::where('order_id', $lockedOrder->id)
+                ->where('user_id', $lockedOrder->user_id)
+                ->where('type', PointTransactionType::REFUND_PARTIAL)
+                ->lockForUpdate()
+                ->sum('points');
 
-            ReferralPointTransaction::create([
-                'user_id' => $purchaser->id,
-                'order_id' => $lockedOrder->id,
-                'type' => PointTransactionType::REFUND,
-                'points' => $lockedOrder->points_redeemed,
-                'note' => 'Order '.$lockedOrder->order_number.' was cancelled/refunded — redeemed points refunded.',
-            ]);
+            $remaining = max(0, $lockedOrder->points_redeemed - $alreadyRestored);
+
+            if ($remaining > 0) {
+                $purchaser->increment('points_balance', $remaining);
+
+                ReferralPointTransaction::create([
+                    'user_id' => $purchaser->id,
+                    'order_id' => $lockedOrder->id,
+                    'type' => PointTransactionType::REFUND,
+                    'points' => $remaining,
+                    'note' => 'Order '.$lockedOrder->order_number.' was cancelled/refunded — redeemed points refunded.',
+                ]);
+            }
 
             $lockedOrder->forceFill(['points_refunded_at' => now()])->saveQuietly();
         }, 3);

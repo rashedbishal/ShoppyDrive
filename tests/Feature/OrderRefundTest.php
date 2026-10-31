@@ -371,3 +371,106 @@ test('a grant made before the ledger is only reversed for refunds recorded after
     app(LoyaltyPointsService::class)->reconcileEarnedPointsAfterRefund($order);
     expect($user->refresh()->points_balance)->toBe(55); // floor(90 × 350 / 900) = 35
 });
+
+// ── Redeemed points (PAY-RETURN-001-BATCH-2) ────────────────────────────────
+
+test('a partial refund restores redeemed points proportionally to the refunded amount, not the full order', function () {
+    $user = User::factory()->create(['points_balance' => 0]);
+    $order = refundOrder(['discount' => 100, 'shipping_cost' => 60, 'points_redeemed' => 90], user: $user);
+
+    courierVerifiedForRefund($order);
+    $returnRequest = approvedReturn($order, [1 => 1]); // worth 360, refunded 300 (damaged)
+    actingAs(createAdmin(), 'admin')->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 300, 'refund_method' => 'bKash'])->assertSessionHas('success');
+
+    expect($user->refresh()->points_balance)->toBe(30) // floor(90 × 300 / 900) = 30 restored
+        ->and((int) ReferralPointTransaction::where('type', PointTransactionType::REFUND_PARTIAL)->sum('points'))->toBe(30);
+});
+
+test('successive partial returns cumulatively restore redeemed points without over- or under-crediting, and the final return picks up any rounding remainder', function () {
+    $user = User::factory()->create(['points_balance' => 0]);
+    // 3 equal 100.00 lines, no discount — productNet = 30000 paisa, so each
+    // 1/3 refund (10000 paisa) does not divide evenly into 100 points,
+    // deliberately exercising the floor-rounding remainder.
+    $order = refundOrder(['points_redeemed' => 100], [[100, 1], [100, 1], [100, 1]], user: $user);
+    courierVerifiedForRefund($order);
+
+    $first = approvedReturn($order, [0 => 1]);
+    actingAs(createAdmin(), 'admin')->patch(route('admin.returns.markRefunded', $first), ['refund_amount' => 100, 'refund_method' => 'bKash'])->assertSessionHas('success');
+    expect($user->refresh()->points_balance)->toBe(33); // floor(100 × 10000 / 30000) = 33
+
+    $second = approvedReturn($order, [1 => 1]);
+    actingAs(createAdmin(), 'admin')->patch(route('admin.returns.markRefunded', $second), ['refund_amount' => 100, 'refund_method' => 'bKash'])->assertSessionHas('success');
+    expect($user->refresh()->points_balance)->toBe(66); // floor(100 × 20000 / 30000) = 66
+
+    $third = approvedReturn($order, [2 => 1]);
+    actingAs(createAdmin(), 'admin')->patch(route('admin.returns.markRefunded', $third), ['refund_amount' => 100, 'refund_method' => 'bKash'])->assertSessionHas('success');
+
+    // The third return fully closes the order (every unit now refunded), so
+    // it goes through the pre-existing full-reversal path (`REFUND`) instead
+    // of the proportional one — exercising the interaction fix in
+    // `refundRedeemedPointsIfApplicable()`: it must restore only the 34
+    // points still owed (100 − 66 already restored via REFUND_PARTIAL), not
+    // the full 100 again, or the customer would be credited 166 points for
+    // 100 redeemed.
+    expect($user->refresh()->points_balance)->toBe(100)
+        ->and((int) ReferralPointTransaction::where('type', PointTransactionType::REFUND_PARTIAL)->sum('points'))->toBe(66)
+        ->and((int) ReferralPointTransaction::where('type', PointTransactionType::REFUND)->sum('points'))->toBe(34);
+});
+
+test('a non-closing sequence of partial returns ends exactly on the original redeemed total with no remainder lost', function () {
+    $user = User::factory()->create(['points_balance' => 0]);
+    // 4 equal lines so a 3-of-4 sequence of partial returns never fully
+    // closes the order (one unit always remains unreturned), letting the
+    // cumulative formula run to its productNet-capped target without the
+    // full-reversal path taking over.
+    $order = refundOrder(['points_redeemed' => 100], [[100, 1], [100, 1], [100, 1], [100, 1]], user: $user);
+    courierVerifiedForRefund($order);
+
+    foreach ([0, 1, 2] as $index) {
+        $return = approvedReturn($order, [$index => 1]);
+        actingAs(createAdmin(), 'admin')->patch(route('admin.returns.markRefunded', $return), ['refund_amount' => 100, 'refund_method' => 'bKash'])->assertSessionHas('success');
+    }
+
+    // refunded = 30000 of productNet 40000 paisa: floor(100 × 30000 / 40000) = 75
+    expect($user->refresh()->points_balance)->toBe(75)
+        ->and((int) ReferralPointTransaction::where('type', PointTransactionType::REFUND_PARTIAL)->sum('points'))->toBe(75);
+});
+
+test('a full-order refund still restores all redeemed points through the pre-existing, unchanged path', function () {
+    $user = User::factory()->create(['points_balance' => 0]);
+    $order = refundOrder(['points_redeemed' => 50], user: $user);
+
+    courierVerifiedForRefund($order);
+    actingAs(createAdmin(), 'admin')->patch(route('admin.orders.markRefunded', $order), ['refund_amount' => 1000, 'refund_method' => 'bKash'])->assertSessionHas('success');
+
+    expect($user->refresh()->points_balance)->toBe(50)
+        ->and(ReferralPointTransaction::where('type', PointTransactionType::REFUND)->count())->toBe(1)
+        ->and(ReferralPointTransaction::where('type', PointTransactionType::REFUND_PARTIAL)->exists())->toBeFalse();
+});
+
+test('reprocessing the same partial-return state never restores redeemed points twice', function () {
+    $user = User::factory()->create(['points_balance' => 0]);
+    $order = refundOrder(['discount' => 100, 'shipping_cost' => 60, 'points_redeemed' => 90], user: $user);
+
+    courierVerifiedForRefund($order);
+    $returnRequest = approvedReturn($order, [1 => 1]);
+    actingAs(createAdmin(), 'admin')->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 300, 'refund_method' => 'bKash'])->assertSessionHas('success');
+
+    app(LoyaltyPointsService::class)->reconcileRedeemedPointsAfterRefund($order); // again: no change
+    app(LoyaltyPointsService::class)->reconcileRedeemedPointsAfterRefund($order); // and again
+
+    expect($user->refresh()->points_balance)->toBe(30)
+        ->and(ReferralPointTransaction::where('type', PointTransactionType::REFUND_PARTIAL)->count())->toBe(1);
+});
+
+test('an order with no redeemed points is left untouched by a partial return', function () {
+    $user = User::factory()->create(['points_balance' => 0]);
+    $order = refundOrder(user: $user); // points_redeemed is null
+
+    courierVerifiedForRefund($order);
+    $returnRequest = approvedReturn($order, [1 => 1]);
+    actingAs(createAdmin(), 'admin')->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 300, 'refund_method' => 'bKash'])->assertSessionHas('success');
+
+    expect($user->refresh()->points_balance)->toBe(0)
+        ->and(ReferralPointTransaction::where('type', PointTransactionType::REFUND_PARTIAL)->exists())->toBeFalse();
+});
