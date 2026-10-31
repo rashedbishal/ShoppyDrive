@@ -15,6 +15,7 @@ use App\Models\ReceivedSms;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\CouponService;
+use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
 
@@ -24,6 +25,7 @@ function couponCheckoutPayload(Product $product, int $quantity, string $couponCo
         'name' => 'Coupon Test', 'email' => 'couponbuyer@example.com', 'phone' => '01700000000',
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'coupon_code' => $couponCode,
         'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => $quantity]],
     ], $overrides);
@@ -366,6 +368,7 @@ test('an order with no coupon is unaffected by cancellation release logic', func
         'name' => 'No Coupon', 'email' => $user->email, 'phone' => '01700000000',
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
     ])->assertRedirect();
 

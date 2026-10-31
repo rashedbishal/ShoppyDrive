@@ -14,6 +14,7 @@ use App\Models\ProductVariant;
 use App\Models\ReceivedSms;
 use App\Models\User;
 use App\Support\CartManager;
+use Illuminate\Support\Str;
 
 function checkoutPayload(Product $product, int $quantity, array $overrides = []): array
 {
@@ -26,6 +27,7 @@ function checkoutPayload(Product $product, int $quantity, array $overrides = [])
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => $quantity],
         ],
@@ -149,6 +151,7 @@ test('a cart price that goes stale between add-to-cart and checkout is corrected
         'name' => 'Flash Pricing Test', 'email' => $user->email, 'phone' => '01700000000',
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
     ]);
 
     $first->assertSessionHas('error');
@@ -161,6 +164,7 @@ test('a cart price that goes stale between add-to-cart and checkout is corrected
         'name' => 'Flash Pricing Test', 'email' => $user->email, 'phone' => '01700000000',
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
     ])->assertRedirect();
 
     $order = Order::query()->firstOrFail();

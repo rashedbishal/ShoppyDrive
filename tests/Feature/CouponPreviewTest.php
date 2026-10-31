@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 
 function validateCoupon(string $code, float $subtotal = 100, ?string $phone = null): TestResponse
@@ -140,6 +141,7 @@ test('real checkout submission still correctly blocks guest reuse regardless of 
         'name' => 'Guest', 'email' => 'guest@example.com', 'phone' => '01711111111',
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
         'payment_method' => 'cod', 'coupon_code' => $coupon->code,
+        'order_token' => (string) Str::uuid(),
         'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
     ])->assertRedirect();
 
@@ -149,6 +151,7 @@ test('real checkout submission still correctly blocks guest reuse regardless of 
         'name' => 'Guest', 'email' => 'guest@example.com', 'phone' => '01711111111',
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
         'payment_method' => 'cod', 'coupon_code' => $coupon->code,
+        'order_token' => (string) Str::uuid(),
         'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
     ]);
 

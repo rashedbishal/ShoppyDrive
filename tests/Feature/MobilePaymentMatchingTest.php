@@ -29,6 +29,7 @@ function startMobileBankingCheckout(TestCase $test, User $user, Product $product
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'mobile_banking',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => $quantity],
         ],

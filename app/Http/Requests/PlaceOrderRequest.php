@@ -40,6 +40,11 @@ class PlaceOrderRequest extends FormRequest
             'redeem_points' => ['nullable', 'boolean'],
             'points_to_redeem' => ['nullable', 'integer', 'min:1', 'required_if:redeem_points,true'],
             'payment_method' => ['required', 'in:cod,zinipay,mobile_banking'],
+            // Missing/malformed must fail validation here, never silently
+            // skip the idempotency check in CheckoutController::store()
+            // (CHECKOUT-COD-002, same requirement as CART-01 on the landing
+            // page flow).
+            'order_token' => ['required', 'uuid'],
             'items' => ['nullable', 'array'],
             'items.*.product_id' => ['required_with:items', 'integer', 'exists:products,id'],
             'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],

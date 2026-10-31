@@ -26,8 +26,10 @@ use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
 use App\Support\CartManager;
 use App\Support\OrderNumberGenerator;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -35,6 +37,16 @@ use Inertia\Response;
 
 class CheckoutController extends Controller
 {
+    // CHECKOUT-COD-002: same idempotency-cache window as
+    // LandingPageController's ORDER_TOKEN_RESULT_TTL_HOURS — matches
+    // PendingCheckout's own existing 2-hour expiry convention.
+    private const ORDER_TOKEN_RESULT_TTL_HOURS = 2;
+
+    // CHECKOUT-COD-002: same reasoning as LandingPageController's
+    // ORDER_TOKEN_LOCK_WAIT_SECONDS — order creation here is a handful of
+    // queries, well under this.
+    private const ORDER_TOKEN_LOCK_WAIT_SECONDS = 10;
+
     public function __construct(
         private readonly CartManager $cartManager,
         private readonly ReferralService $referrals,
@@ -72,6 +84,11 @@ class CheckoutController extends Controller
 
         return Inertia::render('checkout/Checkout', [
             'cart' => $cart,
+            // Fresh per page render, like LandingPageController::show() —
+            // submitted back as order_token so a retried/double-clicked
+            // submit of this exact render can't create a duplicate order
+            // (CHECKOUT-COD-002).
+            'orderToken' => (string) Str::uuid(),
             'savedAddresses' => $savedAddresses,
             'buyNowItem' => $buyNowItem,
             'referralDiscountEligible' => $this->referrals->isEligibleForDiscount($user),
@@ -175,6 +192,69 @@ class CheckoutController extends Controller
             return back()->withErrors(['coupon_code' => $e->getMessage()])->withInput();
         }
 
+        // CHECKOUT-COD-002: same order_token/Cache::lock() idempotency
+        // pattern as LandingPageController::placeOrder() — a repeated
+        // submission (double-click, network retry, back-button resubmit)
+        // of this exact page render replays the cached outcome instead of
+        // creating a second Order/PendingCheckout; a concurrent duplicate
+        // blocks on the lock instead of racing it. Only a final successful
+        // outcome is cached (see completeCheckout()), so a failed attempt
+        // never poisons the token and a genuine retry still works.
+        $orderToken = $request->string('order_token')->toString();
+        $resultKey = "checkout-order-result:{$orderToken}";
+
+        if (($cached = Cache::get($resultKey)) !== null) {
+            return $this->redirectForCachedCheckoutOrder($cached);
+        }
+
+        $lock = Cache::lock("checkout-order-lock:{$orderToken}", self::ORDER_TOKEN_LOCK_WAIT_SECONDS * 3);
+
+        try {
+            return $lock->block(self::ORDER_TOKEN_LOCK_WAIT_SECONDS, function () use (
+                $request, $cart, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $couponDiscount, $resultKey
+            ) {
+                // The other holder may have finished and released between
+                // our first check above and actually acquiring the lock.
+                if (($cached = Cache::get($resultKey)) !== null) {
+                    return $this->redirectForCachedCheckoutOrder($cached);
+                }
+
+                return $this->completeCheckout($request, $cart, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $couponDiscount, $resultKey);
+            });
+        } catch (LockTimeoutException) {
+            // Someone else is actively processing this exact submission and
+            // hasn't finished yet — never fall through to creating a second
+            // order/PendingCheckout; ask the customer to wait rather than
+            // guess at what happened.
+            return back()
+                ->withErrors(['order_token' => 'Your order is still being processed. Please wait a moment and try again.'])
+                ->withInput();
+        }
+    }
+
+    private function redirectForCachedCheckoutOrder(array $cached): RedirectResponse
+    {
+        if ($cached['type'] === 'cod') {
+            return redirect()->route('order.confirmation', $cached['order_number']);
+        }
+
+        return redirect()->route('payment.mobile.show', $cached['pending_token']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $shippingAddress
+     */
+    private function completeCheckout(
+        PlaceOrderRequest $request,
+        Cart $cart,
+        array $shippingAddress,
+        float $subtotal,
+        float $shippingCost,
+        ?int $couponId,
+        ?string $couponCode,
+        float $couponDiscount,
+        string $resultKey,
+    ): RedirectResponse {
         // ── COD ─────────────────────────────────────────────────────────────
         if ($request->payment_method === PaymentMethod::COD->value) {
             try {
@@ -267,6 +347,8 @@ class CheckoutController extends Controller
                 return back()->withErrors(['coupon_code' => $e->getMessage()])->withInput();
             }
 
+            Cache::put($resultKey, ['type' => 'cod', 'order_number' => $order->order_number], now()->addHours(self::ORDER_TOKEN_RESULT_TTL_HOURS));
+
             return redirect()->route('order.confirmation', $order->order_number);
         }
 
@@ -288,6 +370,7 @@ class CheckoutController extends Controller
             $request, $cart, $shippingAddress, $subtotal, $shippingCost,
             $finalCouponId, $finalCouponCode, $discount, $total,
             $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount,
+            $resultKey,
         );
     }
 
@@ -345,6 +428,7 @@ class CheckoutController extends Controller
         bool $usedReferralDiscount,
         int $pointsRedeemed,
         float $pointsDiscountAmount,
+        string $resultKey,
     ): RedirectResponse {
         $itemsSnapshot = $cart->items->map(function ($item) {
             $product = $item->product;
@@ -395,6 +479,8 @@ class CheckoutController extends Controller
             ],
             'expires_at' => now()->addHours(2),
         ]);
+
+        Cache::put($resultKey, ['type' => 'mobile_banking', 'pending_token' => $token], now()->addHours(self::ORDER_TOKEN_RESULT_TTL_HOURS));
 
         return redirect()->route('payment.mobile.show', $token);
     }

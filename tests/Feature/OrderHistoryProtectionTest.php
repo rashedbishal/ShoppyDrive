@@ -75,6 +75,7 @@ function checkoutForHistoryTest(User $customer, Product $product): Order
         'country' => 'Bangladesh',
         'save_address' => false,
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
     ]);
 

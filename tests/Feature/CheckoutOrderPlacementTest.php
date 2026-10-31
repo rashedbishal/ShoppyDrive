@@ -4,6 +4,7 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 test('authenticated user can place an order from checkout using submitted cart items', function () {
     $user = User::factory()->create();
@@ -29,6 +30,7 @@ test('authenticated user can place an order from checkout using submitted cart i
             'country' => 'Bangladesh',
             'save_address' => true,
             'payment_method' => 'cod',
+            'order_token' => (string) Str::uuid(),
             'items' => [
                 [
                     'product_id' => $product->id,

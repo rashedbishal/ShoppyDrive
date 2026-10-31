@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
 function buyNowOrderPayload(array $overrides = []): array
@@ -24,6 +25,7 @@ function buyNowOrderPayload(array $overrides = []): array
         'country' => 'Bangladesh',
         'save_address' => false,
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
     ], $overrides);
 }
 

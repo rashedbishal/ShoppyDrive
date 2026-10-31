@@ -69,6 +69,7 @@ function codPayload(array $overrides = []): array
         'country' => 'Bangladesh',
         'save_address' => false,
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
     ], $overrides);
 }
 

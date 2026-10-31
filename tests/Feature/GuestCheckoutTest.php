@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 function enableGuestCheckout(): void
 {
@@ -27,6 +28,7 @@ function guestOrderPayload(array $overrides = []): array
         'country' => 'Bangladesh',
         'save_address' => false,
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
     ], $overrides);
 }
 

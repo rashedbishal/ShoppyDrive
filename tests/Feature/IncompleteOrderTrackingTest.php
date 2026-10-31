@@ -6,6 +6,7 @@ use App\Models\IncompleteOrder;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
+use Illuminate\Support\Str;
 
 function enableGuestCheckoutForTracking(): void
 {
@@ -113,6 +114,7 @@ test('placing a real COD order deletes any incomplete order rows tracked against
         'country' => 'Bangladesh',
         'save_address' => false,
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
         ],

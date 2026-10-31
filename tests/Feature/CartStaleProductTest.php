@@ -5,6 +5,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
 
@@ -52,6 +53,7 @@ test('placing a cod order with a stale cart item succeeds using only the live it
         'state' => 'Dhaka',
         'save_address' => false,
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
     ]);
 
     $order = Order::query()->firstOrFail();
@@ -79,5 +81,6 @@ test('placing an order with only a stale cart item is rejected as an empty cart'
         'state' => 'Dhaka',
         'save_address' => false,
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
     ])->assertStatus(422);
 });

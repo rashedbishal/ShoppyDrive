@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 test('checkout charges the admin-configured inside-dhaka delivery rate', function () {
     Setting::create(['key' => 'shipping_rate_inside_dhaka', 'value' => 75, 'group' => 'shipping']);
@@ -24,6 +25,7 @@ test('checkout charges the admin-configured inside-dhaka delivery rate', functio
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
         ],
@@ -50,6 +52,7 @@ test('checkout charges the admin-configured outside-dhaka delivery rate', functi
         'state' => 'Chattogram',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
         ],

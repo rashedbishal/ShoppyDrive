@@ -141,6 +141,7 @@ test('an order records the ip address and user agent of the request that created
             'state' => 'Dhaka',
             'country' => 'Bangladesh',
             'payment_method' => 'cod',
+            'order_token' => (string) Str::uuid(),
             'items' => [
                 ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
             ],

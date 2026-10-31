@@ -10,6 +10,7 @@ use App\Models\ProductBundle;
 use App\Models\ProductBundleItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -24,6 +25,7 @@ function bundleCheckoutPayload(ProductBundle $bundle, array $items, array $overr
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => array_map(fn (array $item) => array_merge(['bundle_id' => $bundle->id], $item), $items),
     ], $overrides);
 }
@@ -109,6 +111,7 @@ test('removing a bundle component before checkout breaks the group and charges n
         'name' => 'Bundle Buyer', 'email' => $user->email, 'phone' => '01700000000',
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
     ];
 
     $first = $this->actingAs($user)->post(route('checkout.store'), $basePayload + [

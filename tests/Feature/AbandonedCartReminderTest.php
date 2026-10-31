@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 function placeCodOrder(TestCase $test, User $user, Product $product, string $phone): void
@@ -17,6 +18,7 @@ function placeCodOrder(TestCase $test, User $user, Product $product, string $pho
         'name' => $user->name, 'email' => $user->email, 'phone' => $phone,
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
     ])->assertRedirect();
 }

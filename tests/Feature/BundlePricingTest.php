@@ -12,6 +12,7 @@ use App\Models\ProductBundleItem;
 use App\Models\User;
 use App\Support\CartManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -119,6 +120,7 @@ test('a complete free-delivery bundle waives shipping for a cart made up only of
         'name' => 'Bundle Shipper', 'email' => $user->email, 'phone' => '01700000000',
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
     ])->assertRedirect();
 
     $order = Order::query()->firstOrFail();

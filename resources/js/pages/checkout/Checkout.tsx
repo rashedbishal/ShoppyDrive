@@ -327,6 +327,7 @@ function OrderSummaryRow({ item }: { item: CartItem }): React.JSX.Element {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 interface CheckoutProps {
+    orderToken: string;
     savedAddresses: Address[];
     buyNowItem?: CartItem | null;
     referralDiscountEligible?: boolean;
@@ -339,6 +340,7 @@ interface CheckoutProps {
 type AddressMode = 'default' | 'select' | 'new';
 
 export default function Checkout({
+    orderToken,
     savedAddresses = [],
     buyNowItem = null,
     referralDiscountEligible = false,
@@ -420,6 +422,10 @@ export default function Checkout({
         save_address: !hasAddresses,
         // payment
         payment_method: 'cod' as 'cod' | 'mobile_banking',
+        // CHECKOUT-COD-002: fresh per page render (see CheckoutController::
+        // index()), submitted back unchanged across retries of this same
+        // render so the server can dedupe a double-click/resubmit.
+        order_token: orderToken,
     });
 
     const isDhaka = form.data.state === 'Dhaka';

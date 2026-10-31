@@ -20,6 +20,7 @@ use App\Models\Review;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
 
@@ -29,6 +30,7 @@ function codCheckoutPayload(Product $product, int $quantity = 1): array
         'name' => 'Notify Test', 'email' => 'buyer@example.com', 'phone' => '01700000000',
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => $quantity]],
     ];
 }

@@ -13,6 +13,7 @@ use App\Models\ProductVariant;
 use App\Models\ReceivedSms;
 use App\Models\User;
 use App\Services\InventoryService;
+use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
 
@@ -31,6 +32,7 @@ test('COD checkout decrements product stock', function () {
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 3],
         ],
@@ -59,6 +61,7 @@ test('checkout is rejected when a product that has variants is ordered without p
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             // No variant_id, even though the product has one — must not
             // fall through to decrementing the denormalized sum column.
@@ -87,6 +90,7 @@ test('COD checkout decrements variant stock independently of product stock', fun
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 4],
         ],
@@ -111,6 +115,7 @@ test('checkout is rejected when requested quantity exceeds available stock', fun
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 5],
         ],
@@ -135,6 +140,7 @@ test('a second concurrent-style checkout for the last unit is rejected cleanly',
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
         ],
@@ -172,6 +178,7 @@ test('the flash-sale cap limits the discount, not the product: it is tracked ind
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 2],
         ],
@@ -195,6 +202,7 @@ test('the flash-sale cap limits the discount, not the product: it is tracked ind
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
         ],
@@ -223,6 +231,7 @@ test('admin cancelling an order restores the stock it consumed', function () {
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 3],
         ],
@@ -290,6 +299,7 @@ test('confirming a mobile-banking payment decrements stock and rejects if stock 
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'mobile_banking',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 2],
         ],
@@ -345,6 +355,7 @@ test('marking an order refunded restores its stock', function () {
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 4],
         ],

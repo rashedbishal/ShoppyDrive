@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 function placeOrderWithTrafficCookies($test, User $user, Product $product, ?string $source, ?string $referrer)
 {
@@ -30,6 +31,7 @@ function placeOrderWithTrafficCookies($test, User $user, Product $product, ?stri
         'state' => 'Dhaka',
         'country' => 'Bangladesh',
         'payment_method' => 'cod',
+        'order_token' => (string) Str::uuid(),
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
         ],
