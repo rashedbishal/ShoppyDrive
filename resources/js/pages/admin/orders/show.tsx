@@ -15,6 +15,8 @@ import {
 import { useState } from 'react';
 import CourierSubmissionPanel from '@/components/admin/CourierSubmissionPanel';
 import type { CourierSubmission } from '@/components/admin/CourierSubmissionPanel';
+import DeliveryVerificationDialog from '@/components/admin/DeliveryVerificationDialog';
+import type { CourierEvidence } from '@/components/admin/DeliveryVerificationDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,10 +87,29 @@ type Order = {
     status_histories: StatusHistory[];
 };
 
+type RefundSummary = {
+    collected: number | null;
+    product_net: number;
+    shipping: number;
+    cap: number | null;
+    refunded: number;
+    remaining: number | null;
+    product_refund_complete: boolean;
+    payment_fully_refunded: boolean;
+};
+
 type Props = {
     order: Order;
     courierSubmission: CourierSubmission | null;
+    refundSummary: RefundSummary;
+    courierEvidence: CourierEvidence;
+    canVerifyDelivery: boolean;
 };
+
+const taka = (value: number | null) =>
+    value === null
+        ? '—'
+        : `৳${value.toLocaleString('en-BD', { minimumFractionDigits: 2 })}`;
 
 const trafficSourceLabel: Record<string, string> = {
     google: 'Google',
@@ -121,7 +142,14 @@ const statusVariant: Record<
     refunded: 'default',
 };
 
-export default function OrderShow({ order, courierSubmission }: Props) {
+export default function OrderShow({
+    order,
+    courierSubmission,
+    refundSummary,
+    courierEvidence,
+    canVerifyDelivery,
+}: Props) {
+    const [isVerifyOpen, setIsVerifyOpen] = useState(false);
     // COURIER-SEND-RACE-002 (L2/L3): mirrors the server-side guards, which
     // remain the real boundary — these only avoid offering a refused action.
     const courierUnresolved =
@@ -226,19 +254,25 @@ export default function OrderShow({ order, courierSubmission }: Props) {
         });
     };
 
+    // PAY-RETURN-001: records a refund already paid back outside the app,
+    // for exactly the remaining refundable amount (the server re-checks it).
     const handleMarkRefunded = () => {
-        if (
-            !confirm(
-                `Mark order ${order.order_number} as refunded? This cannot be undone.`,
-            )
-        ) {
+        if (refundSummary.remaining === null || refundSummary.remaining <= 0) {
+            return;
+        }
+
+        const method = prompt(
+            `Refund ${taka(refundSummary.remaining)} for order ${order.order_number} (shipping is not refundable). How was it paid back (e.g. bKash, bank transfer)?`,
+        );
+
+        if (!method) {
             return;
         }
 
         setRefundProcessing(true);
         router.patch(
             route('admin.orders.markRefunded', order.id),
-            {},
+            { refund_amount: refundSummary.remaining, refund_method: method },
             {
                 onFinish: () => setRefundProcessing(false),
             },
@@ -514,6 +548,101 @@ export default function OrderShow({ order, courierSubmission }: Props) {
                                     no longer be set by hand, except marking a
                                     paid order as refunded.
                                 </p>
+                                <dl className="grid grid-cols-2 gap-x-2 gap-y-1 rounded-lg bg-slate-50 p-2 text-xs text-slate-600">
+                                    <dt>Collected</dt>
+                                    <dd className="text-right">
+                                        {taka(refundSummary.collected)}
+                                    </dd>
+                                    <dt>Product refundable</dt>
+                                    <dd className="text-right">
+                                        {taka(refundSummary.cap)}
+                                    </dd>
+                                    <dt>Product refunded</dt>
+                                    <dd className="text-right">
+                                        {taka(refundSummary.refunded)}
+                                    </dd>
+                                    <dt>Remaining</dt>
+                                    <dd className="text-right">
+                                        {taka(refundSummary.remaining)}
+                                    </dd>
+                                    <dt>Shipping (kept)</dt>
+                                    <dd className="text-right">
+                                        {taka(refundSummary.shipping)}
+                                    </dd>
+                                </dl>
+                                {refundSummary.product_refund_complete && (
+                                    <p className="text-xs text-slate-700">
+                                        {refundSummary.payment_fully_refunded
+                                            ? 'Payment fully refunded.'
+                                            : 'Product refund complete — shipping/rounding retained, so the payment is not fully refunded.'}
+                                    </p>
+                                )}
+                                {courierEvidence.courier_involved && (
+                                    <div className="space-y-1 rounded-lg border border-slate-200 p-2 text-xs">
+                                        <p className="font-semibold text-slate-700">
+                                            Courier verification{' '}
+                                            {courierEvidence.eligible
+                                                ? '— complete'
+                                                : '— required before any refund'}
+                                        </p>
+                                        {courierEvidence.consignments.map(
+                                            (c) => (
+                                                <p
+                                                    key={c.provider}
+                                                    className="text-slate-600"
+                                                >
+                                                    {c.provider}{' '}
+                                                    {c.consignment_id}
+                                                    {c.gap_count > 0 &&
+                                                        ` · ${c.gap_count} evidence gap(s)`}
+                                                    {' · '}
+                                                    {c.verification === null
+                                                        ? 'not verified'
+                                                        : c.verification
+                                                                .stale_reason
+                                                          ? `verification stale: ${c.verification.stale_reason}`
+                                                          : `verified ${c.verification.outcome.replace('_', ' ')}`}
+                                                </p>
+                                            ),
+                                        )}
+                                        {courierEvidence.reasons.map(
+                                            (reason) => (
+                                                <p
+                                                    key={reason}
+                                                    className="text-amber-700"
+                                                >
+                                                    {reason}
+                                                </p>
+                                            ),
+                                        )}
+                                        {canVerifyDelivery &&
+                                            courierEvidence.partial_blockers
+                                                .length === 0 &&
+                                            (courierEvidence.consignments
+                                                .length > 0 ||
+                                                courierEvidence
+                                                    .verifiable_submissions
+                                                    .length > 0) && (
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    onClick={() =>
+                                                        setIsVerifyOpen(true)
+                                                    }
+                                                >
+                                                    Verify courier outcome
+                                                </Button>
+                                            )}
+                                    </div>
+                                )}
+                                {canVerifyDelivery && (
+                                    <DeliveryVerificationDialog
+                                        open={isVerifyOpen}
+                                        onClose={() => setIsVerifyOpen(false)}
+                                        order={order}
+                                        evidence={courierEvidence}
+                                    />
+                                )}
                                 {order.payment_status === 'paid' &&
                                     order.status !== 'refunded' && (
                                         <>
@@ -522,7 +651,11 @@ export default function OrderShow({ order, courierSubmission }: Props) {
                                                 className="w-full border-slate-300 text-slate-700 hover:bg-slate-50"
                                                 disabled={
                                                     refundProcessing ||
-                                                    courierUnresolved
+                                                    courierUnresolved ||
+                                                    !courierEvidence.eligible ||
+                                                    refundSummary.remaining ===
+                                                        null ||
+                                                    refundSummary.remaining <= 0
                                                 }
                                                 onClick={handleMarkRefunded}
                                             >

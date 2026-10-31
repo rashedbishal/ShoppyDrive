@@ -46,6 +46,7 @@ const TYPE_LABEL: Record<PointTransaction['type'], string> = {
     redeem: 'Redeemed',
     revoke: 'Reversed',
     refund: 'Refunded',
+    revoke_order: 'Reversed (order refunded)',
 };
 
 const TYPE_VARIANT: Record<
@@ -60,6 +61,7 @@ const TYPE_VARIANT: Record<
     refund: 'default',
     redeem: 'secondary',
     revoke: 'destructive',
+    revoke_order: 'destructive',
 };
 
 export default function Referral({

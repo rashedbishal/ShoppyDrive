@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\CourierEvidenceSource;
+use App\Enums\CourierEvidenceType;
 use App\Enums\CourierSubmissionState;
 use App\Enums\OrderStatus;
 use App\Exceptions\CourierSubmissionBlockedException;
 use App\Exceptions\CourierSubmissionException;
 use App\Exceptions\CourierSubmissionFinalizationException;
 use App\Models\Admin;
+use App\Models\CourierDeliveryEvidence;
 use App\Models\CourierSubmission;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
@@ -225,8 +228,38 @@ class CourierSubmissionService
                 'notes' => "Sent to {$locked->courierLabel()} courier. Consignment ID: {$result['consignment_id']}.",
             ]);
 
+            // PAY-RETURN-001: the chain anchor, atomic with storing the consignment.
+            $this->writeAnchor($order, $locked, (string) $result['consignment_id'], 'send', CourierEvidenceSource::COURIER_SEND);
+
             return true;
         }, 3);
+    }
+
+    /**
+     * PAY-RETURN-001: start a consignment's evidence chain. `send` = created
+     * by this app's own send; `reconcile` = linked by an admin later (never
+     * trusted — courier reports while it was unlinked were not recorded).
+     */
+    private function writeAnchor(Order $order, CourierSubmission $submission, string $consignmentId, string $kind, CourierEvidenceSource $source): void
+    {
+        $raw = $order->{$submission->courier === 'pathao' ? 'pathao_order_status' : 'steadfast_status'};
+
+        CourierDeliveryEvidence::create([
+            'order_id' => $order->id,
+            'provider' => $submission->courier,
+            'consignment_id' => $consignmentId,
+            'courier_submission_id' => $submission->id,
+            'evidence_type' => CourierEvidenceType::ANCHOR,
+            'anchor_kind' => $kind,
+            'source' => $source,
+            'code_generation' => CourierDeliveryEvidence::CODE_GENERATION,
+            'previous_raw_status' => $raw,
+            'raw_status' => null,
+            'anchor_clean' => $kind === 'send' && $raw === null,
+            'history_watermark_id' => (int) OrderStatusHistory::where('order_id', $order->id)->max('id'),
+            'anchor_key' => "{$submission->courier}:{$consignmentId}",
+            'received_at' => now(),
+        ]);
     }
 
     /**
@@ -398,6 +431,8 @@ class CourierSubmissionService
                 'status' => $order->status->value,
                 'notes' => "Steadfast consignment {$consignmentId} recorded by {$admin->name} after verifying it in the Steadfast portal. Note: {$note}",
             ]);
+
+            $this->writeAnchor($order, $locked, $consignmentId, 'reconcile', CourierEvidenceSource::COURIER_RECONCILE_MANUAL);
         }, 3);
     }
 
@@ -452,6 +487,8 @@ class CourierSubmissionService
                     'status' => $order->status->value,
                     'notes' => "{$locked->courierLabel()} consignment {$locked->returned_consignment_id} — returned by {$locked->courierLabel()} for this order's send attempt — linked by {$admin->name}. Note: {$note}",
                 ]);
+
+                $this->writeAnchor($order, $locked, (string) $locked->returned_consignment_id, 'reconcile', CourierEvidenceSource::COURIER_RECONCILE_RETURNED);
             }, 3);
         } catch (UniqueConstraintViolationException) {
             throw new CourierSubmissionBlockedException("Consignment {$submission->fresh()?->returned_consignment_id} is already recorded on another order.");

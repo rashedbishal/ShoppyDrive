@@ -7,6 +7,7 @@ use App\Enums\PointTransactionType;
 use App\Enums\ReturnStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderRefund;
 use App\Models\Product;
 use App\Models\ReferralPointTransaction;
 use App\Models\ReturnRequest;
@@ -245,53 +246,51 @@ test('spend-based points round up and exclude both delivery charge and discount'
 
 // ── PAY-RETURN-001: scheduled spend-reward reduction for refunded returns ────
 
-test('a refunded return request reduces the eligible spend before granting, prorating the discount correctly', function () {
+test('product money already refunded (the refund ledger) reduces the eligible spend before granting', function () {
     setLoyaltySettings(['loyalty_earn_rate_bdt_per_point' => 150]);
     $user = User::factory()->create(['points_balance' => 0]);
 
-    // subtotal 1000, discount 200 -> net spend before any return = 800.
+    // subtotal 1000, discount 200 -> net spend before any refund = 800.
     $order = makeDeliveredOrder($user, 1000, discount: 200);
 
-    // Half the order (by gross value) is refunded via a return.
-    ReturnRequest::create([
-        'order_id' => $order->id,
-        'user_id' => $user->id,
-        'reason' => 'Defective',
-        'status' => ReturnStatus::REFUNDED,
-        'items' => [],
-        'refund_amount' => 500,
-        'refund_method' => 'bKash',
-    ]);
+    // PAY-RETURN-001: half of the paid product value (400 of 800) was refunded.
+    OrderRefund::factory()->create(['order_id' => $order->id, 'amount' => 400, 'source' => OrderRefund::SOURCE_RETURN]);
 
     artisan('rewards:grant-due');
 
-    // reducedSpend = (1000-200) * (1 - 500/1000) = 800 * 0.5 = 400 -> ceil(400/150) = 3.
-    // The naive, unfixed formula (subtotal - discount - refundedValue =
-    // 1000-200-500 = 300 -> ceil(300/150)=2) would have under-credited the
-    // customer by double-subtracting the discount's share of the refund.
+    // spend = 800 - 400 = 400 -> ceil(400/150) = 3, and the basis is recorded on the grant.
     expect($user->refresh()->points_balance)->toBe(3);
+    expect((float) ReferralPointTransaction::where('order_id', $order->id)->where('type', PointTransactionType::EARN_ORDER)->value('currency_amount'))->toBe(400.0);
 });
 
-test('a pending or approved-but-unrefunded return does not reduce scheduled spend points', function () {
+test('a pending or approved return holds back scheduled spend points until it is resolved', function () {
     setLoyaltySettings(['loyalty_earn_rate_bdt_per_point' => 150]);
     $user = User::factory()->create(['points_balance' => 0]);
 
     $order = makeDeliveredOrder($user, 1000, discount: 0);
 
-    ReturnRequest::create([
+    $returnRequest = ReturnRequest::create([
         'order_id' => $order->id,
         'user_id' => $user->id,
         'reason' => 'Defective',
-        'status' => ReturnStatus::APPROVED,
+        'status' => ReturnStatus::PENDING,
         'items' => [],
-        'refund_amount' => 500,
-        'refund_method' => 'bKash',
     ]);
 
     artisan('rewards:grant-due');
+    expect($user->refresh()->points_balance)->toBe(0)
+        ->and($order->refresh()->loyalty_points_granted_at)->toBeNull();
 
-    // Not yet refunded -> full net spend still earns: ceil(1000/150) = 7.
-    expect($user->refresh()->points_balance)->toBe(7);
+    $returnRequest->update(['status' => ReturnStatus::APPROVED]);
+    artisan('rewards:grant-due');
+    expect($user->refresh()->points_balance)->toBe(0)
+        ->and($order->refresh()->loyalty_points_granted_at)->toBeNull();
+
+    // A rejected return restores eligibility: ceil(1000/150) = 7.
+    $returnRequest->update(['status' => ReturnStatus::REJECTED]);
+    artisan('rewards:grant-due');
+    expect($user->refresh()->points_balance)->toBe(7)
+        ->and($order->refresh()->loyalty_points_granted_at)->not->toBeNull();
 });
 
 test('a fully refunded order earns zero scheduled spend points', function () {
@@ -299,16 +298,7 @@ test('a fully refunded order earns zero scheduled spend points', function () {
     $user = User::factory()->create(['points_balance' => 0]);
 
     $order = makeDeliveredOrder($user, 1000, discount: 0);
-
-    ReturnRequest::create([
-        'order_id' => $order->id,
-        'user_id' => $user->id,
-        'reason' => 'Defective',
-        'status' => ReturnStatus::REFUNDED,
-        'items' => [],
-        'refund_amount' => 1000,
-        'refund_method' => 'bKash',
-    ]);
+    OrderRefund::factory()->create(['order_id' => $order->id, 'amount' => 1000, 'source' => OrderRefund::SOURCE_RETURN]);
 
     artisan('rewards:grant-due');
 

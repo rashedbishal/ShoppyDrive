@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\CourierEvidenceSource;
+use App\Models\CourierDeliveryEvidence;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -330,3 +332,18 @@ it('ignores a webhook whose consignment is recorded on more than one order', fun
     fn () => DB::connection()->getDriverName() !== 'sqlite',
     'drops the unique consignment indexes inside the test transaction — only reverted afterwards on SQLite (MySQL/MariaDB DDL commits immediately)',
 );
+
+it('records structured courier evidence tagged with the webhook source only after the signature check (PAY-RETURN-001)', function () {
+    configureSteadfastWebhookSecret();
+    $order = makeSteadfastOrder();
+
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'delivered_parcels'], 'wrong-secret')->assertUnauthorized();
+    expect(CourierDeliveryEvidence::count())->toBe(0);
+
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'delivered_parcels'])->assertOk();
+
+    $evidence = CourierDeliveryEvidence::sole();
+    expect($evidence->source)->toBe(CourierEvidenceSource::STEADFAST_WEBHOOK)
+        ->and($evidence->order_id)->toBe($order->id)
+        ->and($evidence->previous_raw_status)->toBe('in_review');
+});

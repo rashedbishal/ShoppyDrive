@@ -6,14 +6,19 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\OrderStatus;
 use App\Enums\ReturnStatus;
+use App\Exceptions\CouldNotRecordRefundException;
 use App\Http\Controllers\Controller;
 use App\Mail\ReturnApprovedMail;
 use App\Mail\ReturnRejectedMail;
 use App\Models\Order;
 use App\Models\ReturnRequest;
+use App\Services\CourierEvidenceChain;
 use App\Services\InventoryService;
+use App\Services\RefundCalculator;
+use App\Services\RefundService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
@@ -21,15 +26,26 @@ use Inertia\Response;
 
 class ReturnController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, RefundCalculator $calculator, CourierEvidenceChain $courierEvidence): Response
     {
-        $returns = ReturnRequest::with(['user:id,name,email', 'order:id,order_number,total'])
+        $returns = ReturnRequest::with(['user:id,name,email', 'order'])
             ->when($request->search, fn ($q) => $q->whereHas('order', fn ($oq) => $oq->where('order_number', 'like', "%{$request->search}%"))
                 ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$request->search}%")))
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->latest()
             ->paginate(20)
             ->withQueryString();
+
+        // PAY-RETURN-001: the real maximum (or why no refund can be recorded) for approved returns.
+        $returns->getCollection()->each(function (ReturnRequest $returnRequest) use ($calculator, $courierEvidence): void {
+            $order = $returnRequest->order;
+            $maximum = $returnRequest->status === ReturnStatus::APPROVED && $order !== null ? $calculator->returnMaximumPaisa($order, $returnRequest) : null;
+            $courier = $returnRequest->status === ReturnStatus::APPROVED && $order !== null ? $courierEvidence->eligibility($order) : null;
+
+            $returnRequest->setAttribute('max_refund', $maximum === null ? null : RefundCalculator::toTaka($maximum));
+            $returnRequest->setAttribute('refund_blocked_reasons', $courier === null || $courier['eligible'] ? [] : $courier['reasons']);
+            $order?->setVisible(['id', 'order_number', 'total']);
+        });
 
         return Inertia::render('admin/returns/index', [
             'returns' => $returns,
@@ -81,6 +97,7 @@ class ReturnController extends Controller
             ]);
 
             app(InventoryService::class)->restoreForReturnRequest($fresh);
+            $this->logReturnAction($fresh, 'return.approved', ReturnStatus::PENDING);
 
             if ($fresh->user?->email) {
                 Mail::to($fresh->user->email)->send((new ReturnApprovedMail($fresh))->afterCommit());
@@ -120,6 +137,7 @@ class ReturnController extends Controller
                 'admin_note' => $validated['admin_note'] ?? null,
                 'resolved_at' => now(),
             ]);
+            $this->logReturnAction($fresh, 'return.rejected', ReturnStatus::PENDING);
 
             if ($fresh->user?->email) {
                 Mail::to($fresh->user->email)->send((new ReturnRejectedMail($fresh))->afterCommit());
@@ -147,86 +165,38 @@ class ReturnController extends Controller
      * triggers one, and the customer-facing "Refunded" status only ever
      * appears after an admin has called this.
      */
-    public function markRefunded(Request $request, ReturnRequest $returnRequest): RedirectResponse
+    public function markRefunded(Request $request, ReturnRequest $returnRequest, RefundService $refunds): RedirectResponse
     {
-        // The ceiling here is the value of the returned line items only
-        // (unit price × returned quantity, from the order's own item
-        // prices) — it deliberately does NOT add back shipping or deduct
-        // a restocking fee, since no such policy exists anywhere in this
-        // app. If the business wants shipping refunded or a restocking fee
-        // withheld, that's a policy decision to make explicitly, not one
-        // to infer here — this cap only guards against a fat-finger amount
-        // that exceeds what the returned goods were even worth.
-        $maxRefund = $this->eligibleRefundAmount($returnRequest);
-
+        // PAY-RETURN-001: the ceiling (discounted value of the returned units,
+        // within what the customer actually paid excluding shipping, and the
+        // order's shared refund ledger), payment collection and courier
+        // verification are all checked under the order lock by RefundService.
         $validated = $request->validate([
-            'refund_amount' => ['required', 'numeric', 'min:0', 'max:'.$maxRefund],
+            'refund_amount' => ['required', 'numeric', 'min:0'],
             'refund_method' => ['required', 'string', 'max:100'],
         ]);
 
-        $refunded = DB::transaction(function () use ($returnRequest, $validated): bool {
-            // PAY-RETURN-001: Order locked first (see approve()'s
-            // docblock) — this is what makes the full-return check below,
-            // and the possible Order.status transition that follows it,
-            // race-safe against a sibling ReturnRequest being refunded
-            // concurrently on the same order.
-            $lockedOrder = Order::whereKey($returnRequest->order_id)->lockForUpdate()->first();
-            $fresh = ReturnRequest::whereKey($returnRequest->id)->lockForUpdate()->first();
-
-            if ($fresh === null || $fresh->status !== ReturnStatus::APPROVED || $lockedOrder === null) {
-                return false;
-            }
-
-            $fresh->update([
-                'status' => ReturnStatus::REFUNDED,
-                'refund_amount' => $validated['refund_amount'],
-                'refund_method' => $validated['refund_method'],
-                'resolved_at' => now(),
-            ]);
-
-            // PAY-RETURN-001: once every purchased unit on the order is
-            // refunded (across every return request, not just this one),
-            // transition the order itself to REFUNDED — never for a
-            // partial return. The existing Order::booted() listener then
-            // handles coupon release, referral-reward revocation, and
-            // redeemed-points refund on its own; none of that is
-            // duplicated here.
-            if (ReturnRequest::isOrderFullyReturned($lockedOrder)) {
-                $lockedOrder->update(['status' => OrderStatus::REFUNDED]);
-            }
-
-            return true;
-        }, 3);
-
-        if (! $refunded) {
-            return back()->with('error', 'Only an approved return request can be marked as refunded.');
+        try {
+            $refunds->recordReturnRefund(Auth::guard('admin')->user(), $returnRequest, $validated['refund_amount'], $validated['refund_method']);
+        } catch (CouldNotRecordRefundException $e) {
+            return back()->with('error', $e->getMessage());
         }
 
         return back()->with('success', 'Return marked as refunded.');
     }
 
-    /**
-     * Deliberately doesn't trust `$returnRequest->items` to already be
-     * well-formed, even though the only path that creates these rows
-     * (ReturnRequestController::store()) already validates it: a
-     * duplicated order_item_id line, or a stored quantity larger than
-     * what was actually purchased, must never be able to inflate this
-     * ceiling. Aggregates by order_item_id first, then caps each at that
-     * item's real purchased quantity — the hard physical maximum.
-     */
-    private function eligibleRefundAmount(ReturnRequest $returnRequest): float
+    private function logReturnAction(ReturnRequest $returnRequest, string $event, ReturnStatus $previous): void
     {
-        $orderItemsById = $returnRequest->order->items->keyBy('id');
-
-        return collect($returnRequest->items)
-            ->filter(fn (array $item) => isset($item['order_item_id'], $item['quantity']) && $orderItemsById->has($item['order_item_id']))
-            ->groupBy('order_item_id')
-            ->map(fn ($group) => $group->sum('quantity'))
-            ->map(function (int $quantity, int $orderItemId) use ($orderItemsById): float {
-                $orderItem = $orderItemsById->get($orderItemId);
-
-                return (float) $orderItem->price * max(0, min($quantity, $orderItem->quantity));
-            })
-            ->sum();
+        activity('orders')
+            ->causedBy(Auth::guard('admin')->user())
+            ->performedOn($returnRequest)
+            ->event($event)
+            ->withProperties([
+                'order_id' => $returnRequest->order_id,
+                'return_request_id' => $returnRequest->id,
+                'previous_status' => $previous->value,
+                'resulting_status' => $returnRequest->status->value,
+            ])
+            ->log("Return request #{$returnRequest->id} {$returnRequest->status->value}.");
     }
 }

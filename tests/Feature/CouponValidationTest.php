@@ -412,7 +412,9 @@ test('marking an order refunded (not just cancelled) also releases its coupon us
 
     auth('web')->logout();
     actingAs($admin, 'admin');
-    $this->patch(route('admin.orders.markRefunded', $order))->assertRedirect();
+    // PAY-RETURN-001: only a collected payment can be refunded — treat it as paid online, never shipped.
+    $order->forceFill(['payment_method' => 'mobile_banking', 'payment_status' => 'paid'])->save();
+    $this->patch(route('admin.orders.markRefunded', $order), wholeOrderRefundPayload($order))->assertSessionHas('success');
 
     expect($coupon->refresh()->used_count)->toBe(0);
     expect(CouponUse::where('order_id', $order->id)->exists())->toBeFalse();

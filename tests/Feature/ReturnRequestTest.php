@@ -21,7 +21,13 @@ use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Mail;
 
-function createDeliveredOrder(User $user, Product $product, int $quantity = 1, ?CarbonInterface $deliveredAt = null): Order
+/**
+ * PAY-RETURN-001: a delivered order is courier-handled, so by default it is
+ * also given a linked consignment, a current readiness attestation and a
+ * mother-admin full-delivery verification — without them no refund can be
+ * recorded (verification-only mode).
+ */
+function createDeliveredOrder(User $user, Product $product, int $quantity = 1, ?CarbonInterface $deliveredAt = null, bool $courierVerified = true): Order
 {
     $order = Order::create([
         'order_number' => 'ORD-RETURN-'.uniqid(),
@@ -49,7 +55,11 @@ function createDeliveredOrder(User $user, Product $product, int $quantity = 1, ?
         'product_snapshot' => [],
     ]);
 
-    return $order;
+    if ($courierVerified) {
+        courierVerifiedForRefund($order);
+    }
+
+    return $order->refresh();
 }
 
 test('a customer can request a return for their own delivered order within the window', function () {
@@ -438,7 +448,7 @@ test('the refund amount cannot exceed the value of the returned items', function
 
     $this->actingAs($admin, 'admin')
         ->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 900, 'refund_method' => 'bKash'])
-        ->assertSessionHasErrors('refund_amount');
+        ->assertSessionHas('error'); // PAY-RETURN-001: refused by RefundService under the order lock
 
     expect($returnRequest->refresh()->status)->toBe(ReturnStatus::APPROVED);
 
@@ -534,7 +544,7 @@ test('the refund cap cannot be inflated by a duplicated or over-quantity stored 
     // The naive (unfixed) ceiling of 3000 must be rejected...
     $this->actingAs($admin, 'admin')
         ->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 3000, 'refund_method' => 'bKash'])
-        ->assertSessionHasErrors('refund_amount');
+        ->assertSessionHas('error'); // PAY-RETURN-001: refused by RefundService under the order lock
 
     // ...but the correctly-capped amount (the item's real purchased
     // value, 500 * 3 = 1500, deduplicated and capped at quantity 3, not
@@ -693,10 +703,15 @@ test('restocking via a return approval leaves a later whole-order refund from do
     $this->actingAs($admin, 'admin')->patch(route('admin.returns.approve', $returnRequest))->assertRedirect();
     expect($product->refresh()->stock_quantity)->toBe(12); // 2 restocked via the return
 
+    // PAY-RETURN-001: a whole-order refund is refused while a return is
+    // still approved, so record the return's own refund (2 × 500) first.
+    $this->actingAs($admin, 'admin')->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 1000, 'refund_method' => 'bKash'])->assertSessionHasNoErrors();
+    courierVerifiedForRefund($order); // a new refund changes nothing courier-side; re-verify only if needed
+
     // The remaining 1 unit (never returned) is still restocked by the
     // existing whole-order refund path; the already-returned 2 must not
     // be restocked a second time.
-    $this->actingAs($admin, 'admin')->patch(route('admin.orders.markRefunded', $order->id))->assertRedirect();
+    $this->actingAs($admin, 'admin')->patch(route('admin.orders.markRefunded', $order->id), ['refund_amount' => 500, 'refund_method' => 'bKash'])->assertSessionDoesntHaveErrors();
 
     expect($product->refresh()->stock_quantity)->toBe(13); // +1 only, not +3
     expect($item->refresh()->restocked_quantity)->toBe(3);
@@ -766,8 +781,9 @@ test('a return that fully returns and refunds every unit on the order transition
         'status' => ReturnStatus::APPROVED, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 2]],
     ]);
 
+    // PAY-RETURN-001: the cap is the discounted product value, 1000 − 100.
     $this->actingAs($admin, 'admin')
-        ->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 1000, 'refund_method' => 'bKash'])
+        ->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 900, 'refund_method' => 'bKash'])
         ->assertRedirect();
 
     expect($returnRequest->refresh()->status)->toBe(ReturnStatus::REFUNDED);
@@ -791,8 +807,9 @@ test('a partial return does not release the coupon or change the order status', 
         'status' => ReturnStatus::APPROVED, 'items' => [['order_item_id' => $item->id, 'product_id' => $product->id, 'quantity' => 2]],
     ]);
 
+    // PAY-RETURN-001: 2 of 3 units of a 1500 line with a 100 discount = floor(1400 × 2 / 3) = 933.33.
     $this->actingAs($admin, 'admin')
-        ->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 1000, 'refund_method' => 'bKash'])
+        ->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 933.33, 'refund_method' => 'bKash'])
         ->assertRedirect();
 
     expect($returnRequest->refresh()->status)->toBe(ReturnStatus::REFUNDED);

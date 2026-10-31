@@ -1,6 +1,14 @@
 <?php
 
+use App\Enums\CourierSubmissionState;
 use App\Models\Admin;
+use App\Models\CourierSubmission;
+use App\Models\CourierVerificationReadiness;
+use App\Models\Order;
+use App\Models\OrderDeliveryVerification;
+use App\Services\CourierEvidenceChain;
+use App\Services\CourierVerificationReadinessService;
+use App\Services\RefundCalculator;
 use App\Support\AdminSections;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -95,4 +103,119 @@ function createAdmin(array $attributes = []): Admin
         'password' => bcrypt('password'),
         'permissions' => $permissions,
     ], $attributes));
+}
+
+/**
+ * PAY-RETURN-001: pin the readiness service's live probes (release
+ * fingerprint, deployment marker, OPcache, max_execution_time) so tests
+ * control whether an attestation is "current". Bound in the container, so
+ * every service resolved afterwards uses it.
+ *
+ * @param  array<string, mixed>  $probe
+ */
+function fakeCourierReadiness(array $probe = []): CourierVerificationReadinessService
+{
+    $fake = new class($probe) extends CourierVerificationReadinessService
+    {
+        /** @param  array<string, mixed>  $probe */
+        public function __construct(public array $probe) {}
+
+        public function liveFingerprint(): array
+        {
+            return $this->probe['live'] ?? ['fingerprint' => str_repeat('a', 64), 'count' => 1];
+        }
+
+        public function deploymentMarker(): array
+        {
+            return $this->probe['marker'] ?? ['config' => 1_000, 'route' => 1_000];
+        }
+
+        public function opcacheProbe(): array
+        {
+            return $this->probe['opcache'] ?? ['available' => true, 'enabled' => false];
+        }
+
+        public function maxExecutionTime(): int
+        {
+            return $this->probe['max_execution_time'] ?? 30;
+        }
+    };
+
+    app()->instance(CourierVerificationReadinessService::class, $fake);
+
+    return $fake;
+}
+
+/** PAY-RETURN-001: a fake release plus an accepted readiness row matching it. */
+function makeCourierReadinessCurrent(): CourierVerificationReadiness
+{
+    fakeCourierReadiness();
+
+    return CourierVerificationReadiness::factory()->create();
+}
+
+/** PAY-RETURN-001: link a consignment the way a successful send does (order column + sent attempt). */
+function linkTestConsignment(Order $order, string $provider = 'steadfast', ?string $consignmentId = null): void
+{
+    $consignmentId ??= 'TEST-CONS-'.$order->id;
+    $order->forceFill(["{$provider}_consignment_id" => $consignmentId])->save();
+
+    CourierSubmission::factory()->forOrder($order)->create([
+        'courier' => $provider,
+        'state' => CourierSubmissionState::SENT,
+        'active_order_id' => null,
+        'consignment_id' => $consignmentId,
+        'finished_at' => now(),
+    ]);
+}
+
+/**
+ * PAY-RETURN-001: a non-stale mother-admin verification of the order's
+ * linked consignment, carrying the current snapshot (as the real service does).
+ */
+function verifyConsignmentForTest(Order $order, string $outcome = OrderDeliveryVerification::OUTCOME_FULL_DELIVERY, string $provider = 'steadfast'): OrderDeliveryVerification
+{
+    $order->refresh();
+    $chain = app(CourierEvidenceChain::class);
+    $readiness = app(CourierVerificationReadinessService::class)->current();
+    $consignment = $order->{"{$provider}_consignment_id"};
+
+    return OrderDeliveryVerification::factory()->create([
+        'order_id' => $order->id,
+        'provider' => $provider,
+        'consignment_id' => $consignment,
+        'outcome' => $outcome,
+        'evidence_max_id' => $chain->evidenceMaxId($order, $provider, $consignment),
+        'history_max_id' => $chain->courierHistoryMaxId($order, $provider),
+        'raw_status_at_verification' => $order->{$provider === 'pathao' ? 'pathao_order_status' : 'steadfast_status'},
+        'submission_state_snapshot' => $chain->submissionSnapshot($order),
+        'readiness_id' => $readiness->id,
+    ]);
+}
+
+/** PAY-RETURN-001: everything a delivered, courier-handled order needs before a refund can be recorded. */
+function courierVerifiedForRefund(Order $order): OrderDeliveryVerification
+{
+    if (CourierVerificationReadiness::where('status', CourierVerificationReadiness::STATUS_ACCEPTED)->doesntExist()) {
+        makeCourierReadinessCurrent();
+    }
+
+    if ($order->refresh()->steadfast_consignment_id === null && $order->pathao_consignment_id === null) {
+        linkTestConsignment($order);
+    }
+
+    return verifyConsignmentForTest($order);
+}
+
+/**
+ * PAY-RETURN-001: the payload a whole-order refund now requires — exactly
+ * the remaining refundable amount, plus how it was paid back.
+ *
+ * @return array{refund_amount: float, refund_method: string}
+ */
+function wholeOrderRefundPayload(Order $order): array
+{
+    $remaining = app(RefundCalculator::class)->remainingPaisa($order->refresh());
+
+    return ['refund_amount' => RefundCalculator::toTaka((int) $remaining), 'refund_method' => 'bKash'];
 }

@@ -23,6 +23,9 @@ type ReturnRequest = {
     }>;
     user: { id: number; name: string; email: string } | null;
     order: { id: number; order_number: string; total: number } | null;
+    /** PAY-RETURN-001: server-computed maximum for an approved return (null otherwise). */
+    max_refund: number | null;
+    refund_blocked_reasons: string[];
 };
 
 type Paginated<T> = {
@@ -76,8 +79,18 @@ export default function ReturnsIndex({ returns, filters }: Props) {
     };
 
     const handleMarkRefunded = (id: number) => {
+        const request = returns.data.find((r) => r.id === id);
+
+        if (request && request.refund_blocked_reasons.length > 0) {
+            alert(
+                `No refund can be recorded yet:\n\n${request.refund_blocked_reasons.join('\n')}`,
+            );
+
+            return;
+        }
+
         const refund_amount = prompt(
-            'Refund amount actually sent to the customer:',
+            `Refund amount actually sent to the customer (at most ৳${request?.max_refund ?? 0} — the discounted value of the returned items; shipping is not refundable):`,
         );
 
         if (!refund_amount) {

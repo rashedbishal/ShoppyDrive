@@ -8,6 +8,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PointTransactionType;
 use App\Enums\ReturnStatus;
 use App\Models\Order;
+use App\Models\OrderRefund;
 use App\Models\ReferralPointTransaction;
 use App\Models\ReturnRequest;
 use App\Models\Review;
@@ -50,6 +51,7 @@ class LoyaltyPointsService
 
     public function __construct(
         private readonly ReferralService $referrals,
+        private readonly RefundCalculator $refunds,
     ) {}
 
     public function pointsValue(): float
@@ -131,6 +133,99 @@ class LoyaltyPointsService
     {
         $this->referrals->handleOrderCancelledOrRefunded($order);
         $this->refundRedeemedPointsIfApplicable($order);
+
+        // PAY-RETURN-001: a refund (not a cancellation) also takes back the
+        // order-earned points attributable to the refunded money.
+        if ($order->status === OrderStatus::REFUNDED) {
+            $this->reconcileEarnedPointsAfterRefund($order);
+        }
+    }
+
+    /**
+     * PAY-RETURN-001: reverse order-earned points proportionally to the
+     * product money actually refunded since the points were granted — the
+     * balance may go negative (approved policy). Idempotent: the target is
+     * recomputed from the ledgers and only the difference is reversed.
+     *
+     *  - Grants recorded with their spend basis S (`currency_amount`): refunds
+     *    already reflected in the grant are R0 = N − S; reversal covers R − R0.
+     *  - Grants made before PAY-RETURN-001 (no basis): basis B = subtotal −
+     *    discount and only refunds recorded after deployment count, so a
+     *    refund made before deployment never triggers a reversal on its own.
+     */
+    public function reconcileEarnedPointsAfterRefund(Order $order): void
+    {
+        if ($order->user_id === null) {
+            return;
+        }
+
+        DB::transaction(function () use ($order): void {
+            $locked = Order::withTrashed()->whereKey($order->id)->lockForUpdate()->first();
+
+            if ($locked === null || $locked->user_id === null) {
+                return;
+            }
+
+            $grants = ReferralPointTransaction::where('order_id', $locked->id)
+                ->where('user_id', $locked->user_id)
+                ->where('type', PointTransactionType::EARN_ORDER)
+                ->lockForUpdate()
+                ->get();
+            $earned = (int) $grants->sum('points');
+
+            if ($earned <= 0) {
+                return;
+            }
+
+            $alreadyReversed = -1 * (int) ReferralPointTransaction::where('order_id', $locked->id)
+                ->where('user_id', $locked->user_id)
+                ->where('type', PointTransactionType::REVOKE_ORDER)
+                ->lockForUpdate()
+                ->sum('points');
+
+            $refunded = $this->refunds->refundedPaisa($locked, lock: true);
+            $cap = $this->refunds->capPaisa($locked) ?? 0;
+            $basis = $grants->first()->currency_amount;
+
+            if ($basis !== null) {
+                $spend = RefundCalculator::toPaisa($basis);
+                $sinceGrant = $refunded - ($this->refunds->productNetPaisa($locked) - $spend);
+                $target = ($refunded >= $cap && $cap > 0) || ($spend > 0 && $sinceGrant >= $spend)
+                    ? $earned
+                    : ($spend > 0 ? intdiv($earned * max(0, $sinceGrant), $spend) : 0);
+            } else {
+                $legacyBasis = max(0, RefundCalculator::toPaisa($locked->subtotal) - RefundCalculator::toPaisa($locked->discount));
+                $sinceGrant = RefundCalculator::toPaisa(OrderRefund::where('order_id', $locked->id)->where('is_backfilled', false)->sum('amount'));
+                $hasLegacyRefunds = OrderRefund::where('order_id', $locked->id)->where('is_backfilled', true)->exists();
+                $target = ! $hasLegacyRefunds && $refunded >= $cap && $cap > 0
+                    ? $earned
+                    : ($legacyBasis > 0 ? intdiv($earned * $sinceGrant, $legacyBasis) : 0);
+            }
+
+            $delta = min($earned, max(0, $target)) - $alreadyReversed;
+
+            if ($delta <= 0) {
+                return;
+            }
+
+            $customer = User::whereKey($locked->user_id)->lockForUpdate()->first();
+
+            if ($customer === null) {
+                return;
+            }
+
+            // Signed column since PAY-RETURN-001: may go below zero; later earnings offset it.
+            $customer->decrement('points_balance', $delta);
+
+            ReferralPointTransaction::create([
+                'user_id' => $customer->id,
+                'order_id' => $locked->id,
+                'type' => PointTransactionType::REVOKE_ORDER,
+                'points' => -$delta,
+                'currency_amount' => RefundCalculator::toTaka(max(0, $sinceGrant)),
+                'note' => 'Order '.$locked->order_number.' refund — order-earned points reversed'.($basis === null ? ' (pre-ledger grant basis).' : '.'),
+            ]);
+        }, 3);
     }
 
     /**
@@ -344,39 +439,29 @@ class LoyaltyPointsService
         $granted = 0;
 
         foreach ($dueOrderIds as $orderId) {
-            DB::transaction(function () use ($orderId, $rate): void {
+            $counted = DB::transaction(function () use ($orderId, $rate): bool {
                 $order = Order::whereKey($orderId)->lockForUpdate()->first();
 
                 if ($order === null
                     || $order->status !== OrderStatus::DELIVERED
                     || $order->loyalty_points_granted_at !== null
                     || $order->user_id === null) {
-                    return;
+                    return true;
                 }
 
-                $spend = max(0.0, (float) $order->subtotal - (float) $order->discount);
-
-                // PAY-RETURN-001: exclude the value of any fully-REFUNDED
-                // return requests from the earn basis before granting —
-                // $refundedValue and $order->subtotal are both on the same
-                // gross (pre-discount) basis (ReturnRequest.refund_amount
-                // is built from OrderItem.price × quantity, exactly like
-                // subtotal itself; Order.discount is a separate, order-
-                // level figure layered on afterward), so the discount is
-                // prorated onto the refunded share rather than subtracted
-                // a second time. PENDING/APPROVED-but-unrefunded requests
-                // are deliberately excluded (filtered to REFUNDED only) —
-                // they must never reduce what an order is still eligible
-                // to earn. Already-granted points are never revoked after
-                // the fact; this only affects orders not yet granted.
-                $refundedValue = (float) ReturnRequest::where('order_id', $order->id)
-                    ->where('status', ReturnStatus::REFUNDED)
-                    ->sum('refund_amount');
-
-                if ($refundedValue > 0 && $order->subtotal > 0) {
-                    $ratio = min(1.0, $refundedValue / (float) $order->subtotal);
-                    $spend = max(0.0, $spend * (1 - $ratio));
+                // PAY-RETURN-001: while a return is pending or approved the
+                // grant waits (marker left unset, so a later run retries);
+                // a rejected return releases it, a refunded one reduces it.
+                if (ReturnRequest::where('order_id', $order->id)->whereIn('status', [ReturnStatus::PENDING, ReturnStatus::APPROVED])->exists()) {
+                    return false;
                 }
+
+                // PAY-RETURN-001: spend = product net (discount already
+                // allocated) minus the product money actually refunded so far
+                // (the shared refund ledger). The basis is stored on the
+                // ledger row so a later reversal knows exactly what it earned on.
+                $spendPaisa = max(0, $this->refunds->productNetPaisa($order) - $this->refunds->refundedPaisa($order, lock: true));
+                $spend = RefundCalculator::toTaka($spendPaisa);
 
                 $points = $spend > 0 ? (int) ceil($spend / $rate) : 0;
 
@@ -391,15 +476,18 @@ class LoyaltyPointsService
                             'order_id' => $order->id,
                             'type' => PointTransactionType::EARN_ORDER,
                             'points' => $points,
+                            'currency_amount' => $spend,
                             'note' => 'Earned from order '.$order->order_number.'.',
                         ]);
                     }
                 }
 
                 $order->forceFill(['loyalty_points_granted_at' => now()])->saveQuietly();
+
+                return true;
             }, 3);
 
-            $granted++;
+            $granted += $counted ? 1 : 0;
         }
 
         return $granted;

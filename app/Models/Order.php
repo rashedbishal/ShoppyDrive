@@ -174,6 +174,24 @@ class Order extends Model
         return $this->hasOne(ReturnRequest::class)->latestOfMany();
     }
 
+    /** PAY-RETURN-001: the refund ledger (the authoritative cumulative refunded amount). */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(OrderRefund::class);
+    }
+
+    /** PAY-RETURN-001: structured courier evidence (append-only). */
+    public function deliveryEvidence(): HasMany
+    {
+        return $this->hasMany(CourierDeliveryEvidence::class);
+    }
+
+    /** PAY-RETURN-001: mother-admin courier verifications (append-only). */
+    public function deliveryVerifications(): HasMany
+    {
+        return $this->hasMany(OrderDeliveryVerification::class);
+    }
+
     protected static function booted(): void
     {
         // ip_address/user_agent are deliberately excluded from $fillable

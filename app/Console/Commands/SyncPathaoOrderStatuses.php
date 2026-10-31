@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Enums\CourierEvidenceSource;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Services\CourierOrderStatusMapper;
+use App\Services\CourierVerificationReadinessService;
 use App\Services\PathaoCourierService;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -22,8 +24,13 @@ class SyncPathaoOrderStatuses extends Command
     /**
      * Execute the console command.
      */
-    public function handle(PathaoCourierService $pathao): int
+    public function handle(PathaoCourierService $pathao, CourierVerificationReadinessService $readiness): int
     {
+        // PAY-RETURN-001: the release this run is executing, recorded on
+        // completion as the readiness scheduler marker.
+        $startedAt = now();
+        $fingerprint = $readiness->liveFingerprint()['fingerprint'];
+
         $orders = Order::query()
             ->whereNotNull('pathao_consignment_id')
             ->whereNotIn('status', [
@@ -48,7 +55,7 @@ class SyncPathaoOrderStatuses extends Command
             }
 
             try {
-                CourierOrderStatusMapper::sync($order, 'pathao', $info['order_status_slug'] ?? $info['order_status']);
+                CourierOrderStatusMapper::sync($order, 'pathao', $info['order_status_slug'] ?? $info['order_status'], source: CourierEvidenceSource::PATHAO_POLL);
             } catch (Throwable $e) {
                 // sync() rolls the whole status change back when one of its
                 // financial side effects fails, so the order is retried on
@@ -60,6 +67,8 @@ class SyncPathaoOrderStatuses extends Command
         }
 
         $this->info("Synced {$orders->count()} Pathao order(s).");
+
+        $readiness->recordSchedulerCompletion($fingerprint, $startedAt);
 
         return self::SUCCESS;
     }

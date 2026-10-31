@@ -7,6 +7,7 @@ use App\Enums\PointTransactionType;
 use App\Mail\OrderCancelledMail;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderRefund;
 use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use App\Models\ReferralPointTransaction;
@@ -98,23 +99,27 @@ test('admin cancellation refunds redeemed points once and records one history ro
 });
 
 test('marking an order refunded twice credits the redeemed points only once', function () {
-    $order = atomicityOrder($this->customer);
+    // PAY-RETURN-001: a refund needs a collected payment.
+    $order = atomicityOrder($this->customer, ['payment_status' => 'paid', 'payment_method' => 'mobile_banking']);
+    $payload = wholeOrderRefundPayload($order);
 
-    actingAs($this->admin, 'admin')->patch(route('admin.orders.markRefunded', $order))->assertSessionHas('success');
-    actingAs($this->admin, 'admin')->patch(route('admin.orders.markRefunded', $order))->assertSessionHas('error');
+    actingAs($this->admin, 'admin')->patch(route('admin.orders.markRefunded', $order), $payload)->assertSessionHas('success');
+    actingAs($this->admin, 'admin')->patch(route('admin.orders.markRefunded', $order), $payload)->assertSessionHas('error');
 
     expect($this->customer->refresh()->points_balance)->toBe(100);
     expect(refundLedgerCount($order))->toBe(1);
     expect(OrderStatusHistory::where('order_id', $order->id)->where('status', 'refunded')->count())->toBe(1);
 });
 
-test('cancelling and then refunding the same order credits the redeemed points only once', function () {
-    $order = atomicityOrder($this->customer);
+test('a cancelled order cannot then be refunded, and its redeemed points are credited only once', function () {
+    $order = atomicityOrder($this->customer, ['payment_status' => 'paid', 'payment_method' => 'mobile_banking']);
+    $payload = wholeOrderRefundPayload($order);
 
     actingAs($this->admin, 'admin')->patch(route('admin.orders.cancel', $order))->assertSessionHas('success');
-    actingAs($this->admin, 'admin')->patch(route('admin.orders.markRefunded', $order))->assertSessionHas('success');
+    // PAY-RETURN-001: refunding a cancelled order is refused.
+    actingAs($this->admin, 'admin')->patch(route('admin.orders.markRefunded', $order), $payload)->assertSessionHas('error');
 
-    expect($order->refresh()->status)->toBe(OrderStatus::REFUNDED);
+    expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED);
     expect($this->customer->refresh()->points_balance)->toBe(100);
     expect(refundLedgerCount($order))->toBe(1);
 });
@@ -145,14 +150,16 @@ test('a second cancel submitted with a stale order is rejected without a second 
 });
 
 test('a failing REFUND ledger entry rolls back the whole mark-refunded action', function () {
-    $order = atomicityOrder($this->customer);
+    $order = atomicityOrder($this->customer, ['payment_status' => 'paid', 'payment_method' => 'mobile_banking']);
+    $payload = wholeOrderRefundPayload($order);
     $productId = $order->items()->value('product_id');
     $failing = true;
     failRedeemedPointsRefundLedger($failing);
 
     actingAs($this->admin, 'admin')
-        ->patch(route('admin.orders.markRefunded', $order))
+        ->patch(route('admin.orders.markRefunded', $order), $payload)
         ->assertServerError();
+    expect(OrderRefund::count())->toBe(0); // PAY-RETURN-001: the refund-ledger row rolled back too
 
     expect($order->refresh()->status)->toBe(OrderStatus::PROCESSING)
         ->and($order->points_refunded_at)->toBeNull();

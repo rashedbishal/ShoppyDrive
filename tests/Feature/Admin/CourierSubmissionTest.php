@@ -252,7 +252,7 @@ describe('order actions while a submission is unresolved', function () {
         $order = courierOrder();
         $submission = $makeSubmission($order);
 
-        actingAs($this->admin, 'admin')->patch(route('admin.orders.markRefunded', $order))
+        actingAs($this->admin, 'admin')->patch(route('admin.orders.markRefunded', $order), ['refund_amount' => 1, 'refund_method' => 'bKash'])
             ->assertSessionHas('error', "This order can't be marked refunded while a courier submission is in progress or its outcome is unresolved. Resolve it in the Courier panel first.");
 
         expect($order->refresh()->status)->toBe(OrderStatus::PROCESSING);

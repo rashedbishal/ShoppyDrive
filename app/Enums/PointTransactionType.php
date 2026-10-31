@@ -14,4 +14,6 @@ enum PointTransactionType: string
     case REDEEM = 'redeem';
     case REVOKE = 'revoke';
     case REFUND = 'refund';
+    // PAY-RETURN-001: order-earned points reversed after a product refund.
+    case REVOKE_ORDER = 'revoke_order';
 }

@@ -6,11 +6,15 @@ use App\Enums\CourierSubmissionState;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Admin\OrderController;
 use App\Models\Admin;
+use App\Models\CourierDeliveryEvidence;
 use App\Models\CourierSubmission;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\Setting;
+use App\Services\CourierEvidenceChain;
+use App\Services\CourierOrderStatusMapper;
 use App\Services\CourierSubmissionService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Process\InvokedProcess;
 use Illuminate\Support\Facades\DB;
@@ -551,4 +555,124 @@ it('keeps the courier-returned ID and the claim when finalization fails on MySQL
         $dropTrigger();
         $courier?->stop();
     }
+})->skip($mysqlOnly, 'requires a real MySQL connection');
+
+// ── PAY-RETURN-001: structured courier evidence on real MySQL ───────────────
+
+/** A child process that runs one courier status sync: the new mapper, or a replica of the production (G1) mapper. */
+const COURIER_EVIDENCE_SYNC_SCRIPT = <<<'PHP'
+require 'vendor/autoload.php';
+$app = require 'bootstrap/app.php';
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+$database = Illuminate\Support\Facades\DB::connection()->getDatabaseName();
+if (preg_match('/^shoppydrive_test_[a-z0-9_]+$/', $database) !== 1) {
+    fwrite(STDERR, "Refusing to run against database {$database}.");
+    exit(3);
+}
+
+[, $orderId, $mode, $raw, $startAt] = $argv;
+$order = App\Models\Order::findOrFail((int) $orderId);
+while (microtime(true) < (float) $startAt) {
+    usleep(500);
+}
+
+if ($mode === 'g1') {
+    // Production (pre-PAY-RETURN-001) shape: no row lock, raw update, separate history insert, no evidence.
+    Illuminate\Support\Facades\DB::table('orders')->where('id', $order->id)->update(['steadfast_status' => $raw]);
+    App\Models\OrderStatusHistory::create(['order_id' => $order->id, 'status' => $order->status->value, 'notes' => 'Steadfast reported "'.App\Services\CourierOrderStatusMapper::label($raw).'".']);
+} else {
+    App\Services\CourierOrderStatusMapper::sync($order, 'steadfast', $raw, source: App\Enums\CourierEvidenceSource::STEADFAST_WEBHOOK);
+}
+
+echo 'done';
+PHP;
+
+function startEvidenceSync(Order $order, string $mode, string $raw, float $startAt): InvokedProcess
+{
+    return Process::path(base_path())->env([
+        'APP_ENV' => 'testing', 'DB_CONNECTION' => 'mysql', 'DB_DATABASE' => DB::connection()->getDatabaseName(),
+        'MAIL_MAILER' => 'array', 'QUEUE_CONNECTION' => 'sync', 'CACHE_STORE' => 'array', 'SESSION_DRIVER' => 'array',
+    ])->timeout(90)->start(['php', '-r', COURIER_EVIDENCE_SYNC_SCRIPT, (string) $order->id, $mode, $raw, (string) $startAt]);
+}
+
+/** A delivered-in-progress order whose Steadfast consignment was created by this app (send anchor). */
+function evidenceRaceOrder(): Order
+{
+    $order = raceOrder();
+    $submission = CourierSubmission::factory()->forOrder($order)->create(['courier' => 'steadfast']);
+    app(CourierSubmissionService::class)->markSent($submission, ['consignment_id' => 'SF-EV-'.$order->id, 'tracking_code' => 'T']);
+
+    return $order->refresh();
+}
+
+it('rolls back the whole courier status change when the evidence insert fails on MySQL (PAY-RETURN-001)', function () {
+    if (courierRaceDatabase() === null) {
+        return;
+    }
+
+    $dropTrigger = fn () => DB::unprepared('DROP TRIGGER IF EXISTS pay_return_fail_evidence');
+
+    try {
+        $dropTrigger();
+        $order = evidenceRaceOrder();
+        DB::unprepared(<<<'SQL'
+            CREATE TRIGGER pay_return_fail_evidence BEFORE INSERT ON courier_delivery_evidence FOR EACH ROW
+            BEGIN
+                IF NEW.evidence_type = 'transition' THEN
+                    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Simulated evidence failure (PAY-RETURN-001 test trigger)';
+                END IF;
+            END
+            SQL);
+        $historyBefore = OrderStatusHistory::where('order_id', $order->id)->count();
+
+        expect(fn () => CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered_parcels'))->toThrow(QueryException::class);
+
+        $fresh = DB::table('orders')->where('id', $order->id)->first();
+        expect($fresh->status)->toBe('processing')
+            ->and($fresh->steadfast_status)->toBeNull()
+            ->and($fresh->delivered_at)->toBeNull()
+            ->and(OrderStatusHistory::where('order_id', $order->id)->count())->toBe($historyBefore)
+            ->and(CourierDeliveryEvidence::where('order_id', $order->id)->where('evidence_type', 'transition')->count())->toBe(0);
+    } finally {
+        $dropTrigger();
+    }
+})->skip($mysqlOnly, 'requires a real MySQL connection');
+
+it('never loses evidence when a partial and a full report arrive at the same moment (PAY-RETURN-001)', function () {
+    if (courierRaceDatabase() === null) {
+        return;
+    }
+
+    $order = evidenceRaceOrder();
+    $startAt = microtime(true) + 4;
+    $a = startEvidenceSync($order, 'new', 'partial_parcels', $startAt);
+    $b = startEvidenceSync($order, 'new', 'delivered_parcels', $startAt);
+    expect($a->wait()->output())->toBe('done')->and($b->wait()->output())->toBe('done');
+
+    $rows = CourierDeliveryEvidence::where('order_id', $order->id)->whereIn('evidence_type', ['transition', 'observation'])->orderBy('id')->get();
+    expect($rows)->toHaveCount(2)
+        ->and($rows[1]->previous_raw_status)->toBe($rows[0]->raw_status) // serialized on the order row lock: a continuous chain
+        ->and($rows->pluck('is_partial')->contains(true))->toBeTrue()
+        ->and(CourierDeliveryEvidence::where('order_id', $order->id)->where('evidence_type', 'gap')->count())->toBe(0);
+
+    makeCourierReadinessCurrent();
+    expect(app(CourierEvidenceChain::class)->eligibility($order->refresh())['eligible'])->toBeFalse();
+})->skip($mysqlOnly, 'requires a real MySQL connection');
+
+it('detects a stale production-shape writer racing the new mapper (PAY-RETURN-001)', function () {
+    if (courierRaceDatabase() === null) {
+        return;
+    }
+
+    $order = evidenceRaceOrder();
+    $startAt = microtime(true) + 4;
+    $stale = startEvidenceSync($order, 'g1', 'waiting_approval', $startAt);
+    $fresh = startEvidenceSync($order, 'new', 'in_review', $startAt);
+    expect($stale->wait()->output())->toBe('done')->and($fresh->wait()->output())->toBe('done');
+
+    // The next trusted report (even unchanged) records whatever the stale writer left behind.
+    CourierOrderStatusMapper::sync($order->refresh(), 'steadfast', (string) $order->steadfast_status);
+
+    expect(CourierDeliveryEvidence::where('order_id', $order->id)->where('evidence_type', 'gap')->count())->toBeGreaterThan(0);
 })->skip($mysqlOnly, 'requires a real MySQL connection');

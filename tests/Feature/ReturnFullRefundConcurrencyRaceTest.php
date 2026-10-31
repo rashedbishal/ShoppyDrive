@@ -198,3 +198,49 @@ it('detects full-return completion under real MySQL locking even when the comple
         $user?->forceDelete();
     }
 })->skip(fn () => DB::connection()->getDriverName() !== 'mysql', 'requires a real MySQL connection to exercise InnoDB locking-read semantics');
+
+it('serializes two refunds of one order on the order row lock, so the second sees the first\'s ledger row (PAY-RETURN-001)', function () {
+    $conns = returnRaceConnections();
+
+    if ($conns === null) {
+        return;
+    }
+
+    [$connA, $connB] = $conns;
+    $order = null;
+
+    try {
+        $order = Order::on('mysql')->create([
+            'order_number' => 'ORD-REFUND-RACE-'.uniqid(), 'status' => 'delivered', 'payment_status' => 'paid', 'payment_method' => 'zinipay',
+            'subtotal' => 1000, 'shipping_cost' => 60, 'discount' => 100, 'tax' => 0, 'total' => 960,
+            'shipping_address' => [], 'billing_address' => [], 'delivered_at' => now()->subDay(),
+        ]);
+
+        $connA->exec('START TRANSACTION');
+        $connB->exec('START TRANSACTION');
+
+        // B takes its REPEATABLE READ snapshot first (a plain read), before A's refund exists.
+        expect((float) $connB->query("SELECT COALESCE(SUM(amount), 0) FROM order_refunds WHERE order_id = {$order->id}")->fetchColumn())->toBe(0.0);
+
+        // A: the RefundService shape — order row lock, locking ledger read, ledger insert.
+        $connA->prepare('SELECT id FROM orders WHERE id = ? FOR UPDATE')->execute([$order->id]);
+        $connA->query("SELECT COALESCE(SUM(amount), 0) FROM order_refunds WHERE order_id = {$order->id} FOR UPDATE")->fetchColumn();
+        $connA->prepare("INSERT INTO order_refunds (order_id, source, amount, method, is_backfilled, created_at) VALUES (?, 'return', 600, 'bKash', 0, NOW())")->execute([$order->id]);
+        $connA->exec('COMMIT');
+
+        // B: same shape. The locking read sees A's committed row despite B's older snapshot,
+        // so the remaining amount is 900 − 600 = 300 — B cannot overpay.
+        $connB->prepare('SELECT id FROM orders WHERE id = ? FOR UPDATE')->execute([$order->id]);
+        $lockedSum = (float) $connB->query("SELECT COALESCE(SUM(amount), 0) FROM order_refunds WHERE order_id = {$order->id} FOR UPDATE")->fetchColumn();
+        $plainSum = (float) $connB->query("SELECT COALESCE(SUM(amount), 0) FROM order_refunds WHERE order_id = {$order->id}")->fetchColumn();
+        $connB->exec('COMMIT');
+
+        expect($lockedSum)->toBe(600.0)
+            ->and($plainSum)->toBe(0.0); // why RefundCalculator::refundedPaisa(lock: true) uses a locking read
+    } finally {
+        if ($order !== null) {
+            DB::connection('mysql')->table('order_refunds')->where('order_id', $order->id)->delete();
+            DB::connection('mysql')->table('orders')->where('id', $order->id)->delete();
+        }
+    }
+})->skip(fn () => DB::connection()->getDriverName() !== 'mysql', 'requires a real MySQL connection to exercise InnoDB locking-read semantics');

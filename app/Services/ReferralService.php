@@ -419,7 +419,8 @@ class ReferralService
                 return;
             }
 
-            $toRevoke = min($earned, $referrer->points_balance);
+            // PAY-RETURN-001: points_balance can now be negative; never "revoke" a negative amount (which would add points).
+            $toRevoke = max(0, min($earned, $referrer->points_balance));
             $referrer->decrement('points_balance', $toRevoke);
 
             ReferralPointTransaction::create([

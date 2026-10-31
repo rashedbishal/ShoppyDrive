@@ -585,7 +585,8 @@ export interface PointTransaction {
         | 'earn_daily_login'
         | 'redeem'
         | 'revoke'
-        | 'refund';
+        | 'refund'
+        | 'revoke_order';
     points: number;
     currency_amount: number | null;
     note: string | null;

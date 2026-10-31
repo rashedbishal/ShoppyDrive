@@ -355,7 +355,9 @@ test('marking an order refunded restores its stock', function () {
 
     auth('web')->logout();
     actingAs($admin, 'admin');
-    $this->patch(route('admin.orders.markRefunded', $order))->assertRedirect();
+    // PAY-RETURN-001: only a collected payment can be refunded — treat it as paid online, never shipped.
+    $order->forceFill(['payment_method' => 'mobile_banking', 'payment_status' => 'paid'])->save();
+    $this->patch(route('admin.orders.markRefunded', $order), wholeOrderRefundPayload($order))->assertSessionHas('success');
 
     expect($product->refresh()->stock_quantity)->toBe(10);
 });

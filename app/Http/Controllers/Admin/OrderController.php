@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\CourierEvidenceSource;
 use App\Enums\OrderStatus;
+use App\Exceptions\CouldNotRecordRefundException;
 use App\Exceptions\CourierSubmissionBlockedException;
 use App\Exceptions\CourierSubmissionException;
 use App\Exceptions\CourierSubmissionFinalizationException;
@@ -23,12 +25,15 @@ use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Services\CourierEvidenceChain;
 use App\Services\CourierOrderStatusMapper;
 use App\Services\CourierSubmissionService;
 use App\Services\InventoryService;
 use App\Services\OrderDeletionEligibility;
 use App\Services\OrderPermanentDeletionService;
 use App\Services\PathaoCourierService;
+use App\Services\RefundCalculator;
+use App\Services\RefundService;
 use App\Services\SteadfastCourierService;
 use App\Support\OrderNumberGenerator;
 use Illuminate\Http\Client\ConnectionException;
@@ -210,7 +215,7 @@ class OrderController extends Controller
         return redirect()->route('admin.orders.show', $order);
     }
 
-    public function show(Order $order): Response
+    public function show(Order $order, RefundCalculator $refunds, CourierEvidenceChain $courierEvidence): Response
     {
         $order->load(['user:id,name,email,phone', 'items.product:id,name,slug', 'items.variant:id,attributes', 'statusHistories']);
 
@@ -254,47 +259,31 @@ class OrderController extends Controller
                     ? CourierOrderStatusMapper::label($order->steadfast_status)
                     : null,
             ]),
+            // PAY-RETURN-001
+            'refundSummary' => $refunds->summary($order),
+            'courierEvidence' => $courierEvidence->displaySummary($order),
+            'canVerifyDelivery' => (bool) Auth::guard('admin')->user()?->is_mother,
         ]);
     }
 
     /**
-     * The status change, its history row and every financial side effect
-     * Order::booted() runs for it (redeemed-points refund, referral
-     * reversal, stock restore, coupon release) commit or roll back as one
-     * transaction — a failing side effect can't leave the order REFUNDED
-     * with the customer's points never returned. The status is re-checked
-     * on the locked row, so two concurrent clicks can't both transition it
-     * (and double the history row and customer email).
+     * PAY-RETURN-001: whole-order refund. The amount must equal exactly what
+     * is still refundable; that, the unresolved-courier guard, payment
+     * collection, courier verification and the shared refund ledger are all
+     * enforced under the order lock by RefundService, in one transaction
+     * with the status change and every Order::booted() side effect.
      */
-    public function markRefunded(Order $order): RedirectResponse
+    public function markRefunded(Request $request, Order $order, RefundService $refunds): RedirectResponse
     {
-        $error = DB::transaction(function () use ($order): ?string {
-            $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->first();
+        $validated = $request->validate([
+            'refund_amount' => ['required', 'numeric', 'gt:0'],
+            'refund_method' => ['required', 'string', 'max:100'],
+        ]);
 
-            if ($lockedOrder === null || $lockedOrder->status === OrderStatus::REFUNDED) {
-                return 'This order is already marked as refunded.';
-            }
-
-            // COURIER-SEND-RACE-001: a parcel may exist (or be about to) at the
-            // courier — nothing changes until that attempt is resolved.
-            if ($this->courierSubmissions->hasUnresolvedSubmission($lockedOrder->id)) {
-                return $this->courierSubmissions->unresolvedMessage('marked refunded');
-            }
-
-            $old = $lockedOrder->status->value;
-            $lockedOrder->update(['status' => OrderStatus::REFUNDED]);
-
-            OrderStatusHistory::create([
-                'order_id' => $lockedOrder->id,
-                'status' => OrderStatus::REFUNDED->value,
-                'notes' => "Marked as refunded by admin (was: {$old}).",
-            ]);
-
-            return null;
-        }, 3);
-
-        if ($error !== null) {
-            return back()->with('error', $error);
+        try {
+            $refunds->recordOrderRefund(Auth::guard('admin')->user(), $order, $validated['refund_amount'], $validated['refund_method']);
+        } catch (CouldNotRecordRefundException $e) {
+            return back()->with('error', $e->getMessage());
         }
 
         return back()->with('success', 'Order marked as refunded.');
@@ -497,7 +486,7 @@ class OrderController extends Controller
         }
 
         $raw = $info['order_status_slug'] ?? $info['order_status'];
-        CourierOrderStatusMapper::sync($order, 'pathao', $raw);
+        CourierOrderStatusMapper::sync($order, 'pathao', $raw, source: CourierEvidenceSource::PATHAO_ADMIN_REFRESH);
 
         return back()->with('success', 'Pathao status: '.CourierOrderStatusMapper::label($raw).'.');
     }
@@ -519,7 +508,7 @@ class OrderController extends Controller
             return back()->with('error', 'Steadfast: '.$e->getMessage());
         }
 
-        CourierOrderStatusMapper::sync($order, 'steadfast', $info['status']);
+        CourierOrderStatusMapper::sync($order, 'steadfast', $info['status'], source: CourierEvidenceSource::STEADFAST_ADMIN_REFRESH);
 
         return back()->with('success', 'Steadfast status: '.CourierOrderStatusMapper::label($info['status']).'.');
     }
@@ -558,7 +547,7 @@ class OrderController extends Controller
             return back()->with('error', "{$label} returned consignment {$result['consignment_id']}, but this submission had already been resolved — see the order history.");
         }
 
-        CourierOrderStatusMapper::sync($order, $courier, $courier === 'pathao' ? $result['order_status'] : $result['status']);
+        CourierOrderStatusMapper::sync($order, $courier, $courier === 'pathao' ? $result['order_status'] : $result['status'], source: CourierEvidenceSource::COURIER_SEND);
 
         return back()->with('success', "Order sent to {$label} for pickup.");
     }
@@ -582,7 +571,7 @@ class OrderController extends Controller
         if ($order->steadfast_consignment_id !== null) {
             try {
                 $info = $this->steadfast->getOrderInfo($order->steadfast_consignment_id);
-                CourierOrderStatusMapper::sync($order, 'steadfast', $info['status']);
+                CourierOrderStatusMapper::sync($order, 'steadfast', $info['status'], source: CourierEvidenceSource::COURIER_RECONCILE_REFRESH);
             } catch (RuntimeException|ConnectionException) {
                 // The consignment is recorded; its status catches up on the next refresh or webhook.
             }

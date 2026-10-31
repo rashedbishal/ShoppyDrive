@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\CourierEvidenceSource;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Services\CourierOrderStatusMapper;
@@ -48,7 +49,7 @@ class SteadfastWebhookController extends Controller
         $newStatus = $payload['status'] ?? null;
 
         if ($newStatus !== null) {
-            CourierOrderStatusMapper::sync($order, 'steadfast', $newStatus, $payload['tracking_message'] ?? null);
+            CourierOrderStatusMapper::sync($order, 'steadfast', $newStatus, $payload['tracking_message'] ?? null, CourierEvidenceSource::STEADFAST_WEBHOOK);
         }
 
         return response()->json(['status' => 'success']);

@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\CourierEvidenceSource;
+use App\Enums\CourierEvidenceType;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Models\CourierDeliveryEvidence;
 use App\Models\Order;
+use App\Models\OrderStatusHistory;
 use Illuminate\Support\Facades\DB;
 
 class CourierOrderStatusMapper
@@ -118,7 +122,7 @@ class CourierOrderStatusMapper
      * status is unchanged from what's already stored, so repeated
      * polls/webhook retries don't create duplicate history entries.
      */
-    public static function sync(Order $order, string $provider, string $rawStatus, ?string $extraNote = null): void
+    public static function sync(Order $order, string $provider, string $rawStatus, ?string $extraNote = null, CourierEvidenceSource $source = CourierEvidenceSource::UNSPECIFIED): void
     {
         // The raw-status write, the status change, its history row and every
         // financial side effect Order::booted() runs for a cancellation
@@ -128,7 +132,7 @@ class CourierOrderStatusMapper
         // webhook retry racing a scheduled poll or an admin action can't
         // record the same report twice. withTrashed() keeps the pre-existing
         // behavior of recording reports for a trashed order too.
-        $found = DB::transaction(function () use ($order, $provider, $rawStatus, $extraNote): bool {
+        $found = DB::transaction(function () use ($order, $provider, $rawStatus, $extraNote, $source): bool {
             $lockedOrder = Order::withTrashed()->whereKey($order->id)->lockForUpdate()->first();
 
             if ($lockedOrder === null) {
@@ -136,10 +140,18 @@ class CourierOrderStatusMapper
             }
 
             $statusField = $provider === 'pathao' ? 'pathao_order_status' : 'steadfast_status';
+            $consignmentId = $lockedOrder->{"{$provider}_consignment_id"};
+
+            // PAY-RETURN-001: before anything else (even an unchanged report),
+            // record any break in this consignment's evidence chain.
+            self::recordEvidenceGaps($lockedOrder, $provider, $consignmentId, $statusField);
 
             if ($lockedOrder->{$statusField} === $rawStatus) {
                 return true;
             }
+
+            $previousRaw = $lockedOrder->{$statusField};
+            $statusBefore = $lockedOrder->status;
 
             $mapped = $provider === 'pathao' ? self::forPathao($rawStatus) : self::forSteadfast($rawStatus);
             $statusChanged = $mapped !== null
@@ -174,9 +186,33 @@ class CourierOrderStatusMapper
                 $note .= ' '.$extraNote;
             }
 
-            $lockedOrder->statusHistories()->create([
+            $history = $lockedOrder->statusHistories()->create([
                 'status' => $lockedOrder->status->value,
                 'notes' => $note,
+            ]);
+
+            // PAY-RETURN-001: the structured evidence row, linked to its
+            // display note, in the same transaction as the status change.
+            $normalized = self::normalize($rawStatus);
+            $isPartial = str_contains($normalized, 'partial');
+
+            CourierDeliveryEvidence::create([
+                'order_id' => $lockedOrder->id,
+                'provider' => $provider,
+                'consignment_id' => $consignmentId,
+                'order_status_history_id' => $history->id,
+                'evidence_type' => $statusChanged ? CourierEvidenceType::TRANSITION : CourierEvidenceType::OBSERVATION,
+                'source' => $source,
+                'code_generation' => CourierDeliveryEvidence::CODE_GENERATION,
+                'previous_raw_status' => $previousRaw,
+                'raw_status' => $rawStatus,
+                'normalized_status' => $normalized,
+                'mapped_order_status' => $mapped?->value,
+                'order_status_before' => $statusBefore->value,
+                'order_status_after' => $lockedOrder->status->value,
+                'is_partial' => $isPartial,
+                'is_full_delivery' => $mapped === OrderStatus::DELIVERED && ! $isPartial,
+                'received_at' => now(),
             ]);
 
             return true;
@@ -187,6 +223,72 @@ class CourierOrderStatusMapper
         if ($found) {
             $order->refresh();
         }
+    }
+
+    /**
+     * PAY-RETURN-001 gap detection (call with the order row locked):
+     *  - the stored raw status differs from the last evidence row's — a raw
+     *    change happened without evidence;
+     *  - a courier-format history note after the consignment's anchor has no
+     *    evidence row — something wrote a courier report without evidence.
+     * Each gap is recorded once (gap_key) and permanently breaks the chain.
+     */
+    private static function recordEvidenceGaps(Order $order, string $provider, ?string $consignmentId, string $statusField): void
+    {
+        $chain = CourierDeliveryEvidence::where('order_id', $order->id)
+            ->where('provider', $provider)
+            ->where('consignment_id', $consignmentId)
+            ->whereIn('evidence_type', [CourierEvidenceType::ANCHOR, CourierEvidenceType::TRANSITION, CourierEvidenceType::OBSERVATION, CourierEvidenceType::GAP]);
+
+        $last = (clone $chain)->latest('id')->first();
+        $stored = $order->{$statusField};
+
+        if ($last !== null && $last->raw_status !== $stored) {
+            $key = "mismatch:{$last->id}:".sha1((string) $stored);
+
+            if (! CourierDeliveryEvidence::where('gap_key', $key)->exists()) {
+                self::writeGap($order, $provider, $consignmentId, 'raw_mismatch', $key, $last->raw_status, $stored, null);
+            }
+        }
+
+        $anchor = (clone $chain)->where('evidence_type', CourierEvidenceType::ANCHOR)->oldest('id')->first();
+
+        if ($anchor === null) {
+            return;
+        }
+
+        $unlinked = OrderStatusHistory::where('order_id', $order->id)
+            ->where('id', '>', (int) $anchor->history_watermark_id)
+            ->where(fn ($q) => $provider === 'pathao'
+                ? $q->where('notes', 'like', 'Pathao reported "%')
+                : $q->where('notes', 'like', 'Steadfast reported "%')->orWhere('notes', 'like', 'Steadfast status updated to "%'))
+            ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('courier_delivery_evidence')->whereColumn('courier_delivery_evidence.order_status_history_id', 'order_status_histories.id'))
+            ->orderBy('id')
+            ->get(['id']);
+
+        foreach ($unlinked as $history) {
+            self::writeGap($order, $provider, $consignmentId, 'unlinked_history', "unlinked:{$history->id}", $stored, $stored, $history->id);
+        }
+    }
+
+    private static function writeGap(Order $order, string $provider, ?string $consignmentId, string $reason, string $key, ?string $previousRaw, ?string $raw, ?int $historyId): void
+    {
+        CourierDeliveryEvidence::create([
+            'order_id' => $order->id,
+            'provider' => $provider,
+            'consignment_id' => $consignmentId,
+            'order_status_history_id' => $historyId,
+            'evidence_type' => CourierEvidenceType::GAP,
+            'source' => CourierEvidenceSource::UNSPECIFIED,
+            'code_generation' => CourierDeliveryEvidence::CODE_GENERATION,
+            'previous_raw_status' => $previousRaw,
+            'raw_status' => $raw,
+            'normalized_status' => $raw === null ? null : self::normalize($raw),
+            'is_partial' => $raw !== null && str_contains(self::normalize($raw), 'partial'),
+            'gap_reason' => $reason,
+            'gap_key' => $key,
+            'received_at' => now(),
+        ]);
     }
 
     private static function normalize(string $rawStatus): string

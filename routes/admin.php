@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\ContentImageController;
 use App\Http\Controllers\Admin\CouponController;
+use App\Http\Controllers\Admin\CourierVerificationReadinessController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FlashSaleController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\Admin\IncompleteOrderController;
 use App\Http\Controllers\Admin\LandingPageController as AdminLandingPageController;
 use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\OrderDeliveryVerificationController;
 use App\Http\Controllers\Admin\PopularKeywordController;
 use App\Http\Controllers\Admin\ProductBundleController;
 use App\Http\Controllers\Admin\ProductController;
@@ -145,6 +147,10 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::post('orders/{order}/courier-submissions/{courierSubmission}/record-consignment', [OrderController::class, 'recordCourierConsignment'])->name('orders.courier.recordConsignment')->middleware(AdminSections::middleware('orders', 'update'))->scopeBindings();
     Route::post('orders/{order}/courier-submissions/{courierSubmission}/confirm-returned-consignment', [OrderController::class, 'confirmReturnedCourierConsignment'])->name('orders.courier.confirmReturnedConsignment')->middleware(AdminSections::middleware('orders', 'update'))->scopeBindings();
     Route::post('orders/{order}/courier-submissions/{courierSubmission}/confirm-not-created', [OrderController::class, 'confirmCourierNotCreated'])->name('orders.courier.confirmNotCreated')->middleware(AdminSections::middleware('orders', 'update'))->scopeBindings();
+    // PAY-RETURN-001: mother-admin-only courier verification (no section permission is enough).
+    Route::post('orders/{order}/delivery-verifications', [OrderDeliveryVerificationController::class, 'store'])->name('orders.deliveryVerifications.store')->middleware(['admin.mother', 'throttle:30,15'])->block(10, 10);
+    Route::get('courier-readiness', [CourierVerificationReadinessController::class, 'index'])->name('courierReadiness.index')->middleware('admin.mother');
+    Route::post('courier-readiness', [CourierVerificationReadinessController::class, 'store'])->name('courierReadiness.store')->middleware(['admin.mother', 'throttle:30,15'])->block(10, 10);
 
     Route::get('returns', [ReturnController::class, 'index'])->name('returns.index')->middleware(AdminSections::middleware('returns', 'view'));
     Route::patch('returns/{returnRequest}/approve', [ReturnController::class, 'approve'])->name('returns.approve')->middleware(AdminSections::middleware('returns', 'update'));

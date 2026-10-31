@@ -610,3 +610,21 @@ test('admin can update referral and loyalty settings', function () {
     expect((float) Setting::find('points_redeem_value_bdt')?->value)->toBe(2.0);
     expect((float) Setting::find('points_redeem_max_percent')?->value)->toBe(40.0);
 });
+
+test('revoking a referral reward never increases a referrer\'s negative points balance', function () {
+    // PAY-RETURN-001: balances may now be negative (order-earned points
+    // reversed after being spent); the referral revoke must still never add points.
+    enableReferralProgram();
+    $referrer = User::factory()->create(['points_balance' => 0]);
+    $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
+
+    $order = placeAndDeliverQualifyingOrder($referred, $product, daysAgo: 1);
+    artisan('rewards:grant-due');
+    expect($referrer->refresh()->points_balance)->toBe(50);
+
+    $referrer->forceFill(['points_balance' => -30])->save();
+    $order->update(['status' => OrderStatus::CANCELLED]);
+
+    expect($referrer->refresh()->points_balance)->toBe(-30);
+});
