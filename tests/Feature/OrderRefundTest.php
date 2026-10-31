@@ -336,7 +336,7 @@ test('a partial refund reverses earned points by the money actually refunded, no
     actingAs(createAdmin(), 'admin')->patch(route('admin.returns.markRefunded', $returnRequest), ['refund_amount' => 300, 'refund_method' => 'bKash'])->assertSessionHas('success');
 
     expect($user->refresh()->points_balance)->toBe(60) // floor(90 × 300 / 900) = 30 reversed
-        ->and(ReferralPointTransaction::where('type', PointTransactionType::REVOKE_ORDER)->sum('points'))->toBe(-30);
+        ->and((int) ReferralPointTransaction::where('type', PointTransactionType::REVOKE_ORDER)->sum('points'))->toBe(-30);
 });
 
 test('a full refund reverses all earned points, idempotently, and the balance may go negative', function () {

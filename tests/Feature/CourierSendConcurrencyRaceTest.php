@@ -14,6 +14,7 @@ use App\Models\Setting;
 use App\Services\CourierEvidenceChain;
 use App\Services\CourierOrderStatusMapper;
 use App\Services\CourierSubmissionService;
+use App\Services\RefundService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Process\InvokedProcess;
@@ -395,7 +396,11 @@ it('refuses to cancel or mark refunded an order whose courier booking is in flig
         // Both calls share this process's session, so read each flash right away.
         $controller = app(OrderController::class);
         $cancelError = $controller->cancel(Request::create('/', 'PATCH', ['reason' => 'Customer changed mind']), $order)->getSession()->get('error');
-        $refundError = $controller->markRefunded($order)->getSession()->get('error');
+        $refundError = $controller->markRefunded(
+            Request::create('/', 'PATCH', ['refund_amount' => 100, 'refund_method' => 'bkash']),
+            $order,
+            app(RefundService::class),
+        )->getSession()->get('error');
 
         expect($cancelError)->toContain("can't be cancelled while a courier submission is in progress");
         expect($refundError)->toContain("can't be marked refunded while a courier submission is in progress");

@@ -11,6 +11,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use App\Models\ReferralPointTransaction;
 use App\Models\User;
+use App\Services\RefundService;
 use Illuminate\Http\Request;
 use Illuminate\Process\ProcessResult;
 use Illuminate\Support\Facades\DB;
@@ -251,7 +252,11 @@ $controller = $app->make(App\Http\Controllers\Admin\OrderController::class);
 
 match ($argv[2]) {
     'cancel' => $controller->cancel(Illuminate\Http\Request::create('/', 'PATCH'), $order),
-    'refund' => $controller->markRefunded($order),
+    'refund' => $controller->markRefunded(
+        Illuminate\Http\Request::create('/', 'PATCH', ['refund_amount' => 940, 'refund_method' => 'bkash']),
+        $order,
+        $app->make(App\Services\RefundService::class),
+    ),
     'steadfast-cancelled' => App\Services\CourierOrderStatusMapper::sync($order, 'steadfast', 'cancelled_parcells'),
 };
 PHP;
@@ -269,8 +274,12 @@ function createRedeemedPointsRaceOrder(): array
         'order_number' => 'ORD-ATOMIC-RACE-'.uniqid(),
         'user_id' => $user->id,
         'status' => OrderStatus::PROCESSING,
-        'payment_status' => 'unpaid',
-        'payment_method' => 'cod',
+        // PAY-RETURN-001: markRefunded() now requires a paid order. ZiniPay
+        // (not COD) avoids collectedPaisa()'s COD delivered_at requirement,
+        // which would also flip isCourierInvolved() true and demand a
+        // courier-readiness attestation this fixture deliberately has none of.
+        'payment_status' => 'paid',
+        'payment_method' => 'zinipay',
         'subtotal' => 1000,
         'shipping_cost' => 60,
         'discount' => 60,
@@ -362,7 +371,11 @@ it('rejects a duplicate mark-refunded that was blocked behind the first one unde
 
     [$user, $order] = createRedeemedPointsRaceOrder();
 
-    raceAdminActions($conns[0], $order, fn () => controllerUnderRace()->markRefunded($order), 'refund');
+    raceAdminActions($conns[0], $order, fn () => controllerUnderRace()->markRefunded(
+        Request::create('/', 'PATCH', ['refund_amount' => 940, 'refund_method' => 'bkash']),
+        $order,
+        app(RefundService::class),
+    ), 'refund');
 
     expect($order->refresh()->status)->toBe(OrderStatus::REFUNDED);
     expect(OrderStatusHistory::where('order_id', $order->id)->count())->toBe(1);
@@ -370,17 +383,34 @@ it('rejects a duplicate mark-refunded that was blocked behind the first one unde
     expect($user->refresh()->points_balance)->toBe(100);
 })->skip(fn () => DB::connection()->getDriverName() !== 'mysql', 'requires a real MySQL connection to exercise InnoDB locking-read semantics');
 
-it('refunds once when an admin cancellation races a mark-refunded under real MySQL locking', function () {
+/**
+ * PAY-RETURN-001 changed this scenario's correct outcome, not just
+ * markRefunded()'s signature. `raceAdminActions()` only commits the first
+ * action (and releases the Order row lock) *after* confirming the contender
+ * is genuinely blocked in LOCK WAIT on that same row — so the contender's
+ * locked re-read is guaranteed to observe cancellation's committed state,
+ * never a stale pre-commit one. That is a real, verified ordering guarantee
+ * (not an assumption), so under the approved rule "a cancelled order cannot
+ * be refunded", the contending refund is guaranteed to be rejected by
+ * `RefundService::assertRefundable()`, and cancellation is guaranteed to
+ * win. The exactly-once redeemed-points-reversal invariant this test exists
+ * to prove still holds — it's just reached via cancel()'s own reversal
+ * instead of a (no longer possible) successful refund.
+ */
+it('rejects a mark-refunded that was blocked behind a committed cancellation under real MySQL locking', function () {
     if (($conns = loyaltyRaceConnections()) === null) {
         return;
     }
 
     [$user, $order] = createRedeemedPointsRaceOrder();
 
-    raceAdminActions($conns[0], $order, fn () => controllerUnderRace()->cancel(Request::create('/', 'PATCH'), $order), 'refund');
+    $result = raceAdminActions($conns[0], $order, fn () => controllerUnderRace()->cancel(Request::create('/', 'PATCH'), $order), 'refund');
 
-    expect($order->refresh()->status)->toBe(OrderStatus::REFUNDED);
-    expect(OrderStatusHistory::where('order_id', $order->id)->count())->toBe(2);
+    expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED);
+    expect(OrderStatusHistory::where('order_id', $order->id)->count())->toBe(1);
+    // The blocked refund attempt must fail cleanly (the controller catches
+    // CouldNotRecordRefundException), not error out of the subprocess.
+    expect($result->exitCode())->toBe(0, $result->errorOutput());
     expect(ReferralPointTransaction::where('order_id', $order->id)->where('type', PointTransactionType::REFUND)->count())->toBe(1);
     expect($user->refresh()->points_balance)->toBe(100);
 })->skip(fn () => DB::connection()->getDriverName() !== 'mysql', 'requires a real MySQL connection to exercise InnoDB locking-read semantics');
@@ -419,8 +449,11 @@ it('rolls back the status change, history and refund together under real MySQL w
         }
     });
 
-    expect(fn () => controllerUnderRace()->markRefunded($order))
-        ->toThrow(RuntimeException::class, 'Simulated REFUND ledger failure.');
+    expect(fn () => controllerUnderRace()->markRefunded(
+        Request::create('/', 'PATCH', ['refund_amount' => 940, 'refund_method' => 'bkash']),
+        $order,
+        app(RefundService::class),
+    ))->toThrow(RuntimeException::class, 'Simulated REFUND ledger failure.');
 
     expect(DB::transactionLevel())->toBe(0);
 
