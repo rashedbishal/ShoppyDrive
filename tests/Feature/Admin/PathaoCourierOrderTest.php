@@ -95,7 +95,12 @@ test('admin can send an order to pathao for pickup', function () {
     expect($this->order->pathao_order_status)->toBe('Pending');
     expect($this->order->pathao_delivery_fee)->toBe(65.0);
     expect($this->order->tracking_number)->toBe('CONSIGN-ABC');
-    expect($this->order->statusHistories()->latest()->first()->notes)->toContain('CONSIGN-ABC');
+    // TEST-FLAKE-001-class issue: this and the status-sync history row that
+    // immediately follows it both land in the same request with an
+    // identical (second-precision) created_at, so `->latest()->first()`
+    // has an undefined pick between them. Assert on existence instead of
+    // position — this is what the send action actually needs to prove.
+    expect($this->order->statusHistories()->where('notes', 'like', '%CONSIGN-ABC%')->exists())->toBeTrue();
 });
 
 test('a connection failure while sending to pathao shows a clean error instead of a 500', function () {
