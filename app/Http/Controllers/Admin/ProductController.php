@@ -176,6 +176,12 @@ class ProductController extends Controller
             $data['published_at'] = now();
         }
 
+        // MEDIA-VIDEO-TYPE-001: a retained (not re-uploaded) media item arrives
+        // as a bare path string with no type info — looked up here, by path,
+        // against what's currently stored, so storeUploads() can keep a kept
+        // video's real type instead of defaulting it to 'image'.
+        $existingMediaTypes = $product->media()->pluck('type', 'path')->all();
+
         try {
             $this->saveAtomically($images, function (?array $media) use ($product, $data, $variants, $mediaTags, $stockToken): void {
                 ProductStockToken::lockAndVerify($product, $stockToken);
@@ -187,7 +193,7 @@ class ProductController extends Controller
                 if ($media !== null) {
                     $this->syncMedia($product, $media, $mediaTags, $variantsByKey);
                 }
-            });
+            }, $existingMediaTypes);
         } catch (StaleProductStockException $e) {
             Inertia::flash('toast', ['type' => 'error', 'message' => $e->getMessage()]);
 
@@ -252,13 +258,14 @@ class ProductController extends Controller
      *
      * @param  array<int, string|UploadedFile|null>|null  $images
      * @param  Closure(array<int, array{path: string|null, type: string}>|null): void  $save
+     * @param  array<string, string>  $existingMediaTypes  Current product_media type keyed by path — see storeUploads().
      */
-    private function saveAtomically(?array $images, Closure $save): void
+    private function saveAtomically(?array $images, Closure $save, array $existingMediaTypes = []): void
     {
         $storedFiles = [];
 
         try {
-            $media = $images === null ? null : $this->storeUploads($images, $storedFiles);
+            $media = $images === null ? null : $this->storeUploads($images, $storedFiles, $existingMediaTypes);
 
             DB::transaction(fn () => $save($media));
         } catch (Throwable $e) {
@@ -274,13 +281,21 @@ class ProductController extends Controller
     /**
      * @param  array<int, string|UploadedFile|null>  $images
      * @param  array<int, string>  $storedFiles  Each stored path, added as it's written, so a later failure can remove it.
+     * @param  array<string, string>  $existingMediaTypes  Current product_media type keyed by path. A retained path
+     *                                                     (not re-uploaded) has no type info of its own — this is
+     *                                                     how it keeps its real type instead of defaulting to
+     *                                                     'image' (MEDIA-VIDEO-TYPE-001). Fresh uploads never
+     *                                                     consult this; their type is always detected from the
+     *                                                     file's own MIME type below.
      * @return array<int, array{path: string|null, type: string}>
      */
-    private function storeUploads(array $images, array &$storedFiles): array
+    private function storeUploads(array $images, array &$storedFiles, array $existingMediaTypes = []): array
     {
-        return array_map(function (string|UploadedFile|null $fileOrUrl) use (&$storedFiles): array {
+        return array_map(function (string|UploadedFile|null $fileOrUrl) use (&$storedFiles, $existingMediaTypes): array {
             if (! $fileOrUrl instanceof UploadedFile) {
-                return ['path' => $fileOrUrl, 'type' => 'image'];
+                $type = $fileOrUrl !== null ? ($existingMediaTypes[$fileOrUrl] ?? 'image') : 'image';
+
+                return ['path' => $fileOrUrl, 'type' => $type];
             }
 
             $type = str_starts_with((string) $fileOrUrl->getMimeType(), 'video/') ? 'video' : 'image';

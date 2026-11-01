@@ -211,3 +211,27 @@ test('an update that sends no images leaves media alone', function () {
 
     expect($product->media()->pluck('path')->all())->toBe([$oldPath]);
 });
+
+/**
+ * MEDIA-VIDEO-TYPE-001: a retained (not re-uploaded) media path arrives with
+ * no type info of its own — storeUploads() must look its real type up by
+ * path instead of defaulting it to 'image'.
+ */
+test('an update keeping its existing video media keeps its video type', function () {
+    $product = Product::factory()->create(['category_id' => $this->category->id, 'has_color_variant' => true]);
+    $product->media()->create(['path' => '/storage/products/clip.mp4', 'type' => 'video', 'is_primary' => true, 'sort_order' => 0]);
+
+    $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + atomicProductPayload([
+        'images' => ['/storage/products/clip.mp4'],
+    ]))->assertRedirect();
+
+    expect(ProductMedia::where('product_id', $product->id)->firstOrFail()->type)->toBe('video');
+});
+
+test('an update keeping its existing image media keeps its image type', function () {
+    [$product, $oldPath] = existingProductWithMedia();
+
+    $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + atomicProductPayload(['images' => [$oldPath]]))->assertRedirect();
+
+    expect(ProductMedia::where('product_id', $product->id)->firstOrFail()->type)->toBe('image');
+});
