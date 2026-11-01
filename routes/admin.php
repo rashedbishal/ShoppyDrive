@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\IncompleteOrderController;
 use App\Http\Controllers\Admin\LandingPageController as AdminLandingPageController;
 use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\OrderCourierController;
 use App\Http\Controllers\Admin\OrderDeliveryVerificationController;
 use App\Http\Controllers\Admin\PopularKeywordController;
 use App\Http\Controllers\Admin\ProductBundleController;
@@ -142,13 +143,13 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::patch('orders/{order}/shipping-address', [OrderController::class, 'updateShippingAddress'])->name('orders.updateShippingAddress')->middleware(AdminSections::middleware('orders', 'update'));
     Route::patch('orders/{order}/refund', [OrderController::class, 'markRefunded'])->name('orders.markRefunded')->middleware(AdminSections::middleware('orders', 'update'));
     Route::patch('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel')->middleware(AdminSections::middleware('orders', 'update'));
-    Route::post('orders/{order}/pathao/send', [OrderController::class, 'sendToPathao'])->name('orders.pathao.send')->middleware(AdminSections::middleware('orders', 'update'));
-    Route::post('orders/{order}/pathao/refresh', [OrderController::class, 'refreshPathaoStatus'])->name('orders.pathao.refresh')->middleware(AdminSections::middleware('orders', 'update'));
-    Route::post('orders/{order}/steadfast/send', [OrderController::class, 'sendToSteadfast'])->name('orders.steadfast.send')->middleware(AdminSections::middleware('orders', 'update'));
-    Route::post('orders/{order}/steadfast/refresh', [OrderController::class, 'refreshSteadfastStatus'])->name('orders.steadfast.refresh')->middleware(AdminSections::middleware('orders', 'update'));
-    Route::post('orders/{order}/courier-submissions/{courierSubmission}/record-consignment', [OrderController::class, 'recordCourierConsignment'])->name('orders.courier.recordConsignment')->middleware(AdminSections::middleware('orders', 'update'))->scopeBindings();
-    Route::post('orders/{order}/courier-submissions/{courierSubmission}/confirm-returned-consignment', [OrderController::class, 'confirmReturnedCourierConsignment'])->name('orders.courier.confirmReturnedConsignment')->middleware(AdminSections::middleware('orders', 'update'))->scopeBindings();
-    Route::post('orders/{order}/courier-submissions/{courierSubmission}/confirm-not-created', [OrderController::class, 'confirmCourierNotCreated'])->name('orders.courier.confirmNotCreated')->middleware(AdminSections::middleware('orders', 'update'))->scopeBindings();
+    Route::post('orders/{order}/pathao/send', [OrderCourierController::class, 'sendToPathao'])->name('orders.pathao.send')->middleware(AdminSections::middleware('orders', 'update'));
+    Route::post('orders/{order}/pathao/refresh', [OrderCourierController::class, 'refreshPathaoStatus'])->name('orders.pathao.refresh')->middleware(AdminSections::middleware('orders', 'update'));
+    Route::post('orders/{order}/steadfast/send', [OrderCourierController::class, 'sendToSteadfast'])->name('orders.steadfast.send')->middleware(AdminSections::middleware('orders', 'update'));
+    Route::post('orders/{order}/steadfast/refresh', [OrderCourierController::class, 'refreshSteadfastStatus'])->name('orders.steadfast.refresh')->middleware(AdminSections::middleware('orders', 'update'));
+    Route::post('orders/{order}/courier-submissions/{courierSubmission}/record-consignment', [OrderCourierController::class, 'recordCourierConsignment'])->name('orders.courier.recordConsignment')->middleware(AdminSections::middleware('orders', 'update'))->scopeBindings();
+    Route::post('orders/{order}/courier-submissions/{courierSubmission}/confirm-returned-consignment', [OrderCourierController::class, 'confirmReturnedCourierConsignment'])->name('orders.courier.confirmReturnedConsignment')->middleware(AdminSections::middleware('orders', 'update'))->scopeBindings();
+    Route::post('orders/{order}/courier-submissions/{courierSubmission}/confirm-not-created', [OrderCourierController::class, 'confirmCourierNotCreated'])->name('orders.courier.confirmNotCreated')->middleware(AdminSections::middleware('orders', 'update'))->scopeBindings();
     // PAY-RETURN-001: mother-admin-only courier verification (no section permission is enough).
     Route::post('orders/{order}/delivery-verifications', [OrderDeliveryVerificationController::class, 'store'])->name('orders.deliveryVerifications.store')->middleware(['admin.mother', 'throttle:30,15'])->block(10, 10);
     Route::get('courier-readiness', [CourierVerificationReadinessController::class, 'index'])->name('courierReadiness.index')->middleware('admin.mother');

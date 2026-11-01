@@ -68,7 +68,7 @@ if ($action === 'record') {
     return;
 }
 
-$response = $app->make(App\Http\Controllers\Admin\OrderController::class)
+$response = $app->make(App\Http\Controllers\Admin\OrderCourierController::class)
     ->{$action === 'pathao' ? 'sendToPathao' : 'sendToSteadfast'}($order);
 
 echo json_encode(['success' => $response->getSession()?->get('success'), 'error' => $response->getSession()?->get('error')]);
