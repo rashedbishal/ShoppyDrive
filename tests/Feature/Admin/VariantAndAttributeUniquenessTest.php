@@ -16,6 +16,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Testing\TestResponse;
 
@@ -36,26 +37,6 @@ beforeEach(function () {
 function uniqueTestMigration(): object
 {
     return require glob(database_path('migrations/*_add_unique_indexes_to_variant_skus_and_attribute_values.php'))[0];
-}
-
-/**
- * MED-06 deferred: this integration-preparation branch intentionally
- * excludes database/migrations/2026_10_31_223219_add_unique_indexes_to_variant_skus_and_attribute_values.php
- * until its production preflight is complete (see the remediation tracker).
- * Tests below that depend on the real unique indexes, or on the migration
- * file itself, are skipped on this branch only — the checkpoint branch
- * (backup/shoppydrive-remediation-checkpoint-2026-11-01) keeps this file and
- * all its tests complete and unmodified.
- */
-if (! function_exists('med06MigrationExcludedFromIntegrationBranch')) {
-    function med06MigrationExcludedFromIntegrationBranch(): bool
-    {
-        return glob(database_path('migrations/*_add_unique_indexes_to_variant_skus_and_attribute_values.php')) === [];
-    }
-}
-
-if (! defined('MED06_DEFERRED_SKIP_REASON')) {
-    define('MED06_DEFERRED_SKIP_REASON', 'MED-06 deferred: unique indexes/migration intentionally excluded from this integration branch.');
 }
 
 /**
@@ -94,7 +75,7 @@ test('the database refuses a duplicate SKU', function () {
     ProductVariant::factory()->create(['sku' => 'SAME-1']);
 
     expect(fn () => ProductVariant::factory()->create(['sku' => 'SAME-1']))->toThrow(QueryException::class);
-})->skip(fn () => med06MigrationExcludedFromIntegrationBranch(), MED06_DEFERRED_SKIP_REASON);
+});
 
 test('many variants can have no SKU', function () {
     $product = productWithSkus([[$this->red, null], [$this->blue, '   ']]);
@@ -106,7 +87,7 @@ test('the database refuses a duplicate value within an attribute, not across att
     expect(fn () => AttributeValue::create(['attribute_id' => $this->color->id, 'value' => 'Red', 'color_hex' => '#111111']))->toThrow(QueryException::class);
 
     expect(AttributeValue::create(['attribute_id' => $this->size->id, 'value' => 'Red'])->exists)->toBeTrue();
-})->skip(fn () => med06MigrationExcludedFromIntegrationBranch(), MED06_DEFERRED_SKIP_REASON);
+});
 
 test('existing validation still gives the friendly duplicate errors', function () {
     ProductVariant::factory()->create(['sku' => 'TAKEN-1']);
@@ -156,7 +137,7 @@ test('a retired variant keeps its SKU, and reusing it gives a friendly error wit
 
     expect($red->refresh()->sku)->toBe('SKU-A');
     expect($product->variants()->orderBy('id')->pluck('sku', 'id')->all())->toBe($before);
-})->skip(fn () => med06MigrationExcludedFromIntegrationBranch(), MED06_DEFERRED_SKIP_REASON);
+});
 
 test('a save that loses a race for a SKU gets a friendly error and leaves nothing behind', function () {
     ProductVariant::creating(function (ProductVariant $variant): void {
@@ -169,7 +150,7 @@ test('a save that loses a race for a SKU gets a friendly error and leaves nothin
     $this->post(route('admin.products.store'), variantFormPayload([[$this->red, 'RACED-1']]))->assertSessionHasErrors('variants');
 
     expect(Product::where('slug', 'unique-shirt')->exists())->toBeFalse();
-})->skip(fn () => med06MigrationExcludedFromIntegrationBranch(), MED06_DEFERRED_SKIP_REASON);
+});
 
 test('other unique failures are not reported as a SKU problem', function () {
     ProductVariant::creating(fn () => throw new UniqueConstraintViolationException('sqlite', 'insert', [], new RuntimeException('UNIQUE constraint failed: products.slug')));
@@ -189,7 +170,7 @@ test('an attribute value that loses a race gets a friendly error', function () {
     $this->post(route('admin.attribute-values.store'), ['attribute_id' => $this->size->id, 'value' => 'Raced'])->assertSessionHasErrors('value');
 
     expect(AttributeValue::where('value', 'Raced')->count())->toBe(1);
-})->skip(fn () => med06MigrationExcludedFromIntegrationBranch(), MED06_DEFERRED_SKIP_REASON);
+});
 
 test('the migration rolls back and reapplies cleanly', function () {
     $migration = uniqueTestMigration();
@@ -203,9 +184,14 @@ test('the migration rolls back and reapplies cleanly', function () {
 
     expect(Schema::hasIndex('product_variants', 'product_variants_sku_unique'))->toBeTrue();
     expect(Schema::hasIndex('attribute_values', 'attribute_values_attribute_id_value_unique'))->toBeTrue();
-})->skip(fn () => med06MigrationExcludedFromIntegrationBranch(), MED06_DEFERRED_SKIP_REASON);
+});
 
-test('the migration refuses duplicates, names them, and changes nothing', function () {
+test('the migration skips an index with duplicates, logs a warning naming them, and changes nothing', function () {
+    $messages = [];
+    Log::shouldReceive('warning')->twice()->andReturnUsing(function (string $message) use (&$messages): void {
+        $messages[] = $message;
+    });
+
     $migration = uniqueTestMigration();
     $migration->down();
 
@@ -214,18 +200,45 @@ test('the migration refuses duplicates, names them, and changes nothing', functi
     $value = AttributeValue::create(['attribute_id' => $this->size->id, 'value' => 'M']);
     AttributeValue::create(['attribute_id' => $this->size->id, 'value' => 'M']);
 
-    expect(fn () => $migration->up())->toThrow(RuntimeException::class, "[{$first->id}]");
+    $migration->up();
 
     expect(Schema::hasIndex('product_variants', 'product_variants_sku_unique'))->toBeFalse();
     expect(Schema::hasIndex('attribute_values', 'attribute_values_attribute_id_value_unique'))->toBeFalse();
     expect(ProductVariant::whereKey([$first->id, $second->id])->pluck('sku')->all())->toBe(['DUP-1', 'DUP-1']);
     expect(AttributeValue::where('value', 'M')->count())->toBe(2);
     expect($value->exists)->toBeTrue();
+    expect($messages)->toHaveCount(2);
+    expect($messages[0])->toContain('product_variants_sku_unique')->toContain("[{$first->id}]");
+    expect($messages[1])->toContain('attribute_values_attribute_id_value_unique')->toContain("[{$value->id}]");
 
     ProductVariant::whereKey($second->id)->delete();
     AttributeValue::where('value', 'M')->where('id', '!=', $value->id)->delete();
     $migration->up();
-})->skip(fn () => med06MigrationExcludedFromIntegrationBranch(), MED06_DEFERRED_SKIP_REASON);
+
+    expect(Schema::hasIndex('product_variants', 'product_variants_sku_unique'))->toBeTrue();
+    expect(Schema::hasIndex('attribute_values', 'attribute_values_attribute_id_value_unique'))->toBeTrue();
+});
+
+test('resolving only one of two duplicate tables lets that index alone be added on the next run', function () {
+    Log::spy();
+
+    $migration = uniqueTestMigration();
+    $migration->down();
+
+    $first = ProductVariant::factory()->create(['sku' => 'DUP-2']);
+    $second = ProductVariant::factory()->create(['sku' => 'DUP-2']);
+
+    $migration->up();
+
+    expect(Schema::hasIndex('product_variants', 'product_variants_sku_unique'))->toBeFalse();
+    expect(Schema::hasIndex('attribute_values', 'attribute_values_attribute_id_value_unique'))->toBeTrue();
+
+    ProductVariant::whereKey($second->id)->delete();
+    $migration->up();
+
+    expect(Schema::hasIndex('product_variants', 'product_variants_sku_unique'))->toBeTrue();
+    expect(ProductVariant::whereKey($first->id)->value('sku'))->toBe('DUP-2');
+});
 
 test('the migration resumes when only the first index exists', function () {
     $migration = uniqueTestMigration();
@@ -236,4 +249,4 @@ test('the migration resumes when only the first index exists', function () {
     $migration->up();
 
     expect(Schema::hasIndex('attribute_values', 'attribute_values_attribute_id_value_unique'))->toBeTrue();
-})->skip(fn () => med06MigrationExcludedFromIntegrationBranch(), MED06_DEFERRED_SKIP_REASON);
+});
