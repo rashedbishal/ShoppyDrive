@@ -513,39 +513,12 @@ export interface ProductQuestion extends Timestamped {
     is_published: boolean;
 }
 
-export interface ShippingZone extends Timestamped {
-    id: Id;
-    name: string;
-    countries: string[];
-    is_active: boolean;
-}
-
-export interface ShippingMethod extends Timestamped {
-    id: Id;
-    zone_id: Id;
-    name: string;
-    type: 'flat' | 'weight_based' | 'free';
-    cost: number;
-    min_order_for_free?: number | null;
-    estimated_days?: string | null;
-    is_active: boolean;
-}
-
 export interface ShippingRate extends Timestamped {
     id: Id;
     method_id: Id;
     min_weight: number;
     max_weight: number;
     rate: number;
-}
-
-export interface TaxRate extends Timestamped {
-    id: Id;
-    name: string;
-    rate_percent: number;
-    country?: string | null;
-    is_default: boolean;
-    is_active: boolean;
 }
 
 export interface RecentlyViewedProduct extends Timestamped {
