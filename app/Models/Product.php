@@ -191,6 +191,23 @@ class Product extends Model
             ->orWhere(fn ($variantLess) => $variantLess->whereDoesntHave('variants')->where('products.stock_quantity', '>', 0)));
     }
 
+    /**
+     * LOW-03: a summed `stock_quantity` compared against one threshold can
+     * hide a single critically-low variant behind others that are fine, and
+     * `products.low_stock_threshold` only ever holds one variant's value
+     * (whichever was saved there), not each variant's own. This instead
+     * matches InventoryService's real-time alert: each variant is checked
+     * against its own threshold. A NULL variant threshold never matches
+     * (opted out of alerting, same as InventoryService::maybeAlertLowStock),
+     * not treated as "use a default."
+     */
+    public function scopeLowStock($query)
+    {
+        return $query->where(fn ($lowStock) => $lowStock
+            ->whereHas('variants', fn ($variants) => $variants->whereColumn('stock_quantity', '<=', 'low_stock_threshold'))
+            ->orWhere(fn ($variantLess) => $variantLess->whereDoesntHave('variants')->whereColumn('products.stock_quantity', '<=', 'products.low_stock_threshold')));
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\DailyVisit;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -24,8 +27,8 @@ class DashboardController extends Controller
         $yesterday = Carbon::yesterday();
         $weekAgo = Carbon::now()->subDays(7);
 
-        $todayRevenue = Order::whereDate('created_at', $today)->sum('total');
-        $yesterdayRevenue = Order::whereDate('created_at', $yesterday)->sum('total');
+        $todayRevenue = $this->collectedRevenueQuery()->whereDate('created_at', $today)->sum('total');
+        $yesterdayRevenue = $this->collectedRevenueQuery()->whereDate('created_at', $yesterday)->sum('total');
         $todayOrders = Order::whereDate('created_at', $today)->count();
         $yesterdayOrders = Order::whereDate('created_at', $yesterday)->count();
         $totalCustomers = User::count();
@@ -33,14 +36,12 @@ class DashboardController extends Controller
         $pendingOrders = Order::where('status', 'pending')->count();
         $processingOrders = Order::where('status', 'processing')->count();
         $totalProducts = Product::where('is_active', true)->count();
-        $lowStockCount = Product::where('is_active', true)
-            ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
-            ->count();
+        $lowStockCount = Product::where('is_active', true)->lowStock()->count();
         $pendingReviews = Review::where('is_approved', false)->count();
         $todayVisitors = (int) DailyVisit::whereDate('date', $today)->value('visitor_count');
         $yesterdayVisitors = (int) DailyVisit::whereDate('date', $yesterday)->value('visitor_count');
 
-        $revenueChart = Order::select(
+        $revenueChart = $this->collectedRevenueQuery()->select(
             DB::raw('DATE(created_at) as date'),
             DB::raw('COALESCE(SUM(total), 0) as revenue'),
             DB::raw('COUNT(*) as orders')
@@ -87,7 +88,7 @@ class DashboardController extends Controller
             ->get(['id', 'order_number', 'user_id', 'total', 'status', 'payment_status', 'created_at']);
 
         $lowStockProducts = Product::where('is_active', true)
-            ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
+            ->lowStock()
             ->orderBy('stock_quantity')
             ->limit(6)
             ->get(['id', 'name', 'sku', 'stock_quantity', 'low_stock_threshold']);
@@ -117,5 +118,17 @@ class DashboardController extends Controller
             'recentOrders' => $recentOrders,
             'lowStockProducts' => $lowStockProducts,
         ]);
+    }
+
+    /**
+     * LOW-08: revenue stats must reflect money actually collected, not every
+     * order placed. Excludes unpaid orders and cancelled orders; a fully
+     * refunded order is already excluded because its payment_status moves
+     * off PAID (RefundService), so no separate check is needed for it here.
+     */
+    private function collectedRevenueQuery(): Builder
+    {
+        return Order::where('payment_status', PaymentStatus::PAID)
+            ->where('status', '!=', OrderStatus::CANCELLED);
     }
 }
