@@ -25,6 +25,11 @@ Schedule::command('rewards:grant-due')->dailyAt('01:00')->timezone('Asia/Dhaka')
 
 Schedule::command('cart:remind-abandoned')->hourly()->withoutOverlapping(1440, false);
 
+// MED-20 Tier 1: converted PendingCheckout rows are pure leftover bookkeeping
+// once their Order exists, so once a day is plenty. Tier 2 (unconverted,
+// expired rows) is deliberately never touched by this command.
+Schedule::command('pending-checkouts:prune')->dailyAt('02:00')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
+
 // Hostinger shared hosting can't keep a worker process alive, and its
 // disabled pcntl_signal() crashes `queue:work`'s daemon mode, so the
 // every-minute cron that drives this scheduler drains the database queue
