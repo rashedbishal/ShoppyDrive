@@ -459,7 +459,11 @@ class CartManager
         foreach ($this->validItems($cart) as $item) {
             $current = round($this->resolvePrice($item->product_id, $item->variant_id, $item->bundle_id), 2);
 
-            if (round((float) $item->price, 2) !== $current) {
+            // MED-09: compared in integer poisha, not as floats, so
+            // representation noise between two independently-computed
+            // prices never reads as a real change (see ManualOrderPricing's
+            // differs() for the same convention).
+            if ((int) round((float) $item->price * 100) !== (int) round($current * 100)) {
                 $item->update(['price' => $current]);
                 $changed = true;
             }
