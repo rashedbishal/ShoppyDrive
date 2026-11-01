@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\HomepageSetting;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\Setting;
 use App\Support\CartManager;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +19,10 @@ use Illuminate\Support\Facades\Auth;
  */
 class ManualOrderPricing
 {
-    public function __construct(private readonly CartManager $cartManager) {}
+    public function __construct(
+        private readonly CartManager $cartManager,
+        private readonly ShippingCostCalculator $shippingCalculator,
+    ) {}
 
     /**
      * @param  array<int, array{product_id: int|string, variant_id?: int|string|null, quantity: int|string}>  $items
@@ -58,36 +59,19 @@ class ManualOrderPricing
     }
 
     /**
-     * SHIP-DUP-001: mirrors CheckoutController::calculateShippingCost()'s
-     * per-item free-delivery rule. Bundle eligibility (its other free-delivery
-     * path, via BundleService::itemQualifiesForFreeDelivery()) does not apply
-     * to admin-entered orders: neither request collects a bundle_id, so they
-     * can never be a bundle in the first place.
+     * MED-10: delegates to the shared ShippingCostCalculator. Bundle
+     * eligibility (its other free-delivery path, via
+     * BundleService::itemQualifiesForFreeDelivery()) does not apply to
+     * admin-entered orders: neither request collects a bundle_id, so they
+     * can never be a bundle in the first place — this is exactly why
+     * forItemsWithoutBundles(), not forCartWithBundles(), is used here.
      *
      * @param  array<string, mixed>  $shippingAddress
      * @param  Collection<int, array{quantity: int, free_delivery: bool, free_delivery_min_qty: ?int}>  $items
      */
     public function shippingCost(array $shippingAddress, Collection $items, float $subtotal): float
     {
-        $threshold = (float) (HomepageSetting::where('section_key', 'announcement_bar')->first()?->metadata['free_delivery_amount'] ?? 0);
-
-        if ($threshold > 0 && $subtotal >= $threshold) {
-            return 0.0;
-        }
-
-        $allFree = $items->isNotEmpty() && $items->every(function (array $item): bool {
-            if (! $item['free_delivery']) {
-                return false;
-            }
-
-            return $item['free_delivery_min_qty'] === null || $item['quantity'] >= $item['free_delivery_min_qty'];
-        });
-
-        if ($allFree) {
-            return 0.0;
-        }
-
-        return Setting::shippingRateFor($shippingAddress['state'] ?? null, $shippingAddress['city'] ?? null);
+        return $this->shippingCalculator->forItemsWithoutBundles($shippingAddress, $items->all(), $subtotal);
     }
 
     /** Compared in poisha, so float noise never reads as a staff override. */

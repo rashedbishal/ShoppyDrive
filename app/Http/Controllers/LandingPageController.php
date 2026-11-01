@@ -7,7 +7,6 @@ namespace App\Http\Controllers;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Exceptions\InsufficientStockException;
-use App\Models\HomepageSetting;
 use App\Models\LandingPage;
 use App\Models\Order;
 use App\Models\Payment;
@@ -15,6 +14,7 @@ use App\Models\PendingCheckout;
 use App\Models\ReceivedSms;
 use App\Models\Setting;
 use App\Services\InventoryService;
+use App\Services\ShippingCostCalculator;
 use App\Support\CartManager;
 use App\Support\OrderNumberGenerator;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -34,6 +34,7 @@ class LandingPageController extends Controller
     public function __construct(
         private readonly InventoryService $inventory,
         private readonly CartManager $cartManager,
+        private readonly ShippingCostCalculator $shippingCalculator,
     ) {}
 
     public function show(string $slug): Response|RedirectResponse
@@ -166,7 +167,11 @@ class LandingPageController extends Controller
         $qty = (int) $request->quantity;
         $price = $this->cartManager->resolvePrice($product->id, null);
         $subtotal = round($price * $qty, 2);
-        $shippingCost = $this->calculateShipping($product, $qty, $request->state, $request->city, $subtotal);
+        $shippingCost = $this->shippingCalculator->forItemsWithoutBundles(
+            ['state' => $request->state, 'city' => $request->city],
+            [['free_delivery' => (bool) $product->free_delivery, 'free_delivery_min_qty' => $product->free_delivery_min_qty, 'quantity' => $qty]],
+            $subtotal,
+        );
         $total = $subtotal + $shippingCost;
 
         $shippingAddress = [
@@ -494,29 +499,6 @@ class LandingPageController extends Controller
         $pdf = Pdf::loadView('invoices.order', ['order' => $order]);
 
         return $pdf->download("invoice-{$order->order_number}.pdf");
-    }
-
-    /**
-     * SHIP-DUP-001: mirrors CheckoutController::calculateShippingCost()'s
-     * per-item free-delivery rule, which this method was previously missing
-     * — it checked `free_delivery` but never the ordered quantity, so a
-     * product configured with `free_delivery_min_qty` shipped free here
-     * regardless of how many units were actually ordered.
-     */
-    private function calculateShipping(mixed $product, int $quantity, string $state, string $city, float $subtotal): float
-    {
-        $bar = HomepageSetting::where('section_key', 'announcement_bar')->first();
-        $threshold = (float) ($bar?->metadata['free_delivery_amount'] ?? 0);
-
-        if ($threshold > 0 && $subtotal >= $threshold) {
-            return 0.0;
-        }
-
-        if ($product->free_delivery && ($product->free_delivery_min_qty === null || $quantity >= $product->free_delivery_min_qty)) {
-            return 0.0;
-        }
-
-        return Setting::shippingRateFor($state, $city);
     }
 
     private function serializeProduct(mixed $product): array

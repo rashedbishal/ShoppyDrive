@@ -12,19 +12,17 @@ use App\Http\Requests\PlaceOrderRequest;
 use App\Models\Address;
 use App\Models\Cart;
 use App\Models\Coupon;
-use App\Models\HomepageSetting;
 use App\Models\IncompleteOrder;
 use App\Models\Order;
 use App\Models\PendingCheckout;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\Setting;
 use App\Models\User;
-use App\Services\BundleService;
 use App\Services\CouponService;
 use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
+use App\Services\ShippingCostCalculator;
 use App\Support\CartManager;
 use App\Support\OrderNumberGenerator;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -54,7 +52,7 @@ class CheckoutController extends Controller
         private readonly LoyaltyPointsService $loyalty,
         private readonly InventoryService $inventory,
         private readonly CouponService $coupons,
-        private readonly BundleService $bundles,
+        private readonly ShippingCostCalculator $shippingCalculator,
     ) {}
 
     public function index(Request $request): Response|RedirectResponse
@@ -189,7 +187,7 @@ class CheckoutController extends Controller
         $shippingAddress = $this->resolveShippingAddress($request);
 
         $subtotal = $cart->items->sum(fn ($item) => $item->price * $item->quantity);
-        $shippingCost = $this->calculateShippingCost($shippingAddress, $cart, $subtotal);
+        $shippingCost = $this->shippingCalculator->forCartWithBundles($shippingAddress, $cart->items, $subtotal);
 
         try {
             [$couponId, $couponCode, $couponDiscount] = $this->resolveCoupon($request, $subtotal);
@@ -502,57 +500,6 @@ class CheckoutController extends Controller
         ]);
 
         return $token;
-    }
-
-    // ── Shipping calculation ─────────────────────────────────────────────────
-
-    private function calculateShippingCost(array $shippingAddress, Cart $cart, float $subtotal): float
-    {
-        // 1. Free delivery threshold (set in announcement bar CMS)
-        $threshold = $this->getFreeDeliveryThreshold();
-        if ($threshold > 0 && $subtotal >= $threshold) {
-            return 0.0;
-        }
-
-        // 2. Per-product free delivery (or an intact free-delivery bundle):
-        //    If EVERY item in cart qualifies for free delivery → no charge
-        if ($cart->items->isNotEmpty()) {
-            $allFree = $cart->items->every(function ($item) {
-                if ($this->bundles->itemQualifiesForFreeDelivery($item)) {
-                    return true;
-                }
-
-                $product = $item->product;
-                if (! $product->free_delivery) {
-                    return false;
-                }
-                // min qty set? customer must order at least that many
-                if ($product->free_delivery_min_qty !== null) {
-                    return $item->quantity >= $product->free_delivery_min_qty;
-                }
-
-                return true;
-            });
-
-            if ($allFree) {
-                return 0.0;
-            }
-        }
-
-        // 3. Standard location-based rate (admin-configurable, see Setting::shippingRateFor())
-        return Setting::shippingRateFor($shippingAddress['state'] ?? null, $shippingAddress['city'] ?? null);
-    }
-
-    private function getFreeDeliveryThreshold(): float
-    {
-        static $threshold = null;
-
-        if ($threshold === null) {
-            $bar = HomepageSetting::where('section_key', 'announcement_bar')->first();
-            $threshold = (float) ($bar?->metadata['free_delivery_amount'] ?? 0);
-        }
-
-        return $threshold;
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
