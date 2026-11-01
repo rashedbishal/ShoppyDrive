@@ -46,11 +46,12 @@ it('schedules the queue drainer every minute as the last task, with a short over
 it('leaves the existing scheduled tasks and their lock durations unchanged', function () {
     $events = scheduledEvents();
 
-    expect($events)->toHaveCount(4);
-    expect(array_slice($events, 0, 3))->toBe([
+    expect($events)->toHaveCount(5);
+    expect(array_slice($events, 0, 4))->toBe([
         ['command' => 'pathao:sync-statuses', 'expression' => '*/15 * * * *', 'withoutOverlapping' => true, 'expiresAt' => 1440, 'releaseOnTerminationSignals' => false, 'timezone' => 'UTC'],
         ['command' => 'rewards:grant-due', 'expression' => '0 1 * * *', 'withoutOverlapping' => true, 'expiresAt' => 1440, 'releaseOnTerminationSignals' => false, 'timezone' => 'Asia/Dhaka'],
         ['command' => 'cart:remind-abandoned', 'expression' => '0 * * * *', 'withoutOverlapping' => true, 'expiresAt' => 1440, 'releaseOnTerminationSignals' => false, 'timezone' => 'UTC'],
+        ['command' => 'pending-checkouts:prune', 'expression' => '0 2 * * *', 'withoutOverlapping' => true, 'expiresAt' => 1440, 'releaseOnTerminationSignals' => false, 'timezone' => 'Asia/Dhaka'],
     ]);
 });
 
