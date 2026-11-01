@@ -12,6 +12,7 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RedirectAdminToDashboard;
 use App\Http\Middleware\RedirectCustomerFromAdmin;
 use App\Http\Middleware\RedirectToCanonicalDomain;
+use App\Http\Middleware\RedirectToHttps;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\ThrottleFortifyActions;
 use App\Http\Middleware\TrackDailyVisit;
@@ -40,11 +41,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(SecurityHeaders::class);
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
-        // Runs before session/cookie middleware so a www. visitor is
-        // redirected before anything gets set for the wrong host, and so a
-        // blocked IP is declined before a session/cart is ever started for it.
+        // Runs before session/cookie middleware so a www. visitor (and now a
+        // plain-HTTP visitor — MED-18A) is redirected before anything gets
+        // set for the wrong host/scheme, and so a blocked IP is declined
+        // before a session/cart is ever started for it.
         $middleware->web(prepend: [
             RedirectToCanonicalDomain::class,
+            RedirectToHttps::class,
             BlockBlockedIp::class,
         ]);
 
