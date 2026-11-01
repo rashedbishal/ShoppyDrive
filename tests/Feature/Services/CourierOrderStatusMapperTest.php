@@ -197,3 +197,36 @@ it('does not change order status for an unrecognized raw status', function () {
     expect($order->status)->toBe(OrderStatus::PENDING);
     expect($order->pathao_order_status)->toBe('some_brand_new_status');
 });
+
+// MED-02: Pathao is polled, so each report is its current state rather than a
+// delayed event, and it can legitimately step back from shipped.
+it('lets pathao report a real step back from shipped', function (string $raw, OrderStatus $expected) {
+    $order = makeMapperTestOrder(['status' => 'shipped', 'pathao_order_status' => 'in_transit']);
+
+    CourierOrderStatusMapper::sync($order, 'pathao', $raw);
+
+    expect($order->refresh()->status)->toBe($expected);
+})->with([
+    'on hold' => ['on_hold', OrderStatus::PROCESSING],
+    'back at the sorting hub' => ['at_sorting_hub', OrderStatus::PROCESSING],
+    'reprocess pending' => ['reprocess_pending', OrderStatus::PROCESSING],
+]);
+
+it('lets pathao return an on-hold order to shipped and then delivered', function () {
+    $order = makeMapperTestOrder(['status' => 'shipped', 'pathao_order_status' => 'in_transit']);
+
+    CourierOrderStatusMapper::sync($order, 'pathao', 'on_hold');
+    CourierOrderStatusMapper::sync($order, 'pathao', 'assigned_for_delivery');
+    CourierOrderStatusMapper::sync($order, 'pathao', 'delivery');
+
+    expect($order->refresh()->status)->toBe(OrderStatus::DELIVERED);
+});
+
+it('never lets a steadfast report step back, unlike pathao', function () {
+    $order = makeMapperTestOrder(['status' => 'shipped', 'steadfast_status' => 'unknown']);
+
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'in_review');
+
+    expect($order->refresh()->status)->toBe(OrderStatus::SHIPPED);
+    expect($order->steadfast_status)->toBe('in_review');
+});

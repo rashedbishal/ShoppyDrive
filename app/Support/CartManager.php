@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Exceptions\CartChangedException;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\FlashSaleItem;
@@ -13,9 +14,19 @@ use App\Models\User;
 use App\Services\BundleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
+/**
+ * MED-08: every write to a cart's rows runs through `writeUserCart()` or
+ * `writeSessionCart()`. `updateOrCreate()` reads and then inserts, and
+ * `cart_items` cannot have a unique index because `variant_id` and `bundle_id`
+ * are usually NULL and NULLs never collide, so the locks are what keep one row
+ * per product, variant and bundle. Lock order is always user, then cart.
+ */
 class CartManager
 {
+    private const CART_RELATIONS = ['coupon', 'items.product.images', 'items.variant.media', 'items.bundle'];
+
     public function __construct(private readonly BundleService $bundles) {}
 
     public function getCurrentCart(Request $request): ?Cart
@@ -63,22 +74,22 @@ class CartManager
 
     public function mergeSessionCartIntoUserCart(User $user, string $sessionId): Cart
     {
-        $userCart = $this->getOrCreateUserCart($user);
-        $sessionCart = Cart::with(['items.product.images', 'items.variant.media', 'items.bundle'])
-            ->where('session_id', $sessionId)
-            ->whereNull('user_id')
-            ->first();
+        return $this->writeUserCart($user, function (Cart $userCart) use ($sessionId): void {
+            $sessionCart = Cart::with(['items.product.images', 'items.variant.media', 'items.bundle'])
+                ->where('session_id', $sessionId)
+                ->whereNull('user_id')
+                ->lockForUpdate()
+                ->first();
 
-        if ($sessionCart === null || $sessionCart->is($userCart)) {
-            return $userCart->loadMissing(['coupon', 'items.product.images', 'items.variant.media', 'items.bundle']);
-        }
+            if ($sessionCart === null || $sessionCart->is($userCart)) {
+                return;
+            }
 
-        $this->mergeItems($userCart, $sessionCart->items);
+            $this->mergeItems($userCart, $sessionCart->items);
 
-        $sessionCart->items()->delete();
-        $sessionCart->delete();
-
-        return $userCart->fresh(['coupon', 'items.product.images', 'items.variant.media', 'items.bundle']);
+            $sessionCart->items()->delete();
+            $sessionCart->delete();
+        });
     }
 
     /**
@@ -86,28 +97,132 @@ class CartManager
      */
     public function syncUserCart(User $user, array $items, bool $merge = false): Cart
     {
-        $cart = $this->getOrCreateUserCart($user);
-
-        if ($merge) {
-            $this->mergeItemPayloads($cart, $items);
-        } else {
-            $this->replaceItems($cart, $items);
-        }
-
-        return $cart->fresh(['coupon', 'items.product.images', 'items.variant.media', 'items.bundle']);
+        return $this->writeUserCart($user, fn (Cart $cart) => $merge
+            ? $this->mergeItemPayloads($cart, $items)
+            : $this->replaceItems($cart, $items));
     }
 
     public function syncSessionCart(string $sessionId, array $items, bool $merge = false): Cart
     {
-        $cart = $this->getOrCreateSessionCart($sessionId);
+        return $this->writeSessionCart($sessionId, fn (Cart $cart) => $merge
+            ? $this->mergeItemPayloads($cart, $items)
+            : $this->replaceItems($cart, $items));
+    }
 
-        if ($merge) {
-            $this->mergeItemPayloads($cart, $items);
-        } else {
-            $this->replaceItems($cart, $items);
+    /**
+     * The user row is the lock because the cart row may not exist yet, and
+     * `carts.user_id` isn't unique. It must be the transaction's first
+     * statement, so the plain reads after it see every earlier commit (see
+     * LoyaltyPointsService::availablePoints()).
+     *
+     * @param  callable(Cart): mixed  $write
+     */
+    private function writeUserCart(User $user, callable $write): Cart
+    {
+        return DB::transaction(function () use ($user, $write): Cart {
+            User::query()->whereKey($user->id)->lockForUpdate()->first();
+
+            $cart = $this->getOrCreateUserCart($user);
+            Cart::query()->whereKey($cart->id)->lockForUpdate()->first();
+
+            $this->mergeDuplicateRows($cart);
+            $write($cart);
+
+            return $cart->fresh(self::CART_RELATIONS);
+        }, 3);
+    }
+
+    /**
+     * A guest has no user row to lock, so a guest's first two writes can each
+     * create a cart. That leaves an unused cart, not a duplicated line. Once a
+     * cart exists its row serializes writers. It may have been deleted by a
+     * checkout finishing while this waited, hence the second attempt.
+     *
+     * @param  callable(Cart): mixed  $write
+     */
+    private function writeSessionCart(string $sessionId, callable $write): Cart
+    {
+        return DB::transaction(function () use ($sessionId, $write): Cart {
+            $cart = $this->getOrCreateSessionCart($sessionId);
+
+            if (Cart::query()->whereKey($cart->id)->lockForUpdate()->first() === null) {
+                $cart = $this->getOrCreateSessionCart($sessionId);
+            }
+
+            $this->mergeDuplicateRows($cart);
+            $write($cart);
+
+            return $cart->fresh(self::CART_RELATIONS);
+        }, 3);
+    }
+
+    /**
+     * Collapses rows for the same product, variant and bundle into the oldest
+     * one. Quantities are added so nothing is lost, capped at available stock,
+     * but never below the largest single row: a customer keeps what they
+     * could already see. Call with the cart locked.
+     */
+    private function mergeDuplicateRows(Cart $cart): void
+    {
+        $groups = $cart->items()->orderBy('id')->get()
+            ->groupBy(fn (CartItem $item): string => $this->itemKey($item->product_id, $item->variant_id, $item->bundle_id))
+            ->filter(fn (Collection $rows): bool => $rows->count() > 1);
+
+        foreach ($groups as $rows) {
+            $kept = $rows->first();
+            $stock = $kept->variant_id !== null
+                ? ProductVariant::query()->whereKey($kept->variant_id)->value('stock_quantity')
+                : Product::query()->whereKey($kept->product_id)->value('stock_quantity');
+
+            $cart->items()->whereKey($rows->slice(1)->pluck('id'))->delete();
+            $kept->update(['quantity' => max((int) $rows->max('quantity'), min((int) $rows->sum('quantity'), (int) $stock))]);
+        }
+    }
+
+    /**
+     * Returns the cart with any duplicate rows collapsed, for a checkout that
+     * didn't just write it, so one logical line can't become two order lines.
+     */
+    public function withoutDuplicateRows(Cart $cart): Cart
+    {
+        $hasDuplicates = $cart->items
+            ->map(fn (CartItem $item): string => $this->itemKey($item->product_id, $item->variant_id, $item->bundle_id))
+            ->duplicates()
+            ->isNotEmpty();
+
+        if (! $hasDuplicates) {
+            return $cart;
         }
 
-        return $cart->fresh(['coupon', 'items.product.images', 'items.variant.media', 'items.bundle']);
+        return DB::transaction(function () use ($cart): Cart {
+            Cart::query()->whereKey($cart->id)->lockForUpdate()->first();
+            $this->mergeDuplicateRows($cart);
+
+            return $cart->fresh(self::CART_RELATIONS);
+        }, 3);
+    }
+
+    /**
+     * Checkout priced `$cart` before taking any lock. Call inside its order
+     * transaction, right after locking the purchaser, to prove those rows are
+     * still what would be charged. A guest has no purchaser lock, so the
+     * cart's own row serializes them, and it comes first for the same reason.
+     *
+     * @throws CartChangedException
+     */
+    public function lockForCheckout(Cart $cart): void
+    {
+        $locked = Cart::query()->whereKey($cart->id)->lockForUpdate()->first();
+        $snapshot = fn (Collection $items): array => $items
+            ->mapWithKeys(fn (CartItem $item): array => [$item->id => [
+                $item->product_id, $item->variant_id, $item->bundle_id, $item->quantity, round((float) $item->price, 2),
+            ]])
+            ->sortKeys()
+            ->all();
+
+        if ($locked === null || $snapshot($cart->items) !== $snapshot($locked->items()->whereHas('product')->get())) {
+            throw new CartChangedException('Your cart changed while placing this order. Please review it and try again.');
+        }
     }
 
     /**

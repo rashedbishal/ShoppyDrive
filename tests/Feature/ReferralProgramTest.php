@@ -460,6 +460,49 @@ test('reversing a referral reward via two independently loaded stale order copie
     )->toBe(1);
 });
 
+test('a reward granted in the first hours of a period still counts towards that period\'s cap', function (string $period, string $firstHours, string $laterInPeriod) {
+    enableReferralProgram(['referral_reward_points' => 50, 'points_redeem_value_bdt' => 1, 'referral_reward_cap_amount' => 60, 'referral_reward_cap_period' => $period]);
+    $referrer = User::factory()->create(['points_balance' => 0]);
+    $referredA = User::factory()->create(['referred_by_id' => $referrer->id]);
+    $referredB = User::factory()->create(['referred_by_id' => $referrer->id]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
+
+    $this->travelTo($firstHours);
+    placeAndDeliverQualifyingOrder($referredA, $product);
+    artisan('rewards:grant-due');
+
+    $this->travelTo($laterInPeriod);
+    $orderB = placeAndDeliverQualifyingOrder($referredB, $product);
+    artisan('rewards:grant-due');
+
+    expect($referrer->refresh()->points_balance)->toBe(50);
+    expect($orderB->refresh()->referral_reward_granted_at)->toBeNull();
+})->with([
+    'monthly, 01:40 Dhaka on the 1st' => ['month', '2026-10-31 19:40:00', '2026-11-15 12:00:00'],
+    'weekly, 01:00 Dhaka on Monday' => ['week', '2026-11-01 19:00:00', '2026-11-04 12:00:00'],
+]);
+
+test('a reward granted just before a period starts does not count towards the new period\'s cap', function (string $period, string $beforeStart, string $afterStart) {
+    enableReferralProgram(['referral_reward_points' => 50, 'points_redeem_value_bdt' => 1, 'referral_reward_cap_amount' => 60, 'referral_reward_cap_period' => $period]);
+    $referrer = User::factory()->create(['points_balance' => 0]);
+    $referredA = User::factory()->create(['referred_by_id' => $referrer->id]);
+    $referredB = User::factory()->create(['referred_by_id' => $referrer->id]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
+
+    $this->travelTo($beforeStart);
+    placeAndDeliverQualifyingOrder($referredA, $product);
+    artisan('rewards:grant-due');
+
+    $this->travelTo($afterStart);
+    placeAndDeliverQualifyingOrder($referredB, $product);
+    artisan('rewards:grant-due');
+
+    expect($referrer->refresh()->points_balance)->toBe(100);
+})->with([
+    'monthly, either side of midnight Dhaka on the 1st' => ['month', '2026-10-31 17:30:00', '2026-10-31 18:30:00'],
+    'weekly, either side of midnight Dhaka on Monday' => ['week', '2026-11-01 17:30:00', '2026-11-01 18:30:00'],
+]);
+
 // ── Points redemption ────────────────────────────────────────────────────────
 
 test('a customer can redeem points at checkout, and cancelling that order refunds the points', function () {

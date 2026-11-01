@@ -99,7 +99,7 @@ class ProductListingController extends Controller
         }
 
         if ($request->boolean('in_stock')) {
-            $query->where('stock_quantity', '>', 0);
+            $query->inStock();
         }
 
         $minimumRating = $request->integer('rating') ?: null;

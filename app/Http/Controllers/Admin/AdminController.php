@@ -93,10 +93,20 @@ class AdminController extends Controller
         // assignment protection.
         $currentAdmin = Auth::guard('admin')->user();
         if ($currentAdmin->is_mother && ! $admin->is_mother) {
-            $data['permissions'] = AdminSections::sanitize($request->input('permissions', []));
+            $permissions = AdminSections::sanitize($request->input('permissions', []));
+
+            // A never-granted admin stores null, and saving the form with
+            // nothing ticked is not a change worth an Audit Trail entry.
+            if (($admin->permissions ?? []) != $permissions) {
+                $data['permissions'] = $permissions;
+            }
         }
 
         $admin->update($data);
+
+        if ($admin->wasChanged('password')) {
+            $admin->logPasswordChange();
+        }
 
         return redirect()->route('admin.admins.index')->with('success', 'Admin account updated successfully.');
     }

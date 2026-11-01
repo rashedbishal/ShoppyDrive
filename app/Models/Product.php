@@ -55,6 +55,8 @@ class Product extends Model
         'published_at',
     ];
 
+    protected $appends = ['available_stock'];
+
     protected function casts(): array
     {
         return [
@@ -154,6 +156,23 @@ class Product extends Model
         return $this->belongsToMany(PromotionalBanner::class, 'promotional_banner_product');
     }
 
+    /**
+     * What a customer can actually buy. `stock_quantity` is only a real count
+     * for a variant-less product: for one with variants it's a sum the admin
+     * form writes on save, and orders decrement the variants instead (see
+     * InventoryService). Reads only an already-loaded relation, so serializing
+     * a list never queries per product. Every storefront query loads
+     * `variants`; without them this falls back to `stock_quantity`.
+     */
+    public function getAvailableStockAttribute(): int
+    {
+        if ($this->relationLoaded('variants') && $this->variants->isNotEmpty()) {
+            return (int) $this->variants->sum('stock_quantity');
+        }
+
+        return (int) ($this->attributes['stock_quantity'] ?? 0);
+    }
+
     public function getFormattedPriceAttribute(): string
     {
         return number_format($this->price, 2);
@@ -162,6 +181,14 @@ class Product extends Model
     public function getIsOnSaleAttribute(): bool
     {
         return $this->compare_price !== null && $this->compare_price > $this->price;
+    }
+
+    /** The query form of `available_stock`, for the storefront stock filters. */
+    public function scopeInStock($query)
+    {
+        return $query->where(fn ($inStock) => $inStock
+            ->whereHas('variants', fn ($variants) => $variants->where('stock_quantity', '>', 0))
+            ->orWhere(fn ($variantLess) => $variantLess->whereDoesntHave('variants')->where('products.stock_quantity', '>', 0)));
     }
 
     public function scopeActive($query)

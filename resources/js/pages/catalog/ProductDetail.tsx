@@ -162,7 +162,7 @@ export default function ProductDetail({
 
     const stockQuantity = selectedVariant
         ? selectedVariant.stock_quantity
-        : product.stock_quantity;
+        : (product.available_stock ?? product.stock_quantity);
     const lowStockThreshold =
         selectedVariant?.low_stock_threshold ?? product.low_stock_threshold;
     const isOutOfStock = stockQuantity <= 0;

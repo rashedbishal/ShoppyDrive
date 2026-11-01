@@ -282,7 +282,8 @@ export default function Compare({
                                             key={p.id}
                                             className="border-l border-[var(--color-border)] px-8 py-5 text-center"
                                         >
-                                            {p.stock_quantity > 0 ? (
+                                            {(p.available_stock ??
+                                                p.stock_quantity) > 0 ? (
                                                 <div className="inline-flex items-center gap-1.5 text-xs font-bold tracking-widest text-[var(--color-success)] uppercase">
                                                     <Check
                                                         size={14}

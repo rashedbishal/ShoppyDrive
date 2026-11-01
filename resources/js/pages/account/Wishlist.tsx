@@ -97,10 +97,15 @@ export default function Wishlist({
                                                     hydrateCart(props.cart);
                                                 }
 
+                                                const { success, info } =
+                                                    props.flash;
+
                                                 addToast({
-                                                    type: 'success',
+                                                    type: success
+                                                        ? 'success'
+                                                        : 'info',
                                                     message:
-                                                        'All items added to cart',
+                                                        success ?? info ?? '',
                                                 });
                                             },
                                         },

@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { GitCompare, Heart, ShoppingBag } from 'lucide-react';
 import React, { useRef, useState } from 'react';
@@ -84,13 +84,14 @@ export function ProductCard({
         ? getDiscountPercent(currentPrice, originalPrice)
         : 0;
 
-    const isOutOfStock = product.stock_quantity <= 0;
+    const availableStock = product.available_stock ?? product.stock_quantity;
+    const isOutOfStock = availableStock <= 0;
     const isLowStock =
-        !isOutOfStock && product.stock_quantity <= product.low_stock_threshold;
+        !isOutOfStock && availableStock <= product.low_stock_threshold;
     const stockLabel = isOutOfStock
         ? 'Out of stock'
         : isLowStock
-          ? `Only ${product.stock_quantity} left`
+          ? `Only ${availableStock} left`
           : null;
 
     const handleAddToCart = (event: React.MouseEvent): void => {
@@ -112,9 +113,17 @@ export function ProductCard({
         // resolving it would add a variant-less line that InventoryService
         // rejects as out of stock at checkout, even when the default variant
         // itself has plenty of stock.
+        const variants = product.variants ?? [];
         const defaultVariant =
-            (product.variants ?? []).find((variant) => variant.is_default) ??
-            null;
+            variants.find((variant) => variant.is_default) ?? null;
+
+        // Other variants are in stock but the default isn't, so the customer
+        // chooses one rather than getting a size or colour they never picked.
+        if (variants.length > 0 && (defaultVariant?.stock_quantity ?? 0) <= 0) {
+            router.visit(route('product.show', product.slug));
+
+            return;
+        }
 
         addItem({ product, quantity: 1, variant: defaultVariant });
 

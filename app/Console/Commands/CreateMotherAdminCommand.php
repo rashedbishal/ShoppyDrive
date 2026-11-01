@@ -77,6 +77,7 @@ class CreateMotherAdminCommand extends Command
         // forceFill(), so no request path can self-promote an admin.
         if ($existing) {
             $existing->fill($attributes)->forceFill(['is_mother' => true])->save();
+            $existing->logPasswordChange();
             $this->info("Mother admin account replaced. New email: {$email}.");
         } else {
             $admin = Admin::make($attributes);

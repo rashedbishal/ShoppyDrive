@@ -36,6 +36,7 @@ type Stats = {
     total_products: number;
     low_stock_count: number;
     pending_reviews: number;
+    failed_jobs: number | null;
     today_visitors: number;
     yesterday_visitors: number;
 };
@@ -464,7 +465,8 @@ export default function Dashboard({
                 {/* ── Alert bar (only shown if there's something to act on) ── */}
                 {(stats.pending_orders > 0 ||
                     stats.low_stock_count > 0 ||
-                    stats.pending_reviews > 0) && (
+                    stats.pending_reviews > 0 ||
+                    (stats.failed_jobs ?? 0) > 0) && (
                     <div className="grid gap-2 sm:grid-cols-3">
                         <AlertBadge
                             count={stats.pending_orders}
@@ -487,6 +489,12 @@ export default function Dashboard({
                                 route('admin.reviews.index') + '?status=pending'
                             }
                             color="border-violet-200 bg-violet-50 text-violet-800"
+                        />
+                        <AlertBadge
+                            count={stats.failed_jobs ?? 0}
+                            label="Failed background jobs"
+                            href={route('admin.failed-jobs.index')}
+                            color="border-red-200 bg-red-50 text-red-800"
                         />
                     </div>
                 )}

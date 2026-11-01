@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Models\SmsPattern;
+use App\Rules\SafeSmsRegex;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -29,8 +30,8 @@ class SmsPatternController extends Controller
             'provider' => ['required', 'in:bkash,nagad'],
             'name' => ['required', 'string', 'max:100'],
             'identifier' => ['required', 'string', 'max:255'],
-            'txn_id_regex' => ['required', 'string', 'max:500'],
-            'amount_regex' => ['required', 'string', 'max:500'],
+            'txn_id_regex' => ['required', 'string', 'max:255', new SafeSmsRegex],
+            'amount_regex' => ['required', 'string', 'max:255', new SafeSmsRegex],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
@@ -45,8 +46,8 @@ class SmsPatternController extends Controller
             'provider' => ['required', 'in:bkash,nagad'],
             'name' => ['required', 'string', 'max:100'],
             'identifier' => ['required', 'string', 'max:255'],
-            'txn_id_regex' => ['required', 'string', 'max:500'],
-            'amount_regex' => ['required', 'string', 'max:500'],
+            'txn_id_regex' => ['required', 'string', 'max:255', new SafeSmsRegex],
+            'amount_regex' => ['required', 'string', 'max:255', new SafeSmsRegex],
             'is_active' => ['required', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
@@ -77,7 +78,8 @@ class SmsPatternController extends Controller
             'ids.*' => ['integer', 'distinct', 'exists:sms_patterns,id'],
         ])['ids'];
 
-        SmsPattern::whereIn('id', $ids)->delete();
+        // One at a time so each deletion is audited and clears the pattern cache.
+        SmsPattern::whereIn('id', $ids)->get()->each->delete();
 
         return back()->with('success', count($ids).' pattern(s) deleted.');
     }

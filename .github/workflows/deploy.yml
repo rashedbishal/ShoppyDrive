@@ -83,6 +83,43 @@ jobs:
       group: production-deploy
       cancel-in-progress: false
 
+    # MED-15: confirms what Laravel itself reports on the server, where the
+    # manually managed .env lives. This workflow can't see that file and must
+    # never upload or print it, and the about command returns no secrets. Run
+    # over SSH by the two steps below; argument 2 chooses what is read:
+    #  - env-file: reads .env directly. APP_CONFIG_CACHE points at a file that
+    #    doesn't exist, so the live config cache is neither read nor changed.
+    #    A plain check would read that cache, then config:cache would adopt
+    #    whatever .env says.
+    #  - active-config: reads the config cache the site is actually running.
+    # Laravel defaults to production with debug off, so a missing .env or
+    # cache must fail here rather than appear to pass. Any failure to start
+    # Laravel or parse its output fails closed too.
+    env:
+      VERIFY_RUNTIME_SCRIPT: |
+        set -euo pipefail
+        cd "$1"
+
+        if [ "$2" = env-file ]; then
+          if [ ! -f .env ]; then
+            echo 'ERROR: .env file is missing.'
+            exit 1
+          fi
+
+          export APP_CONFIG_CACHE=storage/framework/deploy-check-no-config-cache.php
+        elif [ ! -f bootstrap/cache/config.php ]; then
+          echo 'ERROR: the config cache is missing.'
+          exit 1
+        fi
+
+        if ! php artisan about --only=environment --json 2>/dev/null \
+          | php -r '$a = json_decode(stream_get_contents(STDIN), true)["environment"] ?? []; exit(($a["environment"] ?? null) === "production" && ($a["debug_mode"] ?? null) === false ? 0 : 1);'; then
+          echo 'ERROR: Laravel did not report APP_ENV=production with APP_DEBUG=false.'
+          exit 1
+        fi
+
+        echo 'Laravel reports APP_ENV=production with APP_DEBUG=false.'
+
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────────
       - name: Checkout repository
@@ -127,6 +164,18 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # MED-15: files are live as rsync writes them, with no later activation
+      # step, so this is the only point a deploy can still be stopped. shell:
+      # bash turns on pipefail for this pipe, and ssh returns the script's exit
+      # code. The same applies to the verification after the deploy.
+      - name: Verify production runtime before deploying
+        shell: bash
+        run: |
+          printf '%s' "$VERIFY_RUNTIME_SCRIPT" | ssh -o StrictHostKeyChecking=no \
+            -p ${{ secrets.SSH_PORT }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "bash -s -- '${{ secrets.DEPLOY_PATH }}' env-file"
 
       # DEPLOY-SAFETY-001 (Tier 1): SSH host-key pinning was added then
       # explicitly reverted the same day by user decision after it correctly
@@ -210,6 +259,16 @@ jobs:
             php artisan route:cache
             php artisan view:cache
             php artisan event:cache"
+
+      # MED-15: the new code is already live here, so this can only fail the
+      # run and alert a human. It can't roll anything back.
+      - name: Verify production runtime after deploying
+        shell: bash
+        run: |
+          printf '%s' "$VERIFY_RUNTIME_SCRIPT" | ssh -o StrictHostKeyChecking=no \
+            -p ${{ secrets.SSH_PORT }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "bash -s -- '${{ secrets.DEPLOY_PATH }}' active-config"
 
       # ── 8. Post-deploy health check ──────────────────────────────────────────
       # DEPLOY-SAFETY-001 (Tier 1): confirms the app actually boots after the

@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CourierVerificationReadinessController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\FailedJobController;
 use App\Http\Controllers\Admin\FlashSaleController;
 use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\HomepageController;
@@ -116,6 +117,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     $guardResource(Route::resource('product-bundles', ProductBundleController::class)->parameters(['product-bundles' => 'productBundle']), 'bundles');
 
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index')->middleware(AdminSections::middleware('orders', 'view'));
+    Route::get('orders/pricing-preview', [OrderController::class, 'pricingPreview'])->name('orders.pricingPreview')->middleware(AdminSections::middleware('orders', 'create'));
     Route::post('orders', [OrderController::class, 'store'])->name('orders.store')->middleware(AdminSections::middleware('orders', 'create'));
     Route::get('orders/trashed', [OrderController::class, 'trashed'])->name('orders.trashed')->middleware(AdminSections::middleware('trashed_orders', 'view'));
     Route::get('orders/customers/search', [OrderController::class, 'searchCustomers'])->name('orders.customers.search')->middleware(AdminSections::middleware('orders', 'view'));
@@ -198,6 +200,9 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
 
     // Clearing the log is deliberately NOT part of the permission matrix
     // (AuditTrailController hardcodes mother-only) — only viewing is gated.
+    Route::get('failed-jobs', [FailedJobController::class, 'index'])->name('failed-jobs.index')->middleware(AdminSections::middleware('failed_jobs', 'view'));
+    Route::post('failed-jobs/{uuid}/retry', [FailedJobController::class, 'retry'])->whereUuid('uuid')->name('failed-jobs.retry')->middleware(AdminSections::middleware('failed_jobs', 'update'));
+    Route::delete('failed-jobs/{uuid}', [FailedJobController::class, 'destroy'])->whereUuid('uuid')->name('failed-jobs.destroy')->middleware(AdminSections::middleware('failed_jobs', 'delete'));
     Route::get('audit-trail', [AuditTrailController::class, 'index'])->name('audit-trail.index')->middleware(AdminSections::middleware('audit_trail', 'view'));
     Route::delete('audit-trail', [AuditTrailController::class, 'destroy'])->name('audit-trail.destroy')->middleware(['admin.mother', 'throttle:mother-actions']);
 

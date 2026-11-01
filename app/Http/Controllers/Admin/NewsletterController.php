@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Concerns\RecordsAdminActions;
 use App\Http\Controllers\Controller;
 use App\Mail\NewsletterCustomMail;
 use App\Mail\NewsletterProductMail;
@@ -11,6 +12,7 @@ use App\Models\NewsletterSubscriber;
 use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,6 +20,8 @@ use Mews\Purifier\Facades\Purifier;
 
 class NewsletterController extends Controller
 {
+    use RecordsAdminActions;
+
     public function index(Request $request): Response
     {
         $subscribers = NewsletterSubscriber::query()
@@ -37,7 +41,13 @@ class NewsletterController extends Controller
 
     public function destroy(NewsletterSubscriber $subscriber): RedirectResponse
     {
-        $subscriber->delete();
+        DB::transaction(function () use ($subscriber): void {
+            $subscriber->delete();
+
+            $this->recordAdminAction('deleted', "Newsletter subscriber #{$subscriber->id} removed", $subscriber, [
+                'email' => $this->maskedEmail($subscriber->email),
+            ]);
+        });
 
         return back()->with('success', 'Subscriber removed.');
     }

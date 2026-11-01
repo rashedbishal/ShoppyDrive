@@ -363,7 +363,7 @@ export default function Header(): React.JSX.Element {
 
                             {/* Wishlist */}
                             <Link
-                                href="/account/wishlist"
+                                href={route('wishlist.index')}
                                 aria-label="Wishlist"
                                 className="relative inline-flex size-10 items-center justify-center rounded-xl text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)]"
                             >

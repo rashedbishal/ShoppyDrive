@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\SubCategory;
+use App\Support\ProductStockToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\actingAs;
@@ -353,7 +354,7 @@ test('a product can resubmit its own existing variant SKU without self-conflicti
         'attributes' => ['Color' => 'Red'], 'is_default' => true,
     ]);
 
-    $response = $this->put(route('admin.products.update', $product), baseProductPayload([
+    $response = $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + baseProductPayload([
         'category_id' => $this->category->id,
         'sub_category_id' => $this->subCategory->id,
         'has_color_variant' => true,
@@ -430,7 +431,7 @@ test('removing a variant combo referenced by a live cart item freezes it instead
     ]);
 
     // Admin edits the product, keeping only the Red variant (removing Blue).
-    $response = $this->put(route('admin.products.update', $product), baseProductPayload([
+    $response = $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + baseProductPayload([
         'category_id' => $this->category->id,
         'sub_category_id' => $this->subCategory->id,
         'has_color_variant' => true,
@@ -502,7 +503,7 @@ test('turning off a size variant that has an order-frozen combo detaches it from
     ]);
 
     // Admin turns the "Has Size Variant" toggle off, leaving only a blue, size-less variant.
-    $response = $this->put(route('admin.products.update', $product), baseProductPayload([
+    $response = $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + baseProductPayload([
         'category_id' => $this->category->id,
         'sub_category_id' => $this->subCategory->id,
         'has_color_variant' => true,

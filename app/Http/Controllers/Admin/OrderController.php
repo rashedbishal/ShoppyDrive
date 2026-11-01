@@ -29,6 +29,7 @@ use App\Services\CourierEvidenceChain;
 use App\Services\CourierOrderStatusMapper;
 use App\Services\CourierSubmissionService;
 use App\Services\InventoryService;
+use App\Services\ManualOrderPricing;
 use App\Services\OrderDeletionEligibility;
 use App\Services\OrderPermanentDeletionService;
 use App\Services\PathaoCourierService;
@@ -54,6 +55,7 @@ class OrderController extends Controller
         private readonly InventoryService $inventory,
         private readonly CourierSubmissionService $courierSubmissions,
         private readonly OrderDeletionEligibility $deletionEligibility,
+        private readonly ManualOrderPricing $manualPricing,
         private readonly OrderPermanentDeletionService $permanentDeletion,
     ) {}
 
@@ -119,6 +121,25 @@ class OrderController extends Controller
     }
 
     /**
+     * The calculated pricing for the create-order form to start from, so the
+     * browser never recomputes prices or shipping itself. Purely advisory:
+     * CreateOrderRequest recalculates everything on submit.
+     */
+    public function pricingPreview(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'state' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+        ]);
+
+        return response()->json($this->manualPricing->calculate($data['items'], $data['state'] ?? null, $data['city'] ?? null));
+    }
+
+    /**
      * Creates a real order directly from the admin panel — for a customer
      * who called/messaged in rather than checking out on the site. Reuses
      * the same InventoryService stock/flash-sale enforcement every other
@@ -126,6 +147,10 @@ class OrderController extends Controller
      * than a web one can. Deliberately skips coupon/referral/loyalty
      * logic (none of that applies to a manually-entered order) — same
      * scope as IncompleteOrderController::placeOrder().
+     *
+     * MED-01: staff keep full pricing flexibility, but CreateOrderRequest
+     * requires a reason for any deviation from the server-calculated price,
+     * shipping or discount, and each one goes to the Audit Trail.
      */
     public function store(CreateOrderRequest $request): RedirectResponse
     {
@@ -201,6 +226,13 @@ class OrderController extends Controller
                         ],
                     ]);
                 }
+
+                $this->manualPricing->logOverrides($order, $items, $request->calculatedPricing(), [
+                    'shipping_cost' => $shippingCost,
+                    'discount' => $discount,
+                    'shipping_reason' => $request->validated('shipping_override_reason'),
+                    'discount_reason' => $request->validated('discount_override_reason'),
+                ]);
 
                 return $order;
             });

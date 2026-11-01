@@ -401,8 +401,10 @@ function DrawerCartRow({
                             value={item.quantity}
                             min={1}
                             max={
-                                item.product.stock_quantity > 0
-                                    ? item.product.stock_quantity
+                                (item.variant?.stock_quantity ??
+                                    item.product.stock_quantity) > 0
+                                    ? (item.variant?.stock_quantity ??
+                                      item.product.stock_quantity)
                                     : 99
                             }
                             onChange={onQuantityChange}

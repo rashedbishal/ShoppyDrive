@@ -101,7 +101,7 @@ test('an admin can convert an incomplete order into a real cash-on-delivery orde
 /**
  * SHIP-DUP-001: these mirror the free-delivery rule CheckoutController
  * already enforces at normal checkout — see the docblock on
- * IncompleteOrderController::calculateShippingCost().
+ * ManualOrderPricing::shippingCost().
  */
 function convertIncompleteOrderPayload(IncompleteOrder $incomplete, array $items): array
 {

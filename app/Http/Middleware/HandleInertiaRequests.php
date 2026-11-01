@@ -62,6 +62,9 @@ class HandleInertiaRequests extends Middleware
         'checkout/*',
         'cart',
         'cart/*',
+
+        // A guest's saved-item count only exists in localStorage.
+        'wishlist',
     ];
 
     public function __construct(

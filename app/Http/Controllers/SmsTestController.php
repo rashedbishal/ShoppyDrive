@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ReceivedSms;
 use App\Services\SmsParserService;
+use App\Support\SmsRegex;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\QueryException;
@@ -49,6 +50,15 @@ class SmsTestController extends Controller
         }
 
         $content = (string) $request->input('content', '');
+
+        // Acknowledged, because the forwarder retries anything else, and no
+        // real payment SMS is this long.
+        if (mb_strlen($content) > SmsRegex::MAX_CONTENT_LENGTH) {
+            Log::warning('[SMS] Oversized message ignored', ['length' => mb_strlen($content)]);
+
+            return response()->json(['status' => 'ignored']);
+        }
+
         $parsed = $this->parser->parse($content);
 
         try {

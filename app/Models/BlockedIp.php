@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\Cache;
 
 class BlockedIp extends Model
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
     private const CACHE_KEY = 'security.blocked_ips';
 
@@ -23,8 +24,22 @@ class BlockedIp extends Model
 
     protected static function booted(): void
     {
-        static::created(fn (): bool => Cache::forget(self::CACHE_KEY));
-        static::deleted(fn (): bool => Cache::forget(self::CACHE_KEY));
+        static::created(fn (): bool => self::flushCache());
+        static::deleted(fn (): bool => self::flushCache());
+    }
+
+    /**
+     * The list is cached forever, so a caller writing inside a transaction
+     * must call this again after commit, or a reader could store the old list.
+     */
+    public static function flushCache(): bool
+    {
+        return Cache::forget(self::CACHE_KEY);
+    }
+
+    protected function auditLabel(): string
+    {
+        return $this->ip_address;
     }
 
     public function blockedByAdmin(): BelongsTo

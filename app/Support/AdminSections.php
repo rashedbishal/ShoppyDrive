@@ -73,6 +73,8 @@ final class AdminSections
         // Clearing the log stays mother-only regardless of this matrix
         // (AuditTrailController::destroy()) — it only lists `view` here.
         'audit_trail' => ['label' => 'Audit Trail', 'group' => 'System', 'abilities' => []],
+        // `update` retries a job, `delete` removes its record.
+        'failed_jobs' => ['label' => 'Failed Jobs', 'group' => 'System', 'abilities' => ['update', 'delete']],
     ];
 
     /**

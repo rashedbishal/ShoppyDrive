@@ -3,11 +3,15 @@
 declare(strict_types=1);
 
 use App\Enums\CourierEvidenceSource;
+use App\Enums\CourierEvidenceType;
+use App\Enums\OrderStatus;
+use App\Models\Coupon;
 use App\Models\CourierDeliveryEvidence;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
@@ -347,3 +351,137 @@ it('records structured courier evidence tagged with the webhook source only afte
         ->and($evidence->order_id)->toBe($order->id)
         ->and($evidence->previous_raw_status)->toBe('in_review');
 });
+
+// ── MED-02: a late webhook must not undo progress ────────────────────────────
+
+/**
+ * @return array{0: Order, 1: User, 2: Product, 3: Coupon}
+ */
+function makeShippedSteadfastOrder(string $status = 'shipped', string $rawStatus = 'waiting_approval'): array
+{
+    $customer = User::factory()->create(['points_balance' => 0]);
+    $coupon = Coupon::factory()->create(['used_count' => 1]);
+    $order = makeSteadfastOrder();
+    $product = Product::query()->findOrFail($order->items()->firstOrFail()->product_id);
+    $product->update(['stock_quantity' => 5]);
+
+    $order->forceFill([
+        'user_id' => $customer->id,
+        'coupon_id' => $coupon->id,
+        'points_redeemed' => 40,
+        'status' => $status,
+        'steadfast_status' => $rawStatus,
+    ])->saveQuietly();
+
+    return [$order->refresh(), $customer, $product, $coupon];
+}
+
+function assertNoCancellationSideEffects(Order $order, User $customer, Product $product, Coupon $coupon): void
+{
+    expect($order->refresh()->stock_restored_at)->toBeNull();
+    expect($order->points_refunded_at)->toBeNull();
+    expect($order->coupon_released_at)->toBeNull();
+    expect($product->refresh()->stock_quantity)->toBe(5);
+    expect($customer->refresh()->points_balance)->toBe(0);
+    expect($coupon->refresh()->used_count)->toBe(1);
+}
+
+it('a stale webhook cannot move a shipped order backward', function (string $staleStatus) {
+    configureSteadfastWebhookSecret();
+    [$order, $customer, $product, $coupon] = makeShippedSteadfastOrder(rawStatus: 'unknown');
+
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => $staleStatus, 'tracking_message' => 'Late report'])->assertOk();
+
+    expect($order->refresh()->status)->toBe(OrderStatus::SHIPPED);
+    expect($order->steadfast_status)->toBe($staleStatus);
+    assertNoCancellationSideEffects($order, $customer, $product, $coupon);
+
+    $evidence = CourierDeliveryEvidence::where('order_id', $order->id)->latest('id')->firstOrFail();
+
+    expect($evidence->evidence_type)->toBe(CourierEvidenceType::OBSERVATION);
+    expect($evidence->raw_status)->toBe($staleStatus);
+    expect($evidence->order_status_after)->toBe('shipped');
+    expect($order->statusHistories()->latest('id')->firstOrFail()->notes)->toContain('status left unchanged')->toContain('Late report');
+})->with(['in_review', 'pending_parcels', 'waiting_approval']);
+
+it('a customer cannot cancel a shipped order after a stale webhook', function () {
+    configureSteadfastWebhookSecret();
+    [$order, $customer, $product, $coupon] = makeShippedSteadfastOrder();
+
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'pending_parcels'])->assertOk();
+
+    $this->actingAs($customer)->patch(route('account.orders.cancel', $order))->assertSessionHas('error');
+
+    expect($order->refresh()->status)->toBe(OrderStatus::SHIPPED);
+    assertNoCancellationSideEffects($order, $customer, $product, $coupon);
+});
+
+it('a stale webhook cannot move a processing order back to pending', function () {
+    configureSteadfastWebhookSecret();
+    [$order] = makeShippedSteadfastOrder('processing');
+
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'in_review'])->assertOk();
+
+    expect($order->refresh()->status)->toBe(OrderStatus::PROCESSING);
+});
+
+it('a duplicate stale webhook is recorded once', function () {
+    configureSteadfastWebhookSecret();
+    [$order] = makeShippedSteadfastOrder();
+    $payload = ['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'pending_parcels'];
+
+    postSignedSteadfastWebhook($payload)->assertOk();
+    postSignedSteadfastWebhook($payload)->assertOk();
+
+    expect($order->statusHistories()->count())->toBe(1);
+    expect(CourierDeliveryEvidence::where('order_id', $order->id)->where('raw_status', 'pending_parcels')->count())->toBe(1);
+});
+
+it('later statuses still advance an order after a stale webhook was refused', function () {
+    configureSteadfastWebhookSecret();
+    [$order] = makeShippedSteadfastOrder();
+
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'pending_parcels'])->assertOk();
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'delivered_parcels'])->assertOk();
+
+    expect($order->refresh()->status)->toBe(OrderStatus::DELIVERED);
+    expect($order->delivered_at)->not->toBeNull();
+});
+
+it('webhooks still move an order forward', function (string $from, string $raw, OrderStatus $expected) {
+    configureSteadfastWebhookSecret();
+    [$order] = makeShippedSteadfastOrder($from, 'unknown');
+
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => $raw])->assertOk();
+
+    expect($order->refresh()->status)->toBe($expected);
+})->with([
+    'pending to processing' => ['pending', 'waiting_approval', OrderStatus::PROCESSING],
+    'processing to delivered' => ['processing', 'delivered_parcels', OrderStatus::DELIVERED],
+    'shipped to delivered' => ['shipped', 'delivered_parcels', OrderStatus::DELIVERED],
+    'shipped to partly delivered' => ['shipped', 'partial_parcels', OrderStatus::DELIVERED],
+]);
+
+it('a genuine courier cancellation of a shipped order still runs its side effects once', function () {
+    configureSteadfastWebhookSecret();
+    [$order, , $product] = makeShippedSteadfastOrder();
+    $payload = ['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'cancelled_parcells'];
+
+    postSignedSteadfastWebhook($payload)->assertOk();
+    postSignedSteadfastWebhook($payload)->assertOk();
+
+    expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED);
+    expect($order->stock_restored_at)->not->toBeNull();
+    expect($product->refresh()->stock_quantity)->toBe(6);
+});
+
+it('a stale webhook leaves terminal orders alone', function (string $status) {
+    configureSteadfastWebhookSecret();
+    [$order, $customer, $product, $coupon] = makeShippedSteadfastOrder($status);
+
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'pending_parcels'])->assertOk();
+
+    expect($order->refresh()->status->value)->toBe($status);
+    expect($order->steadfast_status)->toBe('pending_parcels');
+    assertNoCancellationSideEffects($order, $customer, $product, $coupon);
+})->with(['delivered', 'cancelled', 'refunded']);

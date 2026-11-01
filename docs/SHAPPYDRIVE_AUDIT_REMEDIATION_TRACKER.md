@@ -1,0 +1,831 @@
+# ShoppyDrive Audit Remediation Tracker
+
+Source of truth for the forensic audit findings (CRIT/HIGH/MED/LOW IDs). `docs/MASTER_FIXING_TRACKER.md` remains the record of earlier remediation work and its evidence; this file links to it instead of copying it.
+
+**Last updated:** 2026-11-01. **Git baseline:** `main` = `origin/main` = `f36ee18`; one stash (`stash@{0}`). CRIT-01, HIGH-01, HIGH-02, HIGH-03 and REF-CAP-TZ-001 changes are uncommitted on top of this.
+
+> **Authoritative source:** `docs/SHAPPYDRIVE_FORENSIC_AUDIT_REPORT.txt`. All findings were reconciled against it and the code at the current working tree on 2026-11-01. Completed findings are not reopened without new evidence.
+
+**Statuses:** NOT_STARTED, INVESTIGATING, IN_PROGRESS, BLOCKED, PARTIALLY_COMPLETED, COMPLETED, ACCEPTED_RISK, NOT_APPLICABLE. Never mark COMPLETED without implementation and verification evidence. `COMPLETED (LOCAL IMPLEMENTATION)` means verified locally and not deployed.
+
+**Priority order:** see "Remaining priority order". LOW findings only when justified.
+
+## Findings
+
+| ID | Severity | Issue | Status | Implementation approach | Files modified | Tests performed | Verification evidence | Completion date | Remaining work |
+|---|---|---|---|---|---|---|---|---|---|
+| CRIT-01 | Critical | Loyalty points double-spend across overlapping pending checkouts | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Derived reservation: `pending_checkouts.points_reserved`, available = balance minus active reservations. See CRIT-01 notes | See CRIT-01 notes | 21/21 MySQL reservation tests passed, twice. MySQL concurrency tests 2/2 passed. Checkout regression: 336 passed, 10 skipped, 1 unrelated failure (fixed since by REF-CAP-TZ-001) | See CRIT-01 notes | 2026-11-01 (local) | See deployment checklist |
+| HIGH-01 | High | Admin account management is completely unaudited | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Spatie activity logging on `Admin` with an attribute allow-list, plus a value-free password event. See HIGH-01 notes | See HIGH-01 notes | `AdminAuditLogTest` 16/16 on SQLite and MySQL. Admin regression sweep 205 tests: 180 passed, 25 skipped (MySQL-only) | See HIGH-01 notes | 2026-11-01 (local) | See deployment checklist |
+| HIGH-03 | High | Primary wishlist entry point is structurally broken: `/wishlist` rendered the page with no data | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | `/wishlist` redirects signed-in customers to `account.wishlist`; guests get a guest page. See HIGH-03 notes | See HIGH-03 notes | `WishlistEntryTest` 10/10 on SQLite and MySQL. Sweep 157 tests: 147 passed, 10 skipped (MySQL-only). `tsc`, ESLint, Prettier, production build passed | See HIGH-03 notes | 2026-11-01 (local) | See deployment checklist |
+| HIGH-02 | High | Variant product stock inconsistency: orders decrement variants, listings read the stale parent `stock_quantity` | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Computed `Product::available_stock` from already-loaded variants, plus an `inStock` filter scope. See HIGH-02 notes | See HIGH-02 notes | `ProductAvailableStockTest` 25/25 on SQLite and MySQL. Sweep 539 tests: 529 passed, 10 skipped (MySQL-only). `tsc`, ESLint, Prettier, production build passed | See HIGH-02 notes | 2026-11-01 (local) | See deployment checklist |
+| MED-01 | Medium | Admin manual orders accepted any item price with no catalog check | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Server-calculated pricing with a mandatory reason for every deviation. See MED-01 notes | See MED-01 notes | `ManualOrderPricingTest` and `CreateManualOrderTest` on SQLite and MySQL | See MED-01 notes | 2026-11-01 (local) | See deployment checklist |
+| MED-02 | Medium | Late non-terminal Steadfast webhook could move an order backward | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Forward-only rule for Steadfast inside `CourierOrderStatusMapper::sync()`. Pathao deliberately unchanged. See MED-02 notes | See MED-02 notes | 51 focused tests on SQLite and MySQL. 2 two-process MySQL race tests. Courier sweep 408 tests: 381 passed, 27 skipped (MySQL-only) | See MED-02 notes | 2026-11-01 (local) | See deployment checklist |
+| MED-03 | Medium | Permanently failed queued jobs were invisible | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Permission-gated admin page with redacted summaries, allow-listed retry, audited delete and a dashboard count. See MED-03 notes | See MED-03 notes | `FailedJobManagementTest` 19/19 on SQLite. With `DrainQueueCommandTest` 28/28 on MySQL. Sweep 333/333 | See MED-03 notes | 2026-11-01 (local) | See deployment checklist |
+| MED-04 | Medium | SMS regex unvalidated, errors suppressed, content length unbounded | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Save-time validation, bounded execution, safe logging, oversize guard and audit logging. See MED-04 notes | See MED-04 notes | `SmsPatternSafetyTest` 30/30 on SQLite. With `MobilePaymentMatchingTest` 44/44 on MySQL. Sweep 277/277 | See MED-04 notes | 2026-11-01 (local) | See deployment checklist |
+| MED-05 | Medium | Admin-destructive actions missing from the audit trail | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Explicit admin-action logging and `Auditable`, written atomically. See MED-05 notes | See MED-05 notes | `RemainingAdminAuditTest` 19/19 on SQLite, and with related tests 29/29 on disposable MySQL. Sweep 1425 passed, 12 skipped | See MED-05 notes | 2026-11-01 (local) | See deployment checklist |
+| MED-06 | Medium | No DB uniqueness on variant SKU or attribute values | BLOCKED (DEFERRED BY USER) | Application code and disposable MySQL verification completed. Production preflight deferred. **Migration NOT SAFE TO DEPLOY.** See MED-06 notes | See MED-06 notes | 24/24 on MySQL 8.0.46, including a two-process race. 14/14 on in-memory SQLite. Sweep 1406 passed, 10 skipped | See MED-06 notes | — | Production duplicate and schema preflight, then a user decision. Do not run the migration on dev or production |
+| MED-07 | Medium | Admin product save was not transactional | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Single transaction with upload cleanup on failure. Old files deliberately kept. See MED-07 notes | See MED-07 notes | `ProductSaveAtomicityTest` 11/11 on SQLite. With `ProductVariantManagementTest` 29/29 on MySQL. Sweep 613/613 | See MED-07 notes | 2026-11-01 (local) | See deployment checklist |
+| MED-08 | Medium | Concurrent cart writes could create duplicate rows and double-charge a line | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Serialized cart writes with row locks, duplicate consolidation, and a locked checkout re-check. No migration. See MED-08 notes | See MED-08 notes | `CartConcurrencyTest` 18/18 on SQLite. `CartConcurrencyRaceTest` 4/4 multi-process on MySQL. SQLite regression 367/367. MySQL focused 29/29 | See MED-08 notes | 2026-11-01 (local) | See deployment checklist |
+| MED-09 | Medium | Money cast to float across models | NOT_STARTED | Documentation only, per the report. No retrofit | — | None | Still exists as a pattern, with a tolerance in `InventoryService.php:283`. No failing value shown | — | Risk: Low. Complexity: Small |
+| MED-10 | Medium | Shipping calculation duplicated in three controllers | NOT_STARTED | One shared calculator, when next touched | — | Per-controller tests | Still exists. SHIP-DUP-001 fixed behaviour, not the duplication | — | Risk: Medium-term drift. Complexity: Medium |
+| MED-11 | Medium | `Admin\OrderController` is 604 lines and 20 actions | NOT_STARTED | Recommend deferring. Refactor risk outweighs benefit now | — | Existing order tests | Still exists: 604 lines, 20 public methods. Not a defect | — | Risk: Maintainability. Complexity: Large |
+| MED-12 | Medium | Invoice download branches untested | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Test-only. See MED-12 and MED-13 notes | `tests/Feature/InvoiceDownloadTest.php` | 25/25 on in-memory SQLite. Sweep 1465 passed, 14 skipped | See MED-12 and MED-13 notes | 2026-11-01 (local) | None |
+| MED-13 | Medium | Wishlist feature untested | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Tests added, and the 2 add-all bugs they exposed were fixed. See MED-12 and MED-13 notes | See the add-all bug section below | `WishlistActionsTest` and `WishlistEntryTest` 40/40 on in-memory SQLite, no skips. Sweep 1480 passed, 12 skipped | See MED-12 and MED-13 notes | 2026-11-01 (local) | See deployment checklist |
+| MED-14 | Medium | MySQL and SQLite LIKE differ for non-ASCII text | NOT_STARTED | One MySQL-only test, or accept the gap | — | None | Still exists. No non-ASCII search test. MySQL runs are available locally | — | Risk: Low. Complexity: Small |
+| MED-15 | Medium | Deploy didn't verify runtime `APP_DEBUG` or `APP_ENV` | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Runtime check over SSH before `rsync` and after `config:cache`. See MED-15 notes | `.github/workflows/deploy.yml` | Local simulation of 12 cases, no SSH | See MED-15 notes | 2026-11-01 (local) | Separate approval to deploy. First real run is the first proof on Hostinger |
+| MED-16 | Medium | No security headers | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Global `SecurityHeaders` middleware. No CSP or HSTS. See MED-16 notes | See MED-16 notes | `SecurityHeadersTest` 18/18 on SQLite. Sweep 1392 passed, 2 skipped, 0 failed | See MED-16 notes | 2026-11-01 (local) | Confirm headers on production after deploy. See deployment checklist |
+| MED-17 | Medium | ZiniPay webhook unsigned | NOT_STARTED | Recommend removing dead code later. CRIT-01 still calls `createFromPending()`, so check first | — | `OrderService` paths covered by reservation tests | Still exists. `createInvoice()` has no callers. Webhook re-verifies with ZiniPay, so exploitation stays theoretical | — | Risk: Low. Complexity: Small |
+| MED-18 | Medium | `SESSION_SECURE_COOKIE` has no default | BLOCKED | User must check the production `.env`. Code default is an option after that | — | None | Still exists in `config/session.php:172`, and it's absent from `.env.example`. Production value unknown | — | Risk: Medium if unset. Complexity: Small |
+| MED-19 | Medium | SMS amount tolerance is a flat ৳1 | NOT_STARTED | Recommend keeping or tightening only with a business rule | — | Rejection case only, in `MobilePaymentMatchingTest` | Still exists at two call sites. Loss capped at ৳1 per order | — | Risk: Low. Complexity: Small |
+| MED-20 | Medium | Expired PendingCheckout rows never pruned | NOT_STARTED | Scheduled pruning, keeping paid-but-failed rows staff may need | — | None | Rows remain, but **the report's rationale no longer applies**: CRIT-01 reservations ignore expired rows. Now housekeeping only. Dev has 0 rows | — | Risk: Low, downgraded. Complexity: Small |
+| WISHLIST-GUEST | Medium | Guests visiting `/wishlist` received an account layout with blank user details and login-gated navigation. Separate related Medium in the report with no MED ID; linked to HIGH-03 | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Delivered by the HIGH-03 change, no separate implementation | See HIGH-03 notes | Covered by `WishlistEntryTest` | See HIGH-03 notes | 2026-11-01 (local) | See deployment checklist |
+| LOW-01 | Low | `Order::$fillable` includes financial and idempotency fields | NOT_STARTED | Optional narrowing | — | None | Still exists. Call sites are disciplined | — | Risk: Low. Complexity: Small to Medium, many create calls |
+| LOW-02 | Low | Variant attributes JSON duplicates IDs | NOT_STARTED | Optional | — | None | Still exists. Self-heals on save | — | Risk: Low. Complexity: Medium |
+| LOW-03 | Low | Dashboard low-stock uses summed parent stock | NOT_STARTED | Use per-variant stock | — | None | Still exists, and uses stale parent stock (see Observations). HIGH-02 deliberately left admin alone | — | Risk: Low-Medium, misleads staff. Complexity: Small |
+| LOW-04 | Low | Dead TypeScript interfaces | NOT_STARTED | Optional removal | — | Not applicable | Still exists: only in `types/index.ts` | — | Risk: Low. Complexity: Small |
+| LOW-05 | Low | No per-route permission rejection test | NOT_STARTED | Optional enumeration | — | `AdminPermissionsTest` covers the mechanism | Gap exists | — | Risk: Low. Complexity: Small |
+| LOW-06 | Low | No sitemap command test | NOT_STARTED | Optional | — | None | Gap exists | — | Risk: Low. Complexity: Small |
+| LOW-07 | Low | `verify-email.tsx` uses a light theme | NOT_STARTED | Optional, cosmetic | — | Not applicable | Still exists | — | Risk: Cosmetic. Complexity: Small |
+| LOW-08 | Low | Dashboard revenue includes unpaid and cancelled orders | NOT_STARTED | Filter to paid, non-cancelled | — | None | Still exists in `DashboardController.php:26-27,42-44` | — | Risk: Low-Medium, misleading figures. Complexity: Small |
+| LOW-09 | Low | Order number uniqueness check race | NOT_STARTED | Recommend accepting, not in the report's roadmap | — | Not applicable | Still exists, backstopped by the unique column | — | Risk: Negligible. Complexity: None |
+| LOW-10 | Low | No lock timeout for production migrations | NOT_STARTED | Review alongside the CRIT-01 migration, which is a quick additive change | — | Not applicable | Still exists | — | Risk: Low. Complexity: Small |
+
+## CRIT-01 notes
+
+**Verified 2026-11-01 by reading code at `f36ee18`; no test reproduces it yet.**
+
+- `CheckoutController::resolveFinalDiscount()` (`app/Http/Controllers/CheckoutController.php:397`) clamps redemption to the current `points_balance`. It ignores points already promised to other unpaid pending checkouts.
+- `initiateMobileBanking()` (`:461`) stores `points_redeemed` and the discounted `total` in `checkout_data` for 2 hours. No points are debited or reserved.
+- `debitPointsForOrder()` (`app/Services/LoyaltyPointsService.php:108`) decrements unconditionally. Its callers, `MobilePaymentController` (`:175`) and `OrderService::createFromPending()` (`:79`), do not recheck the balance.
+- `users.points_balance` is signed (migration `2026_10_30_214612`), so the database will not stop a negative balance.
+- **Result:** with 100 points, two pending checkouts can each redeem 100. Paying both grants both discounts and leaves the balance at -100. A COD order placed while a checkout is pending has the same effect.
+- **Already covered, do not rebuild:** one checkout token cannot create two pending checkouts (CHECKOUT-COD-002), and one pending checkout cannot create two orders (row lock plus `order_number` check). Each order's debit runs once. The gap is across different checkouts.
+- **Tests:** no overlapping-pending-checkout test was found in `tests/Feature/LoyaltyPoints*.php` or the mobile payment tests.
+
+**Revalidating the balance at payment is rejected.** By then the customer has already sent the discounted amount by bKash or Nagad, and `expectedAmount` is fixed. A failed check would leave money received with no order, or force us to honour a discount the points no longer cover.
+
+**Implemented: a derived reservation, with no separate release step.**
+- `availablePoints()` = `points_balance` minus the sum of `points_reserved` on pending checkouts where `order_number` is null and `expires_at` has not passed. Conversion, cancellation (row deleted) and expiry end a reservation by state alone, so no scheduler is needed and nothing can be released twice. Refund and reversal code is unchanged.
+- The mobile-banking checkout now reserves inside a transaction that locks the user first. COD and the checkout page use `availablePoints()`.
+- **Concurrency:** the user lock must be the first statement in the transaction, so the plain `SUM` that follows sees all earlier commits under REPEATABLE READ. The COD path's lock moved above the address save for this reason. The sum is deliberately not a locking read, which avoids gap locks and deadlocks between users.
+- **Payment paths** (`MobilePaymentController::submit()`, `OrderService::createFromPending()`) lock the user before the pending row, closing the race at the exact moment of expiry.
+- **Cancellation:** `MobilePayment.tsx` shows a cancel link on the existing `payment.cancel` route, only when points are held. Without it, a customer who backs out would lose those points for up to 2 hours.
+- No new index: the `user_id` foreign key index covers the query, which replaces the composite index suggested earlier. The landing-page flow does not redeem points and is unchanged.
+
+**Files modified:** `app/Http/Controllers/CheckoutController.php`, `app/Http/Controllers/MobilePaymentController.php`, `app/Models/PendingCheckout.php`, `app/Services/LoyaltyPointsService.php`, `app/Services/OrderService.php`, `resources/js/pages/checkout/MobilePayment.tsx`, `database/migrations/2026_10_31_193742_add_points_reserved_to_pending_checkouts_table.php`, `tests/Feature/LoyaltyPointsReservationTest.php` (new), `tests/Feature/LoyaltyPointsConcurrencyRaceTest.php`.
+
+**Verification evidence (2026-11-01, against `f36ee18` plus these changes):**
+- `LoyaltyPointsReservationTest` on SQLite: 21/21 passed.
+- Same file on MySQL 8.0.46, `shoppydrive_test_loyalty`: 21/21 passed, 97 assertions, twice. It includes the migration's up, down and backfill.
+- Separate-process race tests on MySQL (contender verified blocked on the user lock): 2/2 passed. Run with `--filter`; the other 8 tests in that file were not rerun.
+- With the reservation subtraction disabled, 9 of the 21 tests fail, so the tests detect the bug.
+- Every test file touching checkout or pending checkouts on SQLite (26 files, 347 tests): 336 passed, 10 skipped (MySQL-only), 1 failed. The failure is listed below and is not caused by this change.
+- Pint passed. `tsc` and ESLint on `MobilePayment.tsx` passed. Prettier passed.
+- Not run: the full suite, and the `LoyaltyPointsConcurrencyRaceTest` deadlock-retry test. The real-browser flow was not exercised.
+
+**Residual risks:**
+- **Negative balance after revocation:** if a referral or refund revocation lowers the balance after points were reserved, paying that checkout can still take the balance negative. The customer has already paid, and negative balances from revocation are an approved rule (PAY-RETURN-001). Checkout redemption alone can no longer cause it.
+- **Coupons and referral discounts** are not reserved. Overlapping pending checkouts may have the same class of problem and it was not assessed here.
+- **Overlaps already open at deploy time:** the migration backfills them, but two existing pending checkouts that already share points can both still be paid. The window closes within 2 hours.
+
+**Production preflight (read-only, before the migration):** this lists users whose open pending checkouts promise more points than they hold.
+```sql
+SELECT p.user_id, u.points_balance,
+       SUM(JSON_EXTRACT(p.checkout_data, '$.points_redeemed')) AS promised
+FROM pending_checkouts p JOIN users u ON u.id = p.user_id
+WHERE p.order_number IS NULL AND p.expires_at >= NOW()
+GROUP BY p.user_id, u.points_balance
+HAVING promised > u.points_balance;
+```
+
+## HIGH-01 notes
+
+**Verified 2026-11-01 against `f36ee18` plus these changes.** `Admin` had no activity logging, although `CLAUDE.md` described it as having some.
+
+- **Coverage:** create, update (name, email, permissions, `is_mother`) and delete are logged under the `admin` log name. The causer is the acting admin (console runs have none) and the subject is the target admin. Deleted admins stay identifiable through the description and `old` properties.
+- **Secrets:** `getActivitylogOptions()` uses an allow-list, so a password hash cannot reach the log. Password changes get a separate `password_changed` event with no value.
+- **Password logging lives at the call sites**, not in a model event, because the guard can rewrite the hash at login when the hashing cost changes, which is not a person changing a password. The call sites are `AdminController::update()` and `admin:create-mother`, the only two paths that change a password.
+- **Permissions:** `old` and `attributes` hold the full before and after, and `permission_changes` holds `granted` and `revoked`. The Audit Trail description names the changed fields; the page does not display properties.
+- **No-op saves:** `AdminController::update()` now skips writing `permissions` when they are unchanged. A never-granted admin keeps `null` instead of becoming `[]`, which `canAccess()` treats identically, so saving an untouched form writes no entry.
+- **Authorization is unchanged.**
+
+**Files modified:** `app/Models/Admin.php`, `app/Http/Controllers/Admin/AdminController.php`, `app/Console/Commands/CreateMotherAdminCommand.php`, `tests/Feature/Admin/AdminAuditLogTest.php` (new). No migration.
+
+**Verification evidence:**
+- `AdminAuditLogTest`: 16/16 passed on SQLite and on MySQL 8.0.46 (`shoppydrive_test_loyalty`). It covers each operation, 7 failed-operation cases writing no entry, a no-op save, no password value or hash in the log, and the console path.
+- Every test file touching admin accounts (10 files, 205 tests): 180 passed, 25 skipped (MySQL-only), 0 failed.
+- Reverting to `logFillable()` fails the secrets test, and removing the unchanged-permissions check fails the no-op tests.
+- Pint passed. Not run: the full suite.
+
+**Residual risks:**
+- An admin change and its audit entry are not written in one transaction. If the activity insert fails after an update, the change stands unlogged and the request errors. This matches every other audited model.
+- `AuditTrailController::destroy()` lets the mother clear these entries, by existing design, and writes a `cleared` entry.
+- The login guard's hash rewrite is deliberately not logged.
+
+## HIGH-03 notes
+
+**Verified 2026-11-01 against `f36ee18` plus these changes.**
+
+- **What was actually broken:** `/wishlist` rendered `account/Wishlist` with no data, and `app-header.tsx` links there. The storefront's `Header.tsx`, which most visitors see, already linked to the working `/account/wishlist`, so it only failed guests, who were sent straight to login.
+- **Fix:** `WishlistController::entry()` redirects signed-in customers to `account.wishlist`, so `index()` stays the only place that builds the list. Guests get `account/GuestWishlist`, outside the account layout, which shows their browser-saved count and sign-in, register and shopping links. `Header.tsx` now links to `wishlist.index`, and `app-header.tsx` already did.
+- **Sign-in link:** it points at `account.wishlist`, so the `auth` redirect remembers the destination. The existing login merge moves guest items onto the account.
+- **SSR:** `/wishlist` is excluded because the guest count only exists in localStorage.
+- **Decision:** guests see a count, not product cards. Showing cards needs a new endpoint and product serialization that isn't shared yet, which is more than the smallest safe fix.
+- **Unverified customers** following the link are sent to email verification, like every other account page.
+
+**Files modified:** `app/Http/Controllers/WishlistController.php`, `app/Http/Middleware/HandleInertiaRequests.php`, `routes/commerce.php`, `resources/js/components/layout/Header.tsx`, `resources/js/pages/account/GuestWishlist.tsx` (new), `tests/Feature/WishlistEntryTest.php` (new), `tests/Feature/HandleInertiaRequestsSsrExclusionTest.php`.
+
+**Verification evidence:**
+- `WishlistEntryTest`: 10/10 passed on SQLite and on MySQL 8.0.46. It covers guest and signed-in entry, list ownership, unverified customers, return after sign-in, toggle, sync, clear, add-all-to-cart and guest rejection. The last group had no tests before.
+- With the old route restored, 3 of the 10 fail.
+- Sweep of every wishlist, Inertia-middleware and referral test file (8 files, 157 tests): 147 passed, 10 skipped (MySQL-only), 0 failed.
+- `tsc`, ESLint, Prettier and `npm run build` passed. Not exercised in a real browser.
+
+**User decisions:** the count-only guest page is approved. No endpoint or product fetching will be added for guest cards.
+
+**Limits of the wishlist evidence:** the login return is tested. The guest merge is browser logic in `app.tsx` and `AppLayout.tsx`, read but not run; only its `wishlist.sync` endpoint is tested. The Create Account link does not return to the wishlist, because registration goes through email verification first; the merge still applies on the next storefront page. The browser walkthrough below covers these.
+
+## HIGH-02 notes
+
+**Verified 2026-11-01 against `f36ee18` plus these changes.**
+
+- **Cause confirmed:** `InventoryService` decrements `product_variants.stock_quantity` only. For a variant product, `products.stock_quantity` is a sum written on admin save, so it goes stale after every order. Parent-based stock appeared on product cards, the Compare page, the product page before a variant is selected, and both `in_stock` filters.
+- **Fix:** `Product::available_stock` is appended on serialization. It sums already-loaded variants and otherwise returns `stock_quantity`, so it runs no query. Every storefront product query already loads `variants`. `scopeInStock()` gives the listing and search filters the same rule.
+- **Frontend:** `ProductCard`, `Compare` and `ProductDetail` read `available_stock`. `CartDrawer` caps quantity by the selected variant's stock, matching `Cart.tsx`.
+- **Quick-add:** `HomeController` and `WishlistController` blanked `variants` after loading them, so quick-add from those surfaces created a variant-less line that checkout rejects. They now send them. This adds payload but no queries, because `toArray()` already serialized them.
+- **Decision:** when the default variant is sold out but others are not, the card opens the product page instead of silently adding a different size or colour.
+- **Unchanged:** `InventoryService`, `Admin\ProductController`, locking, and bundle logic. Bundle pages do not show stock.
+
+**Files modified:** `app/Models/Product.php`, `app/Http/Controllers/HomeController.php`, `app/Http/Controllers/WishlistController.php`, `app/Http/Controllers/ProductListingController.php`, `app/Http/Controllers/SearchController.php`, `resources/js/components/shared/ProductCard.tsx`, `resources/js/components/layout/CartDrawer.tsx`, `resources/js/pages/catalog/ProductDetail.tsx`, `resources/js/pages/compare/Compare.tsx`, `resources/js/types/index.ts`, `tests/Feature/ProductAvailableStockTest.php` (new). No migration.
+
+**Verification evidence:**
+- `ProductAvailableStockTest`: 25/25 passed on SQLite and on MySQL 8.0.46. Cases: variants in stock, all sold out, some sold out, stale zero parent, no variants, stock after a real order, and no query when variants are unloaded. Surfaces: homepage, listing, search, brand, flash sales, related products, product page and wishlist.
+- With the old parent-only value restored, 16 of 25 fail. With the old filters restored, 2 of 25 fail.
+- Sweep of every test file touching stock or variants (42 files, 539 tests): 529 passed, 10 skipped (MySQL-only), 0 failed.
+- `tsc` passed, ESLint 0 errors (3 existing `ProductDetail.tsx` warnings), Prettier passed, `npm run build` passed.
+- Not run: a real browser walkthrough. React cards are checked by types and lint only, as the project has no JS test runner.
+
+## MED-01 notes
+
+**User decision:** staff may use custom pricing, but every deviation from the system-calculated value needs a mandatory reason and an Audit Trail entry. This covers item price, discount and shipping. `orders.create` is unchanged.
+
+- **Calculated values:** `App\Services\ManualOrderPricing`. Item prices use `CartManager::resolvePrice()`, as checkout does, covering flash sales and variants. Manual orders carry no `bundle_id`, so a component is priced standalone and a client-supplied `bundle_id` is ignored. Calculated discount is 0, because manual orders skip coupons, referrals and loyalty. Shipping uses the existing threshold, per-product and location rules on the catalog subtotal.
+- **Enforcement:** `CreateOrderRequest::after()` recalculates server-side and compares in poisha. It rejects a variant from another product, which was previously accepted. Money fields now allow at most 2 decimals and an upper limit. Any client catalog price or override flag is ignored.
+- **Audit:** one `pricing_override` entry in the `orders` log per order, only when something deviates, written inside the order transaction. It holds actor, order, product and variant, calculated and final item price, calculated and final shipping and discount, and reasons. Reasons are the only free text, and staff should not enter credentials there.
+- **Form:** `create-order-modal.tsx` starts from a read-only `admin.orders.pricingPreview` response and shows a reason field only when a value changes. It no longer calculates shipping in the browser, which had missed per-product free delivery. The preview needs `orders.create` and decides nothing.
+- **Shipping rule moved, not copied:** `IncompleteOrderController` now calls `ManualOrderPricing::shippingCost()`, so MED-10 gained no fourth copy. Its behaviour is unchanged.
+- **Not changed:** coupon, promotion, checkout and shipping-rate logic, and historical orders. No migration.
+- **Incomplete-order conversion** prices on the server with no client price or discount, so this finding does not apply. It uses variant or product price without flash-sale pricing, which is recorded under Observations.
+
+**Files modified:** `app/Services/ManualOrderPricing.php` (new), `app/Http/Requests/Admin/CreateOrderRequest.php`, `app/Http/Controllers/Admin/OrderController.php`, `app/Http/Controllers/Admin/IncompleteOrderController.php`, `routes/admin.php`, `resources/js/components/admin/create-order-modal.tsx`, `tests/Feature/Admin/ManualOrderPricingTest.php` (new), `tests/Feature/Admin/IncompleteOrderManagementTest.php` (comment only).
+
+**Verification evidence:**
+- `ManualOrderPricingTest`: 22/22 passed on SQLite. With `CreateManualOrderTest`: 30/30 passed on MySQL 8.0.46.
+- Comparing against `Product.price` only fails 2 of 22. Removing reason enforcement fails 7 of 22.
+- Sweep of every test file touching order creation, checkout, incomplete orders, shipping rates and the Audit Trail (31 files): 388/388 passed.
+- `tsc`, ESLint, Prettier and `npm run build` passed. Pint passed.
+- Not run: the full suite, and a real browser walkthrough of the create-order form.
+
+## MED-02 notes
+
+**Verified 2026-11-01.** Before the fix, a late `pending_parcels` returned a shipped order to `pending`, and the customer could then cancel it, which restores stock and releases coupon and points. A test reproduced this.
+
+- **Architecture:** no broader change needed. Raw status (`steadfast_status`, `pathao_order_status`) was already separate from `orders.status`, every report already gets a history note and append-only evidence row, and `sync()` is the single entry point, locking the order row in a transaction with its side effects.
+- **Fix:** `FORWARD_ONLY_STATUSES` (pending, processing, shipped). For Steadfast, a report mapping to an earlier status changes nothing internal. It still updates the raw field, writes a history note ("status left unchanged", plus any `tracking_message`) and an `OBSERVATION` evidence row. No side effects fire, because `orders.status` never changes.
+- **Pathao is deliberately excluded:** it is polled, so each report is current state rather than a delayed event, and `on_hold` and similar statuses after shipping are real. Its behaviour is unchanged and tested.
+- **Covers all Steadfast sources:** webhook, admin refresh and dispatch. So a `processing` order sent to Steadfast now stays `processing`; `in_review` previously moved it back to `pending`.
+- **Unchanged:** forward moves, delivered and cancelled reports (a genuine courier cancellation of a shipped order still runs its side effects once), terminal handling and the webhook signature check. No migration, and historical orders are untouched.
+
+**Files modified:** `app/Services/CourierOrderStatusMapper.php`, `tests/Feature/SteadfastWebhookTest.php`, `tests/Feature/Services/CourierOrderStatusMapperTest.php`, `tests/Feature/LoyaltyPointsConcurrencyRaceTest.php`.
+
+**Verification evidence:**
+- `SteadfastWebhookTest` and `CourierOrderStatusMapperTest`: 51/51 on SQLite. On MySQL 8.0.46: 50 passed, 1 skipped. The skip is an existing test for a duplicate consignment, which MySQL's unique index makes impossible.
+- Two-process MySQL race tests, with the contender confirmed blocked on the order lock: 2/2. A stale webhook behind the shipping transaction is refused, and a duplicate behind the first writes one report.
+- With the rule removed, 6 of 51 focused tests and the stale race test fail.
+- Courier sweep (23 files, 408 tests): 381 passed, 27 skipped (MySQL-only), 0 failed. Pint passed.
+- Side effects asserted unchanged: stock, `stock_restored_at`, points, `points_refunded_at`, coupon usage and `coupon_released_at`.
+- Not run: the full suite, and live Steadfast traffic.
+
+**Limitations:**
+- **Full webhook payload is not stored for staff.** It stays in `Log::info`. Staff see the raw status, `tracking_message`, history and evidence. Showing the whole payload would need a schema change to append-only evidence, and it was not needed for this fix.
+- **Duplicates are detected against the last raw status.** A replay after a different status (A, B, A) writes one more observation, and internal status and side effects stay safe. Payloads carry no confirmed event ID or timestamp to do better.
+- **The raw field shows the last report received,** so after a stale event it shows the stale value until the next report. Internal status stays correct, and history shows the sequence. Terminal orders already behave this way.
+- **Steadfast's real ordering behaviour is unverified,** as it needs live traffic. The fix does not depend on it.
+
+## MED-08 notes
+
+**Root cause.** Four separate gaps, confirmed with real processes:
+1. `updateOrCreate()` reads then inserts with nothing serializing the two steps, and no unique index can stop it, because `variant_id` and `bundle_id` are usually NULL and NULLs never collide.
+2. `Cart::firstOrCreate()` has the same race and `carts.user_id` isn't unique, so one customer could get two carts.
+3. `BundleService::autoAssemble()` writes rows and runs on page loads, so two views could split one row from stale copies. The report missed this.
+4. Checkout priced a cart read before any lock, then built the order from that in-memory copy. The report missed this too.
+
+With the locks removed, two processes produced 2 carts for one customer and 50 rows where 25 belonged.
+
+**Affected entry points:** `cart.sync` (replace and merge), `cart.store`, wishlist add-all-to-cart, login merge, `checkout.store`'s own sync, and bundle assembly on page loads and the shared Inertia cart prop.
+
+**Fix:**
+- `CartManager::writeUserCart()` locks the user row, then the cart row, in a transaction. The user row is the lock because the cart row may not exist yet. It is the first statement, keeping the CRIT-01 snapshot rule. `writeSessionCart()` locks the cart row for guests. Lock order is always user, then cart.
+- `mergeDuplicateRows()` runs in each locked write and collapses rows by product, variant and bundle into the oldest. Quantities are added, capped at stock, never below the largest row. `withoutDuplicateRows()` covers a checkout with no submitted items.
+- `lockForCheckout()` runs inside both checkout transactions, right after the purchaser lock, and compares locked rows to what was priced. A mismatch throws `CartChangedException`: no order, no stock change, an error message, and the token can retry.
+- `autoAssemble()` does a dry run first, so a cart with nothing to assemble takes no lock. When it must write, it locks the cart and re-reads.
+- **No migration:** locks serialize writers, and consolidation handles rows that already exist. A unique index would not have worked.
+- **Unchanged:** stock validation at checkout, pricing, coupon, payment and loyalty logic. The cart still accepts quantities above stock, as before; `InventoryService` enforces stock at order time.
+
+**Files modified:** `app/Support/CartManager.php`, `app/Services/BundleService.php`, `app/Http/Controllers/CheckoutController.php`, `app/Exceptions/CartChangedException.php` (new), `tests/Feature/CartConcurrencyTest.php` (new), `tests/Feature/CartConcurrencyRaceTest.php` (new).
+
+**Verification evidence:**
+- SQLite: `CartConcurrencyTest` 18/18. Regression across 29 cart, checkout and bundle files: 367/367.
+- MySQL 8.0.46 (`shoppydrive_test_loyalty`): `CartConcurrencyRaceTest` 4/4, using real separate processes. Two adds of the same 25 simple products, two adds of the same 25 variants, a full sync racing adds, and a real HTTP checkout blocked on the customer lock while the cart changed. `CartConcurrencyTest`, `CartPersistenceTest`, `BundleAutoAssembleTest` and `BundleCheckoutTest`: 29/29.
+- With the locks and consolidation removed, all 3 write races fail.
+- Pint passed. No frontend changed.
+- Not run: the full suite, a real browser walkthrough, and a concurrent multi-process page-load test for `autoAssemble` (it is covered by a stale-copies test instead).
+
+**Limitations:**
+- **Guests:** a guest's first two simultaneous writes can each create a cart. That leaves an unused cart, not a duplicated line, and guests only write at checkout.
+- **Existing second carts:** a customer who already has two carts keeps both. Reads and writes use one, so items in the other stay unused. Production not checked.
+- **Lost updates:** a full sync is last-write-wins, so a racing add can be overwritten. The cart stays valid, but that add's quantity may not survive.
+- **Display:** duplicate rows show until the next write or checkout collapses them.
+- **Refusals:** a customer changing their cart at the exact moment of checkout now sees an error and must retry, instead of being charged from stale data.
+- **Pending mobile payments:** the order uses the snapshot from checkout, so later cart changes don't affect it. That is existing behaviour, and the cart is still cleared on payment.
+
+## MED-07 notes
+
+**Root cause:** `Admin\ProductController::store()` and `update()` ran `Product::create/update()`, `syncVariants()` and `syncMedia()` as separate statements. `syncMedia()` deleted all media rows first, so a failure could leave a product without media, or half-saved variants, with uploaded files left behind.
+
+**Writes mapped:** `products`, `product_variants` (updateOrCreate and unreferenced deletes), `product_attribute_values`, `product_media`, and audit entries from `Auditable`. Tags and categories are not written by this flow beyond product columns. Stock is written on variants and the denormalized product columns.
+
+**Fix:**
+- `saveAtomically()` wraps all of those in one `DB::transaction()`. An update also locks the product row, so two saves can't interleave media rebuilds.
+- `storeUploads()` runs before the transaction, so no database lock is held during file I/O. Each stored path is tracked and removed if anything fails, including a later upload. A failed store now throws; before, it saved a broken `/storage/` path.
+- Search and catalog caches flush again after commit, because the model events fire before it.
+- Not retried on deadlock: a retry would reuse a model that believes the rolled-back attributes are saved. A failure surfaces as an error with the previous data intact.
+- No migration. Validation, permissions, inventory and storefront logic are unchanged.
+
+**Filesystem behaviour:**
+| Situation | New upload | Old file |
+|---|---|---|
+| Failed create or update | Removed | Kept |
+| Successful update | Kept | Kept |
+
+**User decision (2026-11-01):** keep old media files for now, and do not delete them automatically after a successful product update. `syncMedia()` has never deleted files, and order lines keep the path in `product_snapshot.image`, shown on `admin/orders/show`. Safe cleanup may be considered later as a separate task, with reference checks across order snapshots and other products.
+
+**Files modified:** `app/Http/Controllers/Admin/ProductController.php`, `tests/Feature/Admin/ProductSaveAtomicityTest.php` (new).
+
+**Verification evidence:**
+- `ProductSaveAtomicityTest`: 11/11 on SQLite. With `ProductVariantManagementTest`: 29/29 on MySQL 8.0.46.
+- Failures injected while creating and updating variants and while creating media, including on the last media row.
+- With the transaction removed, 6 of 11 fail. With file cleanup removed, 6 of 11 fail.
+- Sweep of every product, variant, media, inventory and catalog cache test file (46 files, excluding MySQL-only race files): 613/613.
+- Pint passed. No frontend changed.
+- Not run: the full suite, a browser walkthrough, and concurrent admin saves on MySQL.
+
+**Limitations:**
+- Old files remain on disk by user decision, so unused files accumulate.
+- If file cleanup itself fails after a database failure, that upload is left behind unreferenced. It harms nothing.
+- A process killed between storing uploads and committing leaves the same kind of unreferenced file.
+
+## MED-04 notes
+
+**Flow verified:** the forwarder posts to `/api/sms/receive`, `SmsParserService` extracts provider, transaction ID and amount, and `MobilePaymentController` and `LandingPageController` match a customer's submission on provider, transaction ID and amount, with row locks and the `is_matched` check. That logic is unchanged.
+
+**Fix:**
+- `App\Support\SmsRegex` is the only place a pattern runs. It applies a 100,000 backtrack limit around each match, restored afterwards. Measured on PHP here, a catastrophic pattern stops in about 2 ms with JIT off and under 1 ms with it on.
+- `App\Rules\SafeSmsRegex` rejects, on create and update: invalid syntax, an unescaped `/` or injected modifier, no capture group, and patterns that exhaust the limit on 2,000-character probes. Probes include the regex's own text, because PCRE otherwise skips matching when a required literal is absent.
+- A regex that can't run, including a legacy one, yields null, and the existing payment checks then refuse it: no transaction ID gives `not_found`, no amount gives `amount_unavailable`. The failure is logged with pattern ID, field and PCRE error only, never SMS content.
+- SMS content over 2,000 characters is acknowledged and ignored, with only its length logged. It is acknowledged because the forwarder retries on anything else.
+- `SmsPattern` uses `Auditable`, recording admin and before/after configuration for create, update, delete and status changes. Incoming SMS content is never in these entries.
+- `destroyMany()` deletes one at a time. The old bulk delete skipped model events, so a deleted pattern stayed active in the 5-minute cache and could not be audited.
+- Regex validation is now 255 characters, matching the column, in the controller and form. 500 characters would have failed on save in MySQL strict mode.
+
+**No migration.** The cached pattern shape gains `id`, and old entries expire within 5 minutes.
+
+**Files modified:** `app/Support/SmsRegex.php` (new), `app/Rules/SafeSmsRegex.php` (new), `app/Services/SmsParserService.php`, `app/Http/Controllers/SmsTestController.php`, `app/Http/Controllers/Admin/SmsPatternController.php`, `app/Models/SmsPattern.php`, `resources/js/pages/admin/sms-patterns/index.tsx`, `tests/Feature/SmsPatternSafetyTest.php` (new).
+
+**Verification evidence:**
+- `SmsPatternSafetyTest`: 30/30 on SQLite. With `MobilePaymentMatchingTest`: 44/44 on MySQL 8.0.46.
+- Payment safety, through the real forwarder and payment endpoints: broken legacy transaction regex, amount regex or both, wrong amount, wrong transaction and wrong provider all left 0 orders. A valid bKash and a valid Nagad payment each paid an order. A duplicate SMS stored one record, and a second customer reusing it was refused.
+- Removing save-time validation fails 8 of 30. Removing the controller oversize guard fails 1. Removing audit logging fails 3. Removing the regex text from the probes fails 1.
+- Sweep of every SMS, mobile payment and Audit Trail test file (12 files, excluding MySQL-only race files): 277/277.
+- `tsc`, ESLint, Prettier and Pint passed.
+- Not run: the full suite, and real forwarded SMS traffic.
+
+**Limitations:**
+- **Phone numbers are not verified.** The flow never collected or compared a sender number, so a test records that behaviour. The requested phone test could not be a rejection test. Adding phone matching would be a payment rule change.
+- **Existing production patterns are unchecked.** A legacy bad pattern fails closed, but payments then need manual handling until it is fixed. See the checklist.
+- **A failing pattern does not fall through.** The first pattern whose identifier matches is used, as before, so a broken one blocks a later valid one with the same identifier.
+- **Probes are heuristic.** A slow pattern can still be saved. The runtime limit is the real protection, and it limits backtracking steps, not wall-clock time. If `ini_set` is disabled on the host, PHP's default limit of 1,000,000 applies, which stays bounded at about 20 ms measured here without JIT.
+- **Other SMS logs:** `SmsTestController` still logs sender and transaction ID at info level, as it did before. It is listed under Observations.
+
+## MED-03 notes
+
+**Root cause:** `app:drain-queue` runs `queue:work --once --tries=3`, which writes exhausted jobs to `failed_jobs`, but no code read that table. Failures only reached the application log, and there was no listener, alert or page.
+
+**What is queued:** notification emails and `AbandonedCartReminderJob`. No order, payment, refund or stock operation runs on the queue, so a retry cannot repeat one. `Order::booted()` sends the order emails after the order work is already committed.
+
+**Retry allow-list (`FailedJobSummary::RETRYABLE_JOBS`):** `OrderPlacedMail`, `NewOrderAlertMail`, `ShippedWithTrackingMail`, `OrderDeliveredMail`, `OrderCancelledMail`, `OrderStatusUpdatedMail`, `ReturnApprovedMail`, `ReturnRejectedMail`, `ReviewApprovedMail`, `WelcomeMail`, `LowStockAlertMail`, `AbandonedCartReminderJob`.
+- Each only sends a message. The job re-checks `reminder_sent_at`, so after a claim it does nothing.
+- A resent email is possible if the mail server accepted it before the failure, and the confirmation says so.
+- Emails read current order state, so a late retry shows current data, not the state at the original failure.
+- **Not retryable:** `AbandonedCartReminderMail`, because the job that checks a reminder is still wanted has already passed, and every class not listed, including unknown or malformed payloads. Nothing retries automatically.
+
+**Implementation:**
+- `App\Support\FailedJobSummary` JSON-decodes the payload for metadata only and never unserializes it.
+- `Admin\FailedJobController`, the `admin/failed-jobs/index` page, and a new `failed_jobs` permission section: `view` to see, `update` to retry, `delete` to remove a record. The mother admin bypasses as usual. Other admins have no access until granted.
+- Retry locks the row and runs Laravel's `queue:retry` in the same transaction, so a double submit queues once. Retry and delete require a confirmation dialog and a server-side `confirmed` field, and both are audited with admin, UUID, job name and queue.
+- There is no clear-all action. Records stay until retried or deleted individually.
+- The dashboard shows a failed-job count, only to staff who can open the page.
+- No migration, as `failed_jobs` already exists. Queue, drain and job behaviour are unchanged.
+
+**Redaction:** the page never receives the payload, recipients, stack trace, or file paths. The error is the exception class plus its first line, cut at `(Connection:`, `SQL:` and ` in /`, with emails, URLs, phone numbers, IP addresses, passwords, tokens, long secrets and numbers of 6 or more digits replaced, and limited to 240 characters.
+
+**Files modified:** `app/Support/FailedJobSummary.php` (new), `app/Http/Controllers/Admin/FailedJobController.php` (new), `app/Support/AdminSections.php`, `app/Http/Controllers/Admin/DashboardController.php`, `routes/admin.php`, `resources/js/pages/admin/failed-jobs/index.tsx` (new), `resources/js/layouts/admin-layout.tsx`, `resources/js/pages/admin/dashboard.tsx`, `tests/Feature/Admin/FailedJobManagementTest.php` (new).
+
+**Verification evidence:**
+- `FailedJobManagementTest`: 19/19 on SQLite. With `DrainQueueCommandTest`: 28/28 on MySQL 8.0.46.
+- End to end with a real queued `OrderPlacedMail` and a real worker: the send failed and was recorded, a retry failed and stayed visible, a third attempt succeeded, and exactly 1 email was sent.
+- With redaction off, 2 of 19 fail. With the allow-list off, 5 of 19 fail.
+- Sweep of queue, permission, dashboard and mail test files (22 files, excluding MySQL-only race files): 333/333.
+- `tsc`, ESLint, Prettier, `npm run build` and Pint passed.
+- Not run: the full suite, a real browser walkthrough, and real SMTP failures.
+
+**Limitations:**
+- **No push alert:** staff see failures on the dashboard or page, not by email. An alert email would likely fail the same way during a mail outage.
+- **Redaction is pattern-based.** A customer's name in an exception would not be caught. The first line of real mail and SQL errors is covered, but unusual text could pass.
+- **Limited context:** the order or recipient is not shown, because reading it needs the payload. `max_tries` is often blank, because tries are set on the worker, and attempt counts aren't stored in `failed_jobs`.
+- **Concurrent retries on MySQL** rely on the row lock. The double-submit test is sequential.
+
+## MED-16 notes
+
+**Headers:** `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`.
+
+**Placement:** `App\Http\Middleware\SecurityHeaders`, added with `$middleware->prepend()` in `bootstrap/app.php`. As the outermost global middleware it covers web, API, `/up`, redirects, blocked-IP 403s, and rendered 404 and 500 pages.
+
+**Compatibility checked:**
+- **Framing:** no `<iframe>` or cross-window messaging exists in `resources/`. A test now fails if one is added. Payment and social login redirect rather than frame.
+- **Referrer:** this matches modern browser defaults. Same-site referrers stay intact. `CaptureTrafficSource` reads the incoming `Referer`, which the linking site's policy controls. External sites receive the origin only.
+- **Conflicts:** no existing code or `.htaccess` rule sets these headers, and the app sends one value of each. Hostinger's own server configuration can't be seen from here.
+- **API, webhooks, PDF invoices, file and streamed responses:** tested, unchanged apart from the added headers.
+
+**Files modified:** `app/Http/Middleware/SecurityHeaders.php` (new), `bootstrap/app.php`, `tests/Feature/SecurityHeadersTest.php` (new). No migration.
+
+**Verification evidence:**
+- `SecurityHeadersTest`: 18/18 on SQLite. It covers storefront, login, register, checkout, account, admin, guests redirected, 404, 500, blocked-IP 403, `/up`, JSON API, webhook, PDF invoice, file and streamed downloads.
+- Removing the middleware fails 16 of 18. Moving it to the web group only fails 7.
+- Broad sweep of 144 of 160 test files (every feature file making HTTP requests, excluding MySQL-only race files): 1392 passed, 2 skipped, 0 failed. This is not the full suite. Pint passed.
+- MySQL was not run, as this change has no database behaviour.
+
+**Limitations:**
+- **Static files get no headers.** Apache serves `/storage` uploads and `/build` assets without reaching PHP, so `nosniff` doesn't apply to them. Covering them needs an `.htaccess` change, which was out of scope.
+- **External embedding is blocked.** Anything outside the site that frames a page, such as a third-party preview tool, will now fail. Nothing in the repository does this, and external use can't be seen from here.
+- **Production not verified.** A CDN or Hostinger could add or alter headers.
+
+**Separate considerations, not implemented:**
+- **HSTS:** needs HTTPS enforcement and proxy setup confirmed first, alongside MED-18. A wrong setting can lock visitors out for the length of the policy.
+- **Content-Security-Policy:** would also provide `frame-ancestors`, the modern replacement for `X-Frame-Options`. It needs care around Google Analytics and inline scripts.
+
+## MED-15 notes
+
+**Status: implemented in `deploy.yml` locally, not committed or deployed, by user approval on 2026-11-01.** The user confirmed in Hostinger's terminal that production reports `APP_ENV=production` and `APP_DEBUG=false`. The production `.env` is unchanged, and production was not contacted from this session. The earlier proposal to add both keys to the existing grep loop was withdrawn: that loop reads file text rather than the values Laravel uses, and it runs after the upload, when the new code is already live.
+
+**Existing deployment flow (`.github/workflows/deploy.yml`):**
+1. A push to `main` starts `checks` (Pint and Pest on a `.env.example` copy, which says nothing about production).
+2. `deploy` waits for the `production` Environment, if required reviewers are configured, then builds on the GitHub runner: `composer install --no-dev`, Ziggy, `npm run build`.
+3. It connects to Hostinger over SSH using `SSH_PRIVATE_KEY`, `SSH_HOST`, `SSH_PORT`, `SSH_USER`, `DEPLOY_PATH`, with `StrictHostKeyChecking=no` (accepted risk M1).
+4. `rsync --delete` uploads directly into `DEPLOY_PATH`. **There are no releases, symlink or activation step, so files are live as they land.**
+5. The server `.env` sits at `DEPLOY_PATH/.env`. It is preserved by `--exclude='.env'` and is managed only by the user. Nothing uploads or overwrites it.
+6. A post-deploy SSH script then checks `.env` exists and greps 5 keys, clears caches, runs `migrate --force`, and rebuilds caches.
+7. A `curl` of `/up` confirms the app boots.
+
+**Answers to the architecture questions:**
+- **Can GitHub Actions read production `.env`?** No, and it must not. A check has to run on the server, in Laravel, over the existing SSH access.
+- **Can Laravel run a check there?** Yes. The workflow already runs artisan over SSH, as `migrate --force` and others do.
+- **Can a deploy be stopped before going live?** Only before step 4. There is no later activation point, so the check must run before `rsync`.
+
+**The cached config trap:** `bootstrap/cache/config.php` is what the live site uses, and `rsync` excludes it. A plain check before upload reads that cache, not `.env`, and step 6's `config:cache` then adopts whatever `.env` says. Setting `APP_CONFIG_CACHE` to a path that doesn't exist makes Laravel read `.env` for that one command, without clearing or writing anything.
+
+**Implemented approach:**
+1. **New step before `rsync`:** over SSH, run the framework's `about` command with the cache bypassed, and have PHP read its JSON. Output is one pass or fail line. A failure exits before `rsync`, so nothing is uploaded and the site is untouched.
+   ```
+   APP_CONFIG_CACHE=storage/framework/deploy-check-no-config-cache.php \
+     php artisan about --only=environment --json 2>/dev/null \
+     | php -r '$a = json_decode(stream_get_contents(STDIN), true)["environment"] ?? []; exit(($a["environment"] ?? null) === "production" && ($a["debug_mode"] ?? null) === false ? 0 : 1);'
+   ```
+2. **Second check after `config:cache`:** the same command without the bypass, confirming what the site now runs. A failure here marks the deploy failed, but cannot stop it, because the code is already live.
+
+It uses `about` rather than a new command, because the pre-upload step runs the code already on the server, which wouldn't contain a new command on the first deploy.
+
+**Local proof (this PC only, not production):** production with debug off passes. Debug on, or any other environment, fails. `APP_DEBUG=FALSE` and `0` read as false. Empty output, garbage output and a missing artisan all fail closed. It passes with no `composer` on the PATH. `about --only=environment` returns no secrets (name, versions, environment, debug mode, URL, maintenance mode, timezone, locale), and the check prints none of it. A cached production config with a debug `.env` wrongly passes a plain check and correctly fails with the bypass. No file was created at the bypass path.
+
+**Implementation, `.github/workflows/deploy.yml` only (59 insertions, 0 deletions):**
+- A job-level `VERIFY_RUNTIME_SCRIPT` holds the check once, so no secrets and no nested quoting are involved. Its modes are `env-file` and `active-config`.
+- `Verify production runtime before deploying` runs after `Setup SSH agent` and before `Sync files to server`.
+- `Verify production runtime after deploying` runs after the post-deploy tasks and before the health check. If it fails, the health check is skipped and the run fails.
+- Both steps set `shell: bash`, which gives `pipefail` on the runner, and the remote script runs `set -euo pipefail`. `ssh` returns the remote exit code.
+- **Additional guards found during implementation:** Laravel defaults to `production` with debug off, so a missing `.env` could look like a pass. The `env-file` mode requires `.env`, and `active-config` requires `bootstrap/cache/config.php`.
+- `2>/dev/null` keeps Laravel's error output out of the logs, and the script prints only its own fixed messages.
+
+**Verification evidence (local, no SSH, no Hostinger):** the script was extracted from the parsed YAML and piped to `bash -s` under `bash -eo pipefail`, as the runner does, with `ssh` replaced by a local shell. `bash -n` and YAML parsing passed, and step order was confirmed.
+- Real Laravel: production with debug off passed. Debug on, staging, and the local `.env` failed.
+- Stubbed directories: valid output with `.env` passed, and valid `active-config` with a cache passed. A missing `.env`, a missing cache, valid JSON followed by a non-zero exit (`pipefail`), garbage output, a fatal error and a bad path all failed.
+- A secret in an exception message did not reach the output.
+- Not tested: real `ssh`, GitHub Actions itself, Hostinger's PHP, or `active-config` against real Laravel with a real config cache.
+
+**Limitations:**
+- **The first real run is the first proof on Hostinger.** The user's check used plain output, and `--json` with the cache bypass hasn't run there. A PHP warning printed to stdout would break the JSON and fail closed, blocking the deploy with the site unchanged.
+- **Remote `bash` is required.** The existing post-deploy script already relies on bash brace expansion.
+- **The pre-upload check runs old code.** If artisan cannot start on the server, as in the earlier stale `packages.php` failure, deploys are blocked until that is fixed by hand. This is a safe failure, but it is a new way for a deploy to stop.
+- **Point-in-time only.** It runs at deploy time, so an `.env` edit afterwards is not noticed until the next deploy. Cached config keeps the site on its old values until then.
+- **CLI, not web.** It checks the PHP CLI. The web app reads the cached config that CLI builds, so the values match, but a web-only override in server configuration would not be seen.
+- **The post-upload check cannot roll back.** That needs DEPLOY-SAFETY-001 Tier 2.
+
+## MED-06 notes
+
+**Status: BLOCKED (DEFERRED BY USER), not COMPLETED.** Application code and disposable MySQL verification are completed. The production duplicate and schema verification is deferred by user decision on 2026-11-01. The migration has not run on the dev or production databases, and no data was cleaned.
+
+> **NOT SAFE TO DEPLOY.** `database/migrations/2026_10_31_223219_add_unique_indexes_to_variant_skus_and_attribute_values.php` stays in place but must not reach production until the preflight is completed. `deploy.yml` runs `php artisan migrate --force` automatically, so pushing this file to `main` could run it on production. If production holds duplicates, it would fail after the new code is already live. Leave it out of any commit to `main`, or complete the preflight first.
+
+**Root cause:** both columns relied on check-then-insert validation, so two simultaneous saves could each pass and insert a duplicate.
+
+**Schema findings:** both columns are `varchar(255)` with collation `utf8mb4_unicode_ci`. `sku` is nullable, `value` is not. Neither table uses soft deletes. No import path exists: the only writers are `ProductController::syncVariants()` and `AttributeValueController`. The dev database has 0 variants and 9 attribute values with no duplicates, so it says nothing about production.
+
+**Collation decision:** no collation change. Verified on MySQL 8.0.46 with read-only comparisons: `a`=`A`, `e`=`é`, `a`=`a ` (trailing space), `চা`=`চাঁ`, `দু`=`দুঃ`, `৪২`=`42`, while distinct Bangla letters and vowels (`স`/`শ`, `কি`/`কী`, `ব`/`র`) stay different.
+- **attribute_values:** `Rule::unique` already compares through this collation on MySQL, so the index rejects exactly what validation rejects today. Two values differing only by chandrabindu or visarga are already refused. That is existing behaviour, recorded rather than changed.
+- **SKUs:** codes, so this equality is suitable. Validation only folds case, so accent-only or similar collisions reach the index and get the friendly error.
+- **SQLite differs:** it compares bytes, so case-only collisions aren't rejected by the index there. Only MySQL tests prove collation.
+
+**Migration `2026_10_31_223219_add_unique_indexes_to_variant_skus_and_attribute_values`:**
+- Adds `product_variants_sku_unique` and `attribute_values_attribute_id_value_unique`.
+- Checks for duplicates first and throws with the first ID of each group, before any ALTER. It never changes data or picks a survivor. Each ALTER commits on its own, so this prevents a half-applied state, and each index is skipped if it already exists.
+- `down()` drops both. Existing non-unique indexes stay.
+- Multiple NULL SKUs are intentional.
+
+**Application changes:**
+- `ProductController::prepareVariantRows()` runs first in `syncVariants()`: it deletes unreferenced retired variants and clears each SKU about to change, so SKU swaps and takeovers don't hit the index mid-save. It runs inside the MED-07 transaction.
+- A retired variant still referenced keeps its SKU, and reusing that SKU is refused.
+- Store and update turn a SKU unique violation into a friendly `variants` error. Other unique violations are rethrown. `AttributeValueController` does the same for `value`.
+
+**Files modified:** `database/migrations/2026_10_31_223219_add_unique_indexes_to_variant_skus_and_attribute_values.php` (new), `app/Http/Controllers/Admin/ProductController.php`, `app/Http/Controllers/Admin/AttributeValueController.php`, `tests/Feature/Admin/VariantAndAttributeUniquenessTest.php` (new), `tests/Feature/Admin/VariantAndAttributeUniquenessMysqlTest.php` (new).
+
+**MySQL verification (2026-11-01, user-approved, disposable database only):**
+- **Target confirmed through Laravel:** connection `mysql`, database `shoppydrive_test_loyalty`, host `127.0.0.1`, config not cached, MySQL 8.0.46. Checked again before the tests.
+- **Migration:** ran in 78.76 ms. Rollback ran in 68.97 ms and left 0 index rows. Reapply ran in 74.80 ms. After the test run's fresh schema, the status is Ran in batch 1 with no pending migrations.
+- **Indexes:** `product_variants_sku_unique` is unique BTREE on `sku`. `attribute_values_attribute_id_value_unique` is unique BTREE on `attribute_id, value`. Neither uses a prefix length.
+- **Tests: 24/24 passed, 65 assertions.** That is 10 in `VariantAndAttributeUniquenessMysqlTest` and 14 in `VariantAndAttributeUniquenessTest`.
+- **Collation cases (8/8):** `sku` rejects case, accent and trailing-space variants. `attribute_values` rejects `XL`/`xl`, `৪২`/`42` and `চা`/`চাঁ`, and accepts `স`/`শ` and `কি`/`কী`.
+- **Also passed on MySQL:** exact duplicate SKU and attribute value rejected, 3 NULL SKUs allowed, SKU swap and takeover, retired SKU, friendly errors, rollback and reapply, refusal with IDs and no change, and resuming with one index present.
+- **Race:** two separate processes tried the same 40 SKUs and 40 values at shared moments, 160 attempts in all. Exactly 80 succeeded, one per SKU and value, both processes won some, and the rest were clean unique violations.
+- **Dev database:** `ShoppyDrive` was compared before and after, and is identical: 130 migrations, 0 new indexes, 0 variants, 9 attribute values.
+- The race test runs at the database level. The friendly error path after a lost race is covered by the simulated tests.
+
+**Verification evidence (in-memory SQLite):**
+- `VariantAndAttributeUniquenessTest`: 14/14. It covers index rejection, multiple NULL SKUs, existing validation messages, SKU swap, takeover, resave, retired SKU, simulated race for both tables, other unique errors rethrown, rollback, refusal with IDs and no change, and resuming with one index present.
+- Removing the pre-pass fails 2 of 14. Removing the friendly catch fails 2 of 14.
+- Sweep of 146 of 162 test files: 1406 passed, 10 skipped (MySQL-only), 0 failed. Not the full suite. Pint passed.
+- The SQL below ran as SELECT only against the dev database to confirm its syntax.
+
+**Production read-only check (the user runs this; rows in sections 2, 4 or 6 need a decision):**
+```sql
+-- 1. Server and column details
+SELECT VERSION() AS server_version, @@innodb_default_row_format AS default_row_format;
+SELECT table_name, column_name, column_type, collation_name
+FROM information_schema.columns
+WHERE table_schema = DATABASE()
+  AND ((table_name = 'product_variants' AND column_name = 'sku')
+    OR (table_name = 'attribute_values' AND column_name = 'value'));
+
+-- 2. Duplicate SKUs, as the unique index would see them
+SELECT pv.sku, COUNT(*) AS rows_found, GROUP_CONCAT(pv.id ORDER BY pv.id) AS variant_ids,
+       GROUP_CONCAT(DISTINCT pv.product_id ORDER BY pv.product_id) AS product_ids
+FROM product_variants pv
+WHERE pv.sku IS NOT NULL
+GROUP BY pv.sku
+HAVING COUNT(*) > 1;
+
+-- 3. What references each duplicate variant
+SELECT pv.id AS variant_id, pv.product_id, pv.sku, pv.stock_quantity,
+       (SELECT COUNT(*) FROM order_items x WHERE x.variant_id = pv.id) AS order_items,
+       (SELECT COUNT(*) FROM cart_items x WHERE x.variant_id = pv.id) AS cart_items,
+       (SELECT COUNT(*) FROM product_media x WHERE x.variant_id = pv.id) AS media,
+       (SELECT COUNT(*) FROM flash_sale_items x WHERE x.variant_id = pv.id) AS flash_sale_items,
+       (SELECT COUNT(*) FROM product_bundle_items x WHERE x.variant_id = pv.id) AS bundle_items
+FROM product_variants pv
+JOIN (SELECT sku FROM product_variants WHERE sku IS NOT NULL GROUP BY sku HAVING COUNT(*) > 1) d ON d.sku = pv.sku
+ORDER BY pv.sku, pv.id;
+
+-- 4. Duplicate attribute values, as the unique index would see them
+SELECT av.attribute_id, av.value, COUNT(*) AS rows_found, GROUP_CONCAT(av.id ORDER BY av.id) AS value_ids
+FROM attribute_values av
+GROUP BY av.attribute_id, av.value
+HAVING COUNT(*) > 1;
+
+-- 5. What references each duplicate attribute value
+SELECT av.id AS value_id, av.attribute_id, av.value,
+       (SELECT COUNT(*) FROM product_attribute_values x WHERE x.attribute_value_id = av.id) AS products,
+       (SELECT COUNT(*) FROM product_variants x WHERE x.color_value_id = av.id OR x.size_value_id = av.id) AS variants
+FROM attribute_values av
+JOIN (SELECT attribute_id, value FROM attribute_values GROUP BY attribute_id, value HAVING COUNT(*) > 1) d
+  ON d.attribute_id = av.attribute_id AND d.value = av.value
+ORDER BY av.attribute_id, av.value, av.id;
+
+-- 6. Blank SKUs: more than one fails the index, because '' is not NULL
+SELECT COUNT(*) AS blank_skus FROM product_variants WHERE sku IS NOT NULL AND TRIM(sku) = '';
+```
+
+**Data cleanup requirements:** unknown until the query is run. Any duplicates need a person to choose. Nothing should be merged or deleted automatically, because variants can be referenced by orders and carts.
+
+**Risks and limitations:**
+- **Duplicates in production would block the migration after the code is live.** The deploy runs `migrate --force` after `rsync`, so the check must run before pushing. The migration fails cleanly, but the deploy would fail at that step.
+- **Locking:** adding each index rebuilds or scans its table. Expected to be brief at this size, but untimed on Hostinger.
+- **Index size:** 255 utf8mb4 characters is 1,020 bytes, fine on DYNAMIC row format and possibly too long on old COMPACT tables. The query reports the server and row format. Compatibility with the production server is unconfirmed.
+- **Retired SKUs:** a retired variant holds its SKU permanently while referenced.
+- **Existing behaviour:** a chandrabindu or visarga-only difference can't be stored as separate values.
+
+## MED-05 notes
+
+**Sub-items:**
+| Sub-item | Status | Delivered by |
+|---|---|---|
+| ReturnRequest approve, reject | Done before, not reopened | `logReturnAction` (PAY-RETURN-001) |
+| SmsPattern create, update, delete, bulk | Done before, not reopened | MED-04 |
+| Review approve, reject, delete | Done | `Admin\ReviewController` |
+| BlockedIp create, delete | Done | `Auditable` on `BlockedIp` |
+| ContactMessage delete, clear-all | Done | `Admin\ContactMessageController` |
+| Newsletter subscriber delete | Done | `Admin\NewsletterController` |
+| PopularKeyword create, update, delete, bulk | Done | `Auditable` on `PopularKeyword` |
+
+**Implementation:**
+- `BlockedIp` and `PopularKeyword` are only written by admins, so they use `Auditable`.
+- `Review`, `ContactMessage` and `NewsletterSubscriber` are created by customers, so model-level auditing would log customer activity. `App\Concerns\RecordsAdminActions` records only the admin's action. A test confirms customer submissions write nothing to the trail.
+- **Data:** reviews record ID, product, rating and approval change, never the text or author. Contact messages and subscribers record ID and a masked email such as `r*****@example.com`, never the content or token. Clear-all records a count. Blocked IPs record the address and reason, because the address is the point of the record.
+- **Atomic:** each action and its entry share a `DB::transaction()`, so a failed audit write rolls the action back.
+- **No duplicates:** approval logs only a real change, read under a row lock. Rejecting a pending review changes no column, so the review's last recorded decision separates a real rejection from a repeat click. An empty clear-all writes nothing.
+- **Bulk keyword delete** now deletes one at a time, because the bulk query skipped model events.
+- **Forever caches:** the block list and keyword cache are flushed again after commit, because the model events fire before it and a reader could otherwise store old data permanently.
+
+**Files modified:** `app/Concerns/RecordsAdminActions.php` (new), `app/Http/Controllers/Admin/ReviewController.php`, `app/Http/Controllers/Admin/BlockedIpController.php`, `app/Http/Controllers/Admin/ContactMessageController.php`, `app/Http/Controllers/Admin/NewsletterController.php`, `app/Http/Controllers/Admin/PopularKeywordController.php`, `app/Models/BlockedIp.php`, `app/Models/PopularKeyword.php`, `tests/Feature/Admin/RemainingAdminAuditTest.php` (new). No migration.
+
+**Verification evidence:**
+- `RemainingAdminAuditTest`: 19/19 on in-memory SQLite. Atomic rollback is covered for 7 actions.
+- With `BlockedIpManagementTest` and `ContactMessagesTest`: 29/29 on MySQL 8.0.46, database `shoppydrive_test_loyalty`, confirmed before running.
+- Removing the repeat-rejection guard, a transaction, or the one-at-a-time bulk delete each fails its test.
+- Sweep of 147 of 163 test files: 1425 passed, 12 skipped, 0 failed. Not the full suite. Pint passed.
+- The dev database was compared to its baseline and is unchanged.
+
+**Limitations:**
+- **Other admin actions not listed in MED-05 remain unaudited,** such as newsletter sends and customer deletion. These are outside this finding.
+- **Clearing the audit trail erases these entries too,** by existing design, and writes a `cleared` entry.
+- **Reject after clearing:** the repeat check reads the trail, so after the trail is cleared, one repeat rejection could log again.
+- **Review deletion by a customer** or other non-admin route is not covered, as none exists in the admin flow.
+- **Bulk keyword changes** write one entry per row.
+
+## MED-12 and MED-13 notes
+
+**Test-only work. No application code changed.**
+
+**MED-12 coverage (`InvoiceDownloadTest`, 25 cases):** a real PDF response (content type, attachment name, `%PDF-` content). Delivered COD downloads; pending, processing and shipped COD are refused. Prepaid mobile banking and ZiniPay download before delivery. Cancelled and refunded are refused for every payment method. Other customer's order, guest order through an account, logged-out, unverified, unknown order number and trashed order. Invoice content, isolation from other orders, variant attributes, deleted variant and product, and the guest landing page token.
+
+**MED-13 cases added (`WishlistActionsTest`, 17 cases):** toggle-off, ownership on toggle, sync and clear, toggle and sync validation including the 200 limit, no duplicate rows on sync, empty add-all, merging with an existing cart, the JSON response, unverified access, and deleted products on the wishlist page. `WishlistEntryTest` already covered the rest.
+
+**Verification evidence:**
+- Focused: `InvoiceDownloadTest`, `WishlistActionsTest` and `WishlistEntryTest`: 50 passed, 2 skipped, 0 failed on in-memory SQLite.
+- Removing the ownership check fails 2 invoice tests, the COD rule fails 3, and the cancelled rule fails 4. `routes/account.php` was restored byte-identical.
+- Sweep of 149 of 165 test files: 1465 passed, 14 skipped, 0 failed on the clean rerun. Not the full suite. Pint passed.
+- **MySQL was not run.** These tests cover no MySQL-specific logic, so no MySQL database was touched. The CRIT-01 and MED-06 migrations stay pending on dev and production. In-memory SQLite runs all migrations temporarily, as every test does.
+
+**Intermittent failure:** one sweep run errored once in `GuestCheckoutTest` ("No query results for model Order"). It passed 3 of 3 runs alone, and the rerun of the sweep was clean. The symptom matches TEST-FLAKE-001, recorded earlier for `BuyNowCheckoutTest`. Root cause unconfirmed.
+
+**Uncovered:** concurrent wishlist requests, a real browser download, and a failed PDF render.
+
+## Bugs exposed by MED-13, fixed locally
+
+Both fixed by user decision on 2026-11-01, locally verified and not deployed.
+
+| ID | Root cause | Before | After | Status |
+|---|---|---|---|---|
+| WISHLIST-ADDALL-VARIANT-001 | `addAllToCart` sent `variant_id: null` for every row and then emptied the wishlist. `InventoryService` refuses a variant-less line for a product with variants | Cart line with no variant, item removed from the wishlist, checkout said "out of stock" with stock available | Stays on the wishlist, no cart line, customer told to choose a size or colour | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED |
+| WISHLIST-ADDALL-DELETED-001 | `CartManager::resolvePrice()` calls `findOrFail()`, so one soft-deleted product turned the whole action into a 404 | 404, nothing added | Skipped and counted, others added, wishlist record kept | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED |
+
+**Implementation:**
+- `WishlistController::addAllToCart` now locks the user row and, in one transaction, classifies each row, adds active, published, variant-less products through `syncUserCart(merge: true)`, and removes only those rows from the wishlist. A failed cart write or wishlist removal rolls back the lot. A double submit finds nothing left to add.
+- Inactive, unpublished and scheduled products count as unavailable, because the storefront can't sell them. Previously they were added. This follows the user's "deleted or unavailable" decision.
+- Out-of-stock simple products are still added, leaving checkout to refuse them, as before.
+- JSON adds `added`, `skipped_needs_options` and `skipped_unavailable`. `cart` is null when nothing was added. The message stays `All items added to cart` when everything was added. An empty wishlist says so.
+- The redirect flashes `success` only when everything was added, otherwise `info`. `Wishlist.tsx` now shows the server's message; it used to always say "All items added to cart".
+
+**Files modified:** `app/Http/Controllers/WishlistController.php`, `resources/js/pages/account/Wishlist.tsx`, `tests/Feature/WishlistActionsTest.php`, `tests/Feature/WishlistEntryTest.php` (fixture only: 2 products now published).
+
+**Test change to note:** the skipped test "a variant product moved to the cart can be checked out" contradicted the approved decision, so it was rewritten as "a variant product stays on the wishlist and never reaches the cart". The deleted-product test was unskipped and extended.
+
+**Verification evidence:**
+- `WishlistActionsTest` and `WishlistEntryTest`: 40/40 on in-memory SQLite, no skips. Covers empty, variant-only, deleted-only and mixed wishlists, exact counts and messages, unlisted products, cart merging, repeat runs, rollback from either failure, checkout of a simple product, and out-of-stock handling.
+- Removing the transaction fails 1 test. Removing every row instead of only added ones fails 2. Adding variant products fails 4.
+- Sweep of 149 of 165 test files: 1480 passed, 12 skipped, 0 failed. Not the full suite.
+- `tsc`, ESLint, Prettier, `npm run build` and Pint passed.
+- **MySQL was not run,** as the change uses no database-specific behaviour. The lock is the same pattern verified for MED-08.
+- Not run: a real browser check of the message, and concurrent add-all processes.
+
+**Remaining risks:**
+- **Skipped rows stay on the wishlist.** A deleted product is hidden on the wishlist page but still counts, so it reappears in the skipped count on each Add All, and the customer can't remove it from that page.
+- **Header count:** it includes hidden deleted rows, so it can exceed what the page shows.
+- **Wishlist ID sync:** `wishlist_ids` in shared props still includes skipped rows, which is correct, as they remain saved.
+
+## Full verification, 2026-11-01
+
+Verification only, on the combined local work at `f36ee18` plus the uncommitted changes. No application code or database content changed.
+
+| Check | Result |
+|---|---|
+| Discovery | 165 test files, all executed, none excluded |
+| Full suite, in-memory SQLite (`php artisan test`) | 1586 tests: 1537 passed, 0 failed, 49 skipped, 0 incomplete, 6893 assertions |
+| MySQL 8.0.46, `shoppydrive_test_loyalty`, the 8 files holding those 49 skips | 64 tests: 57 passed, 7 failed, all 7 in `ProductSearchTest` |
+| All 49 tests SQLite skipped | Ran on MySQL and passed |
+| Race files | Courier 15/15, Loyalty 12/12, Cart 4/4, Stock 3/3, Return 2/2, Coupon 1/1, Uniqueness 10/10 |
+| `tsc`, Prettier, Pint, `npm run build` | Passed |
+| ESLint | 0 errors, 7 warnings across 230 files |
+
+The rest of the suite was not run on MySQL. The working-tree fingerprint and dev database snapshot were identical before and after. No intermittent failure occurred in this run. TEST-FLAKE-001 stays open and unconfirmed.
+
+**`ProductSearchTest` on MySQL (7 failures).** The file is written for SQLite, and normally runs only there, which is why CI never saw these.
+- **1 real bug:** autocomplete, see SEARCH-AUTOCOMPLETE-FT-001.
+- **1 by design:** the test asserts the non-MySQL fallback.
+- **1 documented trade-off:** `leath` mid-word, which `ProductSearchQuery` documents as not matching on FULLTEXT.
+- **4 consistent with a test limitation, unproven for these cases:** FULLTEXT can't see rows uncommitted in the test transaction, as shown during HIGH-02.
+- A baseline run on a copy of `f36ee18` was not a clean comparison, because that copy had its own setup failures. It did not prove which failures predate this work.
+
+## Newly found during full verification
+
+| ID | Severity | Issue | Status |
+|---|---|---|---|
+| SEARCH-AUTOCOMPLETE-FT-001 | High (customer-facing, production risk) | `/api/search/suggestions` returns 500 on MySQL for searches of 3 or more usable characters | IN_PROGRESS: code written, MySQL verification NOT finished. Not a regression |
+
+**Evidence:** `SearchController::suggestions()` calls `ProductSearchQuery::apply(..., includeShortDescription: false)`, which generates `MATCH(name)`. The only FULLTEXT index is `products_name_short_description_fulltext` on `(name, short_description)`, and MySQL needs an index with exactly the queried columns. A read-only query on the dev schema confirmed it: `MATCH(name, short_description)` works, and `MATCH(name)` gives `ERROR 1191 Can't find FULLTEXT index matching the column list`.
+
+**Origin:** commit `71c65b5`, already deployed. Neither `ProductSearchQuery` nor the suggestions code was changed by this remediation. SQLite uses a LIKE fallback, so no test run or CI job could see it.
+
+**Production:** not verified. It should apply if production has the same index. Checking needs a request to the live site or a read-only query, by the user.
+
+**Chosen fix, no migration:** `ProductSearchQuery::apply()` always uses `MATCH(name, short_description)`, the only FULLTEXT index, and for a name-only search also requires each word in `name` by LIKE. This keeps the intended name-only suggestions. A bare `MATCH(name, short_description)` would stop the 500 but also match descriptions, and a new `name` index would need a migration. The main search query is unchanged in meaning, though it is now wrapped in a nested group.
+
+**Also found:** the 500 fails the whole response, so brand and category suggestions vanish too, and `SearchBar.tsx` treats any failure as no results, which is why nobody noticed. The two `on MySQL` tests in `ProductSearchTest` are `expect(true)` placeholders and verify nothing.
+
+**Files modified:** `app/Support/ProductSearchQuery.php`, `tests/Feature/SearchSuggestionsTest.php` (new).
+
+**Evidence so far:**
+- SQLite: `SearchSuggestionsTest` and `ProductSearchTest`: 18 passed, 11 skipped (9 MySQL-only here, 2 placeholders), 0 failed.
+- **MySQL: NOT verified.** The `SearchSuggestionsTest` MySQL cases have never completed. Each rebuilds the schema, and the runs were stopped at a 700-second limit with no result. The fix must not be called working on MySQL until they finish. Run them one at a time or with a longer limit, on `shoppydrive_test_loyalty` only, after confirming the target.
+- The planned comparison against the original bug and a bare MATCH was not completed either.
+- Not yet run after this fix: static checks, build, or the full suite.
+
+
+## Observations
+
+Found during remediation and kept separate from the audit findings. None are in scope without an impact assessment.
+
+- **Wishlist remove button (needs browser check):** `Wishlist.tsx` updates the store but does not reload the `wishlist` prop, so a removed item may stay visible until the page reloads.
+- **Compare page:** the `/compare` route passes no `products`, while selections live in `uiStore`. It may always show empty, like the old `/wishlist`.
+- **Variant image queries:** `ProductVariant::getImageAttribute()` reads `media`, and listings do not eager-load `variants.media`, so each variant likely adds a query. Not measured, and not added by HIGH-02.
+- **Admin dashboard low-stock figures:** these use stale parent stock. Tracked as LOW-03.
+- **LP-INVOICE-STATUS-001: guest invoice has no cancelled or refunded restriction (UNRESOLVED, security and business-rule review needed).** Not fixed, and not assumed to be intentional. `routes/account.php:86` refuses cancelled and refunded orders with `abort(403, 'Invoice is not available for cancelled or refunded orders.')`, and `:90` refuses undelivered COD. `LandingPageController::downloadInvoice()` (`app/Http/Controllers/LandingPageController.php:490`), routed at `routes/web.php:60` as `lp.invoice`, only looks up `guest_token` with `firstOrFail()` and renders the PDF, so neither rule applies. Access needs the private token and is throttled by `invoice-download`. Reached from `resources/js/pages/landing/LandingConfirmation.tsx:41`.
+- **Customers can cancel pending orders after courier booking (found during MED-02):** `routes/account.php` lets a customer cancel any `pending` order, including one with a consignment, and the route takes no row lock. A cancelled order would restore stock while a parcel may still be moving. Not fixed by MED-02 or MED-08, and needs a business decision.
+- **Steadfast has no `shipped` mapping:** orders only reach `shipped` by admin action.
+- **SMS success logs contain payment details:** `SmsTestController` logs sender, transaction ID and amount at info level, and `SteadfastWebhookController` logs full payloads. Existing behaviour.
+- **Incomplete-order conversion pricing:** `IncompleteOrderController` uses variant or product price and does not apply an active flash sale, unlike checkout. Not assessed further.
+
+## Unresolved issues found during MED-07
+
+Tracked separately from the audit findings. Neither is resolved.
+
+| ID | Issue | Status | Risk | Assessment |
+|---|---|---|---|---|
+| INV-STALE-STOCK-001 | The admin product form wrote the stock it loaded, so an order placed while it was open was overwritten | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | Medium-High, inventory integrity | Signed stock token verified under row locks. See notes below |
+| MEDIA-VIDEO-TYPE-001 | A kept media path is re-saved with `type=image`, so an existing video becomes `image` | NOT_STARTED | Low-Medium | Affects display of product videos after any admin save that resends media. Small fix. Historical rows already changed would need a separate review |
+
+**INV-STALE-STOCK-001 notes**
+
+- **Root cause:** the form submits absolute stock values, while `InventoryService` changes stock underneath it. `update()` wrote what the form loaded, with no comparison. Writers are only `InventoryService` (order placement, cancellation and refund restock, return restock) and the admin form. Refunds and cancellations reach it through `Order::booted()`.
+- **Fix:** `App\Support\ProductStockToken`. `edit()` gives the form an HMAC, keyed with the app key, of the product's and all variants' stock. It holds no values and can't be forged. On save, inside the MED-07 transaction, `lockAndVerify()` locks the product and variant rows, recomputes the HMAC from the locked values and compares. A mismatch throws `StaleProductStockException` before any write, so product, variants, media, audit and `inventory_logs` are untouched, and new uploads are removed by the MED-07 cleanup. The admin sees an error asking them to reload.
+- The token is required on update and prohibited on create. `InventoryService` and order logic are unchanged. No migration.
+- **Form:** `edit.tsx` keeps the token from first load, so a rejected form stays rejected until it is really reloaded.
+
+**Files modified:** `app/Support/ProductStockToken.php` (new), `app/Exceptions/StaleProductStockException.php` (new), `app/Http/Controllers/Admin/ProductController.php`, `app/Http/Requests/Admin/ProductRequest.php`, `resources/js/pages/admin/products/edit.tsx`, `tests/Feature/Admin/ProductStockConflictTest.php` (new), `tests/Feature/Admin/ProductStockConflictRaceTest.php` (new), and 4 existing product test files, which now send a token.
+
+**Verification evidence:**
+- SQLite: `ProductStockConflictTest` 12/12. Sweep of every product, variant, media and stock test file (48 files, excluding MySQL-only race files): 655/655.
+- MySQL 8.0.46 (`shoppydrive_test_loyalty`): `ProductStockConflictRaceTest` 3/3, using real separate processes. `ProductStockConflictTest`, `ProductSaveAtomicityTest` and `ProductVariantManagementTest`: 41/41.
+- Race design: one process sells 30 units through `InventoryService` while another repeatedly opens the form and saves back the stock it saw. Final stock must be exactly 70 of 100. A third test blocks a save behind an uncommitted sale, and a final valid save proves the save path works.
+- With verification removed, all 3 races fail: flat product 93 instead of 70 (23 sales lost), variant product 77 instead of 70 (7 lost).
+- `tsc`, ESLint, Prettier, `npm run build` and Pint passed.
+- Not run: the full suite, and a real browser walkthrough of the refusal message.
+
+**Limitations:**
+- **Stock only:** two admins changing other fields, with stock unchanged, is still last-write-wins.
+- **Busy products:** the form refuses after any sale, so an admin editing a fast-selling product must reload, and typed edits are lost on reload.
+- **Forms open during deploy:** they have no token, so the first save fails validation until reloaded. Rotating `APP_KEY` has the same effect.
+- **Same values:** stock that changes and returns to the same value passes, because nothing would be overwritten.
+- **Deadlocks:** a save locks the product, then its variants by ID. An order locking several variants of that product in another order could deadlock with it. InnoDB would abort one transaction, and neither retries, so the admin or customer would see an error with nothing partly saved. Not observed in these runs.
+- **Admin stock edits still write no `inventory_logs` entry:** existing behaviour, unchanged.
+
+## Remaining priority order
+
+The report's roadmap, adjusted where the reconciliation changed the facts.
+
+1. MED-06 is deferred by the user.
+2. MED-18: needs the user to check production.
+3. MED-20, MED-19: lowered, housekeeping and capped at ৳1.
+4. Medium-term: MED-14, MED-10, MED-09, MED-17, LOW-08, LOW-03. MED-11 recommended to defer.
+5. Optional LOW findings. LOW-09 recommended to accept.
+
+## Corrections to the audit report
+
+- **HIGH-03:** `app-header.tsx` is not 100% of traffic. The storefront uses `Header.tsx`, which already linked to the working page.
+- **MED-01:** the entered price is stored on `order_items`, and the order's `created` entry names the admin. The missing control is the catalog comparison.
+- **MED-05:** return approve and reject are logged.
+- **MED-08:** the recommended unique index cannot prevent the common duplicate because of NULLs. The report also missed the bundle page-load and stale-checkout paths.
+- **MED-20:** no longer tied to CRIT-01.
+
+## Informational items from the report
+
+Not defects. Recorded so they aren't re-raised: no error-tracking service; `CLAUDE.md` scheduler section omits `app:drain-queue`; `SecuritySettingsController` docblock understates enforcement; whole-order refund shares `orders.update`; no admin password-reset flow by design; ADMIN-2FA-001 permanently declined.
+
+## Newly discovered production defects
+
+These were found during remediation and are not original audit findings.
+
+| ID | Severity | Issue | Status | Files modified | Verification evidence | Completion date | Remaining work |
+|---|---|---|---|---|---|---|---|
+| REF-CAP-TZ-001 | High (financial, production) | Referral reward cap skipped rewards granted in the first 6 hours of a period | COMPLETED (LOCAL IMPLEMENTATION). Deployment: NOT DEPLOYED | `app/Services/ReferralService.php`, `tests/Feature/ReferralProgramTest.php` | See notes below | 2026-11-01 (local) | See deployment checklist |
+
+**REF-CAP-TZ-001 notes**
+- **Root cause:** `periodStart()` returned a Dhaka-time date, the app stores UTC, and Laravel formats a date for SQL without converting its timezone. The period start was therefore 6 hours later than intended, for the whole period. Rewards granted from 00:00 to 06:00 Dhaka on the first day never counted towards the cap, and the daily `rewards:grant-due` run at 01:00 Dhaka falls in that window on the first day of every period. Monthly and weekly caps share the method.
+- **Fix:** `periodStart()` converts the result with `setTimezone(config('app.timezone'))`. Nothing else in `ReferralService` changed. No migration.
+- **Evidence:** the existing cap test and the 2 new first-hours cases failed before the fix and pass after it. Two new cases confirm a reward granted just before a period starts still does not count towards the new one, for both monthly and weekly. `ReferralProgramTest`: 27/27. Referral sweep (6 files, 121 tests): 111 passed, 10 skipped (MySQL-only). The 5 period tests also pass on MySQL 8.0.46.
+- **Past data:** rewards already granted in production during those windows are unchanged. Whether any referrer exceeded a cap was not checked.
+
+## Deployment checklist
+
+Nothing here has been pushed or deployed. Nothing is approved for deployment. Commit, push and deploy each need separate user approval.
+
+- [x] Run the full test suite: done 2026-11-01, see Full verification. Re-run after any further change.
+- [ ] Run the local migration for CRIT-01 on the dev database.
+- [ ] Confirm production MySQL or MariaDB version and compatibility.
+- [ ] Review the CRIT-01 production migration and existing `pending_checkouts` records with the preflight query above.
+- [ ] Check existing production `sms_patterns` against `SmsRegex::problem()`, and fix any that fail before relying on automatic matching.
+- [ ] Grant the new `failed_jobs` section to the staff who should see failed jobs.
+- [ ] Confirm the three security headers on production, with one value each, for HTML and JSON responses.
+- [ ] **Blocker:** the MED-06 migration is NOT SAFE TO DEPLOY. Run the deferred read-only preflight and resolve anything it finds, or keep the file out of what is pushed to `main`.
+- [ ] Review the final migration and deployment procedure.
+- [ ] Perform a real browser walkthrough of checkout and wishlist, including the guest merge, plus product cards, quick-add and the admin create-order form.
+- [ ] Obtain user approval to commit, push and deploy, each separately.
+
+## Later work
+
+- Check whether any production referrers exceeded their reward caps before REF-CAP-TZ-001 was fixed.
+- Optional safe media cleanup, with reference checks across order snapshots and other products.
+
+## Reconciliation with existing work
+
+Audit IDs cannot be mapped to these until the report is available. Rows may turn out to be already fixed or accepted.
+
+**Completed and deployed (`MASTER_FIXING_TRACKER.md`):** PROMO-LOY-001, PAY-RETURN-001, PAY-RETURN-001-BATCH-2, CHECKOUT-COD-002, SHIP-001, SHIP-DUP-001, DEP-SEC-COMPOSER-001 (Symfony patch), XSS sinks (5 of 5 live).
+
+**Accepted risks, preserve them:**
+- ADMIN-2FA-001: declined by the user, final. Do not propose it again.
+- No database backup before deploy (DEPLOY-SAFETY-001 C1): accepted only while production holds no important business data.
+- `StrictHostKeyChecking=no` (M1): accepted again after the pinning revert `bdb444e`.
+- 17 moderate npm advisories: deliberately left, because the only fixes are regressive `--force` versions.
+- `Page.content` not purified: no write path exists today (XSS-SINK-GAP-001).
+
+**Open or deferred:** DEPLOY-SAFETY-001 Tier 2, `nunomaduro/pao` rename, E2E-COVERAGE-001, CI-MYSQL-001, TEST-FLAKE-001, OPS-001.
+
+## Informational observations
+
+Non-actionable items from the audit go here once the report is supplied.
+
+## Change log
+
+- 2026-11-01: SEARCH-AUTOCOMPLETE-FT-001 fix written, MySQL verification unfinished. Checkpoint branch `backup/shoppydrive-remediation-checkpoint-2026-11-01` created.
+- 2026-11-01: Full verification run. SEARCH-AUTOCOMPLETE-FT-001 found.
+- 2026-11-01: MED-13 completed locally. WISHLIST-ADDALL-VARIANT-001 and WISHLIST-ADDALL-DELETED-001 fixed locally. LP-INVOICE-STATUS-001 recorded as unresolved.
+- 2026-11-01: MED-12 completed locally. MED-13 remaining tests added, exposing WISHLIST-ADDALL-DELETED-001 and WISHLIST-ADDALL-VARIANT-001.
+- 2026-11-01: MED-05 remaining sub-items implemented and verified locally.
+- 2026-11-01: MED-06 production preflight deferred by the user. Status BLOCKED (DEFERRED BY USER), migration flagged NOT SAFE TO DEPLOY.
+- 2026-11-01: MED-06 verified on disposable MySQL.
+- 2026-11-01: MED-06 migration and handling written, verified on in-memory SQLite only. Not complete.
+- 2026-11-01: MED-15 implemented in `deploy.yml` locally, with user approval. Not committed or deployed.
+- 2026-11-01: MED-15 reassessed against the real deployment architecture.
+- 2026-11-01: MED-16 implemented and verified locally.
+- 2026-11-01: MED-03 implemented and verified locally.
+- 2026-11-01: INV-STALE-STOCK-001 implemented and verified locally.
+- 2026-11-01: MED-04 implemented and verified locally. User decided to keep old media files. INV-STALE-STOCK-001 and MEDIA-VIDEO-TYPE-001 recorded as unresolved.
+- 2026-11-01: MED-07 implemented and verified locally.
+- 2026-11-01: MED-08 implemented and verified locally.
+- 2026-11-01: MED-02 implemented and verified locally.
+- 2026-11-01: MED-01 implemented and verified locally.
+- 2026-11-01: Audit report added and read in full. All MED and LOW findings reconciled against code. HIGH-02 accepted by the user.
+- 2026-11-01: HIGH-02 implemented and verified locally. All four Critical and High findings are locally complete. Count-only guest wishlist approved.
+- 2026-11-01: HIGH-03, its guest /wishlist finding and REF-CAP-TZ-001 implemented and verified locally. HIGH-01 accepted by the user.
+- 2026-11-01: HIGH-01 implemented and verified locally. 
+- 2026-11-01: CRIT-01 accepted by the user as COMPLETED (LOCAL IMPLEMENTATION).
+- 2026-11-01: CRIT-01 implemented and verified locally. Not committed, pushed or deployed.
+- 2026-11-01: Tracker created. CRIT-01 confirmed by code reading. Other findings awaited the audit report. No application code changed.

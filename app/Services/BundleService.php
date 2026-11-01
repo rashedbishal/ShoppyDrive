@@ -12,6 +12,7 @@ use App\Models\ProductBundle;
 use App\Models\ProductBundleItem;
 use App\Models\ProductVariant;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class BundleService
 {
@@ -233,6 +234,26 @@ class BundleService
      */
     public function autoAssemble(Cart $cart): bool
     {
+        if (! $this->assemble($cart, dryRun: true)) {
+            return false;
+        }
+
+        // This also runs on page loads, so a cart with nothing to assemble
+        // takes no lock. When it does write, two requests must not split the
+        // same row from their own stale copy, so the second re-reads here.
+        return DB::transaction(function () use ($cart): bool {
+            if (Cart::query()->whereKey($cart->id)->lockForUpdate()->first() === null) {
+                return false;
+            }
+
+            $cart->load(['items.product.images', 'items.variant.media', 'items.bundle']);
+
+            return $this->assemble($cart);
+        }, 3);
+    }
+
+    private function assemble(Cart $cart, bool $dryRun = false): bool
+    {
         $items = $cart->items->values();
         $candidates = $items->filter(
             fn (CartItem $item): bool => $item->bundle_id === null && $item->product !== null
@@ -281,6 +302,10 @@ class BundleService
 
             if ($multiplier === null || $multiplier < 1) {
                 continue;
+            }
+
+            if ($dryRun) {
+                return true;
             }
 
             foreach ($matches as [$component, $candidate]) {

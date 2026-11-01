@@ -9,6 +9,7 @@ use App\Models\BlockedIp;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,14 +29,16 @@ class BlockedIpController extends Controller
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        BlockedIp::create($data + ['blocked_by' => Auth::guard('admin')->id()]);
+        DB::transaction(fn () => BlockedIp::create($data + ['blocked_by' => Auth::guard('admin')->id()]));
+        BlockedIp::flushCache();
 
         return back()->with('success', 'IP address blocked.');
     }
 
     public function destroy(BlockedIp $blockedIp): RedirectResponse
     {
-        $blockedIp->delete();
+        DB::transaction(fn () => $blockedIp->delete());
+        BlockedIp::flushCache();
 
         return back()->with('success', 'IP address unblocked.');
     }

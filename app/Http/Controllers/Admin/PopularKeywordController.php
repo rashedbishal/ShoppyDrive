@@ -10,6 +10,7 @@ use App\Models\PopularKeyword;
 use App\Support\LayoutCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,11 +35,12 @@ class PopularKeywordController extends Controller
 
         $maxOrder = PopularKeyword::max('sort_order') ?? 0;
 
-        PopularKeyword::create([
+        DB::transaction(fn () => PopularKeyword::create([
             'keyword' => trim($request->keyword),
             'sort_order' => $maxOrder + 1,
             'is_active' => true,
-        ]);
+        ]));
+        $this->flushLayoutCache();
 
         return back()->with('success', 'Keyword added.');
     }
@@ -51,25 +53,28 @@ class PopularKeywordController extends Controller
             'is_active' => ['boolean'],
         ]);
 
-        $popularKeyword->update([
+        DB::transaction(fn () => $popularKeyword->update([
             'keyword' => trim($request->keyword),
             'sort_order' => $request->integer('sort_order'),
             'is_active' => $request->boolean('is_active'),
-        ]);
+        ]));
+        $this->flushLayoutCache();
 
         return back()->with('success', 'Keyword updated.');
     }
 
     public function destroy(PopularKeyword $popularKeyword): RedirectResponse
     {
-        $popularKeyword->delete();
+        DB::transaction(fn () => $popularKeyword->delete());
+        $this->flushLayoutCache();
 
         return back()->with('success', 'Keyword deleted.');
     }
 
     public function updateStatusMany(Request $request): RedirectResponse
     {
-        $result = $this->updateStatusInBulk($request, PopularKeyword::class);
+        $result = DB::transaction(fn () => $this->updateStatusInBulk($request, PopularKeyword::class));
+        $this->flushLayoutCache();
 
         return redirect()->route('admin.popular-keywords.index')->with('success', $result['count'].' keyword(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
     }
@@ -81,11 +86,19 @@ class PopularKeywordController extends Controller
             'ids.*' => ['integer', 'distinct', 'exists:popular_keywords,id'],
         ])['ids'];
 
-        PopularKeyword::whereIn('id', $ids)->delete();
-
-        // Bulk delete() fires no model events, so clear the cache here.
-        LayoutCache::forget(...PopularKeyword::LAYOUT_CACHE_KEYS);
+        // One at a time so each deletion is audited.
+        DB::transaction(fn () => PopularKeyword::whereIn('id', $ids)->get()->each->delete());
+        $this->flushLayoutCache();
 
         return back()->with('success', count($ids).' keyword(s) deleted.');
+    }
+
+    /**
+     * The model events flush this before the commit, and it's cached forever,
+     * so a reader could otherwise store the old list.
+     */
+    private function flushLayoutCache(): void
+    {
+        LayoutCache::forget(...PopularKeyword::LAYOUT_CACHE_KEYS);
     }
 }

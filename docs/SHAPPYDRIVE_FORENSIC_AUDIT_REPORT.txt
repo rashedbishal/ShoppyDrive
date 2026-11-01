@@ -1,0 +1,503 @@
+ShoppyDrive — Full System Forensic Audit Report
+
+  Scope: Complete, evidence-based, read-only audit of the entire ShoppyDrive codebase, conducted via 7 parallel independent investigations (Security; Order Lifecycle & Payment/Financial
+  Integrity; Product/Inventory/Database; Admin Panel/Courier/Notifications; Customer Journey/Frontend; Backend Architecture/Business Logic/Testing; Deployment/Production Operations). No
+  code, configuration, database, or git state was modified during this audit. All 5 pre-existing stashes remain intact; working tree is unchanged from before this audit began.
+
+  ---
+
+  1. Executive Summary
+
+  ShoppyDrive is, overall, a well-engineered application for its scale — its core transactional subsystems (stock decrement, coupon consumption, refund ledger math, admin permission gating,
+  courier status mapping) show real engineering discipline: correct row-locking, idempotency markers, and fail-closed designs in the places that matter most. No SQL injection, no IDOR, no
+  mass-assignment exploit, and no authorization-bypass was found anywhere in the codebase across all seven independent passes.
+
+  That said, the audit surfaced one CRITICAL, deterministic financial-loss defect that must be fixed before further scaling: a customer can redeem the same loyalty points balance twice
+  through the mobile-banking/ZiniPay checkout flow, with no technical sophistication required — just ordinary overlapping checkout usage. It also surfaced three HIGH-severity issues:
+  admin-account management (who can create/edit/delete admins) is completely invisible to the audit trail; a denormalized stock field can show wrong stock status to every customer for
+  variant products; and the site's primary wishlist entry point is structurally broken for all visitors. Beyond these, the audit found a cluster of MEDIUM-severity gaps concentrated around
+  missing database-level constraints, under-tested-but-complete features, operational blind spots (failed background jobs, admin-order pricing controls), and standard web-hardening gaps
+  (security headers, one unauthenticated legacy webhook).
+
+  None of this invalidates the substantial, already-completed remediation work recorded in docs/MASTER_FIXING_TRACKER.md — every previously-closed item this audit independently re-checked
+  (PAY-RETURN-001-BATCH-2's math, DB-001's foreign-key design, SHIP-001/SHIP-DUP-001's fixes, the Ziggy/SSR fix, XSS-SINK-GAP-001's conclusion, CHECKOUT-COD-002's idempotency) held up under
+  independent re-verification.
+
+  ---
+
+  2. System Architecture Overview
+
+  Verified directly from source (not assumed from documentation):
+
+  - Stack: Laravel 13 (PHP 8.3) + Inertia v3 + React 19 + Tailwind v4, dual auth guards (web for customers, admin for staff), MySQL in production, SQLite in-memory for tests, file-based
+    cache/session (Hostinger shared hosting has no Redis), database-backed queue drained by a custom app:drain-queue scheduled command (Hostinger can't run a persistent queue:work daemon —
+    pcntl_signal() is disabled there).
+  - Authorization: granular per-section admin permissions (AdminSections catalog + EnsureAdminPermission middleware), one hardcoded mother-super-admin with unconditional bypass.
+  - Order creation paths (5 independent entry points, all converging on InventoryService/CouponService/LoyaltyPointsService): main checkout (COD + mobile banking, order_token-idempotent),
+    landing-page guest funnel, admin manual order creation, legacy ZiniPay gateway (confirmed now dead/unreachable from new traffic), admin conversion of abandoned checkouts.
+  - Financial ledger: order_refunds (integer-poisha money math via RefundCalculator), courier_delivery_evidence (append-only, arch-tested), inventory_logs, CouponUse,
+    ReferralPointTransaction — all introduced/hardened by the DB-001 and PAY-RETURN-001 remediation work.
+  - External integrations: Pathao/Steadfast couriers (credentials in Setting, not .env), ZiniPay hosted gateway (confirmed dead code for new orders), SMS-forwarder-based manual bKash/Nagad
+    verification.
+  - Deployment: GitHub Actions → Hostinger shared hosting via rsync + SSH, in-place (non-atomic) deploy, migrate --force with no backup (explicitly accepted risk, re-confirmed current),
+    gated by a GitHub production Environment + concurrency lock + health check (DEPLOY-SAFETY-001 Tier 1, confirmed still correctly in place, no drift from what the tracker claims).
+
+  ---
+
+  3. Audit Coverage
+
+  ┌────────────────────────────────┬────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │             Domain             │             Status             │                                                        Notes                                                        │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ A — Application Security       │ Fully inspected                │ Auth, authz, CSRF, XSS, SQLi, mass assignment, sessions, uploads, webhooks, dependencies all traced to source.      │
+  │                                │                                │ Production .env/session-cookie value and HTTPS-topology NOT VERIFIED (no server access).                            │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ B — Customer Journey           │ Fully inspected via source     │ Entire journey traced through code (routes→controllers→components). No live browser; runtime rendering/console/perf │
+  │                                │                                │  claims explicitly marked NOT VERIFIED/THEORETICAL.                                                                 │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ C — Order Lifecycle            │ Fully inspected                │ Every order-creation path and status-transition guard traced end-to-end.                                            │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ D — Payment & Financial        │ Fully inspected                │ Every money-computing service read in full; CRITICAL finding below is from direct code trace, not inference.        │
+  │ Integrity                      │                                │                                                                                                                     │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ E — Product/Inventory          │ Fully inspected                │ InventoryService, variant/bundle logic, pricing resolution all traced.                                              │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ F — Database Architecture      │ Fully inspected                │ All 130 migrations read. Live production row-level data NOT VERIFIED (no DB access) — findings are                  │
+  │                                │ (source/migrations only)       │ schema/code-level.                                                                                                  │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ G — Admin Panel                │ Fully inspected                │ Every admin module's authorization and core logic traced against AdminSections.                                     │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ H — Courier & External         │ Fully inspected (code)         │ Webhook verification, status mapping, retry/failure handling traced. Live courier-API outage behavior NOT VERIFIED. │
+  │ Integrations                   │                                │                                                                                                                     │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ I — Notifications              │ Fully inspected                │ Every mailable's trigger/idempotency traced; queue-failure visibility checked directly.                             │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ J — Frontend                   │ Partially inspected            │ Structural/code-level issues found; actual rendering, Core Web Vitals, console errors NOT VERIFIED (no browser      │
+  │ Architecture/Performance       │                                │ access).                                                                                                            │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ K — Backend Architecture       │ Fully inspected                │ Controller/service size, duplication, dead-code sweep performed.                                                    │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ L — Business Logic             │ Fully inspected                │ Checked against CLAUDE.md's documented scope; no invented requirements.                                             │
+  │ Completeness                   │                                │                                                                                                                     │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ M — Testing & Reliability      │ Fully inspected                │ Test-file inventory cross-referenced against every documented business flow.                                        │
+  ├────────────────────────────────┼────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ N — Deployment/Production Ops  │ Fully inspected (code), NOT    │ Actual GitHub Environment/secrets configuration and live Hostinger cron behavior cannot be checked from this        │
+  │                                │ VERIFIED (live)                │ session.                                                                                                            │
+  └────────────────────────────────┴────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  Limitations disclosed up front: no live browser, no production database access, no GitHub Actions/Hostinger API access — consistent with every prior session in this engagement. Where a
+  finding depends on something only observable live, it is explicitly marked NOT VERIFIED or THEORETICAL below, never presented as confirmed.
+
+  ---
+
+  4. Critical & High-Severity Findings
+
+  CRIT-01 — CRITICAL — Loyalty points can be redeemed twice (double-spend) through mobile-banking/ZiniPay checkout
+
+  Verification: CONFIRMED (deterministic, no race/timing dependency required).
+
+  - Files: app/Http/Controllers/CheckoutController.php:364-374 (preview computed against an unlocked $user), app/Services/LoyaltyPointsService.php:93-124
+    (redeemPoints()/debitPointsForOrder() — the debit is an unconditional decrement() with no re-check against current balance), app/Http/Controllers/MobilePaymentController.php:174-176,
+    app/Services/OrderService.php:74-77 (legacy ZiniPay path).
+  - Execution path: Customer with 100 points opens checkout, redeems 100 points, selects mobile banking → gets PendingCheckout A with that discount baked into checkout_data (balance checked,
+    but not reserved). Before paying for A, the customer starts a second checkout for a different item, redeems the same 100 points again → gets PendingCheckout B (the preview recomputes
+    against the still-untouched balance of 100, since nothing was ever reserved or locked). Customer pays both real transactions. MobilePaymentController::submit() for A debits 100→0 under a
+    correctly-locked user row. submit() for B locks the same row, now at 0, and debits 100 more anyway — no code path re-validates the frozen discount against the current balance — leaving
+    the customer with a signed, negative points_balance and the business having given away discount value for points that didn't exist a second time.
+  - Why the COD path is safe and this one isn't: COD checks and debits points in the exact same locked transaction (CheckoutController.php:269-271, 329). The async paths (mobile banking,
+    legacy ZiniPay) split that into "check now, debit later — up to 2 hours later, via PendingCheckout" with nothing holding the points in between.
+  - Impact: direct, repeatable monetary loss, reachable through completely ordinary customer behavior (not deliberate fraud required), unbounded in aggregate frequency (only per-order
+    capped).
+  - Remediation direction (not implemented): debit points at PendingCheckout-creation time under the same lock the preview uses (reservation model, mirroring how stock is reserved), or
+    re-clamp to min(points, currentBalance) at the moment of actual debit rather than trusting the frozen preview value.
+
+  HIGH-01 — Admin account management is completely unaudited
+
+  Verification: CONFIRMED.
+  - Files: app/Http/Controllers/Admin/AdminController.php (store(), update(), destroy()), app/Models/Admin.php (no LogsActivity, no getActivitylogOptions()).
+  - Creating a new admin (with arbitrary AdminSections-sanitized permissions), changing any admin's password/email, or deleting an admin account leaves zero trace in the activity log —
+    contrast with AdminAuthController, which does explicitly log login/logout. CLAUDE.md's claim that "Admin and Setting implement getActivitylogOptions() directly" is inaccurate for Admin;
+    only Setting actually does.
+  - Impact: in a credential-compromise or insider-threat scenario, there is no forensic record of a backdoor admin being created or a legitimate admin's permissions being silently escalated
+    — a disproportionate gap given this is the control point for every other permission in the system.
+  - Remediation direction: add LogsActivity/explicit activity() calls to Admin CRUD, logging actor, target, and a permissions diff.
+  
+  HIGH-02 — Denormalized Product.stock_quantity goes stale for variant products and the storefront trusts it directly
+
+  Verification: CONFIRMED by code; real-world drift magnitude NOT VERIFIED (needs production data).
+  - Files: app/Services/InventoryService.php:76-84 (decrements only ProductVariant.stock_quantity, explicitly never the parent Product.stock_quantity),
+    app/Http/Controllers/Admin/ProductController.php:217-239 (computeDenormalizedFields() — the only place the sum is recomputed, and only when an admin re-saves the product form),
+    resources/js/components/shared/ProductCard.tsx:87-93 (every listing surface — homepage, category grids, search, flash sale, best-sellers — reads product.stock_quantity directly, no
+    per-variant resolution).
+  - Impact: a variant product can sell completely out while every listing card still shows "Add to Cart"/a healthy stock badge, because the denormalized sum was last written before the
+    orders happened (and the inverse is equally possible). No actual overselling occurs — the product-detail page and real order creation correctly re-check live variant stock — but this is
+    a silent, storefront-wide, customer-facing display defect. The admin dashboard's low-stock list has the same staleness exposure for variant products.
+  - Remediation direction: stop trusting Product.stock_quantity for variant products on customer-facing listing surfaces (resolve from live variant stock at read time, or recompute
+    transactionally on every variant stock change rather than only on admin save).
+
+  HIGH-03 — The site's primary wishlist entry point is structurally dead for every visitor
+
+  Verification: CONFIRMED (full component/route read; no fetch logic exists in the component).
+  - Files: routes/commerce.php:105 (/wishlist → inertia('account/Wishlist') with zero props), resources/js/pages/account/Wishlist.tsx:26 (wishlist: Product[] = [], no client-side fetch),
+    resources/js/components/app-header.tsx:135 (the header icon — used by 100% of traffic — links here). The real, data-populated wishlist only exists at the separate account.wishlist route
+    (WishlistController@index, reached only via the account sidebar).
+  - Impact: every customer — guest or logged-in with real saved items — who clicks the header wishlist icon sees a permanent, unconditional "Your wishlist is empty" state, regardless of
+    actual contents. This is the primary, most-visible entry point to a feature that is otherwise fully built (WishlistController has complete index/sync/toggle/clear/add-all-to-cart logic —
+    see MED-13 below for its separate test-coverage gap).
+  - Related MEDIUM: a guest visiting /wishlist (no auth middleware on that route) is shown the full authenticated account shell (AccountLayout.tsx:49-67) with a blank avatar/name/email and a
+    nav full of login-gated links — a confusing, broken-looking dead end rather than an intentional guest experience.
+  - Remediation direction: point the header link at account.wishlist directly (with an appropriate guest-aware fallback), or have /wishlist actually compute the same prop
+    WishlistController@index does.
+
+  ---
+
+  5. Medium & Low-Severity Findings
+
+  MEDIUM
+
+  MED-01 — Manual admin order creation accepts arbitrary per-item price with no catalog tie-back, barely audited. app/Http/Requests/Admin/CreateOrderRequest.php:30 validates price only as
+  numeric, min:0 — no comparison against the actual product price — and Order's Auditable scope (logOnly(['status'])) never captures the price that was recorded. Any admin with only
+  orders.create can record a real order at any price with no trace of what price was actually entered. CONFIRMED / PROBABLE live risk (requires an already-privileged admin). Remediation: 
+  validate against catalog price with an explicit, logged override field if manual pricing is a genuine business need.
+
+  MED-02 — Steadfast courier webhook has no anti-replay/ordering protection for non-terminal status transitions. CourierOrderStatusMapper::sync() blocks regression only out of the terminal
+  statuses (CANCELLED/REFUNDED/DELIVERED); HMAC verification proves authenticity, not freshness. A stale or reordered webhook describing an earlier non-terminal state can still regress
+  status backward. PROBABLE (courier webhook delivery order isn't guaranteed; no malice required). Remediation: track a monotonic sequence/timestamp per consignment for non-terminal 
+  transitions too.
+
+  MED-03 — No visibility or alerting for permanently-failed queued notification jobs. Every transactional mailable is ShouldQueue, processed by the custom app:drain-queue command with
+  retries — exhausted failures land in failed_jobs, but nothing anywhere (admin UI, dashboard, alert mail) ever surfaces them. A customer could simply never receive an order/shipping email
+  with nothing revealing it short of manual SSH inspection. CONFIRMED. Remediation: a small admin widget or failure-alert mail keyed off the JobFailed event.
+
+  MED-04 — SmsPattern auto-verification regex is unaudited, unbounded, and fails silently. SmsParserService.php:62-82 interpolates admin-authored regex directly into @preg_match(...)
+  (error-suppressed — a malformed pattern fails with no log entry), with no input-length bound on the incoming SMS content and no activity-log coverage for pattern changes — unlike every
+  other business-rule-bearing admin section, despite gating automatic real-money payment acceptance. CONFIRMED code gaps; ReDoS exploitability itself is THEORETICAL (depends on patterns
+  actually stored, not inspected). Remediation: validate pattern syntax at save time, cap content length, log pattern changes.
+
+  MED-05 — Several admin-destructive actions have zero audit-trail coverage, and this is not a previously-documented exclusion. ReturnRequest approve/reject, Review approve/reject/delete,
+  BlockedIp create/delete, ContactMessage/newsletter-subscriber deletion, PopularKeyword CRUD, and SmsPattern CRUD all write state with no activity-log entry — distinct from the two
+  deliberately-documented exclusions (Admins management, Dashboard). CONFIRMED, not flagged anywhere in the existing backlog. Remediation: extend Auditable or add manual activity() calls, 
+  prioritizing ReturnRequest and BlockedIp.
+
+  MED-06 — product_variants.sku and attribute_values.(attribute_id,value) have no database-level uniqueness constraint. Protection is entirely application-layer check-then-insert validation
+  (the gap is even self-documented in ProductRequest.php's own comments). Two concurrent admin saves could both pass validation and insert a real duplicate. CONFIRMED, admin-only attack
+  surface. Remediation: add real unique indexes once existing duplicates (if any) are resolved.
+
+  MED-07 — Admin\ProductController::store()/update() run without a database transaction. Product::create/update() → syncVariants() → syncMedia() are three independent unguarded statements; a
+  failure partway leaves a half-created product with denormalized fields computed from incompletely-synced variants. CONFIRMED. Remediation: wrap the sequence in DB::transaction().
+
+  MED-08 — cart_items has no unique constraint on (cart_id, product_id, variant_id, bundle_id). All add/merge paths use check-then-updateOrCreate, not an atomic upsert — a double-click or
+  duplicate network retry could create two rows for the same line, and since checkout iterates cart rows one-decrement-per-row, this could decrement stock and charge for the same product
+  twice from a UI race alone. PROBABLE (gap confirmed; not reproduced live; partially mitigated by CheckoutController's own order-level idempotency lock, which dedupes a resubmitted checkout
+  but not a cart row duplicated before checkout starts). Remediation: add the unique index and use a real upsert, or serialize cart writes per-cart.
+
+  MED-09 — App-wide money columns are cast to PHP float, while the refund ledger deliberately uses integer paisa specifically to avoid float-money bugs. Order, OrderItem, CartItem, Product
+  all cast price/total fields to 'float'; InventoryService's flash-sale price comparison already needs a ±0.01 tolerance band precisely because of this. The team's own newer refund code
+  implicitly flags this pattern as risky by avoiding it. PROBABLE/THEORETICAL — pattern confirmed, no concrete failing value combination demonstrated. Remediation: no broad retrofit 
+  recommended given blast radius; document the float-tolerance comparisons as deliberate, and use integer minor-units for any new money logic going forward.
+
+  MED-10 — Shipping-cost calculation is still triplicated across three controllers; SHIP-DUP-001 fixed the symptoms, not the root cause. CheckoutController::calculateShippingCost(),
+  LandingPageController::calculateShipping(), and Admin\IncompleteOrderController::calculateShippingCost() remain three independently-maintained implementations of the same logic. CONFIRMED.
+  Remediation: extract one shared ShippingCostCalculator service.
+
+  MED-11 — Admin\OrderController is a 604-line, 20-action controller mixing five unrelated responsibilities (CRUD, refunds, destructive deletion, address correction, courier dispatch) in one
+  class. CONFIRMED, maintainability/blast-radius risk, not an active defect. Remediation: split by responsibility.
+
+  MED-12 — account.orders.invoice (PDF invoice download) has zero test coverage despite a real ownership check and three distinct business-rule branches (cancelled/refunded blocked,
+  pre-delivery COD blocked, happy path). CONFIRMED gap — no active defect found, but a future regression in any branch would ship undetected. Remediation: add a test per branch plus a 
+  cross-user 403 test.
+
+  MED-13 — The complete, authenticated Wishlist feature has zero test coverage anywhere. No test verifies toggle/sync/clear/add-all-to-cart correctness. CONFIRMED.
+
+  MED-14 — MySQL/SQLite LIKE case-folding diverges for non-ASCII text, affecting ~15 search/filter call sites (customer search, admin
+  customer/coupon/brand/category/sub-category/flash-sale/blog/homepage/promo-banner/return filters). Production MySQL uses utf8mb4_unicode_ci; SQLite's LIKE only case-folds ASCII. For a
+  Bangladesh-focused storefront where product/brand/customer names may be non-ASCII, a passing SQLite test is not proof of identical MySQL behavior. PROBABLE (mechanism confirmed, real-world
+  mismatch not reproduced against live data). Remediation: add one targeted MySQL-only non-ASCII case-insensitivity test, or document as an accepted gap.
+
+  MED-15 — No automated verification that production .env has APP_DEBUG=false/APP_ENV=production. deploy.yml's key-presence loop checks only APP_KEY/DB_* are non-empty, never
+  APP_DEBUG/APP_ENV; .env.example ships APP_DEBUG=true. If ever misconfigured on the server, Laravel's debug page would leak stack traces and credentials to any visitor triggering an
+  exception. CONFIRMED gap in the pipeline's checks; actual production value NOT VERIFIED (no server access). Remediation: add the same grep-presence pattern already used for the 5 DB/key 
+  fields.
+
+  MED-16 — No security-header middleware anywhere in the application. No X-Frame-Options/CSP/X-Content-Type-Options found anywhere. Login/checkout/account pages can be framed by an attacker
+  page (clickjacking/UI-redress). CONFIRMED (absence). Remediation: add a small middleware setting baseline headers.
+
+  MED-17 — ZiniPay webhook has no signature/HMAC verification, inconsistent with Steadfast's hardened design — but materially de-risked: it never trusts the webhook payload's claimed status
+  (always re-verifies server-to-server against ZiniPay's real API), the token is an unguessable UUID, and createInvoice() — the only path that creates a new payable checkout — has zero live 
+  call sites, confirmed dead code. CONFIRMED (missing signature) / THEORETICAL (actual exploitation), given the mitigations. Remediation: remove the dead ZiniPay code entirely, or add 
+  signature verification purely as defense-in-depth for any surviving legacy rows.
+
+  MED-18 — SESSION_SECURE_COOKIE has no default in config/session.php:172 — depends entirely on an unverified production .env value; if unset, the session cookie isn't marked Secure. NOT 
+  VERIFIED (requires production .env, inaccessible from this session). Remediation: confirm the production value and HTTPS-enforcement topology.
+
+  MED-19 — SMS payment amount matching uses a flat ±1 Taka tolerance regardless of order size, a ~20% margin on a very low-value order. CONFIRMED as written; impact THEORETICAL. Remediation:
+  scale tolerance to a percentage with a small floor.
+
+  MED-20 — PendingCheckout rows for mobile banking/ZiniPay are never proactively cleaned up, only ignored once expired — not itself a correctness bug, but the mechanism that keeps CRIT-01's
+  overlapping-redemption window open for up to 2 hours. CONFIRMED (no cleanup job exists). Remediation: a scheduled pruning command, independent of fixing CRIT-01.
+
+  LOW
+
+  - LOW-01 — Order::$fillable includes all financial fields plus idempotency markers; currently safe only because every call site is disciplined (spot-checked in depth for the COD path), not
+    because the model itself constrains it. Latent risk for a future careless call site.
+  - LOW-02 — ProductVariant.attributes JSON duplicates color_value_id/size_value_id as a second source of truth; can drift only if an AttributeValue is renamed after a variant was last
+    saved; self-heals on next save.
+  - LOW-03 — Admin dashboard's low-stock widget compares summed variant stock against only the default variant's threshold — coarser than the correctly per-variant real-time alert email.
+  - LOW-04 — Dead frontend TypeScript interfaces (ShippingZone, ShippingMethod, TaxRate) with zero real references, mirroring unwired backend scaffolding — could mislead a future frontend
+    developer.
+  - LOW-05 — No per-route rejection test enumerating every individual admin.can:<section>,<ability> gated route, though the gating mechanism itself is well-tested generically.
+  - LOW-06 — No test exists for GenerateSitemapCommand (already a manual/external-cron process, low urgency).
+  - LOW-07 — verify-email.tsx uses a plain light theme (hardcoded Tailwind gray literals) inconsistent with the rest of the dark-themed auth flow — cosmetic only, functionally complete.
+  - LOW-08 — Admin dashboard revenue figures (today's revenue, 7-day chart) sum Order.total across every status/payment_status, including pending/unpaid/same-day-cancelled orders — not
+    actual collected money.
+  - LOW-09 — OrderNumberGenerator's uniqueness check-then-act loop has a classic race, but is fully backstopped by a genuine DB unique constraint — a collision would cleanly roll back the
+    transaction, not corrupt data. Practically unreachable (62⁶ combinations/day).
+  - LOW-10 — No explicit DB statement/lock timeout for migrate --force on shared hosting — a specific instance of the already-accepted "no automatic recovery from a stuck migration" risk,
+    flagged because the just-applied points_balance unsigned→signed ALTER is exactly the kind of operation that can run long on a large table.
+
+  INFO (observations, accepted risk, or already-resolved — not current defects)
+
+  - RefundCalculator/RefundService/CourierEvidenceChain design is genuinely strong — no way found for an admin-submitted refund amount to exceed entitlement.
+  - Order::booted()'s status-change hook is only reachable via genuine Eloquent calls; no bulk query-builder bypass found anywhere.
+  - PAY-RETURN-001-BATCH-2's proportional redeemed-points reversal math and lock ordering were independently re-derived and found to exactly match the tracker's description — the one place a
+    "COMPLETED" claim was re-verified end-to-end and held up perfectly.
+  - Guest order tracking by order-number + phone (OrderTrackingController) exists, is rate-limited, and uses non-sequential order numbers — explicitly checked against the hypothesis that it
+    might be missing; it is not.
+  - Social login, rewards:grant-due, and pathao:sync-statuses all have genuine test coverage.
+  - No Laravel Events/Listeners are used anywhere (deliberate — model booted() hooks and traits instead, per CLAUDE.md's documented architecture).
+  - No error-tracking/exception-monitoring service (Sentry/Bugsnag-equivalent) is installed — a real operational blind spot at scale, but a reasonable choice today.
+  - CLAUDE.md's documented scheduler list omits the actual queue-draining mechanism (app:drain-queue) — a documentation-accuracy gap, not a functional one.
+  - deploy.yml/tests.yml/lint.yml were re-read in full and match the tracker's DEPLOY-SAFETY-001 Tier 1 claims exactly — no drift found.
+  - SecuritySettingsController's own docblock understates its actual (correct, stricter) enforcement — comment-only inaccuracy.
+  - Whole-order refund is gated by the same orders.update ability as routine edits rather than a separately-grantable sensitive ability — a business-policy question, not a code defect
+    (RefundService independently enforces amount-exactness regardless of caller).
+  - StockReservation, ShippingZone/Method/Rate, TaxRate confirmed still genuinely unwired exactly as CLAUDE.md documents — no admin UI references them misleadingly.
+  - ADMIN-2FA-001 (no admin 2FA) is a permanently declined, user-accepted risk — not reported as a finding, per standing instruction.
+  - No admin-guard password-reset flow exists by design (resets are mother-admin-mediated) — this removes an email-based admin account-takeover vector; noted as a positive design
+    characteristic, not a gap.
+
+  ---
+
+  6. Security Assessment
+
+  The authorization architecture is unusually disciplined for the project's scale: the mother-admin/section-permission model has no self-escalation path, the shared SettingController
+  endpoint correctly enforces per-field-group authorization despite being a single route, every customer-facing resource checked (addresses, returns, orders, invoices) properly scopes
+  ownership before any mutation, and there is no SQL-injection surface anywhere in the codebase (every raw/dynamic query uses binding or a fixed whitelist). Both dependency trees are
+  currently clean of anything above moderate severity (0 Critical/High/Low in composer audit and npm audit; the 17 remaining npm Moderate findings are an already-documented, deliberate
+  deferral).
+
+  The real weaknesses cluster at two places: who can manage the admins themselves (HIGH-01 — invisible to the audit trail that governs everything else) and standard web-hardening baseline
+  (missing security headers, an unauthenticated-but-mostly-dead legacy webhook, an unverified session-cookie flag). None of these are exploitable without first compromising or abusing an
+  already-privileged admin account, or require production-only information this session cannot check. ADMIN-2FA-001 remains correctly excluded from this assessment per the standing,
+  permanent decision.
+
+  ---
+
+  7. Ecommerce Business Logic Assessment
+
+  Core business rules are internally consistent and well-enforced server-side, not merely in the frontend — stock, coupon usage, and refund math all have a single authoritative choke point
+  each, and no client-submitted price/discount/shipping/refund value was found to be trusted anywhere. Guest checkout, guest order tracking, referrals, and scheduled loyalty grants are all
+  genuinely wired end-to-end (better than an initial "might be missing" hypothesis suggested).
+
+  The one deterministic logic gap with real business impact is CRIT-01 — the loyalty-points redemption model was correctly built for synchronous (COD) checkout but that safety property was
+  never carried over to the asynchronous (mobile-banking/ZiniPay) path built on top of it. Secondary, smaller gaps: manual admin-order pricing has no catalog tie-back (MED-01), and the
+  dashboard's revenue figures don't distinguish collected from merely-recorded money (LOW-08) — both are operational-trust gaps rather than exploitable defects. No contradictory business
+  rules, no orphaned unconnected features beyond the already-documented, deliberately-unwired scaffolding (StockReservation, ShippingZone/Method/Rate, TaxRate), and no invented missing
+  requirement is reported here.
+
+  ---
+
+  8. Database Integrity Assessment
+
+  The order-history-protection and refund-ledger design (DB-001, PAY-RETURN-001) is genuinely solid — correct RESTRICT/SET NULL choices, correct down() guards refusing destructive rollback
+  while real data exists, and order history that survives a hard-deleted product/variant exactly as documented. No oversell, no double-refund, and no silent data-loss path was found in the
+  core order-creation/refund pipeline.
+
+  The gaps that exist sit one layer up: missing database-level uniqueness on product_variants.sku and attribute_values (MED-06), a missing uniqueness constraint on cart_items that could let
+  a UI race double-charge a single checkout (MED-08), an un-transactional product save (MED-07), a denormalized stock field the storefront trusts but the order pipeline never refreshes for
+  variants (HIGH-02), and an app-wide float-money casting convention the team's own newer code implicitly treats as risky (MED-09). None of these produced a confirmed live financial
+  discrepancy or data-loss event in this audit — they are correctness gaps waiting for the right (rare but plausible) trigger, not active incidents.
+
+  ---
+
+  9. Customer Journey & Dead-End Assessment
+
+  The checkout→order→cancellation→return journey is consistent end-to-end — frontend and backend validation rules match exactly everywhere checked (phone-number format, cancellation
+  eligibility, return-request visibility), and the SSR/Ziggy routing fix documented in CLAUDE.md is confirmed still correctly in place.
+
+  The one real dead end is significant precisely because of where it sits: HIGH-03, the header wishlist icon — the single most-visible entry point to a fully-built feature — can never show a
+  real wishlist to anyone. A related MEDIUM (guest /wishlist showing a broken-looking authenticated shell) compounds the same underlying route-wiring mistake. Beyond that, findings are
+  cosmetic (one auth-page theme inconsistency) or minor UX gaps (a stock-stepper cap that can go stale between page load and checkout, safely backstopped by server-side re-validation at
+  order time).
+
+  ---
+
+  10. Admin & Operational Assessment
+
+  Administrators can, for the most part, safely operate the business today: the permission-matrix system has no bypass, dangerous financial actions (refunds) are independently amount-capped
+  and courier-verified regardless of who triggers them, and the courier/SMS reconciliation machinery is correctly locked and amount-tolerant. The gaps that exist are real but bounded: manual
+  order pricing has no catalog guardrail (MED-01), several admin-destructive actions have no audit trail (MED-05) — most notably SmsPattern, which silently governs automatic payment
+  acceptance (MED-04) — and admin-account management itself, the most sensitive operation of all, is completely unaudited (HIGH-01). None of these require fixing before an admin can safely
+  process today's order volume, but all of them erode the forensic trail a growing business will eventually need.
+
+  ---
+
+  11. Performance & Reliability Assessment
+
+  No live performance measurement was possible (no browser/profiling access), so this section is necessarily code-evidence-only. No obviously catastrophic pattern was found (no unbounded N+1
+  loop flagged by any fork, no missing lazy-loading on the main product-card component). The concrete reliability gaps are operational rather than performance-related: failed background
+  jobs (order/shipping emails) are invisible once queued and exhausted (MED-03), and there's no error-tracking service to surface a live production exception beyond manually reading a log
+  file on shared hosting (INFO). Both are real blind spots for a growing order volume, neither is an active incident today.
+
+  ---
+
+  12. Testing & Verification Gaps
+
+  The test suite is broad and evidently taken seriously — concurrency-race files, cache-isolation tests, and permission-matrix tests all exist and were independently re-run/verified where
+  relevant to this engagement's prior work. The concrete, confirmed gaps: two complete customer-facing features (invoice PDF download's authorization/business-rule branches, and the entire
+  Wishlist feature) carry zero regression protection despite non-trivial logic (MED-12, MED-13); a MySQL/SQLite non-ASCII LIKE-matching divergence spans most of the app's search/filter
+  surface with no MySQL-side test proving real-world behavior (MED-14); and no test enumerates individual permission-gated routes one by one, though the gating mechanism itself is
+  well-covered generically (LOW-05).
+
+  ---
+
+  13. Existing Fixes & Accepted Risks (not reopened, not newly flagged)
+
+  - ADMIN-2FA-001 — permanently declined by explicit user decision. Not reported as a finding anywhere in this audit.
+  - DEPLOY-SAFETY-001 Tier 1 — independently re-read in full; matches the tracker's claims exactly, no drift.
+  - C1 (no production DB backup) — confirmed still an explicitly accepted risk; nothing found in this audit contradicts the premise it rests on (no evidence of real transactional volume
+    beyond what's already known).
+  - M1 (SSH known-host pinning reverted) — confirmed still StrictHostKeyChecking=no, exactly as the explicit user-approved revert intended; not re-flagged.
+  - PAY-RETURN-001 / PAY-RETURN-001-BATCH-2 — independently re-verified correct (math, lock ordering, full-order-refund interaction fix) by this audit; production migration status previously
+    user-confirmed via migrate:status.
+  - SHIP-001, SHIP-DUP-001, CHECKOUT-COD-002, DB-001, PROMO-LOY-001 — independently spot-checked where relevant; no regression found.
+  - XSS-SINK-GAP-001 — Page.content re-confirmed still unsanitized but still has zero write paths in the live app (only a seeder) — same conclusion as before, independently re-derived rather
+    than cited.
+  - 17 Moderate npm advisories, nunomaduro/pao rename — confirmed still deliberately deferred, counts match the tracker exactly.
+  - StockReservation, ShippingZone/Method/Rate, TaxRate, spatie/laravel-responsecache, BackupFailedMail — confirmed still genuinely unwired scaffolding exactly as documented; no admin UI
+    misleadingly references them.
+
+  ---
+
+  14. Prioritized Remediation Roadmap
+
+  Immediate — before continuing normal business operations at current/growing scale
+
+  ┌─────────┬──────────┬───────────────────────────────────────────────────────┬──────────────────────────────────────────────────────────────┬──────────────────────────────┬────────────┐
+  │   ID    │ Severity │                    Business Impact                    │                      Recommended Action                      │         Dependencies         │ Complexity │
+  ├─────────┼──────────┼───────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────────────────────────┼────────────┤
+  │ CRIT-01 │ CRITICAL │ Direct, repeatable financial loss via loyalty-point   │ Reserve points at PendingCheckout creation, or re-clamp      │ Design decision on           │ Medium     │
+  │         │          │ double-spend                                          │ against current balance at debit time                        │ reservation vs. clamp        │            │
+  ├─────────┼──────────┼───────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────────────────────────┼────────────┤
+  │ HIGH-01 │ HIGH     │ No forensic trail for the single most sensitive       │ Add activity logging to Admin CRUD                           │ None                         │ Small      │
+  │         │          │ privilege-management operation                        │                                                              │                              │            │
+  ├─────────┼──────────┼───────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────────────────────────┼────────────┤
+  │ HIGH-03 │ HIGH     │ Primary wishlist entry point non-functional for all   │ Fix /wishlist route to pass real data or redirect to         │ None                         │ Small      │
+  │         │          │ visitors                                              │ account.wishlist                                             │                              │            │
+  ├─────────┼──────────┼───────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────┼──────────────────────────────┼────────────┤
+  │ HIGH-02 │ HIGH     │ Storefront can show wrong stock status for variant    │ Stop trusting denormalized sum for variant products on       │ None                         │ Medium     │
+  │         │          │ products                                              │ customer-facing surfaces                                     │                              │            │
+  └─────────┴──────────┴───────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────────┴──────────────────────────────┴────────────┘
+
+  Short-term — should address next
+
+  ┌──────────────────────────────────┬──────────┬───────────────────────────────────────────────────────────────────────────────────────────────┬──────────────────────┐
+  │                ID                │ Severity │                                      Recommended Action                                       │      Complexity      │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ MED-01                           │ MEDIUM   │ Validate manual admin order item prices against catalog; log overrides                        │ Small                │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ MED-20                           │ MEDIUM   │ Scheduled cleanup of expired PendingCheckout rows                                             │ Small                │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ MED-08                           │ MEDIUM   │ Unique constraint on cart_items(cart_id,product_id,variant_id,bundle_id) + atomic upsert      │ Medium               │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ MED-07                           │ MEDIUM   │ Wrap Admin\ProductController::store/update in a transaction                                   │ Small                │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ MED-06                           │ MEDIUM   │ Add DB-level uniqueness on product_variants.sku / attribute_values                            │ Medium               │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ MED-16                           │ MEDIUM   │ Add security-header middleware                                                                │ Small                │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ MED-18                           │ MEDIUM   │ Confirm production SESSION_SECURE_COOKIE/HTTPS enforcement                                    │ Small (verification) │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ MED-15                           │ MEDIUM   │ Add APP_DEBUG=false/APP_ENV=production checks to deploy pipeline                              │ Small                │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ MED-03                           │ MEDIUM   │ Surface failed queued jobs to an admin or alert mail                                          │ Small                │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ MED-04                           │ MEDIUM   │ Validate SmsPattern regex at save time; log changes; cap SMS content length                   │ Small                │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ MED-05                           │ MEDIUM   │ Extend audit logging to ReturnRequest, BlockedIp, and the other listed gaps                   │ Small                │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ MED-02                           │ MEDIUM   │ Add sequence/timestamp-based replay protection to Steadfast webhook for non-terminal statuses │ Medium               │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ MED-19                           │ MEDIUM   │ Scale SMS amount-match tolerance to order size                                                │ Small                │
+  ├──────────────────────────────────┼──────────┼───────────────────────────────────────────────────────────────────────────────────────────────┼──────────────────────┤
+  │ (frontend) guest /wishlist shell │ MEDIUM   │ Give guests a dedicated wishlist view instead of the authenticated shell                      │ Small                │
+  └──────────────────────────────────┴──────────┴───────────────────────────────────────────────────────────────────────────────────────────────┴──────────────────────┘
+
+  Medium-term — worth addressing when justified
+
+  ┌─────────────────┬────────────────────────────────────────────────────────────────────────────────────────────┬───────────────────────┐
+  │       ID        │                                     Recommended Action                                     │      Complexity       │
+  ├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────┤
+  │ MED-10          │ Extract one shared shipping-cost calculator                                                │ Medium                │
+  ├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────┤
+  │ MED-11          │ Split Admin\OrderController by responsibility                                              │ Large                 │
+  ├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────┤
+  │ MED-12 / MED-13 │ Add test coverage for invoice download and Wishlist                                        │ Medium                │
+  ├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────┤
+  │ MED-14          │ Add a targeted MySQL non-ASCII LIKE test                                                   │ Small                 │
+  ├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────┤
+  │ MED-09          │ Document float-money convention as deliberate; use integer minor-units for new money logic │ Small (documentation) │
+  ├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────┤
+  │ MED-17          │ Remove dead ZiniPay code, or add webhook signature verification                            │ Small                 │
+  ├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────┤
+  │ LOW-08          │ Filter admin dashboard revenue stat to paid/non-cancelled orders                           │ Small                 │
+  ├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────┤
+  │ LOW-03          │ Fix dashboard low-stock widget to per-variant granularity                                  │ Small                 │
+  └─────────────────┴────────────────────────────────────────────────────────────────────────────────────────────┴───────────────────────┘
+
+  Optional — no immediate business need
+
+  ┌────────┬────────────────────────────────────────────────────────────────────────────────────┐
+  │   ID   │                                 Recommended Action                                 │
+  ├────────┼────────────────────────────────────────────────────────────────────────────────────┤
+  │ LOW-01 │ Narrow Order::$fillable to exclude idempotency markers as defense-in-depth         │
+  ├────────┼────────────────────────────────────────────────────────────────────────────────────┤
+  │ LOW-02 │ Derive variant attribute labels from relation at read time instead of snapshotting │
+  ├────────┼────────────────────────────────────────────────────────────────────────────────────┤
+  │ LOW-04 │ Remove dead frontend TypeScript interfaces                                         │
+  ├────────┼────────────────────────────────────────────────────────────────────────────────────┤
+  │ LOW-05 │ Add per-route permission-rejection test enumeration                                │
+  ├────────┼────────────────────────────────────────────────────────────────────────────────────┤
+  │ LOW-06 │ Add a test for GenerateSitemapCommand                                              │
+  ├────────┼────────────────────────────────────────────────────────────────────────────────────┤
+  │ LOW-07 │ Restyle verify-email.tsx to match the dark auth theme                              │
+  ├────────┼────────────────────────────────────────────────────────────────────────────────────┤
+  │ LOW-10 │ Review migration safety for future large-table ALTERs on shared hosting            │
+  ├────────┼────────────────────────────────────────────────────────────────────────────────────┤
+  │ INFO   │ Adopt an error-tracking service as order volume grows                              │
+  ├────────┼────────────────────────────────────────────────────────────────────────────────────┤
+  │ INFO   │ Update CLAUDE.md's scheduler section to mention app:drain-queue                    │
+  └────────┴────────────────────────────────────────────────────────────────────────────────────┘
+
+  ---
+
+  15. Final Forensic Verdict
+
+  - Are there confirmed critical or high-severity issues? Yes — one CRITICAL (loyalty-points double-spend) and three HIGH (admin-account audit gap, stale stock display for variants, dead
+    wishlist entry point).
+  - Are there financial integrity risks? Yes. CRIT-01 is a direct, deterministic, repeatable financial-loss path. Several MEDIUM findings (manual admin order pricing, cart-row race,
+    float-money casting, COD rounding) are financial-adjacent correctness gaps, none currently confirmed as an active incident.
+  - Are there database consistency risks? Yes, at MEDIUM severity — missing uniqueness constraints (SKU, attribute values, cart items) and a non-transactional product save. No CRITICAL/HIGH
+    data-loss or corruption path was found in the core order/refund pipeline.
+  - Are there broken customer journeys? Yes — one HIGH (the primary wishlist entry point) and one related MEDIUM (guest wishlist experience). The core browse→cart→checkout→order→return
+    journey is otherwise consistent and well-validated on both frontend and backend.
+  - Are there incomplete or misleading business workflows? A few narrow ones (dashboard revenue not distinguishing collected money; refund gated by the same ability as routine order edits) —
+    no fundamentally missing ecommerce capability was found; guest tracking, referrals, and scheduled loyalty logic are genuinely complete.
+  - Are there security weaknesses beyond accepted decisions? Yes, but none rise above MEDIUM, and the authorization/data-access architecture itself is strong (no SQLi, no IDOR, no
+    mass-assignment exploit, no authorization bypass found anywhere). The most consequential gap (HIGH-01) is an audit-trail blind spot, not an exploitable hole.
+  - Is the application ready for normal ecommerce operations based on available evidence? For COD-dominant, non-loyalty-redemption traffic, yes — the core transactional machinery is sound.
+    For traffic that combines loyalty-point redemption with mobile-banking/digital-payment checkout, no — CRIT-01 is live and reachable through ordinary use today.
+  - What must be fixed before further business growth? CRIT-01 first. Then HIGH-01/02/03. Then the growth-relevant MEDIUM cluster: database-level uniqueness constraints, the admin
+    manual-order pricing guardrail, webhook replay protection, and the standard security-hardening gaps (headers, session-cookie verification, debug-flag pipeline check) — all of these
+    compound in likelihood and consequence as order volume and admin headcount increase.

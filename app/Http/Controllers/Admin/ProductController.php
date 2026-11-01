@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\StaleProductStockException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProductRequest;
 use App\Models\AttributeValue;
@@ -15,13 +16,22 @@ use App\Models\Product;
 use App\Models\ProductMedia;
 use App\Models\ProductVariant;
 use App\Models\SubCategory;
+use App\Support\CatalogFilterCache;
+use App\Support\ProductStockToken;
+use App\Support\SearchSuggestionCache;
+use Closure;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use RuntimeException;
+use Throwable;
 
 class ProductController extends Controller
 {
@@ -111,11 +121,17 @@ class ProductController extends Controller
             $data['published_at'] = now();
         }
 
-        $product = Product::create($data);
+        try {
+            $this->saveAtomically($images, function (array $media) use ($data, $variants, $mediaTags): void {
+                $product = Product::create($data);
 
-        $variantsByKey = $this->syncVariants($product, $variants);
+                $variantsByKey = $this->syncVariants($product, $variants);
 
-        $this->syncMedia($product, $images, $mediaTags, $variantsByKey);
+                $this->syncMedia($product, $media, $mediaTags, $variantsByKey);
+            });
+        } catch (UniqueConstraintViolationException $e) {
+            return $this->duplicateSkuResponse($e);
+        }
 
         return redirect()->route('admin.products.index')->with('success', 'Product created.');
     }
@@ -124,6 +140,7 @@ class ProductController extends Controller
     {
         return Inertia::render('admin/products/edit', [
             'product' => $product->load(['media', 'variants', 'category:id,name', 'subCategory:id,name', 'brand:id,name']),
+            'stockToken' => ProductStockToken::for($product),
             'categories' => Category::active()->orderBy('name')->get(['id', 'name']),
             'subCategories' => SubCategory::active()->orderBy('name')->get(['id', 'name', 'category_id']),
             'brands' => Brand::active()->orderBy('name')->get(['id', 'name']),
@@ -137,7 +154,8 @@ class ProductController extends Controller
         $images = $data['images'] ?? null;
         $mediaTags = $data['media_tags'] ?? [];
         $variants = $data['variants'] ?? [];
-        unset($data['images'], $data['media_tags'], $data['variants']);
+        $stockToken = $data['stock_token'];
+        unset($data['images'], $data['media_tags'], $data['variants'], $data['stock_token']);
 
         if (isset($data['slug'])) {
             $data['slug'] = Str::slug($data['slug']);
@@ -158,12 +176,24 @@ class ProductController extends Controller
             $data['published_at'] = now();
         }
 
-        $product->update($data);
+        try {
+            $this->saveAtomically($images, function (?array $media) use ($product, $data, $variants, $mediaTags, $stockToken): void {
+                ProductStockToken::lockAndVerify($product, $stockToken);
 
-        $variantsByKey = $this->syncVariants($product, $variants);
+                $product->update($data);
 
-        if ($images !== null) {
-            $this->syncMedia($product, $images, $mediaTags, $variantsByKey);
+                $variantsByKey = $this->syncVariants($product, $variants);
+
+                if ($media !== null) {
+                    $this->syncMedia($product, $media, $mediaTags, $variantsByKey);
+                }
+            });
+        } catch (StaleProductStockException $e) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => $e->getMessage()]);
+
+            return back()->withErrors(['stock_token' => $e->getMessage()]);
+        } catch (UniqueConstraintViolationException $e) {
+            return $this->duplicateSkuResponse($e);
         }
 
         return redirect()->route('admin.products.index')->with('success', 'Product updated.');
@@ -191,6 +221,79 @@ class ProductController extends Controller
         $product->forceDelete();
 
         return redirect()->route('admin.products.index')->with('success', 'Product permanently deleted.');
+    }
+
+    /**
+     * MED-06: the database has the last word on SKUs. This covers what
+     * validation can't see: a simultaneous save, a variant kept for order
+     * history, or values only the column's collation treats as equal.
+     */
+    private function duplicateSkuResponse(UniqueConstraintViolationException $e): RedirectResponse
+    {
+        if (! str_contains($e->getMessage(), 'sku')) {
+            throw $e;
+        }
+
+        return back()->withErrors(['variants' => 'One of these SKUs is already in use by another variant. Choose a different SKU.'])->withInput();
+    }
+
+    /**
+     * MED-07: a product, its variants, attribute values and media commit
+     * together. Files can't roll back, so uploads are stored first, holding no
+     * database locks, and removed again if anything fails. Files of media the
+     * save replaces are deliberately left on disk: order lines keep their path
+     * in `product_snapshot.image`, and a failed save must never lose them.
+     *
+     * Not retried on deadlock: a retry would reuse a model that already
+     * believes the rolled-back attributes are saved, and skip writing them.
+     *
+     * The model events flush these caches before the commit, when a reader
+     * could refill them with old data, so they're flushed again after it.
+     *
+     * @param  array<int, string|UploadedFile|null>|null  $images
+     * @param  Closure(array<int, array{path: string|null, type: string}>|null): void  $save
+     */
+    private function saveAtomically(?array $images, Closure $save): void
+    {
+        $storedFiles = [];
+
+        try {
+            $media = $images === null ? null : $this->storeUploads($images, $storedFiles);
+
+            DB::transaction(fn () => $save($media));
+        } catch (Throwable $e) {
+            Storage::disk('public')->delete($storedFiles);
+
+            throw $e;
+        }
+
+        CatalogFilterCache::flush();
+        SearchSuggestionCache::flush();
+    }
+
+    /**
+     * @param  array<int, string|UploadedFile|null>  $images
+     * @param  array<int, string>  $storedFiles  Each stored path, added as it's written, so a later failure can remove it.
+     * @return array<int, array{path: string|null, type: string}>
+     */
+    private function storeUploads(array $images, array &$storedFiles): array
+    {
+        return array_map(function (string|UploadedFile|null $fileOrUrl) use (&$storedFiles): array {
+            if (! $fileOrUrl instanceof UploadedFile) {
+                return ['path' => $fileOrUrl, 'type' => 'image'];
+            }
+
+            $type = str_starts_with((string) $fileOrUrl->getMimeType(), 'video/') ? 'video' : 'image';
+            $storedPath = $fileOrUrl->store('products', 'public');
+
+            if ($storedPath === false) {
+                throw new RuntimeException('A product file could not be stored.');
+            }
+
+            $storedFiles[] = $storedPath;
+
+            return ['path' => '/storage/'.$storedPath, 'type' => $type];
+        }, $images);
     }
 
     /**
@@ -255,6 +358,8 @@ class ProductController extends Controller
         $submittedKeys = [];
         $variantsByKey = [];
 
+        $this->prepareVariantRows($product, $variants);
+
         foreach ($variants as $variant) {
             // Force-null a dimension the toggles disabled, no matter what the submitted
             // row still carries — otherwise a stale frontend state (or a variant row left
@@ -300,20 +405,6 @@ class ProductController extends Controller
             );
         }
 
-        foreach ($product->variants()->get() as $existing) {
-            $key = $this->variantKey($existing->color_value_id, $existing->size_value_id);
-            if (in_array($key, $submittedKeys, true)) {
-                continue;
-            }
-
-            $isReferenced = CartItem::where('variant_id', $existing->id)->exists()
-                || OrderItem::where('variant_id', $existing->id)->exists();
-
-            if (! $isReferenced) {
-                $existing->delete();
-            }
-        }
-
         $valueIds = [];
         foreach ($variantsByKey as $variant) {
             if ($variant->color_value_id) {
@@ -328,21 +419,61 @@ class ProductController extends Controller
         return $variantsByKey;
     }
 
+    /**
+     * Rows are written one at a time, but SKUs are unique at every step. So
+     * first remove what the save retires and clear each SKU about to change,
+     * letting two variants swap SKUs or a new variant take over a retired
+     * one's. A retired variant still referenced keeps its SKU.
+     *
+     * @param  array<int, array<string, mixed>>  $variants
+     */
+    private function prepareVariantRows(Product $product, array $variants): void
+    {
+        $submittedSkus = [];
+
+        foreach ($variants as $variant) {
+            $colorId = $product->has_color_variant && isset($variant['color_value_id']) ? (int) $variant['color_value_id'] : null;
+            $sizeId = $product->has_size_variant && isset($variant['size_value_id']) ? (int) $variant['size_value_id'] : null;
+            $sku = trim((string) ($variant['sku'] ?? ''));
+
+            $submittedSkus[$this->variantKey($colorId, $sizeId)] = $sku !== '' ? $sku : null;
+        }
+
+        foreach ($product->variants()->get() as $existing) {
+            $key = $this->variantKey($existing->color_value_id, $existing->size_value_id);
+
+            if (array_key_exists($key, $submittedSkus)) {
+                if ($existing->sku !== $submittedSkus[$key]) {
+                    $existing->update(['sku' => null]);
+                }
+
+                continue;
+            }
+
+            $isReferenced = CartItem::where('variant_id', $existing->id)->exists()
+                || OrderItem::where('variant_id', $existing->id)->exists();
+
+            if (! $isReferenced) {
+                $existing->delete();
+            }
+        }
+    }
+
     private function variantKey(?int $colorId, ?int $sizeId): string
     {
         return ($colorId ?? 'none').'-'.($sizeId ?? 'none');
     }
 
     /**
-     * @param  array<int, string|UploadedFile>  $images
+     * @param  array<int, array{path: string|null, type: string}>  $media
      * @param  array<int, string|null>  $mediaTags
      * @param  array<string, ProductVariant>  $variantsByKey
      */
-    private function syncMedia(Product $product, array $images, array $mediaTags, array $variantsByKey): void
+    private function syncMedia(Product $product, array $media, array $mediaTags, array $variantsByKey): void
     {
         $product->media()->delete();
 
-        if (empty($images)) {
+        if (empty($media)) {
             ProductMedia::create([
                 'product_id' => $product->id,
                 'path' => '/placeholder.svg',
@@ -355,25 +486,16 @@ class ProductController extends Controller
             return;
         }
 
-        foreach ($images as $i => $fileOrUrl) {
-            $type = 'image';
-            if ($fileOrUrl instanceof UploadedFile) {
-                $mime = $fileOrUrl->getMimeType();
-                $type = str_starts_with($mime, 'video/') ? 'video' : 'image';
-                $url = '/storage/'.$fileOrUrl->store('products', 'public');
-            } else {
-                $url = $fileOrUrl;
-            }
-
-            if (! $url) {
+        foreach ($media as $i => $item) {
+            if (! $item['path']) {
                 continue;
             }
 
             ProductMedia::create([
                 'product_id' => $product->id,
                 'variant_id' => $this->resolveVariantIdFromTag($mediaTags[$i] ?? null, $variantsByKey),
-                'path' => $url,
-                'type' => $type,
+                'path' => $item['path'],
+                'type' => $item['type'],
                 'is_primary' => $i === 0,
                 'sort_order' => $i,
             ]);

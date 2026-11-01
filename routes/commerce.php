@@ -6,6 +6,7 @@ use App\Http\Controllers\IncompleteOrderController;
 use App\Http\Controllers\MobilePaymentController;
 use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\WishlistController;
 use App\Models\Coupon;
 use App\Models\Order;
 use Illuminate\Http\Request;
@@ -102,5 +103,5 @@ Route::post('/coupon/validate', function (Request $request) {
     return response()->json(['coupon' => $coupon]);
 })->middleware('throttle:coupon-check')->name('coupon.validate');
 
-Route::get('/wishlist', fn () => inertia('account/Wishlist'))->name('wishlist.index');
+Route::get('/wishlist', [WishlistController::class, 'entry'])->name('wishlist.index');
 Route::get('/compare', fn () => inertia('compare/Compare'))->name('compare');

@@ -55,14 +55,25 @@ class ProductSearchQuery
     /**
      * Add the name/sku/short_description OR-condition to an existing query
      * builder (or sub-query closure), as the first condition in that group.
+     *
+     * The only FULLTEXT index covers name and short_description together, and
+     * MATCH() must name exactly an index's columns, so a name-only search
+     * still matches on both, then requires every word in the name.
      */
     public static function apply(Builder $query, string $term, bool $includeShortDescription = true): Builder
     {
         $booleanQuery = self::buildBooleanQuery($term);
 
         if ($booleanQuery !== null) {
-            $columns = $includeShortDescription ? ['name', 'short_description'] : ['name'];
-            $query->whereFullText($columns, $booleanQuery, ['mode' => 'boolean']);
+            $query->where(function (Builder $fullText) use ($booleanQuery, $includeShortDescription): void {
+                $fullText->whereFullText(['name', 'short_description'], $booleanQuery, ['mode' => 'boolean']);
+
+                if (! $includeShortDescription) {
+                    foreach (explode(' ', $booleanQuery) as $word) {
+                        $fullText->where('name', 'like', '%'.trim($word, '+*').'%');
+                    }
+                }
+            });
         } else {
             $query->where('name', 'like', "%{$term}%");
 

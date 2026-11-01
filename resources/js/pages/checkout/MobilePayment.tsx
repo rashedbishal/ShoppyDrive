@@ -1,4 +1,4 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     AlertCircle,
     CheckCircle2,
@@ -20,6 +20,7 @@ interface Props {
     token: string;
     amount: number;
     orderNumber: string;
+    holdsPoints: boolean;
     bkashNumber: string | null;
     nagadNumber: string | null;
 }
@@ -68,6 +69,7 @@ export default function MobilePayment({
     token,
     amount,
     orderNumber,
+    holdsPoints,
     bkashNumber,
     nagadNumber,
 }: Props): React.JSX.Element {
@@ -340,6 +342,20 @@ export default function MobilePayment({
                     Having trouble? Contact support with Order ID:{' '}
                     <strong>{orderNumber}</strong>
                 </p>
+
+                {holdsPoints && (
+                    <p className="text-center text-xs text-[var(--color-text-muted)]">
+                        Your loyalty points are on hold for this payment. Not
+                        paying?{' '}
+                        <Link
+                            href={route('payment.cancel', token)}
+                            className="font-semibold underline"
+                        >
+                            Cancel it to use them on another order
+                        </Link>
+                        . Don't cancel if you've already sent the money.
+                    </p>
+                )}
             </div>
         </CheckoutLayout>
     );

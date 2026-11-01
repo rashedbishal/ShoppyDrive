@@ -6,17 +6,21 @@ use App\Enums\OrderStatus;
 use App\Enums\PointTransactionType;
 use App\Http\Controllers\Admin\OrderController;
 use App\Models\Admin;
+use App\Models\CourierDeliveryEvidence;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
+use App\Models\PendingCheckout;
 use App\Models\Product;
 use App\Models\ReferralPointTransaction;
 use App\Models\User;
+use App\Services\CourierOrderStatusMapper;
 use App\Services\RefundService;
 use Illuminate\Http\Request;
 use Illuminate\Process\ProcessResult;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
 
@@ -269,6 +273,8 @@ match ($argv[2]) {
         $app->make(App\Services\RefundService::class),
     ),
     'steadfast-cancelled' => App\Services\CourierOrderStatusMapper::sync($order, 'steadfast', 'cancelled_parcells'),
+    'steadfast-stale' => App\Services\CourierOrderStatusMapper::sync($order, 'steadfast', 'pending_parcels'),
+    'steadfast-duplicate' => App\Services\CourierOrderStatusMapper::sync($order, 'steadfast', 'waiting_approval'),
 };
 PHP;
 
@@ -575,4 +581,176 @@ it('retries mark-refunded after a real InnoDB deadlock without duplicating any s
     expect(OrderItem::where('order_id', $order->id)->value('restocked_quantity'))->toBe(2);
     expect((int) $monitor->query("SELECT COUNT(*) FROM jobs WHERE payload LIKE '%OrderStatusUpdatedMail%'")->fetchColumn() - $mailJobsBefore)->toBe(1);
     expect((int) $monitor->query("SELECT COUNT(*) FROM cache WHERE `key` LIKE 'deadlock-ballast-{$order->id}-%'")->fetchColumn())->toBe(0);
+})->skip(fn () => DB::connection()->getDriverName() !== 'mysql', 'requires a real MySQL connection to exercise InnoDB locking-read semantics');
+
+/**
+ * Prints what a checkout blocked on the purchaser's row would see once it gets
+ * the lock. A snapshot taken before that lock would miss the committed write.
+ */
+const POINTS_RESERVATION_CONTENDER_SCRIPT = <<<'PHP'
+require 'vendor/autoload.php';
+$app = require 'bootstrap/app.php';
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+$database = Illuminate\Support\Facades\DB::connection()->getDatabaseName();
+if (preg_match('/^shoppydrive_test_[a-z0-9_]+$/', $database) !== 1) {
+    fwrite(STDERR, "Refusing to run against database {$database}.");
+    exit(3);
+}
+
+echo Illuminate\Support\Facades\DB::transaction(function () use ($app, $argv) {
+    $lockedUser = $app->make(App\Services\ReferralService::class)->lockUser((int) $argv[1]);
+
+    return $app->make(App\Services\LoyaltyPointsService::class)->availablePoints($lockedUser);
+});
+PHP;
+
+/**
+ * Runs $holderWrites on a connection already holding the purchaser's row lock,
+ * commits once the contender is really blocked behind that lock, and returns
+ * the points the contender then saw as available.
+ */
+function pointsAvailableBehindLockedWrite(PDO $holder, PDO $monitor, User $user, Closure $holderWrites): int
+{
+    $holder->exec('START TRANSACTION');
+    $holder->prepare('SELECT * FROM users WHERE id = ? FOR UPDATE')->execute([$user->id]);
+    $holderWrites($holder);
+
+    $contender = Process::path(base_path())
+        ->env([
+            'APP_ENV' => 'testing',
+            'DB_CONNECTION' => 'mysql',
+            'DB_DATABASE' => DB::connection()->getDatabaseName(),
+            'CACHE_STORE' => 'array',
+            'SESSION_DRIVER' => 'array',
+        ])
+        ->timeout(60)
+        ->start(['php', '-r', POINTS_RESERVATION_CONTENDER_SCRIPT, (string) $user->id]);
+
+    $blocked = false;
+
+    for ($attempt = 0; $attempt < 100 && $contender->running(); $attempt++) {
+        if ((int) $monitor->query("SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT'")->fetchColumn() > 0) {
+            $blocked = true;
+
+            break;
+        }
+
+        usleep(100_000);
+    }
+
+    $holder->exec('COMMIT');
+
+    expect($blocked)->toBeTrue('The contending process never blocked on the user row lock.');
+
+    $result = $contender->wait();
+
+    expect($result->exitCode())->toBe(0, $result->errorOutput());
+
+    return (int) trim($result->output());
+}
+
+it('sees a reservation committed while it waited for the user lock under real MySQL locking', function () {
+    $conns = loyaltyRaceConnections();
+
+    if ($conns === null) {
+        return;
+    }
+
+    [$holder, $monitor] = $conns;
+
+    $user = User::create([
+        'name' => 'Points Reservation Race Test',
+        'email' => 'points-reservation-race-'.uniqid().'@example.com',
+        'password' => bcrypt('irrelevant'),
+    ]);
+    $user->forceFill(['points_balance' => 100])->save();
+
+    try {
+        $available = pointsAvailableBehindLockedWrite($holder, $monitor, $user, function (PDO $connection) use ($user): void {
+            $connection->prepare("INSERT INTO pending_checkouts (token, user_id, checkout_data, points_reserved, expires_at, created_at, updated_at) VALUES (?, ?, '{}', 100, ?, NOW(), NOW())")
+                ->execute([(string) Str::uuid(), $user->id, now()->addHour()->toDateTimeString()]);
+        });
+
+        expect($available)->toBe(0);
+    } finally {
+        PendingCheckout::where('user_id', $user->id)->delete();
+        $user->forceDelete();
+    }
+})->skip(fn () => DB::connection()->getDriverName() !== 'mysql', 'requires a real MySQL connection to exercise InnoDB locking-read semantics');
+
+it('sees a debit and conversion committed while it waited for the user lock under real MySQL locking', function () {
+    $conns = loyaltyRaceConnections();
+
+    if ($conns === null) {
+        return;
+    }
+
+    [$holder, $monitor] = $conns;
+
+    $user = User::create([
+        'name' => 'Points Conversion Race Test',
+        'email' => 'points-conversion-race-'.uniqid().'@example.com',
+        'password' => bcrypt('irrelevant'),
+    ]);
+    $user->forceFill(['points_balance' => 100])->save();
+    $pending = PendingCheckout::create([
+        'token' => (string) Str::uuid(),
+        'user_id' => $user->id,
+        'checkout_data' => [],
+        'points_reserved' => 60,
+        'expires_at' => now()->addHour(),
+    ]);
+
+    try {
+        $available = pointsAvailableBehindLockedWrite($holder, $monitor, $user, function (PDO $connection) use ($user, $pending): void {
+            $connection->prepare('UPDATE users SET points_balance = points_balance - 60 WHERE id = ?')->execute([$user->id]);
+            $connection->prepare("UPDATE pending_checkouts SET order_number = 'ORD-CONVERTED' WHERE id = ?")->execute([$pending->id]);
+        });
+
+        expect($available)->toBe(40);
+    } finally {
+        $pending->delete();
+        $user->forceDelete();
+    }
+})->skip(fn () => DB::connection()->getDriverName() !== 'mysql', 'requires a real MySQL connection to exercise InnoDB locking-read semantics');
+
+it('refuses a stale webhook blocked behind the transaction that shipped the order under real MySQL locking', function () {
+    $conns = loyaltyRaceConnections();
+
+    if ($conns === null) {
+        return;
+    }
+
+    [, $monitor] = $conns;
+    [$user, $order, $admin] = createRedeemedPointsRaceOrder();
+    $balanceBefore = $user->refresh()->points_balance;
+
+    raceAdminActions($monitor, $order, $admin, function () use ($order): void {
+        Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail()->update(['status' => OrderStatus::SHIPPED]);
+    }, 'steadfast-stale');
+
+    $order->refresh();
+
+    expect($order->status)->toBe(OrderStatus::SHIPPED);
+    expect($order->steadfast_status)->toBe('pending_parcels');
+    expect($order->stock_restored_at)->toBeNull();
+    expect($order->points_refunded_at)->toBeNull();
+    expect($user->refresh()->points_balance)->toBe($balanceBefore);
+})->skip(fn () => DB::connection()->getDriverName() !== 'mysql', 'requires a real MySQL connection to exercise InnoDB locking-read semantics');
+
+it('records one report when a duplicate webhook is blocked behind the first under real MySQL locking', function () {
+    $conns = loyaltyRaceConnections();
+
+    if ($conns === null) {
+        return;
+    }
+
+    [, $monitor] = $conns;
+    [, $order, $admin] = createRedeemedPointsRaceOrder();
+
+    raceAdminActions($monitor, $order, $admin, fn () => CourierOrderStatusMapper::sync($order, 'steadfast', 'waiting_approval'), 'steadfast-duplicate');
+
+    expect($order->statusHistories()->where('notes', 'like', 'Steadfast reported%')->count())->toBe(1);
+    expect(CourierDeliveryEvidence::where('order_id', $order->id)->where('raw_status', 'waiting_approval')->count())->toBe(1);
 })->skip(fn () => DB::connection()->getDriverName() !== 'mysql', 'requires a real MySQL connection to exercise InnoDB locking-read semantics');

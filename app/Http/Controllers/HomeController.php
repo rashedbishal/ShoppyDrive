@@ -146,7 +146,6 @@ class HomeController extends Controller
                 'images' => ($product->images ?? collect())->toArray(),
                 'media' => $product->images->toArray(),
                 'videos' => [],
-                'variants' => [],
                 'attributes' => [],
                 'tags' => [],
                 'in_flash_sale' => $product->in_flash_sale ?? false,

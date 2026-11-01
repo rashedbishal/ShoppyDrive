@@ -102,8 +102,8 @@ export default function SmsPatternsIndex({ patterns }: Props) {
         const clientErrors: Record<string, string> = validate(data, {
             name: [required(), maxLength(100)],
             identifier: [required(), maxLength(255)],
-            txn_id_regex: [required(), maxLength(500)],
-            amount_regex: [required(), maxLength(500)],
+            txn_id_regex: [required(), maxLength(255)],
+            amount_regex: [required(), maxLength(255)],
         });
 
         for (const field of ['txn_id_regex', 'amount_regex'] as const) {

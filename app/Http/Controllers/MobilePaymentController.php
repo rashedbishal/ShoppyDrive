@@ -58,6 +58,7 @@ class MobilePaymentController extends Controller
             'token' => $token,
             'amount' => $pending->checkout_data['total'],
             'orderNumber' => $pending->checkout_data['order_number'],
+            'holdsPoints' => $pending->points_reserved > 0,
             'bkashNumber' => Setting::find('bkash_number')?->value,
             'nagadNumber' => Setting::find('nagad_number')?->value,
         ]);
@@ -93,6 +94,10 @@ class MobilePaymentController extends Controller
 
         try {
             $order = DB::transaction(function () use ($pending, $provider, $transactionId, $expectedAmount): Order {
+                // The purchaser's lock comes first so this expiry check can't
+                // pass while a concurrent checkout, holding that lock, already
+                // treats the reservation as expired and spends the same points.
+                $lockedUser = $pending->user_id !== null ? $this->referrals->lockUser($pending->user_id) : null;
                 $freshPending = PendingCheckout::lockForUpdate()->find($pending->id);
 
                 if ($freshPending === null || $freshPending->isExpired()) {
@@ -161,12 +166,10 @@ class MobilePaymentController extends Controller
                     'billing_address' => $data['shipping_address'],
                 ]);
 
-                // Mirror CheckoutController::store()'s COD side effects: lock
-                // the purchaser and commit whichever referral/points outcome
-                // was already baked into checkout_data at checkout time.
-                if ($freshPending->user_id !== null) {
-                    $lockedUser = $this->referrals->lockUser($freshPending->user_id);
-
+                // Mirror CheckoutController::store()'s COD side effects: commit
+                // whichever referral/points outcome was already baked into
+                // checkout_data at checkout time.
+                if ($lockedUser !== null) {
                     if ($order->used_referral_discount) {
                         $this->referrals->markReferralDiscountUsed($order, $lockedUser);
                     }

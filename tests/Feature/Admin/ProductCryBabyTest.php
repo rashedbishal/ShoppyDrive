@@ -3,6 +3,7 @@
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\SubCategory;
+use App\Support\ProductStockToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -82,7 +83,7 @@ test('admin can enable the cry baby easter egg for an individual product', funct
     $otherProduct = Product::factory()->create();
 
     actingAs($this->admin, 'admin')
-        ->put(route('admin.products.update', $product), cryBabyProductPayload($product, ['cry_baby_enabled' => true]))
+        ->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + cryBabyProductPayload($product, ['cry_baby_enabled' => true]))
         ->assertRedirect(route('admin.products.index'));
 
     expect($product->fresh()->cry_baby_enabled)->toBeTrue()
@@ -93,7 +94,7 @@ test('unchecking the cry baby easter egg on an individual product turns it off',
     $product = Product::factory()->create(['cry_baby_enabled' => true]);
 
     actingAs($this->admin, 'admin')
-        ->put(route('admin.products.update', $product), cryBabyProductPayload($product))
+        ->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + cryBabyProductPayload($product))
         ->assertRedirect(route('admin.products.index'));
 
     expect($product->fresh()->cry_baby_enabled)->toBeFalse();

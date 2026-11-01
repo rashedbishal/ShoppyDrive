@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\PaymentMethod;
+use App\Exceptions\CartChangedException;
 use App\Exceptions\CouponUnavailableException;
 use App\Exceptions\InsufficientStockException;
 use App\Http\Requests\PlaceOrderRequest;
@@ -93,7 +94,9 @@ class CheckoutController extends Controller
             'buyNowItem' => $buyNowItem,
             'referralDiscountEligible' => $this->referrals->isEligibleForDiscount($user),
             'referralDiscountPreview' => $user ? $this->referrals->calculateReferralDiscount($user, $subtotal) : 0.0,
-            'pointsBalance' => $user?->points_balance ?? 0,
+            // Spendable points, not the raw balance: anything held by an
+            // unpaid pending checkout can't be redeemed here.
+            'pointsBalance' => $user ? $this->loyalty->availablePoints($user) : 0,
             'pointsValue' => $this->loyalty->pointsValue(),
             'pointsRedeemMaxPercent' => $this->loyalty->redeemMaxPercent(),
         ]);
@@ -159,6 +162,8 @@ class CheckoutController extends Controller
         $cart = $this->cartManager->getCurrentCart($request);
 
         abort_if(! $cart || $cart->items->isEmpty(), 422, 'Your cart is empty.');
+
+        $cart = $this->cartManager->withoutDuplicateRows($cart);
 
         // Eager-load products so free_delivery checks don't N+1
         $cart->load('items.product');
@@ -259,14 +264,18 @@ class CheckoutController extends Controller
         if ($request->payment_method === PaymentMethod::COD->value) {
             try {
                 $order = DB::transaction(function () use ($request, $cart, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $couponDiscount) {
-                    $this->maybeAutoSaveAddress($request, $shippingAddress);
-
                     // Locking the purchaser's row here (rather than before the
                     // transaction) lets us re-check referral/points eligibility
                     // against a guaranteed-fresh row, so two concurrent COD
                     // checkouts by the same user can never both consume the
-                    // one-time referral discount or double-spend points.
+                    // one-time referral discount or double-spend points. It
+                    // must stay the first statement: see
+                    // LoyaltyPointsService::availablePoints().
                     $lockedUser = auth()->check() ? $this->referrals->lockUser(auth()->id()) : null;
+                    $this->cartManager->lockForCheckout($cart);
+
+                    $this->maybeAutoSaveAddress($request, $shippingAddress);
+
                     [$discount, $finalCouponId, $finalCouponCode, $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount] =
                         $this->resolveFinalDiscount($request, $subtotal, $couponId, $couponCode, $couponDiscount, $lockedUser);
 
@@ -345,6 +354,8 @@ class CheckoutController extends Controller
                 return back()->withErrors(['items' => $e->getMessage()])->withInput();
             } catch (CouponUnavailableException $e) {
                 return back()->withErrors(['coupon_code' => $e->getMessage()])->withInput();
+            } catch (CartChangedException $e) {
+                return back()->with('error', $e->getMessage());
             }
 
             Cache::put($resultKey, ['type' => 'cod', 'order_number' => $order->order_number], now()->addHours(self::ORDER_TOKEN_RESULT_TTL_HOURS));
@@ -353,25 +364,35 @@ class CheckoutController extends Controller
         }
 
         // ── Mobile Banking (Bkash / Nagad) ───────────────────────────────────
-        // Not inside a DB transaction/lock (no Order exists yet — this only
-        // stages a PendingCheckout; the real order is created later, under a
-        // lock, in MobilePaymentController::submit()). This is therefore a
-        // best-effort preview: the discount baked in here is what the
-        // customer is told to pay and is NOT recomputed at submit() time, so
-        // it must match exactly. Same residual double-discount risk as the
-        // existing, already-unenforced `Coupon::max_uses`/`per_user_limit`
-        // check below — acceptable, not worth a reservation mechanism.
-        $user = $request->user();
-        [$discount, $finalCouponId, $finalCouponCode, $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount] =
-            $this->resolveFinalDiscount($request, $subtotal, $couponId, $couponCode, $couponDiscount, $user);
-        $total = max(0, $subtotal - $discount + $shippingCost);
+        // No Order exists yet — this only stages a PendingCheckout; the real
+        // order is created later, under a lock, in
+        // MobilePaymentController::submit(). The discount baked in here is
+        // what the customer is told to pay and is NOT recomputed at submit()
+        // time, because by then they have already sent the money. So redeemed
+        // points are reserved now, under the same user lock as the COD path,
+        // rather than rechecked at payment. Coupons and the referral discount
+        // are not reserved and keep their existing residual risk.
+        try {
+            $token = DB::transaction(function () use ($request, $cart, $shippingAddress, $subtotal, $shippingCost, $couponId, $couponCode, $couponDiscount): string {
+                $lockedUser = auth()->check() ? $this->referrals->lockUser(auth()->id()) : null;
+                $this->cartManager->lockForCheckout($cart);
+                [$discount, $finalCouponId, $finalCouponCode, $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount] =
+                    $this->resolveFinalDiscount($request, $subtotal, $couponId, $couponCode, $couponDiscount, $lockedUser);
+                $total = max(0, $subtotal - $discount + $shippingCost);
 
-        return $this->initiateMobileBanking(
-            $request, $cart, $shippingAddress, $subtotal, $shippingCost,
-            $finalCouponId, $finalCouponCode, $discount, $total,
-            $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount,
-            $resultKey,
-        );
+                return $this->initiateMobileBanking(
+                    $request, $cart, $shippingAddress, $subtotal, $shippingCost,
+                    $finalCouponId, $finalCouponCode, $discount, $total,
+                    $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount,
+                );
+            }, 3);
+        } catch (CartChangedException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        Cache::put($resultKey, ['type' => 'mobile_banking', 'pending_token' => $token], now()->addHours(self::ORDER_TOKEN_RESULT_TTL_HOURS));
+
+        return redirect()->route('payment.mobile.show', $token);
     }
 
     /**
@@ -428,8 +449,7 @@ class CheckoutController extends Controller
         bool $usedReferralDiscount,
         int $pointsRedeemed,
         float $pointsDiscountAmount,
-        string $resultKey,
-    ): RedirectResponse {
+    ): string {
         $itemsSnapshot = $cart->items->map(function ($item) {
             $product = $item->product;
 
@@ -462,6 +482,7 @@ class CheckoutController extends Controller
             'token' => $token,
             'user_id' => auth()->id(),
             'cart_id' => $cart->id,
+            'points_reserved' => $pointsRedeemed ?: null,
             'checkout_data' => [
                 'order_number' => $orderNumber,
                 'shipping_address' => $shippingAddress,
@@ -480,9 +501,7 @@ class CheckoutController extends Controller
             'expires_at' => now()->addHours(2),
         ]);
 
-        Cache::put($resultKey, ['type' => 'mobile_banking', 'pending_token' => $token], now()->addHours(self::ORDER_TOKEN_RESULT_TTL_HOURS));
-
-        return redirect()->route('payment.mobile.show', $token);
+        return $token;
     }
 
     // ── Shipping calculation ─────────────────────────────────────────────────

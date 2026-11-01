@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -104,6 +105,10 @@ class DashboardController extends Controller
                 'total_products' => $totalProducts,
                 'low_stock_count' => $lowStockCount,
                 'pending_reviews' => $pendingReviews,
+                // Null hides the alert from admins who can't open the page.
+                'failed_jobs' => Auth::guard('admin')->user()->canAccess('failed_jobs')
+                    ? DB::connection(config('queue.failed.database'))->table(config('queue.failed.table'))->count()
+                    : null,
                 'today_visitors' => $todayVisitors,
                 'yesterday_visitors' => $yesterdayVisitors,
             ],

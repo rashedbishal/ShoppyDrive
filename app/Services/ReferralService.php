@@ -434,11 +434,16 @@ class ReferralService
         }, 3);
     }
 
-    /** Asia/Dhaka calendar start of the current reward-cap period. */
+    /**
+     * Asia/Dhaka calendar start of the current reward-cap period, in the
+     * application timezone: dates reach SQL as plain wall-clock strings, so
+     * it must match how `created_at` is stored.
+     */
     private function periodStart(string $period): CarbonImmutable
     {
         $now = CarbonImmutable::now('Asia/Dhaka');
+        $start = $period === 'week' ? $now->startOfWeek() : $now->startOfMonth();
 
-        return $period === 'week' ? $now->startOfWeek() : $now->startOfMonth();
+        return $start->setTimezone(config('app.timezone'));
     }
 }

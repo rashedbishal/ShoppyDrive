@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\AttributeValueRequest;
 use App\Models\AttributeValue;
 use App\Models\Product;
 use App\Support\CatalogFilterCache;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,7 +18,11 @@ class AttributeValueController extends Controller
 {
     public function store(AttributeValueRequest $request): RedirectResponse
     {
-        AttributeValue::create($request->validated());
+        try {
+            AttributeValue::create($request->validated());
+        } catch (UniqueConstraintViolationException) {
+            return $this->duplicateValueResponse();
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Value added.']);
 
@@ -26,7 +31,11 @@ class AttributeValueController extends Controller
 
     public function update(AttributeValueRequest $request, AttributeValue $attributeValue): RedirectResponse
     {
-        $attributeValue->update($request->validated());
+        try {
+            $attributeValue->update($request->validated());
+        } catch (UniqueConstraintViolationException) {
+            return $this->duplicateValueResponse();
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Value updated.']);
 
@@ -78,5 +87,11 @@ class AttributeValueController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Value deleted.']);
 
         return redirect()->route('admin.attributes.index');
+    }
+
+    /** A simultaneous save can pass validation and still hit the unique index. */
+    private function duplicateValueResponse(): RedirectResponse
+    {
+        return back()->withErrors(['value' => 'This value already exists.'])->withInput();
     }
 }

@@ -32,6 +32,11 @@ class OrderService
     public function createFromPending(PendingCheckout $pending, array $verifiedPayment): Order
     {
         return DB::transaction(function () use ($pending, $verifiedPayment): Order {
+            // The purchaser's lock comes first so the expiry check below can't
+            // pass while a concurrent checkout, holding that lock, already
+            // treats the reservation as expired and spends the same points.
+            $lockedUser = $pending->user_id !== null ? $this->referrals->lockUser($pending->user_id) : null;
+
             // Lock row — prevent race between callback and webhook
             $fresh = PendingCheckout::lockForUpdate()->find($pending->id);
 
@@ -65,12 +70,10 @@ class OrderService
                 'billing_address' => $data['shipping_address'],
             ]);
 
-            // Mirror CheckoutController::store()'s COD side effects: lock the
-            // purchaser and commit whichever referral/points outcome was
-            // already baked into checkout_data at checkout time.
-            if ($fresh->user_id !== null) {
-                $lockedUser = $this->referrals->lockUser($fresh->user_id);
-
+            // Mirror CheckoutController::store()'s COD side effects: commit
+            // whichever referral/points outcome was already baked into
+            // checkout_data at checkout time.
+            if ($lockedUser !== null) {
                 if ($order->used_referral_discount) {
                     $this->referrals->markReferralDiscountUsed($order, $lockedUser);
                 }

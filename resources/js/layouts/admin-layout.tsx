@@ -29,6 +29,7 @@ import {
     Star,
     Tag,
     Trash2,
+    TriangleAlert,
     Truck,
     Undo2,
     UserCog,
@@ -290,6 +291,14 @@ const navSections: NavSection[] = [
                 exact: false,
                 extraMatches: [] as string[],
                 section: 'audit_trail',
+            },
+            {
+                label: 'Failed Jobs',
+                href: '/admin/failed-jobs',
+                icon: TriangleAlert,
+                exact: false,
+                extraMatches: [] as string[],
+                section: 'failed_jobs',
             },
             {
                 label: 'Blocked IPs',

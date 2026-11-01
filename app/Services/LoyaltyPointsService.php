@@ -9,6 +9,7 @@ use App\Enums\PointTransactionType;
 use App\Enums\ReturnStatus;
 use App\Models\Order;
 use App\Models\OrderRefund;
+use App\Models\PendingCheckout;
 use App\Models\ReferralPointTransaction;
 use App\Models\ReturnRequest;
 use App\Models\Review;
@@ -65,10 +66,29 @@ class LoyaltyPointsService
     }
 
     /**
+     * Points a customer can spend right now: their balance minus whatever
+     * their unpaid pending checkouts still hold (see
+     * PendingCheckout::scopeHoldingPointsFor()).
+     *
+     * When this decides a redemption, call it on a user locked by the first
+     * statement of the transaction. That lock serializes every reservation
+     * and debit for this user, and because a locking read does not start
+     * InnoDB's REPEATABLE READ snapshot, this plain read then sees everything
+     * committed before the lock was granted. A plain read earlier in the
+     * transaction would pin an older snapshot and could miss a reservation.
+     */
+    public function availablePoints(User $user): int
+    {
+        $reserved = (int) PendingCheckout::query()->holdingPointsFor($user->id)->sum('points_reserved');
+
+        return max(0, $user->points_balance - $reserved);
+    }
+
+    /**
      * The most points a customer could apply at checkout right now, capped
-     * by both their balance and the configured max-percent-of-subtotal rule.
-     * Used both to compute the frontend's slider max and to clamp whatever
-     * the client actually requested server-side.
+     * by both their available points and the configured
+     * max-percent-of-subtotal rule.
+     * Clamps whatever the client actually requested server-side.
      */
     public function maxRedeemablePoints(User $user, float $subtotal): int
     {
@@ -81,14 +101,14 @@ class LoyaltyPointsService
         $maxAmount = $subtotal * ($this->redeemMaxPercent() / 100);
         $maxByPercent = (int) floor($maxAmount / $pointsValue);
 
-        return max(0, min($user->points_balance, $maxByPercent));
+        return max(0, min($this->availablePoints($user), $maxByPercent));
     }
 
     /**
      * Currency value of redeeming N points at today's conversion rate,
-     * clamped to the balance and the max-percent-of-subtotal rule. Pure
-     * calculation — does not touch the database. Call on the LOCKED user so
-     * the balance check reflects any concurrent transaction.
+     * clamped to the available points and the max-percent-of-subtotal rule. Pure
+     * calculation — writes nothing. Call on the LOCKED user so the check
+     * reflects any concurrent transaction.
      */
     public function redeemPoints(User $lockedUser, int $points, float $subtotal): float
     {

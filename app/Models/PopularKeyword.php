@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Concerns\Auditable;
 use App\Concerns\FlushesLayoutCache;
 use App\Support\LayoutCache;
 use Illuminate\Database\Eloquent\Model;
 
 class PopularKeyword extends Model
 {
-    use FlushesLayoutCache;
+    use Auditable, FlushesLayoutCache;
 
     /** LayoutCache entries built from this table (see FlushesLayoutCache). */
     public const LAYOUT_CACHE_KEYS = [LayoutCache::POPULAR_KEYWORDS];
@@ -20,5 +21,10 @@ class PopularKeyword extends Model
     protected function casts(): array
     {
         return ['is_active' => 'boolean'];
+    }
+
+    protected function auditLabel(): string
+    {
+        return $this->keyword;
     }
 }

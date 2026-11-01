@@ -28,6 +28,7 @@ test('every customer-facing path meant to skip SSR actually matches a withoutSsr
         '/email/verify/1/somehash',
         '/user/confirm-password',
         '/two-factor-challenge',
+        '/wishlist',
         '/account',
         '/account/orders',
         '/settings',

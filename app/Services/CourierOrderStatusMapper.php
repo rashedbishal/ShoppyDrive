@@ -112,13 +112,28 @@ class CourierOrderStatusMapper
     private const TERMINAL_STATUSES = [OrderStatus::CANCELLED, OrderStatus::REFUNDED, OrderStatus::DELIVERED];
 
     /**
+     * MED-02: the active statuses in lifecycle order. Steadfast pushes
+     * webhooks that can arrive late, and every status it reports moves
+     * forward, so a report mapping to an earlier status here is stale. It
+     * must not act: returning a shipped order to pending would let the
+     * customer cancel it, restoring stock while the parcel is moving.
+     *
+     * Pathao is deliberately excluded. It is polled, so each report is its
+     * current state rather than a delayed event, and it can genuinely step
+     * back (a shipped parcel going `on_hold`).
+     *
+     * @var list<OrderStatus>
+     */
+    private const FORWARD_ONLY_STATUSES = [OrderStatus::PENDING, OrderStatus::PROCESSING, OrderStatus::SHIPPED];
+
+    /**
      * Record a provider's raw status on the order and, when it maps to a
      * different lifecycle status, advance the order's status to match —
      * unless the order is already in a terminal status (see
-     * TERMINAL_STATUSES), in which case only the raw tracking field is
-     * recorded (so admins can still see what the courier reported) and a
-     * history note is written, but the order's own status/payment_status
-     * is never touched. No-ops (and writes nothing at all) when the raw
+     * TERMINAL_STATUSES) or the report is stale (see FORWARD_ONLY_STATUSES),
+     * in which case only the raw tracking field is recorded (so admins can
+     * still see what the courier reported) and a history note is written,
+     * but the order's own status/payment_status is never touched. No-ops (and writes nothing at all) when the raw
      * status is unchanged from what's already stored, so repeated
      * polls/webhook retries don't create duplicate history entries.
      */
@@ -156,7 +171,8 @@ class CourierOrderStatusMapper
             $mapped = $provider === 'pathao' ? self::forPathao($rawStatus) : self::forSteadfast($rawStatus);
             $statusChanged = $mapped !== null
                 && $mapped !== $lockedOrder->status
-                && ! in_array($lockedOrder->status, self::TERMINAL_STATUSES, true);
+                && ! in_array($lockedOrder->status, self::TERMINAL_STATUSES, true)
+                && ! ($provider === 'steadfast' && self::movesBackward($lockedOrder->status, $mapped));
 
             $updates = [$statusField => $rawStatus];
 
@@ -171,14 +187,13 @@ class CourierOrderStatusMapper
 
             $lockedOrder->update($updates);
 
-            $ignoredAsTerminal = ! $statusChanged
+            $ignored = ! $statusChanged
                 && $mapped !== null
-                && $mapped !== $lockedOrder->status
-                && in_array($lockedOrder->status, self::TERMINAL_STATUSES, true);
+                && $mapped !== $lockedOrder->status;
 
             $note = ucfirst($provider).' reported "'.self::label($rawStatus).'"'.match (true) {
                 $statusChanged => ' — order status updated to '.$mapped->value.'.',
-                $ignoredAsTerminal => " — order is already {$lockedOrder->status->value}; status left unchanged.",
+                $ignored => " — order is already {$lockedOrder->status->value}; status left unchanged.",
                 default => '.',
             };
 
@@ -223,6 +238,14 @@ class CourierOrderStatusMapper
         if ($found) {
             $order->refresh();
         }
+    }
+
+    private static function movesBackward(OrderStatus $current, OrderStatus $reported): bool
+    {
+        $currentPosition = array_search($current, self::FORWARD_ONLY_STATUSES, true);
+        $reportedPosition = array_search($reported, self::FORWARD_ONLY_STATUSES, true);
+
+        return $currentPosition !== false && $reportedPosition !== false && $reportedPosition < $currentPosition;
     }
 
     /**

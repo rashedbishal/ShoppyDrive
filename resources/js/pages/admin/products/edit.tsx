@@ -71,6 +71,7 @@ type Product = {
 
 type Props = {
     product: Product;
+    stockToken: string;
     categories: { id: number; name: string }[];
     subCategories: { id: number; name: string; category_id: number }[];
     brands: { id: number; name: string }[];
@@ -111,6 +112,7 @@ function mediaTagFor(
 
 export default function ProductEdit({
     product,
+    stockToken,
     categories,
     subCategories,
     brands,
@@ -119,6 +121,9 @@ export default function ProductEdit({
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
             _method: 'PUT',
+            // Kept from when the form first loaded, even after a failed save:
+            // it proves the stock shown here is still current.
+            stock_token: stockToken,
             name: product.name,
             slug: product.slug,
             sku: product.sku ?? '',

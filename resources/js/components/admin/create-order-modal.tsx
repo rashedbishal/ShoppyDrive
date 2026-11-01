@@ -1,4 +1,4 @@
-import { router, useForm, usePage } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import {
     Package,
     Search,
@@ -28,7 +28,6 @@ import {
 } from '@/lib/bangladesh-geography';
 import { formatCurrency } from '@/lib/utils';
 import { email, maxLength, pattern, required, validate } from '@/lib/validate';
-import type { SharedPageProps } from '@/types';
 
 type SearchVariant = {
     id: number;
@@ -53,6 +52,9 @@ type OrderLine = {
     product_name: string;
     sku: string | null;
     price: number;
+    calculated_price: number | null;
+    price_touched: boolean;
+    price_override_reason: string;
     quantity: number;
     variant_attributes: Record<string, string> | null;
 };
@@ -78,6 +80,10 @@ type Props = {
     onOpenChange: (open: boolean) => void;
 };
 
+function differs(entered: number, calculated: number): boolean {
+    return Math.round(entered * 100) !== Math.round(calculated * 100);
+}
+
 function variantLabel(attributes: Record<string, string> | null): string {
     if (!attributes) {
         return '';
@@ -100,16 +106,27 @@ const emptyFormData = {
     postal_code: '',
     payment_method: 'cod' as 'cod' | 'mobile_banking',
     shipping_cost: 0,
+    shipping_override_reason: '',
     discount: 0,
+    discount_override_reason: '',
     notes: '',
 };
 
 export function CreateOrderModal({ open, onOpenChange }: Props) {
-    const { settings } = usePage<SharedPageProps>().props;
     const form = useForm(emptyFormData);
     const [submitting, setSubmitting] = useState(false);
     const [lines, setLines] = useState<OrderLine[]>([]);
     const [shippingTouched, setShippingTouched] = useState(false);
+    const [calculatedShipping, setCalculatedShipping] = useState<number | null>(
+        null,
+    );
+    const formErrors = form.errors as Record<string, string | undefined>;
+
+    const shippingOverridden =
+        lines.length > 0 &&
+        calculatedShipping !== null &&
+        differs(Number(form.data.shipping_cost) || 0, calculatedShipping);
+    const discountOverridden = (Number(form.data.discount) || 0) > 0;
 
     const isDhaka = form.data.state === 'Dhaka';
     const subtotal = lines.reduce(
@@ -123,39 +140,82 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
             (Number(form.data.shipping_cost) || 0),
     );
 
-    // ── Auto-calculated shipping, same formula the storefront uses ───────────
+    // ── Calculated pricing comes from the server, which re-checks on submit ──
+    const pricedLines = JSON.stringify(
+        lines.map((line) => [line.product_id, line.variant_id, line.quantity]),
+    );
+
     useEffect(() => {
-        if (shippingTouched) {
+        if (lines.length === 0) {
             return;
         }
 
-        const threshold = settings.free_delivery_threshold ?? 0;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(async () => {
+            try {
+                const res = await fetch(
+                    route('admin.orders.pricingPreview', {
+                        state: form.data.state,
+                        city: form.data.city,
+                        items: lines.map((line) => ({
+                            product_id: line.product_id,
+                            variant_id: line.variant_id,
+                            quantity: line.quantity,
+                        })),
+                    }),
+                    {
+                        signal: controller.signal,
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    },
+                );
 
-        if (threshold > 0 && subtotal >= threshold) {
-            form.setData('shipping_cost', 0);
+                if (!res.ok) {
+                    return;
+                }
 
-            return;
-        }
+                const pricing = (await res.json()) as {
+                    prices: number[];
+                    shipping_cost: number;
+                };
 
-        if (!form.data.state || !form.data.city) {
-            return;
-        }
+                setLines((prev) =>
+                    prev.map((line, index) => ({
+                        ...line,
+                        calculated_price: pricing.prices[index] ?? null,
+                        price: line.price_touched
+                            ? line.price
+                            : (pricing.prices[index] ?? line.price),
+                    })),
+                );
 
-        const rate =
-            form.data.state === 'Dhaka' &&
-            form.data.city === 'Inside Dhaka City Corporation'
-                ? (settings.shipping_rate_inside_dhaka ?? 60)
-                : (settings.shipping_rate_outside_dhaka ?? 120);
+                if (form.data.state && form.data.city) {
+                    setCalculatedShipping(pricing.shipping_cost);
 
-        form.setData('shipping_cost', rate);
+                    if (!shippingTouched) {
+                        form.setData('shipping_cost', pricing.shipping_cost);
+                    }
+                }
+            } catch {
+                // aborted or network error
+            }
+        }, 300);
+
+        return () => {
+            clearTimeout(timeoutId);
+            controller.abort();
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [form.data.state, form.data.city, subtotal, shippingTouched]);
+    }, [pricedLines, form.data.state, form.data.city, shippingTouched]);
 
     const resetAll = () => {
         form.reset();
         form.clearErrors();
         setLines([]);
         setShippingTouched(false);
+        setCalculatedShipping(null);
         setSelectedCustomer(null);
         setCustomerQuery('');
         setCustomerResults([]);
@@ -349,6 +409,9 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                     product_name: product.name,
                     sku: variant?.sku ?? product.sku,
                     price: variant?.price ?? product.price,
+                    calculated_price: null,
+                    price_touched: false,
+                    price_override_reason: '',
                     quantity: 1,
                     variant_attributes: variant?.attributes ?? null,
                 },
@@ -425,6 +488,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                     variant_id: line.variant_id,
                     quantity: line.quantity,
                     price: line.price,
+                    price_override_reason: line.price_override_reason,
                 })),
             },
             {
@@ -832,10 +896,50 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                             parseFloat(
                                                                 e.target.value,
                                                             ) || 0,
+                                                        price_touched: true,
                                                     })
                                                 }
                                                 className="mt-1 h-7 w-24 rounded border border-slate-200 px-1.5 text-xs focus:border-[#c8102e] focus:outline-none"
                                             />
+                                            {((line.calculated_price !== null &&
+                                                differs(
+                                                    line.price,
+                                                    line.calculated_price,
+                                                )) ||
+                                                formErrors[
+                                                    `items.${index}.price_override_reason`
+                                                ]) && (
+                                                <div className="mt-1.5 space-y-1">
+                                                    {line.calculated_price !==
+                                                        null && (
+                                                        <p className="text-xs text-slate-500">
+                                                            Calculated price:{' '}
+                                                            {formatCurrency(
+                                                                line.calculated_price,
+                                                            )}
+                                                        </p>
+                                                    )}
+                                                    <Input
+                                                        aria-label="Reason for changing the price"
+                                                        placeholder="Reason for changing the price"
+                                                        value={
+                                                            line.price_override_reason
+                                                        }
+                                                        onChange={(e) =>
+                                                            updateLine(index, {
+                                                                price_override_reason:
+                                                                    e.target
+                                                                        .value,
+                                                            })
+                                                        }
+                                                        error={
+                                                            formErrors[
+                                                                `items.${index}.price_override_reason`
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                         <QuantityStepper
                                             value={line.quantity}
@@ -879,6 +983,25 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                 }}
                                 error={form.errors.shipping_cost}
                             />
+                            {(shippingOverridden ||
+                                form.errors.shipping_override_reason) && (
+                                <Input
+                                    aria-label="Reason for changing shipping"
+                                    placeholder={
+                                        calculatedShipping === null
+                                            ? 'Reason for changing shipping'
+                                            : `Reason (calculated: ${formatCurrency(calculatedShipping)})`
+                                    }
+                                    value={form.data.shipping_override_reason}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'shipping_override_reason',
+                                            e.target.value,
+                                        )
+                                    }
+                                    error={form.errors.shipping_override_reason}
+                                />
+                            )}
                         </div>
                         <div className="space-y-1.5">
                             <Label htmlFor="co-discount">Discount (৳)</Label>
@@ -896,6 +1019,21 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                 }
                                 error={form.errors.discount}
                             />
+                            {(discountOverridden ||
+                                form.errors.discount_override_reason) && (
+                                <Input
+                                    aria-label="Reason for the discount"
+                                    placeholder="Reason for the discount"
+                                    value={form.data.discount_override_reason}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'discount_override_reason',
+                                            e.target.value,
+                                        )
+                                    }
+                                    error={form.errors.discount_override_reason}
+                                />
+                            )}
                         </div>
                     </div>
 

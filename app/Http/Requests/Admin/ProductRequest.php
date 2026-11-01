@@ -23,6 +23,7 @@ class ProductRequest extends FormRequest
         $hasVariants = $this->boolean('has_color_variant') || $this->boolean('has_size_variant');
 
         return [
+            'stock_token' => [$productId !== null ? 'required' : 'prohibited', 'string'],
             'name' => ['required', 'string', 'max:255'],
             'slug' => [
                 'required',

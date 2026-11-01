@@ -207,6 +207,7 @@ export interface Product extends Timestamped, SoftDeletable {
     formatted_compare_price?: string | null;
     discount_percentage?: number | null;
     stock_quantity: number;
+    available_stock?: number;
     low_stock_threshold: number;
     is_active: boolean;
     is_featured: boolean;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\SubCategory;
+use App\Support\ProductStockToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\actingAs;
@@ -48,7 +49,7 @@ test('updating a product preserves legitimate formatting in description', functi
         'sub_category_id' => $this->subCategory->id,
     ]);
 
-    $response = $this->put(route('admin.products.update', $product), [
+    $response = $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + [
         'name' => $product->name,
         'slug' => $product->slug,
         'category_id' => $this->category->id,

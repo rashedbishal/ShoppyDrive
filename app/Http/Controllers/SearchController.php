@@ -52,7 +52,7 @@ class SearchController extends Controller
             ->when($brandSlugs !== [], fn ($q) => $q->whereHas('brand', fn ($b) => $b->whereIn('slug', $brandSlugs)))
             ->when($minPrice !== null, fn ($q) => $q->where('price', '>=', $minPrice))
             ->when($maxPrice !== null, fn ($q) => $q->where('price', '<=', $maxPrice))
-            ->when($request->boolean('in_stock'), fn ($q) => $q->where('stock_quantity', '>', 0))
+            ->when($request->boolean('in_stock'), fn ($q) => $q->inStock())
             ->when($minimumRating !== null && $minimumRating > 0, fn ($q) => $q->whereIn(
                 'products.id',
                 Review::query()
