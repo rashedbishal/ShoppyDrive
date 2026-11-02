@@ -2,6 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Mandatory ShoppyDrive Session Handoff
+
+Before doing anything on ShoppyDrive, read these files completely, in this order:
+
+1. `CLAUDE.md`
+2. `docs/SHAPPYDRIVE_PROJECT_HANDOFF_2026-11-03.md` — current state, local commits, test results, next task
+3. `docs/SHAPPYDRIVE_AUDIT_REMEDIATION_TRACKER.md` — **operational status source of truth**
+4. `docs/SHOPPYDRIVE_FULL_SYSTEM_FORENSIC_AUDIT_REPORT_2026-11-02.md` — **original audit source of truth**
+5. `docs/SHAPPYDRIVE_PRODUCTION_READONLY_CHECKS.sql` — verified read-only production checks
+
+Rules:
+- Never assume previous conversation memory exists. Verify Git state and the tracker yourself.
+- Never repeat completed work without new evidence.
+- Never push or deploy without explicit approval. Pushing `main` auto-deploys to Hostinger and runs production migrations.
+- Never reset, stash, discard or overwrite user changes.
+- Preserve all finding IDs and commit history.
+- Never run production SQL or migrations. The user runs the read-only checks, and only with their approval.
+- Ask before modifying production configuration or `.github/workflows/deploy.yml`.
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
