@@ -87,20 +87,20 @@ export default function HeroSlidesIndex({ slides }: Props) {
                                             </div>
                                         )}
                                     </div>
-                                    <CardContent className="flex flex-1 flex-col justify-between p-6">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-[10px] font-bold tracking-widest text-primary uppercase">
+                                    <CardContent className="flex min-w-0 flex-1 flex-col justify-between p-6">
+                                        <div className="min-w-0 space-y-2">
+                                            <div className="flex min-w-0 items-center gap-2">
+                                                <p className="min-w-0 truncate text-[10px] font-bold tracking-widest text-primary uppercase">
                                                     {slide.eyebrow}
                                                 </p>
-                                                <span className="text-slate-300">
+                                                <span className="shrink-0 text-slate-300">
                                                     ·
                                                 </span>
-                                                <p className="text-xs text-slate-500">
+                                                <p className="shrink-0 text-xs whitespace-nowrap text-slate-500">
                                                     Order: {slide.sort_order}
                                                 </p>
                                             </div>
-                                            <h3 className="text-lg font-bold text-slate-800">
+                                            <h3 className="truncate text-lg font-bold text-slate-800">
                                                 {slide.title}
                                             </h3>
                                             <p className="line-clamp-2 text-sm text-slate-500">

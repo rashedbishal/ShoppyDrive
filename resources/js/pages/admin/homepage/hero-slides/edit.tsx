@@ -33,8 +33,10 @@ export default function HeroSlideEdit({ slide }: Props) {
         clearErrors();
 
         const clientErrors = validate(data, {
-            title: [required(), maxLength(255)],
-            eyebrow: [maxLength(255)],
+            title: [required(), maxLength(100)],
+            eyebrow: [maxLength(50)],
+            description: [maxLength(200)],
+            primary_cta_label: [maxLength(40)],
             image: [required('The slide image or video is required.')],
         });
 
@@ -119,6 +121,8 @@ export default function HeroSlideEdit({ slide }: Props) {
                                         }}
                                         placeholder="e.g. New Arrivals"
                                         error={errors.eyebrow}
+                                        maxLength={50}
+                                        hint={`${data.eyebrow.length}/50`}
                                     />
                                     <Input
                                         label="Title"
@@ -130,6 +134,8 @@ export default function HeroSlideEdit({ slide }: Props) {
                                         placeholder="Main headline"
                                         error={errors.title}
                                         required
+                                        maxLength={100}
+                                        hint={`${data.title.length}/100`}
                                     />
                                 </div>
                                 <Textarea
@@ -142,6 +148,8 @@ export default function HeroSlideEdit({ slide }: Props) {
                                     placeholder="Supporting text"
                                     error={errors.description}
                                     rows={4}
+                                    maxLength={200}
+                                    hint={`${data.description.length}/200`}
                                 />
                                 <div className="space-y-2">
                                     <p className="text-sm font-medium text-text-primary">
@@ -187,6 +195,8 @@ export default function HeroSlideEdit({ slide }: Props) {
                                             )
                                         }
                                         placeholder="e.g. Shop Now"
+                                        error={errors.primary_cta_label}
+                                        maxLength={40}
                                     />
                                     <Input
                                         label="Link"
@@ -198,6 +208,7 @@ export default function HeroSlideEdit({ slide }: Props) {
                                             )
                                         }
                                         placeholder="/category/..."
+                                        maxLength={255}
                                     />
                                 </div>
                             </CardContent>
@@ -234,6 +245,7 @@ export default function HeroSlideEdit({ slide }: Props) {
                                                     )
                                                 }
                                                 placeholder="Label (e.g. Delivery)"
+                                                maxLength={30}
                                             />
                                         </div>
                                         <div className="flex-1">
@@ -247,6 +259,7 @@ export default function HeroSlideEdit({ slide }: Props) {
                                                     )
                                                 }
                                                 placeholder="Value (e.g. 24h)"
+                                                maxLength={30}
                                             />
                                         </div>
                                         <Button

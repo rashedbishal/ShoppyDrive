@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "ClaudeInChromeDomain(192.168.0.113:8000)"
+      "ClaudeInChromeDomain(192.168.0.113:8000)",
+      "Bash(xargs -I{} cat {})",
+      "Bash(php -r ' *)"
     ]
   }
 }

@@ -92,6 +92,35 @@ test('admin can create a hero slide with a video upload', function () {
     expect($slide->image)->toEndWith('.mp4');
 });
 
+test('creating a hero slide rejects fields past their character limits', function () {
+    Storage::fake('public');
+
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.hero-slides.store'), [
+        'title' => str_repeat('a', 101),
+        'eyebrow' => str_repeat('a', 51),
+        'description' => str_repeat('a', 201),
+        'image' => UploadedFile::fake()->image('hero.jpg', 1920, 1080),
+        'primary_cta_label' => str_repeat('a', 41),
+        'primary_cta_href' => '/category/x',
+        'is_active' => '1',
+        'sort_order' => '1',
+        'stats' => [
+            ['label' => str_repeat('a', 31), 'value' => str_repeat('a', 31)],
+        ],
+    ]);
+
+    $response->assertInvalid([
+        'title',
+        'eyebrow',
+        'description',
+        'primary_cta_label',
+        'stats.0.label',
+        'stats.0.value',
+    ]);
+});
+
 test('uploading a hero slide file larger than 15MB is rejected', function () {
     Storage::fake('public');
 
