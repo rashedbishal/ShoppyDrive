@@ -35,12 +35,24 @@ export default function HeroSlideEdit({ slide }: Props) {
         e.preventDefault();
         clearErrors();
 
-        const clientErrors = validate(data, {
-            title: [required(), maxLength(100)],
-            eyebrow: [maxLength(50)],
-            description: [maxLength(200)],
-            primary_cta_label: [maxLength(40)],
-            image: [required('The slide image or video is required.')],
+        const clientErrors: Record<string, string> = {
+            ...validate(data, {
+                title: [required(), maxLength(100)],
+                eyebrow: [maxLength(50)],
+                description: [maxLength(200)],
+                primary_cta_label: [maxLength(40)],
+                image: [required('The slide image or video is required.')],
+            }),
+        };
+
+        data.stats.forEach((stat, index) => {
+            if (!stat.label.trim()) {
+                clientErrors[`stats.${index}.label`] = 'Label is required.';
+            }
+
+            if (!stat.value.trim()) {
+                clientErrors[`stats.${index}.value`] = 'Value is required.';
+            }
         });
 
         if (Object.keys(clientErrors).length > 0) {
@@ -72,6 +84,10 @@ export default function HeroSlideEdit({ slide }: Props) {
             'stats',
             data.stats.filter((_, i) => i !== index),
         );
+        // Indices shift after removal, so stale per-index stat errors would
+        // no longer point at the right row — clear them all rather than risk
+        // showing an error next to the wrong stat.
+        clearErrors();
     };
 
     const updateStat = (
@@ -82,6 +98,7 @@ export default function HeroSlideEdit({ slide }: Props) {
         const newStats = [...data.stats];
         newStats[index][key] = value;
         setData('stats', newStats);
+        clearErrors(`stats.${index}.${key}`);
     };
 
     return (
@@ -170,10 +187,7 @@ export default function HeroSlideEdit({ slide }: Props) {
                                     <MediaUpload
                                         value={data.image}
                                         onChange={(file) => {
-                                            setData(
-                                                'image',
-                                                file ?? slide.image,
-                                            );
+                                            setData('image', file);
                                             clearErrors('image');
                                         }}
                                         error={errors.image}
@@ -240,7 +254,7 @@ export default function HeroSlideEdit({ slide }: Props) {
                                 {data.stats.map((stat, index) => (
                                     <div
                                         key={index}
-                                        className="flex items-end gap-2"
+                                        className="flex items-start gap-2"
                                     >
                                         <div className="flex-1">
                                             <Input
@@ -254,6 +268,11 @@ export default function HeroSlideEdit({ slide }: Props) {
                                                 }
                                                 placeholder="Label (e.g. Delivery)"
                                                 maxLength={30}
+                                                error={
+                                                    errors[
+                                                        `stats.${index}.label`
+                                                    ]
+                                                }
                                             />
                                         </div>
                                         <div className="flex-1">
@@ -268,6 +287,11 @@ export default function HeroSlideEdit({ slide }: Props) {
                                                 }
                                                 placeholder="Value (e.g. 24h)"
                                                 maxLength={30}
+                                                error={
+                                                    errors[
+                                                        `stats.${index}.value`
+                                                    ]
+                                                }
                                             />
                                         </div>
                                         <Button
