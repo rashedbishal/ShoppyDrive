@@ -10,6 +10,50 @@ Source of truth for the forensic audit findings (CRIT/HIGH/MED/LOW IDs). `docs/M
 
 **Priority order:** see "Remaining priority order". LOW findings only when justified.
 
+## FSA-09 notes
+
+**Status: COMMITTED (local only), 2026-11-03, in "fix(auth): prevent social login account takeover (FSA-09)". Not pushed, not deployed.**
+
+- **Root cause:** `SocialAuthController::callback()` linked a social identity to any existing `User` with the same email. The only refusal (SEC-01) was Google's explicit `email_verified === false`. A missing claim, and every Facebook login, linked. The local account's own `email_verified_at` was never consulted, and the password and sessions of whoever created that account survived. Two related paths:
+  - New Facebook accounts were created `email_verified_at = now()` on Facebook's word.
+  - `connectToCurrentUser()` let an unverified account attach providers (`settings/connections` requires only `auth`). A pre-registrant could plant a Facebook link that outlived the real owner verifying the address.
+- **Provider guarantees, as integrated:**
+  - Google (Socialite `GoogleProvider`, OpenID userinfo) returns a boolean `email_verified` claim in the raw payload.
+  - Socialite's `FacebookProvider` requests `name, email, gender, verified, link, picture`. `verified` is a deprecated account-level flag, not an email-verification claim, and nothing in the integration proves email ownership.
+- **Fix (`app/Http/Controllers/Auth/SocialAuthController.php`):**
+  - `providerVerifiedEmail()`: true only for Google with `email_verified === true`. This **supersedes SEC-01's "missing claim still links" and "Facebook unaffected" decisions**; the two tests encoding them were updated, not deleted.
+  - Existing account matched by email:
+    - If the provider doesn't vouch, nothing is linked. Google keeps its existing message. Facebook gets "log in with your password or Google, then connect Facebook from your account settings".
+    - If it vouches and the account is verified, it links as before; password, sessions and `has_password` are untouched.
+    - If it vouches and the account is **unverified**, `claimUnverifiedAccount()` runs under a row lock in the existing transaction: email marked verified; password replaced with a random one and `has_password=false`, the same state as social-created accounts, so the owner can set one in Settings › Connections; `remember_token` cycled; social links attached while unverified deleted; pending OTP cleared; `referred_by_id` cleared only if the account has no orders, trashed ones included, which keeps `ReferralService`'s write-once assumption since an unverified account can't check out.
+    - **Session invalidation:** every customer route has `auth.session` (Laravel's `AuthenticateSession`), which compares the session's stored password hash and the remember cookie's hash against the current password. Replacing the password logs out every other session and remember-me login on its next request. No file-session enumeration is needed (the session driver is `file`).
+  - New account: verified only if the provider vouches. Otherwise it's created unverified, the 6-digit code is sent (`sendEmailVerificationNotification()`), and the user is redirected to `verification.notice`, the same destination as `LoginResponse`/`RegisterResponse`. The registration bonus and referral capture are unchanged.
+  - Already-linked identities (`social_accounts` match) log in exactly as before.
+  - `connectToCurrentUser()` refuses an unverified account: "Verify your email address before connecting …".
+- **Files:** `app/Http/Controllers/Auth/SocialAuthController.php`, `tests/Feature/Auth/SocialLoginTest.php` (2 tests rewritten for the new rule, 1 fixture given `email_verified: true`), `tests/Feature/Auth/SocialAccountClaimTest.php` (new).
+- **Tests (in-memory SQLite):**
+  - `SocialAccountClaimTest` 9/9:
+    - A verified account links to verified Google and keeps its password.
+    - A pre-registered unverified account is claimed: verified, password changed, `has_password=false`, remember token changed, referrer cleared, the planted Facebook link removed, Google linked. The registrant's real session, captured before the claim and replayed after it, is logged out, and the old password is refused at `/login`.
+    - Unverified account plus Google claim false or missing is not linked and untouched.
+    - Facebook never links or claims an unverified account.
+    - A new verified Google account is created verified.
+    - A new Facebook account is unverified, gets the code mail and is sent to `verification.notice`.
+    - An already-linked Facebook identity still logs in.
+    - An unverified account can't connect a provider.
+  - A scratch control test (outside the repo) confirmed the same session replay stays logged in when no claim happens, so the logout is caused by the password rotation.
+  - `SocialLoginTest` 12/12.
+  - Auth, Settings, referral, loyalty, connections and anonymization sweep: 165 tests, 153 passed, 12 skipped (MySQL-only).
+  - Full suite: 1714 tests, 1651 passed, 63 skipped, 0 failed. Pint passed. No MySQL race file touches social auth. MySQL tests were not run.
+- **Behaviour changes users will notice:**
+  - Signing in with Facebook for an email that already has an account now requires logging in another way first and connecting Facebook in Settings.
+  - New Facebook sign-ups enter a 6-digit email code once.
+  - A Google sign-in that claims an unverified account leaves it with no password until the owner sets one.
+- **Remaining concerns:**
+  - **Existing data:** Facebook-created accounts made before this fix were marked verified on Facebook's word. They now count as verified, and a later verified-Google login would link to them. Finding these needs a production query (users with a Facebook `social_accounts` row created at registration and no password, `has_password = 0`). Their handling is a separate decision.
+  - Social links already planted on accounts before this fix can't be told apart from legitimate ones.
+  - The claim does not send `WelcomeMail`; that is only sent by the code-verification flow.
+
 ## FSA-13 notes
 
 **Status: COMMITTED (local only), 2026-11-03, in "fix(newsletter): queue newsletter delivery in subscriber chunks (FSA-13)". Not pushed, not deployed.**

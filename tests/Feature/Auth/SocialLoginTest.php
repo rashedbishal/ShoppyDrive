@@ -53,6 +53,8 @@ test('logging in via a social provider links to an existing manually registered 
         'id' => 'google-456',
         'name' => 'Existing User',
         'email' => 'existing@example.com',
+        // FSA-09: linking by email needs Google's verified-email claim.
+        'email_verified' => true,
     ]));
 
     $response = $this->get('/auth/google/callback');
@@ -106,7 +108,9 @@ test('Google login with an explicitly unverified email claim is blocked from lin
     expect($user->refresh()->password)->toBe($originalPasswordHash);
 });
 
-test('Google login with the email_verified claim missing preserves existing auto-link behavior', function () {
+// FSA-09 replaced SEC-01's "a missing claim keeps auto-linking" rule: only an
+// explicit `email_verified: true` proves the address.
+test('Google login with the email_verified claim missing does not link an existing account', function () {
     $user = User::factory()->create(['email' => 'existing@example.com']);
 
     Socialite::fake('google', fakeSocialiteUser([
@@ -115,28 +119,32 @@ test('Google login with the email_verified claim missing preserves existing auto
         'email' => 'existing@example.com',
     ]));
 
-    $response = $this->get('/auth/google/callback');
+    $this->get('/auth/google/callback')
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors('email');
 
-    $response->assertRedirect();
-    $this->assertAuthenticatedAs($user);
-    expect($user->socialAccounts()->where('provider', 'google')->exists())->toBeTrue();
+    $this->assertGuest();
+    expect($user->socialAccounts()->exists())->toBeFalse();
 });
 
-test('Facebook login matching an existing account is unaffected by the Google-only verification guard', function () {
+// FSA-09 replaced SEC-01's "Facebook is unaffected" rule: Facebook gives no
+// email-verification claim, so it never links an existing account by email.
+test('Facebook login matching an existing account does not link it by email', function () {
     $user = User::factory()->create(['email' => 'existing@example.com']);
 
     Socialite::fake('facebook', fakeSocialiteUser([
         'id' => 'facebook-1',
         'name' => 'Existing User',
         'email' => 'existing@example.com',
-        'verified' => false,
+        'verified' => true,
     ]));
 
-    $response = $this->get('/auth/facebook/callback');
+    $this->get('/auth/facebook/callback')
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors(['email' => 'An account with this email already exists. Please log in with your password or Google, then connect Facebook from your account settings.']);
 
-    $response->assertRedirect();
-    $this->assertAuthenticatedAs($user);
-    expect($user->socialAccounts()->where('provider', 'facebook')->exists())->toBeTrue();
+    $this->assertGuest();
+    expect($user->socialAccounts()->exists())->toBeFalse();
 });
 
 test('a previously linked Google identity still logs in even if the current response reports an unverified email', function () {

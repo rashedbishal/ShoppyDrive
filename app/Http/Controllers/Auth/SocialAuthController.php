@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Services\LoyaltyPointsService;
@@ -97,27 +98,28 @@ class SocialAuthController extends Controller
                     return ['status' => 'anonymized', 'user' => null];
                 }
 
-                // An existing account matched purely by email, with no prior
-                // link to this exact provider identity — the email itself is
-                // the only thing being trusted here (SEC-01). Google exposes
-                // an explicit `email_verified` claim in its raw payload (not
-                // surfaced by any SocialiteUser contract method, so it has to
-                // be read from getRaw() directly); when Google itself says
-                // the email is unverified, that is not enough proof of
-                // ownership to auto-link an existing account. Facebook
-                // exposes no equivalent claim at all, so this check is
-                // deliberately Google-only. A missing/null claim (every
-                // provider other than Google, and Google responses that
-                // simply don't include it) is never treated as proof either
-                // way — only an explicit `false` blocks the link.
-                if ($provider === 'google' && ($socialUser->getRaw()['email_verified'] ?? null) === false) {
-                    return ['status' => 'unverified_email', 'user' => null];
+                // FSA-09: an existing account matched purely by email is
+                // linked only when the provider itself vouches that this
+                // person owns the address (see providerVerifiedEmail()).
+                // Facebook never does, so it never links by email.
+                if (! $this->providerVerifiedEmail($provider, $socialUser)) {
+                    return ['status' => $provider === 'google' ? 'unverified_email' : 'link_requires_login', 'user' => null];
+                }
+
+                // The provider proved ownership but nobody ever proved it
+                // locally, so whoever registered this account (possibly
+                // someone else, pre-registering the address) must not keep
+                // any way back in.
+                if (! $user->hasVerifiedEmail()) {
+                    $user = $this->claimUnverifiedAccount($user);
                 }
             } else {
                 $user = User::create([
                     'name' => $socialUser->getName() ?? $socialUser->getNickname(),
                     'email' => $socialUser->getEmail(),
-                    'email_verified_at' => now(),
+                    // FSA-09: only a provider-verified address counts as
+                    // verified here; otherwise the normal OTP flow proves it.
+                    'email_verified_at' => $this->providerVerifiedEmail($provider, $socialUser) ? now() : null,
                     'password' => Hash::make(Str::password(24)),
                     'has_password' => false,
                     'referred_by_id' => $this->referrals->resolveReferrerId(session('pending_referral_code')),
@@ -149,9 +151,72 @@ class SocialAuthController extends Controller
             ]);
         }
 
+        if ($result['status'] === 'link_requires_login') {
+            return redirect()->route('login')->withErrors([
+                'email' => 'An account with this email already exists. Please log in with your password or Google, then connect '.ucfirst($provider).' from your account settings.',
+            ]);
+        }
+
         Auth::login($result['user']);
 
+        // Same destination as LoginResponse/RegisterResponse for an
+        // unverified account: the 6-digit code flow.
+        if (! $result['user']->hasVerifiedEmail()) {
+            $result['user']->sendEmailVerificationNotification();
+
+            return redirect()->route('verification.notice');
+        }
+
         return redirect(config('fortify.home'));
+    }
+
+    /**
+     * FSA-09: whether the provider itself asserts the email is verified.
+     * Google's OpenID userinfo carries an `email_verified` claim (raw
+     * payload only — no SocialiteUser method exposes it); anything but an
+     * explicit `true` is not proof. Facebook's integration has no email
+     * verification claim (its requested `verified` field is a deprecated
+     * account-level flag, not about the email), so it never vouches.
+     */
+    private function providerVerifiedEmail(string $provider, SocialiteUser $socialUser): bool
+    {
+        return $provider === 'google'
+            && ($socialUser->getRaw()['email_verified'] ?? null) === true;
+    }
+
+    /**
+     * FSA-09: hands an unverified local account to the person a provider
+     * has just proven owns its email. Anyone who registered it before them
+     * loses every way back in: the password is replaced (and with it, via
+     * the `auth.session` middleware, every other session), the remember
+     * token is cycled, and social links attached while it was unverified
+     * are removed. A referrer attached at registration is dropped too when
+     * the account has never ordered, so a pre-registered referral can't
+     * earn from the real owner's purchases. Must run inside the caller's
+     * transaction.
+     */
+    private function claimUnverifiedAccount(User $user): User
+    {
+        $locked = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+
+        $locked->socialAccounts()->delete();
+
+        $updates = [
+            'email_verified_at' => now(),
+            'password' => Hash::make(Str::password(24)),
+            'has_password' => false,
+            'remember_token' => Str::random(60),
+            'email_verification_code' => null,
+            'email_verification_code_expires_at' => null,
+        ];
+
+        if (! Order::withTrashed()->where('user_id', $locked->id)->exists()) {
+            $updates['referred_by_id'] = null;
+        }
+
+        $locked->forceFill($updates)->save();
+
+        return $locked;
     }
 
     /**
@@ -168,6 +233,15 @@ class SocialAuthController extends Controller
             session()->regenerateToken();
 
             return redirect()->route('login')->withErrors(['email' => 'This account is no longer active.']);
+        }
+
+        // FSA-09: an unverified account may belong to someone who only
+        // pre-registered the address; a provider attached now would survive
+        // the real owner later verifying or claiming it.
+        if ($user instanceof User && ! $user->hasVerifiedEmail()) {
+            return redirect()->route('connections.edit')->withErrors([
+                'connections' => 'Verify your email address before connecting '.ucfirst($provider).'.',
+            ]);
         }
 
         $existing = SocialAccount::where('provider', $provider)
