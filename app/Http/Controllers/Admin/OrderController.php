@@ -405,6 +405,8 @@ class OrderController extends Controller
      */
     private const UNCANCELLABLE_STATUSES = [OrderStatus::CANCELLED, OrderStatus::REFUNDED, OrderStatus::DELIVERED];
 
+    public const SHIPPED_CANCEL_MESSAGE = 'This order has shipped and is with the courier, so it can\'t be cancelled here. Cancel it or request a return in the courier\'s portal; the order is cancelled and its stock restored automatically when the courier reports the cancellation or return.';
+
     public function cancel(Request $request, Order $order): RedirectResponse
     {
         $request->validate([
@@ -418,6 +420,16 @@ class OrderController extends Controller
 
             if ($lockedOrder === null || in_array($lockedOrder->status, self::UNCANCELLABLE_STATUSES, true)) {
                 return "Orders that are already {$status->value} cannot be cancelled.";
+            }
+
+            // FSA-11: only courier status sync ever sets SHIPPED, so the
+            // parcel is with the courier. Cancelling here would restock goods
+            // still in transit, and the courier's later "delivered" (ignored
+            // once cancelled) would collect COD against a cancelled order.
+            // The courier's own return/cancel report cancels the order —
+            // and restocks it — through CourierOrderStatusMapper::sync().
+            if ($lockedOrder->status === OrderStatus::SHIPPED) {
+                return self::SHIPPED_CANCEL_MESSAGE;
             }
 
             // COURIER-SEND-RACE-001: same guard as markRefunded().

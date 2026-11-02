@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\OrderStatus;
+use App\Http\Controllers\Admin\OrderController;
 use App\Models\Coupon;
 use App\Models\CouponUse;
 use App\Models\InventoryLog;
@@ -110,7 +111,9 @@ test('admin can still cancel a pending order', function () {
     expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED);
 });
 
-test('admin can still cancel a shipped order', function () {
+// FSA-11 replaced "admin can still cancel a shipped order": the parcel is
+// with the courier, so only the courier's cancel/return report cancels it.
+test('admin cannot cancel a shipped order', function () {
     $admin = createAdmin(['name' => 'Admin', 'email' => 'cancel-guard-6@example.com', 'password' => bcrypt('password')]);
     $order = orderForCancelGuardTest(['status' => OrderStatus::SHIPPED]);
 
@@ -119,5 +122,6 @@ test('admin can still cancel a shipped order', function () {
     $response = $this->patch(route('admin.orders.cancel', $order), ['reason' => 'Lost in transit']);
 
     $response->assertRedirect();
-    expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED);
+    $response->assertSessionHas('error', OrderController::SHIPPED_CANCEL_MESSAGE);
+    expect($order->refresh()->status)->toBe(OrderStatus::SHIPPED);
 });

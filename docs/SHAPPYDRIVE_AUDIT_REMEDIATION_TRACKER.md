@@ -54,6 +54,38 @@ Source of truth for the forensic audit findings (CRIT/HIGH/MED/LOW IDs). `docs/M
   - Social links already planted on accounts before this fix can't be told apart from legitimate ones.
   - The claim does not send `WelcomeMail`; that is only sent by the code-verification flow.
 
+## FSA-11 notes
+
+**Status: COMMITTED (local only), 2026-11-03, in "fix(orders): prevent admin cancellation of shipped orders (FSA-11)". Not pushed, not deployed.**
+
+- **Root cause:** `Admin\OrderController::UNCANCELLABLE_STATUSES` was `[cancelled, refunded, delivered]`, so `shipped` was cancellable once no courier submission was unresolved. Only courier status sync (`CourierOrderStatusMapper::sync()`: Pathao `in_transit`, `at_delivery_hub`, … → `shipped`) ever sets `shipped`, so the parcel is physically with the courier.
+  - Cancelling restored stock still in transit, plus coupon and points through `Order::booted()`.
+  - The courier's later "delivered" was then ignored as terminal, recorded but not applied, so COD could be collected against a cancelled order.
+- **Existing authoritative workflow (no new workflow added):**
+  - Courier cancel and return reports are mapped to `cancelled`: Pathao `pickup_cancelled`, `return_*`, `returned`, `paid_return`, … and Steadfast `cancelled_parcells`. They arrive through the HMAC-verified Steadfast webhook, the `pathao:sync-statuses` poll, or the admin "Refresh status" buttons.
+  - That transition runs the same idempotent reversals (stock, coupon, points) exactly once.
+  - The courier-submission reconciliation actions (`confirmReturnedConsignment`, `confirmNotCreated`) only resolve booking attempts and never change order status.
+- **Fix:**
+  - `Admin\OrderController::cancel()` refuses `shipped` inside its existing locked transaction, after the uncancellable check and before any write, with `SHIPPED_CANCEL_MESSAGE` telling the admin to cancel or request a return in the courier's portal. Nothing is written: no status, reason, history, mail, stock, coupon, points or payment change.
+  - `resources/js/pages/admin/orders/show.tsx` shows that procedure instead of the cancel form for shipped orders; the server rule is the enforcement.
+  - Pending and processing cancellation, the delivered/refunded/cancelled refusals, and the unresolved-submission guard are unchanged.
+- **Late courier reports:** unchanged, already safe. Once an order is `cancelled`, a later delivered report leaves status, payment, `delivered_at`, stock, coupon and points untouched and records a history row ("order is already cancelled; status left unchanged") plus an `OBSERVATION` evidence row. Covered by a new test.
+- **Files:** `app/Http/Controllers/Admin/OrderController.php`, `resources/js/pages/admin/orders/show.tsx`, `tests/Feature/ShippedOrderCancellationTest.php` (new), `tests/Feature/Admin/CancelDeliveredOrderTest.php` (the test "admin can still cancel a shipped order" rewritten to expect refusal, because FSA-11 replaces that rule).
+- **Tests (in-memory SQLite):** `ShippedOrderCancellationTest` 8/8:
+  - Shipped cancel is refused for unpaid COD and for paid orders. Status and payment status are unchanged, no `stock_restored_at` or `coupon_released_at`, no reason, history or cancellation mail, and stock, points, coupon `used_count`, `CouponUse` and refund ledger rows are unchanged.
+  - Pending and processing cancellation still reverses stock (+2), points (+60), coupon and the refund ledger exactly once.
+  - Delivered is still refused.
+  - An unresolved courier submission still blocks.
+  - A Pathao return report cancels a shipped order and reverses everything once.
+  - A late Pathao "Delivery" after a courier cancellation changes nothing and is recorded.
+- **Sweeps:**
+  - Order, courier, refund, inventory, stock and coupon sweep (all non-race files referencing them): 657 tests, 656 passed before the old shipped-cancel test was updated, then all green in the full run.
+  - Full suite: 1722 tests, 1659 passed, 63 skipped (MySQL-only), 0 failed. Pint, Prettier, ESLint and `tsc` clean.
+  - MySQL race files cancel only `processing` orders, so they are unaffected. MySQL tests were not run.
+- **Remaining concerns:**
+  - **Lost parcels (decision needed):** a parcel the courier loses may never produce a mapped cancel or return status, and the order then stays `shipped` with no admin way out. That needs a business rule, for example a mother-admin "courier confirmed lost" action with evidence and restock policy. Not invented here.
+  - Orders with a consignment booked but not yet picked up (`pending`/`processing`) are still admin-cancellable, as before. The admin must also cancel at the courier, otherwise a later pickup and delivery is recorded but ignored.
+
 ## FSA-13 notes
 
 **Status: COMMITTED (local only), 2026-11-03, in "fix(newsletter): queue newsletter delivery in subscriber chunks (FSA-13)". Not pushed, not deployed.**

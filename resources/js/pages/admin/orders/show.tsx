@@ -673,9 +673,31 @@ export default function OrderShow({
                             </CardContent>
                         </Card>
 
+                        {order.status === 'shipped' && (
+                            <Card className="border-amber-100 shadow-sm">
+                                <CardHeader className="border-b border-amber-100 pb-4">
+                                    <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-amber-700">
+                                        <XCircle className="size-4" /> Cancel
+                                        Order
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    <p className="text-xs text-amber-700">
+                                        This order is with the courier. Cancel
+                                        it or request a return in the
+                                        courier&apos;s portal — the order is
+                                        cancelled and its stock restored
+                                        automatically when the courier reports
+                                        it.
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
+
                         {order.status !== 'cancelled' &&
                             order.status !== 'refunded' &&
-                            order.status !== 'delivered' && (
+                            order.status !== 'delivered' &&
+                            order.status !== 'shipped' && (
                                 <Card className="border-red-100 shadow-sm">
                                     <CardHeader className="border-b border-red-100 pb-4">
                                         <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-red-600">
