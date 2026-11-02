@@ -41,7 +41,7 @@ class HeroSlideController extends Controller
             'primary_cta_href' => ['nullable', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
             'sort_order' => ['required', 'integer'],
-            'stats' => ['nullable', 'array'],
+            'stats' => ['nullable', 'array', 'max:3'],
             'stats.*.label' => ['required', 'string', 'max:30'],
             'stats.*.value' => ['required', 'string', 'max:30'],
         ]);
@@ -73,7 +73,7 @@ class HeroSlideController extends Controller
             'primary_cta_href' => ['nullable', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
             'sort_order' => ['required', 'integer'],
-            'stats' => ['nullable', 'array'],
+            'stats' => ['nullable', 'array', 'max:3'],
             'stats.*.label' => ['required', 'string', 'max:30'],
             'stats.*.value' => ['required', 'string', 'max:30'],
         ]);

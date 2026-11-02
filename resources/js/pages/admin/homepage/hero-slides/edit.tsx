@@ -13,6 +13,9 @@ type Props = {
     slide: HeroSlide;
 };
 
+/** The hero banner's stat strip is a fixed 3-column row — more wouldn't fit. */
+const MAX_STATS = 3;
+
 export default function HeroSlideEdit({ slide }: Props) {
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
@@ -57,6 +60,10 @@ export default function HeroSlideEdit({ slide }: Props) {
     };
 
     const addStat = () => {
+        if (data.stats.length >= MAX_STATS) {
+            return;
+        }
+
         setData('stats', [...data.stats, { label: '', value: '' }]);
     };
 
@@ -224,6 +231,7 @@ export default function HeroSlideEdit({ slide }: Props) {
                                     variant="outline"
                                     size="sm"
                                     onClick={addStat}
+                                    disabled={data.stats.length >= MAX_STATS}
                                 >
                                     <Plus className="mr-1 size-3.5" /> Add Stat
                                 </Button>
@@ -275,9 +283,14 @@ export default function HeroSlideEdit({ slide }: Props) {
                                 ))}
                                 {data.stats.length === 0 && (
                                     <p className="py-4 text-center text-xs text-slate-400 italic">
-                                        No stats added. Max 3 recommended.
+                                        No stats added. The hero banner shows
+                                        up to {MAX_STATS}.
                                     </p>
                                 )}
+                                <p className="text-right text-xs text-slate-400">
+                                    {data.stats.length}/{MAX_STATS} stats — the
+                                    hero banner only has room for {MAX_STATS}.
+                                </p>
                             </CardContent>
                         </Card>
 

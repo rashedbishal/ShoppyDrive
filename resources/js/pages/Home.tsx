@@ -230,9 +230,9 @@ function HeroSlider({
                         )}
                         <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-secondary)] via-[rgba(26,26,46,0.76)] to-[rgba(26,26,46,0.12)]" />
                         <div className="absolute inset-0 bg-gradient-to-t from-[rgba(26,26,46,0.7)] via-transparent to-transparent lg:bg-none" />
-                        <div className="relative z-10 flex h-full flex-col justify-between px-4 py-6 sm:px-10 sm:py-10 lg:px-14 lg:py-14">
+                        <div className="relative z-10 flex h-full min-w-0 flex-col justify-between overflow-hidden px-4 py-5 sm:px-10 sm:py-8 lg:px-14 lg:py-10">
                             <motion.div
-                                className="max-w-3xl space-y-3 sm:space-y-5"
+                                className="max-w-full space-y-2 sm:max-w-xl sm:space-y-3 lg:max-w-2xl"
                                 initial="hidden"
                                 animate="visible"
                                 variants={{
@@ -247,7 +247,7 @@ function HeroSlider({
                                 }}
                             >
                                 <motion.div
-                                    className="hidden sm:block"
+                                    className="hidden max-w-full sm:block"
                                     variants={{
                                         hidden: { opacity: 0, y: 12 },
                                         visible: { opacity: 1, y: 0 },
@@ -255,10 +255,12 @@ function HeroSlider({
                                 >
                                     <Badge
                                         variant="amber"
-                                        className="border-0 bg-[rgba(245,166,35,0.16)] text-amber-100"
+                                        className="max-w-full border-0 bg-[rgba(245,166,35,0.16)] text-amber-100"
                                     >
-                                        <Sparkles className="size-3.5" />
-                                        {activeSlide.eyebrow}
+                                        <Sparkles className="size-3.5 shrink-0" />
+                                        <span className="truncate">
+                                            {activeSlide.eyebrow}
+                                        </span>
                                     </Badge>
                                 </motion.div>
 
@@ -267,20 +269,22 @@ function HeroSlider({
                                         hidden: { opacity: 0, y: 12 },
                                         visible: { opacity: 1, y: 0 },
                                     }}
-                                    className="font-display text-2xl leading-[1.1] tracking-tight sm:text-4xl sm:leading-[1.05] lg:max-w-2xl lg:text-6xl"
+                                    className="line-clamp-2 font-display text-xl leading-[1.15] tracking-tight break-words sm:text-3xl sm:leading-[1.1] lg:text-5xl"
                                 >
                                     {activeSlide.title}
                                 </motion.h1>
 
-                                <motion.p
+                                <motion.div
+                                    className="hidden sm:block"
                                     variants={{
                                         hidden: { opacity: 0, y: 12 },
                                         visible: { opacity: 1, y: 0 },
                                     }}
-                                    className="max-w-2xl text-sm leading-7 text-white/80 sm:text-base lg:text-lg"
                                 >
-                                    {activeSlide.description}
-                                </motion.p>
+                                    <p className="line-clamp-1 max-w-xl text-sm leading-6 break-words text-white/80 sm:text-base lg:line-clamp-2 lg:text-lg lg:leading-7">
+                                        {activeSlide.description}
+                                    </p>
+                                </motion.div>
 
                                 <motion.div
                                     variants={{
@@ -291,21 +295,23 @@ function HeroSlider({
                                 >
                                     <Button
                                         asChild
-                                        className="h-8 shrink-0 gap-1.5 rounded-full bg-white px-4 text-xs font-semibold text-[var(--color-secondary)] shadow-md hover:bg-white/90 sm:h-10 sm:px-6 sm:text-sm"
+                                        className="h-8 max-w-full shrink-0 gap-1.5 rounded-full bg-white px-4 text-xs font-semibold text-[var(--color-secondary)] shadow-md hover:bg-white/90 sm:h-10 sm:px-6 sm:text-sm"
                                     >
                                         <Link
                                             href={activeSlide.primaryCta.href}
                                         >
-                                            {activeSlide.primaryCta.label}
-                                            <ArrowRight className="size-3 sm:size-3.5" />
+                                            <span className="truncate">
+                                                {activeSlide.primaryCta.label}
+                                            </span>
+                                            <ArrowRight className="size-3 shrink-0 sm:size-3.5" />
                                         </Link>
                                     </Button>
                                 </motion.div>
                             </motion.div>
 
-                            {/* Stat cards — pinned to bottom above the two absolute pills */}
+                            {/* Stat cards — desktop only (avoids squeezing/overlapping the bottom pills on shorter tablet/mobile viewports); capped at 3 to match the fixed 3-column strip */}
                             <motion.div
-                                className="hidden grid-cols-3 gap-2 pb-16 sm:grid sm:gap-3 sm:pb-14 lg:pb-8"
+                                className="hidden grid-cols-3 gap-3 pb-8 lg:grid"
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{
@@ -314,15 +320,15 @@ function HeroSlider({
                                     ease: 'easeOut',
                                 }}
                             >
-                                {activeSlide.stats.map((stat) => (
+                                {activeSlide.stats.slice(0, 3).map((stat, index) => (
                                     <div
-                                        key={stat.label}
-                                        className="rounded-xl border border-white/10 bg-white/10 px-2.5 py-2 backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3"
+                                        key={`${stat.label}-${index}`}
+                                        className="min-w-0 rounded-xl border border-white/10 bg-white/10 px-2.5 py-2 backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3"
                                     >
-                                        <p className="text-[10px] tracking-[0.15em] text-white/60 uppercase sm:text-xs sm:tracking-[0.2em]">
+                                        <p className="truncate text-[10px] tracking-[0.15em] text-white/60 uppercase sm:text-xs sm:tracking-[0.2em]">
                                             {stat.label}
                                         </p>
-                                        <p className="mt-0.5 text-xs font-semibold text-white sm:mt-1 sm:text-sm">
+                                        <p className="mt-0.5 truncate text-xs font-semibold text-white sm:mt-1 sm:text-sm">
                                             {stat.value}
                                         </p>
                                     </div>
@@ -338,24 +344,44 @@ function HeroSlider({
                             type="button"
                             onClick={goToPrevious}
                             aria-label="Previous hero slide"
-                            className="absolute top-1/2 left-4 z-20 hidden -translate-y-1/2 rounded-full border border-white/20 bg-white/10 p-3 text-white opacity-0 backdrop-blur-md transition group-hover:opacity-100 hover:bg-white/20 lg:inline-flex"
+                            className="absolute top-1/2 left-2 z-20 hidden -translate-y-1/2 rounded-full border border-white/20 bg-white/10 p-2 text-white backdrop-blur-md transition hover:bg-white/20 sm:left-4 sm:inline-flex sm:p-2.5 lg:p-3 lg:opacity-0 lg:group-hover:opacity-100"
                         >
-                            <ChevronLeft className="size-5" />
+                            <ChevronLeft className="size-4 sm:size-5" />
                         </button>
                         <button
                             type="button"
                             onClick={goToNext}
                             aria-label="Next hero slide"
-                            className="absolute top-1/2 right-4 z-20 hidden -translate-y-1/2 rounded-full border border-white/20 bg-white/10 p-3 text-white opacity-0 backdrop-blur-md transition group-hover:opacity-100 hover:bg-white/20 lg:inline-flex"
+                            className="absolute top-1/2 right-2 z-20 hidden -translate-y-1/2 rounded-full border border-white/20 bg-white/10 p-2 text-white backdrop-blur-md transition hover:bg-white/20 sm:right-4 sm:inline-flex sm:p-2.5 lg:p-3 lg:opacity-0 lg:group-hover:opacity-100"
                         >
-                            <ChevronRight className="size-5" />
+                            <ChevronRight className="size-4 sm:size-5" />
                         </button>
+
+                        <div className="absolute right-4 bottom-4 z-20 flex items-center gap-1.5 sm:right-6 sm:bottom-6">
+                            {slides.map((slide, index) => (
+                                <button
+                                    key={slide.id}
+                                    type="button"
+                                    onClick={() => setActiveIndex(index)}
+                                    aria-label={`Go to slide ${index + 1}`}
+                                    aria-current={index === activeIndex}
+                                    className={cn(
+                                        'h-1.5 rounded-full transition-all',
+                                        index === activeIndex
+                                            ? 'w-5 bg-white'
+                                            : 'w-1.5 bg-white/40 hover:bg-white/60',
+                                    )}
+                                />
+                            ))}
+                        </div>
                     </>
                 ) : null}
 
-                <div className="absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs text-white/90 backdrop-blur-md sm:bottom-6 sm:left-6">
-                    <Truck className="size-4 text-[var(--color-accent)]" />
-                    Nationwide delivery across Bangladesh
+                <div className="absolute bottom-4 left-4 z-20 flex max-w-[calc(100%-5rem)] items-center gap-2 truncate rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs text-white/90 backdrop-blur-md sm:bottom-6 sm:left-6">
+                    <Truck className="size-4 shrink-0 text-[var(--color-accent)]" />
+                    <span className="truncate">
+                        Nationwide delivery across Bangladesh
+                    </span>
                 </div>
             </div>
         </section>

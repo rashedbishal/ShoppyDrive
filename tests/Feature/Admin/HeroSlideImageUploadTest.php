@@ -121,6 +121,32 @@ test('creating a hero slide rejects fields past their character limits', functio
     ]);
 });
 
+test('creating a hero slide rejects more than 3 stats', function () {
+    Storage::fake('public');
+
+    actingAs($this->admin, 'admin');
+
+    $response = $this->post(route('admin.hero-slides.store'), [
+        'title' => 'Too Many Stats',
+        'eyebrow' => '',
+        'description' => '',
+        'image' => UploadedFile::fake()->image('hero.jpg', 1920, 1080),
+        'primary_cta_label' => '',
+        'primary_cta_href' => '',
+        'is_active' => '1',
+        'sort_order' => '1',
+        'stats' => [
+            ['label' => 'One', 'value' => '1'],
+            ['label' => 'Two', 'value' => '2'],
+            ['label' => 'Three', 'value' => '3'],
+            ['label' => 'Four', 'value' => '4'],
+        ],
+    ]);
+
+    $response->assertInvalid(['stats']);
+    expect(HeroSlide::where('title', 'Too Many Stats')->exists())->toBeFalse();
+});
+
 test('uploading a hero slide file larger than 15MB is rejected', function () {
     Storage::fake('public');
 
