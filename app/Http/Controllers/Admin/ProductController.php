@@ -138,8 +138,14 @@ class ProductController extends Controller
 
     public function edit(Product $product): Response
     {
+        // FSA-04: cost_price is hidden on both models for storefront
+        // responses; the edit form is the one screen that needs it.
+        $product->load(['media', 'variants', 'category:id,name', 'subCategory:id,name', 'brand:id,name'])
+            ->makeVisible('cost_price');
+        $product->variants->each->makeVisible('cost_price');
+
         return Inertia::render('admin/products/edit', [
-            'product' => $product->load(['media', 'variants', 'category:id,name', 'subCategory:id,name', 'brand:id,name']),
+            'product' => $product,
             'stockToken' => ProductStockToken::for($product),
             'categories' => Category::active()->orderBy('name')->get(['id', 'name']),
             'subCategories' => SubCategory::active()->orderBy('name')->get(['id', 'name', 'category_id']),

@@ -10,6 +10,26 @@ Source of truth for the forensic audit findings (CRIT/HIGH/MED/LOW IDs). `docs/M
 
 **Priority order:** see "Remaining priority order". LOW findings only when justified.
 
+## FSA-01 notes
+
+**Status: COMMITTED (local only), 2026-11-03, in "fix(security): harden product variants, pricing and visibility (FSA-01, FSA-04, FSA-05)". Not pushed, not deployed.**
+
+- **Root cause:** `PlaceOrderRequest` and `AddToCartRequest` validated `variant_id` only with `exists:product_variants,id`. `SyncCartRequest` and `Admin/CreateOrderRequest` already checked ownership. `CartManager::resolvePrice()` priced from `product_id` (`FlashSaleItem::findActiveFor()` matches a product-wide sale against any variant id), while `InventoryService` locked and decremented the variant by id alone, and the order line took that variant's SKU.
+- **Fix, all layers fail closed:**
+  - New `app/Rules/VariantBelongsToProduct.php` (data-aware; derives the sibling `product_id` key, so it works for `variant_id` and `items.N.variant_id`). Applied in `PlaceOrderRequest` and `AddToCartRequest`. Same message as `SyncCartRequest`'s existing closure, which was deliberately left unchanged.
+  - `CartManager::resolvePrice()` loads the variant scoped to the product before any flash-sale lookup: a mismatch is `ModelNotFoundException` (404), the same outcome as the existing missing-variant path.
+  - `CartManager::validItems()` drops a cart row whose variant belongs to another product, as it already did for deleted products, so a row stored before the fix is never priced or checked out.
+  - `InventoryService::decrementForOrderItem()` throws `InsufficientStockException::forMismatchedVariant()` before touching stock. Every order path (COD, mobile banking, landing page, admin) already catches this exception and rolls back. Exception: `Admin\IncompleteOrderController::placeOrder()` catches no stock exception at all (pre-existing, unchanged), so there a mismatch rolls back as a 500.
+- **Files:** `app/Rules/VariantBelongsToProduct.php` (new), `app/Http/Requests/PlaceOrderRequest.php`, `app/Http/Requests/AddToCartRequest.php`, `app/Support/CartManager.php`, `app/Services/InventoryService.php`, `app/Exceptions/InsufficientStockException.php`, `tests/Feature/VariantProductOwnershipTest.php` (new).
+- **Tests (in-memory SQLite):**
+  - `VariantProductOwnershipTest` 8/8 (24 assertions): foreign variant via `cart.store`; authenticated and guest `checkout.store` (no order, stock unchanged); valid pairs still work through both endpoints (variant price charged, stock decremented); a pre-existing mismatched cart row is not checked out; service guards in `resolvePrice()` and `InventoryService`.
+  - The audit's proof-of-concept probe (a ৳50,000 variant ordered for ৳100) now fails to create an order.
+  - Regression sweep of 70 cart, checkout, flash-sale, bundle, inventory, stock, landing-page, mobile-payment, wishlist, coupon, loyalty, referral and order test files: 709 tests, 679 passed, 30 skipped (MySQL-only), 0 failed. Pint passed.
+  - MySQL race files grepped: only `CartConcurrencyRaceTest.php:170` passes a variant, and it pairs it with its own product.
+- **Full SQLite suite (2026-11-03, together with FSA-03/04):** 1687 tests, 1624 passed, 63 skipped, 0 failed. **Not run:** MySQL tests (no MySQL-specific behaviour changed).
+- **Follow-up found during FSA-05:** a mixed cart containing a pre-fix mismatched row was refused by `lockForCheckout()` instead of dropping that row. This was fixed under FSA-05 (see FSA-05 notes), so for a clean FSA-01 commit `lockForCheckout()` belongs with FSA-05.
+- **Remaining:** commit and deploy, each with separate approval. After deploy, the owner runs the read-only mismatch query from report §6 against production to find any orders placed through this hole earlier.
+
 ## FSA-03 notes
 
 **Status: COMMITTED (local only), 2026-11-03, in "fix(checkout): secure order confirmation and preserve bundle attribution (FSA-03, FSA-12)". Not pushed, not deployed.**
@@ -40,6 +60,54 @@ Source of truth for the forensic audit findings (CRIT/HIGH/MED/LOW IDs). `docs/M
   - A guest who returns to the confirmation page after 24 hours, or from another device, gets 404 and must use order tracking (phone or email). This is intended.
   - The invoice link on the confirmation page still points at `account.orders.invoice` (auth-only, owner-checked), unchanged.
   - The frontend `Order` TypeScript type is broader than the payload; the page reads only allow-listed fields.
+
+## FSA-04 notes
+
+**Status: COMMITTED (local only), 2026-11-03, in "fix(security): harden product variants, pricing and visibility (FSA-01, FSA-04, FSA-05)". Not pushed, not deployed.**
+
+- **Root cause:** `Product` and `ProductVariant` had no `$hidden`. Every storefront surface serializes the models whole: product detail (`toArray()`, variants, related products), listings and search, the shared `cart` prop on every page, Buy Now on checkout, and the order confirmation. So `cost_price` reached every visitor.
+- **Fix:** `protected $hidden = ['cost_price']` on both models. This is one rule for every current and future serialization; per-controller column lists would miss new props. `Admin\ProductController::edit()`, the only screen that renders cost (`edit.tsx`, `ProductVariantManager.tsx`), calls `makeVisible('cost_price')` on the product and each variant. Admin create posts cost without reading a model. Saving is unaffected, because `$hidden` only affects serialization; mass assignment, the audit log and `ProductStockToken` read attributes directly.
+- **Files:** `app/Models/Product.php`, `app/Models/ProductVariant.php`, `app/Http/Controllers/Admin/ProductController.php`, `tests/Feature/CostPriceVisibilityTest.php` (new).
+- **Tests:** `CostPriceVisibilityTest` 5/5 (50 assertions):
+  - Product detail has no product or variant `cost_price`, in props or anywhere in the page.
+  - Listing and search pages show the product but contain no `cost_price`.
+  - Cart page and checkout Buy Now, including the shared cart prop, contain no `cost_price`.
+  - The admin edit page still receives the product and variant `cost_price`.
+  - The audit's earlier probe proved the leak existed on product detail.
+- **Full SQLite suite after FSA-01/03/04:** 1687 tests, 1624 passed, 63 skipped (MySQL-only), 0 failed. Pint passed; it touched only the new lines. MySQL race files reference none of the changed routes or attributes.
+- **Remaining:** cached pre-fix arrays (layout, search-suggestion and catalog-filter caches) are cleared by deploy's `cache:clear`. Admin activity-log views still show `cost_price` changes, which is admin-only and intended.
+
+## FSA-05 notes
+
+**Status: COMMITTED (local only), 2026-11-03, in "fix(security): harden product variants, pricing and visibility (FSA-01, FSA-04, FSA-05)". Not pushed, not deployed.**
+
+- **Root cause:** listings, search, home, brands and landing pages already filter `active()->published()`, but three entry points did not:
+  - `ProductController::show()` bound the product by slug with no visibility check.
+  - `CartManager::validItems()` dropped only deleted products.
+  - Checkout's Buy Now preview (`resolveBuyNowItem()`) and `AddToCartRequest` accepted any existing product id.
+- **Fix:**
+  - New `Product::isPubliclyVisible()`, the instance form of `active()->published()`: active, `published_at` set and not in the future.
+  - `ProductController::show()` returns 404 for a hidden product.
+  - `CartManager::validItems()` also drops hidden products. A stale cart row or a submitted hidden item is never priced or sold, exactly like a deleted product today: an all-hidden cart gets the existing 422 "Your cart is empty"; a mixed cart orders only the visible lines (the established `CartStaleProductTest` behaviour).
+  - `PlaceOrderRequest` validation deliberately left unchanged: `Checkout.tsx` has no display for per-item errors, so a stale client cart would be stuck with an invisible error, whereas the drop path is already handled.
+  - `AddToCartRequest` rejects a hidden or deleted product with "This product is not available." (`Rule::exists` with the same conditions).
+  - Buy Now ignores a hidden product, so checkout redirects home.
+- **Defect found and fixed during FSA-05, which also affected FSA-01:** `CartManager::lockForCheckout()` (MED-08) re-checked the locked cart with only `whereHas('product')`, not the full `validItems()` filter. A mixed cart containing any row checkout deliberately dropped (a foreign variant from FSA-01, or a hidden product) therefore failed with "Your cart changed…" every time, and the row was never removed, so the customer was stuck. It still failed closed. `lockForCheckout()` now applies `validItems()` to the locked rows, so the two can't diverge. `CartConcurrencyTest` and `CartStaleProductTest` pass.
+- **Admin preview:** none exists. Logged-in admins are redirected off the storefront by `RedirectAdminToDashboard`, so there was nothing to preserve.
+- **Not changed (out of scope, noted):**
+  - Admin manual orders and incomplete-order conversion can still order hidden products; that is an admin decision.
+  - A mobile-banking `PendingCheckout` staged before a product was hidden still converts at payment, because the customer has already paid.
+  - The wishlist page still lists hidden products, but they can't be added to the cart or bought.
+- **Test-support changes:**
+  - `database/factories/ProductFactory.php` now defaults `published_at` to yesterday. Admin create and update always set `published_at = now()` for an active product, so the old "active but never published" default was a state real data can't have, and it is hidden under the storefront's own rule. Tests wanting a draft pass `published_at => null`.
+  - `tests/Feature/ReferralProgramTest.php:468,490`: two time-travel tests that move the clock back to 2026-10-31 and 2026-11-01 now pin the fixture's `published_at` to 2026-01-01. Otherwise the product is correctly "not yet published" at the travelled-to time.
+- **Files:** `app/Models/Product.php`, `app/Http/Controllers/ProductController.php`, `app/Http/Controllers/CheckoutController.php`, `app/Support/CartManager.php`, `app/Http/Requests/AddToCartRequest.php`, `database/factories/ProductFactory.php`, `tests/Feature/ProductVisibilityTest.php` (new), `tests/Feature/ReferralProgramTest.php`.
+- **Tests (in-memory SQLite):** `ProductVisibilityTest` 18/18:
+  - A visible page loads.
+  - Product page 404, add-to-cart rejection, authenticated checkout with no order and stock untouched, guest mixed checkout charging only the visible line, and Buy Now redirect: each for the inactive, draft and future-scheduled states.
+  - A future product becomes visible after its time.
+  - A cart row hidden after adding can't be checked out.
+- **Full suite:** 1705 tests, 1642 passed, 63 skipped (MySQL-only), 0 failed. Pint passed. MySQL race files contain no visibility-dependent fixtures or `lockForCheckout` call-site assumptions. MySQL tests were not run.
 
 ## FSA-09 notes
 

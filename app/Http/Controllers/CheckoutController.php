@@ -119,7 +119,8 @@ class CheckoutController extends Controller
 
         $product = Product::with('images')->find($productId);
 
-        if (! $product) {
+        // FSA-05: a Buy Now link to a hidden product shows nothing to buy.
+        if (! $product || ! $product->isPubliclyVisible()) {
             return null;
         }
 

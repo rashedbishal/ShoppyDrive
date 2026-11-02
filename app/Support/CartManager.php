@@ -220,7 +220,16 @@ class CartManager
             ->sortKeys()
             ->all();
 
-        if ($locked === null || $snapshot($cart->items) !== $snapshot($locked->items()->whereHas('product')->get())) {
+        if ($locked === null) {
+            throw new CartChangedException('Your cart changed while placing this order. Please review it and try again.');
+        }
+
+        // Same filter checkout priced with (validItems), so a row it
+        // deliberately dropped — deleted, hidden (FSA-05) or a foreign
+        // variant (FSA-01) — isn't mistaken for a concurrent change.
+        $lockedItems = $this->validItems($locked->setRelation('items', $locked->items()->with(['product', 'variant'])->get()));
+
+        if ($snapshot($cart->items) !== $snapshot($lockedItems)) {
             throw new CartChangedException('Your cart changed while placing this order. Please review it and try again.');
         }
     }
@@ -233,7 +242,16 @@ class CartManager
      */
     public function validItems(Cart $cart): Collection
     {
-        return $cart->items->filter(fn (CartItem $item): bool => $item->product !== null)->values();
+        // FSA-01: a row pairing a product with another product's variant
+        // (stored before the request-level check existed) is dropped like a
+        // deleted product, so it can never be priced or checked out.
+        // FSA-05: so is a product that's since been deactivated or
+        // unpublished — checkout reads only these rows.
+        return $cart->items
+            ->filter(fn (CartItem $item): bool => $item->product !== null
+                && $item->product->isPubliclyVisible()
+                && ($item->variant === null || (int) $item->variant->product_id === (int) $item->product_id))
+            ->values();
     }
 
     public function serialize(?Cart $cart): ?array
@@ -422,15 +440,20 @@ class CartManager
             }
         }
 
+        // FSA-01: resolved before the flash-sale lookup, which matches a
+        // product-wide sale against any variant id — a variant of another
+        // product must never be priced here at all.
+        $variant = $variantId !== null
+            ? ProductVariant::query()->whereKey($variantId)->where('product_id', $productId)->firstOrFail()
+            : null;
+
         $flashItem = FlashSaleItem::findActiveFor($productId, $variantId);
 
         if ($flashItem !== null) {
             return (float) $flashItem->sale_price;
         }
 
-        if ($variantId !== null) {
-            $variant = ProductVariant::query()->findOrFail($variantId);
-
+        if ($variant !== null) {
             if ($variant->price !== null) {
                 return (float) $variant->price;
             }

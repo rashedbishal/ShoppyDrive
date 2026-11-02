@@ -53,6 +53,12 @@ class InventoryService
         if ($variantId !== null) {
             $variant = ProductVariant::whereKey($variantId)->lockForUpdate()->first();
 
+            // FSA-01: fail closed on a variant that isn't this line's
+            // product's, whatever path built the line.
+            if ($variant !== null && (int) $variant->product_id !== $productId) {
+                throw InsufficientStockException::forMismatchedVariant();
+            }
+
             if ($variant === null || $variant->stock_quantity < $quantity) {
                 throw InsufficientStockException::forProduct(
                     $variant?->product?->name ?? 'this item',

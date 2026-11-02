@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Rules\VariantBelongsToProduct;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AddToCartRequest extends FormRequest
 {
@@ -16,9 +19,24 @@ class AddToCartRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'product_id' => ['required', 'exists:products,id'],
-            'variant_id' => ['nullable', 'exists:product_variants,id'],
+            // FSA-05: same visibility as Product::isPubliclyVisible().
+            'product_id' => ['required', Rule::exists('products', 'id')->where(fn (Builder $query) => $query
+                ->where('is_active', true)
+                ->whereNotNull('published_at')
+                ->where('published_at', '<=', now())
+                ->whereNull('deleted_at'))],
+            'variant_id' => ['nullable', 'exists:product_variants,id', new VariantBelongsToProduct],
             'quantity' => ['required', 'integer', 'min:1'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'product_id.exists' => 'This product is not available.',
         ];
     }
 }

@@ -26,6 +26,14 @@ class Product extends Model
     /** Columns the search-bar suggestions depend on (see FlushesSearchSuggestions). */
     public const SEARCH_SUGGESTION_FIELDS = ['name', 'sku', 'slug', 'price', 'compare_price', 'is_featured', 'is_active', 'published_at'];
 
+    /**
+     * FSA-04: wholesale cost never leaves the server in a storefront
+     * response. Admin screens that edit it call makeVisible('cost_price').
+     *
+     * @var list<string>
+     */
+    protected $hidden = ['cost_price'];
+
     protected $fillable = [
         'name',
         'slug',
@@ -221,5 +229,16 @@ class Product extends Model
     public function scopePublished($query)
     {
         return $query->whereNotNull('published_at')->where('published_at', '<=', now());
+    }
+
+    /**
+     * FSA-05: the instance form of `active()->published()` — whether a
+     * customer may see or buy this product right now.
+     */
+    public function isPubliclyVisible(): bool
+    {
+        return $this->is_active
+            && $this->published_at !== null
+            && ! $this->published_at->isFuture();
     }
 }

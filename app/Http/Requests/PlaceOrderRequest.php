@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Http\Middleware\EnsureCheckoutAccess;
+use App\Rules\VariantBelongsToProduct;
 use Illuminate\Foundation\Http\FormRequest;
 
 class PlaceOrderRequest extends FormRequest
@@ -47,7 +48,7 @@ class PlaceOrderRequest extends FormRequest
             'order_token' => ['required', 'uuid'],
             'items' => ['nullable', 'array'],
             'items.*.product_id' => ['required_with:items', 'integer', 'exists:products,id'],
-            'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
+            'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id', new VariantBelongsToProduct],
             'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
             'items.*.bundle_id' => ['nullable', 'integer', 'exists:product_bundles,id'],
             'items.*.bundle_unit_quantity' => ['nullable', 'integer', 'min:1'],

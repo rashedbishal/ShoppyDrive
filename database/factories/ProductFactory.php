@@ -34,6 +34,10 @@ class ProductFactory extends Factory
             'compare_price' => fake()->optional()->randomFloat(2, 1000, 2000),
             'stock_quantity' => fake()->numberBetween(0, 500),
             'is_active' => true,
+            // An active product always has a publish time — admin create and
+            // update set it to now() — so the default is a live product.
+            // Pass `published_at => null` for a draft.
+            'published_at' => now()->subDay(),
             'is_featured' => fake()->boolean(20),
             'weight' => fake()->randomFloat(2, 0, 10),
         ];

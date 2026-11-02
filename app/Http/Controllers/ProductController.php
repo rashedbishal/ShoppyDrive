@@ -12,6 +12,10 @@ class ProductController extends Controller
 {
     public function show(Product $product): Response
     {
+        // FSA-05: inactive, draft and future-scheduled products don't exist
+        // as far as the storefront is concerned.
+        abort_unless($product->isPubliclyVisible(), 404);
+
         $product->load([
             'category',
             'brand',

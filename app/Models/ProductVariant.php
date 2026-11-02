@@ -13,6 +13,13 @@ class ProductVariant extends Model
 {
     use HasFactory;
 
+    /**
+     * FSA-04: see Product::$hidden.
+     *
+     * @var list<string>
+     */
+    protected $hidden = ['cost_price'];
+
     protected $fillable = [
         'product_id',
         'sku',

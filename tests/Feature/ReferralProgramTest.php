@@ -465,7 +465,7 @@ test('a reward granted in the first hours of a period still counts towards that 
     $referrer = User::factory()->create(['points_balance' => 0]);
     $referredA = User::factory()->create(['referred_by_id' => $referrer->id]);
     $referredB = User::factory()->create(['referred_by_id' => $referrer->id]);
-    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10, 'published_at' => '2026-01-01 00:00:00']); // before the travel dates below
 
     $this->travelTo($firstHours);
     placeAndDeliverQualifyingOrder($referredA, $product);
@@ -487,7 +487,7 @@ test('a reward granted just before a period starts does not count towards the ne
     $referrer = User::factory()->create(['points_balance' => 0]);
     $referredA = User::factory()->create(['referred_by_id' => $referrer->id]);
     $referredB = User::factory()->create(['referred_by_id' => $referrer->id]);
-    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10, 'published_at' => '2026-01-01 00:00:00']); // before the travel dates below
 
     $this->travelTo($beforeStart);
     placeAndDeliverQualifyingOrder($referredA, $product);
