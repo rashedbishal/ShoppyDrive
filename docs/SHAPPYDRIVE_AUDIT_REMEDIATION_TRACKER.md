@@ -1,14 +1,91 @@
 # ShoppyDrive Audit Remediation Tracker
 
-Source of truth for the forensic audit findings (CRIT/HIGH/MED/LOW IDs). `docs/MASTER_FIXING_TRACKER.md` remains the record of earlier remediation work and its evidence; this file links to it instead of copying it.
+Operational source of truth for remediation status. The original findings are defined by two reports: `docs/SHAPPYDRIVE_FORENSIC_AUDIT_REPORT.txt` (CRIT/HIGH/MED/LOW IDs, 2026-11-01) and `docs/SHOPPYDRIVE_FULL_SYSTEM_FORENSIC_AUDIT_REPORT_2026-11-02.md` (FSA-01–FSA-24). `docs/MASTER_FIXING_TRACKER.md` remains the record of earlier remediation work (PROMO-LOY-001, PAY-RETURN-001, …).
 
-**Last updated:** 2026-11-01. **Git baseline:** `main` = `origin/main` = `f36ee18`; one stash (`stash@{0}`). CRIT-01, HIGH-01, HIGH-02, HIGH-03 and REF-CAP-TZ-001 changes are uncommitted on top of this.
+**Last updated:** 2026-11-03. **Git baseline:** `origin/main` = `0ef9d9a` (the remediation batch `18125d4` and the MED-06 migration `3254bac` are on it). Local `main` carries these **unpushed** commits on top: `8d17320` (FSA-13), `8cb8ff7` (FSA-09), `1d16a71` (FSA-11), `9c840f7` (FSA-03, FSA-12), `985d73b` (FSA-01, FSA-04, FSA-05) and the documentation commit "docs: consolidate ShoppyDrive forensic audit remediation tracking". One stash (`stash@{0}`, untouched); no tags; no other branches. Pushing `main` deploys to Hostinger and runs `migrate --force`.
 
-> **Authoritative source:** `docs/SHAPPYDRIVE_FORENSIC_AUDIT_REPORT.txt`. All findings were reconciled against it and the code at the current working tree on 2026-11-01. Completed findings are not reopened without new evidence.
+**Deployment evidence (2026-11-03, read-only `gh run list --workflow=deploy.yml`):** "Deploy to Hostinger" succeeded for `1db8482` (2026-11-02 08:24 UTC, first push containing `18125d4` and `3254bac`), `84aa1c0` and `0ef9d9a` (10:27 UTC). The run logs did not show `migrate` output, so which migrations ran and with what result (including whether MED-06 skipped an index) is **not verified**. Code on `main` is therefore `DEPLOYED_UNVERIFIED`, never `VERIFIED_IN_PRODUCTION`, until production evidence exists.
 
-**Statuses:** NOT_STARTED, INVESTIGATING, IN_PROGRESS, BLOCKED, PARTIALLY_COMPLETED, COMPLETED, ACCEPTED_RISK, NOT_APPLICABLE. Never mark COMPLETED without implementation and verification evidence. `COMPLETED (LOCAL IMPLEMENTATION)` means verified locally and not deployed.
+**Statuses (from 2026-11-03):** OPEN, IN_PROGRESS, FIXED_LOCALLY, TESTED_LOCALLY, COMMITTED, DEPLOYED_UNVERIFIED, VERIFIED_IN_PRODUCTION, BLOCKED, PARTIALLY_FIXED, ACCEPTED_RISK (plus NOT_APPLICABLE for LOW-07, kept as recorded). Never mark progress without evidence. Old statuses in the historical sections below are kept verbatim; the table below supersedes them. Historical vocabulary (pre-2026-11-03): NOT_STARTED, INVESTIGATING, IN_PROGRESS, BLOCKED, PARTIALLY_COMPLETED, COMPLETED, ACCEPTED_RISK, NOT_APPLICABLE; `COMPLETED (LOCAL IMPLEMENTATION)` meant verified locally and not deployed at the time. Completed findings are not reopened without new evidence.
 
-**Priority order:** see "Remaining priority order". LOW findings only when justified.
+## Reconciled status (2026-11-03)
+
+Prod. = production verification status. "Notes" points to the historical section below, which keeps the implementation detail and evidence.
+
+| ID | Sev | Description | Status | Implementation / files | Tests (recorded) | Remaining work | Prod. | Blockers / decisions |
+|---|---|---|---|---|---|---|---|---|
+| FSA-01 | Critical | Foreign variant accepted with another product's id: flash-sale price of A applied to a variant of B | COMMITTED (`985d73b`, local only; not pushed) | `VariantBelongsToProduct` rule on `PlaceOrderRequest`/`AddToCartRequest`; fail-closed guards in `CartManager::resolvePrice()`/`validItems()` and `InventoryService`. See FSA-01 notes | New `VariantProductOwnershipTest` 8/8; sweep 709: 679 passed, 30 skipped (MySQL-only), 0 failed (SQLite). Full SQLite suite 2026-11-03 (with FSA-03/04): 1687 tests, 1624 passed, 63 skipped, 0 failed | Push and deploy (separate approvals); production mismatch query (report §6) | Not deployed | None |
+| FSA-02 | Critical | SMS payment verification never authenticates the sender | BLOCKED | — | — | Sender allowlist | — | Owner must supply the exact bKash/Nagad SMS sender IDs (Admin › Received SMS) and check whether the forwarder app relays non-provider senders |
+| FSA-03 | High | Public order confirmation route exposes PII and `guest_token` | COMMITTED (`9c840f7`, local only; not pushed) | Owner-or-session grant (`OrderConfirmationAccess`), allow-listed payload, `throttle:order-tracking`, `Order::$hidden = ['guest_token']`. See FSA-03 notes | `OrderConfirmationAccessTest` 9/9; full SQLite suite 1687: 1624 passed, 63 skipped, 0 failed | Push and deploy (separate approvals) | Not deployed | None |
+| FSA-04 | High | `cost_price` serialized on storefront | COMMITTED (`985d73b`, local only; not pushed) | `$hidden = ['cost_price']` on `Product` and `ProductVariant`; admin edit opts back in with `makeVisible`. See FSA-04 notes | `CostPriceVisibilityTest` 5/5; full SQLite suite as above | Push and deploy; after deploy, `cache:clear` (deploy already runs it) drops any cached pre-fix arrays | Not deployed | None |
+| FSA-05 | High | Inactive/unpublished products viewable and orderable | COMMITTED (`985d73b`, local only; not pushed) | `Product::isPubliclyVisible()` enforced on product page, Buy Now, `CartManager::validItems()` (+ `lockForCheckout()` now reuses it) and `AddToCartRequest`. See FSA-05 notes | `ProductVisibilityTest` 18/18; full SQLite suite 1705: 1642 passed, 63 skipped, 0 failed | Push and deploy (separate approvals) | Not deployed | None |
+| FSA-06 | High | Paid order can be admin-cancelled and then never refunded | BLOCKED | — | — | — | — | Business decision: refuse cancel of paid orders, or cancel creates the refund |
+| FSA-07 | High | Mobile banking: customer can pay and receive no order | BLOCKED | — | — | — | — | Design decision: reserve at staging vs. flagged order vs. reconciliation view |
+| FSA-08 | High | Landing pages for variant products cannot sell, can still take payment | BLOCKED | — | — | — | — | Decision: block at admin save vs. add variant selector |
+| FSA-09 | Medium | Social login links to an unverified local account (pre-takeover) | COMMITTED (`8cb8ff7`, local only; not pushed) | Link by email only on Google `email_verified: true`; Facebook never links by email and new Facebook accounts verify by OTP; unverified account claimed safely (password, remember token, planted links, unordered referrer reset); unverified accounts can't connect providers. See FSA-09 notes | `SocialAccountClaimTest` 9/9 + updated `SocialLoginTest` 12/12; auth/settings/referral sweep 165: 153 passed, 12 skipped; full SQLite suite 1714: 1651 passed, 63 skipped, 0 failed | Push and deploy (separate approvals) | Not deployed | None |
+| FSA-10 | Medium | Reviews auto-approved, open to unverified accounts | BLOCKED | — | — | — | — | Business decision on moderation policy |
+| FSA-11 | Medium | Admin can cancel a shipped order | COMMITTED (`1d16a71`, local only; not pushed) | Admin cancel refuses `shipped` (inside the existing locked check); admin order page shows the courier procedure instead of the cancel form. The courier's own cancel/return report remains the only path. See FSA-11 notes | `ShippedOrderCancellationTest` 8/8; order/courier/inventory sweep 657; full SQLite suite 1722: 1659 passed, 63 skipped, 0 failed; ESLint, Prettier, `tsc` clean | Push and deploy (separate approvals) | Not deployed | Decision: how to close a parcel the courier reports lost (no mapped status today) |
+| FSA-12 | Low | Mobile-banking order items drop `bundle_id` | COMMITTED (`9c840f7`, local only; not pushed) | `MobilePaymentController::submit()` persists the staged snapshot's server-reconciled `bundle_id`. See FSA-12 notes | `MobileBankingBundleAttributionTest` 3/3; mobile/bundle/checkout/LP sweep 177: 164 passed, 13 skipped; full SQLite suite 1725: 1662 passed, 63 skipped, 0 failed | Push and deploy (committed with FSA-03 in `9c840f7`) | Not deployed | None |
+| FSA-13 | Medium | Newsletter: one synchronous all-BCC send; temp attachments never deleted | COMMITTED (`8d17320`, local only; not pushed) | Queued `Bus::batch` of `SendNewsletterChunk` jobs (≤50 BCC each, deduplicated), per-send attachment directory deleted by the batch's `then` callback, `newsletter:prune-attachments` daily backstop. No migration. See FSA-13 notes | `NewsletterSendTest` 9/9 (2 existing + 7 new), `PruneNewsletterAttachmentsCommandTest` 5/5, `QueueWorkerScheduleTest` updated; full SQLite suite 1736: 1673 passed, 63 skipped, 0 failed | Push and deploy (separate approvals); first real send on Hostinger SMTP is the first delivery proof | Not deployed | Optional decision: allow-list `SendNewsletterChunk` for retry in Admin › Failed jobs (MED-03 code) |
+| FSA-14 | Low | Newsletter unsubscribe/status unauthenticated | OPEN | — | — | — | — | — |
+| FSA-15 | Medium | = existing Observation "Customers can cancel pending orders after courier booking" (not duplicated) | BLOCKED | — | — | — | — | Business decision (already recorded) |
+| FSA-16 | Medium | Tracker deployment status did not reflect `main` | COMMITTED (documentation commit, local only; not pushed) | This reconciliation | n/a | Keep updated | n/a | — |
+| FSA-17 | Low | Encrypted 2FA columns serialized on every page | OPEN | — | — | — | — | — |
+| FSA-18 | Low | Rating breakdown from 50 reviews only | OPEN | — | — | — | — | — |
+| FSA-19 | Low | Unset SMS forwarder token → 500 | OPEN | — | — | — | — | — |
+| FSA-20 | Low | Product media uploads have no size limit | OPEN | — | — | — | — | — |
+| FSA-21 | Low | Landing-page phone validation weaker than checkout | OPEN | — | — | — | — | — |
+| FSA-22 | Low | Guest loses pending payment after logging in | OPEN | — | — | — | — | — |
+| FSA-23 | Low | `payment_method=zinipay` silently treated as mobile banking | OPEN | — | — | — | — | — |
+| FSA-24 | Info | All settings incl. secrets cached in plaintext file cache | OPEN | — | — | — | — | — |
+| CRIT-01 | Critical | Loyalty points double-spend | DEPLOYED_UNVERIFIED | See CRIT-01 notes (`points_reserved` migration `2026_10_31_193742`) | See CRIT-01 notes | Production preflight of `pending_checkouts` (checklist) | Unverified; migration result not seen | — |
+| HIGH-01 | High | Admin management unaudited | DEPLOYED_UNVERIFIED | See HIGH-01 notes | See notes | — | Unverified | — |
+| HIGH-02 | High | Variant stock display stale | DEPLOYED_UNVERIFIED | See HIGH-02 notes | See notes | — | Unverified | — |
+| HIGH-03 | High | Wishlist entry point broken | DEPLOYED_UNVERIFIED | See HIGH-03 notes | See notes | Browser walkthrough | Unverified | — |
+| WISHLIST-GUEST | Medium | Guest `/wishlist` shell | DEPLOYED_UNVERIFIED | Via HIGH-03 | See notes | — | Unverified | — |
+| MED-01 | Medium | Manual order pricing unchecked | DEPLOYED_UNVERIFIED | See MED-01 notes | See notes | — | Unverified | — |
+| MED-02 | Medium | Steadfast backward status | DEPLOYED_UNVERIFIED | See MED-02 notes | See notes | — | Unverified | — |
+| MED-03 | Medium | Failed jobs invisible | DEPLOYED_UNVERIFIED | See MED-03 notes | See notes | Grant `failed_jobs` section to staff | Unverified | — |
+| MED-04 | Medium | SMS regex safety | DEPLOYED_UNVERIFIED | See MED-04 notes | See notes | Check production `sms_patterns` against `SmsRegex::problem()` | Unverified | — |
+| MED-05 | Medium | Admin actions unaudited | DEPLOYED_UNVERIFIED | See MED-05 notes | See notes | — | Unverified | — |
+| MED-06 | Medium | No DB uniqueness on SKU/attribute values | DEPLOYED_UNVERIFIED | Skip-on-duplicate migration `2026_10_31_223219` (`3254bac`). Dev DB preflight 2026-11-03: 0 duplicates; migration applied on dev | See MED-06 notes | Confirm with `SHOW INDEX` whether production created or skipped each index | Unverified | Owner production check |
+| MED-07 | Medium | Product save not transactional | DEPLOYED_UNVERIFIED | See MED-07 notes | See notes | — | Unverified | — |
+| MED-08 | Medium | Cart duplicate rows | DEPLOYED_UNVERIFIED | See MED-08 notes | See notes | — | Unverified | — |
+| MED-09 | Medium | Float money | DEPLOYED_UNVERIFIED | Single site fixed; no retrofit by design | See notes | — | Unverified | — |
+| MED-10 | Medium | Shipping duplicated | DEPLOYED_UNVERIFIED | `ShippingCostCalculator` | See notes | — | Unverified | — |
+| MED-11 | Medium | `Admin\OrderController` size | PARTIALLY_FIXED | Courier extraction only, deployed unverified | See notes; MySQL race rerun never done | Rest of split is a separate decision | Unverified | — |
+| MED-12 | Medium | Invoice tests | DEPLOYED_UNVERIFIED | Test-only | See notes | — | n/a | — |
+| MED-13 | Medium | Wishlist tests and 2 bugs | DEPLOYED_UNVERIFIED | See notes | See notes | — | Unverified | — |
+| MED-14 | Medium | MySQL/SQLite LIKE | DEPLOYED_UNVERIFIED | Test-only | See notes | — | n/a | — |
+| MED-15 | Medium | Deploy did not check APP_DEBUG/APP_ENV | DEPLOYED_UNVERIFIED | `deploy.yml` check | Local simulation | Confirm the check appears in a deploy log | Deploy runs succeed; step output not inspected | — |
+| MED-16 | Medium | No security headers | DEPLOYED_UNVERIFIED | `SecurityHeaders` middleware | See notes | Confirm headers on production | Unverified | — |
+| MED-17 | Medium | ZiniPay dead code | DEPLOYED_UNVERIFIED | `createInvoice()` removed | See notes | — | Unverified | — |
+| MED-18 | Medium | `SESSION_SECURE_COOKIE` no default | BLOCKED | — | — | — | — | Owner must check production `.env` |
+| MED-18A | Medium | HTTP served without redirect | DEPLOYED_UNVERIFIED | `RedirectToHttps` (`eb3d687`) | See notes | `curl -I http://…` on production | Unverified | — |
+| MED-19 | Medium | Flat ৳1 SMS tolerance | ACCEPTED_RISK | — | — | — | — | — |
+| MED-20 | Medium | PendingCheckout pruning | PARTIALLY_FIXED | Tier 1 deployed unverified | See notes | Tier 2 (unconverted rows), interacts with FSA-07 | Unverified | Deferred by user |
+| LOW-01 | Low | `Order::$fillable` | ACCEPTED_RISK | — | — | — | — | — |
+| LOW-02 | Low | Variant attributes snapshot | ACCEPTED_RISK | — | — | — | — | — |
+| LOW-03 | Low | Dashboard low-stock | DEPLOYED_UNVERIFIED | See notes | See notes | — | Unverified | — |
+| LOW-04 | Low | Dead TS interfaces | DEPLOYED_UNVERIFIED | Removed | n/a | — | n/a | — |
+| LOW-05 | Low | Route permission test | DEPLOYED_UNVERIFIED | Test-only | See notes | — | n/a | — |
+| LOW-06 | Low | Sitemap test | DEPLOYED_UNVERIFIED | Test-only | See notes | — | n/a | — |
+| LOW-07 | Low | verify-email theme | NOT_APPLICABLE | Premise incorrect | — | — | — | — |
+| LOW-08 | Low | Dashboard revenue | DEPLOYED_UNVERIFIED | See notes | See notes | Note FSA-06 interaction | Unverified | — |
+| LOW-09 | Low | Order number race | ACCEPTED_RISK | — | — | — | — | — |
+| LOW-10 | Low | No migration lock timeout | OPEN | — | — | — | — | Deferred by user (timeout value, Hostinger compatibility) |
+| REF-CAP-TZ-001 | High | Referral cap timezone | DEPLOYED_UNVERIFIED | See notes | See notes | Check past over-cap rewards (Later work) | Unverified | — |
+| INV-STALE-STOCK-001 | Med-High | Admin form overwrote sold stock | DEPLOYED_UNVERIFIED | See notes | See notes | — | Unverified | — |
+| MEDIA-VIDEO-TYPE-001 | Low-Med | Kept video re-saved as image | PARTIALLY_FIXED | Code fix deployed unverified | See notes | Historical data repair | Unverified | Not approved (separate scope) |
+| SEARCH-AUTOCOMPLETE-FT-001 | High | Suggestions 500 on MySQL | DEPLOYED_UNVERIFIED | `ProductSearchQuery` fix on `main` | SQLite only; MySQL cases never completed | Run `SearchSuggestionsTest` on disposable MySQL, or one read-only production request | Unverified | — |
+| LP-INVOICE-STATUS-001 | Medium | Guest LP invoice ignores cancelled/refunded rule | BLOCKED | — | — | — | — | Security and business-rule decision |
+| WISHLIST-ADDALL-VARIANT-001 / -DELETED-001 | — | Wishlist add-all bugs | DEPLOYED_UNVERIFIED | Via MED-13 | See notes | — | Unverified | — |
+
+**Accepted risks preserved (not findings):** ADMIN-2FA-001 (declined, final), DEPLOY-SAFETY-001 C1 (no pre-deploy backup), M1 (`StrictHostKeyChecking=no`), 17 moderate npm advisories, XSS-SINK-GAP-001 (`Page.content`), MED-19, LOW-01, LOW-02, LOW-09.
+
+**Open from earlier work:** DEPLOY-SAFETY-001 Tier 2, `nunomaduro/pao` rename, E2E-COVERAGE-001, CI-MYSQL-001, TEST-FLAKE-001, OPS-001.
+
+**Priority order (2026-11-03):** FSA-01 → FSA-02 → FSA-03 + FSA-04 → FSA-05 → FSA-06 → FSA-07 + FSA-08 → FSA-09, FSA-10, FSA-11 → remaining FSA, LOW and earlier unresolved items.
 
 ## FSA-01 notes
 
@@ -267,7 +344,7 @@ Source of truth for the forensic audit findings (CRIT/HIGH/MED/LOW IDs). `docs/M
   3. **Double submit:** two submissions of the compose form create two batches, so subscribers get two newsletters, as with the old synchronous code. "One copy per subscriber" holds per send operation; cross-submission idempotency was not in scope.
   4. **`APP_KEY` rotation** while a batch is in flight makes its stored `then` closure unverifiable. The chunks then fail closed (nothing sent), and the prune command removes the files after 30 days.
 
-## Findings
+## Historical findings detail (statuses as of 2026-11-01, superseded by the table above)
 
 | ID | Severity | Issue | Status | Implementation approach | Files modified | Tests performed | Verification evidence | Completion date | Remaining work |
 |---|---|---|---|---|---|---|---|---|---|
@@ -1191,6 +1268,8 @@ These were found during remediation and are not original audit findings.
 - **Past data:** rewards already granted in production during those windows are unchanged. Whether any referrer exceeded a cap was not checked.
 
 ## Deployment checklist
+
+> **Superseded 2026-11-03:** kept verbatim as of 2026-11-01. These items have since reached `main`, and the deploy workflow succeeded on 2026-11-02 (see the header); production effects are unverified. Use the reconciled table at the top.
 
 Nothing here has been pushed or deployed. Nothing is approved for deployment. Commit, push and deploy each need separate user approval.
 
