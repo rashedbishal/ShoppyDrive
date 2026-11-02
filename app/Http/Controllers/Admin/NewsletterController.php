@@ -6,14 +6,15 @@ namespace App\Http\Controllers\Admin;
 
 use App\Concerns\RecordsAdminActions;
 use App\Http\Controllers\Controller;
-use App\Mail\NewsletterCustomMail;
-use App\Mail\NewsletterProductMail;
+use App\Jobs\SendNewsletterChunk;
 use App\Models\NewsletterSubscriber;
 use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Mews\Purifier\Facades\Purifier;
@@ -21,6 +22,20 @@ use Mews\Purifier\Facades\Purifier;
 class NewsletterController extends Controller
 {
     use RecordsAdminActions;
+
+    /**
+     * FSA-13: BCC recipients per message — well under common shared-hosting
+     * SMTP per-message recipient caps (typically 100).
+     */
+    public const RECIPIENTS_PER_MESSAGE = 50;
+
+    /**
+     * Each send's uploads live in their own `{ATTACHMENT_ROOT}/{sendId}`
+     * directory on the local disk, removed when its batch completes.
+     */
+    public const ATTACHMENT_ROOT = 'newsletter-attachments';
+
+    public const BATCH_NAME_PREFIX = 'newsletter:';
 
     public function index(Request $request): Response
     {
@@ -69,11 +84,20 @@ class NewsletterController extends Controller
     {
         $type = $request->validate(['type' => ['required', 'in:custom,product_promotion']])['type'];
 
-        $activeEmails = NewsletterSubscriber::where('is_active', true)->pluck('email')->toArray();
+        // FSA-13: one entry per subscriber (case-insensitively), sent in
+        // queued chunks instead of one synchronous all-BCC message.
+        $activeEmails = NewsletterSubscriber::where('is_active', true)
+            ->orderBy('id')
+            ->pluck('email')
+            ->unique(fn (string $email): string => mb_strtolower(trim($email)))
+            ->values();
 
-        if (empty($activeEmails)) {
+        if ($activeEmails->isEmpty()) {
             return back()->with('error', 'No active subscribers to send to.');
         }
+
+        $sendId = (string) Str::uuid();
+        $attachmentDirectory = self::ATTACHMENT_ROOT.'/'.$sendId;
 
         if ($type === 'custom') {
             $data = $request->validate([
@@ -85,16 +109,15 @@ class NewsletterController extends Controller
 
             $attachmentPaths = [];
             foreach ($request->file('attachments', []) as $file) {
-                $attachmentPaths[] = $file->store('newsletter-attachments/tmp', 'local');
+                $attachmentPaths[] = $file->store($attachmentDirectory, 'local');
             }
 
-            Mail::to(config('mail.from.address'))
-                ->bcc($activeEmails)
-                ->send(new NewsletterCustomMail(
-                    emailSubject: $data['subject'],
-                    body: Purifier::clean($data['body']),
-                    attachmentPaths: $attachmentPaths,
-                ));
+            $newsletter = [
+                'type' => 'custom',
+                'subject' => $data['subject'],
+                'body' => Purifier::clean($data['body']),
+                'attachment_paths' => $attachmentPaths,
+            ];
         } else {
             $data = $request->validate([
                 'subject' => ['required', 'string', 'max:255'],
@@ -102,18 +125,31 @@ class NewsletterController extends Controller
                 'selected_image' => ['nullable', 'string'],
             ]);
 
-            $product = Product::with(['media', 'brand:id,name', 'category:id,name'])->findOrFail($data['product_id']);
-
-            Mail::to(config('mail.from.address'))
-                ->bcc($activeEmails)
-                ->send(new NewsletterProductMail(
-                    emailSubject: $data['subject'],
-                    product: $product,
-                    selectedImage: $data['selected_image'] ?? null,
-                ));
+            $newsletter = [
+                'type' => 'product_promotion',
+                'subject' => $data['subject'],
+                'product_id' => (int) $data['product_id'],
+                'selected_image' => $data['selected_image'] ?? null,
+            ];
         }
 
+        $jobs = $activeEmails
+            ->chunk(self::RECIPIENTS_PER_MESSAGE)
+            ->map(fn ($chunk): SendNewsletterChunk => new SendNewsletterChunk($chunk->values()->all(), $newsletter))
+            ->values()
+            ->all();
+
+        // `then` runs only once every chunk has succeeded — including a
+        // failed chunk later retried successfully — so attachments are never
+        // removed while any chunk may still need them. allowFailures() keeps
+        // one bad chunk from cancelling the others.
+        Bus::batch($jobs)
+            ->name(self::BATCH_NAME_PREFIX.$sendId)
+            ->allowFailures()
+            ->then(static fn () => Storage::disk('local')->deleteDirectory($attachmentDirectory))
+            ->dispatch();
+
         return redirect()->route('admin.newsletter.index')
-            ->with('success', 'Newsletter sent to '.count($activeEmails).' subscribers.');
+            ->with('success', 'Newsletter queued for '.$activeEmails->count().' subscribers in '.count($jobs).' message(s). It will go out in the background over the next few minutes.');
     }
 }

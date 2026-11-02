@@ -30,6 +30,10 @@ Schedule::command('cart:remind-abandoned')->hourly()->withoutOverlapping(1440, f
 // expired rows) is deliberately never touched by this command.
 Schedule::command('pending-checkouts:prune')->dailyAt('02:00')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
 
+// FSA-13 backstop: newsletter uploads normally go with their batch's `then`
+// callback; this clears finished, never-queued and abandoned leftovers.
+Schedule::command('newsletter:prune-attachments')->dailyAt('03:00')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
+
 // Hostinger shared hosting can't keep a worker process alive, and its
 // disabled pcntl_signal() crashes `queue:work`'s daemon mode, so the
 // every-minute cron that drives this scheduler drains the database queue

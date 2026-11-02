@@ -10,6 +10,67 @@ Source of truth for the forensic audit findings (CRIT/HIGH/MED/LOW IDs). `docs/M
 
 **Priority order:** see "Remaining priority order". LOW findings only when justified.
 
+## FSA-13 notes
+
+**Status: COMMITTED (local only), 2026-11-03, in "fix(newsletter): queue newsletter delivery in subscriber chunks (FSA-13)". Not pushed, not deployed.**
+
+- **Root cause:** `Admin\NewsletterController::send()` built one message with every active subscriber in BCC and sent it synchronously inside the admin's request (`->send()` on a non-queued Mailable).
+  - Shared-hosting SMTP per-message recipient caps or PHP's time limit failed the whole send.
+  - A failure left no record of who had or hadn't received it.
+  - Uploaded attachments were stored in the shared `newsletter-attachments/tmp` and never deleted.
+- **Queue architecture (existing infrastructure only):**
+  - The `database` queue drained by the scheduled `app:drain-queue` (one `queue:work --once` process per job, 45s timeout, `--tries=3`), plus Laravel job batches.
+  - `job_batches` already exists in `0001_01_01_000002_create_jobs_table`, so there is no migration and no new service.
+- **Implementation:**
+  - `send()` now validates as before, collects active subscribers ordered by id, de-duplicated case-insensitively (keeping the stored address), and splits them into chunks of `RECIPIENTS_PER_MESSAGE = 50`. It then dispatches one `Bus::batch` named `newsletter:{sendId}` of `App\Jobs\SendNewsletterChunk` jobs with `allowFailures()`, so one bad chunk doesn't cancel the rest.
+  - The admin sees "queued for N subscribers in M message(s)". Authorization (`admin.can:newsletter,create`), validation and HTML purification are unchanged.
+  - `SendNewsletterChunk` (`Batchable`, `Queueable`, `$tries = 3`, `$backoff = 60`):
+    - Skips if the batch is cancelled.
+    - Re-reads which of its emails are **still active**, so unsubscribes during sending are respected.
+    - Fails, and stays retryable, if any attachment is missing or a promoted product was deleted, rather than sending a degraded newsletter.
+    - Sends **one** BCC message as its last step. A failed attempt sends nothing, so a retry repeats only an undelivered message and never touches another chunk. The only duplicate window is the SMTP server accepting a message and the connection then failing before the job completes, which is inherent to SMTP.
+  - Content is unchanged: the same `NewsletterCustomMail` / `NewsletterProductMail`. The product mail now loads the product inside the job.
+- **Attachment lifecycle:**
+  - Uploads are stored in `newsletter-attachments/{sendId}/` on the local disk.
+  - The batch's `then` callback deletes that directory. Laravel runs `then` only when the batch's pending count reaches 0; a permanently failed job does not decrement it, but a failed job that is later retried and succeeds does. So the files are deleted only after **every** chunk has been delivered, never while a failed chunk could still be retried.
+  - Backstop: new `newsletter:prune-attachments` (`PruneNewsletterAttachmentsCommand`), scheduled daily at 03:00 Asia/Dhaka with `withoutOverlapping(1440, false)`, like the other daily commands. It removes a send's directory when its batch is finished (the callback failed), when no batch exists after 24 hours (the request died before dispatch), or after 30 days unfinished (abandoned failures; a later retry then fails on the missing-attachment check instead of sending without it). It also clears legacy `tmp/` files older than 24 hours. A batch still in progress is never touched.
+- **Failure visibility:** a chunk that exhausts its 3 tries lands in `failed_jobs` and is listed in Admin › Failed jobs (MED-03). That page shows only the class name and a redacted error line, never the payload with its emails. `SendNewsletterChunk` is **not** in `FailedJobSummary::RETRYABLE_JOBS`, so retrying it currently needs `php artisan queue:retry`. Adding it would change MED-03 code and is left as a decision; the job meets that list's stated criteria.
+- **Files:** `app/Http/Controllers/Admin/NewsletterController.php`, `app/Jobs/SendNewsletterChunk.php` (new), `app/Console/Commands/PruneNewsletterAttachmentsCommand.php` (new), `routes/console.php`, `tests/Feature/Admin/NewsletterSendTest.php` (7 tests added; the 2 sanitizer tests unchanged), `tests/Feature/Admin/PruneNewsletterAttachmentsCommandTest.php` (new), `tests/Feature/QueueWorkerScheduleTest.php` (expects the 6th scheduled event).
+- **Tests (in-memory SQLite; no real mail: `Mail::fake()` or the `array` mailer):**
+  - `NewsletterSendTest` 9/9:
+    - The request queues one batch of `[50, 50, 21]` chunk jobs with `allowFailures` and sends nothing synchronously.
+    - 121 unique active subscribers plus one case-variant duplicate and one inactive give 3 messages of ≤50, each person exactly once, the inactive one excluded.
+    - Subject, body and attachment reach every chunk, and the upload is deleted after all are delivered.
+    - Failure lifecycle, on the real `database` queue with an in-process worker and a send-time listener that rejects one chunk: chunk 1 delivered once, the bad chunk tried 3 times (60s backoff, clock advanced) and then in `failed_jobs`, attachments still present; `queue:retry` with the fault cleared gives 2 messages total, all 60 recipients exactly once, and the attachments deleted.
+    - An unsubscribe after queuing is respected.
+    - An admin with only `newsletter.view` gets 403 and nothing is batched.
+    - The 2 existing purification tests pass unchanged.
+  - `PruneNewsletterAttachmentsCommandTest` 5/5: finished batch removed; in-progress batch with a failed chunk kept at 10 days; abandoned removed at 31 days; no-batch upload removed after a day and kept before; legacy `tmp` old removed and fresh kept.
+  - Focused newsletter and schedule files: 24/24.
+  - Full suite: 1736 tests, 1673 passed, 63 skipped, 0 failed. Pint clean.
+  - The first full run failed one new test only: the in-test worker hit `queue:work`'s default 128 MB memory stop late in the suite. The test helper now passes `--memory=4096`, and the suite is green.
+  - No MySQL race file touches newsletters or batches. MySQL and real SMTP were not exercised.
+- **Remaining limitations:**
+  - **Throughput:** `app:drain-queue` runs about 50s per minute, one job per process. A 10,000-subscriber list is 200 jobs, so delivery spreads over a few minutes, slower if the SMTP host throttles. Not measured on Hostinger.
+  - The 50-recipient chunk is a conservative assumption about Hostinger's per-message cap, not a verified figure.
+  - Newsletter sends are not written to the admin audit log (unchanged; not part of FSA-13).
+  - The success message no longer says "sent", because delivery is now asynchronous.
+- **Final review (2026-11-03, no code changed):**
+  - The diff is confined to FSA-13 files: `NewsletterController`, the new job, the new command, `routes/console.php`, `NewsletterSendTest`, the new prune test, `QueueWorkerScheduleTest`, and this tracker. No other finding touches them.
+  - Batch semantics, re-read in the installed framework:
+    - `Batch::recordSuccessfulJob()` runs `then` only when `pendingJobs === 0`.
+    - `recordFailedJob()` only increments the failed count, so a dead chunk keeps the batch open.
+    - Callbacks run inside `invokeHandlerCallback()`'s try/catch, so a failing cleanup is only reported and can never fail or retry the chunk that triggered it. The local disk is also `'throw' => false`.
+  - `app:drain-queue` processes connection `database`, queue `default`, which is where `Bus::batch()` dispatches with `QUEUE_CONNECTION=database`, the same assumption as every existing queued mail. `then` runs inside that job's `--once` child process.
+  - The prune command can't touch a batch younger than 30 days that hasn't finished.
+  - The schedule is `0 3 * * *` with timezone Asia/Dhaka (21:00 UTC), and the prune command's age maths uses Unix timestamps, so it is timezone-independent.
+  - Focused files re-run: 24/24.
+- **Residual risks recorded by the review:**
+  1. **Post-send window:** the mail is sent before the job reports success. If the SMTP server accepts the message and then the connection drops, or the batch bookkeeping fails, or `app:drain-queue` kills the process at its 45s timeout after acceptance, the job is retried and that one chunk (≤50 people) gets a second copy. This is inherent to SMTP plus at-least-once queues and can't be closed without an SMTP-side idempotency key. Normal failures (refusal, timeout before acceptance, missing attachment, deleted product) send nothing.
+  2. **Large messages vs the 45s per-job timeout:** `attachments.*` is capped at 10 MB each with no count limit (unchanged validation). A very large message may not finish uploading within 45s; it then fails after 3 tries (visible in Failed jobs) rather than sending. A total-size cap would be a separate decision.
+  3. **Double submit:** two submissions of the compose form create two batches, so subscribers get two newsletters, as with the old synchronous code. "One copy per subscriber" holds per send operation; cross-submission idempotency was not in scope.
+  4. **`APP_KEY` rotation** while a batch is in flight makes its stored `then` closure unverifiable. The chunks then fail closed (nothing sent), and the prune command removes the files after 30 days.
+
 ## Findings
 
 | ID | Severity | Issue | Status | Implementation approach | Files modified | Tests performed | Verification evidence | Completion date | Remaining work |
