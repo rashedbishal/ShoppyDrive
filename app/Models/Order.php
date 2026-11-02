@@ -42,6 +42,15 @@ class Order extends Model
      */
     protected static array $recordEvents = ['created', 'updated'];
 
+    /**
+     * FSA-03: `guest_token` is the bearer secret for the landing-page
+     * confirmation and invoice links; it never goes out in a serialized
+     * order. The landing-page confirmation passes it explicitly.
+     *
+     * @var list<string>
+     */
+    protected $hidden = ['guest_token'];
+
     protected $fillable = [
         'order_number',
         'user_id',

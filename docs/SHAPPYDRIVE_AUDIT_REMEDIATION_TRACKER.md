@@ -10,6 +10,37 @@ Source of truth for the forensic audit findings (CRIT/HIGH/MED/LOW IDs). `docs/M
 
 **Priority order:** see "Remaining priority order". LOW findings only when justified.
 
+## FSA-03 notes
+
+**Status: COMMITTED (local only), 2026-11-03, in "fix(checkout): secure order confirmation and preserve bundle attribution (FSA-03, FSA-12)". Not pushed, not deployed.**
+
+- **Root cause:** `routes/commerce.php`'s `order.confirmation` closure had no middleware and no ownership check, and rendered `$order->load('items.product')`. `Order` had no `$hidden`, so the full shipping address including phone, totals, coupon and points data, courier ids and `guest_token` went to anyone who knew the order number. Order numbers are printed in emails, SMS and courier labels.
+- **Fix:**
+  - New `app/Support/OrderConfirmationAccess.php`:
+    - `allows()`: true for the logged-in owner (`orders.user_id`), or for a session holding an unexpired grant for that order number.
+    - `grant()`: stores `order_number => expiry` in the session, 24 hours, at most 20 entries, expired entries pruned.
+    - `payload()`: an explicit allow-list of exactly the fields `OrderConfirmation.tsx` renders. These are order number, status, payment method, total, `created_at`, and shipping name, email and address lines. Excluded: phone, items, user id, tokens, courier ids.
+  - Route: `abort_unless(allows, 404)`; it uses a 404 so a guessed number reveals nothing. It renders `payload()` and adds `throttle:order-tracking`, the existing admin-tunable "order lookup" limiter, default 30/min.
+  - Grants are recorded at every redirect that follows a successful placement or payment:
+    - `CheckoutController`: COD success and the cached `order_token` replay. The token is a per-render secret, so a replay comes from the original buyer.
+    - `MobilePaymentController`: `show()` and `submit()` when the pending checkout is already converted, and after a successful submit.
+    - `PaymentController` (legacy ZiniPay) is auth-only and owner-checked, so the owner rule covers it unchanged.
+  - `Order::$hidden = ['guest_token']`, defence in depth for every serialized order (account order pages, etc.). `LandingPageController::confirmation()` already passes `guestToken` explicitly to its holder, so the landing-page flow is unchanged.
+- **Files:** `app/Support/OrderConfirmationAccess.php` (new), `routes/commerce.php`, `app/Http/Controllers/CheckoutController.php`, `app/Http/Controllers/MobilePaymentController.php`, `app/Models/Order.php`, `tests/Feature/OrderConfirmationAccessTest.php` (new).
+- **Tests:** `OrderConfirmationAccessTest` 9/9 (50 assertions) on SQLite:
+  - The owner sees only the allow-listed fields: no phone, items, user id or `guest_token`, checked in the page HTML too.
+  - The owner from a new session is allowed.
+  - A guest in the placing session is allowed.
+  - An anonymous visitor gets 404, and another logged-in customer gets 404.
+  - A guest grant expires after 24 hours.
+  - A cached-token replay re-grants access without a second order.
+  - A guest who pays by mobile banking is allowed, and a fresh session gets 404.
+  - `account.orders.show` never contains `guest_token`.
+- **Gaps and limits:**
+  - A guest who returns to the confirmation page after 24 hours, or from another device, gets 404 and must use order tracking (phone or email). This is intended.
+  - The invoice link on the confirmation page still points at `account.orders.invoice` (auth-only, owner-checked), unchanged.
+  - The frontend `Order` TypeScript type is broader than the payload; the page reads only allow-listed fields.
+
 ## FSA-09 notes
 
 **Status: COMMITTED (local only), 2026-11-03, in "fix(auth): prevent social login account takeover (FSA-09)". Not pushed, not deployed.**
@@ -85,6 +116,27 @@ Source of truth for the forensic audit findings (CRIT/HIGH/MED/LOW IDs). `docs/M
 - **Remaining concerns:**
   - **Lost parcels (decision needed):** a parcel the courier loses may never produce a mapped cancel or return status, and the order then stays `shipped` with no admin way out. That needs a business rule, for example a mother-admin "courier confirmed lost" action with evidence and restock policy. Not invented here.
   - Orders with a consignment booked but not yet picked up (`pending`/`processing`) are still admin-cancellable, as before. The admin must also cancel at the courier, otherwise a later pickup and delivery is recorded but ignored.
+
+## FSA-12 notes
+
+**Status: COMMITTED (local only), 2026-11-03, in "fix(checkout): secure order confirmation and preserve bundle attribution (FSA-03, FSA-12)". Not pushed, not deployed.**
+
+- **Trace:**
+  - The checkout UI submits no `bundle_id` (`Checkout.tsx`'s items carry only product, variant and quantity).
+  - Bundle tags on the cart are decided server-side in `CartManager::revalidatePrices()`, which runs on every checkout before both COD and mobile-banking staging. It calls `BundleService::reconcile()`, which strips tags whose group isn't an intact, active bundle, then `autoAssemble()`, which tags complete recipes.
+  - `CheckoutController::initiateMobileBanking()` copies each cart item's resulting `bundle_id` into the server-side `PendingCheckout.checkout_data` snapshot, which the client can't modify.
+  - COD (`CheckoutController.php`, order item creation) and legacy ZiniPay (`OrderService.php:97`) persist it.
+- **Root cause:** `MobilePaymentController::submit()` built each `OrderItem` from the snapshot but omitted `bundle_id`, so every paid mobile-banking order lost its bundle attribution. The charged bundle-prorated prices themselves were correct.
+- **Fix:** add `'bundle_id' => $item['bundle_id'] ?? null` to that `OrderItem` create, the same pattern as `OrderService`. A snapshot without the key (an ordinary item or an older row) gives `null`. No new trust in client input: the value is the server-reconciled staged tag. The landing-page mobile flow has no bundles and is unchanged.
+- **Files:** `app/Http/Controllers/MobilePaymentController.php` (one line), `tests/Feature/MobileBankingBundleAttributionTest.php` (new).
+- **Tests (in-memory SQLite):** `MobileBankingBundleAttributionTest` 3/3 (19 assertions), each staging through `checkout.store` and paying with a matched SMS:
+  - An intact bundle's two items keep `bundle_id` at their prorated 90/30 prices, and an ordinary item stays `null`.
+  - Two different bundles in one order keep their own ids.
+  - A bundle id the submitted product isn't part of is stripped before staging, so the item is `null` at full price.
+- COD attribution is still covered unchanged by `BundleCheckoutTest`, and the partial-group "price bounce" is already covered there. Payment verification is unchanged (`MobilePaymentMatchingTest` in the sweep).
+- **Sweeps:** mobile, bundle, checkout, landing, payment, loyalty, coupon and confirmation files: 177 tests, 164 passed, 13 skipped (MySQL-only). Full suite: 1725 tests, 1662 passed, 63 skipped, 0 failed. Pint clean. No MySQL race file references `bundle_id`. MySQL tests were not run.
+- **Commit note:** `MobilePaymentController.php` also carries FSA-03's confirmation grants. FSA-12's line can go into the FSA-03 commit, or the file can be split with a patch.
+- **Remaining:** past mobile-banking orders already lack `bundle_id`. Restoring it would mean inferring from prices or snapshots, a separate data-repair decision. Not done.
 
 ## FSA-13 notes
 

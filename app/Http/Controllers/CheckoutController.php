@@ -24,6 +24,7 @@ use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
 use App\Services\ShippingCostCalculator;
 use App\Support\CartManager;
+use App\Support\OrderConfirmationAccess;
 use App\Support\OrderNumberGenerator;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
@@ -238,6 +239,8 @@ class CheckoutController extends Controller
     private function redirectForCachedCheckoutOrder(array $cached): RedirectResponse
     {
         if ($cached['type'] === 'cod') {
+            OrderConfirmationAccess::grant(request(), $cached['order_number']);
+
             return redirect()->route('order.confirmation', $cached['order_number']);
         }
 
@@ -357,6 +360,7 @@ class CheckoutController extends Controller
             }
 
             Cache::put($resultKey, ['type' => 'cod', 'order_number' => $order->order_number], now()->addHours(self::ORDER_TOKEN_RESULT_TTL_HOURS));
+            OrderConfirmationAccess::grant($request, $order->order_number);
 
             return redirect()->route('order.confirmation', $order->order_number);
         }

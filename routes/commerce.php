@@ -9,6 +9,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Coupon;
 use App\Models\Order;
+use App\Support\OrderConfirmationAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -42,11 +43,15 @@ Route::middleware(['auth', 'auth.session', 'account.active'])->group(function ()
 });
 Route::get('/order/track', [OrderTrackingController::class, 'show'])->middleware('throttle:order-tracking')->name('order.track');
 Route::get('/order/track/check', [OrderTrackingController::class, 'checkRequirements'])->middleware('throttle:order-tracking')->name('order.track.check');
-Route::get('/order/{order:order_number}/confirmation', function (Order $order) {
+// FSA-03: only the owner or the session that placed the order — see
+// OrderConfirmationAccess. 404, not 403, so a guessed number reveals nothing.
+Route::get('/order/{order:order_number}/confirmation', function (Request $request, Order $order) {
+    abort_unless(OrderConfirmationAccess::allows($request, $order), 404);
+
     return inertia('order/OrderConfirmation', [
-        'order' => $order->load('items.product'),
+        'order' => OrderConfirmationAccess::payload($order),
     ]);
-})->name('order.confirmation');
+})->middleware('throttle:order-tracking')->name('order.confirmation');
 
 Route::post('/coupon/validate', function (Request $request) {
     $request->validate([

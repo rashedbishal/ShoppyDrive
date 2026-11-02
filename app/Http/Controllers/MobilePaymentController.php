@@ -19,6 +19,7 @@ use App\Services\CouponService;
 use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
+use App\Support\OrderConfirmationAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +52,8 @@ class MobilePaymentController extends Controller
         abort_if(auth()->id() !== $pending->user_id, 403);
 
         if ($pending->order_number !== null) {
+            OrderConfirmationAccess::grant(request(), $pending->order_number);
+
             return redirect()->route('order.confirmation', $pending->order_number);
         }
 
@@ -85,6 +88,8 @@ class MobilePaymentController extends Controller
         abort_if(auth()->id() !== $pending->user_id, 403);
 
         if ($pending->order_number !== null) {
+            OrderConfirmationAccess::grant($request, $pending->order_number);
+
             return redirect()->route('order.confirmation', $pending->order_number);
         }
 
@@ -190,6 +195,10 @@ class MobilePaymentController extends Controller
                         'product_id' => $item['product_id'],
                         'variant_id' => $item['variant_id'],
                         'flash_sale_item_id' => $flashSaleItemId,
+                        // FSA-12: the snapshot's server-reconciled bundle
+                        // tag (CartManager::revalidatePrices()), as COD and
+                        // OrderService already persist it.
+                        'bundle_id' => $item['bundle_id'] ?? null,
                         'product_name' => $item['product_name'],
                         'sku' => $item['sku'],
                         'price' => $item['price'],
@@ -287,6 +296,8 @@ class MobilePaymentController extends Controller
                 })(),
             };
         }
+
+        OrderConfirmationAccess::grant($request, $order->order_number);
 
         return redirect()->route('order.confirmation', $order->order_number);
     }
