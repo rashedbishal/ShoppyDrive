@@ -19,26 +19,29 @@ export default function HeroSlidesIndex({ slides }: Props) {
         <>
             <Head title="Hero Slides — Admin" />
             <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <Button
-                        asChild
-                        variant="ghost"
-                        size="icon"
-                        className="rounded-full"
-                    >
-                        <Link href={route('admin.homepage.index')}>
-                            <ArrowLeft className="size-5" />
-                        </Link>
-                    </Button>
-                    <div className="flex-1">
-                        <h1 className="text-2xl font-bold text-slate-900">
-                            Hero Slides
-                        </h1>
-                        <p className="text-sm text-slate-500">
-                            Manage the large banners at the top of the homepage.
-                        </p>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div className="flex items-center gap-4">
+                        <Button
+                            asChild
+                            variant="ghost"
+                            size="icon"
+                            className="shrink-0 rounded-full"
+                        >
+                            <Link href={route('admin.homepage.index')}>
+                                <ArrowLeft className="size-5" />
+                            </Link>
+                        </Button>
+                        <div className="flex-1">
+                            <h1 className="text-2xl font-bold text-slate-900">
+                                Hero Slides
+                            </h1>
+                            <p className="text-sm text-slate-500">
+                                Manage the large banners at the top of the
+                                homepage.
+                            </p>
+                        </div>
                     </div>
-                    <Button asChild>
+                    <Button asChild className="w-full sm:ml-auto sm:w-auto">
                         <Link href={route('admin.hero-slides.create')}>
                             <Plus className="mr-2 size-4" />
                             Add New Slide
@@ -84,20 +87,20 @@ export default function HeroSlidesIndex({ slides }: Props) {
                                             </div>
                                         )}
                                     </div>
-                                    <CardContent className="flex flex-1 flex-col justify-between p-6">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-[10px] font-bold tracking-widest text-primary uppercase">
+                                    <CardContent className="flex min-w-0 flex-1 flex-col justify-between p-6">
+                                        <div className="min-w-0 space-y-2">
+                                            <div className="flex min-w-0 items-center gap-2">
+                                                <p className="min-w-0 truncate text-[10px] font-bold tracking-widest text-primary uppercase">
                                                     {slide.eyebrow}
                                                 </p>
-                                                <span className="text-slate-300">
+                                                <span className="shrink-0 text-slate-300">
                                                     ·
                                                 </span>
-                                                <p className="text-xs text-slate-500">
+                                                <p className="shrink-0 text-xs whitespace-nowrap text-slate-500">
                                                     Order: {slide.sort_order}
                                                 </p>
                                             </div>
-                                            <h3 className="text-lg font-bold text-slate-800">
+                                            <h3 className="truncate text-lg font-bold text-slate-800">
                                                 {slide.title}
                                             </h3>
                                             <p className="line-clamp-2 text-sm text-slate-500">

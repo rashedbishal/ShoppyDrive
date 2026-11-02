@@ -33,15 +33,17 @@ class HeroSlideController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'eyebrow' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'title' => ['required', 'string', 'max:100'],
+            'eyebrow' => ['nullable', 'string', 'max:50'],
+            'description' => ['nullable', 'string', 'max:200'],
             'image' => ['required', 'file', 'mimes:'.self::MEDIA_EXTENSIONS, 'max:'.self::MEDIA_MAX_KILOBYTES],
-            'primary_cta_label' => ['nullable', 'string', 'max:100'],
+            'primary_cta_label' => ['nullable', 'string', 'max:40'],
             'primary_cta_href' => ['nullable', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
             'sort_order' => ['required', 'integer'],
             'stats' => ['nullable', 'array'],
+            'stats.*.label' => ['required', 'string', 'max:30'],
+            'stats.*.value' => ['required', 'string', 'max:30'],
         ]);
 
         $validated['image'] = '/storage/'.$request->file('image')->store('hero-slides', 'public');
@@ -61,17 +63,19 @@ class HeroSlideController extends Controller
     public function update(Request $request, HeroSlide $heroSlide): RedirectResponse
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'eyebrow' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'title' => ['required', 'string', 'max:100'],
+            'eyebrow' => ['nullable', 'string', 'max:50'],
+            'description' => ['nullable', 'string', 'max:200'],
             'image' => $request->hasFile('image')
                 ? ['required', 'file', 'mimes:'.self::MEDIA_EXTENSIONS, 'max:'.self::MEDIA_MAX_KILOBYTES]
                 : ['nullable'],
-            'primary_cta_label' => ['nullable', 'string', 'max:100'],
+            'primary_cta_label' => ['nullable', 'string', 'max:40'],
             'primary_cta_href' => ['nullable', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
             'sort_order' => ['required', 'integer'],
             'stats' => ['nullable', 'array'],
+            'stats.*.label' => ['required', 'string', 'max:30'],
+            'stats.*.value' => ['required', 'string', 'max:30'],
         ]);
 
         if ($request->hasFile('image')) {
