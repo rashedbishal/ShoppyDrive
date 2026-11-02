@@ -19,26 +19,29 @@ export default function HeroSlidesIndex({ slides }: Props) {
         <>
             <Head title="Hero Slides — Admin" />
             <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <Button
-                        asChild
-                        variant="ghost"
-                        size="icon"
-                        className="rounded-full"
-                    >
-                        <Link href={route('admin.homepage.index')}>
-                            <ArrowLeft className="size-5" />
-                        </Link>
-                    </Button>
-                    <div className="flex-1">
-                        <h1 className="text-2xl font-bold text-slate-900">
-                            Hero Slides
-                        </h1>
-                        <p className="text-sm text-slate-500">
-                            Manage the large banners at the top of the homepage.
-                        </p>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div className="flex items-center gap-4">
+                        <Button
+                            asChild
+                            variant="ghost"
+                            size="icon"
+                            className="shrink-0 rounded-full"
+                        >
+                            <Link href={route('admin.homepage.index')}>
+                                <ArrowLeft className="size-5" />
+                            </Link>
+                        </Button>
+                        <div className="flex-1">
+                            <h1 className="text-2xl font-bold text-slate-900">
+                                Hero Slides
+                            </h1>
+                            <p className="text-sm text-slate-500">
+                                Manage the large banners at the top of the
+                                homepage.
+                            </p>
+                        </div>
                     </div>
-                    <Button asChild>
+                    <Button asChild className="w-full sm:ml-auto sm:w-auto">
                         <Link href={route('admin.hero-slides.create')}>
                             <Plus className="mr-2 size-4" />
                             Add New Slide
