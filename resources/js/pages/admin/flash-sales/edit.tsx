@@ -87,10 +87,7 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
         setData('items', items);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        clearErrors();
+    const getClientErrors = (): Record<string, string> => {
         const clientErrors: Record<string, string> = validate(data, {
             name: [required(), maxLength(255)],
             starts_at: [required()],
@@ -114,6 +111,17 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
             clientErrors.items =
                 'Every product row needs a product, sale price, and stock limit.';
         }
+
+        return clientErrors;
+    };
+
+    const isFormValid = Object.keys(getClientErrors()).length === 0;
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        clearErrors();
+        const clientErrors = getClientErrors();
 
         if (Object.keys(clientErrors).length > 0) {
             setError(clientErrors);
@@ -190,10 +198,7 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                                                             item.product_id,
                                                     );
                                                 const usedIds = data.items
-                                                    .map(
-                                                        (it) =>
-                                                            it.product_id,
-                                                    )
+                                                    .map((it) => it.product_id)
                                                     .filter(Boolean);
                                                 const availableProducts =
                                                     products.filter(
@@ -208,9 +213,9 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                                                 return (
                                                     <div
                                                         key={i}
-                                                        className="flex items-end gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-3"
+                                                        className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-3 sm:flex-row sm:items-end"
                                                     >
-                                                        <div className="flex-1">
+                                                        <div className="min-w-0 flex-1">
                                                             <label className="mb-1 block text-xs font-medium text-slate-600">
                                                                 Product *
                                                             </label>
@@ -219,9 +224,7 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                                                                 value={
                                                                     item.product_id
                                                                 }
-                                                                onChange={(
-                                                                    e,
-                                                                ) =>
+                                                                onChange={(e) =>
                                                                     updateItem(
                                                                         i,
                                                                         'product_id',
@@ -249,17 +252,15 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                                                                             }{' '}
                                                                             (৳
                                                                             {p.price.toLocaleString()}
-
                                                                             )
                                                                         </option>
                                                                     ),
                                                                 )}
                                                             </Select>
                                                         </div>
-                                                        <div className="w-32">
+                                                        <div className="w-full sm:w-32">
                                                             <label className="mb-1 block text-xs font-medium text-slate-600">
-                                                                Sale Price (৳)
-                                                                *
+                                                                Sale Price (৳) *
                                                             </label>
                                                             <input
                                                                 type="number"
@@ -269,9 +270,7 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                                                                 value={
                                                                     item.sale_price
                                                                 }
-                                                                onChange={(
-                                                                    e,
-                                                                ) =>
+                                                                onChange={(e) =>
                                                                     updateItem(
                                                                         i,
                                                                         'sale_price',
@@ -291,7 +290,7 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                                                                 }
                                                             />
                                                         </div>
-                                                        <div className="w-28">
+                                                        <div className="w-full sm:w-28">
                                                             <label className="mb-1 block text-xs font-medium text-slate-600">
                                                                 Stock Limit *
                                                             </label>
@@ -302,9 +301,7 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                                                                 value={
                                                                     item.stock_limit
                                                                 }
-                                                                onChange={(
-                                                                    e,
-                                                                ) =>
+                                                                onChange={(e) =>
                                                                     updateItem(
                                                                         i,
                                                                         'stock_limit',
@@ -319,7 +316,7 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                                                             onClick={() =>
                                                                 removeItem(i)
                                                             }
-                                                            className="mb-0.5 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                                                            className="self-end rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 sm:mb-0.5 sm:self-auto"
                                                         >
                                                             <Trash2 className="size-4" />
                                                         </button>
@@ -342,15 +339,10 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                                 <CardContent className="space-y-4 pt-4">
                                     <Field label="Name *" error={errors.name}>
                                         <input
-                                            className={inputClass(
-                                                errors.name,
-                                            )}
+                                            className={inputClass(errors.name)}
                                             value={data.name}
                                             onChange={(e) =>
-                                                setData(
-                                                    'name',
-                                                    e.target.value,
-                                                )
+                                                setData('name', e.target.value)
                                             }
                                         />
                                     </Field>
@@ -412,7 +404,7 @@ export default function FlashSaleEdit({ flashSale, products }: Props) {
                     <div className="flex items-center gap-3">
                         <Button
                             type="submit"
-                            disabled={processing}
+                            disabled={processing || !isFormValid}
                             className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
                         >
                             {processing ? 'Saving…' : 'Save Changes'}
