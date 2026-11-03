@@ -370,225 +370,289 @@ export default function ProductDetail({
                 />
             </Head>
 
-            <div className="container mx-auto px-4 py-6">
-                <Breadcrumb items={breadcrumbItems} className="mb-8" />
+            <div className="py-6 lg:py-10">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <Breadcrumb items={breadcrumbItems} className="mb-8" />
 
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-8 xl:gap-12">
-                    {/* Left Column: Media Gallery */}
-                    <div className="lg:col-span-7 xl:col-span-8">
-                        <div className="flex flex-col gap-4 md:flex-row">
-                            {/* Thumbnails - Left on desktop */}
-                            <div className="scrollbar-hide order-2 flex max-h-[600px] gap-3 overflow-x-auto py-1 md:order-1 md:flex-col md:overflow-y-auto">
-                                {media.map((item, idx) => (
-                                    <button
-                                        key={item.id}
-                                        onClick={() =>
-                                            handleThumbnailSelect(idx)
-                                        }
-                                        className={`relative aspect-[4/3] w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
-                                            currentImageIndex === idx
-                                                ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary-light)]'
-                                                : 'border-transparent hover:border-[var(--color-border)]'
-                                        }`}
-                                    >
-                                        {item.type === 'video' ? (
-                                            <div className="relative flex h-full w-full items-center justify-center bg-slate-900">
-                                                <video
-                                                    src={item.path}
-                                                    className="h-full w-full object-cover opacity-50"
-                                                />
-                                                <Film className="absolute z-10 size-6 text-white" />
-                                            </div>
-                                        ) : (
-                                            <img
-                                                src={item.path}
-                                                alt={item.alt || product.name}
-                                                className="h-full w-full object-cover"
-                                            />
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Main Media */}
-                            <div className="group relative order-1 aspect-[4/3] flex-1 overflow-hidden rounded-3xl bg-white shadow-sm md:order-2">
-                                <AnimatePresence mode="wait">
-                                    {currentMedia ? (
-                                        <motion.div
-                                            key={currentMedia.id}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{ duration: 0.3 }}
-                                            className="h-full w-full"
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-8 xl:gap-12">
+                        {/* Left Column: Media Gallery */}
+                        <div className="lg:col-span-7 xl:col-span-8">
+                            <div className="flex flex-col gap-4 md:flex-row">
+                                {/* Thumbnails - Left on desktop */}
+                                <div className="scrollbar-hide order-2 flex max-h-[600px] gap-3 overflow-x-auto py-1 md:order-1 md:flex-col md:overflow-y-auto">
+                                    {media.map((item, idx) => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() =>
+                                                handleThumbnailSelect(idx)
+                                            }
+                                            className={`relative aspect-[4/3] w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                                                currentImageIndex === idx
+                                                    ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary-light)]'
+                                                    : 'border-transparent hover:border-[var(--color-border)]'
+                                            }`}
                                         >
-                                            {currentMedia.type === 'video' ? (
-                                                <video
-                                                    src={currentMedia.path}
-                                                    className="h-full w-full object-cover"
-                                                    controls
-                                                    autoPlay
-                                                    muted
-                                                />
+                                            {item.type === 'video' ? (
+                                                <div className="relative flex h-full w-full items-center justify-center bg-slate-900">
+                                                    <video
+                                                        src={item.path}
+                                                        className="h-full w-full object-cover opacity-50"
+                                                    />
+                                                    <Film className="absolute z-10 size-6 text-white" />
+                                                </div>
                                             ) : (
                                                 <img
-                                                    src={currentMedia.path}
+                                                    src={item.path}
                                                     alt={
-                                                        currentMedia.alt ||
-                                                        product.name
+                                                        item.alt || product.name
                                                     }
-                                                    className="h-full w-full cursor-zoom-in object-cover"
-                                                    onClick={() =>
-                                                        setIsLightboxOpen(true)
-                                                    }
+                                                    className="h-full w-full object-cover"
                                                 />
                                             )}
-                                        </motion.div>
-                                    ) : (
-                                        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-slate-50">
-                                            <svg
-                                                className="size-20 text-slate-200"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={1}
-                                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                                />
-                                            </svg>
-                                            <span className="text-sm text-slate-400">
-                                                No media available
-                                            </span>
-                                        </div>
-                                    )}
-                                </AnimatePresence>
-
-                                {discountPercent > 0 && (
-                                    <Badge
-                                        variant="amber"
-                                        className="absolute top-6 left-6 px-4 py-1.5 text-sm font-bold shadow-lg"
-                                    >
-                                        SALE {discountPercent}% OFF
-                                    </Badge>
-                                )}
-
-                                {product.in_flash_sale && (
-                                    <div className="absolute top-6 right-6 z-10">
-                                        <div className="rounded-2xl border border-white/20 bg-black/70 p-3 backdrop-blur-md">
-                                            <p className="mb-2 text-[10px] font-bold tracking-widest text-amber-400 uppercase">
-                                                ⚡ Flash Sale Ends In
-                                            </p>
-                                            <FlashSaleCountdown
-                                                ends_at={new Date(
-                                                    // eslint-disable-next-line react-hooks/purity -- existing placeholder countdown; the page has no real flash-sale end time yet
-                                                    Date.now() + 86400000,
-                                                ).toISOString()}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {media.length > 0 &&
-                                    currentMedia?.type === 'image' && (
-                                        <button
-                                            onClick={() =>
-                                                setIsLightboxOpen(true)
-                                            }
-                                            className="absolute right-6 bottom-6 rounded-full bg-white/90 p-3 text-[var(--color-text-primary)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
-                                        >
-                                            <Maximize2 size={20} />
                                         </button>
-                                    )}
-                            </div>
-                        </div>
-                    </div>
+                                    ))}
+                                </div>
 
-                    {/* Right Column: Product Info */}
-                    <div className="lg:col-span-5 xl:col-span-4">
-                        <div className="sticky top-24 rounded-3xl border border-[var(--color-border)] bg-white p-6 shadow-sm md:p-8">
-                            {/* Brand & Stats */}
-                            <div className="mb-4 flex items-center justify-between">
-                                <Link
-                                    href={route(
-                                        'brand.show',
-                                        product.brand?.slug || '#',
+                                {/* Main Media */}
+                                <div className="group relative order-1 aspect-[4/3] flex-1 overflow-hidden rounded-3xl bg-white shadow-sm md:order-2">
+                                    <AnimatePresence mode="wait">
+                                        {currentMedia ? (
+                                            <motion.div
+                                                key={currentMedia.id}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="h-full w-full"
+                                            >
+                                                {currentMedia.type ===
+                                                'video' ? (
+                                                    <video
+                                                        src={currentMedia.path}
+                                                        className="h-full w-full object-cover"
+                                                        controls
+                                                        autoPlay
+                                                        muted
+                                                    />
+                                                ) : (
+                                                    <img
+                                                        src={currentMedia.path}
+                                                        alt={
+                                                            currentMedia.alt ||
+                                                            product.name
+                                                        }
+                                                        className="h-full w-full cursor-zoom-in object-cover"
+                                                        onClick={() =>
+                                                            setIsLightboxOpen(
+                                                                true,
+                                                            )
+                                                        }
+                                                    />
+                                                )}
+                                            </motion.div>
+                                        ) : (
+                                            <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-slate-50">
+                                                <svg
+                                                    className="size-20 text-slate-200"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={1}
+                                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                                    />
+                                                </svg>
+                                                <span className="text-sm text-slate-400">
+                                                    No media available
+                                                </span>
+                                            </div>
+                                        )}
+                                    </AnimatePresence>
+
+                                    {discountPercent > 0 && (
+                                        <Badge
+                                            variant="amber"
+                                            className="absolute top-6 left-6 px-4 py-1.5 text-sm font-bold shadow-lg"
+                                        >
+                                            SALE {discountPercent}% OFF
+                                        </Badge>
                                     )}
-                                    className="text-sm font-bold tracking-widest text-[var(--color-primary)] uppercase hover:underline"
-                                >
-                                    {product.brand?.name || 'GENUINE PRODUCT'}
-                                </Link>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-1">
-                                        <Star
-                                            size={16}
-                                            className="fill-[var(--color-accent)] text-[var(--color-accent)]"
-                                        />
-                                        <span className="text-sm font-bold">
-                                            {product.average_rating?.toFixed(
-                                                1,
-                                            ) || '5.0'}
-                                        </span>
-                                    </div>
-                                    <div className="h-4 w-px bg-[var(--color-border)]" />
-                                    <span className="text-xs font-medium tracking-wide text-[var(--color-text-muted)] uppercase">
-                                        SKU:{' '}
-                                        {selectedVariant?.sku ||
-                                            product.sku ||
-                                            'N/A'}
-                                    </span>
+
+                                    {product.in_flash_sale && (
+                                        <div className="absolute top-6 right-6 z-10">
+                                            <div className="rounded-2xl border border-white/20 bg-black/70 p-3 backdrop-blur-md">
+                                                <p className="mb-2 text-[10px] font-bold tracking-widest text-amber-400 uppercase">
+                                                    ⚡ Flash Sale Ends In
+                                                </p>
+                                                <FlashSaleCountdown
+                                                    ends_at={new Date(
+                                                        // eslint-disable-next-line react-hooks/purity -- existing placeholder countdown; the page has no real flash-sale end time yet
+                                                        Date.now() + 86400000,
+                                                    ).toISOString()}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {media.length > 0 &&
+                                        currentMedia?.type === 'image' && (
+                                            <button
+                                                onClick={() =>
+                                                    setIsLightboxOpen(true)
+                                                }
+                                                className="absolute right-6 bottom-6 rounded-full bg-white/90 p-3 text-[var(--color-text-primary)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                                            >
+                                                <Maximize2 size={20} />
+                                            </button>
+                                        )}
                                 </div>
                             </div>
+                        </div>
 
-                            <h1 className="mb-4 font-serif text-3xl leading-tight font-bold text-[var(--color-text-primary)]">
-                                {product.name}
-                            </h1>
-
-                            <div className="mb-6 flex items-baseline gap-4">
-                                <span className="text-4xl font-bold text-[var(--color-primary)]">
-                                    {formatCurrency(currentPrice)}
-                                </span>
-                                {hasDiscount && (
-                                    <span className="text-xl text-[var(--color-text-muted)] line-through">
-                                        {formatCurrency(comparePrice!)}
-                                    </span>
-                                )}
-                            </div>
-
-                            <p className="mb-8 line-clamp-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-                                {product.short_description}
-                            </p>
-
-                            <div className="mb-8 h-px w-full bg-[var(--color-border)]" />
-
-                            {/* Variant Selectors */}
-                            <div className="mb-8 space-y-6">
-                                {attributes.map((attr) => (
-                                    <div key={attr.id} className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-bold tracking-wide text-[var(--color-text-primary)] uppercase">
-                                                Select {attr.name}
-                                            </span>
-                                            <span className="text-xs font-medium text-[var(--color-text-muted)]">
-                                                {selectedAttributes[attr.name]}
+                        {/* Right Column: Product Info */}
+                        <div className="lg:col-span-5 xl:col-span-4">
+                            <div className="sticky top-24 rounded-3xl border border-[var(--color-border)] bg-white p-6 shadow-sm md:p-8">
+                                {/* Brand & Stats */}
+                                <div className="mb-4 flex items-center justify-between">
+                                    <Link
+                                        href={route(
+                                            'brand.show',
+                                            product.brand?.slug || '#',
+                                        )}
+                                        className="text-sm font-bold tracking-widest text-[var(--color-primary)] uppercase hover:underline"
+                                    >
+                                        {product.brand?.name ||
+                                            'GENUINE PRODUCT'}
+                                    </Link>
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-1">
+                                            <Star
+                                                size={16}
+                                                className="fill-[var(--color-accent)] text-[var(--color-accent)]"
+                                            />
+                                            <span className="text-sm font-bold">
+                                                {product.average_rating?.toFixed(
+                                                    1,
+                                                ) || '5.0'}
                                             </span>
                                         </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {attr.values.map(
-                                                (val: AttributeValue) => {
-                                                    const isSelected =
+                                        <div className="h-4 w-px bg-[var(--color-border)]" />
+                                        <span className="text-xs font-medium tracking-wide text-[var(--color-text-muted)] uppercase">
+                                            SKU:{' '}
+                                            {selectedVariant?.sku ||
+                                                product.sku ||
+                                                'N/A'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <h1 className="mb-4 font-serif text-3xl leading-tight font-bold text-[var(--color-text-primary)]">
+                                    {product.name}
+                                </h1>
+
+                                <div className="mb-6 flex items-baseline gap-4">
+                                    <span className="text-4xl font-bold text-[var(--color-primary)]">
+                                        {formatCurrency(currentPrice)}
+                                    </span>
+                                    {hasDiscount && (
+                                        <span className="text-xl text-[var(--color-text-muted)] line-through">
+                                            {formatCurrency(comparePrice!)}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <p className="mb-8 line-clamp-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                                    {product.short_description}
+                                </p>
+
+                                <div className="mb-8 h-px w-full bg-[var(--color-border)]" />
+
+                                {/* Variant Selectors */}
+                                <div className="mb-8 space-y-6">
+                                    {attributes.map((attr) => (
+                                        <div
+                                            key={attr.id}
+                                            className="space-y-3"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-bold tracking-wide text-[var(--color-text-primary)] uppercase">
+                                                    Select {attr.name}
+                                                </span>
+                                                <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                                                    {
                                                         selectedAttributes[
                                                             attr.name
-                                                        ] === val.value;
-                                                    const isAvailable =
-                                                        isAttributeValueAvailable(
-                                                            attr.name,
-                                                            val.value,
-                                                        );
+                                                        ]
+                                                    }
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {attr.values.map(
+                                                    (val: AttributeValue) => {
+                                                        const isSelected =
+                                                            selectedAttributes[
+                                                                attr.name
+                                                            ] === val.value;
+                                                        const isAvailable =
+                                                            isAttributeValueAvailable(
+                                                                attr.name,
+                                                                val.value,
+                                                            );
 
-                                                    if (attr.type === 'color') {
+                                                        if (
+                                                            attr.type ===
+                                                            'color'
+                                                        ) {
+                                                            return (
+                                                                <button
+                                                                    key={val.id}
+                                                                    onClick={() =>
+                                                                        isAvailable &&
+                                                                        handleAttributeSelect(
+                                                                            attr.name,
+                                                                            val.value,
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        !isAvailable
+                                                                    }
+                                                                    className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${
+                                                                        isSelected
+                                                                            ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary-light)]'
+                                                                            : 'border-transparent'
+                                                                    } ${!isAvailable ? 'cursor-not-allowed opacity-30' : ''}`}
+                                                                    title={
+                                                                        isAvailable
+                                                                            ? val.value
+                                                                            : `${val.value} — not available in this combination`
+                                                                    }
+                                                                >
+                                                                    <span
+                                                                        className="h-7 w-7 rounded-full border border-black/5 shadow-inner"
+                                                                        style={{
+                                                                            backgroundColor:
+                                                                                val.color_hex ||
+                                                                                '#ccc',
+                                                                        }}
+                                                                    />
+                                                                    {isSelected && (
+                                                                        <Check
+                                                                            size={
+                                                                                12
+                                                                            }
+                                                                            className="absolute text-white drop-shadow-md"
+                                                                        />
+                                                                    )}
+                                                                    {!isAvailable && (
+                                                                        <span className="absolute inset-0 rotate-45 rounded-full border-t-2 border-[var(--color-text-muted)]" />
+                                                                    )}
+                                                                </button>
+                                                            );
+                                                        }
+
                                                         return (
                                                             <button
                                                                 key={val.id}
@@ -602,546 +666,524 @@ export default function ProductDetail({
                                                                 disabled={
                                                                     !isAvailable
                                                                 }
-                                                                className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${
+                                                                className={`rounded-xl border-2 px-4 py-2 text-sm font-bold transition-all ${
                                                                     isSelected
-                                                                        ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary-light)]'
-                                                                        : 'border-transparent'
-                                                                } ${!isAvailable ? 'cursor-not-allowed opacity-30' : ''}`}
+                                                                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]'
+                                                                        : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-primary)]'
+                                                                } ${!isAvailable ? 'cursor-not-allowed line-through opacity-40' : ''}`}
                                                                 title={
                                                                     isAvailable
-                                                                        ? val.value
+                                                                        ? undefined
                                                                         : `${val.value} — not available in this combination`
                                                                 }
                                                             >
-                                                                <span
-                                                                    className="h-7 w-7 rounded-full border border-black/5 shadow-inner"
-                                                                    style={{
-                                                                        backgroundColor:
-                                                                            val.color_hex ||
-                                                                            '#ccc',
-                                                                    }}
-                                                                />
-                                                                {isSelected && (
-                                                                    <Check
-                                                                        size={
-                                                                            12
-                                                                        }
-                                                                        className="absolute text-white drop-shadow-md"
-                                                                    />
-                                                                )}
-                                                                {!isAvailable && (
-                                                                    <span className="absolute inset-0 rotate-45 rounded-full border-t-2 border-[var(--color-text-muted)]" />
-                                                                )}
+                                                                {val.value}
                                                             </button>
                                                         );
-                                                    }
-
-                                                    return (
-                                                        <button
-                                                            key={val.id}
-                                                            onClick={() =>
-                                                                isAvailable &&
-                                                                handleAttributeSelect(
-                                                                    attr.name,
-                                                                    val.value,
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                !isAvailable
-                                                            }
-                                                            className={`rounded-xl border-2 px-4 py-2 text-sm font-bold transition-all ${
-                                                                isSelected
-                                                                    ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]'
-                                                                    : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-primary)]'
-                                                            } ${!isAvailable ? 'cursor-not-allowed line-through opacity-40' : ''}`}
-                                                            title={
-                                                                isAvailable
-                                                                    ? undefined
-                                                                    : `${val.value} — not available in this combination`
-                                                            }
-                                                        >
-                                                            {val.value}
-                                                        </button>
-                                                    );
-                                                },
-                                            )}
+                                                    },
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Stock & Quantity */}
-                            <div className="mb-8 space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div
-                                            className={`h-2.5 w-2.5 rounded-full ${isOutOfStock ? 'bg-[var(--color-error)]' : stockQuantity <= lowStockThreshold ? 'animate-pulse bg-[var(--color-warning)]' : 'bg-[var(--color-success)]'}`}
-                                        />
-                                        <span
-                                            className={`text-sm font-bold ${isOutOfStock ? 'text-[var(--color-error)]' : stockQuantity <= lowStockThreshold ? 'text-[var(--color-warning)]' : 'text-[var(--color-success)]'}`}
-                                        >
-                                            {isOutOfStock
-                                                ? 'Out of Stock'
-                                                : stockQuantity <=
-                                                    lowStockThreshold
-                                                  ? `Hurry! Only ${stockQuantity} left`
-                                                  : 'In Stock & Ready to Ship'}
-                                        </span>
-                                    </div>
-                                    {!isOutOfStock && (
-                                        <QuantityStepper
-                                            value={quantity}
-                                            onChange={setQuantity}
-                                            max={stockQuantity}
-                                            className="h-10"
-                                        />
-                                    )}
+                                    ))}
                                 </div>
-                            </div>
 
-                            {/* Actions */}
-                            <div className="relative mb-8 flex flex-col gap-3">
-                                <CryBabyEasterEgg
-                                    key={product.id}
-                                    productId={product.id}
-                                    enabled={
-                                        Boolean(product.cry_baby_enabled) &&
-                                        !isOutOfStock
-                                    }
-                                />
-                                <Button
-                                    data-cry-baby-target
-                                    onClick={handleAddToCart}
-                                    disabled={isOutOfStock}
-                                    size="lg"
-                                    className="flex h-14 w-full gap-3 rounded-2xl text-lg font-bold shadow-[var(--color-primary)]/20 shadow-lg"
-                                >
-                                    <ShoppingCart size={22} />
-                                    Add to Cart
-                                </Button>
-                                <Button
-                                    onClick={handleBuyNow}
-                                    disabled={isOutOfStock}
-                                    variant="secondary"
-                                    size="lg"
-                                    className="h-14 w-full rounded-2xl text-lg font-bold"
-                                >
-                                    Buy Now
-                                </Button>
+                                {/* Stock & Quantity */}
+                                <div className="mb-8 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div
+                                                className={`h-2.5 w-2.5 rounded-full ${isOutOfStock ? 'bg-[var(--color-error)]' : stockQuantity <= lowStockThreshold ? 'animate-pulse bg-[var(--color-warning)]' : 'bg-[var(--color-success)]'}`}
+                                            />
+                                            <span
+                                                className={`text-sm font-bold ${isOutOfStock ? 'text-[var(--color-error)]' : stockQuantity <= lowStockThreshold ? 'text-[var(--color-warning)]' : 'text-[var(--color-success)]'}`}
+                                            >
+                                                {isOutOfStock
+                                                    ? 'Out of Stock'
+                                                    : stockQuantity <=
+                                                        lowStockThreshold
+                                                      ? `Hurry! Only ${stockQuantity} left`
+                                                      : 'In Stock & Ready to Ship'}
+                                            </span>
+                                        </div>
+                                        {!isOutOfStock && (
+                                            <QuantityStepper
+                                                value={quantity}
+                                                onChange={setQuantity}
+                                                max={stockQuantity}
+                                                className="h-10"
+                                            />
+                                        )}
+                                    </div>
+                                </div>
 
-                                <div className="mt-2 grid grid-cols-2 gap-3">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() =>
-                                            toggleWishlist(product.id)
+                                {/* Actions */}
+                                <div className="relative mb-8 flex flex-col gap-3">
+                                    <CryBabyEasterEgg
+                                        key={product.id}
+                                        productId={product.id}
+                                        enabled={
+                                            Boolean(product.cry_baby_enabled) &&
+                                            !isOutOfStock
                                         }
-                                        className={`flex h-12 gap-2 rounded-xl font-semibold ${isWishlisted ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]' : ''}`}
+                                    />
+                                    <Button
+                                        data-cry-baby-target
+                                        onClick={handleAddToCart}
+                                        disabled={isOutOfStock}
+                                        size="lg"
+                                        className="flex h-14 w-full gap-3 rounded-2xl text-lg font-bold shadow-[var(--color-primary)]/20 shadow-lg"
                                     >
-                                        <Heart
-                                            size={18}
-                                            fill={
-                                                isWishlisted
-                                                    ? 'currentColor'
-                                                    : 'none'
-                                            }
-                                        />
-                                        {isWishlisted
-                                            ? 'Wishlisted'
-                                            : 'Wishlist'}
+                                        <ShoppingCart size={22} />
+                                        Add to Cart
                                     </Button>
-                                    <div className="flex gap-2">
+                                    <Button
+                                        onClick={handleBuyNow}
+                                        disabled={isOutOfStock}
+                                        variant="secondary"
+                                        size="lg"
+                                        className="h-14 w-full rounded-2xl text-lg font-bold"
+                                    >
+                                        Buy Now
+                                    </Button>
+
+                                    <div className="mt-2 grid grid-cols-2 gap-3">
                                         <Button
                                             variant="outline"
-                                            className="flex h-12 w-full gap-2 rounded-xl font-semibold"
-                                            onClick={() => shareProduct('copy')}
+                                            onClick={() =>
+                                                toggleWishlist(product.id)
+                                            }
+                                            className={`flex h-12 gap-2 rounded-xl font-semibold ${isWishlisted ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]' : ''}`}
                                         >
-                                            <Share2 size={18} />
-                                            Share
+                                            <Heart
+                                                size={18}
+                                                fill={
+                                                    isWishlisted
+                                                        ? 'currentColor'
+                                                        : 'none'
+                                                }
+                                            />
+                                            {isWishlisted
+                                                ? 'Wishlisted'
+                                                : 'Wishlist'}
                                         </Button>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                className="flex h-12 w-full gap-2 rounded-xl font-semibold"
+                                                onClick={() =>
+                                                    shareProduct('copy')
+                                                }
+                                            >
+                                                <Share2 size={18} />
+                                                Share
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Trust Badges */}
-                            <div className="grid grid-cols-3 gap-2 border-t border-[var(--color-border)] pt-6">
-                                <div className="flex flex-col items-center gap-1.5 text-center">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                                        <ShieldCheck size={20} />
+                                {/* Trust Badges */}
+                                <div className="grid grid-cols-3 gap-2 border-t border-[var(--color-border)] pt-6">
+                                    <div className="flex flex-col items-center gap-1.5 text-center">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                                            <ShieldCheck size={20} />
+                                        </div>
+                                        <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-primary)] uppercase">
+                                            100% Genuine
+                                        </span>
                                     </div>
-                                    <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-primary)] uppercase">
-                                        100% Genuine
-                                    </span>
-                                </div>
-                                <div className="flex flex-col items-center gap-1.5 text-center">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50 text-green-600">
-                                        <Truck size={20} />
+                                    <div className="flex flex-col items-center gap-1.5 text-center">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50 text-green-600">
+                                            <Truck size={20} />
+                                        </div>
+                                        <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-primary)] uppercase">
+                                            Fast Delivery
+                                        </span>
                                     </div>
-                                    <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-primary)] uppercase">
-                                        Fast Delivery
-                                    </span>
-                                </div>
-                                <div className="flex flex-col items-center gap-1.5 text-center">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600">
-                                        <Undo2 size={20} />
+                                    <div className="flex flex-col items-center gap-1.5 text-center">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                                            <Undo2 size={20} />
+                                        </div>
+                                        <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-primary)] uppercase">
+                                            7 Days Return
+                                        </span>
                                     </div>
-                                    <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-primary)] uppercase">
-                                        7 Days Return
-                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Tabs Section */}
-                <div className="mt-10 rounded-3xl border border-[var(--color-border)] bg-white p-4 shadow-sm sm:p-6 md:mt-16 md:p-10">
-                    <Tabs defaultValue="description" className="w-full">
-                        {/* Phones: three equal columns with short labels. sm+: full labels, left-aligned.
+                    {/* Tabs Section */}
+                    <div className="mt-10 rounded-3xl border border-[var(--color-border)] bg-white p-4 shadow-sm sm:p-6 md:mt-16 md:p-10">
+                        <Tabs defaultValue="description" className="w-full">
+                            {/* Phones: three equal columns with short labels. sm+: full labels, left-aligned.
                             The active underline comes from TabsTrigger itself. */}
-                        <TabsList className="mb-6 grid w-full grid-cols-3 border-b border-[var(--color-border)] sm:mb-8 sm:flex sm:justify-start sm:gap-8">
-                            <TabsTrigger
-                                value="description"
-                                className="px-1 py-3 text-sm font-bold sm:px-0 sm:py-4 sm:text-lg"
-                            >
-                                <span className="sm:hidden">Description</span>
-                                <span className="hidden sm:inline">
-                                    Product Description
-                                </span>
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="reviews"
-                                className="px-1 py-3 text-sm font-bold sm:px-0 sm:py-4 sm:text-lg"
-                            >
-                                Reviews
-                                <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--color-surface-alt)] px-1.5 text-xs font-bold text-[var(--color-text-secondary)] sm:text-sm">
-                                    {reviews.length}
-                                </span>
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="shipping"
-                                className="px-1 py-3 text-sm font-bold sm:px-0 sm:py-4 sm:text-lg"
-                            >
-                                <span className="sm:hidden">Shipping</span>
-                                <span className="hidden sm:inline">
-                                    Shipping & Returns
-                                </span>
-                            </TabsTrigger>
-                        </TabsList>
+                            <TabsList className="mb-6 grid w-full grid-cols-3 border-b border-[var(--color-border)] sm:mb-8 sm:flex sm:justify-start sm:gap-8">
+                                <TabsTrigger
+                                    value="description"
+                                    className="px-1 py-3 text-sm font-bold sm:px-0 sm:py-4 sm:text-lg"
+                                >
+                                    <span className="sm:hidden">
+                                        Description
+                                    </span>
+                                    <span className="hidden sm:inline">
+                                        Product Description
+                                    </span>
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="reviews"
+                                    className="px-1 py-3 text-sm font-bold sm:px-0 sm:py-4 sm:text-lg"
+                                >
+                                    Reviews
+                                    <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--color-surface-alt)] px-1.5 text-xs font-bold text-[var(--color-text-secondary)] sm:text-sm">
+                                        {reviews.length}
+                                    </span>
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="shipping"
+                                    className="px-1 py-3 text-sm font-bold sm:px-0 sm:py-4 sm:text-lg"
+                                >
+                                    <span className="sm:hidden">Shipping</span>
+                                    <span className="hidden sm:inline">
+                                        Shipping & Returns
+                                    </span>
+                                </TabsTrigger>
+                            </TabsList>
 
-                        <TabsContent value="description" className="mt-0">
-                            {/* Admin-authored HTML: keep images, tables and code inside the card on small screens */}
-                            <div
-                                className="prose prose-sm max-w-none leading-relaxed break-words text-[var(--color-text-secondary)] md:prose-base prose-headings:text-[var(--color-text-primary)] prose-a:text-[var(--color-primary)] prose-strong:text-[var(--color-text-primary)] [&_iframe]:max-w-full [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-xl [&_pre]:overflow-x-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_video]:max-w-full"
-                                dangerouslySetInnerHTML={{
-                                    __html:
-                                        product.description ||
-                                        '<p>No description available.</p>',
-                                }}
-                            />
-                        </TabsContent>
+                            <TabsContent value="description" className="mt-0">
+                                {/* Admin-authored HTML: keep images, tables and code inside the card on small screens */}
+                                <div
+                                    className="prose prose-sm max-w-none leading-relaxed break-words text-[var(--color-text-secondary)] md:prose-base prose-headings:text-[var(--color-text-primary)] prose-a:text-[var(--color-primary)] prose-strong:text-[var(--color-text-primary)] [&_iframe]:max-w-full [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-xl [&_pre]:overflow-x-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_video]:max-w-full"
+                                    dangerouslySetInnerHTML={{
+                                        __html:
+                                            product.description ||
+                                            '<p>No description available.</p>',
+                                    }}
+                                />
+                            </TabsContent>
 
-                        <TabsContent value="reviews" className="mt-0">
-                            <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
-                                <div className="min-w-0 lg:col-span-4">
-                                    <RatingBreakdown
-                                        breakdown={ratingBreakdown}
-                                    />
-                                    <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-white p-4 sm:mt-8 sm:p-6">
-                                        <h4 className="mb-1 flex items-center gap-2 font-bold text-[var(--color-text-primary)]">
-                                            <MessageSquare
-                                                size={16}
-                                                className="text-[var(--color-primary)]"
-                                            />
-                                            Write a Review
-                                        </h4>
-
-                                        {!auth.user ? (
-                                            <div className="mt-3">
-                                                <p className="mb-3 text-sm text-[var(--color-text-secondary)]">
-                                                    Please log in to share your
-                                                    experience.
-                                                </p>
-                                                <Link
-                                                    href={route('login')}
-                                                    className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[var(--color-primary-hover)]"
-                                                >
-                                                    Log in to review
-                                                </Link>
-                                            </div>
-                                        ) : hasReviewed ? (
-                                            <p className="mt-3 flex items-center gap-1.5 text-sm text-[var(--color-success)]">
-                                                <Check size={14} />
-                                                You have already reviewed this
-                                                product.
-                                            </p>
-                                        ) : (
-                                            <form
-                                                onSubmit={submitReview}
-                                                className="mt-4 space-y-4"
-                                            >
-                                                {/* Star picker */}
-                                                <div className="space-y-1">
-                                                    <span className="text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase">
-                                                        Your Rating *
-                                                    </span>
-                                                    <StarRating
-                                                        rating={reviewRating}
-                                                        interactive
-                                                        size="lg"
-                                                        onChange={
-                                                            setReviewRating
-                                                        }
-                                                    />
-                                                    {reviewErrors.rating && (
-                                                        <p className="text-xs text-red-500">
-                                                            {
-                                                                reviewErrors.rating
-                                                            }
-                                                        </p>
-                                                    )}
-                                                </div>
-
-                                                <div className="space-y-1">
-                                                    <label className="text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase">
-                                                        Title{' '}
-                                                        <span className="font-normal normal-case">
-                                                            (optional)
-                                                        </span>
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={
-                                                            reviewForm.data
-                                                                .title
-                                                        }
-                                                        onChange={(e) =>
-                                                            reviewForm.setData(
-                                                                'title',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="Summarise your experience"
-                                                        maxLength={255}
-                                                        className="h-10 w-full rounded-xl border border-[var(--color-border)] px-3 text-sm focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:outline-none"
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-1">
-                                                    <label className="text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase">
-                                                        Review *
-                                                    </label>
-                                                    <textarea
-                                                        value={
-                                                            reviewForm.data.body
-                                                        }
-                                                        onChange={(e) =>
-                                                            reviewForm.setData(
-                                                                'body',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder="Tell others what you think about this product…"
-                                                        rows={4}
-                                                        maxLength={2000}
-                                                        className="w-full resize-none rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:outline-none"
-                                                    />
-                                                    {reviewForm.errors.body && (
-                                                        <p className="text-xs text-red-500">
-                                                            {
-                                                                reviewForm
-                                                                    .errors.body
-                                                            }
-                                                        </p>
-                                                    )}
-                                                    {reviewErrors.review && (
-                                                        <p className="text-xs text-red-500">
-                                                            {
-                                                                reviewErrors.review
-                                                            }
-                                                        </p>
-                                                    )}
-                                                </div>
-
-                                                <Button
-                                                    type="submit"
-                                                    disabled={
-                                                        reviewSubmitting ||
-                                                        reviewRating === 0
-                                                    }
-                                                    className="w-full rounded-xl font-bold"
-                                                >
-                                                    {reviewSubmitting
-                                                        ? 'Submitting…'
-                                                        : 'Submit Review'}
-                                                </Button>
-                                            </form>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="min-w-0 lg:col-span-8">
-                                    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4 sm:mb-8">
-                                        <h3 className="text-lg font-bold text-[var(--color-text-primary)] sm:text-xl">
-                                            User Reviews
-                                        </h3>
-                                        <div className="flex items-center gap-2">
-                                            <span className="hidden text-sm font-medium text-[var(--color-text-muted)] sm:inline">
-                                                Sort by:
-                                            </span>
-                                            <Select
-                                                aria-label="Sort reviews"
-                                                containerClassName="min-w-36"
-                                                selectClassName="h-9 rounded-full px-3.5 text-sm font-bold"
-                                            >
-                                                <option>Newest First</option>
-                                                <option>Highest Rated</option>
-                                                <option>Lowest Rated</option>
-                                                <option>Most Helpful</option>
-                                            </Select>
-                                        </div>
-                                    </div>
-
-                                    {reviews.length > 0 ? (
-                                        <div className="space-y-2">
-                                            {reviews.map((review) => (
-                                                <ReviewCard
-                                                    key={review.id}
-                                                    review={review}
+                            <TabsContent value="reviews" className="mt-0">
+                                <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
+                                    <div className="min-w-0 lg:col-span-4">
+                                        <RatingBreakdown
+                                            breakdown={ratingBreakdown}
+                                        />
+                                        <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-white p-4 sm:mt-8 sm:p-6">
+                                            <h4 className="mb-1 flex items-center gap-2 font-bold text-[var(--color-text-primary)]">
+                                                <MessageSquare
+                                                    size={16}
+                                                    className="text-[var(--color-primary)]"
                                                 />
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="rounded-3xl bg-[var(--color-surface-alt)] px-4 py-12 text-center sm:py-20">
-                                            <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-white text-[var(--color-text-muted)] sm:size-16">
-                                                <MessageSquare className="size-7 sm:size-8" />
-                                            </div>
-                                            <h4 className="mb-1 font-bold text-[var(--color-text-primary)]">
-                                                No reviews yet
+                                                Write a Review
                                             </h4>
-                                            <p className="text-sm text-[var(--color-text-muted)]">
-                                                Be the first to review this
-                                                product!
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </TabsContent>
 
-                        <TabsContent value="shipping" className="mt-0">
-                            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12">
-                                <div className="min-w-0">
-                                    <h4 className="mb-4 flex items-center gap-2 text-lg font-bold text-[var(--color-text-primary)] sm:mb-6 sm:text-xl">
-                                        <Truck className="size-5 shrink-0 text-[var(--color-primary)] sm:size-6" />
-                                        Delivery Options
-                                    </h4>
-                                    <div className="space-y-4">
-                                        {shippingMethods.map((method) => (
-                                            <div
-                                                key={method.id}
-                                                className="flex items-center justify-between rounded-2xl border border-[var(--color-border)] p-4"
-                                            >
-                                                <div>
-                                                    <p className="font-bold text-[var(--color-text-primary)]">
-                                                        {method.name}
+                                            {!auth.user ? (
+                                                <div className="mt-3">
+                                                    <p className="mb-3 text-sm text-[var(--color-text-secondary)]">
+                                                        Please log in to share
+                                                        your experience.
                                                     </p>
-                                                    <p className="text-xs text-[var(--color-text-muted)]">
-                                                        {method.estimated_days}{' '}
-                                                        business days
-                                                    </p>
+                                                    <Link
+                                                        href={route('login')}
+                                                        className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[var(--color-primary-hover)]"
+                                                    >
+                                                        Log in to review
+                                                    </Link>
                                                 </div>
-                                                <span className="font-bold text-[var(--color-primary)]">
-                                                    {formatCurrency(
-                                                        method.cost,
-                                                    )}
+                                            ) : hasReviewed ? (
+                                                <p className="mt-3 flex items-center gap-1.5 text-sm text-[var(--color-success)]">
+                                                    <Check size={14} />
+                                                    You have already reviewed
+                                                    this product.
+                                                </p>
+                                            ) : (
+                                                <form
+                                                    onSubmit={submitReview}
+                                                    className="mt-4 space-y-4"
+                                                >
+                                                    {/* Star picker */}
+                                                    <div className="space-y-1">
+                                                        <span className="text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase">
+                                                            Your Rating *
+                                                        </span>
+                                                        <StarRating
+                                                            rating={
+                                                                reviewRating
+                                                            }
+                                                            interactive
+                                                            size="lg"
+                                                            onChange={
+                                                                setReviewRating
+                                                            }
+                                                        />
+                                                        {reviewErrors.rating && (
+                                                            <p className="text-xs text-red-500">
+                                                                {
+                                                                    reviewErrors.rating
+                                                                }
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="space-y-1">
+                                                        <label className="text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase">
+                                                            Title{' '}
+                                                            <span className="font-normal normal-case">
+                                                                (optional)
+                                                            </span>
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={
+                                                                reviewForm.data
+                                                                    .title
+                                                            }
+                                                            onChange={(e) =>
+                                                                reviewForm.setData(
+                                                                    'title',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder="Summarise your experience"
+                                                            maxLength={255}
+                                                            className="h-10 w-full rounded-xl border border-[var(--color-border)] px-3 text-sm focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:outline-none"
+                                                        />
+                                                    </div>
+
+                                                    <div className="space-y-1">
+                                                        <label className="text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase">
+                                                            Review *
+                                                        </label>
+                                                        <textarea
+                                                            value={
+                                                                reviewForm.data
+                                                                    .body
+                                                            }
+                                                            onChange={(e) =>
+                                                                reviewForm.setData(
+                                                                    'body',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder="Tell others what you think about this product…"
+                                                            rows={4}
+                                                            maxLength={2000}
+                                                            className="w-full resize-none rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:outline-none"
+                                                        />
+                                                        {reviewForm.errors
+                                                            .body && (
+                                                            <p className="text-xs text-red-500">
+                                                                {
+                                                                    reviewForm
+                                                                        .errors
+                                                                        .body
+                                                                }
+                                                            </p>
+                                                        )}
+                                                        {reviewErrors.review && (
+                                                            <p className="text-xs text-red-500">
+                                                                {
+                                                                    reviewErrors.review
+                                                                }
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    <Button
+                                                        type="submit"
+                                                        disabled={
+                                                            reviewSubmitting ||
+                                                            reviewRating === 0
+                                                        }
+                                                        className="w-full rounded-xl font-bold"
+                                                    >
+                                                        {reviewSubmitting
+                                                            ? 'Submitting…'
+                                                            : 'Submit Review'}
+                                                    </Button>
+                                                </form>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="min-w-0 lg:col-span-8">
+                                        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4 sm:mb-8">
+                                            <h3 className="text-lg font-bold text-[var(--color-text-primary)] sm:text-xl">
+                                                User Reviews
+                                            </h3>
+                                            <div className="flex items-center gap-2">
+                                                <span className="hidden text-sm font-medium text-[var(--color-text-muted)] sm:inline">
+                                                    Sort by:
                                                 </span>
+                                                <Select
+                                                    aria-label="Sort reviews"
+                                                    containerClassName="min-w-36"
+                                                    selectClassName="h-9 rounded-full px-3.5 text-sm font-bold"
+                                                >
+                                                    <option>
+                                                        Newest First
+                                                    </option>
+                                                    <option>
+                                                        Highest Rated
+                                                    </option>
+                                                    <option>
+                                                        Lowest Rated
+                                                    </option>
+                                                    <option>
+                                                        Most Helpful
+                                                    </option>
+                                                </Select>
                                             </div>
-                                        ))}
-                                        {shippingMethods.length === 0 && (
-                                            <>
-                                                <div className="flex items-center justify-between rounded-2xl border border-[var(--color-border)] p-4">
-                                                    <div>
-                                                        <p className="font-bold text-[var(--color-text-primary)]">
-                                                            Inside Dhaka
-                                                        </p>
-                                                        <p className="text-xs text-[var(--color-text-muted)]">
-                                                            1-2 business days
-                                                        </p>
-                                                    </div>
-                                                    <span className="font-bold text-[var(--color-primary)]">
-                                                        {formatCurrency(
-                                                            settings.shipping_rate_inside_dhaka ??
-                                                                60,
-                                                        )}
-                                                    </span>
+                                        </div>
+
+                                        {reviews.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {reviews.map((review) => (
+                                                    <ReviewCard
+                                                        key={review.id}
+                                                        review={review}
+                                                    />
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-3xl bg-[var(--color-surface-alt)] px-4 py-12 text-center sm:py-20">
+                                                <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-white text-[var(--color-text-muted)] sm:size-16">
+                                                    <MessageSquare className="size-7 sm:size-8" />
                                                 </div>
-                                                <div className="flex items-center justify-between rounded-2xl border border-[var(--color-border)] p-4">
-                                                    <div>
-                                                        <p className="font-bold text-[var(--color-text-primary)]">
-                                                            Outside Dhaka
-                                                        </p>
-                                                        <p className="text-xs text-[var(--color-text-muted)]">
-                                                            3-5 business days
-                                                        </p>
-                                                    </div>
-                                                    <span className="font-bold text-[var(--color-primary)]">
-                                                        {formatCurrency(
-                                                            settings.shipping_rate_outside_dhaka ??
-                                                                120,
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            </>
+                                                <h4 className="mb-1 font-bold text-[var(--color-text-primary)]">
+                                                    No reviews yet
+                                                </h4>
+                                                <p className="text-sm text-[var(--color-text-muted)]">
+                                                    Be the first to review this
+                                                    product!
+                                                </p>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
-                                <div className="min-w-0">
-                                    <h4 className="mb-4 flex items-center gap-2 text-lg font-bold text-[var(--color-text-primary)] sm:mb-6 sm:text-xl">
-                                        <Undo2 className="size-5 shrink-0 text-[var(--color-primary)] sm:size-6" />
-                                        Return Policy
-                                    </h4>
-                                    <div className="space-y-5 text-sm text-[var(--color-text-secondary)] sm:space-y-6">
-                                        <p>
-                                            You can return the item within{' '}
-                                            <strong>7 days</strong> of delivery
-                                            if it's in original condition with
-                                            tags and packaging.
-                                        </p>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="flex gap-2">
-                                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
-                                                    <Check size={12} />
+                            </TabsContent>
+
+                            <TabsContent value="shipping" className="mt-0">
+                                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12">
+                                    <div className="min-w-0">
+                                        <h4 className="mb-4 flex items-center gap-2 text-lg font-bold text-[var(--color-text-primary)] sm:mb-6 sm:text-xl">
+                                            <Truck className="size-5 shrink-0 text-[var(--color-primary)] sm:size-6" />
+                                            Delivery Options
+                                        </h4>
+                                        <div className="space-y-4">
+                                            {shippingMethods.map((method) => (
+                                                <div
+                                                    key={method.id}
+                                                    className="flex items-center justify-between rounded-2xl border border-[var(--color-border)] p-4"
+                                                >
+                                                    <div>
+                                                        <p className="font-bold text-[var(--color-text-primary)]">
+                                                            {method.name}
+                                                        </p>
+                                                        <p className="text-xs text-[var(--color-text-muted)]">
+                                                            {
+                                                                method.estimated_days
+                                                            }{' '}
+                                                            business days
+                                                        </p>
+                                                    </div>
+                                                    <span className="font-bold text-[var(--color-primary)]">
+                                                        {formatCurrency(
+                                                            method.cost,
+                                                        )}
+                                                    </span>
                                                 </div>
-                                                <span>Original Tags</span>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
-                                                    <Check size={12} />
-                                                </div>
-                                                <span>Unwashed</span>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
-                                                    <Check size={12} />
-                                                </div>
-                                                <span>Not Used</span>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
-                                                    <Check size={12} />
-                                                </div>
-                                                <span>Sealed Box</span>
-                                            </div>
+                                            ))}
+                                            {shippingMethods.length === 0 && (
+                                                <>
+                                                    <div className="flex items-center justify-between rounded-2xl border border-[var(--color-border)] p-4">
+                                                        <div>
+                                                            <p className="font-bold text-[var(--color-text-primary)]">
+                                                                Inside Dhaka
+                                                            </p>
+                                                            <p className="text-xs text-[var(--color-text-muted)]">
+                                                                1-2 business
+                                                                days
+                                                            </p>
+                                                        </div>
+                                                        <span className="font-bold text-[var(--color-primary)]">
+                                                            {formatCurrency(
+                                                                settings.shipping_rate_inside_dhaka ??
+                                                                    60,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between rounded-2xl border border-[var(--color-border)] p-4">
+                                                        <div>
+                                                            <p className="font-bold text-[var(--color-text-primary)]">
+                                                                Outside Dhaka
+                                                            </p>
+                                                            <p className="text-xs text-[var(--color-text-muted)]">
+                                                                3-5 business
+                                                                days
+                                                            </p>
+                                                        </div>
+                                                        <span className="font-bold text-[var(--color-primary)]">
+                                                            {formatCurrency(
+                                                                settings.shipping_rate_outside_dhaka ??
+                                                                    120,
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
-                                        <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 italic">
-                                            * Change of mind is not applicable
-                                            for electronics and hygiene products
-                                            once opened.
-                                        </p>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h4 className="mb-4 flex items-center gap-2 text-lg font-bold text-[var(--color-text-primary)] sm:mb-6 sm:text-xl">
+                                            <Undo2 className="size-5 shrink-0 text-[var(--color-primary)] sm:size-6" />
+                                            Return Policy
+                                        </h4>
+                                        <div className="space-y-5 text-sm text-[var(--color-text-secondary)] sm:space-y-6">
+                                            <p>
+                                                You can return the item within{' '}
+                                                <strong>7 days</strong> of
+                                                delivery if it's in original
+                                                condition with tags and
+                                                packaging.
+                                            </p>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="flex gap-2">
+                                                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
+                                                        <Check size={12} />
+                                                    </div>
+                                                    <span>Original Tags</span>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
+                                                        <Check size={12} />
+                                                    </div>
+                                                    <span>Unwashed</span>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
+                                                        <Check size={12} />
+                                                    </div>
+                                                    <span>Not Used</span>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600">
+                                                        <Check size={12} />
+                                                    </div>
+                                                    <span>Sealed Box</span>
+                                                </div>
+                                            </div>
+                                            <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 italic">
+                                                * Change of mind is not
+                                                applicable for electronics and
+                                                hygiene products once opened.
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </TabsContent>
-                    </Tabs>
+                            </TabsContent>
+                        </Tabs>
+                    </div>
                 </div>
             </div>
 
