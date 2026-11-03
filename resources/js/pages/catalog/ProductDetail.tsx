@@ -814,7 +814,7 @@ export default function ProductDetail({
                             >
                                 Reviews
                                 <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--color-surface-alt)] px-1.5 text-xs font-bold text-[var(--color-text-secondary)] sm:text-sm">
-                                    {reviews.length}
+                                    {product.reviews_count ?? 0}
                                 </span>
                             </TabsTrigger>
                             <TabsTrigger

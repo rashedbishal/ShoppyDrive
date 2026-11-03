@@ -23,8 +23,18 @@ class ProductController extends Controller
             'media',
             'variants',
             'tags',
+            // Capped at the 50 most recent for display only — the
+            // aggregates below are computed independently of this limit.
             'reviews' => fn ($q) => $q->where('is_approved', true)->with('user:id,name,avatar')->latest()->limit(50),
         ]);
+
+        // FSA-18: the review list above is capped at 50 for display, but the
+        // header rating and the Reviews tab count must reflect every
+        // approved review. Same withCount()/withAvg() convention as
+        // ProductListingController/HomeController/etc., just via
+        // loadCount()/loadAvg() since $product is already resolved.
+        $product->loadCount(['reviews as reviews_count' => fn ($q) => $q->where('is_approved', true)]);
+        $product->loadAvg(['reviews as average_rating' => fn ($q) => $q->where('is_approved', true)], 'rating');
 
         // Build attributes array from product_attribute_values → attribute
         $attributeValues = $product->attributeValues()->with('attribute')->orderBy('attribute_values.sort_order')->get();
@@ -52,9 +62,20 @@ class ProductController extends Controller
             })
             ->values();
 
-        $ratingBreakdown = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
-        foreach ($product->reviews as $review) {
-            $ratingBreakdown[(int) $review->rating] = ($ratingBreakdown[(int) $review->rating] ?? 0) + 1;
+        // FSA-18: a `GROUP BY rating` over every approved review for this
+        // product, independent of the 50-review display cap above — not
+        // the capped $product->reviews collection, which previously made
+        // this wrong (and silently drifting, since it's the 50 *most
+        // recent*) for any product with more than 50 approved reviews.
+        $approvedRatingCounts = $product->reviews()
+            ->where('is_approved', true)
+            ->selectRaw('rating, COUNT(*) as count')
+            ->groupBy('rating')
+            ->pluck('count', 'rating');
+
+        $ratingBreakdown = [];
+        foreach ([5, 4, 3, 2, 1] as $star) {
+            $ratingBreakdown[$star] = (int) ($approvedRatingCounts[$star] ?? 0);
         }
 
         $relatedProducts = Product::query()
