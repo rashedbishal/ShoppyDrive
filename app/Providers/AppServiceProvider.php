@@ -245,6 +245,30 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // FSA-14: requesting an unsubscribe-management link sends an email,
+        // so (like password-reset) this needs both a per-network limit
+        // (stop one visitor mass-requesting links for many emails) and a
+        // per-email limit (stop a target's inbox being flooded regardless
+        // of how many different networks the requests come from) — the
+        // existing single-bucket `newsletter-check`/`newsletter-signup`
+        // limiters only cover one axis, not both.
+        RateLimiter::for('newsletter-manage', function (Request $request) {
+            $limits = SecurityRateLimits::all();
+            $response = SecurityRateLimits::tooManyAttempts('Too many requests. Please wait a while and try again.');
+            $email = Str::lower(trim((string) $request->input('email')));
+
+            return [
+                Limit::perMinutes($limits['newsletter_manage_per_network_minutes'], $limits['newsletter_manage_per_network_times'])
+                    ->by('ip:'.$request->ip())
+                    ->response($response),
+                $email === ''
+                    ? Limit::none()
+                    : Limit::perMinutes($limits['newsletter_manage_per_email_minutes'], $limits['newsletter_manage_per_email_times'])
+                        ->by('email:'.$email)
+                        ->response($response),
+            ];
+        });
+
         RateLimiter::for('coupon-check', function (Request $request) {
             $limits = SecurityRateLimits::all();
 

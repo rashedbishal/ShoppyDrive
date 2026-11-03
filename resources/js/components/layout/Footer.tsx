@@ -12,7 +12,7 @@ import {
     Youtube,
     Zap,
 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { TikTokLogo, XLogo } from '@/components/icons/brand-icons';
 import {
@@ -33,9 +33,7 @@ const trustBadges = [
 export default function Footer(): React.JSX.Element {
     const { settings } = usePage<SharedPageProps>().props;
     const form = useForm<NewsletterFormData>({ email: '' });
-    const [isSubscribed, setIsSubscribed] = useState(false);
     const [statusMsg, setStatusMsg] = useState('');
-    const checkTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const socialLinks = [
         {
@@ -61,49 +59,16 @@ export default function Footer(): React.JSX.Element {
         },
     ].filter((s) => typeof s.href === 'string' && s.href.length > 0);
 
-    const checkStatus = (email: string): void => {
-        if (checkTimeout.current) {
-            clearTimeout(checkTimeout.current);
-        }
-
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            setIsSubscribed(false);
-
-            return;
-        }
-
-        checkTimeout.current = setTimeout(() => {
-            fetch(`/newsletter/status?email=${encodeURIComponent(email)}`)
-                .then((r) => r.json())
-                .then((data: { is_subscribed: boolean }) =>
-                    setIsSubscribed(data.is_subscribed),
-                )
-                .catch(() => {});
-        }, 500);
-    };
-
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
         e.preventDefault();
 
-        if (isSubscribed) {
-            form.post('/newsletter/unsubscribe', {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setIsSubscribed(false);
-                    setStatusMsg('You have been unsubscribed.');
-                    form.reset('email');
-                },
-            });
-        } else {
-            form.post('/newsletter/subscribe', {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setIsSubscribed(true);
-                    setStatusMsg("You're subscribed!");
-                    form.reset('email');
-                },
-            });
-        }
+        form.post('/newsletter/subscribe', {
+            preserveScroll: true,
+            onSuccess: () => {
+                setStatusMsg("You're subscribed!");
+                form.reset('email');
+            },
+        });
     };
 
     return (
@@ -265,10 +230,9 @@ export default function Footer(): React.JSX.Element {
                                     autoComplete="email"
                                     placeholder="your@email.com"
                                     value={form.data.email}
-                                    onChange={(e) => {
-                                        form.setData('email', e.target.value);
-                                        checkStatus(e.target.value);
-                                    }}
+                                    onChange={(e) =>
+                                        form.setData('email', e.target.value)
+                                    }
                                     className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none"
                                     required
                                 />
@@ -278,12 +242,8 @@ export default function Footer(): React.JSX.Element {
                                     className="flex items-center gap-1.5 bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)] disabled:opacity-60"
                                 >
                                     {form.processing
-                                        ? isSubscribed
-                                            ? 'Removing…'
-                                            : 'Subscribing…'
-                                        : isSubscribed
-                                          ? 'Unsubscribe'
-                                          : 'Subscribe'}
+                                        ? 'Subscribing…'
+                                        : 'Subscribe'}
                                 </button>
                             </div>
                             {statusMsg ? (
@@ -292,9 +252,8 @@ export default function Footer(): React.JSX.Element {
                                 </p>
                             ) : (
                                 <p className="text-xs text-[var(--color-text-muted)]">
-                                    {isSubscribed
-                                        ? 'You are subscribed.'
-                                        : 'No spam. Unsubscribe any time.'}
+                                    No spam. Unsubscribe any time via the link
+                                    in our emails.
                                 </p>
                             )}
                         </form>

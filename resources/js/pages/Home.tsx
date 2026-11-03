@@ -834,53 +834,18 @@ function FlashSaleCountdown({
 
 function NewsletterForm(): React.JSX.Element {
     const form = useForm<{ email: string }>({ email: '' });
-    const [isSubscribed, setIsSubscribed] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
-    const checkTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const checkStatus = (email: string): void => {
-        if (checkTimeout.current) {
-            clearTimeout(checkTimeout.current);
-        }
-
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            setIsSubscribed(false);
-
-            return;
-        }
-
-        checkTimeout.current = setTimeout(() => {
-            fetch(`/newsletter/status?email=${encodeURIComponent(email)}`)
-                .then((r) => r.json())
-                .then((data: { is_subscribed: boolean }) =>
-                    setIsSubscribed(data.is_subscribed),
-                )
-                .catch(() => {});
-        }, 500);
-    };
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
         event.preventDefault();
 
-        if (isSubscribed) {
-            form.post('/newsletter/unsubscribe', {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setIsSubscribed(false);
-                    setStatusMessage('You have been unsubscribed.');
-                    form.reset('email');
-                },
-            });
-        } else {
-            form.post('/newsletter/subscribe', {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setIsSubscribed(true);
-                    setStatusMessage('Thanks! You are now subscribed.');
-                    form.reset('email');
-                },
-            });
-        }
+        form.post('/newsletter/subscribe', {
+            preserveScroll: true,
+            onSuccess: () => {
+                setStatusMessage('Thanks! You are now subscribed.');
+                form.reset('email');
+            },
+        });
     };
 
     return (
@@ -909,10 +874,9 @@ function NewsletterForm(): React.JSX.Element {
                         autoComplete="email"
                         placeholder="you@example.com"
                         value={form.data.email}
-                        onChange={(event) => {
-                            form.setData('email', event.target.value);
-                            checkStatus(event.target.value);
-                        }}
+                        onChange={(event) =>
+                            form.setData('email', event.target.value)
+                        }
                         error={form.errors.email}
                         containerClassName="space-y-2"
                         labelClassName="text-white"
@@ -923,16 +887,10 @@ function NewsletterForm(): React.JSX.Element {
                         type="submit"
                         fullWidth
                         loading={form.processing}
-                        loadingText={
-                            isSubscribed ? 'Unsubscribing...' : 'Subscribing...'
-                        }
-                        className={
-                            isSubscribed
-                                ? 'border border-white/30 bg-white/20 text-white hover:bg-white/30'
-                                : 'bg-white text-[var(--color-secondary)] hover:bg-white/90'
-                        }
+                        loadingText="Subscribing..."
+                        className="bg-white text-[var(--color-secondary)] hover:bg-white/90"
                     >
-                        {isSubscribed ? 'Unsubscribe' : 'Subscribe'}
+                        Subscribe
                     </Button>
 
                     <p
@@ -943,9 +901,7 @@ function NewsletterForm(): React.JSX.Element {
                         aria-live="polite"
                     >
                         {statusMessage ||
-                            (isSubscribed
-                                ? 'You are subscribed. Click above to unsubscribe.'
-                                : 'Unsubscribe anytime. No spam, only useful updates.')}
+                            'Unsubscribe anytime via the link in our emails. No spam, only useful updates.'}
                     </p>
                 </form>
             </CardContent>

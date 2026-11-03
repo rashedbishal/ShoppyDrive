@@ -48,8 +48,18 @@ Route::get('/blog/{blog:slug}', [BlogController::class, 'show'])->name('blog.sho
 
 // Newsletter
 Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->middleware('throttle:newsletter-signup')->name('newsletter.subscribe');
+// FSA-14: unsubscribing requires the subscriber's own token. The GET here
+// only ever reads (never changes subscription state) and shows a
+// confirmation page; the actual unsubscribe happens on the POST below, so
+// an email client/scanner that auto-opens the link can't unsubscribe anyone.
+Route::get('/newsletter/unsubscribe', [NewsletterController::class, 'unsubscribeConfirm'])->middleware('throttle:newsletter-check')->name('newsletter.unsubscribe.confirm');
 Route::post('/newsletter/unsubscribe', [NewsletterController::class, 'unsubscribe'])->middleware('throttle:newsletter-signup')->name('newsletter.unsubscribe');
-Route::get('/newsletter/status', [NewsletterController::class, 'status'])->middleware('throttle:newsletter-check')->name('newsletter.status');
+// FSA-14: the generic link in newsletter emails (FSA-13's shared BCC body
+// can't carry a per-recipient token) — a visitor submits an email here and,
+// if it's an active subscriber, a separate personalized email containing
+// their own token link is queued. The response is identical either way.
+Route::get('/newsletter/manage', [NewsletterController::class, 'manage'])->middleware('throttle:newsletter-check')->name('newsletter.manage');
+Route::post('/newsletter/manage', [NewsletterController::class, 'manageSubmit'])->middleware('throttle:newsletter-manage')->name('newsletter.manage.send');
 
 // Landing pages (public, guest-accessible)
 Route::get('/lp/{slug}', [LandingPageController::class, 'show'])->name('lp.show');

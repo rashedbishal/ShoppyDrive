@@ -28,6 +28,10 @@ type LimitField =
     | 'newsletter_signups_minutes'
     | 'newsletter_checks_times'
     | 'newsletter_checks_minutes'
+    | 'newsletter_manage_per_network_times'
+    | 'newsletter_manage_per_network_minutes'
+    | 'newsletter_manage_per_email_times'
+    | 'newsletter_manage_per_email_minutes'
     | 'checkout_tracking_times'
     | 'checkout_tracking_minutes'
     | 'order_tracking_times'
@@ -184,10 +188,22 @@ const EXTRA_SECTIONS: LimitSection[] = [
                 minutes: 'newsletter_signups_minutes',
             },
             {
-                label: 'Checking if an email is already subscribed (happens automatically while typing)',
-                noun: 'checks',
+                label: 'Opening an unsubscribe confirmation link',
+                noun: 'opens',
                 times: 'newsletter_checks_times',
                 minutes: 'newsletter_checks_minutes',
+            },
+            {
+                label: 'Requesting an unsubscribe-management email, from the same internet connection',
+                noun: 'requests',
+                times: 'newsletter_manage_per_network_times',
+                minutes: 'newsletter_manage_per_network_minutes',
+            },
+            {
+                label: 'Requesting an unsubscribe-management email, for the same email address',
+                noun: 'requests',
+                times: 'newsletter_manage_per_email_times',
+                minutes: 'newsletter_manage_per_email_minutes',
             },
         ],
     },

@@ -95,6 +95,8 @@
         &copy; {{ date('Y') }} {{ $siteName }}. All rights reserved.
         &nbsp;&middot;&nbsp;
         <a href="{{ config('app.url') }}">Visit Store</a>
+        &nbsp;&middot;&nbsp;
+        <a href="{{ route('newsletter.manage') }}">Manage subscription / Unsubscribe</a>
       </p>
     </div>
   </div>

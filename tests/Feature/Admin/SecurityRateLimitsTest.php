@@ -204,7 +204,9 @@ test('each protected route has its limiter attached', function (string $routeNam
     ['contact.store', 'throttle:contact-message'],
     ['newsletter.subscribe', 'throttle:newsletter-signup'],
     ['newsletter.unsubscribe', 'throttle:newsletter-signup'],
-    ['newsletter.status', 'throttle:newsletter-check'],
+    ['newsletter.unsubscribe.confirm', 'throttle:newsletter-check'],
+    ['newsletter.manage', 'throttle:newsletter-check'],
+    ['newsletter.manage.send', 'throttle:newsletter-manage'],
     ['checkout.track-incomplete', 'throttle:checkout-tracking'],
     ['order.track', 'throttle:order-tracking'],
     ['order.track.check', 'throttle:order-tracking'],
@@ -241,14 +243,47 @@ test('a throttled page shows the 429 page instead of redirecting, and queues no 
         ->assertSessionMissing('inertia.flash_data.toast');
 });
 
+test('newsletter-manage trips its per-email limit before its per-network limit', function () {
+    SecurityRateLimits::save(array_merge(lowestSecurityLimits(), [
+        'newsletter_manage_per_network_times' => 50,
+        'newsletter_manage_per_network_minutes' => 10,
+        'newsletter_manage_per_email_times' => 1,
+        'newsletter_manage_per_email_minutes' => 60,
+    ]));
+
+    $this->post(route('newsletter.manage.send'), ['email' => 'target@example.com'])->assertRedirect();
+
+    $this->post(route('newsletter.manage.send'), ['email' => 'target@example.com'])
+        ->assertSessionHasErrors('rate_limit');
+
+    // A different email, same request/network, is unaffected.
+    $this->post(route('newsletter.manage.send'), ['email' => 'someone-else@example.com'])
+        ->assertSessionHasNoErrors();
+});
+
+test('newsletter-manage trips its per-network limit across different emails', function () {
+    SecurityRateLimits::save(array_merge(lowestSecurityLimits(), [
+        'newsletter_manage_per_network_times' => 2,
+        'newsletter_manage_per_network_minutes' => 10,
+        'newsletter_manage_per_email_times' => 50,
+        'newsletter_manage_per_email_minutes' => 60,
+    ]));
+
+    $this->post(route('newsletter.manage.send'), ['email' => 'one@example.com'])->assertRedirect();
+    $this->post(route('newsletter.manage.send'), ['email' => 'two@example.com'])->assertRedirect();
+
+    $this->post(route('newsletter.manage.send'), ['email' => 'three@example.com'])
+        ->assertSessionHasErrors('rate_limit');
+});
+
 test('a background check without a JSON header gets a plain 429 and queues no pop-up', function () {
     SecurityRateLimits::save(lowestSecurityLimits());
 
     foreach (range(1, 10) as $ignored) {
-        $this->get(route('newsletter.status', ['email' => 'a@example.com']));
+        $this->get(route('newsletter.unsubscribe.confirm', ['email' => 'a@example.com', 'token' => 'x']));
     }
 
-    $this->get(route('newsletter.status', ['email' => 'a@example.com']))
+    $this->get(route('newsletter.unsubscribe.confirm', ['email' => 'a@example.com', 'token' => 'x']))
         ->assertStatus(429)
         ->assertSessionMissing('inertia.flash_data.toast');
 });
