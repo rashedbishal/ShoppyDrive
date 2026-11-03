@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { DEFAULT_BANNER_GRADIENT, isCssGradient } from '@/lib/gradient';
 import type { PromotionalBanner } from '@/types';
 
 type Props = {
@@ -67,10 +67,14 @@ export default function PromotionalBannersIndex({ banners }: Props) {
                                             className="h-full w-full object-cover"
                                         />
                                         <div
-                                            className={cn(
-                                                'absolute inset-0 bg-gradient-to-r opacity-60',
-                                                banner.accent,
-                                            )}
+                                            className="absolute inset-0"
+                                            style={{
+                                                backgroundImage: isCssGradient(
+                                                    banner.accent,
+                                                )
+                                                    ? banner.accent
+                                                    : DEFAULT_BANNER_GRADIENT,
+                                            }}
                                         />
                                         {!banner.is_active && (
                                             <div className="absolute inset-0 flex items-center justify-center bg-black/40">

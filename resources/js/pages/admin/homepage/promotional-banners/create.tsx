@@ -2,10 +2,12 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GradientPicker } from '@/components/ui/gradient-picker';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { DEFAULT_BANNER_GRADIENT } from '@/lib/gradient';
 import { maxLength, required, validate } from '@/lib/validate';
 
 export default function PromotionalBannerCreate() {
@@ -16,7 +18,7 @@ export default function PromotionalBannerCreate() {
             image: null as File | null,
             href: '',
             badge: '',
-            accent: 'from-secondary/90 via-secondary/70 to-secondary/20',
+            accent: DEFAULT_BANNER_GRADIENT,
             is_active: true,
             sort_order: '0',
         });
@@ -166,14 +168,14 @@ export default function PromotionalBannerCreate() {
                                         placeholder="/products?sort=..."
                                         error={errors.href}
                                     />
-                                    <Input
-                                        label="Tailwind Accent Gradient"
+                                    <GradientPicker
+                                        label="Overlay Gradient"
                                         value={data.accent}
-                                        onChange={(e) => {
-                                            setData('accent', e.target.value);
+                                        onChange={(value) => {
+                                            setData('accent', value);
                                             clearErrors('accent');
                                         }}
-                                        placeholder="from-secondary/90 via-secondary/70 to-secondary/20"
+                                        hint="Darkens the image left-to-right so the text stays readable."
                                         error={errors.accent}
                                     />
                                 </CardContent>

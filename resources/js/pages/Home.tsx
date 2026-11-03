@@ -42,6 +42,7 @@ import {
     PRODUCT_GRID_CLASS,
     PRODUCT_RAIL_CLASS,
 } from '@/lib/constants';
+import { DEFAULT_BANNER_GRADIENT, isCssGradient } from '@/lib/gradient';
 import { isVideoUrl, cn } from '@/lib/utils';
 import categoryRoutes from '@/routes/category';
 import type {
@@ -1248,11 +1249,14 @@ function Home(): React.JSX.Element {
                                         className="h-full min-h-[18rem] w-full object-cover transition duration-500 group-hover:scale-105"
                                     />
                                     <div
-                                        className={cn(
-                                            'absolute inset-0 bg-gradient-to-r',
-                                            banner.accent ||
-                                                'from-secondary/90 via-secondary/70 to-secondary/20',
-                                        )}
+                                        className="absolute inset-0"
+                                        style={{
+                                            backgroundImage: isCssGradient(
+                                                banner.accent,
+                                            )
+                                                ? banner.accent
+                                                : DEFAULT_BANNER_GRADIENT,
+                                        }}
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
                                     <div className="absolute inset-0 flex min-w-0 flex-col justify-end overflow-hidden p-6 text-white sm:p-8">

@@ -11,10 +11,12 @@ import {
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GradientPicker } from '@/components/ui/gradient-picker';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { DEFAULT_BANNER_GRADIENT, isCssGradient } from '@/lib/gradient';
 import { cn } from '@/lib/utils';
 import { maxLength, required, validate } from '@/lib/validate';
 import type { PromotionalBanner } from '@/types';
@@ -42,9 +44,9 @@ export default function PromotionalBannerEdit({
             image: banner.image as File | string | null,
             href: banner.href ?? '',
             badge: banner.badge ?? '',
-            accent:
-                banner.accent ??
-                'from-secondary/90 via-secondary/70 to-secondary/20',
+            accent: isCssGradient(banner.accent)
+                ? banner.accent
+                : DEFAULT_BANNER_GRADIENT,
             is_active: banner.is_active,
             sort_order: String(banner.sort_order),
             products: bannerProducts.map((p) => p.id),
@@ -458,14 +460,14 @@ export default function PromotionalBannerEdit({
                                             </p>
                                         )}
                                     </div>
-                                    <Input
-                                        label="Tailwind Accent Gradient"
+                                    <GradientPicker
+                                        label="Overlay Gradient"
                                         value={data.accent}
-                                        onChange={(e) => {
-                                            setData('accent', e.target.value);
+                                        onChange={(value) => {
+                                            setData('accent', value);
                                             clearErrors('accent');
                                         }}
-                                        placeholder="from-secondary/90 via-secondary/70 to-secondary/20"
+                                        hint="Darkens the image left-to-right so the text stays readable."
                                         error={errors.accent}
                                     />
                                 </CardContent>
