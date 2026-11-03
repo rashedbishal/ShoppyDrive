@@ -49,7 +49,14 @@ class MobilePaymentController extends Controller
                 ->with('error', 'Payment session expired. Please try again.');
         }
 
-        abort_if(auth()->id() !== $pending->user_id, 403);
+        // FSA-22: a guest-originated pending checkout (user_id null) has no
+        // owner identity to compare against — its unguessable token is
+        // already the access boundary, the same way guest_token works for
+        // order confirmation. Only enforce ownership when the checkout was
+        // actually staged under a specific logged-in user; a different
+        // auth state at this point (including having since logged in)
+        // must not lock the guest out of their own checkout.
+        abort_if($pending->user_id !== null && auth()->id() !== $pending->user_id, 403);
 
         if ($pending->order_number !== null) {
             OrderConfirmationAccess::grant(request(), $pending->order_number);
@@ -96,7 +103,10 @@ class MobilePaymentController extends Controller
                 ->with('error', 'Payment session expired. Please start a new order.');
         }
 
-        abort_if(auth()->id() !== $pending->user_id, 403);
+        // FSA-22: see show() above — only a logged-in-originated checkout
+        // enforces ownership; a guest-originated one is accessible by
+        // token alone regardless of the submitter's current auth state.
+        abort_if($pending->user_id !== null && auth()->id() !== $pending->user_id, 403);
 
         if ($pending->order_number !== null) {
             OrderConfirmationAccess::grant($request, $pending->order_number);
