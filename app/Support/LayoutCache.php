@@ -40,6 +40,24 @@ final class LayoutCache
 
     private const PREFIX = 'layout.';
 
+    /**
+     * FSA-24: the only keys this cache's two consumers (HandleInertiaRequests'
+     * shared `settings` prop, and Setting::shippingRateFor()) ever actually
+     * read. Deliberately an explicit allow-list, not a blocklist of secret
+     * keys — the same table holds courier/gateway/webhook secrets in the
+     * same `value` column (see Setting::RICH_TEXT_KEYS for the identical
+     * reasoning), and a blocklist could miss a future one. A key left out
+     * here is never cached/returned — every reader already falls back to a
+     * default for a missing key, so this fails safe, never a crash.
+     */
+    private const PUBLIC_SETTING_KEYS = [
+        'site_name', 'logo', 'currency_symbol', 'contact_email', 'contact_phone',
+        'contact_address', 'social_links', 'google_analytics_id', 'meta_pixel_id',
+        'whatsapp_number', 'messenger_link', 'referral_enabled',
+        'referral_discount_type', 'referral_discount_value',
+        'shipping_rate_inside_dhaka', 'shipping_rate_outside_dhaka',
+    ];
+
     public static function forget(string ...$keys): void
     {
         foreach ($keys as $key) {
@@ -48,13 +66,16 @@ final class LayoutCache
     }
 
     /**
-     * Every setting's value, keyed by setting key.
+     * Every public setting's value, keyed by setting key. Never caches a
+     * secret-bearing key (API keys, courier/gateway/webhook credentials) —
+     * see PUBLIC_SETTING_KEYS.
      *
      * @return array<string, mixed>
      */
     public static function settings(): array
     {
-        return Cache::rememberForever(self::PREFIX.self::SETTINGS, fn (): array => Setting::all()
+        return Cache::rememberForever(self::PREFIX.self::SETTINGS, fn (): array => Setting::whereIn('key', self::PUBLIC_SETTING_KEYS)
+            ->get()
             ->mapWithKeys(fn (Setting $setting): array => [$setting->key => $setting->value])
             ->all());
     }

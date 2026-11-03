@@ -10,6 +10,7 @@ use App\Models\PopularKeyword;
 use App\Models\PromotionalBanner;
 use App\Models\Setting;
 use App\Models\SubCategory;
+use App\Support\LayoutCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -189,6 +190,102 @@ test('cached layout data survives a real persistent cache store between requests
         }
 
         expect(Setting::shippingRateFor(null, null))->toBe(120.0);
+    } finally {
+        File::deleteDirectory($directory);
+    }
+});
+
+// ── FSA-24: secret-bearing settings must never enter this cache ──────────────
+
+test('a secret-looking setting key is excluded from the cached settings array', function () {
+    Setting::create(['key' => 'site_name', 'value' => 'ShoppyDrive', 'group' => 'general']);
+    Setting::create(['key' => 'pathao_client_secret', 'value' => 'super-secret-pathao-value', 'group' => 'courier']);
+
+    $cached = LayoutCache::settings();
+
+    expect($cached)->toHaveKey('site_name');
+    expect($cached)->not->toHaveKey('pathao_client_secret');
+});
+
+test('a secret setting value is not present anywhere in the rebuilt cached array', function () {
+    Setting::create(['key' => 'site_name', 'value' => 'ShoppyDrive', 'group' => 'general']);
+    Setting::create(['key' => 'steadfast_api_key', 'value' => 'super-secret-steadfast-value', 'group' => 'courier']);
+    Setting::create(['key' => 'steadfast_webhook_secret', 'value' => 'super-secret-webhook-value', 'group' => 'courier']);
+
+    $cached = LayoutCache::settings();
+
+    expect(json_encode($cached))
+        ->not->toContain('super-secret-steadfast-value')
+        ->not->toContain('super-secret-webhook-value');
+});
+
+test('all 16 approved public setting keys remain available when configured', function () {
+    $values = [
+        'site_name' => 'ShoppyDrive',
+        'logo' => '/storage/logo.png',
+        'currency_symbol' => '৳',
+        'contact_email' => 'support@example.com',
+        'contact_phone' => '+8801700000000',
+        'contact_address' => 'Dhaka, Bangladesh',
+        'social_links' => ['facebook' => 'https://facebook.com/shoppydrive'],
+        'google_analytics_id' => 'G-TEST123',
+        'meta_pixel_id' => 'PIXEL123',
+        'whatsapp_number' => '01700000000',
+        'messenger_link' => 'https://m.me/shoppydrive',
+        'referral_enabled' => true,
+        'referral_discount_type' => 'percent',
+        'referral_discount_value' => 10,
+        'shipping_rate_inside_dhaka' => 70,
+        'shipping_rate_outside_dhaka' => 130,
+    ];
+
+    foreach ($values as $key => $value) {
+        Setting::create(['key' => $key, 'value' => $value, 'group' => 'general']);
+    }
+
+    $cached = LayoutCache::settings();
+
+    foreach ($values as $key => $value) {
+        expect($cached)->toHaveKey($key);
+        expect($cached[$key])->toEqual($value);
+    }
+
+    expect(Setting::shippingRateFor('Dhaka', 'Inside Dhaka City Corporation'))->toBe(70.0);
+    expect(Setting::shippingRateFor(null, null))->toBe(130.0);
+});
+
+test('existing LayoutCache behavior for categories, homepage data and keywords is unaffected by the public-settings allow-list', function () {
+    Category::factory()->create(['is_active' => true, 'name' => 'Shoes']);
+    HeroSlide::create(['title' => 'Big sale', 'image' => '/storage/a.jpg', 'is_active' => true]);
+    Setting::create(['key' => 'site_name', 'value' => 'ShoppyDrive', 'group' => 'general']);
+    Setting::create(['key' => 'pathao_client_secret', 'value' => 'leaked-if-broken', 'group' => 'courier']);
+
+    $this->get('/order/track')->assertInertia(fn (Assert $page) => $page
+        ->where('navCategories.0.name', 'Shoes')
+        ->where('hero_slides.0.title', 'Big sale')
+        ->where('settings.site_name', 'ShoppyDrive'));
+});
+
+test('a secret setting value is absent from the raw persistent cache file on disk', function () {
+    // Same real file-store setup as the test above — the in-memory test
+    // store never serializes, so it can't prove anything about what
+    // actually lands on disk.
+    $directory = sys_get_temp_dir().'/layout-cache-fsa24-test-'.uniqid();
+    config(['cache.default' => 'file', 'cache.stores.file.path' => $directory]);
+    Cache::purge('file');
+
+    Setting::create(['key' => 'site_name', 'value' => 'ShoppyDrive', 'group' => 'general']);
+    Setting::create(['key' => 'pathao_client_secret', 'value' => 'super-secret-on-disk-value', 'group' => 'courier']);
+
+    try {
+        LayoutCache::settings();
+
+        $rawFileContents = collect(File::allFiles($directory))
+            ->map(fn ($file) => File::get($file->getPathname()))
+            ->implode("\n");
+
+        expect($rawFileContents)->toContain('ShoppyDrive');
+        expect($rawFileContents)->not->toContain('super-secret-on-disk-value');
     } finally {
         File::deleteDirectory($directory);
     }
