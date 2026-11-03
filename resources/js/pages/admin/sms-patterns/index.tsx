@@ -20,6 +20,7 @@ type Pattern = {
     provider: 'bkash' | 'nagad';
     name: string;
     identifier: string;
+    sender_regex: string | null;
     txn_id_regex: string;
     amount_regex: string;
     is_active: boolean;
@@ -32,6 +33,7 @@ const emptyForm = {
     provider: 'bkash' as 'bkash' | 'nagad',
     name: '',
     identifier: '',
+    sender_regex: '',
     txn_id_regex: '',
     amount_regex: '',
     is_active: true,
@@ -87,6 +89,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
             provider: p.provider,
             name: p.name,
             identifier: p.identifier,
+            sender_regex: p.sender_regex ?? '',
             txn_id_regex: p.txn_id_regex,
             amount_regex: p.amount_regex,
             is_active: p.is_active,
@@ -106,8 +109,12 @@ export default function SmsPatternsIndex({ patterns }: Props) {
             amount_regex: [required(), maxLength(255)],
         });
 
-        for (const field of ['txn_id_regex', 'amount_regex'] as const) {
-            if (!clientErrors[field]) {
+        for (const field of [
+            'sender_regex',
+            'txn_id_regex',
+            'amount_regex',
+        ] as const) {
+            if (!clientErrors[field] && data[field]) {
                 try {
                     new RegExp(data[field]);
                 } catch {
@@ -252,6 +259,34 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                     {errors.identifier && (
                                         <p className="mt-0.5 text-xs text-red-500">
                                             {errors.identifier}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-xs font-medium text-slate-600">
+                                        Sender Regex
+                                        <span className="ml-1 font-normal text-slate-400">
+                                            — 1 capture group; leave blank to
+                                            accept any sender (FSA-02: the
+                                            allowlist only applies once this
+                                            is set)
+                                        </span>
+                                    </label>
+                                    <input
+                                        className={`${inputClass} font-mono text-xs`}
+                                        value={data.sender_regex ?? ''}
+                                        onChange={(e) =>
+                                            setData(
+                                                'sender_regex',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="e.g. (bKash) — leave blank for unrestricted"
+                                    />
+                                    {errors.sender_regex && (
+                                        <p className="mt-0.5 text-xs text-red-500">
+                                            {errors.sender_regex}
                                         </p>
                                     )}
                                 </div>
@@ -447,6 +482,21 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                 <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px]">
                                                     {p.identifier}
                                                 </code>
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                <span className="font-medium text-slate-600">
+                                                    Sender:
+                                                </span>{' '}
+                                                {p.sender_regex ? (
+                                                    <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px]">
+                                                        {p.sender_regex}
+                                                    </code>
+                                                ) : (
+                                                    <span className="text-amber-600">
+                                                        unrestricted — any
+                                                        sender accepted
+                                                    </span>
+                                                )}
                                             </p>
                                             <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-500">
                                                 <span>

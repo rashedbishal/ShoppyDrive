@@ -59,11 +59,12 @@ class SmsTestController extends Controller
             return response()->json(['status' => 'ignored']);
         }
 
-        $parsed = $this->parser->parse($content);
+        $sender = (string) $request->input('from', '');
+        $parsed = $this->parser->parse($content, $sender);
 
         try {
             $sms = ReceivedSms::create([
-                'sender' => $request->input('from', ''),
+                'sender' => $sender,
                 'provider' => $parsed['provider'],
                 'content' => $content,
                 'received_at' => $this->parseReceivedAt($request->input('received_at')),

@@ -39,6 +39,26 @@ class SmsRegex
     }
 
     /**
+     * Whether `$content` matches `$regex` at all. Used for sender checks
+     * (FSA-02), where only match/no-match matters, not a captured value.
+     *
+     * @param  string|null  $failure  Set to why the regex could not run. Never contains the content.
+     */
+    public static function matches(string $regex, string $content, ?string &$failure = null): bool
+    {
+        $failure = null;
+        $result = self::run($regex, $content, $matches);
+
+        if ($result === false) {
+            $failure = preg_last_error_msg();
+
+            return false;
+        }
+
+        return $result === 1;
+    }
+
+    /**
      * Why this regex must not be saved, or null if it may. The probes can't
      * prove a pattern safe, so the runtime limit stays the real protection.
      * Each one ends with the regex's own text, because PCRE skips matching

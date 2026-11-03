@@ -16,6 +16,7 @@ class SmsPattern extends Model
         'provider',
         'name',
         'identifier',
+        'sender_regex',
         'txn_id_regex',
         'amount_regex',
         'is_active',

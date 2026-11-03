@@ -26,10 +26,13 @@ class SmsPatternController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $request->merge(['sender_regex' => $request->filled('sender_regex') ? $request->input('sender_regex') : null]);
+
         $data = $request->validate([
             'provider' => ['required', 'in:bkash,nagad'],
             'name' => ['required', 'string', 'max:100'],
             'identifier' => ['required', 'string', 'max:255'],
+            'sender_regex' => ['nullable', 'string', 'max:255', new SafeSmsRegex],
             'txn_id_regex' => ['required', 'string', 'max:255', new SafeSmsRegex],
             'amount_regex' => ['required', 'string', 'max:255', new SafeSmsRegex],
             'sort_order' => ['nullable', 'integer', 'min:0'],
@@ -42,10 +45,13 @@ class SmsPatternController extends Controller
 
     public function update(Request $request, SmsPattern $smsPattern): RedirectResponse
     {
+        $request->merge(['sender_regex' => $request->filled('sender_regex') ? $request->input('sender_regex') : null]);
+
         $data = $request->validate([
             'provider' => ['required', 'in:bkash,nagad'],
             'name' => ['required', 'string', 'max:100'],
             'identifier' => ['required', 'string', 'max:255'],
+            'sender_regex' => ['nullable', 'string', 'max:255', new SafeSmsRegex],
             'txn_id_regex' => ['required', 'string', 'max:255', new SafeSmsRegex],
             'amount_regex' => ['required', 'string', 'max:255', new SafeSmsRegex],
             'is_active' => ['required', 'boolean'],

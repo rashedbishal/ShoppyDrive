@@ -112,6 +112,32 @@ test('a valid pattern can be created and updated, and is audited with its actor'
     expect($updated->properties['attributes']['txn_id_regex'])->toBe('Ref\s+([A-Z0-9]+)');
 });
 
+// ── Sender allowlist (FSA-02) ────────────────────────────────────────────────
+
+test('a blank sender_regex is saved as null, leaving the pattern unrestricted', function () {
+    actingAs(createAdmin(['name' => 'Pattern Admin', 'email' => 'pattern@example.com', 'password' => bcrypt('password')]), 'admin');
+
+    $this->post(route('admin.sms-patterns.store'), patternPayload())->assertSessionHasNoErrors();
+
+    expect(SmsPattern::where('identifier', 'NewMarker')->firstOrFail()->sender_regex)->toBeNull();
+});
+
+test('an unsafe sender_regex is rejected when creating and updating', function (string $regex) {
+    actingAs(createAdmin(['name' => 'Pattern Admin', 'email' => 'pattern@example.com', 'password' => bcrypt('password')]), 'admin');
+    $pattern = SmsPattern::firstOrFail();
+    $original = $pattern->sender_regex;
+
+    $this->post(route('admin.sms-patterns.store'), patternPayload(['sender_regex' => $regex]))->assertSessionHasErrors('sender_regex');
+    $this->patch(route('admin.sms-patterns.update', $pattern), patternPayload(['sender_regex' => $regex, 'is_active' => true]))->assertSessionHasErrors('sender_regex');
+
+    expect(SmsPattern::where('identifier', 'NewMarker')->exists())->toBeFalse();
+    expect($pattern->refresh()->sender_regex)->toBe($original);
+})->with([
+    'unclosed group' => ['(unclosed'],
+    'no capture group' => ['bKash'],
+    'catastrophic nesting' => ['(a+)+$'],
+]);
+
 test('deleting patterns is audited and takes effect at once', function (string $how) {
     actingAs(createAdmin(['name' => 'Pattern Admin', 'email' => 'pattern@example.com', 'password' => bcrypt('password')]), 'admin');
     $pattern = SmsPattern::where('provider', 'bkash')->firstOrFail();
@@ -163,6 +189,22 @@ test('real bKash and Nagad messages still parse', function (string $sms, string 
     'bKash' => [BKASH_SMS, 'bkash', 'DED66E1DFW'],
     'Nagad' => [NAGAD_SMS, 'nagad', '75AIB4WJ'],
 ]);
+
+test('a sender matching the pattern allowlist is accepted', function () {
+    SmsPattern::where('provider', 'bkash')->update(['sender_regex' => '(bKash)']);
+    Cache::forget('sms_patterns_active');
+
+    expect(app(SmsParserService::class)->parse(BKASH_SMS, 'bKash'))
+        ->toEqual(['provider' => 'bkash', 'transaction_id' => 'DED66E1DFW', 'amount' => 100.0]);
+});
+
+test('a sender not matching the pattern allowlist is rejected, with no fallback to body-only matching', function () {
+    SmsPattern::where('provider', 'bkash')->update(['sender_regex' => '(bKash)']);
+    Cache::forget('sms_patterns_active');
+
+    expect(app(SmsParserService::class)->parse(BKASH_SMS, '01700000000'))
+        ->toEqual(['provider' => 'unknown', 'transaction_id' => null, 'amount' => null]);
+});
 
 test('a legacy unsafe pattern parses nothing, and logs without the SMS', function (array $regexes) {
     legacyPattern($regexes);
@@ -228,6 +270,22 @@ test('a matching payment is accepted for each provider', function (string $sms, 
     'bKash' => [BKASH_SMS, 'bkash', 'DED66E1DFW'],
     'Nagad' => [NAGAD_SMS, 'nagad', '75AIB4WJ'],
 ]);
+
+test('once a sender allowlist is configured, a non-allowlisted sender never pays an order', function () {
+    SmsPattern::where('provider', 'bkash')->update(['sender_regex' => '(bKash)']);
+    Cache::forget('sms_patterns_active');
+
+    $user = User::factory()->create();
+    $pending = pendingMobileCheckout($user);
+
+    test()->withToken('phone-token')->postJson('/api/sms/receive', ['from' => '01700000000', 'content' => BKASH_SMS])->assertOk();
+
+    expect(ReceivedSms::query()->firstOrFail()->parsed_transaction_id)->toBeNull();
+
+    submitTransaction($user, $pending, 'bkash', 'DED66E1DFW')->assertSessionHasErrors('transaction_id');
+
+    expect(Order::query()->count())->toBe(0);
+});
 
 test('a legacy pattern that cannot run never pays an order', function (array $regexes) {
     legacyPattern($regexes);
