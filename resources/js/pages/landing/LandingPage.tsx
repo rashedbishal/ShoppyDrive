@@ -435,11 +435,18 @@ function OrderForm({
                 </div>
                 <div>
                     <input
+                        type="tel"
+                        inputMode="tel"
+                        maxLength={20}
                         className={inputClass}
                         placeholder="Phone Number *"
                         value={data.phone}
                         onChange={(e) => setData('phone', e.target.value)}
                     />
+                    <p className="mt-0.5 text-xs text-slate-400">
+                        Enter your mobile number (e.g. 017XXXXXXXX or
+                        +88017XXXXXXXX)
+                    </p>
                     {errors.phone && (
                         <p className="mt-0.5 text-xs text-red-500">
                             {errors.phone}

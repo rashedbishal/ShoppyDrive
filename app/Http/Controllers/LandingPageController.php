@@ -99,9 +99,20 @@ class LandingPageController extends Controller
             ->firstOrFail();
         $product = $page->product;
 
+        // FSA-21: accept the common country-code/separator variants a
+        // customer might type (+8801..., 8801..., spaces, hyphens) but
+        // always validate and store the plain local 01XXXXXXXXX shape —
+        // matching the strict rule every other order-creation path
+        // (PlaceOrderRequest, ConvertIncompleteOrderRequest,
+        // TrackIncompleteOrderRequest) already enforces. Only
+        // whitespace/hyphens are stripped, never every non-digit
+        // character, so malformed input can't be reshaped into something
+        // that happens to pass.
+        $request->merge(['phone' => self::normalizeBangladeshiPhone($request->string('phone')->toString())]);
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'regex:/^01[3-9][0-9]{8}$/'],
             'email' => ['nullable', 'email', 'max:255'],
             'address_line1' => ['required', 'string', 'max:255'],
             'address_line2' => ['nullable', 'string', 'max:255'],
@@ -114,6 +125,8 @@ class LandingPageController extends Controller
             // Missing/malformed must fail validation here, never silently
             // skip the idempotency check below (CART-01).
             'order_token' => ['required', 'uuid'],
+        ], [
+            'phone.regex' => 'Enter a valid 11-digit Bangladeshi phone number (e.g. 01712345678).',
         ]);
 
         $orderToken = $request->string('order_token')->toString();
@@ -144,6 +157,31 @@ class LandingPageController extends Controller
                 ->withErrors(['order_token' => 'Your order is still being processed. Please wait a moment and try again.'])
                 ->withInput();
         }
+    }
+
+    /**
+     * FSA-21: collapses +880/880 country-code prefixes and strips spaces
+     * and hyphens so a customer typing an international-looking format
+     * still lands on the plain local 01XXXXXXXXX shape the regex above
+     * (and every other order-creation path) expects. Deliberately does
+     * NOT strip arbitrary non-digit characters — doing so could turn
+     * clearly-invalid input (e.g. embedded letters) into something that
+     * coincidentally matches the regex; anything left over after this
+     * targeted normalization simply fails validation as-is.
+     */
+    private static function normalizeBangladeshiPhone(string $raw): string
+    {
+        $value = str_replace([' ', '-'], '', trim($raw));
+
+        if (str_starts_with($value, '+880')) {
+            return '0'.substr($value, 4);
+        }
+
+        if (str_starts_with($value, '880')) {
+            return '0'.substr($value, 3);
+        }
+
+        return $value;
     }
 
     private function redirectForCachedLandingOrder(array $cached, string $slug): RedirectResponse
