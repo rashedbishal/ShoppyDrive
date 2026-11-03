@@ -241,7 +241,7 @@ function HeroSlider({
 
     return (
         <section
-            className="group relative rounded-[1.25rem] bg-[var(--color-secondary)] text-white shadow-[var(--shadow-modal)] [clip-path:inset(0_round_1.25rem)]"
+            className="group selection-light relative rounded-[1.25rem] bg-[var(--color-secondary)] text-white shadow-[var(--shadow-modal)] [clip-path:inset(0_round_1.25rem)]"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
             aria-label="Homepage hero banner"
@@ -959,7 +959,7 @@ function NewsletterForm(): React.JSX.Element {
     };
 
     return (
-        <Card className="overflow-hidden border-[var(--color-border)] bg-[var(--color-secondary)] text-white shadow-[var(--shadow-card-hover)]">
+        <Card className="selection-light overflow-hidden border-[var(--color-border)] bg-[var(--color-secondary)] text-white shadow-[var(--shadow-card-hover)]">
             <CardContent className="grid gap-8 px-6 py-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-8 lg:py-8">
                 <div className="space-y-4">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold tracking-[0.22em] text-white/75 uppercase">
@@ -1157,7 +1157,7 @@ function Home(): React.JSX.Element {
             node: getSection('flash_sale')?.is_visible &&
                 flashSale &&
                 flashSale.items.length > 0 && (
-                    <section className="bg-[var(--color-secondary)] py-12 text-white lg:py-16">
+                    <section className="selection-light bg-[var(--color-secondary)] py-12 text-white lg:py-16">
                         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                                 <div className="space-y-2">
@@ -1239,7 +1239,7 @@ function Home(): React.JSX.Element {
                                 <Link
                                     key={banner.id}
                                     href={banner.href || '#'}
-                                    className="group relative min-w-0 overflow-hidden rounded-[2rem] bg-[var(--color-secondary)] shadow-[var(--shadow-card)]"
+                                    className="group selection-light relative min-w-0 overflow-hidden rounded-[2rem] bg-[var(--color-secondary)] shadow-[var(--shadow-card)]"
                                 >
                                     <img
                                         src={banner.image}
