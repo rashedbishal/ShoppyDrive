@@ -10,8 +10,10 @@ use App\Models\Address;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\Wishlist;
+use App\Services\CourierSubmissionService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'auth.session', 'account.active'])->prefix('account')->group(function () {
@@ -110,22 +112,47 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active'])->prefi
 
     Route::post('/profile', [AccountProfileController::class, 'update'])->middleware('throttle:account-action')->name('account.profile.update');
 
-    Route::patch('/orders/{order:order_number}/cancel', function (Order $order) {
+    // FSA-15: a pending order can already have a courier consignment —
+    // CourierSubmissionService::claim()/markSent() never touch `status`,
+    // only the consignment columns, so the order stays `pending` until the
+    // async courier-status sync later promotes it to `shipped`. This must
+    // be locked and checked exactly like Admin\OrderController::cancel()
+    // does (same Order-row-first locking convention documented on
+    // CourierSubmissionService), since that's the only thing serializing
+    // this against claim()/markSent()/markFailed()/markUnknown(), all of
+    // which lock the same Order row before touching it.
+    Route::patch('/orders/{order:order_number}/cancel', function (Order $order, CourierSubmissionService $courierSubmissions) {
         if ($order->user_id !== auth()->id()) {
             abort(403);
         }
 
-        if ($order->status !== OrderStatus::PENDING) {
-            return back()->with('error', 'Only pending orders can be cancelled.');
+        $error = DB::transaction(function () use ($order, $courierSubmissions): ?string {
+            $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->first();
+
+            if ($lockedOrder === null || $lockedOrder->status !== OrderStatus::PENDING) {
+                return 'Only pending orders can be cancelled.';
+            }
+
+            if ($lockedOrder->pathao_consignment_id !== null
+                || $lockedOrder->steadfast_consignment_id !== null
+                || $courierSubmissions->hasUnresolvedSubmission($lockedOrder->id)) {
+                return 'This order is already being processed by our courier and can no longer be cancelled here. Please contact our support team for assistance.';
+            }
+
+            $lockedOrder->update(['status' => OrderStatus::CANCELLED]);
+
+            OrderStatusHistory::create([
+                'order_id' => $lockedOrder->id,
+                'status' => OrderStatus::CANCELLED->value,
+                'notes' => 'Cancelled by customer.',
+            ]);
+
+            return null;
+        }, 3);
+
+        if ($error !== null) {
+            return back()->with('error', $error);
         }
-
-        $order->update(['status' => OrderStatus::CANCELLED]);
-
-        OrderStatusHistory::create([
-            'order_id' => $order->id,
-            'status' => OrderStatus::CANCELLED->value,
-            'notes' => 'Cancelled by customer.',
-        ]);
 
         return back()->with('success', 'Your order has been cancelled.');
     })->middleware('throttle:account-action')->name('account.orders.cancel');
