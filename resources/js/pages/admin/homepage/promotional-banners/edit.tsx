@@ -272,14 +272,14 @@ export default function PromotionalBannerEdit({
 
                             {/* Product Picker */}
                             <Card>
-                                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                         <Package className="size-4 text-emerald-500" />
                                         Banner Products
                                     </CardTitle>
                                     <div
                                         ref={searchRef}
-                                        className="relative w-72"
+                                        className="relative w-full sm:w-72"
                                     >
                                         <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                         <Input

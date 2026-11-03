@@ -546,14 +546,14 @@ export default function HomepageEdit({
 
                             {isFeaturedProducts && (
                                 <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                         <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                             <Star className="size-4 fill-amber-500 text-amber-500" />
                                             Featured Products
                                         </CardTitle>
                                         <div
                                             ref={searchContainerRef}
-                                            className="relative w-72"
+                                            className="relative w-full sm:w-72"
                                         >
                                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                             <Input
@@ -707,7 +707,7 @@ export default function HomepageEdit({
 
                             {isProductSection && (
                                 <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                         <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                             {isNewArrivals ? (
                                                 <Package className="size-4 text-emerald-500" />
@@ -720,7 +720,7 @@ export default function HomepageEdit({
                                         </CardTitle>
                                         <div
                                             ref={searchContainerRef}
-                                            className="relative w-72"
+                                            className="relative w-full sm:w-72"
                                         >
                                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                             <Input
@@ -873,14 +873,14 @@ export default function HomepageEdit({
 
                             {isBrands && (
                                 <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                         <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                             <ShoppingBag className="size-4 text-violet-500" />
                                             Featured Brands
                                         </CardTitle>
                                         <div
                                             ref={brandSearchRef}
-                                            className="relative w-72"
+                                            className="relative w-full sm:w-72"
                                         >
                                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                             <Input
