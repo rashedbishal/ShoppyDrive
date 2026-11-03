@@ -45,3 +45,52 @@ test('creating a promotional banner accepts fields within their character limits
     $response->assertSessionDoesntHaveErrors();
     expect(PromotionalBanner::count())->toBe(1);
 });
+
+test('clearing a promotional banner image on update replaces it with the placeholder', function () {
+    actingAs($this->admin, 'admin');
+
+    $banner = PromotionalBanner::create([
+        'title' => 'Sale',
+        'image' => '/storage/promotional-banners/original.jpg',
+        'is_active' => true,
+        'sort_order' => 1,
+    ]);
+
+    // Mirrors what the browser sends when the admin clicks the media upload's
+    // remove button without picking a replacement: no file, and the field
+    // posts as an empty string (Inertia serializes a null form value that way).
+    $response = $this->post(route('admin.promotional-banners.update', $banner), [
+        '_method' => 'PUT',
+        'title' => 'Sale',
+        'image' => '',
+        'is_active' => '1',
+        'sort_order' => '1',
+    ]);
+
+    $response->assertRedirect(route('admin.promotional-banners.index'));
+    $response->assertSessionDoesntHaveErrors();
+    expect($banner->refresh()->image)->toBe('/placeholder.svg');
+});
+
+test('leaving a promotional banner image untouched on update keeps the existing image', function () {
+    actingAs($this->admin, 'admin');
+
+    $banner = PromotionalBanner::create([
+        'title' => 'Sale',
+        'image' => '/storage/promotional-banners/original.jpg',
+        'is_active' => true,
+        'sort_order' => 1,
+    ]);
+
+    $response = $this->post(route('admin.promotional-banners.update', $banner), [
+        '_method' => 'PUT',
+        'title' => 'Sale',
+        'image' => $banner->image,
+        'is_active' => '1',
+        'sort_order' => '1',
+    ]);
+
+    $response->assertRedirect(route('admin.promotional-banners.index'));
+    $response->assertSessionDoesntHaveErrors();
+    expect($banner->refresh()->image)->toBe('/storage/promotional-banners/original.jpg');
+});

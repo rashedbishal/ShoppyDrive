@@ -96,6 +96,13 @@ class PromotionalBannerController extends Controller
 
         if ($request->hasFile('image')) {
             $validated['image'] = '/storage/'.$request->file('image')->store('promotional-banners', 'public');
+        } elseif (blank($validated['image'] ?? null)) {
+            // The admin cleared the image without picking a replacement — RasterImageOrUrl
+            // accepts a blank value as "keep as-is", so an empty string here means the
+            // field was explicitly emptied, not merely left untouched (the client always
+            // resends the current path otherwise). The column isn't nullable, so fall back
+            // to the same placeholder used when a banner is first created without an image.
+            $validated['image'] = '/placeholder.svg';
         } else {
             unset($validated['image']);
         }
