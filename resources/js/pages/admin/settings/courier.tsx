@@ -482,23 +482,30 @@ export default function CourierConfig({ settings }: Props) {
     return (
         <>
             <Head title="Courier Config — Admin" />
-            <div className="max-w-2xl space-y-5">
+            <div className="space-y-4">
                 <h1 className="text-xl font-bold text-slate-900">
                     Courier Config
                 </h1>
 
-                <ShippingRateCard
-                    zoneKey="shipping_rate_inside_dhaka"
-                    title="Inside Dhaka City Corporation"
-                    hint="Flat delivery charge for addresses inside Dhaka City Corporation."
-                />
-                <ShippingRateCard
-                    zoneKey="shipping_rate_outside_dhaka"
-                    title="Outside Dhaka City Corporation"
-                    hint="Flat delivery charge for every other district, and areas of Dhaka outside the city corporation."
-                />
-                <PathaoCourierCard settings={settings} />
-                <SteadfastCourierCard settings={settings} />
+                <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+                    <div className="space-y-4">
+                        <PathaoCourierCard settings={settings} />
+                        <SteadfastCourierCard settings={settings} />
+                    </div>
+
+                    <div className="space-y-4">
+                        <ShippingRateCard
+                            zoneKey="shipping_rate_inside_dhaka"
+                            title="Inside Dhaka City Corporation"
+                            hint="Flat delivery charge for addresses inside Dhaka City Corporation."
+                        />
+                        <ShippingRateCard
+                            zoneKey="shipping_rate_outside_dhaka"
+                            title="Outside Dhaka City Corporation"
+                            hint="Flat delivery charge for every other district, and areas of Dhaka outside the city corporation."
+                        />
+                    </div>
+                </div>
             </div>
         </>
     );

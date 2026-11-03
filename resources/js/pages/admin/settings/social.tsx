@@ -196,13 +196,15 @@ export default function SocialConfig({ settings }: Props) {
     return (
         <>
             <Head title="Social Config — Admin" />
-            <div className="max-w-2xl space-y-5">
+            <div className="space-y-4">
                 <h1 className="text-xl font-bold text-slate-900">
                     Social Config
                 </h1>
 
-                <GoogleLoginCard settings={settings} />
-                <FacebookLoginCard settings={settings} />
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <GoogleLoginCard settings={settings} />
+                    <FacebookLoginCard settings={settings} />
+                </div>
             </div>
         </>
     );

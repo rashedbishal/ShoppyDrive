@@ -320,9 +320,9 @@ export default function ConvertIncompleteOrder({
 
                 <form
                     onSubmit={handleSubmit}
-                    className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12"
+                    className="grid grid-cols-1 items-start gap-5 lg:grid-cols-12"
                 >
-                    <div className="space-y-6 lg:col-span-7">
+                    <div className="space-y-5 lg:col-span-7">
                         <Card>
                             <CardHeader className="border-b border-slate-100 pb-4">
                                 <CardTitle className="text-base font-semibold">
@@ -489,7 +489,7 @@ export default function ConvertIncompleteOrder({
                         </Card>
                     </div>
 
-                    <div className="space-y-6 lg:col-span-5">
+                    <div className="space-y-5 lg:col-span-5">
                         <Card>
                             <CardHeader className="border-b border-slate-100 pb-4">
                                 <CardTitle className="text-base font-semibold">

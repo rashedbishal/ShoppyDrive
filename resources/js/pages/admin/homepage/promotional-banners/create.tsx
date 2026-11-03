@@ -65,125 +65,152 @@ export default function PromotionalBannerCreate() {
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
-                    <Card>
-                        <CardHeader className="border-b border-slate-100 pb-4">
-                            <CardTitle className="text-base font-semibold">
-                                Banner Content
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 pt-6">
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <Input
-                                    label="Badge"
-                                    value={data.badge}
-                                    onChange={(e) => {
-                                        setData('badge', e.target.value);
-                                        clearErrors('badge');
-                                    }}
-                                    placeholder="e.g. New arrivals"
-                                    error={errors.badge}
-                                />
-                                <Input
-                                    label="Title"
-                                    value={data.title}
-                                    onChange={(e) => {
-                                        setData('title', e.target.value);
-                                        clearErrors('title');
-                                    }}
-                                    placeholder="Banner headline"
-                                    error={errors.title}
-                                    required
-                                />
-                            </div>
-                            <Textarea
-                                label="Description"
-                                value={data.description}
-                                onChange={(e) => {
-                                    setData('description', e.target.value);
-                                    clearErrors('description');
-                                }}
-                                placeholder="Brief supporting text"
-                                error={errors.description}
-                                rows={4}
-                            />
-                            <div className="space-y-2">
-                                <p className="text-sm font-medium text-text-primary">
-                                    Banner Image
-                                </p>
-                                <p className="text-xs text-slate-400">
-                                    Leave empty to use a placeholder. Upload
-                                    your own image to replace it.
-                                </p>
-                                <ImageUpload
-                                    value={data.image}
-                                    onChange={(file) => {
-                                        setData('image', file);
-                                        clearErrors('image');
-                                    }}
-                                    error={errors.image}
-                                    hint="Best resolution: 1200×800px (3:2) landscape, minimum 800×600px. Banners display two per row and crop to fill, so keep key content centered."
-                                    previewClassName="h-48"
-                                />
-                            </div>
-                            <Input
-                                label="Link URL"
-                                value={data.href}
-                                onChange={(e) => {
-                                    setData('href', e.target.value);
-                                    clearErrors('href');
-                                }}
-                                placeholder="/products?sort=..."
-                                error={errors.href}
-                            />
-                            <Input
-                                label="Tailwind Accent Gradient"
-                                value={data.accent}
-                                onChange={(e) => {
-                                    setData('accent', e.target.value);
-                                    clearErrors('accent');
-                                }}
-                                placeholder="from-secondary/90 via-secondary/70 to-secondary/20"
-                                error={errors.accent}
-                            />
-                        </CardContent>
-                    </Card>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+                        <div className="space-y-5">
+                            <Card>
+                                <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardTitle className="text-base font-semibold">
+                                        Banner Content
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4 pt-4">
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <Input
+                                            label="Badge"
+                                            value={data.badge}
+                                            onChange={(e) => {
+                                                setData(
+                                                    'badge',
+                                                    e.target.value,
+                                                );
+                                                clearErrors('badge');
+                                            }}
+                                            placeholder="e.g. New arrivals"
+                                            error={errors.badge}
+                                        />
+                                        <Input
+                                            label="Title"
+                                            value={data.title}
+                                            onChange={(e) => {
+                                                setData(
+                                                    'title',
+                                                    e.target.value,
+                                                );
+                                                clearErrors('title');
+                                            }}
+                                            placeholder="Banner headline"
+                                            error={errors.title}
+                                            required
+                                        />
+                                    </div>
+                                    <Textarea
+                                        label="Description"
+                                        value={data.description}
+                                        onChange={(e) => {
+                                            setData(
+                                                'description',
+                                                e.target.value,
+                                            );
+                                            clearErrors('description');
+                                        }}
+                                        placeholder="Brief supporting text"
+                                        error={errors.description}
+                                        rows={4}
+                                    />
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-text-primary">
+                                            Banner Image
+                                        </p>
+                                        <p className="text-xs text-slate-400">
+                                            Leave empty to use a placeholder.
+                                            Upload your own image to replace it.
+                                        </p>
+                                        <ImageUpload
+                                            value={data.image}
+                                            onChange={(file) => {
+                                                setData('image', file);
+                                                clearErrors('image');
+                                            }}
+                                            error={errors.image}
+                                            hint="Best resolution: 1200×800px (3:2) landscape, minimum 800×600px. Banners display two per row and crop to fill, so keep key content centered."
+                                            previewClassName="h-48"
+                                        />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                    <Card>
-                        <CardHeader className="border-b border-slate-100 pb-4">
-                            <CardTitle className="text-base font-semibold">
-                                Settings
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex items-center gap-8 pt-6">
-                            <div className="flex items-center gap-2">
-                                <label className="text-sm font-medium text-slate-700">
-                                    Active
-                                </label>
-                                <Switch
-                                    checked={data.is_active}
-                                    onCheckedChange={(checked) =>
-                                        setData('is_active', checked)
-                                    }
-                                />
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <label className="text-sm font-medium text-slate-700">
-                                    Sort Order
-                                </label>
-                                <Input
-                                    type="number"
-                                    className="w-20"
-                                    value={data.sort_order}
-                                    onChange={(e) => {
-                                        setData('sort_order', e.target.value);
-                                        clearErrors('sort_order');
-                                    }}
-                                    error={errors.sort_order}
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
+                        <div className="space-y-5">
+                            <Card>
+                                <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardTitle className="text-base font-semibold">
+                                        Call to Action
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4 pt-4">
+                                    <Input
+                                        label="Link URL"
+                                        value={data.href}
+                                        onChange={(e) => {
+                                            setData('href', e.target.value);
+                                            clearErrors('href');
+                                        }}
+                                        placeholder="/products?sort=..."
+                                        error={errors.href}
+                                    />
+                                    <Input
+                                        label="Tailwind Accent Gradient"
+                                        value={data.accent}
+                                        onChange={(e) => {
+                                            setData('accent', e.target.value);
+                                            clearErrors('accent');
+                                        }}
+                                        placeholder="from-secondary/90 via-secondary/70 to-secondary/20"
+                                        error={errors.accent}
+                                    />
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardTitle className="text-base font-semibold">
+                                        Settings
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4 pt-4">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm font-medium text-slate-700">
+                                            Active
+                                        </label>
+                                        <Switch
+                                            checked={data.is_active}
+                                            onCheckedChange={(checked) =>
+                                                setData('is_active', checked)
+                                            }
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-slate-700">
+                                            Sort Order
+                                        </label>
+                                        <Input
+                                            type="number"
+                                            value={data.sort_order}
+                                            onChange={(e) => {
+                                                setData(
+                                                    'sort_order',
+                                                    e.target.value,
+                                                );
+                                                clearErrors('sort_order');
+                                            }}
+                                            error={errors.sort_order}
+                                        />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
 
                     <div className="flex items-center gap-3">
                         <Button

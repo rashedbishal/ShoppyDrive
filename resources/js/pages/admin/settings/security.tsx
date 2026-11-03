@@ -298,29 +298,33 @@ function SectionCards({
     disabled: boolean;
     setValue: (field: LimitField, value: number) => void;
 }) {
-    return sections.map((section) => (
-        <Card key={section.title} className="shadow-sm">
-            <CardHeader className="border-b border-slate-100 pb-4">
-                <CardTitle className="text-sm font-semibold text-slate-900">
-                    {section.title}
-                </CardTitle>
-                <p className="text-xs text-slate-600">{section.why}</p>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-4">
-                {section.rules.map((rule) => (
-                    <RuleRow
-                        key={rule.times}
-                        rule={rule}
-                        data={data}
-                        bounds={bounds}
-                        errors={errors}
-                        disabled={disabled}
-                        setValue={setValue}
-                    />
-                ))}
-            </CardContent>
-        </Card>
-    ));
+    return (
+        <div className="grid gap-4 lg:grid-cols-2">
+            {sections.map((section) => (
+                <Card key={section.title} className="shadow-sm">
+                    <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardTitle className="text-sm font-semibold text-slate-900">
+                            {section.title}
+                        </CardTitle>
+                        <p className="text-xs text-slate-600">{section.why}</p>
+                    </CardHeader>
+                    <CardContent className="space-y-3 pt-4">
+                        {section.rules.map((rule) => (
+                            <RuleRow
+                                key={rule.times}
+                                rule={rule}
+                                data={data}
+                                bounds={bounds}
+                                errors={errors}
+                                disabled={disabled}
+                                setValue={setValue}
+                            />
+                        ))}
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
 }
 
 const numberInputClass =
@@ -450,7 +454,7 @@ export default function SecuritySettings({
     return (
         <>
             <Head title="Security — Admin" />
-            <div className="max-w-2xl space-y-5">
+            <div className="space-y-4">
                 <div className="flex items-start gap-3">
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#c8102e]/10 text-[#c8102e]">
                         <ShieldCheck className="size-5" />

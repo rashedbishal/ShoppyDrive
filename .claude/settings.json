@@ -4,7 +4,8 @@
       "ClaudeInChromeDomain(192.168.0.113:8000)",
       "Bash(xargs -I{} cat {})",
       "Bash(php -r ' *)",
-      "Bash(composer test *)"
+      "Bash(composer test *)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm run build)"
     ]
   }
 }

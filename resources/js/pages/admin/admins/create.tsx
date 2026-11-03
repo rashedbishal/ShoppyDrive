@@ -76,91 +76,95 @@ export default function AdminCreate({ sectionCatalog }: Props) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-4">
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-slate-700">
-                                    Full Name
-                                </label>
-                                <input
-                                    className={inputClass}
-                                    value={data.name}
-                                    onChange={(e) =>
-                                        setData('name', e.target.value)
-                                    }
-                                    placeholder="Admin name"
-                                />
-                                {errors.name && (
-                                    <p className="mt-1 text-xs text-red-600">
-                                        {errors.name}
-                                    </p>
-                                )}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                        Full Name
+                                    </label>
+                                    <input
+                                        className={inputClass}
+                                        value={data.name}
+                                        onChange={(e) =>
+                                            setData('name', e.target.value)
+                                        }
+                                        placeholder="Admin name"
+                                    />
+                                    {errors.name && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {errors.name}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                        Email Address
+                                    </label>
+                                    <input
+                                        type="email"
+                                        className={inputClass}
+                                        value={data.email}
+                                        onChange={(e) =>
+                                            setData('email', e.target.value)
+                                        }
+                                        placeholder="admin@example.com"
+                                    />
+                                    {errors.email && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {errors.email}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-slate-700">
-                                    Email Address
-                                </label>
-                                <input
-                                    type="email"
-                                    className={inputClass}
-                                    value={data.email}
-                                    onChange={(e) =>
-                                        setData('email', e.target.value)
-                                    }
-                                    placeholder="admin@example.com"
-                                />
-                                {errors.email && (
-                                    <p className="mt-1 text-xs text-red-600">
-                                        {errors.email}
-                                    </p>
-                                )}
-                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                        Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        className={inputClass}
+                                        value={data.password}
+                                        onChange={(e) =>
+                                            setData('password', e.target.value)
+                                        }
+                                        placeholder="Minimum 8 characters"
+                                    />
+                                    {errors.password && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {errors.password}
+                                        </p>
+                                    )}
+                                </div>
 
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-slate-700">
-                                    Password
-                                </label>
-                                <input
-                                    type="password"
-                                    className={inputClass}
-                                    value={data.password}
-                                    onChange={(e) =>
-                                        setData('password', e.target.value)
-                                    }
-                                    placeholder="Minimum 8 characters"
-                                />
-                                {errors.password && (
-                                    <p className="mt-1 text-xs text-red-600">
-                                        {errors.password}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-slate-700">
-                                    Confirm Password
-                                </label>
-                                <input
-                                    type="password"
-                                    className={inputClass}
-                                    value={data.password_confirmation}
-                                    onChange={(e) =>
-                                        setData(
-                                            'password_confirmation',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="Repeat password"
-                                />
-                                {errors.password_confirmation && (
-                                    <p className="mt-1 text-xs text-red-600">
-                                        {errors.password_confirmation}
-                                    </p>
-                                )}
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                        Confirm Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        className={inputClass}
+                                        value={data.password_confirmation}
+                                        onChange={(e) =>
+                                            setData(
+                                                'password_confirmation',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="Repeat password"
+                                    />
+                                    {errors.password_confirmation && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {errors.password_confirmation}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="mt-4 shadow-sm">
+                    <Card className="shadow-sm">
                         <CardHeader className="border-b border-slate-100 pb-4">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Permissions
