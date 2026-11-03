@@ -402,12 +402,14 @@ function SidebarContent({
     logoUrl,
     admin,
     unseenOrdersCount,
+    unmatchedSmsCount,
     onClose,
 }: {
     currentUrl: string;
     logoUrl?: string | null;
     admin?: CurrentAdmin;
     unseenOrdersCount?: number | null;
+    unmatchedSmsCount?: number;
     onClose?: () => void;
 }) {
     const mostSpecificMatch = findMostSpecificMatch(currentUrl);
@@ -479,7 +481,9 @@ function SidebarContent({
                             const unseenCount =
                                 item.href === '/admin/orders'
                                     ? (unseenOrdersCount ?? 0)
-                                    : 0;
+                                    : item.href === '/admin/received-sms'
+                                      ? (unmatchedSmsCount ?? 0)
+                                      : 0;
 
                             return (
                                 <Link
@@ -584,7 +588,7 @@ export default function AdminLayout({
     const logoUrl = (page.props.settings as AppSettings)?.logo ?? null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [hasMobileLogoError, setHasMobileLogoError] = useState(false);
-    const { toasts, dismiss } = useSmsPolling();
+    const { toasts, dismiss, unmatchedCount } = useSmsPolling();
     const handleDismiss = useCallback((key: number) => dismiss(key), [dismiss]);
 
     const handleLogout = () => router.post(route('admin.logout'));
@@ -598,6 +602,7 @@ export default function AdminLayout({
                     logoUrl={logoUrl}
                     admin={admin ?? undefined}
                     unseenOrdersCount={unseenOrdersCount}
+                    unmatchedSmsCount={unmatchedCount}
                 />
             </aside>
 
@@ -614,6 +619,7 @@ export default function AdminLayout({
                             logoUrl={logoUrl}
                             admin={admin ?? undefined}
                             unseenOrdersCount={unseenOrdersCount}
+                            unmatchedSmsCount={unmatchedCount}
                             onClose={() => setSidebarOpen(false)}
                         />
                     </aside>

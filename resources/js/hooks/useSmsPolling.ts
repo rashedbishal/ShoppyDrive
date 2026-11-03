@@ -14,6 +14,10 @@ const POLL_INTERVAL = 5000;
 
 export function useSmsPolling() {
     const [toasts, setToasts] = useState<SmsToast[]>([]);
+    // FSA-07: count of SMS unmatched past the admin-reconciliation threshold
+    // (ReceivedSmsController::UNMATCHED_STALE_MINUTES), piggybacking on this
+    // same poll — not a new endpoint or table.
+    const [unmatchedCount, setUnmatchedCount] = useState(0);
     // true after the first successful response — prevents toasting stale SMS on startup
     const initializedRef = useRef(false);
 
@@ -51,7 +55,10 @@ export function useSmsPolling() {
                 return;
             }
 
-            let data: { sms: Omit<SmsToast, 'key'>[] };
+            let data: {
+                sms: Omit<SmsToast, 'key'>[];
+                unmatched_count?: number;
+            };
 
             try {
                 data = await res.json();
@@ -61,6 +68,10 @@ export function useSmsPolling() {
 
             if (!mounted) {
                 return;
+            }
+
+            if (typeof data.unmatched_count === 'number') {
+                setUnmatchedCount(data.unmatched_count);
             }
 
             const isFirstPoll = !initializedRef.current;
@@ -98,5 +109,5 @@ export function useSmsPolling() {
         };
     }, []);
 
-    return { toasts, dismiss };
+    return { toasts, dismiss, unmatchedCount };
 }

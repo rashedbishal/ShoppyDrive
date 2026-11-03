@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Http\Middleware\RedirectAdminToDashboard;
+use App\Enums\OrderStatus;
 use App\Models\Admin;
 use App\Models\Cart;
 use App\Models\LandingPage;
@@ -57,6 +57,74 @@ test('a valid transaction id with the correct amount confirms the order and mark
     expect($order->payment_status->value)->toBe('paid');
     expect($sms->refresh()->is_matched)->toBeTrue();
     expect($sms->matched_order_id)->toBe($order->id);
+});
+
+/*
+ * FSA-07: a customer who genuinely paid within the original 2-hour window
+ * but only submits the form late must not be bounced to a new checkout —
+ * but the window itself (expires_at) is never changed, and an SMS that
+ * truly arrived after it must still be refused.
+ */
+test('a late submission is accepted when the matching SMS genuinely arrived within the original window', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
+    $pending = startMobileBankingCheckout($this, $user, $product);
+    $amount = (float) $pending->checkout_data['total'];
+    $originalExpiry = $pending->expires_at->clone();
+
+    // The SMS arrived with time to spare before expiry...
+    ReceivedSms::create([
+        'sender' => '01799999999', 'provider' => 'bkash', 'content' => 'TrxID LATE1234',
+        'received_at' => $originalExpiry->clone()->subMinutes(5),
+        'parsed_transaction_id' => 'LATE1234', 'parsed_amount' => $amount, 'is_matched' => false,
+    ]);
+
+    // ...but the customer only submits the form after expires_at has passed.
+    $this->travelTo($originalExpiry->clone()->addMinute());
+
+    $this->actingAs($user)->post(route('payment.mobile.submit', $pending->token), [
+        'provider' => 'bkash', 'transaction_id' => 'late1234',
+    ])->assertRedirect(route('order.confirmation', $pending->fresh()->order_number));
+
+    expect(Order::query()->count())->toBe(1);
+    expect(Order::query()->firstOrFail()->payment_status->value)->toBe('paid');
+    expect($pending->fresh()->expires_at->equalTo($originalExpiry))->toBeTrue();
+});
+
+test('an SMS received after the original expiry is refused, not treated as proof of timely payment', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
+    $pending = startMobileBankingCheckout($this, $user, $product);
+    $amount = (float) $pending->checkout_data['total'];
+    $originalExpiry = $pending->expires_at->clone();
+
+    // The SMS itself arrived after the original window closed.
+    ReceivedSms::create([
+        'sender' => '01799999999', 'provider' => 'bkash', 'content' => 'TrxID TOOLATE1',
+        'received_at' => $originalExpiry->clone()->addMinutes(5),
+        'parsed_transaction_id' => 'TOOLATE1', 'parsed_amount' => $amount, 'is_matched' => false,
+    ]);
+    $this->travelTo($originalExpiry->clone()->addMinutes(10));
+
+    $this->actingAs($user)->post(route('payment.mobile.submit', $pending->token), [
+        'provider' => 'bkash', 'transaction_id' => 'toolate1',
+    ])->assertRedirect(route('checkout.index'))->assertSessionHas('error', 'Payment session expired. Please start a new order.');
+
+    expect(Order::query()->count())->toBe(0);
+    expect(ReceivedSms::query()->firstOrFail()->is_matched)->toBeFalse();
+});
+
+test('a genuinely expired session with no matching SMS at all is still refused exactly as before', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
+    $pending = startMobileBankingCheckout($this, $user, $product);
+    $this->travelTo($pending->expires_at->clone()->addMinute());
+
+    $this->actingAs($user)->post(route('payment.mobile.submit', $pending->token), [
+        'provider' => 'bkash', 'transaction_id' => 'NEVERSENT1',
+    ])->assertRedirect(route('checkout.index'))->assertSessionHas('error', 'Payment session expired. Please start a new order.');
+
+    expect(Order::query()->count())->toBe(0);
 });
 
 test('an incorrect amount is rejected and does not mark the order paid', function () {
@@ -242,7 +310,6 @@ test('resubmitting the same confirmed transaction id is idempotent and does not 
 test('a transaction consumed by an order that is later cancelled still cannot be reused for a new order', function () {
     $userA = User::factory()->create();
     $userB = User::factory()->create();
-    $admin = createAdmin(['name' => 'Admin', 'email' => 'admin-cancel-sms@example.com', 'password' => bcrypt('password')]);
     $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
 
     $pendingA = startMobileBankingCheckout($this, $userA, $product);
@@ -260,21 +327,20 @@ test('a transaction consumed by an order that is later cancelled still cannot be
 
     $order = Order::query()->firstOrFail();
 
-    auth('web')->logout();
-    $this->actingAs($admin, 'admin')
-        ->patch(route('admin.orders.cancel', $order), ['reason' => 'Customer request'])
-        ->assertRedirect();
+    // FSA-06 now correctly refuses normal admin cancellation of a paid
+    // order (Admin\OrderController::cancel() refuses it, directing to "Mark
+    // as Refunded" instead), so this can no longer be reached through the
+    // admin cancellation endpoint. What this test actually verifies is
+    // narrower than "cancellation works" — it's that a transaction id
+    // already consumed by an order can never be reused for a different
+    // order, regardless of that order's later status — so the cancelled
+    // state is established directly against the model, independent of
+    // whichever flow (FSA-06's own refund-then-close path, a courier
+    // return/cancel report, etc.) a real cancelled-paid order would go
+    // through.
+    $order->update(['status' => OrderStatus::CANCELLED]);
 
-    expect($order->refresh()->status->value)->toBe('cancelled');
-    auth('admin')->logout();
-
-    // Switching the test's simulated browser back from the admin session to
-    // a plain customer session isn't what's under test here (that's covered
-    // by RedirectAdminToDashboard's own tests) — bypass it so this request
-    // actually reaches the controller instead of bouncing to /admin/dashboard.
-    $this->withoutMiddleware(RedirectAdminToDashboard::class);
-
-    // Even though the order that consumed this transaction was cancelled,
+    // Even though the order that consumed this transaction is cancelled,
     // the real-world payment still happened under that transaction id — it
     // must not become claimable again for an unrelated order.
     $this->actingAs($userB)->post(route('payment.mobile.submit', $pendingB->token), [

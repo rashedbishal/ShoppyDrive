@@ -78,9 +78,20 @@ class MobilePaymentController extends Controller
             'transaction_id' => ['required', 'string', 'min:4', 'max:40'],
         ]);
 
+        $provider = $request->input('provider');
+        $transactionId = strtoupper(trim($request->transaction_id));
+
         $pending = PendingCheckout::where('token', $token)->first();
 
-        if (! $pending || $pending->isExpired()) {
+        // FSA-07: the hard 2-hour window is never extended, globally or on
+        // this row — but a customer who genuinely paid in time and only
+        // submits the form late must not be bounced to a brand-new
+        // checkout. If a received SMS for this exact (provider, TrxID)
+        // arrived within this PendingCheckout's own original window, let
+        // this one submission through to the normal matching logic below,
+        // which still enforces amount, duplicate-use, wrong-provider, etc.
+        // exactly as before. An SMS received after the window still fails.
+        if (! $pending || ($pending->isExpired() && ! $this->hasProofOfPaymentWithinWindow($pending, $provider, $transactionId))) {
             return redirect()->route('checkout.index')
                 ->with('error', 'Payment session expired. Please start a new order.');
         }
@@ -93,8 +104,6 @@ class MobilePaymentController extends Controller
             return redirect()->route('order.confirmation', $pending->order_number);
         }
 
-        $provider = $request->input('provider');
-        $transactionId = strtoupper(trim($request->transaction_id));
         $expectedAmount = (float) $pending->checkout_data['total'];
 
         try {
@@ -105,7 +114,13 @@ class MobilePaymentController extends Controller
                 $lockedUser = $pending->user_id !== null ? $this->referrals->lockUser($pending->user_id) : null;
                 $freshPending = PendingCheckout::lockForUpdate()->find($pending->id);
 
-                if ($freshPending === null || $freshPending->isExpired()) {
+                if ($freshPending === null) {
+                    throw new \RuntimeException('expired');
+                }
+
+                // FSA-07: same grace as the outer check above, re-verified
+                // under lock since this is the authoritative check.
+                if ($freshPending->isExpired() && ! $this->hasProofOfPaymentWithinWindow($freshPending, $provider, $transactionId)) {
                     throw new \RuntimeException('expired');
                 }
 
@@ -300,5 +315,21 @@ class MobilePaymentController extends Controller
         OrderConfirmationAccess::grant($request, $order->order_number);
 
         return redirect()->route('order.confirmation', $order->order_number);
+    }
+
+    /**
+     * FSA-07: whether a received SMS matching this (provider, TrxID) proves
+     * payment arrived while $pending was still genuinely open — not merely
+     * before "now". This never changes $pending->expires_at itself, and
+     * doesn't require the SMS to be unmatched: a matched one still reaches
+     * (and is correctly refused by) the normal "already_used" check below,
+     * which is a more honest answer than a generic "session expired".
+     */
+    private function hasProofOfPaymentWithinWindow(PendingCheckout $pending, string $provider, string $transactionId): bool
+    {
+        return ReceivedSms::where('provider', $provider)
+            ->where('parsed_transaction_id', $transactionId)
+            ->whereBetween('received_at', [$pending->created_at, $pending->expires_at])
+            ->exists();
     }
 }

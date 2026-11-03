@@ -17,8 +17,21 @@ use Inertia\Response;
 class ReceivedSmsController extends Controller
 {
     /**
+     * FSA-07: an SMS unmatched for longer than this is past any realistic
+     * time a genuine customer takes to type a TrxID into the payment form,
+     * so it's worth an admin's attention — a reconciliation signal, not a
+     * hard cutoff (the SMS and its PendingCheckout stay usable long after
+     * this, up to the checkout's own 2-hour window). Comfortably shorter
+     * than that 2-hour window, so there's still time to help the customer.
+     */
+    private const UNMATCHED_STALE_MINUTES = 30;
+
+    /**
      * Lightweight poll endpoint for the admin layout toast notifications.
-     * Returns SMS records with id > after, capped at 10.
+     * Returns SMS records with id > after, capped at 10, plus a running
+     * count of stale unmatched SMS (FSA-07) for the sidebar badge — both
+     * piggyback on the same 5-second poll already running; no new route,
+     * table, or dashboard.
      * Route: GET /admin/sms/poll
      */
     public function poll(Request $request): JsonResponse
@@ -30,7 +43,11 @@ class ReceivedSmsController extends Controller
             ->limit(10)
             ->get(['id', 'sender', 'content', 'parsed_transaction_id', 'parsed_amount', 'received_at']);
 
-        return response()->json(['sms' => $sms]);
+        $unmatchedCount = ReceivedSms::where('is_matched', false)
+            ->where('received_at', '<=', now()->subMinutes(self::UNMATCHED_STALE_MINUTES))
+            ->count();
+
+        return response()->json(['sms' => $sms, 'unmatched_count' => $unmatchedCount]);
     }
 
     public function index(Request $request): Response
