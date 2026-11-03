@@ -2,6 +2,17 @@ import { Film, ImagePlus, X } from 'lucide-react';
 import React, { useRef, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
+// FSA-20: mirrors the backend limits in ProductRequest.php exactly (image
+// and video caps differ because they're the same mixed-type field with very
+// different reasonable size expectations). This is advisory UX only — a
+// browser-reported File.type/size is trivially spoofable, so the backend's
+// own content-sniffed, size-checked validation remains the real boundary;
+// this only saves a legitimate admin an upload-then-rejection round trip.
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+const MAX_NEW_UPLOADS = 10;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
 interface MultiMediaUploadProps {
     value: (string | File)[];
     onChange: (files: (string | File)[]) => void;
@@ -24,6 +35,8 @@ export function MultiMediaUpload({
 }: MultiMediaUploadProps): React.JSX.Element {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [previews, setPreviews] = useState<{ id: string; url: string; item: string | File; type: 'image' | 'video' }[]>([]);
+    const [clientError, setClientError] = useState<string | null>(null);
+    const displayedError = clientError ?? error;
 
     useEffect(() => {
         const nextPreviews = value.map((item, index) => {
@@ -55,16 +68,59 @@ export function MultiMediaUpload({
     }, [value]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const newFiles = Array.from(e.target.files);
-            onChange([...value, ...newFiles]);
+        setClientError(null);
+
+        if (!e.target.files || e.target.files.length === 0) {
+            return;
         }
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+
+        const newFiles = Array.from(e.target.files);
+        const resetInput = () => {
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        };
+
+        const existingNewUploadCount = value.filter((item) => item instanceof File).length;
+
+        if (existingNewUploadCount + newFiles.length > MAX_NEW_UPLOADS) {
+            setClientError(`You can upload at most ${MAX_NEW_UPLOADS} new images or videos at once.`);
+            resetInput();
+
+            return;
         }
+
+        for (const file of newFiles) {
+            const isVideo = file.type.startsWith('video/');
+            const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
+
+            if (!isImage && !isVideo) {
+                setClientError(`"${file.name}" isn't a supported image or video type.`);
+                resetInput();
+
+                return;
+            }
+
+            const maxBytes = isImage ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
+
+            if (file.size > maxBytes) {
+                setClientError(
+                    isImage
+                        ? `"${file.name}" is larger than 5MB. Please choose a smaller image.`
+                        : `"${file.name}" is larger than 50MB. Please choose a smaller video.`,
+                );
+                resetInput();
+
+                return;
+            }
+        }
+
+        onChange([...value, ...newFiles]);
+        resetInput();
     };
 
     const handleRemove = (indexToRemove: number) => {
+        setClientError(null);
         const next = value.filter((_, index) => index !== indexToRemove);
         onChange(next);
     };
@@ -139,7 +195,7 @@ export function MultiMediaUpload({
                 <div
                     className={cn(
                         'flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-colors hover:bg-slate-50',
-                        error ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
+                        displayedError ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
                     )}
                     onClick={() => fileInputRef.current?.click()}
                 >
@@ -160,7 +216,7 @@ export function MultiMediaUpload({
                 onChange={handleFileChange}
             />
 
-            {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
+            {displayedError && <p className="mt-2 text-xs text-red-500">{displayedError}</p>}
         </div>
     );
 }

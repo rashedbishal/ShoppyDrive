@@ -12,6 +12,19 @@ use Illuminate\Validation\Rule;
 
 class ProductRequest extends FormRequest
 {
+    // FSA-20: no existing precedent anywhere in this codebase for a video
+    // size limit — 50MB is a deliberate choice for a short product-demo
+    // clip, not derived from an existing convention the way the 5MB image
+    // limit is (matches BlogRequest's existing featured_image max:5120).
+    private const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+    private const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+
+    // Newly uploaded files only, per submission — never counts existing
+    // media kept as plain string paths, so editing a product that already
+    // has more than 10 media items is never blocked by this.
+    private const MAX_NEW_UPLOADS = 10;
+
     public function authorize(): bool
     {
         return true;
@@ -59,21 +72,59 @@ class ProductRequest extends FormRequest
             'variants.*.low_stock_threshold' => ['nullable', 'integer', 'min:0'],
             'variants.*.is_default' => ['boolean'],
             'cry_baby_enabled' => ['boolean'],
-            'images' => ['nullable', 'array'],
+            // FSA-20: counts only newly uploaded files (UploadedFile
+            // instances) against the cap — a string is an existing media
+            // path being kept as-is, never counted, so a product that
+            // already has more than MAX_NEW_UPLOADS media items is never
+            // blocked from being edited when no new file is added.
+            'images' => ['nullable', 'array', function ($attribute, $value, $fail) {
+                $newUploadCount = count(array_filter(
+                    is_array($value) ? $value : [],
+                    fn ($item) => $item instanceof UploadedFile,
+                ));
+
+                if ($newUploadCount > self::MAX_NEW_UPLOADS) {
+                    $fail('No more than '.self::MAX_NEW_UPLOADS.' new images or videos may be uploaded in one submission.');
+                }
+            }],
             'images.*' => ['nullable', function ($attribute, $value, $fail) {
                 if (! is_string($value) && ! ($value instanceof UploadedFile)) {
                     $fail('The '.$attribute.' must be a valid string, image, or video file.');
+
+                    return;
                 }
-                if ($value instanceof UploadedFile) {
-                    // Explicit raster allowlist, not a blanket "image/*"
-                    // prefix check — that previously admitted
-                    // image/svg+xml, which is served straight from public
-                    // storage with no sanitization (stored XSS).
-                    $mime = $value->getMimeType();
-                    $allowedImageMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-                    if (! in_array($mime, $allowedImageMimes, true) && ! str_starts_with($mime, 'video/')) {
-                        $fail('The '.$attribute.' must be a JPEG, PNG, WebP, GIF image, or a video.');
-                    }
+
+                if (! $value instanceof UploadedFile) {
+                    return;
+                }
+
+                // Explicit raster allowlist, not a blanket "image/*"
+                // prefix check — that previously admitted
+                // image/svg+xml, which is served straight from public
+                // storage with no sanitization (stored XSS).
+                // getMimeType() sniffs the real file content via finfo,
+                // not the client-supplied filename or Content-Type header.
+                $mime = (string) $value->getMimeType();
+                $allowedImageMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+                $isImage = in_array($mime, $allowedImageMimes, true);
+                $isVideo = str_starts_with($mime, 'video/');
+
+                if (! $isImage && ! $isVideo) {
+                    $fail('The '.$attribute.' must be a JPEG, PNG, WebP, GIF image, or a video.');
+
+                    return;
+                }
+
+                // FSA-20: images and videos get different caps on the same
+                // mixed-type field — a single uniform `max:` rule can't
+                // express that, so the size check lives here, after the
+                // type is already known.
+                $maxBytes = $isImage ? self::MAX_IMAGE_BYTES : self::MAX_VIDEO_BYTES;
+
+                if ($value->getSize() > $maxBytes) {
+                    $fail($isImage
+                        ? 'Image files must be 5MB or smaller.'
+                        : 'Video files must be 50MB or smaller.');
                 }
             }],
             'media_tags' => ['nullable', 'array'],

@@ -6,9 +6,12 @@ use App\Models\Admin;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductMedia;
 use App\Models\PromotionalBanner;
 use App\Models\SubCategory;
+use App\Support\ProductStockToken;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\actingAs;
 
@@ -289,4 +292,168 @@ test('a product image upload rejects an SVG disguised with a .jpg extension', fu
 
     $response->assertSessionHasErrors('images.0');
     expect(Product::where('slug', 'evil-product')->exists())->toBeFalse();
+});
+
+// ── FSA-20: product media size and count limits ─────────────────────────────
+
+function fsa20ProductFixture(): array
+{
+    $admin = imageSecurityAdmin();
+    $category = Category::factory()->create();
+    $subCategory = SubCategory::factory()->create(['category_id' => $category->id]);
+    actingAs($admin, 'admin');
+
+    return [$admin, $category, $subCategory];
+}
+
+test('a product image upload of exactly 5MB is accepted', function () {
+    [, $category, $subCategory] = fsa20ProductFixture();
+
+    $response = $this->post(route('admin.products.store'), [
+        'name' => 'Exact Image', 'slug' => 'exact-image',
+        'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
+        'price' => 100, 'stock_quantity' => 10,
+        'images' => [UploadedFile::fake()->image('product.jpg')->size(5120)],
+    ]);
+
+    $response->assertRedirect();
+    expect(Product::where('slug', 'exact-image')->exists())->toBeTrue();
+});
+
+test('a product image upload larger than 5MB is rejected', function () {
+    [, $category, $subCategory] = fsa20ProductFixture();
+
+    $response = $this->post(route('admin.products.store'), [
+        'name' => 'Oversized Image', 'slug' => 'oversized-image',
+        'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
+        'price' => 100, 'stock_quantity' => 10,
+        'images' => [UploadedFile::fake()->image('product.jpg')->size(5121)],
+    ]);
+
+    $response->assertSessionHasErrors(['images.0' => 'Image files must be 5MB or smaller.']);
+    expect(Product::where('slug', 'oversized-image')->exists())->toBeFalse();
+});
+
+test('a product video upload of exactly 50MB is accepted', function () {
+    [, $category, $subCategory] = fsa20ProductFixture();
+
+    $response = $this->post(route('admin.products.store'), [
+        'name' => 'Exact Video', 'slug' => 'exact-video',
+        'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
+        'price' => 100, 'stock_quantity' => 10,
+        'images' => [UploadedFile::fake()->create('clip.mp4', 51200, 'video/mp4')],
+    ]);
+
+    $response->assertRedirect();
+    expect(Product::where('slug', 'exact-video')->exists())->toBeTrue();
+});
+
+test('a product video upload larger than 50MB is rejected', function () {
+    [, $category, $subCategory] = fsa20ProductFixture();
+
+    $response = $this->post(route('admin.products.store'), [
+        'name' => 'Oversized Video', 'slug' => 'oversized-video',
+        'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
+        'price' => 100, 'stock_quantity' => 10,
+        'images' => [UploadedFile::fake()->create('clip.mp4', 51201, 'video/mp4')],
+    ]);
+
+    $response->assertSessionHasErrors(['images.0' => 'Video files must be 50MB or smaller.']);
+    expect(Product::where('slug', 'oversized-video')->exists())->toBeFalse();
+});
+
+test('exactly 10 newly uploaded media files are accepted', function () {
+    [, $category, $subCategory] = fsa20ProductFixture();
+
+    $response = $this->post(route('admin.products.store'), [
+        'name' => 'Ten Files', 'slug' => 'ten-files',
+        'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
+        'price' => 100, 'stock_quantity' => 10,
+        'images' => array_map(fn (int $i) => UploadedFile::fake()->image("product-{$i}.jpg"), range(1, 10)),
+    ]);
+
+    $response->assertRedirect();
+    $product = Product::where('slug', 'ten-files')->firstOrFail();
+    expect(ProductMedia::where('product_id', $product->id)->count())->toBe(10);
+});
+
+test('11 newly uploaded media files are rejected in one submission', function () {
+    Storage::fake('public');
+    [, $category, $subCategory] = fsa20ProductFixture();
+
+    $response = $this->post(route('admin.products.store'), [
+        'name' => 'Eleven Files', 'slug' => 'eleven-files',
+        'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
+        'price' => 100, 'stock_quantity' => 10,
+        'images' => array_map(fn (int $i) => UploadedFile::fake()->image("product-{$i}.jpg"), range(1, 11)),
+    ]);
+
+    $response->assertSessionHasErrors('images');
+    expect(Product::where('slug', 'eleven-files')->exists())->toBeFalse();
+    expect(Storage::disk('public')->allFiles('products'))->toBeEmpty();
+});
+
+test('a product with more than 10 existing media items can still be edited without uploading new files', function () {
+    [, $category, $subCategory] = fsa20ProductFixture();
+    $product = Product::factory()->create([
+        'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
+        'price' => 100, 'stock_quantity' => 10,
+    ]);
+    foreach (range(1, 12) as $i) {
+        ProductMedia::create(['product_id' => $product->id, 'path' => "/storage/products/existing-{$i}.jpg", 'type' => 'image', 'is_primary' => $i === 1, 'sort_order' => $i]);
+    }
+
+    $response = $this->put(route('admin.products.update', $product), [
+        'stock_token' => ProductStockToken::for($product),
+        'name' => 'Updated Name', 'slug' => $product->slug,
+        'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
+        'price' => 100, 'stock_quantity' => 10,
+    ]);
+
+    $response->assertSessionHasNoErrors();
+    expect($product->refresh()->name)->toBe('Updated Name');
+    expect(ProductMedia::where('product_id', $product->id)->count())->toBe(12);
+});
+
+test('existing media kept as plain string paths continue to work when updating a product', function () {
+    [, $category, $subCategory] = fsa20ProductFixture();
+    $product = Product::factory()->create([
+        'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
+        'price' => 100, 'stock_quantity' => 10,
+    ]);
+    ProductMedia::create(['product_id' => $product->id, 'path' => '/storage/products/existing-1.jpg', 'type' => 'image', 'is_primary' => true, 'sort_order' => 1]);
+    ProductMedia::create(['product_id' => $product->id, 'path' => '/storage/products/existing-2.jpg', 'type' => 'image', 'is_primary' => false, 'sort_order' => 2]);
+
+    $response = $this->put(route('admin.products.update', $product), [
+        'stock_token' => ProductStockToken::for($product),
+        'name' => $product->name, 'slug' => $product->slug,
+        'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
+        'price' => 100, 'stock_quantity' => 10,
+        'images' => ['/storage/products/existing-1.jpg', '/storage/products/existing-2.jpg'],
+    ]);
+
+    $response->assertSessionHasNoErrors();
+    expect(ProductMedia::where('product_id', $product->id)->pluck('path')->sort()->values()->all())
+        ->toBe(['/storage/products/existing-1.jpg', '/storage/products/existing-2.jpg']);
+});
+
+test('a mixed batch containing one oversized file is rejected without storing any of the batch', function () {
+    Storage::fake('public');
+    [, $category, $subCategory] = fsa20ProductFixture();
+
+    $response = $this->post(route('admin.products.store'), [
+        'name' => 'Mixed Batch', 'slug' => 'mixed-batch',
+        'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
+        'price' => 100, 'stock_quantity' => 10,
+        'images' => [
+            UploadedFile::fake()->image('good-1.jpg')->size(1024),
+            UploadedFile::fake()->image('good-2.jpg')->size(1024),
+            UploadedFile::fake()->image('too-big.jpg')->size(5121),
+        ],
+    ]);
+
+    $response->assertSessionHasErrors('images.2');
+    expect(Product::where('slug', 'mixed-batch')->exists())->toBeFalse();
+    expect(ProductMedia::count())->toBe(0);
+    expect(Storage::disk('public')->allFiles('products'))->toBeEmpty();
 });
