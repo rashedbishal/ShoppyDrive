@@ -141,9 +141,10 @@ export default function PromotionalBannerEdit({
         clearErrors();
 
         const clientErrors = validate(data, {
-            title: [required(), maxLength(255)],
+            title: [required(), maxLength(80)],
+            description: [maxLength(150)],
             href: [maxLength(255)],
-            badge: [maxLength(100)],
+            badge: [maxLength(40)],
         });
 
         if (Object.keys(clientErrors).length > 0) {
@@ -210,6 +211,8 @@ export default function PromotionalBannerEdit({
                                             }}
                                             placeholder="e.g. New arrivals"
                                             error={errors.badge}
+                                            maxLength={40}
+                                            hint={`${data.badge.length}/40`}
                                         />
                                         <Input
                                             label="Title"
@@ -224,6 +227,8 @@ export default function PromotionalBannerEdit({
                                             placeholder="Banner headline"
                                             error={errors.title}
                                             required
+                                            maxLength={80}
+                                            hint={`${data.title.length}/80`}
                                         />
                                     </div>
                                     <Textarea
@@ -239,6 +244,8 @@ export default function PromotionalBannerEdit({
                                         placeholder="Brief supporting text"
                                         error={errors.description}
                                         rows={4}
+                                        maxLength={150}
+                                        hint={`${data.description.length}/150`}
                                     />
                                     <div className="space-y-2">
                                         <p className="text-sm font-medium text-text-primary">
@@ -252,10 +259,7 @@ export default function PromotionalBannerEdit({
                                         <ImageUpload
                                             value={data.image}
                                             onChange={(file) => {
-                                                setData(
-                                                    'image',
-                                                    file ?? banner.image,
-                                                );
+                                                setData('image', file);
                                                 clearErrors('image');
                                             }}
                                             error={errors.image}

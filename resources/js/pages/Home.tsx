@@ -387,19 +387,21 @@ function HeroSlider({
                                     ease: 'easeOut',
                                 }}
                             >
-                                {activeSlide.stats.slice(0, 3).map((stat, index) => (
-                                    <div
-                                        key={`${stat.label}-${index}`}
-                                        className="min-w-0 rounded-xl border border-white/10 bg-white/10 px-2.5 py-2 backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3"
-                                    >
-                                        <p className="truncate text-[10px] tracking-[0.15em] text-white/60 uppercase sm:text-xs sm:tracking-[0.2em]">
-                                            {stat.label}
-                                        </p>
-                                        <p className="mt-0.5 truncate text-xs font-semibold text-white sm:mt-1 sm:text-sm">
-                                            {stat.value}
-                                        </p>
-                                    </div>
-                                ))}
+                                {activeSlide.stats
+                                    .slice(0, 3)
+                                    .map((stat, index) => (
+                                        <div
+                                            key={`${stat.label}-${index}`}
+                                            className="min-w-0 rounded-xl border border-white/10 bg-white/10 px-2.5 py-2 backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3"
+                                        >
+                                            <p className="truncate text-[10px] tracking-[0.15em] text-white/60 uppercase sm:text-xs sm:tracking-[0.2em]">
+                                                {stat.label}
+                                            </p>
+                                            <p className="mt-0.5 truncate text-xs font-semibold text-white sm:mt-1 sm:text-sm">
+                                                {stat.value}
+                                            </p>
+                                        </div>
+                                    ))}
                             </motion.div>
                         </div>
                     </motion.div>
@@ -1236,7 +1238,7 @@ function Home(): React.JSX.Element {
                                 <Link
                                     key={banner.id}
                                     href={banner.href || '#'}
-                                    className="group relative overflow-hidden rounded-[2rem] bg-[var(--color-secondary)] shadow-[var(--shadow-card)]"
+                                    className="group relative min-w-0 overflow-hidden rounded-[2rem] bg-[var(--color-secondary)] shadow-[var(--shadow-card)]"
                                 >
                                     <img
                                         src={banner.image}
@@ -1253,23 +1255,27 @@ function Home(): React.JSX.Element {
                                         )}
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-                                    <div className="absolute inset-0 flex flex-col justify-end p-6 text-white sm:p-8">
+                                    <div className="absolute inset-0 flex min-w-0 flex-col justify-end overflow-hidden p-6 text-white sm:p-8">
                                         {banner.badge && (
-                                            <Badge className="mb-4 w-fit bg-white/10 text-white backdrop-blur-md">
-                                                {banner.badge}
+                                            <Badge className="mb-4 w-fit max-w-full bg-white/10 text-white backdrop-blur-md">
+                                                <span className="truncate">
+                                                    {banner.badge}
+                                                </span>
                                             </Badge>
                                         )}
-                                        <h3 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                                        <h3 className="line-clamp-2 font-display text-2xl leading-tight font-semibold tracking-tight break-words sm:text-3xl lg:text-4xl">
                                             {banner.title}
                                         </h3>
                                         {banner.description && (
-                                            <p className="mt-2 max-w-lg text-sm leading-7 text-white/80 sm:text-base">
+                                            <p className="mt-2 line-clamp-2 max-w-lg text-sm leading-6 break-words text-white/80 sm:text-base sm:leading-7">
                                                 {banner.description}
                                             </p>
                                         )}
-                                        <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-white">
-                                            Explore now
-                                            <ArrowRight className="size-4 transition group-hover:translate-x-1" />
+                                        <div className="mt-5 inline-flex max-w-full shrink-0 items-center gap-2 text-sm font-semibold text-white">
+                                            <span className="truncate">
+                                                Explore now
+                                            </span>
+                                            <ArrowRight className="size-4 shrink-0 transition group-hover:translate-x-1" />
                                         </div>
                                     </div>
                                 </Link>

@@ -61,7 +61,7 @@ export default function LandingPagesIndex({ pages }: Props) {
         <>
             <Head title="Landing Pages — Admin" />
             <div className="space-y-5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900">
                             Landing Pages
@@ -70,8 +70,11 @@ export default function LandingPagesIndex({ pages }: Props) {
                             {pages.length} total
                         </p>
                     </div>
-                    <Link href={route('admin.landing-pages.create')}>
-                        <Button className="bg-[#c8102e] text-white hover:bg-[#a50d25]">
+                    <Link
+                        href={route('admin.landing-pages.create')}
+                        className="w-full sm:w-auto"
+                    >
+                        <Button className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25] sm:w-auto">
                             <Plus className="size-4" /> New Landing Page
                         </Button>
                     </Link>

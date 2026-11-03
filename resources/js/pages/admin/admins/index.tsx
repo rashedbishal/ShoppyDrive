@@ -75,7 +75,7 @@ export default function AdminsIndex({ admins }: Props) {
         <>
             <Head title="Admin Accounts — Admin" />
             <div className="space-y-5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900">
                             Admin Accounts
@@ -85,8 +85,11 @@ export default function AdminsIndex({ admins }: Props) {
                         </p>
                     </div>
                     {currentAdmin.is_mother && (
-                        <Link href={route('admin.admins.create')}>
-                            <Button className="bg-[#c8102e] text-white hover:bg-[#a50d25]">
+                        <Link
+                            href={route('admin.admins.create')}
+                            className="w-full sm:w-auto"
+                        >
+                            <Button className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25] sm:w-auto">
                                 <Plus className="size-4" />
                                 New Admin
                             </Button>
