@@ -23,7 +23,13 @@ test('users can authenticate using the login screen', function () {
     $response->assertRedirect(config('fortify.home'));
 });
 
-test('users with two factor enabled are redirected to two factor challenge', function () {
+/*
+ * Product decision: password credentials alone are always sufficient to log
+ * in, even for an account with 2FA already configured — see
+ * FortifyServiceProvider::configureAuthenticationPipeline(). This replaces
+ * the stock Fortify-scaffolded test of the opposite behavior.
+ */
+test('users with two factor enabled can still log in using only their password, with no challenge', function () {
     $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
 
     Features::twoFactorAuthentication([
@@ -44,9 +50,9 @@ test('users with two factor enabled are redirected to two factor challenge', fun
         'password' => 'password',
     ]);
 
-    $response->assertRedirect(route('two-factor.login'));
-    $response->assertSessionHas('login.id', $user->id);
-    $this->assertGuest();
+    $this->assertAuthenticated();
+    $response->assertRedirect(config('fortify.home'));
+    $response->assertSessionMissing('login.id');
 });
 
 test('users can not authenticate with invalid password', function () {

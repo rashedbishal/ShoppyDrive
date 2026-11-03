@@ -43,10 +43,17 @@ class User extends Authenticatable implements MustVerifyEmail
         'referred_by_id',
     ];
 
+    // FSA-17: both columns hold Laravel-encrypted ciphertext written by
+    // Laravel\Fortify\TwoFactorAuthenticatable (the trait itself never adds
+    // them to $hidden — that's the consuming app's responsibility). $hidden
+    // only affects toArray()/toJson() serialization, never direct property
+    // access, so this doesn't touch anything Fortify's own trait methods do.
     protected $hidden = [
         'password',
         'remember_token',
         'email_verification_code',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     /**

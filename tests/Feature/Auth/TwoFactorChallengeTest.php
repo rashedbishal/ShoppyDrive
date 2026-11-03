@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\User;
-use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 
 beforeEach(function () {
@@ -14,7 +13,15 @@ test('two factor challenge redirects to login when not authenticated', function 
     $response->assertRedirect(route('login'));
 });
 
-test('two factor challenge can be rendered', function () {
+/*
+ * Product decision: no mandatory 2FA challenge or redirect after successful
+ * password authentication — see
+ * FortifyServiceProvider::configureAuthenticationPipeline(). Logging in
+ * never puts a pending challenge in session, so this screen is no longer
+ * reachable through the normal login flow; replaces the stock
+ * Fortify-scaffolded test that rendered it after login.
+ */
+test('logging in with two factor enabled never reaches the challenge screen', function () {
     Features::twoFactorAuthentication([
         'confirm' => true,
         'confirmPassword' => true,
@@ -33,9 +40,11 @@ test('two factor challenge can be rendered', function () {
         'password' => 'password',
     ]);
 
+    $this->assertAuthenticated();
+
+    // Already fully logged in (no pending challenge was ever created), so
+    // the route's own `guest` middleware bounces this away before the
+    // controller's "no challenged user" check ever runs.
     $this->get(route('two-factor.login'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('auth/two-factor-challenge'),
-        );
+        ->assertRedirect(config('fortify.home'));
 });

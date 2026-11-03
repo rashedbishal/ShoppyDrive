@@ -180,9 +180,9 @@ export default function Security({
                     {twoFactorEnabled ? (
                         <div className="flex flex-col items-start justify-start space-y-4">
                             <p className="text-sm text-muted-foreground">
-                                You will be prompted for a secure, random pin
-                                during login, which you can retrieve from the
-                                TOTP-supported application on your phone.
+                                Two-factor authentication settings can be
+                                managed here, but login verification is
+                                currently disabled.
                             </p>
 
                             <div className="relative inline">
@@ -208,10 +208,9 @@ export default function Security({
                     ) : (
                         <div className="flex flex-col items-start justify-start space-y-4">
                             <p className="text-sm text-muted-foreground">
-                                When you enable two-factor authentication, you
-                                will be prompted for a secure pin during login.
-                                This pin can be retrieved from a TOTP-supported
-                                application on your phone.
+                                Two-factor authentication settings can be
+                                managed here, but login verification is
+                                currently disabled.
                             </p>
 
                             <div>

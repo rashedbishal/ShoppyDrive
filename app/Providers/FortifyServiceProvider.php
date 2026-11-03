@@ -21,6 +21,10 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Laravel\Fortify\Actions\AttemptToAuthenticate;
+use Laravel\Fortify\Actions\CanonicalizeUsername;
+use Laravel\Fortify\Actions\EnsureLoginIsNotThrottled;
+use Laravel\Fortify\Actions\PrepareAuthenticatedSession;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
 use Laravel\Fortify\Features;
@@ -46,6 +50,7 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureViews();
         $this->configureRateLimiting();
         $this->configureAuthenticationHooks();
+        $this->configureAuthenticationPipeline();
     }
 
     /**
@@ -188,6 +193,31 @@ class FortifyServiceProvider extends ServiceProvider
                 ])),
             ];
         });
+    }
+
+    /**
+     * Product decision: password credentials alone are always sufficient to
+     * log in, even for an account with 2FA already configured — no
+     * mandatory 2FA challenge or redirect after successful password
+     * authentication. This is the standard Fortify login pipeline
+     * (config/fortify.php's default, see AuthenticatedSessionController::
+     * loginPipeline()) with only `RedirectsIfTwoFactorAuthenticatable`
+     * removed; every other step (login throttling, username
+     * canonicalization, the credential check, session preparation) is
+     * unchanged. `Features::twoFactorAuthentication()` stays enabled so the
+     * Settings > Security management page, QR code, and recovery-code
+     * routes keep working for any customer who still wants to view/manage
+     * their 2FA — nothing in this app enforces it at login, or anywhere
+     * else, any more.
+     */
+    private function configureAuthenticationPipeline(): void
+    {
+        Fortify::authenticateThrough(fn (Request $request): array => array_filter([
+            config('fortify.limiters.login') ? null : EnsureLoginIsNotThrottled::class,
+            config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
+            AttemptToAuthenticate::class,
+            PrepareAuthenticatedSession::class,
+        ]));
     }
 
     private function configureAuthenticationHooks(): void
