@@ -8,6 +8,7 @@ use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Models\LandingPage;
 use App\Models\Product;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -17,6 +18,25 @@ use Inertia\Response;
 class LandingPageController extends Controller
 {
     use UpdatesStatusInBulk;
+
+    /**
+     * FSA-08: a landing page has no variant selector, and
+     * InventoryService::decrementForOrderItem() always throws
+     * InsufficientStockException for a variant product ordered with no
+     * variant_id — every order placed through a landing page for such a
+     * product fails deterministically, with mobile banking having already
+     * collected payment first. Block it at the one place landing pages are
+     * created or repointed at a product, rather than touching the funnel
+     * itself or the payment flow.
+     */
+    private function productHasVariantsRule(): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail): void {
+            if (Product::whereKey($value)->whereHas('variants')->exists()) {
+                $fail('This product has colour/size variants, which landing pages don\'t support yet. Choose a variant-less product, or add a variant selector to the landing-page funnel before using this one.');
+            }
+        };
+    }
 
     public function index(): Response
     {
@@ -41,7 +61,7 @@ class LandingPageController extends Controller
         $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9\-]+$/', 'unique:landing_pages,slug'],
-            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'product_id' => ['required', 'integer', 'exists:products,id', $this->productHasVariantsRule()],
             'is_active' => ['boolean'],
         ]);
 
@@ -75,7 +95,7 @@ class LandingPageController extends Controller
         $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9\-]+$/', Rule::unique('landing_pages', 'slug')->ignore($landingPage->id)],
-            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'product_id' => ['required', 'integer', 'exists:products,id', $this->productHasVariantsRule()],
             'is_active' => ['boolean'],
             'sections' => ['nullable', 'array'],
             'sections.description.custom_content' => ['nullable', 'string', 'max:20000'],
