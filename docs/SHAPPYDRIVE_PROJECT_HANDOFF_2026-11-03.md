@@ -13,6 +13,113 @@ The spellings `SHAPPYDRIVE_*` / `SHOPPYDRIVE_*` are the real filenames. Do not r
 
 ---
 
+## 0. Current status at session end (2026-11-03): read this before anything below
+
+**Where sections below conflict with this section, this section wins.** Older sections are kept as the record of how the release got here.
+
+### Deployment: complete, do not repeat it
+
+- `origin/main` moved from `0ef9d9a` to `17a1501` by an approved push. All 7 commits in §2 are live on production.
+- GitHub Actions "Deploy to Hostinger" run `41575932713` succeeded: required checks, file sync, post-deploy tasks and both runtime checks.
+- `migrate --force` printed "Nothing to migrate", so this deploy ran no migrations.
+- The deploy log reported `APP_ENV=production` with `APP_DEBUG=false`, and the health check passed on attempt 1.
+- Smoke check, **availability only**: `/`, `/up` and `/products` returned 200, and `/order/SMOKE-NOT-REAL/confirmation` returned 404.
+- The tracker status for the deployed findings is `DEPLOYED_UNVERIFIED`. Nothing is `VERIFIED_IN_PRODUCTION`.
+
+### Non-gating workflows that failed on `17a1501` (neither fixed)
+
+- **Run Tests:** one flaky failure, `BuyNowCheckoutTest` ("buy now places an order without ever creating a cart row"). The test buys 2 units of a product with random factory stock from 0 to 500, so it fails when stock is 0 or 1. The same suite passed in the deploy's required checks.
+- **Lint:** Prettier fails on `resources/js/pages/admin/homepage/hero-slides/create.tsx`, `resources/js/pages/admin/homepage/hero-slides/edit.tsx` and `resources/js/pages/Home.tsx`. The 7 commits did not change these files.
+
+### Production facts
+
+| Fact | Value | Source |
+|---|---|---|
+| Host and app folder | `my-kul-h5g-node12.hstgr.io`, `/home/u631918861/websites/j34XMYNEn/public_html` | Owner's SSH output |
+| Database | **MariaDB 11.8.9, not MySQL** (Laravel connection name is `mysql`) | Owner's pre-check through Laravel PDO |
+| Isolation | `READ-COMMITTED`, `innodb_snapshot_isolation` ON | Owner's pre-check |
+| Invalid `pending_checkouts.checkout_data` rows | 0 | Owner's pre-check |
+| Tables | 74; a migrated test database has 73, and the extra table is **not identified** | Owner's pre-check |
+| Business data | No important business data | Owner's statement |
+| Direct `mariadb` CLI login | Failed with ERROR 1045; `php artisan db:show` and Laravel PDO work | Owner's report |
+
+### Not done on production
+
+- **The read-only SQL runner has NOT been executed.** So FSA-05 product visibility impact, the 5 unique indexes, `job_batches` and the 74th table are all unknown.
+- **No real COD order, mobile payment or Google login test has been performed.**
+- No newsletter has been sent to test the queue, and none should be sent just for that.
+
+### Read-only runner
+
+- **Runner:** `/tmp/claude-1000/-home-octagon-Desktop-ShoppyDrive/61f5993e-7f4c-43c6-b32a-b54beb8e83c8/scratchpad/runner/sd_run_checks.php`, SHA-256 `3c75869445856fb80d19f6dbe171e6b969083ba0c5712944a19a980adf5d7e35`.
+- **SQL file:** `docs/SHAPPYDRIVE_PRODUCTION_READONLY_CHECKS.sql`, on Hostinger at `~/sd_checks.sql`, SHA-256 `f429ebedfb0d317ed65ae76f85254f204cd286e50876ccb36c983c3e0e93e106`.
+- **Hashes:** the owner reports that both were verified. The local copies were confirmed to match these values.
+- **Method:** the direct CLI failed, so the runner uses Laravel's own PDO connection. It validates the file, sends the 22 statements one at a time in order, stops at the first failure, then prints a separate schema report. Do not pass the file to `DB::unprepared()`.
+- **Tested:** on the disposable MariaDB under `REPEATABLE-READ`, with tampered files and a forced failure. It has not been run under `READ-COMMITTED`.
+- **The runner lives only in that temporary folder, not in the repo.** If it is gone, ask the owner before recreating it.
+
+### Open problem: Hostinger permissions
+
+- **Previous `chmod 600` attempts failed with Permission denied** (owner's report). The cause is not known, so do not assume one.
+- The command previously proposed chains `chmod 600 ... && [hash check] && ... || echo "HASH CHECK OR FOLDER CHANGE FAILED - NOT RUN"`. A `chmod` failure therefore skips the runner and prints that message, even when the hash and folder are fine. Do not reuse this command as it stands.
+- Ask the owner to run these read-only diagnostics before attempting the runner:
+
+  ```bash
+  id; pwd -P; hostname
+  ls -ld ~ ~/sd_checks.sql ~/sd_run_checks.php
+  stat -c '%U:%G %a %n' ~/sd_checks.sql ~/sd_run_checks.php
+  sha256sum ~/sd_checks.sql ~/sd_run_checks.php
+  ```
+
+- The runner's guards also require that exact hostname and app folder, and it reads `~/sd_checks.sql`.
+
+### Concurrency evidence at production settings
+
+Run on the disposable MariaDB at `READ-COMMITTED` with snapshot isolation ON. Connections reported those values.
+
+| Check | Result |
+|---|---|
+| `CartConcurrencyRaceTest` | 4/4 passed |
+| `ReturnFullRefundConcurrencyRaceTest` | 1 of 2 passed. The failure is only the assertion at line 239 that a plain read returns stale data (expects 0, gets 600). The locked-read safety assertion passed, and there was no error 1020 |
+| Two-buyer COD checkout, 12 rounds | 24 of 24 orders, no error 1020, no deadlocks; the same scenario under `REPEATABLE-READ` gave 12 of 24 |
+| Integrity after that checkout | 0 stock mismatches, 0 inventory-log mismatches, no negative stock |
+
+Evidence: `/tmp/claude-1000/-home-octagon-Desktop-ShoppyDrive/61f5993e-7f4c-43c6-b32a-b54beb8e83c8/scratchpad/mariadb/results/rc3/` and `/tmp/claude-1000/-home-octagon-Desktop-ShoppyDrive/61f5993e-7f4c-43c6-b32a-b54beb8e83c8/scratchpad/mariadb/results/rc2/`.
+
+**Deferred by the owner, not verified at `READ-COMMITTED`:**
+
+- the other 5 race files;
+- mobile-banking races;
+- multi-item opposite-order and coupon races;
+- real concurrent `RefundService` calls.
+
+**Known risks from code reading:**
+
+- `CheckoutController.php:307` locks stock in cart order, so opposite-order carts could deadlock.
+- An order insert with a `coupon_id` followed by the coupon lock could also deadlock.
+- COD and mobile payment have no transaction retry. A failed mobile submission shows a paid customer "Something went wrong. Please contact support."
+- The app does not pin the isolation level. Under `REPEATABLE-READ` with snapshot isolation ON, error 1020 occurred in every COD and mobile scenario tested, so a host change could bring it back.
+
+### Disposable MariaDB: keep it
+
+- **Must stay intact until the owner approves cleanup.** Database `shoppydrive_test_mariadb_20261103` on `127.0.0.1:33118`, under `/tmp/claude-1000/-home-octagon-Desktop-ShoppyDrive/61f5993e-7f4c-43c6-b32a-b54beb8e83c8/scratchpad/mariadb/`, with the app copy in `/tmp/claude-1000/-home-octagon-Desktop-ShoppyDrive/61f5993e-7f4c-43c6-b32a-b54beb8e83c8/scratchpad/tree/` (about 2.2 GB in total).
+- It was started by the ending session's background shell (pid 75354), so **it may stop when that session ends**. Its data stays on disk unless `/tmp` is cleared.
+- It currently runs at `READ-COMMITTED`, with `innodb_print_all_deadlocks` ON. These are runtime settings, so a restart returns to `REPEATABLE-READ` and deadlock logging OFF. Set them again before testing.
+- To restart it, only if the owner approves and it has stopped:
+
+  ```bash
+  M=/tmp/claude-1000/-home-octagon-Desktop-ShoppyDrive/61f5993e-7f4c-43c6-b32a-b54beb8e83c8/scratchpad/mariadb
+  "$M/server/bin/mariadbd" --no-defaults --basedir="$M/server" --datadir="$M/data" --port=33118 --bind-address=127.0.0.1 --socket=m.sock --pid-file="$M/run/mariadbd.pid" --log-error="$M/run/error.log" --skip-name-resolve --max-connections=300 --innodb-buffer-pool-size=512M
+  ```
+
+- The existing MySQL database `shoppydrive_test_release_20261103` must also be preserved.
+
+### Working tree at session end
+
+`docs/SHAPPYDRIVE_AUDIT_REMEDIATION_TRACKER.md` and this file have uncommitted changes. **Preserve them.** Do not commit unless the owner explicitly asks. Pushing even a docs-only commit to `main` runs a full deploy.
+
+---
+
 ## 1. Project and current objective
 
 ShoppyDrive is a Bangladesh-focused Laravel 13 / Inertia v3 / React 19 ecommerce storefront plus `/admin` back office, hosted on **Hostinger shared hosting**.
@@ -35,10 +142,11 @@ ShoppyDrive is a Bangladesh-focused Laravel 13 / Inertia v3 / React 19 ecommerce
 ## 2. Git state (verified 2026-11-03)
 
 - **Branch:** `main`. It is the only local branch, and the remote has only `main`. No tags. One stash `stash@{0}` (pre-existing, never touched).
-- **Remote:** `origin/main` = `0ef9d9a` ("ui improve: hero slider design improved and made responsive"). The deploy workflow last succeeded on that commit (2026-11-02).
-- **Local:** `main` is **7 commits ahead** of `origin/main`: the six below, plus the handoff commit that adds this file.
-- **Nothing has been pushed or deployed.** Pushing `main` = automatic Hostinger deployment + production migrations.
-- **Working tree:** clean at the last verification.
+- **Remote:** `origin/main` = `17a1501`, level with local `main`. It was `0ef9d9a` before the push. The deploy workflow succeeded on `17a1501` (run `41575932713`).
+- **Local:** `main` is 0 ahead and 0 behind `origin/main`. Pushing `main` = automatic Hostinger deployment + production migrations.
+- **Working tree:** two uncommitted documentation changes, this file and the tracker (see §0).
+
+These seven commits are now deployed:
 
 | Order | Commit | Message | Findings |
 |---|---|---|---|
@@ -48,13 +156,13 @@ ShoppyDrive is a Bangladesh-focused Laravel 13 / Inertia v3 / React 19 ecommerce
 | 4 | `9c840f7` | fix(checkout): secure order confirmation and preserve bundle attribution (FSA-03, FSA-12) | FSA-03, FSA-12 |
 | 5 | `985d73b` | fix(security): harden product variants, pricing and visibility (FSA-01, FSA-04, FSA-05) | FSA-01, FSA-04, FSA-05 |
 | 6 | `d1f258c` | docs: consolidate ShoppyDrive forensic audit remediation tracking | tracker, `CLAUDE.md`, audit report (resolves FSA-16) |
-| 7 | (this commit) | docs: add ShoppyDrive release handoff for future sessions | this file, SQL file, `CLAUDE.md` |
+| 7 | `17a1501` | docs: add ShoppyDrive release handoff for future sessions | this file, SQL file, `CLAUDE.md` |
 
 Each code commit was staged so it contained only its own finding. Each was tested on an exported copy of exactly the staged tree before committing.
 
 ## 3. FSA-01 to FSA-24 status
 
-Statuses use the tracker vocabulary. "Committed" means local only, not pushed and not deployed.
+Statuses use the tracker vocabulary. This table was written before the deploy: rows marked committed are now `DEPLOYED_UNVERIFIED`, and the tracker's table is the current source of truth.
 
 | ID | Sev | Finding (short) | Status | Notes |
 |---|---|---|---|---|
@@ -157,7 +265,7 @@ None of the 7 contains a SQL error, an HTTP 500, or MySQL error 1191. Optional t
 
 ## 6. Production verification still required (user runs it; Claude never touches production)
 
-Use `docs/SHAPPYDRIVE_PRODUCTION_READONLY_CHECKS.sql`. Every statement is verified on the disposable database and not yet run on production. It contains the queries and the full interpretation guide.
+**This section predates the deploy.** The "before the push" gates were not run before it, so treat them as post-deployment checks (see §0). Use `docs/SHAPPYDRIVE_PRODUCTION_READONLY_CHECKS.sql` through the runner in §0. Every statement is verified on the disposable database and not yet run on production. It contains the queries and the full interpretation guide.
 
 - **Mandatory before the push:**
   - Queries 0 (session safety), 1 (active products without a past `published_at`), 5 (132 migrations + the 14 expected names), 7 (`jobs`/`failed_jobs`/`job_batches` exist) and 8 (no newsletter batch in progress) all within their safe results.
@@ -208,22 +316,29 @@ Use `docs/SHAPPYDRIVE_PRODUCTION_READONLY_CHECKS.sql`. Every statement is verifi
   - optional test-hygiene fixes (§4)
   - updating the tracker with the 2026-11-03 MySQL results
 - **Release readiness (2026-11-03 audit):**
-  - Concluded **READY FOR STAGING**. The MySQL-concurrency blocker has since been cleared.
-  - The remaining gate to production is the user's production read-only checks (§6), plus explicit push approval.
+  - Concluded **READY FOR STAGING**, later superseded: production turned out to be MariaDB, and the MySQL results did not transfer directly. See §0 for the evidence at production settings.
+  - The release has now been deployed. The production read-only checks (§6) remain outstanding as post-deployment verification.
 
 ## 9. Next session — first task (in this order)
 
-1. Read `CLAUDE.md`, this file, the tracker, the audit report and the SQL file completely.
-2. Verify Git:
+**Do not repeat the deployment or any completed work.**
+
+1. Read `CLAUDE.md` and complete its mandatory reading list.
+2. Read this file, starting with §0.
+3. Read `docs/SHAPPYDRIVE_AUDIT_REMEDIATION_TRACKER.md`.
+4. Verify Git:
    - `git status --short --branch`
-   - `git log --oneline -8`
+   - `git log --oneline -3`
    - `git rev-list --left-right --count origin/main...main`
 
-   Expect a clean tree, `main` 7 ahead / 0 behind, and the six commits above plus the handoff commit, unchanged. If anything differs, stop and ask the user.
-3. Continue **production read-only verification**: give the user the SQL file. Do not run it.
-4. Wait for the user to paste the production results.
-5. Interpret each result against the guide in the SQL file. Report the safe/unsafe items and whether the push may proceed.
-6. **Do not push or deploy** without explicit user approval of that specific step.
+   Expect `main` at `17a1501`, 0 ahead / 0 behind, with uncommitted changes only in this file and the tracker. If anything else differs, stop and ask the user.
+5. Review the Hostinger permission issue in §0.
+6. **Ask the user to run the permission diagnostics in §0 before attempting the read-only runner.** Do not run anything on production yourself.
+7. Once that is resolved and the user approves, give them the corrected runner command, then wait for the output.
+8. Report which results are verified against the guide in the SQL file: FSA-05 (statements 4 and 5), indexes (14 and 15), `job_batches` (16) and the 74th table. Do not change any product without reporting the findings first.
+9. COD, mobile-banking and Google-login smoke tests need the user's approval first. Proposed approach: a low-value COD order that is kept from the courier and then cancelled; the mobile payment page with a made-up transaction ID and no money sent; a test Google account with a verified Gmail address. A real mobile payment needs separate approval.
+
+Do not commit, push, deploy, or delete the disposable MariaDB environment, scratchpad files or `~/sd_checks.sql` without explicit approval of that step.
 
 **FSA-14 must not be started until the user changes the priority.** No application code changes are pending.
 

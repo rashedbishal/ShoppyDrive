@@ -2,7 +2,15 @@
 
 Operational source of truth for remediation status. The original findings are defined by two reports: `docs/SHAPPYDRIVE_FORENSIC_AUDIT_REPORT.txt` (CRIT/HIGH/MED/LOW IDs, 2026-11-01) and `docs/SHOPPYDRIVE_FULL_SYSTEM_FORENSIC_AUDIT_REPORT_2026-11-02.md` (FSA-01–FSA-24). `docs/MASTER_FIXING_TRACKER.md` remains the record of earlier remediation work (PROMO-LOY-001, PAY-RETURN-001, …).
 
-**Last updated:** 2026-11-03. **Git baseline:** `origin/main` = `0ef9d9a` (the remediation batch `18125d4` and the MED-06 migration `3254bac` are on it). Local `main` carries these **unpushed** commits on top: `8d17320` (FSA-13), `8cb8ff7` (FSA-09), `1d16a71` (FSA-11), `9c840f7` (FSA-03, FSA-12), `985d73b` (FSA-01, FSA-04, FSA-05) and the documentation commit "docs: consolidate ShoppyDrive forensic audit remediation tracking". One stash (`stash@{0}`, untouched); no tags; no other branches. Pushing `main` deploys to Hostinger and runs `migrate --force`.
+**Last updated:** 2026-11-03. **Git baseline:** `origin/main` = `17a1501`, level with local `main`. The push of 2026-11-03 moved it from `0ef9d9a` to `17a1501` with `8d17320` (FSA-13), `8cb8ff7` (FSA-09), `1d16a71` (FSA-11), `9c840f7` (FSA-03, FSA-12), `985d73b` (FSA-01, FSA-04, FSA-05), `d1f258c` (tracker documentation) and `17a1501` (handoff documentation). One stash (`stash@{0}`, untouched); no tags; no other branches. Pushing `main` deploys to Hostinger and runs `migrate --force`.
+
+**Deployment record (2026-11-03, push `0ef9d9a..17a1501`):**
+
+- **Verified from the workflow and logs:** "Deploy to Hostinger" run `41575932713` succeeded, including `Required checks (Pint + Pest)` and `Build & Deploy`. `migrate --force` printed "Nothing to migrate", so no migration ran in this deploy. The runtime check reported `APP_ENV=production` with `APP_DEBUG=false` before and after the sync. The health check passed on attempt 1.
+- **Verified by smoke check:** `https://shoppydrive.com/`, `/up` and `/products` returned 200. `/` returned the ShoppyDrive page with Inertia page data. `/order/SMOKE-NOT-REAL/confirmation` returned 404. This is availability only: no order, payment, login or admin action was exercised.
+- **Non-gating workflows that failed on `17a1501`:** `Run Tests` failed only on `BuyNowCheckoutTest` ("buy now places an order without ever creating a cart row"). The test buys 2 units of a product with random factory stock from 0 to 500, so it fails when the stock is 0 or 1; the same suite passed in the deploy's required checks. `Lint` failed on Prettier in `hero-slides/create.tsx`, `hero-slides/edit.tsx` and `Home.tsx`, none of which the seven commits changed. Neither is fixed yet.
+- **Production database (owner-supplied pre-check through Laravel's PDO connection):** MariaDB 11.8.9, not MySQL; `READ-COMMITTED`; `innodb_snapshot_isolation` ON; 0 invalid `pending_checkouts.checkout_data` rows; 74 tables (73 expected; the extra table is not yet identified).
+- **Pending functional verification:** FSA-05 product visibility impact, the expected unique indexes, `job_batches`, and COD, mobile-banking and Google-login smoke tests. The read-only production checks had not been run when this deploy happened. No finding below is `VERIFIED_IN_PRODUCTION` on this evidence.
 
 **Deployment evidence (2026-11-03, read-only `gh run list --workflow=deploy.yml`):** "Deploy to Hostinger" succeeded for `1db8482` (2026-11-02 08:24 UTC, first push containing `18125d4` and `3254bac`), `84aa1c0` and `0ef9d9a` (10:27 UTC). The run logs did not show `migrate` output, so which migrations ran and with what result (including whether MED-06 skipped an index) is **not verified**. Code on `main` is therefore `DEPLOYED_UNVERIFIED`, never `VERIFIED_IN_PRODUCTION`, until production evidence exists.
 
@@ -14,22 +22,22 @@ Prod. = production verification status. "Notes" points to the historical section
 
 | ID | Sev | Description | Status | Implementation / files | Tests (recorded) | Remaining work | Prod. | Blockers / decisions |
 |---|---|---|---|---|---|---|---|---|
-| FSA-01 | Critical | Foreign variant accepted with another product's id: flash-sale price of A applied to a variant of B | COMMITTED (`985d73b`, local only; not pushed) | `VariantBelongsToProduct` rule on `PlaceOrderRequest`/`AddToCartRequest`; fail-closed guards in `CartManager::resolvePrice()`/`validItems()` and `InventoryService`. See FSA-01 notes | New `VariantProductOwnershipTest` 8/8; sweep 709: 679 passed, 30 skipped (MySQL-only), 0 failed (SQLite). Full SQLite suite 2026-11-03 (with FSA-03/04): 1687 tests, 1624 passed, 63 skipped, 0 failed | Push and deploy (separate approvals); production mismatch query (report §6) | Not deployed | None |
+| FSA-01 | Critical | Foreign variant accepted with another product's id: flash-sale price of A applied to a variant of B | DEPLOYED_UNVERIFIED (`985d73b`, deploy run `41575932713`) | `VariantBelongsToProduct` rule on `PlaceOrderRequest`/`AddToCartRequest`; fail-closed guards in `CartManager::resolvePrice()`/`validItems()` and `InventoryService`. See FSA-01 notes | New `VariantProductOwnershipTest` 8/8; sweep 709: 679 passed, 30 skipped (MySQL-only), 0 failed (SQLite). Full SQLite suite 2026-11-03 (with FSA-03/04): 1687 tests, 1624 passed, 63 skipped, 0 failed | Functional production verification (see the deployment record above); production mismatch query (report §6) | Deployed; smoke check only, functional verification pending | None |
 | FSA-02 | Critical | SMS payment verification never authenticates the sender | BLOCKED | — | — | Sender allowlist | — | Owner must supply the exact bKash/Nagad SMS sender IDs (Admin › Received SMS) and check whether the forwarder app relays non-provider senders |
-| FSA-03 | High | Public order confirmation route exposes PII and `guest_token` | COMMITTED (`9c840f7`, local only; not pushed) | Owner-or-session grant (`OrderConfirmationAccess`), allow-listed payload, `throttle:order-tracking`, `Order::$hidden = ['guest_token']`. See FSA-03 notes | `OrderConfirmationAccessTest` 9/9; full SQLite suite 1687: 1624 passed, 63 skipped, 0 failed | Push and deploy (separate approvals) | Not deployed | None |
-| FSA-04 | High | `cost_price` serialized on storefront | COMMITTED (`985d73b`, local only; not pushed) | `$hidden = ['cost_price']` on `Product` and `ProductVariant`; admin edit opts back in with `makeVisible`. See FSA-04 notes | `CostPriceVisibilityTest` 5/5; full SQLite suite as above | Push and deploy; after deploy, `cache:clear` (deploy already runs it) drops any cached pre-fix arrays | Not deployed | None |
-| FSA-05 | High | Inactive/unpublished products viewable and orderable | COMMITTED (`985d73b`, local only; not pushed) | `Product::isPubliclyVisible()` enforced on product page, Buy Now, `CartManager::validItems()` (+ `lockForCheckout()` now reuses it) and `AddToCartRequest`. See FSA-05 notes | `ProductVisibilityTest` 18/18; full SQLite suite 1705: 1642 passed, 63 skipped, 0 failed | Push and deploy (separate approvals) | Not deployed | None |
+| FSA-03 | High | Public order confirmation route exposes PII and `guest_token` | DEPLOYED_UNVERIFIED (`9c840f7`, deploy run `41575932713`) | Owner-or-session grant (`OrderConfirmationAccess`), allow-listed payload, `throttle:order-tracking`, `Order::$hidden = ['guest_token']`. See FSA-03 notes | `OrderConfirmationAccessTest` 9/9; full SQLite suite 1687: 1624 passed, 63 skipped, 0 failed | Functional production verification (see the deployment record above) | Deployed; smoke check only, functional verification pending | None |
+| FSA-04 | High | `cost_price` serialized on storefront | DEPLOYED_UNVERIFIED (`985d73b`, deploy run `41575932713`) | `$hidden = ['cost_price']` on `Product` and `ProductVariant`; admin edit opts back in with `makeVisible`. See FSA-04 notes | `CostPriceVisibilityTest` 5/5; full SQLite suite as above | Functional production verification (see the deployment record above); after deploy, `cache:clear` (deploy already runs it) drops any cached pre-fix arrays | Deployed; smoke check only, functional verification pending | None |
+| FSA-05 | High | Inactive/unpublished products viewable and orderable | DEPLOYED_UNVERIFIED (`985d73b`, deploy run `41575932713`) | `Product::isPubliclyVisible()` enforced on product page, Buy Now, `CartManager::validItems()` (+ `lockForCheckout()` now reuses it) and `AddToCartRequest`. See FSA-05 notes | `ProductVisibilityTest` 18/18; full SQLite suite 1705: 1642 passed, 63 skipped, 0 failed | Functional production verification (see the deployment record above) | Deployed; smoke check only, functional verification pending | None |
 | FSA-06 | High | Paid order can be admin-cancelled and then never refunded | BLOCKED | — | — | — | — | Business decision: refuse cancel of paid orders, or cancel creates the refund |
 | FSA-07 | High | Mobile banking: customer can pay and receive no order | BLOCKED | — | — | — | — | Design decision: reserve at staging vs. flagged order vs. reconciliation view |
 | FSA-08 | High | Landing pages for variant products cannot sell, can still take payment | BLOCKED | — | — | — | — | Decision: block at admin save vs. add variant selector |
-| FSA-09 | Medium | Social login links to an unverified local account (pre-takeover) | COMMITTED (`8cb8ff7`, local only; not pushed) | Link by email only on Google `email_verified: true`; Facebook never links by email and new Facebook accounts verify by OTP; unverified account claimed safely (password, remember token, planted links, unordered referrer reset); unverified accounts can't connect providers. See FSA-09 notes | `SocialAccountClaimTest` 9/9 + updated `SocialLoginTest` 12/12; auth/settings/referral sweep 165: 153 passed, 12 skipped; full SQLite suite 1714: 1651 passed, 63 skipped, 0 failed | Push and deploy (separate approvals) | Not deployed | None |
+| FSA-09 | Medium | Social login links to an unverified local account (pre-takeover) | DEPLOYED_UNVERIFIED (`8cb8ff7`, deploy run `41575932713`) | Link by email only on Google `email_verified: true`; Facebook never links by email and new Facebook accounts verify by OTP; unverified account claimed safely (password, remember token, planted links, unordered referrer reset); unverified accounts can't connect providers. See FSA-09 notes | `SocialAccountClaimTest` 9/9 + updated `SocialLoginTest` 12/12; auth/settings/referral sweep 165: 153 passed, 12 skipped; full SQLite suite 1714: 1651 passed, 63 skipped, 0 failed | Functional production verification (see the deployment record above) | Deployed; smoke check only, functional verification pending | None |
 | FSA-10 | Medium | Reviews auto-approved, open to unverified accounts | BLOCKED | — | — | — | — | Business decision on moderation policy |
-| FSA-11 | Medium | Admin can cancel a shipped order | COMMITTED (`1d16a71`, local only; not pushed) | Admin cancel refuses `shipped` (inside the existing locked check); admin order page shows the courier procedure instead of the cancel form. The courier's own cancel/return report remains the only path. See FSA-11 notes | `ShippedOrderCancellationTest` 8/8; order/courier/inventory sweep 657; full SQLite suite 1722: 1659 passed, 63 skipped, 0 failed; ESLint, Prettier, `tsc` clean | Push and deploy (separate approvals) | Not deployed | Decision: how to close a parcel the courier reports lost (no mapped status today) |
-| FSA-12 | Low | Mobile-banking order items drop `bundle_id` | COMMITTED (`9c840f7`, local only; not pushed) | `MobilePaymentController::submit()` persists the staged snapshot's server-reconciled `bundle_id`. See FSA-12 notes | `MobileBankingBundleAttributionTest` 3/3; mobile/bundle/checkout/LP sweep 177: 164 passed, 13 skipped; full SQLite suite 1725: 1662 passed, 63 skipped, 0 failed | Push and deploy (committed with FSA-03 in `9c840f7`) | Not deployed | None |
-| FSA-13 | Medium | Newsletter: one synchronous all-BCC send; temp attachments never deleted | COMMITTED (`8d17320`, local only; not pushed) | Queued `Bus::batch` of `SendNewsletterChunk` jobs (≤50 BCC each, deduplicated), per-send attachment directory deleted by the batch's `then` callback, `newsletter:prune-attachments` daily backstop. No migration. See FSA-13 notes | `NewsletterSendTest` 9/9 (2 existing + 7 new), `PruneNewsletterAttachmentsCommandTest` 5/5, `QueueWorkerScheduleTest` updated; full SQLite suite 1736: 1673 passed, 63 skipped, 0 failed | Push and deploy (separate approvals); first real send on Hostinger SMTP is the first delivery proof | Not deployed | Optional decision: allow-list `SendNewsletterChunk` for retry in Admin › Failed jobs (MED-03 code) |
+| FSA-11 | Medium | Admin can cancel a shipped order | DEPLOYED_UNVERIFIED (`1d16a71`, deploy run `41575932713`) | Admin cancel refuses `shipped` (inside the existing locked check); admin order page shows the courier procedure instead of the cancel form. The courier's own cancel/return report remains the only path. See FSA-11 notes | `ShippedOrderCancellationTest` 8/8; order/courier/inventory sweep 657; full SQLite suite 1722: 1659 passed, 63 skipped, 0 failed; ESLint, Prettier, `tsc` clean | Functional production verification (see the deployment record above) | Deployed; smoke check only, functional verification pending | Decision: how to close a parcel the courier reports lost (no mapped status today) |
+| FSA-12 | Low | Mobile-banking order items drop `bundle_id` | DEPLOYED_UNVERIFIED (`9c840f7`, deploy run `41575932713`) | `MobilePaymentController::submit()` persists the staged snapshot's server-reconciled `bundle_id`. See FSA-12 notes | `MobileBankingBundleAttributionTest` 3/3; mobile/bundle/checkout/LP sweep 177: 164 passed, 13 skipped; full SQLite suite 1725: 1662 passed, 63 skipped, 0 failed | Functional production verification (see the deployment record above) | Deployed; smoke check only, functional verification pending | None |
+| FSA-13 | Medium | Newsletter: one synchronous all-BCC send; temp attachments never deleted | DEPLOYED_UNVERIFIED (`8d17320`, deploy run `41575932713`) | Queued `Bus::batch` of `SendNewsletterChunk` jobs (≤50 BCC each, deduplicated), per-send attachment directory deleted by the batch's `then` callback, `newsletter:prune-attachments` daily backstop. No migration. See FSA-13 notes | `NewsletterSendTest` 9/9 (2 existing + 7 new), `PruneNewsletterAttachmentsCommandTest` 5/5, `QueueWorkerScheduleTest` updated; full SQLite suite 1736: 1673 passed, 63 skipped, 0 failed | Functional production verification (see the deployment record above); first real send on Hostinger SMTP is the first delivery proof | Deployed; smoke check only, functional verification pending | Optional decision: allow-list `SendNewsletterChunk` for retry in Admin › Failed jobs (MED-03 code) |
 | FSA-14 | Low | Newsletter unsubscribe/status unauthenticated | OPEN | — | — | — | — | — |
 | FSA-15 | Medium | = existing Observation "Customers can cancel pending orders after courier booking" (not duplicated) | BLOCKED | — | — | — | — | Business decision (already recorded) |
-| FSA-16 | Medium | Tracker deployment status did not reflect `main` | COMMITTED (documentation commit, local only; not pushed) | This reconciliation | n/a | Keep updated | n/a | — |
+| FSA-16 | Medium | Tracker deployment status did not reflect `main` | DEPLOYED_UNVERIFIED (documentation commits `d1f258c` and `17a1501`, on `main`) | This reconciliation | n/a | Keep updated | n/a | — |
 | FSA-17 | Low | Encrypted 2FA columns serialized on every page | OPEN | — | — | — | — | — |
 | FSA-18 | Low | Rating breakdown from 50 reviews only | OPEN | — | — | — | — | — |
 | FSA-19 | Low | Unset SMS forwarder token → 500 | OPEN | — | — | — | — | — |
@@ -57,7 +65,7 @@ Prod. = production verification status. "Notes" points to the historical section
 | MED-12 | Medium | Invoice tests | DEPLOYED_UNVERIFIED | Test-only | See notes | — | n/a | — |
 | MED-13 | Medium | Wishlist tests and 2 bugs | DEPLOYED_UNVERIFIED | See notes | See notes | — | Unverified | — |
 | MED-14 | Medium | MySQL/SQLite LIKE | DEPLOYED_UNVERIFIED | Test-only | See notes | — | n/a | — |
-| MED-15 | Medium | Deploy did not check APP_DEBUG/APP_ENV | DEPLOYED_UNVERIFIED | `deploy.yml` check | Local simulation | Confirm the check appears in a deploy log | Deploy runs succeed; step output not inspected | — |
+| MED-15 | Medium | Deploy did not check APP_DEBUG/APP_ENV | DEPLOYED_UNVERIFIED | `deploy.yml` check | Local simulation | — | Deploy run `41575932713` log shows the check passing before and after the sync | — |
 | MED-16 | Medium | No security headers | DEPLOYED_UNVERIFIED | `SecurityHeaders` middleware | See notes | Confirm headers on production | Unverified | — |
 | MED-17 | Medium | ZiniPay dead code | DEPLOYED_UNVERIFIED | `createInvoice()` removed | See notes | — | Unverified | — |
 | MED-18 | Medium | `SESSION_SECURE_COOKIE` no default | BLOCKED | — | — | — | — | Owner must check production `.env` |
@@ -89,7 +97,7 @@ Prod. = production verification status. "Notes" points to the historical section
 
 ## FSA-01 notes
 
-**Status: COMMITTED (local only), 2026-11-03, in "fix(security): harden product variants, pricing and visibility (FSA-01, FSA-04, FSA-05)". Not pushed, not deployed.**
+**Status: DEPLOYED_UNVERIFIED, 2026-11-03: committed in "fix(security): harden product variants, pricing and visibility (FSA-01, FSA-04, FSA-05)", deployed by run `41575932713` (push `0ef9d9a..17a1501`). Functional production verification pending.**
 
 - **Root cause:** `PlaceOrderRequest` and `AddToCartRequest` validated `variant_id` only with `exists:product_variants,id`. `SyncCartRequest` and `Admin/CreateOrderRequest` already checked ownership. `CartManager::resolvePrice()` priced from `product_id` (`FlashSaleItem::findActiveFor()` matches a product-wide sale against any variant id), while `InventoryService` locked and decremented the variant by id alone, and the order line took that variant's SKU.
 - **Fix, all layers fail closed:**
@@ -109,7 +117,7 @@ Prod. = production verification status. "Notes" points to the historical section
 
 ## FSA-03 notes
 
-**Status: COMMITTED (local only), 2026-11-03, in "fix(checkout): secure order confirmation and preserve bundle attribution (FSA-03, FSA-12)". Not pushed, not deployed.**
+**Status: DEPLOYED_UNVERIFIED, 2026-11-03: committed in "fix(checkout): secure order confirmation and preserve bundle attribution (FSA-03, FSA-12)", deployed by run `41575932713` (push `0ef9d9a..17a1501`). Functional production verification pending.**
 
 - **Root cause:** `routes/commerce.php`'s `order.confirmation` closure had no middleware and no ownership check, and rendered `$order->load('items.product')`. `Order` had no `$hidden`, so the full shipping address including phone, totals, coupon and points data, courier ids and `guest_token` went to anyone who knew the order number. Order numbers are printed in emails, SMS and courier labels.
 - **Fix:**
@@ -140,7 +148,7 @@ Prod. = production verification status. "Notes" points to the historical section
 
 ## FSA-04 notes
 
-**Status: COMMITTED (local only), 2026-11-03, in "fix(security): harden product variants, pricing and visibility (FSA-01, FSA-04, FSA-05)". Not pushed, not deployed.**
+**Status: DEPLOYED_UNVERIFIED, 2026-11-03: committed in "fix(security): harden product variants, pricing and visibility (FSA-01, FSA-04, FSA-05)", deployed by run `41575932713` (push `0ef9d9a..17a1501`). Functional production verification pending.**
 
 - **Root cause:** `Product` and `ProductVariant` had no `$hidden`. Every storefront surface serializes the models whole: product detail (`toArray()`, variants, related products), listings and search, the shared `cart` prop on every page, Buy Now on checkout, and the order confirmation. So `cost_price` reached every visitor.
 - **Fix:** `protected $hidden = ['cost_price']` on both models. This is one rule for every current and future serialization; per-controller column lists would miss new props. `Admin\ProductController::edit()`, the only screen that renders cost (`edit.tsx`, `ProductVariantManager.tsx`), calls `makeVisible('cost_price')` on the product and each variant. Admin create posts cost without reading a model. Saving is unaffected, because `$hidden` only affects serialization; mass assignment, the audit log and `ProductStockToken` read attributes directly.
@@ -156,7 +164,7 @@ Prod. = production verification status. "Notes" points to the historical section
 
 ## FSA-05 notes
 
-**Status: COMMITTED (local only), 2026-11-03, in "fix(security): harden product variants, pricing and visibility (FSA-01, FSA-04, FSA-05)". Not pushed, not deployed.**
+**Status: DEPLOYED_UNVERIFIED, 2026-11-03: committed in "fix(security): harden product variants, pricing and visibility (FSA-01, FSA-04, FSA-05)", deployed by run `41575932713` (push `0ef9d9a..17a1501`). Functional production verification pending.**
 
 - **Root cause:** listings, search, home, brands and landing pages already filter `active()->published()`, but three entry points did not:
   - `ProductController::show()` bound the product by slug with no visibility check.
@@ -188,7 +196,7 @@ Prod. = production verification status. "Notes" points to the historical section
 
 ## FSA-09 notes
 
-**Status: COMMITTED (local only), 2026-11-03, in "fix(auth): prevent social login account takeover (FSA-09)". Not pushed, not deployed.**
+**Status: DEPLOYED_UNVERIFIED, 2026-11-03: committed in "fix(auth): prevent social login account takeover (FSA-09)", deployed by run `41575932713` (push `0ef9d9a..17a1501`). Functional production verification pending.**
 
 - **Root cause:** `SocialAuthController::callback()` linked a social identity to any existing `User` with the same email. The only refusal (SEC-01) was Google's explicit `email_verified === false`. A missing claim, and every Facebook login, linked. The local account's own `email_verified_at` was never consulted, and the password and sessions of whoever created that account survived. Two related paths:
   - New Facebook accounts were created `email_verified_at = now()` on Facebook's word.
@@ -232,7 +240,7 @@ Prod. = production verification status. "Notes" points to the historical section
 
 ## FSA-11 notes
 
-**Status: COMMITTED (local only), 2026-11-03, in "fix(orders): prevent admin cancellation of shipped orders (FSA-11)". Not pushed, not deployed.**
+**Status: DEPLOYED_UNVERIFIED, 2026-11-03: committed in "fix(orders): prevent admin cancellation of shipped orders (FSA-11)", deployed by run `41575932713` (push `0ef9d9a..17a1501`). Functional production verification pending.**
 
 - **Root cause:** `Admin\OrderController::UNCANCELLABLE_STATUSES` was `[cancelled, refunded, delivered]`, so `shipped` was cancellable once no courier submission was unresolved. Only courier status sync (`CourierOrderStatusMapper::sync()`: Pathao `in_transit`, `at_delivery_hub`, … → `shipped`) ever sets `shipped`, so the parcel is physically with the courier.
   - Cancelling restored stock still in transit, plus coupon and points through `Order::booted()`.
@@ -264,7 +272,7 @@ Prod. = production verification status. "Notes" points to the historical section
 
 ## FSA-12 notes
 
-**Status: COMMITTED (local only), 2026-11-03, in "fix(checkout): secure order confirmation and preserve bundle attribution (FSA-03, FSA-12)". Not pushed, not deployed.**
+**Status: DEPLOYED_UNVERIFIED, 2026-11-03: committed in "fix(checkout): secure order confirmation and preserve bundle attribution (FSA-03, FSA-12)", deployed by run `41575932713` (push `0ef9d9a..17a1501`). Functional production verification pending.**
 
 - **Trace:**
   - The checkout UI submits no `bundle_id` (`Checkout.tsx`'s items carry only product, variant and quantity).
@@ -285,7 +293,7 @@ Prod. = production verification status. "Notes" points to the historical section
 
 ## FSA-13 notes
 
-**Status: COMMITTED (local only), 2026-11-03, in "fix(newsletter): queue newsletter delivery in subscriber chunks (FSA-13)". Not pushed, not deployed.**
+**Status: DEPLOYED_UNVERIFIED, 2026-11-03: committed in "fix(newsletter): queue newsletter delivery in subscriber chunks (FSA-13)", deployed by run `41575932713` (push `0ef9d9a..17a1501`). Functional production verification pending.**
 
 - **Root cause:** `Admin\NewsletterController::send()` built one message with every active subscriber in BCC and sent it synchronously inside the admin's request (`->send()` on a non-queued Mailable).
   - Shared-hosting SMTP per-message recipient caps or PHP's time limit failed the whole send.
