@@ -5,7 +5,8 @@
       "Bash(xargs -I{} cat {})",
       "Bash(php -r ' *)",
       "Bash(composer test *)",
-      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm run build)"
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm run build)",
+      "Bash(node -e \"console.log\\(Object.keys\\(require\\('lucide-react'\\)\\).filter\\(k => /ArrowUpDown|GripVertical|Check|X$/.test\\(k\\)\\).slice\\(0,20\\)\\)\")"
     ]
   }
 }
