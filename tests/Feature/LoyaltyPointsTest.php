@@ -210,7 +210,11 @@ test('submitting a review through the controller resolves verified-purchase stat
 
     $review = Review::where('user_id', $user->id)->where('product_id', $product->id)->firstOrFail();
     expect($review->order_id)->toBe($order->id);
-    expect($user->refresh()->points_balance)->toBe(15);
+    // FSA-10: every new review starts pending moderation, so the bonus
+    // isn't granted until an admin approves it — order_id resolution (what
+    // this test is actually about) is independent of that and unaffected.
+    expect($review->is_approved)->toBeFalse();
+    expect($user->refresh()->points_balance)->toBe(0);
 });
 
 // ── Order-spend points ───────────────────────────────────────────────────────

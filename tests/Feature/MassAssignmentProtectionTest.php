@@ -54,14 +54,17 @@ test('a customer cannot submit a pre-approved or mis-attributed product review',
     $this->actingAs($author)->post(route('product.reviews.store', $product->slug), [
         'rating' => 5,
         'body' => 'Great product, exactly as described and arrived quickly.',
-        'is_approved' => false,
+        // FSA-10: the actual attack this test's title describes — trying
+        // to force instant publication — now means submitting `true`,
+        // since every genuine review starts pending (`is_approved: false`).
+        'is_approved' => true,
         'user_id' => $impersonated->id,
         'order_id' => 999999,
     ])->assertRedirect();
 
     $review = Review::where('product_id', $product->id)->firstOrFail();
     expect($review->user_id)->toBe($author->id);
-    expect($review->is_approved)->toBeTrue();
+    expect($review->is_approved)->toBeFalse();
     expect($review->order_id)->toBeNull();
 });
 

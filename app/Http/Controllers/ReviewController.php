@@ -41,12 +41,17 @@ class ReviewController extends Controller
             'rating' => $validated['rating'],
             'title' => $validated['title'] ?? null,
             'body' => $validated['body'],
-            'is_approved' => true,
+            // FSA-10: every new review starts pending admin moderation
+            // (Admin\ReviewController::approve()/reject()) instead of
+            // publishing instantly. grantReviewBonus() already no-ops on a
+            // non-approved review, so the bonus is granted only once an
+            // admin approves it, not here.
+            'is_approved' => false,
         ]);
 
         $this->loyalty->grantReviewBonus($review);
 
-        return back()->with('success', 'Your review has been submitted. Thank you!');
+        return back()->with('success', 'Your review has been submitted and is awaiting approval. Thank you!');
     }
 
     /**
