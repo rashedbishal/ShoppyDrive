@@ -697,7 +697,8 @@ export default function OrderShow({
                         {order.status !== 'cancelled' &&
                             order.status !== 'refunded' &&
                             order.status !== 'delivered' &&
-                            order.status !== 'shipped' && (
+                            order.status !== 'shipped' &&
+                            order.payment_status !== 'paid' && (
                                 <Card className="border-red-100 shadow-sm">
                                     <CardHeader className="border-b border-red-100 pb-4">
                                         <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-red-600">

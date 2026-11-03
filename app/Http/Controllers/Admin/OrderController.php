@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Exceptions\CouldNotRecordRefundException;
 use App\Exceptions\InsufficientStockException;
 use App\Exceptions\PermanentDeletionRefusedException;
@@ -407,6 +408,15 @@ class OrderController extends Controller
 
     public const SHIPPED_CANCEL_MESSAGE = 'This order has shipped and is with the courier, so it can\'t be cancelled here. Cancel it or request a return in the courier\'s portal; the order is cancelled and its stock restored automatically when the courier reports the cancellation or return.';
 
+    /**
+     * FSA-06: a paid order (e.g. mobile banking, created paid at checkout)
+     * must not be cancelled directly — that leaves it stuck forever, since
+     * RefundService::assertRefundable() refuses to refund a cancelled order.
+     * Use "Mark as Refunded" instead, which records the refund ledger entry
+     * and closes the order through the already-hardened refund path.
+     */
+    public const PAID_CANCEL_MESSAGE = 'This order has been paid for, so it can\'t be cancelled directly. Use "Mark as Refunded" instead to record the refund and close the order.';
+
     public function cancel(Request $request, Order $order): RedirectResponse
     {
         $request->validate([
@@ -430,6 +440,12 @@ class OrderController extends Controller
             // and restocks it — through CourierOrderStatusMapper::sync().
             if ($lockedOrder->status === OrderStatus::SHIPPED) {
                 return self::SHIPPED_CANCEL_MESSAGE;
+            }
+
+            // FSA-06: a paid order must go through "Mark as Refunded"
+            // (RefundService::recordOrderRefund()), not direct cancellation.
+            if ($lockedOrder->payment_status === PaymentStatus::PAID) {
+                return self::PAID_CANCEL_MESSAGE;
             }
 
             // COURIER-SEND-RACE-001: same guard as markRefunded().

@@ -132,6 +132,34 @@ test('an admin can still cancel a pending or processing order, reversing everyth
     'processing' => [OrderStatus::PROCESSING],
 ]);
 
+/*
+ * FSA-06: a paid order (e.g. mobile banking, created paid at checkout) must
+ * not be admin-cancelled directly — RefundService::assertRefundable()
+ * refuses to refund an already-cancelled order, which would leave the money
+ * stuck with no ledger path forward. "Mark as Refunded" is the only way to
+ * close a paid order.
+ */
+test('a processing paid order cannot be cancelled, and nothing is reversed', function (OrderStatus $status) {
+    $order = fsa11Order(['status' => $status, 'payment_status' => PaymentStatus::PAID, 'pathao_consignment_id' => null]);
+
+    $this->actingAs($this->admin, 'admin')
+        ->patch(route('admin.orders.cancel', $order), ['reason' => 'customer asked'])
+        ->assertSessionHas('error', OrderController::PAID_CANCEL_MESSAGE);
+
+    $order->refresh();
+    expect($order->status)->toBe($status)
+        ->and($order->payment_status)->toBe(PaymentStatus::PAID)
+        ->and($order->stock_restored_at)->toBeNull()
+        ->and($order->coupon_released_at)->toBeNull()
+        ->and($order->cancellation_reason)->toBeNull()
+        ->and(fsa11Ledgers($order))->toBe(FSA11_UNTOUCHED)
+        ->and(OrderStatusHistory::where('order_id', $order->id)->count())->toBe(0);
+    Mail::assertNotQueued(OrderCancelledMail::class);
+})->with([
+    'pending' => [OrderStatus::PENDING],
+    'processing' => [OrderStatus::PROCESSING],
+]);
+
 test('a delivered order is still refused', function () {
     $order = fsa11Order(['status' => OrderStatus::DELIVERED, 'delivered_at' => now()]);
 
