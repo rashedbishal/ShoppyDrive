@@ -40,7 +40,13 @@ class PlaceOrderRequest extends FormRequest
             'coupon_code' => ['nullable', 'string', 'max:50'],
             'redeem_points' => ['nullable', 'boolean'],
             'points_to_redeem' => ['nullable', 'integer', 'min:1', 'required_if:redeem_points,true'],
-            'payment_method' => ['required', 'in:cod,zinipay,mobile_banking'],
+            // FSA-23: 'zinipay' deliberately removed — ZiniPayService has
+            // no initiation path anywhere (only verifyPayment(), called
+            // from the historical-only callback/webhook), so a new
+            // checkout submitting it must fail validation here instead of
+            // silently falling through CheckoutController::completeCheckout()'s
+            // COD/else branching into the unrelated mobile-banking flow.
+            'payment_method' => ['required', 'in:cod,mobile_banking'],
             // Missing/malformed must fail validation here, never silently
             // skip the idempotency check in CheckoutController::store()
             // (CHECKOUT-COD-002, same requirement as CART-01 on the landing
