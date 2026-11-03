@@ -162,34 +162,34 @@ Each code commit was staged so it contained only its own finding. Each was teste
 
 ## 3. FSA-01 to FSA-24 status
 
-Statuses use the tracker vocabulary. This table was written before the deploy: rows marked committed are now `DEPLOYED_UNVERIFIED`, and the tracker's table is the current source of truth.
+**Reconciled 2026-11-03 (final pre-release audit cleanup) against the authoritative tracker (`docs/SHAPPYDRIVE_AUDIT_REMEDIATION_TRACKER.md`), which remains the source of truth for exact evidence, commit hashes and per-finding notes.** This table was originally written before the deploy described in §0 and before a later session implemented FSA-10, 14, 15, and 17 through 24; it is corrected here, not merely re-asserted — every status below was checked against the tracker's "Reconciled status" table and the real `fsa-remediation` branch's commit log as of this correction. Do not treat `COMMITTED, NOT PUSHED` as deployed or production-verified: none of it is.
 
 | ID | Sev | Finding (short) | Status | Notes |
 |---|---|---|---|---|
-| FSA-01 | Critical | Variant of product B accepted with product A → A's flash price on B's variant | COMMITTED `985d73b` | `VariantBelongsToProduct` rule; fail-closed in `CartManager::resolvePrice()`/`validItems()`/`lockForCheckout()` and `InventoryService` |
-| FSA-02 | Critical | Payment SMS sender never authenticated (forged "payment received" SMS) | **BLOCKED** | Needs the user's real bKash/Nagad SMS sender IDs and a check of whether the forwarder app relays non-provider senders |
-| FSA-03 | High | Public order confirmation exposed PII and `guest_token` | COMMITTED `9c840f7` | `OrderConfirmationAccess`: owner or 24h session grant; allow-listed payload; 404; `throttle:order-tracking`; `Order::$hidden` |
-| FSA-04 | High | `cost_price` sent to every storefront visitor | COMMITTED `985d73b` | `$hidden` on `Product`/`ProductVariant`; admin edit page uses `makeVisible` |
-| FSA-05 | High | Inactive/unpublished products viewable and orderable | COMMITTED `985d73b` | `Product::isPubliclyVisible()`; product page 404; cart drop; add-to-cart refusal; Buy Now; factory now defaults `published_at` |
-| FSA-06 | High | Paid order can be admin-cancelled, then never refunded | **BLOCKED** | Business decision: refuse cancel of paid orders, or cancel records the refund |
-| FSA-07 | High | Mobile banking: customer can pay and get no order | **BLOCKED** | Design decision: reserve at staging, flagged order, or reconciliation view |
-| FSA-08 | High | Landing pages for variant products can't sell but can take payment | **BLOCKED** | Decision: block at admin save, or add a variant picker |
-| FSA-09 | Medium | Social login pre-account-takeover | COMMITTED `8cb8ff7` | Links by email only on Google `email_verified: true`; Facebook never links by email; safe claim of unverified accounts. Follow-up decision: Facebook accounts created before the fix |
-| FSA-10 | Medium | Reviews auto-approved, open to unverified accounts | **BLOCKED** | Moderation policy decision |
-| FSA-11 | Medium | Admin could cancel shipped orders | COMMITTED `1d16a71` | Refused; courier return report is the path. Follow-up decision: lost parcels |
-| FSA-12 | Low | Mobile-banking orders dropped `bundle_id` | COMMITTED `9c840f7` | One line in `MobilePaymentController` |
-| FSA-13 | Medium | Newsletter synchronous all-BCC send; attachments never deleted | COMMITTED `8d17320` | `Bus::batch` of `SendNewsletterChunk` (≤50 BCC), cleanup via batch `then`, daily `newsletter:prune-attachments`. Optional decision: retry from Admin › Failed jobs (MED-03 allow-list) |
-| FSA-14 | Low | Newsletter unsubscribe/status unauthenticated | OPEN | **Do not start until the user changes the priority** |
-| FSA-15 | Medium | (= existing tracker observation) Customer cancel after courier booking, unlocked | **BLOCKED** | Business decision; not duplicated |
-| FSA-16 | Medium | Tracker didn't reflect `main` | COMMITTED `d1f258c` | — |
-| FSA-17 | Low | Encrypted 2FA columns serialized on every page | OPEN | — |
-| FSA-18 | Low | Rating breakdown from 50 reviews only | OPEN | — |
-| FSA-19 | Low | Unset SMS forwarder token → 500 | OPEN | — |
-| FSA-20 | Low | Product media uploads have no size limit | OPEN | — |
-| FSA-21 | Low | Landing-page phone validation weaker than checkout | OPEN | — |
-| FSA-22 | Low | Guest loses pending payment after logging in | OPEN | — |
-| FSA-23 | Low | `payment_method=zinipay` silently treated as mobile banking | OPEN | — |
-| FSA-24 | Info | All settings, including secrets, cached in plaintext file cache | OPEN | — |
+| FSA-01 | Critical | Variant of product B accepted with product A → A's flash price on B's variant | DEPLOYED_UNVERIFIED `985d73b` | `VariantBelongsToProduct` rule; fail-closed in `CartManager::resolvePrice()`/`validItems()`/`lockForCheckout()` and `InventoryService` |
+| FSA-02 | Critical | Payment SMS sender never authenticated (forged "payment received" SMS) | COMMITTED, NOT PUSHED (infra only) `29de44d`; sender allowlist **BLOCKED** | `sender_regex` column + enforcement built; every pattern's value is still `NULL` (unrestricted) — **the vulnerability itself is not fixed yet**. Needs the owner's real bKash/Nagad SMS sender IDs and a forwarder-filter check before this does anything |
+| FSA-03 | High | Public order confirmation exposed PII and `guest_token` | DEPLOYED_UNVERIFIED `9c840f7` | `OrderConfirmationAccess`: owner or 24h session grant; allow-listed payload; 404; `throttle:order-tracking`; `Order::$hidden` |
+| FSA-04 | High | `cost_price` sent to every storefront visitor | DEPLOYED_UNVERIFIED `985d73b` | `$hidden` on `Product`/`ProductVariant`; admin edit page uses `makeVisible` |
+| FSA-05 | High | Inactive/unpublished products viewable and orderable | DEPLOYED_UNVERIFIED `985d73b` | `Product::isPubliclyVisible()`; product page 404; cart drop; add-to-cart refusal; Buy Now; factory now defaults `published_at` |
+| FSA-06 | High | Paid order can be admin-cancelled, then never refunded | COMMITTED, NOT PUSHED `fe6fd58` | Refuses cancel of a paid order, directs to "Mark as Refunded" (Option A, owner-approved). Two pre-existing tests that cancelled a paid order via this now-refused path were found and corrected — see the tracker's FSA-06 notes |
+| FSA-07 | High | Mobile banking: customer can pay and get no order | COMMITTED, NOT PUSHED `9989d1b` | Expiry grace for proven payment + admin unmatched-SMS badge built (2 of 3 owner-approved increments); durable PendingCheckout↔SMS linking deliberately not built |
+| FSA-08 | High | Landing pages for variant products can't sell but can take payment | COMMITTED, NOT PUSHED `dd48b9c` | Blocked at admin save (owner-approved); one existing local dev landing page already affected, not touched — owner decision pending |
+| FSA-09 | Medium | Social login pre-account-takeover | DEPLOYED_UNVERIFIED `8cb8ff7` | Links by email only on Google `email_verified: true`; Facebook never links by email; safe claim of unverified accounts. Follow-up decision: Facebook accounts created before the fix |
+| FSA-10 | Medium | Reviews auto-approved, open to unverified accounts | COMMITTED, NOT PUSHED `2ede844` | Requires verified email + defaults every new review to pending moderation (owner-approved) |
+| FSA-11 | Medium | Admin could cancel shipped orders | DEPLOYED_UNVERIFIED `1d16a71` | Refused; courier return report is the path. Follow-up decision: lost parcels |
+| FSA-12 | Low | Mobile-banking orders dropped `bundle_id` | DEPLOYED_UNVERIFIED `9c840f7` | One line in `MobilePaymentController` |
+| FSA-13 | Medium | Newsletter synchronous all-BCC send; attachments never deleted | DEPLOYED_UNVERIFIED `8d17320` | `Bus::batch` of `SendNewsletterChunk` (≤50 BCC), cleanup via batch `then`, daily `newsletter:prune-attachments`. Optional decision: retry from Admin › Failed jobs (MED-03 allow-list) |
+| FSA-14 | Low | Newsletter unsubscribe/status unauthenticated | COMMITTED, NOT PUSHED `c94e9ef` | Priority was raised and implementation approved in a later session (superseding this file's earlier "do not start" note, see above). Token-protected unsubscribe + confirmation flow; public `/newsletter/status` oracle removed entirely |
+| FSA-15 | Medium | (= existing tracker observation) Customer cancel after courier booking, unlocked | COMMITTED, NOT PUSHED `9c8a9b2` | Customer self-service cancel now blocked on any courier involvement (owner-approved) |
+| FSA-16 | Medium | Tracker didn't reflect `main` | RESOLVED `d1f258c` (+ local `7d383e6`) | Documentation/process finding only, no application code |
+| FSA-17 | Low | Encrypted 2FA columns serialized on every page | COMMITTED, NOT PUSHED `5333b94` | `User::$hidden` now includes `two_factor_secret`/`two_factor_recovery_codes`. Same commit also carries a separate, explicit owner product decision to remove the mandatory 2FA login challenge for both admin and customer guards — recorded distinctly from this finding in the tracker |
+| FSA-18 | Low | Rating breakdown from 50 reviews only | COMMITTED, NOT PUSHED `ade58d5` | Breakdown now computed over every approved review, not just the 50-review display cap; plus two owner-approved adjacent product-page corrections found during the same investigation |
+| FSA-19 | Low | Unset SMS forwarder token → 500 | COMMITTED, NOT PUSHED `f55dfe7` | Casts the configured token to string and rejects an empty one before `hash_equals()`, fixing a `strict_types=1` TypeError |
+| FSA-20 | Low | Product media uploads have no size limit | COMMITTED, NOT PUSHED `4301aed` | Images capped at 5MB, videos at 50MB (sniffed content type), 10 new uploads per submission (owner-approved limits). Production PHP upload-limit compatibility not verified |
+| FSA-21 | Low | Landing-page phone validation weaker than checkout | COMMITTED, NOT PUSHED `67f2ff8` | Normalizes +880/880/space/hyphen variants, then enforces the same strict regex as the main checkout |
+| FSA-22 | Low | Guest loses pending payment after logging in | COMMITTED, NOT PUSHED `902d26d` | Ownership check on the mobile-payment page now only applies when the pending checkout was staged by a specific logged-in user; a guest-staged one stays accessible by its token regardless of later auth-state changes |
+| FSA-23 | Low | `payment_method=zinipay` silently treated as mobile banking | COMMITTED, NOT PUSHED `0afd514` | `zinipay` removed from `PlaceOrderRequest`'s allowed payment methods; fails validation cleanly instead |
+| FSA-24 | Info | All settings, including secrets, cached in plaintext file cache | COMMITTED, NOT PUSHED `564b182` | `LayoutCache::settings()` now caches only an explicit 16-key public allow-list, never a secret-bearing key |
 
 **Earlier audit items.** Detail and evidence are in the tracker.
 - **`DEPLOYED_UNVERIFIED`** (on `origin/main`; deploy succeeded 2026-11-02; production effect unverified): CRIT-01, HIGH-01/02/03, WISHLIST-GUEST, MED-01–10, MED-12–17, MED-18A, LOW-03/04/05/06/08, REF-CAP-TZ-001, INV-STALE-STOCK-001, SEARCH-AUTOCOMPLETE-FT-001, WISHLIST-ADDALL-*.
@@ -304,9 +304,9 @@ None of the 7 contains a SQL error, an HTTP 500, or MySQL error 1191. Optional t
   - 17 moderate npm advisories
   - XSS-SINK-GAP-001 (`Page.content` unpurified, no write path)
   - MED-19, LOW-01, LOW-02, LOW-09
-- **Pending user decisions:**
-  - FSA-02 (sender IDs + forwarder check)
-  - FSA-06, FSA-07, FSA-08, FSA-10, FSA-15
+- **No longer pending — decided and implemented in a later session (corrected 2026-11-03):** FSA-06, FSA-07, FSA-08, FSA-10, FSA-14, FSA-15 all had their business/design decisions made by the owner and are now `COMMITTED, NOT PUSHED` (see §3). This replaces the earlier listing of FSA-06/07/08/10/15 as pending decisions, which was true only at the time this file was first written.
+- **Still genuinely pending user decisions:**
+  - FSA-02 (sender IDs + forwarder check) — still blocked, unchanged
   - LP-INVOICE-STATUS-001
   - FSA-11 lost-parcel rule
   - FSA-09 handling of pre-fix Facebook accounts
@@ -315,9 +315,12 @@ None of the 7 contains a SQL error, an HTTP 500, or MySQL error 1191. Optional t
   - `deploy.yml` storage exclusion
   - optional test-hygiene fixes (§4)
   - updating the tracker with the 2026-11-03 MySQL results
-- **Release readiness (2026-11-03 audit):**
+  - FSA-06's `LoyaltyPointsConcurrencyRaceTest` fixture correction (see tracker FSA-06 notes) needs an actual MySQL/MariaDB run — it was corrected by code review only, no credentialed MySQL/MariaDB instance was available in the 2026-11-03 final-audit/regression-cleanup session
+- **Release readiness (2026-11-03 full-system audit, the one in §0-§7):**
   - Concluded **READY FOR STAGING**, later superseded: production turned out to be MariaDB, and the MySQL results did not transfer directly. See §0 for the evidence at production settings.
   - The release has now been deployed. The production read-only checks (§6) remain outstanding as post-deployment verification.
+- **Release readiness (2026-11-03 final pre-release audit, separate and later — covers the local-only `fsa-remediation` branch, FSA-02/06/07/08/10/14/15/17-24):**
+  - Concluded **NOT READY FOR STAGED RELEASE**: a fresh full-suite run found `tests/Feature/OrderCancellationAtomicityTest.php` failing because FSA-06's approved rule (refuse cancelling a paid order) contradicted a pre-existing test's expectation, which would have failed `deploy.yml`'s required check and blocked any push. A dedicated regression-cleanup task fixed this test and the three latent copies of the same issue in `LoyaltyPointsConcurrencyRaceTest.php` (MySQL-only, fixed by code review, not executed — see above). This branch is still **not pushed**; re-verify the full suite is green (ideally including a real MySQL/MariaDB run) before asking the owner to approve a push.
 
 ## 9. Next session — first task (in this order)
 
@@ -340,7 +343,7 @@ None of the 7 contains a SQL error, an HTTP 500, or MySQL error 1191. Optional t
 
 Do not commit, push, deploy, or delete the disposable MariaDB environment, scratchpad files or `~/sd_checks.sql` without explicit approval of that step.
 
-**FSA-14 must not be started until the user changes the priority.** No application code changes are pending.
+**Obsolete instruction removed (corrected 2026-11-03, final pre-release audit cleanup):** this section previously said "FSA-14 must not be started until the user changes the priority. No application code changes are pending." That is no longer true — the owner explicitly raised FSA-14's priority and approved its implementation in a later session, along with FSA-10, 15, and 17 through 24. All of these are now `COMMITTED, NOT PUSHED` on the local `fsa-remediation` branch. See §3 (corrected) and `docs/SHAPPYDRIVE_AUDIT_REMEDIATION_TRACKER.md` for current, accurate status — do not rely on this file's §3 table below without checking the tracker first, since this file is updated less frequently.
 
 ## 10. Rules for every session
 

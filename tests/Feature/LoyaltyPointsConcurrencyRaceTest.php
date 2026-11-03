@@ -278,7 +278,10 @@ match ($argv[2]) {
 };
 PHP;
 
-function createRedeemedPointsRaceOrder(): array
+/**
+ * @param  array<string, mixed>  $overrides
+ */
+function createRedeemedPointsRaceOrder(array $overrides = []): array
 {
     $admin = Admin::create([
         'name' => 'Loyalty Race Admin',
@@ -293,7 +296,7 @@ function createRedeemedPointsRaceOrder(): array
     ]);
     $user->forceFill(['points_balance' => 40])->save();
 
-    $order = Order::create([
+    $order = Order::create(array_merge([
         'order_number' => 'ORD-ATOMIC-RACE-'.uniqid(),
         'user_id' => $user->id,
         'status' => OrderStatus::PROCESSING,
@@ -311,7 +314,7 @@ function createRedeemedPointsRaceOrder(): array
         'points_redeemed' => 60,
         'shipping_address' => ['name' => 'Test', 'phone' => '01700000000'],
         'billing_address' => [],
-    ]);
+    ], $overrides));
 
     return [$user, $order, $admin];
 }
@@ -384,7 +387,13 @@ it('rejects a duplicate admin cancellation that was blocked behind the first one
         return;
     }
 
-    [$user, $order, $admin] = createRedeemedPointsRaceOrder();
+    // FSA-06: cancel() now refuses any paid order outright, before the
+    // locking this test exists to exercise ever matters — this fixture is
+    // unpaid instead, so the race is still genuinely between two
+    // concurrent cancel() calls, the thing under test here (markRefunded's
+    // own duplicate-request race is covered separately below, on the
+    // default paid fixture, which that test genuinely needs).
+    [$user, $order, $admin] = createRedeemedPointsRaceOrder(['payment_status' => 'unpaid', 'payment_method' => 'cod']);
 
     raceAdminActions($conns[0], $order, $admin, fn () => controllerUnderRace()->cancel(Request::create('/', 'PATCH'), $order), 'cancel');
 
@@ -432,7 +441,13 @@ it('rejects a mark-refunded that was blocked behind a committed cancellation und
         return;
     }
 
-    [$user, $order, $admin] = createRedeemedPointsRaceOrder();
+    // FSA-06: an unpaid fixture so cancel() actually succeeds here (a paid
+    // order would now be refused outright, never reaching the lock
+    // contention this test exists to prove) — the refund contender's
+    // hardcoded 940 amount doesn't matter either way, since
+    // RefundService::assertRefundable() rejects an already-cancelled order
+    // before it ever checks payment_status (see the docblock below).
+    [$user, $order, $admin] = createRedeemedPointsRaceOrder(['payment_status' => 'unpaid', 'payment_method' => 'cod']);
 
     $result = raceAdminActions($conns[0], $order, $admin, fn () => controllerUnderRace()->cancel(Request::create('/', 'PATCH'), $order), 'refund');
 
@@ -450,7 +465,10 @@ it('leaves an admin-cancelled order alone when a courier cancellation report rac
         return;
     }
 
-    [$user, $order, $admin] = createRedeemedPointsRaceOrder();
+    // FSA-06: unpaid, for the same reason as the two tests above — cancel()
+    // must actually succeed here for this race (admin cancel vs. courier
+    // report) to be exercised at all.
+    [$user, $order, $admin] = createRedeemedPointsRaceOrder(['payment_status' => 'unpaid', 'payment_method' => 'cod']);
 
     raceAdminActions($conns[0], $order, $admin, fn () => controllerUnderRace()->cancel(Request::create('/', 'PATCH'), $order), 'steadfast-cancelled');
 

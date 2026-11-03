@@ -115,7 +115,17 @@ test('a cancelled order cannot then be refunded, and its redeemed points are cre
     $order = atomicityOrder($this->customer, ['payment_status' => 'paid', 'payment_method' => 'mobile_banking']);
     $payload = wholeOrderRefundPayload($order);
 
-    actingAs($this->admin, 'admin')->patch(route('admin.orders.cancel', $order))->assertSessionHas('success');
+    // FSA-06: a paid order can no longer be cancelled directly by an admin
+    // (see ShippedOrderCancellationTest's "a processing paid order cannot
+    // be cancelled" for that rule's own dedicated coverage) — so this test
+    // now cancels via the courier-report entry point instead, one of the
+    // other two Order::booted() cancellation paths this file's own docblock
+    // describes, to prove the same "a cancelled order cannot then be
+    // refunded" invariant holds regardless of which entry point cancelled
+    // it, which is this test's actual point.
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'cancelled_parcells');
+    expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED);
+
     // PAY-RETURN-001: refunding a cancelled order is refused.
     actingAs($this->admin, 'admin')->patch(route('admin.orders.markRefunded', $order), $payload)->assertSessionHas('error');
 
