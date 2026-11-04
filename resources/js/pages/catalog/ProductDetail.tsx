@@ -23,6 +23,7 @@ import { FlashSaleCountdown } from '@/components/shared/FlashSaleCountdown';
 import { ProductCarousel } from '@/components/shared/ProductCarousel';
 import { RatingBreakdown } from '@/components/shared/RatingBreakdown';
 import { ReviewCard } from '@/components/shared/ReviewCard';
+import { VariantSelectionModal } from '@/components/shared/VariantSelectionModal';
 import { Badge } from '@/components/ui/badge';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
@@ -111,11 +112,19 @@ export default function ProductDetail({
         'recently_viewed',
         [],
     );
+    // Gates Add to Cart / Buy Now behind the variant-selection modal for
+    // variant-based products — see handleModalConfirm below. `null` means
+    // the modal is closed; otherwise it records which action to run once
+    // the customer confirms their selection inside it.
+    const [pendingVariantAction, setPendingVariantAction] = useState<
+        'cart' | 'buy' | null
+    >(null);
 
     // Derived State
     const allMedia = product.media ?? [];
     const attributes = product.attributes ?? [];
     const variants = product.variants ?? [];
+    const hasVariants = variants.length > 0;
 
     const selectedVariant = useMemo(() => {
         // No attributes picked (e.g. a general gallery image was selected,
@@ -320,6 +329,61 @@ export default function ProductDetail({
         // follows natively, instead of depending on Inertia's XHR client to
         // detect and follow a redirect to a page outside the current visit.
         window.location.href = route('checkout.index', params);
+    };
+
+    // For a variant-based product, Add to Cart / Buy Now open the
+    // variant-selection modal instead of running the action immediately —
+    // confirming inside it is the only thing that ever calls
+    // handleAddToCart/handleBuyNow above, unmodified, with whatever
+    // selectedVariant/quantity the modal left in place (the same page
+    // state the inline selectors already drive). A product with no
+    // variants skips the modal entirely, preserving the previous
+    // behavior exactly.
+    const closeVariantModal = (): void => {
+        setPendingVariantAction(null);
+    };
+
+    const confirmVariantModal = (): void => {
+        if (!selectedVariant || isOutOfStock) {
+            return;
+        }
+
+        const action = pendingVariantAction;
+        setPendingVariantAction(null);
+
+        if (action === 'cart') {
+            handleAddToCart();
+        } else if (action === 'buy') {
+            handleBuyNow();
+        }
+    };
+
+    const onAddToCartClick = (): void => {
+        if (isOutOfStock) {
+            return;
+        }
+
+        if (hasVariants) {
+            setPendingVariantAction('cart');
+
+            return;
+        }
+
+        handleAddToCart();
+    };
+
+    const onBuyNowClick = (): void => {
+        if (isOutOfStock) {
+            return;
+        }
+
+        if (hasVariants) {
+            setPendingVariantAction('buy');
+
+            return;
+        }
+
+        handleBuyNow();
     };
 
     const shareProduct = (platform: 'facebook' | 'twitter' | 'copy') => {
@@ -728,7 +792,7 @@ export default function ProductDetail({
                                     />
                                     <Button
                                         data-cry-baby-target
-                                        onClick={handleAddToCart}
+                                        onClick={onAddToCartClick}
                                         disabled={isOutOfStock}
                                         size="lg"
                                         className="flex h-14 w-full gap-3 rounded-2xl text-lg font-bold shadow-[var(--color-primary)]/20 shadow-lg"
@@ -737,7 +801,7 @@ export default function ProductDetail({
                                         Add to Cart
                                     </Button>
                                     <Button
-                                        onClick={handleBuyNow}
+                                        onClick={onBuyNowClick}
                                         disabled={isOutOfStock}
                                         variant="secondary"
                                         size="lg"
@@ -1355,6 +1419,30 @@ export default function ProductDetail({
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <VariantSelectionModal
+                isOpen={pendingVariantAction !== null}
+                onClose={closeVariantModal}
+                onConfirm={confirmVariantModal}
+                productName={product.name}
+                thumbnailUrl={primaryMedia?.path ?? null}
+                attributes={attributes}
+                selectedAttributes={selectedAttributes}
+                onAttributeSelect={handleAttributeSelect}
+                isAttributeValueAvailable={isAttributeValueAvailable}
+                selectedVariant={selectedVariant}
+                quantity={quantity}
+                onQuantityChange={setQuantity}
+                currentPrice={currentPrice}
+                comparePrice={comparePrice}
+                hasDiscount={Boolean(hasDiscount)}
+                stockQuantity={stockQuantity}
+                lowStockThreshold={lowStockThreshold}
+                isOutOfStock={isOutOfStock}
+                confirmLabel={
+                    pendingVariantAction === 'buy' ? 'Buy Now' : 'Add to Cart'
+                }
+            />
         </div>
     );
 }
