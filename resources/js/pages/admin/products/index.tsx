@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Baby, Edit, Plus, Search, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,13 @@ export default function ProductsIndex({
     categories,
     cryBabyEnabledCount,
 }: Props) {
+    // Prefetching covers the form's data but not its code, which is otherwise
+    // only downloaded on the first click. A failure here is harmless: the
+    // click just downloads it as usual.
+    useEffect(() => {
+        import('./create').catch(() => {});
+    }, []);
+
     const [search, setSearch] = useState(filters.search ?? '');
     const [deleteTarget, setDeleteTarget] = useState<{
         id: number;
@@ -133,7 +140,11 @@ export default function ProductsIndex({
                         size="sm"
                         className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25] sm:w-auto"
                     >
-                        <Link href={route('admin.products.create')}>
+                        <Link
+                            href={route('admin.products.create')}
+                            prefetch={['mount', 'hover']}
+                            cacheFor="1m"
+                        >
                             <Plus className="mr-1.5 size-4" /> Add Product
                         </Link>
                     </Button>

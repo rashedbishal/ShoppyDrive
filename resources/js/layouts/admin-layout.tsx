@@ -592,6 +592,19 @@ export default function AdminLayout({
     const { toasts, dismiss, unmatchedCount } = useSmsPolling();
     const handleDismiss = useCallback((key: number) => dismiss(key), [dismiss]);
 
+    // Prefetched pages (e.g. Add Product) hold form options such as categories.
+    // Any admin write can change those, so drop what's cached instead of
+    // showing a form with stale choices.
+    useEffect(
+        () =>
+            router.on('before', (event) => {
+                if (event.detail.visit.method !== 'get') {
+                    router.flushAll();
+                }
+            }),
+        [],
+    );
+
     const handleLogout = () => router.post(route('admin.logout'));
 
     return (
