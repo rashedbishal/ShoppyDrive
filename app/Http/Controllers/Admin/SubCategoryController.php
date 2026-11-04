@@ -23,11 +23,15 @@ class SubCategoryController extends Controller
 
     public function index(Request $request): Response
     {
+        // Newest-created first, matching the categories table. sort_order/name
+        // are only tiebreakers here; storefront menus keep their own ordering.
         $subCategories = SubCategory::with('category:id,name')
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
             ->when($request->status === 'active', fn ($q) => $q->where('is_active', true))
             ->when($request->status === 'inactive', fn ($q) => $q->where('is_active', false))
-            ->orderBy('sort_order')->orderBy('name')
+            ->orderByDesc('created_at')
+            ->orderBy('sort_order')
+            ->orderBy('name')
             ->paginate(20)->withQueryString();
 
         return Inertia::render('admin/sub-categories/index', [
