@@ -8,9 +8,7 @@ import CookieConsent from '@/components/layout/CookieConsent';
 import Footer from '@/components/layout/Footer';
 import Header from '@/components/layout/Header';
 import SocialChatWidget from '@/components/layout/SocialChatWidget';
-import { CompareBar } from '@/components/shared/CompareBar';
 import { MOTION } from '@/lib/constants';
-import { useUiStore } from '@/stores/uiStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import type { SharedPageProps } from '@/types';
 
@@ -22,7 +20,6 @@ export default function AppLayout({
     children,
 }: AppLayoutProps): React.JSX.Element {
     const page = usePage<SharedPageProps>();
-    const compareItems = useUiStore((state) => state.compareItems);
     const setWishlist = useWishlistStore((state) => state.setWishlist);
 
     // Sync wishlist from server; merge guest wishlist into account on login
@@ -122,7 +119,6 @@ export default function AppLayout({
 
             <Footer />
             <CartDrawer />
-            <CompareBar products={compareItems} />
             <CookieConsent />
             <SocialChatWidget />
         </div>

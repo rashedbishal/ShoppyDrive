@@ -1,6 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 import { motion, useInView, useReducedMotion } from 'framer-motion';
-import { GitCompare, Heart, ShoppingBag } from 'lucide-react';
+import { Heart, ShoppingBag } from 'lucide-react';
 import React, { useRef, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -56,9 +56,6 @@ export function ProductCard({
     const isWishlisted = useWishlistStore((state) =>
         state.isWishlisted(product.id),
     );
-    const addCompareItem = useUiStore((state) => state.addCompareItem);
-    const removeCompareItem = useUiStore((state) => state.removeCompareItem);
-    const isComparing = useUiStore((state) => state.hasCompareItem(product.id));
 
     const imageSet = Array.isArray(product.images) ? product.images : [];
     const primaryImage =
@@ -152,24 +149,6 @@ export function ProductCard({
         });
     };
 
-    const handleCompare = (event: React.MouseEvent): void => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        if (isComparing) {
-            removeCompareItem(product.id);
-
-            return;
-        }
-
-        addCompareItem(product);
-        addToast({
-            type: 'success',
-            title: 'Added to compare',
-            message: `${product.name} added to comparison list.`,
-        });
-    };
-
     const media = (
         <div className="relative h-full overflow-hidden bg-[var(--color-surface-alt)]">
             {primaryUrl ? (
@@ -236,23 +215,6 @@ export function ProductCard({
                     <Heart
                         className={cn('size-4', isWishlisted && 'fill-current')}
                     />
-                </button>
-                <button
-                    type="button"
-                    onClick={handleCompare}
-                    aria-label={
-                        isComparing
-                            ? `Remove ${product.name} from compare`
-                            : `Add ${product.name} to compare`
-                    }
-                    className={cn(
-                        'inline-flex size-9 items-center justify-center rounded-full border border-[var(--color-border)] shadow-sm transition hover:scale-105',
-                        isComparing
-                            ? 'bg-amber-400 text-[var(--color-secondary)]'
-                            : 'bg-white/95 text-[var(--color-text-secondary)] hover:text-amber-500',
-                    )}
-                >
-                    <GitCompare className="size-4" />
                 </button>
             </div>
 

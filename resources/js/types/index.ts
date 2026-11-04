@@ -725,7 +725,6 @@ export interface UiState {
     cartOpen: boolean;
     mobileMenuOpen: boolean;
     searchOpen: boolean;
-    compareItems: Id[];
     toasts: UiStateToast[];
 }
 

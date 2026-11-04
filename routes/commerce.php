@@ -109,4 +109,3 @@ Route::post('/coupon/validate', function (Request $request) {
 })->middleware('throttle:coupon-check')->name('coupon.validate');
 
 Route::get('/wishlist', [WishlistController::class, 'entry'])->name('wishlist.index');
-Route::get('/compare', fn () => inertia('compare/Compare'))->name('compare');
