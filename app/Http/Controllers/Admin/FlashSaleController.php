@@ -11,9 +11,11 @@ use App\Models\FlashSale;
 use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Support\AdminDateTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -80,6 +82,8 @@ class FlashSaleController extends Controller
         unset($data['items']);
 
         $data['is_active'] = $data['is_active'] ?? false;
+        $data['starts_at'] = AdminDateTime::fromInput($data['starts_at']);
+        $data['ends_at'] = AdminDateTime::fromInput($data['ends_at']);
         $flashSale = FlashSale::create($data);
 
         foreach ($items as $item) {
@@ -107,7 +111,11 @@ class FlashSaleController extends Controller
         ]);
 
         return Inertia::render('admin/flash-sales/edit', [
-            'flashSale' => $flashSale,
+            'flashSale' => [
+                ...$flashSale->toArray(),
+                'starts_at_input' => AdminDateTime::toInput($flashSale->starts_at),
+                'ends_at_input' => AdminDateTime::toInput($flashSale->ends_at),
+            ],
         ]);
     }
 
@@ -118,21 +126,51 @@ class FlashSaleController extends Controller
         unset($data['items']);
 
         $data['is_active'] = $data['is_active'] ?? false;
-        $flashSale->update($data);
+        $data['starts_at'] = AdminDateTime::fromInput($data['starts_at']);
+        $data['ends_at'] = AdminDateTime::fromInput($data['ends_at']);
 
-        if ($items !== null) {
-            $flashSale->items()->delete();
-            foreach ($items as $item) {
-                FlashSaleItem::create([
-                    'flash_sale_id' => $flashSale->id,
-                    'product_id' => $item['product_id'],
-                    'variant_id' => $item['variant_id'] ?? null,
-                    'sale_price' => $item['sale_price'],
-                ]);
+        DB::transaction(function () use ($flashSale, $data, $items): void {
+            $flashSale->update($data);
+
+            if ($items !== null) {
+                $this->syncItems($flashSale, $items);
             }
-        }
+        });
 
         return redirect()->route('admin.flash-sales.index')->with('success', 'Flash sale updated.');
+    }
+
+    /**
+     * Updates a row that stays in the sale rather than recreating it: its
+     * sold_count is real sales history, and order items point at its id so a
+     * cancellation or return can reduce that count later.
+     *
+     * @param  array<int, array{product_id: int|string, variant_id?: int|string|null, sale_price: int|float|string}>  $items
+     */
+    private function syncItems(FlashSale $flashSale, array $items): void
+    {
+        $rowKey = fn (int|string $productId, int|string|null $variantId): string => $productId.':'.($variantId ?? 'whole');
+        $existing = $flashSale->items->keyBy(fn (FlashSaleItem $item) => $rowKey($item->product_id, $item->variant_id));
+        $keptIds = [];
+
+        foreach ($items as $item) {
+            $saved = $existing->get($rowKey($item['product_id'], $item['variant_id'] ?? null));
+
+            if ($saved !== null) {
+                $saved->update(['sale_price' => $item['sale_price']]);
+                $keptIds[] = $saved->id;
+
+                continue;
+            }
+
+            $keptIds[] = $flashSale->items()->create([
+                'product_id' => $item['product_id'],
+                'variant_id' => $item['variant_id'] ?? null,
+                'sale_price' => $item['sale_price'],
+            ])->id;
+        }
+
+        $flashSale->items()->whereNotIn('id', $keptIds)->delete();
     }
 
     public function destroy(FlashSale $flashSale): RedirectResponse

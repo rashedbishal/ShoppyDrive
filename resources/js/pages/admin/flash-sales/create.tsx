@@ -146,7 +146,7 @@ export default function FlashSaleCreate() {
                                         />
                                     </Field>
                                     <Field
-                                        label="Starts At *"
+                                        label="Starts At * (Bangladesh time)"
                                         error={errors.starts_at}
                                     >
                                         <input
@@ -164,7 +164,7 @@ export default function FlashSaleCreate() {
                                         />
                                     </Field>
                                     <Field
-                                        label="Ends At *"
+                                        label="Ends At * (Bangladesh time)"
                                         error={errors.ends_at}
                                     >
                                         <input

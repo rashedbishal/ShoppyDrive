@@ -35,15 +35,14 @@ type FlashSaleItemRaw = {
 type FlashSale = {
     id: number;
     name: string;
-    starts_at: string;
-    ends_at: string;
+    /** Bangladesh time, formatted for the date inputs. */
+    starts_at_input: string;
+    ends_at_input: string;
     is_active: boolean;
     items: FlashSaleItemRaw[];
 };
 
 type Props = { flashSale: FlashSale };
-
-const toDatetimeLocal = (str: string) => str.slice(0, 16);
 
 function variantLabel(attributes: Record<string, string> | null): string {
     if (!attributes) {
@@ -96,8 +95,8 @@ export default function FlashSaleEdit({ flashSale }: Props) {
     const { data, setData, put, processing, errors, setError, clearErrors } =
         useForm({
             name: flashSale.name,
-            starts_at: toDatetimeLocal(flashSale.starts_at),
-            ends_at: toDatetimeLocal(flashSale.ends_at),
+            starts_at: flashSale.starts_at_input,
+            ends_at: flashSale.ends_at_input,
             is_active: flashSale.is_active,
             items: flashSale.items.map(toItemData),
         });
@@ -210,7 +209,7 @@ export default function FlashSaleEdit({ flashSale }: Props) {
                                         />
                                     </Field>
                                     <Field
-                                        label="Starts At *"
+                                        label="Starts At * (Bangladesh time)"
                                         error={errors.starts_at}
                                     >
                                         <input
@@ -228,7 +227,7 @@ export default function FlashSaleEdit({ flashSale }: Props) {
                                         />
                                     </Field>
                                     <Field
-                                        label="Ends At *"
+                                        label="Ends At * (Bangladesh time)"
                                         error={errors.ends_at}
                                     >
                                         <input
