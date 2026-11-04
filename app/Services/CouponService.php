@@ -63,14 +63,14 @@ class CouponService
         // caller's row (if it already committed) or blocks until it does
         // — the same correctness property Coupon::lockForUpdate() above
         // already relies on for max_uses.
-        if ($userId !== null && $coupon->uses()->where('user_id', $userId)->lockForUpdate()->count() >= $coupon->per_user_limit) {
+        if ($coupon->per_user_limit !== null && $userId !== null && $coupon->uses()->where('user_id', $userId)->lockForUpdate()->count() >= $coupon->per_user_limit) {
             throw CouponUnavailableException::because('You have already used this coupon the maximum number of times.');
         }
 
         // PROMO-001: the guest equivalent of the check above — see
         // Coupon::guestRedemptionCount()'s docblock for why this is
         // derived from Order rows rather than a locked CouponUse count.
-        if ($userId === null && $guestPhone !== null
+        if ($coupon->per_user_limit !== null && $userId === null && $guestPhone !== null
             && Coupon::guestRedemptionCount($coupon->id, $guestPhone, excludeOrderId: $order->id, lockForUpdate: true) >= $coupon->per_user_limit) {
             throw CouponUnavailableException::because('You have already used this coupon the maximum number of times.');
         }

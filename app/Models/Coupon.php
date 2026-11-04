@@ -182,14 +182,14 @@ class Coupon extends Model
             return 'Minimum order amount of ৳'.number_format($this->min_order_amount, 0).' required.';
         }
 
-        if ($userId !== null && $this->uses()->where('user_id', $userId)->count() >= $this->per_user_limit) {
+        if ($this->per_user_limit !== null && $userId !== null && $this->uses()->where('user_id', $userId)->count() >= $this->per_user_limit) {
             return 'You have already used this coupon the maximum number of times.';
         }
 
         // PROMO-001: guests have no account to key per_user_limit against,
         // so per_user_limit was previously unenforceable for them at all —
         // see guestRedemptionCount()'s docblock for how this is derived.
-        if ($userId === null && $guestPhone !== null && self::guestRedemptionCount($this->id, $guestPhone) >= $this->per_user_limit) {
+        if ($this->per_user_limit !== null && $userId === null && $guestPhone !== null && self::guestRedemptionCount($this->id, $guestPhone) >= $this->per_user_limit) {
             return 'You have already used this coupon the maximum number of times.';
         }
 
