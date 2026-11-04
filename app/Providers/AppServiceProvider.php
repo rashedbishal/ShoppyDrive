@@ -96,7 +96,7 @@ class AppServiceProvider extends ServiceProvider
                 return null;
             }
 
-            if ($request->is('api/*') || ($request->expectsJson() && ! $request->header('X-Inertia'))) {
+            if ($request->is('api/*', 'storage/*') || ($request->expectsJson() && ! $request->header('X-Inertia'))) {
                 return null;
             }
 
