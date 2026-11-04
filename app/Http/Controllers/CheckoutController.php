@@ -353,7 +353,17 @@ class CheckoutController extends Controller
                     return $order;
                 });
             } catch (InsufficientStockException $e) {
-                return back()->withErrors(['items' => $e->getMessage()])->withInput();
+                // `withErrors(['items' => ...])` alone is invisible to the
+                // customer: Checkout.tsx only renders field-level errors for
+                // the named shipping-address inputs, nothing reads an
+                // `items` key. Also flashing it as `error` surfaces it
+                // through the same banner CartChangedException's message
+                // already uses below — `withErrors` stays, since several
+                // existing tests assert `assertSessionHasErrors('items')`.
+                return back()
+                    ->withErrors(['items' => $e->getMessage()])
+                    ->with('error', $e->getMessage())
+                    ->withInput();
             } catch (CouponUnavailableException $e) {
                 return back()->withErrors(['coupon_code' => $e->getMessage()])->withInput();
             } catch (CartChangedException $e) {
