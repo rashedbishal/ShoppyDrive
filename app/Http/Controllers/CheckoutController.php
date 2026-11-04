@@ -322,7 +322,7 @@ class CheckoutController extends Controller
                                 'name' => $product->name,
                                 'sku' => $product->sku,
                                 'price' => $item->price,
-                                'image' => $item->variant?->image ?? $product->images->first()?->path,
+                                'image' => $item->variant?->image ?? $product->primaryImagePath(),
                                 'variant_attributes' => $item->variant?->attributes,
                             ],
                         ]);
@@ -480,7 +480,7 @@ class CheckoutController extends Controller
                     'name' => $product->name,
                     'sku' => $product->sku,
                     'price' => $item->price,
-                    'image' => $item->variant?->image ?? $product->images->first()?->path,
+                    'image' => $item->variant?->image ?? $product->primaryImagePath(),
                     'variant_attributes' => $item->variant?->attributes,
                 ],
             ];

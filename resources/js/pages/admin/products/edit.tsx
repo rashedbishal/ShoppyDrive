@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import { mediaFlagIndex, remapProductMedia } from '@/lib/product-media-form';
 import { maxLength, minValue, required, validate } from '@/lib/validate';
 import { buildMediaTagOptions } from '@/lib/variant-media-tags';
 import { computeMinVariantPrice } from '@/lib/variant-pricing';
@@ -26,6 +27,7 @@ type ProductMedia = {
     path: string;
     type: 'image' | 'video';
     is_primary: boolean;
+    is_hover: boolean;
     variant_id: number | null;
 };
 type ProductVariant = {
@@ -179,6 +181,8 @@ export default function ProductEdit({
             media_tags: product.media.map((m) =>
                 mediaTagFor(m, product.variants),
             ) as (string | null)[],
+            primary_image_index: mediaFlagIndex(product.media, 'is_primary'),
+            hover_image_index: mediaFlagIndex(product.media, 'is_hover'),
             meta_title: product.meta_title ?? '',
             meta_description: product.meta_description ?? '',
         });
@@ -186,11 +190,7 @@ export default function ProductEdit({
     const hasVariants = data.has_color_variant || data.has_size_variant;
 
     const setImages = (files: (File | string)[]) => {
-        setData((prev) => ({
-            ...prev,
-            images: files,
-            media_tags: files.map((_, i) => prev.media_tags[i] ?? null),
-        }));
+        setData((prev) => ({ ...prev, ...remapProductMedia(prev, files) }));
     };
 
     const tagOptions = buildMediaTagOptions(
@@ -622,6 +622,21 @@ export default function ProductEdit({
                                     error={errors.images}
                                     tagOptions={tagOptions}
                                     tags={data.media_tags}
+                                    primaryIndex={data.primary_image_index}
+                                    hoverIndex={data.hover_image_index}
+                                    onPrimaryChange={(index) =>
+                                        setData((prev) => ({
+                                            ...prev,
+                                            primary_image_index: index,
+                                            hover_image_index:
+                                                prev.hover_image_index === index
+                                                    ? null
+                                                    : prev.hover_image_index,
+                                        }))
+                                    }
+                                    onHoverChange={(index) =>
+                                        setData('hover_image_index', index)
+                                    }
                                     onTagChange={(index, tag) =>
                                         setData((prev) => {
                                             const next = [...prev.media_tags];

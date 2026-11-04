@@ -136,6 +136,15 @@ class Product extends Model
         return $this->hasMany(ProductMedia::class)->where('type', 'image');
     }
 
+    /**
+     * The image an admin chose as this product's default, falling back to its
+     * first image for a product with no primary image (e.g. a video is primary).
+     */
+    public function primaryImagePath(): ?string
+    {
+        return ($this->images->firstWhere('is_primary', true) ?? $this->images->first())?->path;
+    }
+
     public function videos(): HasMany
     {
         return $this->hasMany(ProductMedia::class)->where('type', 'video');

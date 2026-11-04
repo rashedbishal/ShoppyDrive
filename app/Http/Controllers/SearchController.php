@@ -134,7 +134,7 @@ class SearchController extends Controller
                     'slug' => $p->slug,
                     'price' => $p->price,
                     'compare_price' => $p->compare_price,
-                    'primary_image_url' => $p->images->first()?->path,
+                    'primary_image_url' => $p->primaryImagePath(),
                     'images' => $p->images->map(fn ($i) => ['path' => $i->path])->values(),
                 ]);
 

@@ -134,6 +134,8 @@ class ProductRequest extends FormRequest
             }],
             'media_tags' => ['nullable', 'array'],
             'media_tags.*' => ['nullable', 'string'],
+            'primary_image_index' => ['nullable', 'integer', 'min:0'],
+            'hover_image_index' => ['nullable', 'integer', 'min:0'],
             'meta_title' => ['nullable', 'string', 'max:255'],
             'meta_description' => ['nullable', 'string', 'max:500'],
         ];

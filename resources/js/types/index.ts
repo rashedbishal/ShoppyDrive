@@ -172,6 +172,7 @@ export interface ProductMedia extends Timestamped {
     alt?: string | null;
     sort_order: number;
     is_primary: boolean;
+    is_hover?: boolean;
 }
 
 export interface ProductVariant extends Timestamped {

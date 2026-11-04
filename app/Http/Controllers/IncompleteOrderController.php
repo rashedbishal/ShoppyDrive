@@ -46,7 +46,7 @@ class IncompleteOrderController extends Controller
                     'price' => $price,
                     'quantity' => $quantity,
                     'subtotal' => $price * $quantity,
-                    'image' => $variant?->image ?? $product->images->first()?->path,
+                    'image' => $variant?->image ?? $product->primaryImagePath(),
                     'variant_attributes' => $variant?->attributes,
                 ];
             })

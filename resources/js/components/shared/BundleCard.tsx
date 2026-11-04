@@ -2,7 +2,7 @@ import { Equal, Minus, Package, Plus, ShoppingBag, Truck } from 'lucide-react';
 import { Fragment, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { Product, ProductVariant } from '@/types';
@@ -37,7 +37,7 @@ function thumbUrl(item: BundleItem): string {
     return (
         item.variant?.image ||
         item.product.primary_image_url ||
-        item.product.images?.[0]?.path ||
+        getPrimaryImagePath(item.product) ||
         '/placeholder.svg'
     );
 }

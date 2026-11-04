@@ -26,12 +26,14 @@ class ProductMedia extends Model
         'alt',
         'sort_order',
         'is_primary',
+        'is_hover',
     ];
 
     protected function casts(): array
     {
         return [
             'is_primary' => 'boolean',
+            'is_hover' => 'boolean',
         ];
     }
 

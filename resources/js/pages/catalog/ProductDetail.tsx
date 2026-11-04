@@ -106,7 +106,12 @@ export default function ProductDetail({
         Record<string, string>
     >({});
     const [quantity, setQuantity] = useState(1);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [currentImageIndex, setCurrentImageIndex] = useState(() =>
+        Math.max(
+            (product.media ?? []).findIndex((m) => m.is_primary),
+            0,
+        ),
+    );
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [recentlyViewed, setRecentlyViewed] = useLocalStorage<Product[]>(
         'recently_viewed',

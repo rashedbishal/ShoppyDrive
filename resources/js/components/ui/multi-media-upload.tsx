@@ -1,4 +1,4 @@
-import { Film, ImagePlus, X } from 'lucide-react';
+import { Film, ImagePlus, MousePointer2, Star, X } from 'lucide-react';
 import React, { useRef, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +22,12 @@ interface MultiMediaUploadProps {
     tagOptions?: { value: string; label: string }[];
     tags?: (string | null)[];
     onTagChange?: (index: number, tag: string | null) => void;
+    /** The item shown as the product's default picture. */
+    primaryIndex?: number | null;
+    /** The image a product card swaps to on hover; null for no swap. */
+    hoverIndex?: number | null;
+    onPrimaryChange?: (index: number) => void;
+    onHoverChange?: (index: number | null) => void;
 }
 
 export function MultiMediaUpload({
@@ -32,6 +38,10 @@ export function MultiMediaUpload({
     tagOptions,
     tags,
     onTagChange,
+    primaryIndex,
+    hoverIndex,
+    onPrimaryChange,
+    onHoverChange,
 }: MultiMediaUploadProps): React.JSX.Element {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [previews, setPreviews] = useState<{ id: string; url: string; item: string | File; type: 'image' | 'video' }[]>([]);
@@ -129,7 +139,7 @@ export function MultiMediaUpload({
         <div className={cn('w-full', className)}>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {previews.map((preview, index) => (
-                    <div key={preview.id} className="space-y-1.5">
+                    <div key={preview.id} className="min-w-0 space-y-1.5">
                     <div
                         className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
                     >
@@ -162,9 +172,14 @@ export function MultiMediaUpload({
                         >
                             <X className="size-3.5" />
                         </button>
-                        {index === 0 && (
+                        {index === (primaryIndex ?? 0) && (
                             <span className="absolute bottom-0 left-0 right-0 bg-black/60 py-1 text-center text-[10px] font-bold text-white backdrop-blur-sm">
-                                PRIMARY
+                                DEFAULT
+                            </span>
+                        )}
+                        {index === hoverIndex && (
+                            <span className="absolute bottom-0 left-0 right-0 bg-black/60 py-1 text-center text-[10px] font-bold text-white backdrop-blur-sm">
+                                HOVER
                             </span>
                         )}
                         {preview.type === 'video' && (
@@ -173,6 +188,44 @@ export function MultiMediaUpload({
                             </div>
                         )}
                     </div>
+                    {onPrimaryChange && preview.type === 'image' && (
+                        <div className="grid gap-1">
+                            <button
+                                type="button"
+                                aria-pressed={index === (primaryIndex ?? 0)}
+                                title="Show this picture first: on cards, in search, in the cart and on the product page"
+                                onClick={() => onPrimaryChange(index)}
+                                className={cn(
+                                    'flex w-full items-center justify-center gap-1 rounded-lg border px-1 py-1 text-[10px] font-semibold transition-colors',
+                                    index === (primaryIndex ?? 0)
+                                        ? 'border-amber-400 bg-amber-50 text-amber-700'
+                                        : 'border-slate-200 text-slate-500 hover:border-slate-300',
+                                )}
+                            >
+                                <Star className="size-3" /> Default
+                            </button>
+                            {index !== (primaryIndex ?? 0) && (
+                                <button
+                                    type="button"
+                                    aria-pressed={index === hoverIndex}
+                                    title="Show this picture when a shopper hovers over the product card. Click again to turn the swap off"
+                                    onClick={() =>
+                                        onHoverChange?.(
+                                            index === hoverIndex ? null : index,
+                                        )
+                                    }
+                                    className={cn(
+                                        'flex w-full items-center justify-center gap-1 rounded-lg border px-1 py-1 text-[10px] font-semibold transition-colors',
+                                        index === hoverIndex
+                                            ? 'border-[#c8102e] bg-[#c8102e]/10 text-[#c8102e]'
+                                            : 'border-slate-200 text-slate-500 hover:border-slate-300',
+                                    )}
+                                >
+                                    <MousePointer2 className="size-3" /> Hover
+                                </button>
+                            )}
+                        </div>
+                    )}
                     {tagOptions && (
                         <select
                             value={tags?.[index] ?? ''}
@@ -206,6 +259,14 @@ export function MultiMediaUpload({
                     <p className="text-[10px] text-slate-400">Images or Videos</p>
                 </div>
             </div>
+
+            {onPrimaryChange && previews.length > 0 && (
+                <p className="mt-2 text-xs text-slate-400">
+                    Default is the main picture shoppers see. Hover is the
+                    picture a product card swaps to when hovered: choose one, or
+                    leave it unset for no swap.
+                </p>
+            )}
 
             <input
                 type="file"

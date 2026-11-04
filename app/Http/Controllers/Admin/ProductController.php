@@ -104,7 +104,9 @@ class ProductController extends Controller
         $images = $data['images'] ?? [];
         $mediaTags = $data['media_tags'] ?? [];
         $variants = $data['variants'] ?? [];
-        unset($data['images'], $data['media_tags'], $data['variants']);
+        $primaryIndex = isset($data['primary_image_index']) ? (int) $data['primary_image_index'] : null;
+        $hoverIndex = isset($data['hover_image_index']) ? (int) $data['hover_image_index'] : null;
+        unset($data['images'], $data['media_tags'], $data['variants'], $data['primary_image_index'], $data['hover_image_index']);
 
         $data['slug'] = Str::slug($data['slug'] ?? $data['name']);
         $data['is_active'] = $data['is_active'] ?? false;
@@ -122,12 +124,12 @@ class ProductController extends Controller
         }
 
         try {
-            $this->saveAtomically($images, function (array $media) use ($data, $variants, $mediaTags): void {
+            $this->saveAtomically($images, function (array $media) use ($data, $variants, $mediaTags, $primaryIndex, $hoverIndex): void {
                 $product = Product::create($data);
 
                 $variantsByKey = $this->syncVariants($product, $variants);
 
-                $this->syncMedia($product, $media, $mediaTags, $variantsByKey);
+                $this->syncMedia($product, $media, $mediaTags, $variantsByKey, $primaryIndex, $hoverIndex);
             });
         } catch (UniqueConstraintViolationException $e) {
             return $this->duplicateSkuResponse($e);
@@ -161,7 +163,9 @@ class ProductController extends Controller
         $mediaTags = $data['media_tags'] ?? [];
         $variants = $data['variants'] ?? [];
         $stockToken = $data['stock_token'];
-        unset($data['images'], $data['media_tags'], $data['variants'], $data['stock_token']);
+        $primaryIndex = isset($data['primary_image_index']) ? (int) $data['primary_image_index'] : null;
+        $hoverIndex = isset($data['hover_image_index']) ? (int) $data['hover_image_index'] : null;
+        unset($data['images'], $data['media_tags'], $data['variants'], $data['stock_token'], $data['primary_image_index'], $data['hover_image_index']);
 
         if (isset($data['slug'])) {
             $data['slug'] = Str::slug($data['slug']);
@@ -189,7 +193,7 @@ class ProductController extends Controller
         $existingMediaTypes = $product->media()->pluck('type', 'path')->all();
 
         try {
-            $this->saveAtomically($images, function (?array $media) use ($product, $data, $variants, $mediaTags, $stockToken): void {
+            $this->saveAtomically($images, function (?array $media) use ($product, $data, $variants, $mediaTags, $primaryIndex, $hoverIndex, $stockToken): void {
                 ProductStockToken::lockAndVerify($product, $stockToken);
 
                 $product->update($data);
@@ -197,7 +201,7 @@ class ProductController extends Controller
                 $variantsByKey = $this->syncVariants($product, $variants);
 
                 if ($media !== null) {
-                    $this->syncMedia($product, $media, $mediaTags, $variantsByKey);
+                    $this->syncMedia($product, $media, $mediaTags, $variantsByKey, $primaryIndex, $hoverIndex);
                 }
             }, $existingMediaTypes);
         } catch (StaleProductStockException $e) {
@@ -490,7 +494,7 @@ class ProductController extends Controller
      * @param  array<int, string|null>  $mediaTags
      * @param  array<string, ProductVariant>  $variantsByKey
      */
-    private function syncMedia(Product $product, array $media, array $mediaTags, array $variantsByKey): void
+    private function syncMedia(Product $product, array $media, array $mediaTags, array $variantsByKey, ?int $primaryIndex = null, ?int $hoverIndex = null): void
     {
         $product->media()->delete();
 
@@ -507,6 +511,12 @@ class ProductController extends Controller
             return;
         }
 
+        // An index that doesn't point at a real item falls back rather than
+        // leaving the product with no primary image. A card swaps to an image,
+        // so the hover pick can't be a video, or the image already showing.
+        $primaryIndex = ($media[$primaryIndex]['path'] ?? null) ? $primaryIndex : array_key_first(array_filter($media, fn (array $item) => (bool) $item['path']));
+        $isHoverPick = fn (int $i, array $item): bool => $i === $hoverIndex && $i !== $primaryIndex && $item['type'] === 'image';
+
         foreach ($media as $i => $item) {
             if (! $item['path']) {
                 continue;
@@ -517,7 +527,8 @@ class ProductController extends Controller
                 'variant_id' => $this->resolveVariantIdFromTag($mediaTags[$i] ?? null, $variantsByKey),
                 'path' => $item['path'],
                 'type' => $item['type'],
-                'is_primary' => $i === 0,
+                'is_primary' => $i === $primaryIndex,
+                'is_hover' => $isHoverPick($i, $item),
                 'sort_order' => $i,
             ]);
         }

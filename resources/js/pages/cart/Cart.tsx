@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { groupCartItems } from '@/lib/cart-bundles';
 import { getXsrfToken } from '@/lib/csrf';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import type { CartItem as CartItemType } from '@/types';
 
@@ -410,7 +410,7 @@ function CartRow({
                         src={
                             item.variant?.image ||
                             item.product.primary_image_url ||
-                            item.product.images[0]?.path
+                            getPrimaryImagePath(item.product)
                         }
                         alt={item.product.name}
                         className="h-full w-full object-cover"

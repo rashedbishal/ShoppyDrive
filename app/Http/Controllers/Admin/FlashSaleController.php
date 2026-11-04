@@ -60,7 +60,7 @@ class FlashSaleController extends Controller
                 'sku' => $product->sku,
                 'price' => (float) $product->price,
                 'available_stock' => $product->available_stock,
-                'image' => $product->images->first()?->path,
+                'image' => $product->primaryImagePath(),
                 'variants' => $product->variants->map(fn (ProductVariant $variant) => [
                     'id' => $variant->id,
                     'sku' => $variant->sku,

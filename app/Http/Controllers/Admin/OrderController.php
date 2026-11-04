@@ -210,7 +210,7 @@ class OrderController extends Controller
                             'name' => $product->name,
                             'sku' => $product->sku,
                             'price' => $price,
-                            'image' => $variant?->image ?? $product->images->first()?->path,
+                            'image' => $variant?->image ?? $product->primaryImagePath(),
                             'variant_attributes' => $variant?->attributes,
                         ],
                     ]);

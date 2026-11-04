@@ -30,7 +30,7 @@ import {
 } from '@/lib/bangladesh-geography';
 import { groupCartItems } from '@/lib/cart-bundles';
 import { getXsrfToken } from '@/lib/csrf';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import type { Address, CartItem, SharedPageProps } from '@/types';
 
@@ -304,7 +304,7 @@ function OrderSummaryRow({ item }: { item: CartItem }): React.JSX.Element {
                     src={
                         item.variant?.image ||
                         item.product.primary_image_url ||
-                        item.product.images[0]?.path
+                        getPrimaryImagePath(item.product)
                     }
                     alt={item.product.name}
                     className="h-full w-full object-cover"

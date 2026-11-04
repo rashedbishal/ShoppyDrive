@@ -78,7 +78,7 @@ class IncompleteOrderController extends Controller
                 'product_name' => $product?->name ?? $item['product_name'],
                 'sku' => $variant?->sku ?? $product?->sku ?? $item['sku'],
                 'price' => $available ? (float) ($variant?->price ?? $product->price) : $item['price'],
-                'image' => $variant?->image ?? $product?->images->first()?->path ?? $item['image'] ?? null,
+                'image' => $variant?->image ?? $product?->primaryImagePath() ?? $item['image'] ?? null,
                 'variant_attributes' => $variant?->attributes ?? $item['variant_attributes'] ?? null,
             ];
         });
@@ -107,7 +107,7 @@ class IncompleteOrderController extends Controller
                 'name' => $product->name,
                 'sku' => $product->sku,
                 'price' => (float) $product->price,
-                'image' => $product->images->first()?->path,
+                'image' => $product->primaryImagePath(),
                 'variants' => $product->variants->map(fn (ProductVariant $variant) => [
                     'id' => $variant->id,
                     'sku' => $variant->sku,
@@ -159,7 +159,7 @@ class IncompleteOrderController extends Controller
                         'name' => $product->name,
                         'sku' => $product->sku,
                         'price' => $price,
-                        'image' => $variant?->image ?? $product->images->first()?->path,
+                        'image' => $variant?->image ?? $product->primaryImagePath(),
                         'variant_attributes' => $variant?->attributes,
                     ],
                 ];

@@ -60,7 +60,9 @@ export function ProductCard({
     const imageSet = Array.isArray(product.images) ? product.images : [];
     const primaryImage =
         imageSet.find((image) => image.is_primary) ?? imageSet[0];
-    const secondaryImage = imageSet.find((image) => !image.is_primary);
+    const secondaryImage = imageSet.find(
+        (image) => image.is_hover && !image.is_primary,
+    );
     const primaryUrl = primaryImage?.path ?? product.primary_image_url ?? '';
     const secondaryUrl = secondaryImage?.path ?? '';
     const productUrl = productRoutes.show.url(product.slug);

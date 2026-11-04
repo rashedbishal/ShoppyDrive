@@ -146,6 +146,15 @@ export function isVideoUrl(url: string): boolean {
     return /\.(mp4|webm|mov|ogg)$/i.test(url);
 }
 
+/** The image an admin chose as the product's default, else its first image. */
+export function getPrimaryImagePath(
+    product: Pick<Product, 'images'>,
+): string | undefined {
+    const images = product.images ?? [];
+
+    return (images.find((image) => image.is_primary) ?? images[0])?.path;
+}
+
 export function getDiscountPercent(
     price: number,
     comparePrice: number,
