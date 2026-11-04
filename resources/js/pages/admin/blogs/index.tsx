@@ -68,7 +68,7 @@ export default function BlogsIndex({ blogs, filters }: Props) {
         }
 
         setDeleting(true);
-        router.delete(route('admin.blogs.destroy', deleteTarget.id), {
+        router.delete(route('admin.blogs.destroy', deleteTarget.slug), {
             onFinish: () => {
                 setDeleting(false);
                 setDeleteTarget(null);
@@ -199,7 +199,7 @@ export default function BlogsIndex({ blogs, filters }: Props) {
                                         <Link
                                             href={route(
                                                 'admin.blogs.edit',
-                                                blog.id,
+                                                blog.slug,
                                             )}
                                             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                                         >

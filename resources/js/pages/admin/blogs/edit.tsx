@@ -71,7 +71,7 @@ export default function BlogEdit({ blog }: Props) {
             return;
         }
 
-        post(route('admin.blogs.update', blog.id), { forceFormData: true });
+        post(route('admin.blogs.update', blog.slug), { forceFormData: true });
     };
 
     return (
