@@ -32,11 +32,26 @@ class HomeController extends Controller
             ->where('ends_at', '>=', now())
             ->first();
 
-        if ($activeFlashSale) {
-            foreach ($activeFlashSale->items as $item) {
-                $item->product->in_flash_sale = true;
-                $item->product->flash_sale_price = $item->sale_price;
-            }
+        // A product can now have more than one active item at once (a
+        // whole-product one, specific variant combinations, or several of
+        // each — see Admin\FlashSaleController), and `items.product` is
+        // the same shared model instance for every item that references
+        // the same product_id (Eloquent's belongsTo eager loading matches
+        // them from one query result), so naively overwriting these on
+        // every iteration left whichever item happened to be last in the
+        // list silently winning, even though its own `sale_price` was no
+        // more "the" price than any other item's. Grouped by product and
+        // resolved to its single lowest active price instead, both here
+        // (for $mapProduct's generic flash fields) and in the deduped
+        // `items` list below (one card per product, not one per item).
+        $itemsByProduct = $activeFlashSale
+            ? $activeFlashSale->items->filter(fn ($item) => $item->product !== null)->groupBy('product_id')
+            : collect();
+
+        foreach ($itemsByProduct as $productItems) {
+            $product = $productItems->first()->product;
+            $product->in_flash_sale = true;
+            $product->flash_sale_price = $productItems->min('sale_price');
         }
 
         $productEagerLoads = ['brand', 'images', 'category', 'variants'];
@@ -170,18 +185,28 @@ class HomeController extends Controller
                 'starts_at' => $activeFlashSale->starts_at,
                 'ends_at' => $activeFlashSale->ends_at,
                 'is_active' => $activeFlashSale->is_active,
-                'items' => $activeFlashSale->items
-                    ->filter(fn ($item) => $item->product !== null)
-                    ->map(fn ($item) => [
-                        'id' => $item->id,
-                        'flash_sale_id' => $item->flash_sale_id,
-                        'product_id' => $item->product_id,
-                        'sale_price' => $item->sale_price,
-                        'stock_limit' => $item->stock_limit,
-                        'sold_count' => $item->sold_count,
-                        'product' => $mapFlashSaleProduct($item->product),
-                    ])
-                    ->values(),
+                // One card per product: the group's cheapest item stands
+                // in for the product-level fields (id, flash_sale_id —
+                // not meaningful once several items are combined, but
+                // every item in a group shares the same flash_sale_id
+                // regardless), sale_price is that lowest price, and
+                // sold_count/stock_limit are combined across every item
+                // for this product so the progress bar reflects the whole
+                // campaign for it, not just whichever one was cheapest.
+                'items' => $itemsByProduct->map(function ($productItems) use ($mapFlashSaleProduct) {
+                    $cheapest = $productItems->sortBy('sale_price')->first();
+                    $stockLimits = $productItems->pluck('stock_limit');
+
+                    return [
+                        'id' => $cheapest->id,
+                        'flash_sale_id' => $cheapest->flash_sale_id,
+                        'product_id' => $cheapest->product_id,
+                        'sale_price' => $cheapest->sale_price,
+                        'stock_limit' => $stockLimits->contains(null) ? null : $stockLimits->sum(),
+                        'sold_count' => $productItems->sum('sold_count'),
+                        'product' => $mapFlashSaleProduct($cheapest->product),
+                    ];
+                })->values(),
             ];
         }
 

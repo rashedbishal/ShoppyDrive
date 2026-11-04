@@ -189,6 +189,9 @@ export interface ProductVariant extends Timestamped {
     size_value_id?: Id | null;
     formatted_price?: string;
     image?: string | null;
+    in_flash_sale?: boolean;
+    flash_sale_price?: number | null;
+    flash_sale_ends_at?: string | null;
 }
 
 export interface Product extends Timestamped, SoftDeletable {
@@ -233,6 +236,7 @@ export interface Product extends Timestamped, SoftDeletable {
     is_wishlisted?: boolean;
     in_flash_sale?: boolean;
     flash_sale_price?: number | null;
+    flash_sale_ends_at?: string | null;
 }
 
 export interface CartItemBundle {

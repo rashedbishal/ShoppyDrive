@@ -156,10 +156,30 @@ export default function ProductDetail({
     const primaryMedia = media.find((m) => m.is_primary) ?? media[0] ?? null;
     const currentMedia = media[currentImageIndex] ?? primaryMedia ?? null;
 
-    const currentPrice =
-        product.in_flash_sale && product.flash_sale_price
-            ? product.flash_sale_price
-            : selectedVariant?.price || product.price;
+    // A specific variant's own flash-sale item (set via Admin ▸ Flash Sales,
+    // targeting that exact combination) always wins over a whole-product
+    // one, matching how ProductController::show() resolves it server-side
+    // (FlashSaleItem::findActiveFor() prefers the more specific match) —
+    // switching variants here can change which flash price (or whether one
+    // applies at all) is currently active.
+    const activeFlashSale =
+        selectedVariant?.in_flash_sale &&
+        typeof selectedVariant.flash_sale_price === 'number'
+            ? {
+                  price: selectedVariant.flash_sale_price,
+                  endsAt: selectedVariant.flash_sale_ends_at ?? null,
+              }
+            : product.in_flash_sale &&
+                typeof product.flash_sale_price === 'number'
+              ? {
+                    price: product.flash_sale_price,
+                    endsAt: product.flash_sale_ends_at ?? null,
+                }
+              : null;
+
+    const currentPrice = activeFlashSale
+        ? activeFlashSale.price
+        : selectedVariant?.price || product.price;
 
     const comparePrice = selectedVariant
         ? selectedVariant.compare_price
@@ -386,12 +406,66 @@ export default function ProductDetail({
         handleBuyNow();
     };
 
+    // `navigator.clipboard` only exists in a secure context (HTTPS, or
+    // localhost) — it's `undefined` over plain HTTP on any other host,
+    // which made the button throw immediately and silently do nothing
+    // (the toast below never ran). This falls back to the old
+    // select-and-execCommand trick when the modern API isn't there, and
+    // only ever reports success once something has actually copied.
+    const copyTextToClipboard = async (text: string): Promise<boolean> => {
+        if (navigator.clipboard?.writeText) {
+            try {
+                await navigator.clipboard.writeText(text);
+
+                return true;
+            } catch {
+                // Permission denied or similar — fall through to the
+                // legacy fallback below instead of giving up.
+            }
+        }
+
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        // Off-screen rather than hidden — a hidden element can't be
+        // selected, which execCommand('copy') needs.
+        textarea.style.position = 'fixed';
+        textarea.style.top = '-9999px';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        let succeeded = false;
+
+        try {
+            succeeded = document.execCommand('copy');
+        } catch {
+            succeeded = false;
+        }
+
+        document.body.removeChild(textarea);
+
+        return succeeded;
+    };
+
     const shareProduct = (platform: 'facebook' | 'twitter' | 'copy') => {
         const url = window.location.href;
 
         if (platform === 'copy') {
-            navigator.clipboard.writeText(url);
-            addToast({ type: 'info', message: 'Link copied to clipboard!' });
+            copyTextToClipboard(url).then((succeeded) => {
+                addToast(
+                    succeeded
+                        ? {
+                              type: 'info',
+                              message: 'Link copied to clipboard!',
+                          }
+                        : {
+                              type: 'error',
+                              message:
+                                  "Couldn't copy the link — please copy it from the address bar instead.",
+                          },
+                );
+            });
         } else if (platform === 'facebook') {
             window.open(
                 `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
@@ -545,17 +619,16 @@ export default function ProductDetail({
                                         </Badge>
                                     )}
 
-                                    {product.in_flash_sale && (
+                                    {activeFlashSale?.endsAt && (
                                         <div className="absolute top-6 right-6 z-10">
                                             <div className="rounded-2xl border border-white/20 bg-black/70 p-3 backdrop-blur-md">
                                                 <p className="mb-2 text-[10px] font-bold tracking-widest text-amber-400 uppercase">
                                                     ⚡ Flash Sale Ends In
                                                 </p>
                                                 <FlashSaleCountdown
-                                                    ends_at={new Date(
-                                                        // eslint-disable-next-line react-hooks/purity -- existing placeholder countdown; the page has no real flash-sale end time yet
-                                                        Date.now() + 86400000,
-                                                    ).toISOString()}
+                                                    ends_at={
+                                                        activeFlashSale.endsAt
+                                                    }
                                                 />
                                             </div>
                                         </div>
@@ -876,48 +949,6 @@ export default function ProductDetail({
                         </div>
                     </div>
 
-                    {/* Product Specifications */}
-                    {product.specifications &&
-                        product.specifications.length > 0 && (
-                            <div className="mt-10 overflow-hidden rounded-3xl border border-[var(--color-border)] bg-white md:mt-16">
-                                <div className="bg-[var(--color-surface-alt)] px-6 py-4">
-                                    <h3 className="text-base font-bold text-[var(--color-text-primary)] sm:text-lg">
-                                        Product specifications
-                                    </h3>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2">
-                                    {product.specifications.map(
-                                        (spec, index) => {
-                                            const total =
-                                                product.specifications!.length;
-                                            // sm+ is a 2-column grid: the last
-                                            // row is just the final item when
-                                            // the count is odd, or the final
-                                            // two when it's even.
-                                            const isLastRow =
-                                                index >=
-                                                total -
-                                                    (total % 2 === 0 ? 2 : 1);
-
-                                            return (
-                                                <div
-                                                    key={index}
-                                                    className={`flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-6 py-3 last:border-b-0 sm:odd:border-r ${isLastRow ? 'sm:border-b-0' : ''}`}
-                                                >
-                                                    <span className="text-sm text-[var(--color-text-muted)]">
-                                                        {spec.key}
-                                                    </span>
-                                                    <span className="text-right text-sm font-bold text-[var(--color-text-primary)]">
-                                                        {spec.value}
-                                                    </span>
-                                                </div>
-                                            );
-                                        },
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
                     {/* Tabs Section */}
                     <div className="mt-10 rounded-3xl border border-[var(--color-border)] bg-white p-4 shadow-sm sm:p-6 md:mt-16 md:p-10">
                         <Tabs defaultValue="description" className="w-full">
@@ -965,6 +996,49 @@ export default function ProductDetail({
                                             '<p>No description available.</p>',
                                     }}
                                 />
+
+                                {product.specifications &&
+                                    product.specifications.length > 0 && (
+                                        <div className="mt-8 border-t border-[var(--color-border)] pt-8">
+                                            <h4 className="mb-4 text-base font-bold text-[var(--color-text-primary)] sm:text-lg">
+                                                Product specifications
+                                            </h4>
+                                            <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-[var(--color-border)] sm:grid-cols-2">
+                                                {product.specifications.map(
+                                                    (spec, index) => {
+                                                        const total =
+                                                            product
+                                                                .specifications!
+                                                                .length;
+                                                        // sm+ is a 2-column grid: the last
+                                                        // row is just the final item when
+                                                        // the count is odd, or the final
+                                                        // two when it's even.
+                                                        const isLastRow =
+                                                            index >=
+                                                            total -
+                                                                (total % 2 === 0
+                                                                    ? 2
+                                                                    : 1);
+
+                                                        return (
+                                                            <div
+                                                                key={index}
+                                                                className={`flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-4 py-2.5 last:border-b-0 sm:odd:border-r ${isLastRow ? 'sm:border-b-0' : ''}`}
+                                                            >
+                                                                <span className="text-sm text-[var(--color-text-secondary)]">
+                                                                    {spec.key}
+                                                                </span>
+                                                                <span className="text-right text-sm font-bold text-[var(--color-text-primary)]">
+                                                                    {spec.value}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    },
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                             </TabsContent>
 
                             <TabsContent value="reviews" className="mt-0">

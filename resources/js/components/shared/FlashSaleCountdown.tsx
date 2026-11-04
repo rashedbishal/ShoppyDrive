@@ -12,30 +12,41 @@ interface TimeLeft {
     seconds: number;
 }
 
+function calculateTimeLeft(ends_at: string): TimeLeft | null {
+    const difference = +new Date(ends_at) - +new Date();
+
+    if (difference <= 0) {
+        return null;
+    }
+
+    return {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+    };
+}
+
 export function FlashSaleCountdown({
     ends_at,
     className,
 }: FlashSaleCountdownProps): React.JSX.Element {
-    const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
+    // Computed eagerly (not starting at null) so the very first render —
+    // including the server-rendered HTML, since this page is SSR'd — shows
+    // the real time left immediately. Starting at null and only
+    // calculating inside an effect meant every page load visibly flashed
+    // "SALE ENDED" first, since that's what null renders as below, until
+    // the effect ran a moment later and corrected it.
+    const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(() =>
+        calculateTimeLeft(ends_at),
+    );
 
     useEffect(() => {
-        const calculateTimeLeft = () => {
-            const difference = +new Date(ends_at) - +new Date();
-
-            if (difference > 0) {
-                setTimeLeft({
-                    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-                    hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-                    minutes: Math.floor((difference / 1000 / 60) % 60),
-                    seconds: Math.floor((difference / 1000) % 60),
-                });
-            } else {
-                setTimeLeft(null);
-            }
-        };
-
-        calculateTimeLeft();
-        const timer = setInterval(calculateTimeLeft, 1000);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- re-syncs if `ends_at` itself changes after mount, not a duplicate of the lazy initial state above
+        setTimeLeft(calculateTimeLeft(ends_at));
+        const timer = setInterval(() => {
+            setTimeLeft(calculateTimeLeft(ends_at));
+        }, 1000);
 
         return () => clearInterval(timer);
     }, [ends_at]);

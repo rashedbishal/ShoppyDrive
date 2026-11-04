@@ -101,13 +101,30 @@ function getItemPrice(
         return fallback;
     }
 
+    // Mirrors FlashSaleItem::findActiveFor()'s precedence (and
+    // ProductController::show()'s per-variant resolution): a flash-sale
+    // item targeting this exact variant wins over a whole-product one,
+    // which in turn wins over either's own regular catalog price. Checking
+    // only the product-level flash price used to always win here whenever
+    // a variant was selected, silently ignoring a variant-specific sale
+    // (or picking up the product-wide one even once a more specific
+    // variant override existed).
+    if (
+        variant?.in_flash_sale &&
+        typeof variant.flash_sale_price === 'number'
+    ) {
+        return variant.flash_sale_price;
+    }
+
+    if (product.in_flash_sale && typeof product.flash_sale_price === 'number') {
+        return product.flash_sale_price;
+    }
+
     if (typeof variant?.price === 'number') {
         return variant.price;
     }
 
-    return product.in_flash_sale && typeof product.flash_sale_price === 'number'
-        ? product.flash_sale_price
-        : product.price;
+    return product.price;
 }
 
 /**

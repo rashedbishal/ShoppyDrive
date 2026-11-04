@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\FlashSaleItem;
 use App\Models\Product;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -89,8 +90,44 @@ class ProductController extends Controller
             ->limit(8)
             ->get();
 
+        // The single source of truth for "is this on flash sale" (same
+        // method CartManager::resolvePrice() and InventoryService use) —
+        // without this, the detail page always showed the regular price,
+        // and Add to Cart/Buy Now priced from it. `findActiveFor()` already
+        // eager-loads `flashSale`, so this is the same campaign row
+        // HomeController's countdown reads `ends_at` from — not a second,
+        // independently-guessed end time.
+        //
+        // The admin can target a whole product OR specific variant
+        // combinations (see Admin\FlashSaleController), so each variant
+        // gets its own resolution too: `findActiveFor($product->id,
+        // $variant->id)` prefers that variant's own item, and — since its
+        // query matches a null `variant_id` OR this one — falls back to the
+        // product-wide item when no more specific one exists, so a plain
+        // whole-product sale still correctly applies to every variant.
+        $flashSaleItem = FlashSaleItem::findActiveFor($product->id, null);
+
+        $variants = $product->variants
+            ->map(function ($variant) use ($product) {
+                $variantFlashItem = FlashSaleItem::findActiveFor($product->id, $variant->id);
+
+                return array_merge($variant->toArray(), [
+                    'in_flash_sale' => $variantFlashItem !== null,
+                    'flash_sale_price' => $variantFlashItem?->sale_price,
+                    'flash_sale_ends_at' => $variantFlashItem?->flashSale?->ends_at,
+                ]);
+            })
+            ->values();
+
         return Inertia::render('catalog/ProductDetail', [
-            'product' => array_merge($product->toArray(), ['attributes' => $attributes, 'images' => ($product->images ?? collect())->map(fn ($img) => array_merge($img->toArray(), ['is_primary' => $img->is_primary]))->values()->toArray()]),
+            'product' => array_merge($product->toArray(), [
+                'attributes' => $attributes,
+                'images' => ($product->images ?? collect())->map(fn ($img) => array_merge($img->toArray(), ['is_primary' => $img->is_primary]))->values()->toArray(),
+                'variants' => $variants,
+                'in_flash_sale' => $flashSaleItem !== null,
+                'flash_sale_price' => $flashSaleItem?->sale_price,
+                'flash_sale_ends_at' => $flashSaleItem?->flashSale?->ends_at,
+            ]),
             'relatedProducts' => $relatedProducts,
             'reviews' => $product->reviews,
             'ratingBreakdown' => $ratingBreakdown,

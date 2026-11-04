@@ -10,6 +10,8 @@ use App\Http\Requests\Admin\FlashSaleRequest;
 use App\Models\FlashSale;
 use App\Models\FlashSaleItem;
 use App\Models\Product;
+use App\Models\ProductVariant;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -33,9 +35,42 @@ class FlashSaleController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('admin/flash-sales/create', [
-            'products' => Product::active()->orderBy('name')->get(['id', 'name', 'price', 'sku']),
-        ]);
+        return Inertia::render('admin/flash-sales/create');
+    }
+
+    /**
+     * Same response shape as Admin\IncompleteOrderController::searchProducts()
+     * — each product's variants (with their own stock) embedded directly —
+     * so the create/edit form can offer "whole product" or a specific
+     * variant combination when a product has any.
+     */
+    public function searchProducts(Request $request): JsonResponse
+    {
+        $query = $request->string('q')->toString();
+
+        $products = Product::with(['images', 'variants'])
+            ->active()
+            ->when($query !== '', fn ($q) => $q->where('name', 'like', "%{$query}%"))
+            ->orderBy('name')
+            ->limit(20)
+            ->get()
+            ->map(fn (Product $product) => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'price' => (float) $product->price,
+                'available_stock' => $product->available_stock,
+                'image' => $product->images->first()?->path,
+                'variants' => $product->variants->map(fn (ProductVariant $variant) => [
+                    'id' => $variant->id,
+                    'sku' => $variant->sku,
+                    'price' => (float) $variant->price,
+                    'stock_quantity' => $variant->stock_quantity,
+                    'attributes' => $variant->attributes,
+                ])->values(),
+            ]);
+
+        return response()->json($products);
     }
 
     public function store(FlashSaleRequest $request): RedirectResponse
@@ -51,6 +86,7 @@ class FlashSaleController extends Controller
             FlashSaleItem::create([
                 'flash_sale_id' => $flashSale->id,
                 'product_id' => $item['product_id'],
+                'variant_id' => $item['variant_id'] ?? null,
                 'sale_price' => $item['sale_price'],
                 'stock_limit' => $item['stock_limit'],
             ]);
@@ -61,9 +97,19 @@ class FlashSaleController extends Controller
 
     public function edit(FlashSale $flashSale): Response
     {
+        $flashSale->load([
+            // stock_quantity: the "max" hint for a whole-product (no
+            // variant_id) item — kept in sync with the live variant sum by
+            // the admin product form on save (see
+            // Product::getAvailableStockAttribute()'s own docblock), so
+            // it's accurate here without also eager-loading every
+            // variant just for this one display hint.
+            'items.product:id,name,price,sku,stock_quantity',
+            'items.variant:id,product_id,sku,price,stock_quantity,attributes',
+        ]);
+
         return Inertia::render('admin/flash-sales/edit', [
-            'flashSale' => $flashSale->load(['items.product:id,name,price,sku']),
-            'products' => Product::active()->orderBy('name')->get(['id', 'name', 'price', 'sku']),
+            'flashSale' => $flashSale,
         ]);
     }
 
@@ -82,6 +128,7 @@ class FlashSaleController extends Controller
                 FlashSaleItem::create([
                     'flash_sale_id' => $flashSale->id,
                     'product_id' => $item['product_id'],
+                    'variant_id' => $item['variant_id'] ?? null,
                     'sale_price' => $item['sale_price'],
                     'stock_limit' => $item['stock_limit'],
                 ]);
