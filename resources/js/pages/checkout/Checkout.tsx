@@ -29,6 +29,7 @@ import {
     DISTRICT_OPTIONS,
 } from '@/lib/bangladesh-geography';
 import { groupCartItems } from '@/lib/cart-bundles';
+import { getCouponEligibleSubtotal, toCouponPreviewItems } from '@/lib/coupon';
 import { getXsrfToken } from '@/lib/csrf';
 import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
@@ -565,6 +566,7 @@ export default function Checkout({
         code: string;
         type: string;
         value: number;
+        eligible_keys?: string[] | null;
     } | null>(null);
     const [couponError, setCouponError] = useState('');
     const [applyingCoupon, setApplyingCoupon] = useState(false);
@@ -592,6 +594,7 @@ export default function Checkout({
                     code,
                     subtotal,
                     phone: form.data.phone || undefined,
+                    items: toCouponPreviewItems(items),
                 }),
             });
             const data = await res.json();
@@ -679,11 +682,19 @@ export default function Checkout({
             return 0;
         }
 
+        const eligibleSubtotal = getCouponEligibleSubtotal(
+            appliedCoupon,
+            items,
+        );
+
         if (appliedCoupon.type === 'percent') {
-            return Math.min((subtotal * appliedCoupon.value) / 100, subtotal);
+            return Math.min(
+                (eligibleSubtotal * appliedCoupon.value) / 100,
+                eligibleSubtotal,
+            );
         }
 
-        return Math.min(appliedCoupon.value, subtotal);
+        return Math.min(appliedCoupon.value, eligibleSubtotal);
     })();
 
     // Discount priority mirrors the backend exactly: coupon > points > the

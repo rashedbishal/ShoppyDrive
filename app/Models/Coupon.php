@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Concerns\Auditable;
+use App\Enums\CouponAppliesTo;
 use App\Enums\CouponType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use RuntimeException;
@@ -16,11 +18,14 @@ class Coupon extends Model
 {
     use Auditable, HasFactory, SoftDeletes;
 
+    public const NOT_APPLICABLE_MESSAGE = "This coupon doesn't apply to the items in your cart.";
+
     protected $fillable = [
         'code',
         'name',
         'type',
         'value',
+        'applies_to',
         'min_order_amount',
         'max_uses',
         'used_count',
@@ -34,6 +39,7 @@ class Coupon extends Model
     {
         return [
             'type' => CouponType::class,
+            'applies_to' => CouponAppliesTo::class,
             'value' => 'float',
             'min_order_amount' => 'float',
             'starts_at' => 'datetime',
@@ -73,6 +79,74 @@ class Coupon extends Model
     public function uses(): HasMany
     {
         return $this->hasMany(CouponUse::class);
+    }
+
+    public function productTargets(): HasMany
+    {
+        return $this->hasMany(CouponProductTarget::class);
+    }
+
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'coupon_category');
+    }
+
+    public function subCategories(): BelongsToMany
+    {
+        return $this->belongsToMany(SubCategory::class, 'coupon_sub_category');
+    }
+
+    public function appliesToEverything(): bool
+    {
+        return $this->applies_to !== CouponAppliesTo::SELECTED;
+    }
+
+    /**
+     * Whether this coupon covers a cart line. A line qualifies by matching any
+     * one target, so a product both listed and in a listed category still gets
+     * one discount.
+     */
+    public function appliesToProduct(Product $product, ?int $variantId): bool
+    {
+        if ($this->appliesToEverything()) {
+            return true;
+        }
+
+        return $this->categories->contains('id', $product->category_id)
+            || $this->subCategories->contains('id', $product->sub_category_id)
+            || $this->productTargets->contains(fn (CouponProductTarget $target): bool => (int) $target->product_id === $product->id
+                && ($target->variant_id === null || (int) $target->variant_id === $variantId));
+    }
+
+    /**
+     * The lines this coupon covers, out of a cart's or checkout's lines.
+     *
+     * @param  array<int, array{product_id: int, variant_id: int|null, subtotal: float}>  $lines
+     * @return array<int, array{product_id: int, variant_id: int|null, subtotal: float}>
+     */
+    public function eligibleLines(array $lines): array
+    {
+        if ($this->appliesToEverything()) {
+            return $lines;
+        }
+
+        $products = Product::whereIn('id', array_column($lines, 'product_id'))->get(['id', 'category_id', 'sub_category_id'])->keyBy('id');
+
+        return array_values(array_filter($lines, function (array $line) use ($products): bool {
+            $product = $products->get($line['product_id']);
+
+            return $product !== null && $this->appliesToProduct($product, $line['variant_id']);
+        }));
+    }
+
+    /**
+     * The amount this coupon's discount and minimum order are measured against.
+     */
+    public function discountFor(float $eligibleSubtotal): float
+    {
+        return round($this->type->value === 'percent'
+            ? min($eligibleSubtotal, $eligibleSubtotal * $this->value / 100)
+            : min($eligibleSubtotal, $this->value), 2);
     }
 
     /**

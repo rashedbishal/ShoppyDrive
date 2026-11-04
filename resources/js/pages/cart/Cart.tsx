@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { groupCartItems } from '@/lib/cart-bundles';
+import { toCouponPreviewItems } from '@/lib/coupon';
 import { getXsrfToken } from '@/lib/csrf';
 import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
@@ -60,6 +61,7 @@ export default function Cart(): React.JSX.Element {
                 body: JSON.stringify({
                     code: couponCode,
                     subtotal: getSubtotal(),
+                    items: toCouponPreviewItems(items),
                 }),
             });
             const data = await response.json();

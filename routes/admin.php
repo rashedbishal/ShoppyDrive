@@ -104,6 +104,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::delete('brands/bulk-delete', [BrandController::class, 'destroyMany'])->name('brands.destroyMany')->middleware(AdminSections::middleware('brands', 'delete'));
     $guardResource(Route::resource('brands', BrandController::class), 'brands');
 
+    Route::get('coupons/products/search', [CouponController::class, 'searchProducts'])->name('coupons.products.search')->middleware(AdminSections::middleware('coupons', 'view'));
     Route::patch('coupons/bulk-status', [CouponController::class, 'updateStatusMany'])->name('coupons.updateStatusMany')->middleware(AdminSections::middleware('coupons', 'update'));
     Route::delete('coupons/bulk-delete', [CouponController::class, 'destroyMany'])->name('coupons.destroyMany')->middleware(AdminSections::middleware('coupons', 'delete'));
     $guardResource(Route::resource('coupons', CouponController::class), 'coupons');

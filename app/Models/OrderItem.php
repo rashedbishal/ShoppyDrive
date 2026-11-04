@@ -18,6 +18,7 @@ class OrderItem extends Model
         'variant_id',
         'flash_sale_item_id',
         'bundle_id',
+        'coupon_applied',
         'product_name',
         'sku',
         'price',
@@ -30,6 +31,7 @@ class OrderItem extends Model
     protected function casts(): array
     {
         return [
+            'coupon_applied' => 'boolean',
             'price' => 'float',
             'subtotal' => 'float',
             'product_snapshot' => 'array',

@@ -60,12 +60,14 @@ class RefundCalculator
 
     /**
      * Net product value per order item (discount allocated by largest remainder).
+     * When a selected-items coupon marked the lines it covered, only those
+     * lines carry the discount; any other order shares it across every line.
      *
      * @return array<int, int> order_item_id => net poisha
      */
     public function lineNetPaisa(Order $order): array
     {
-        $items = OrderItem::where('order_id', $order->id)->orderBy('id')->get(['id', 'subtotal']);
+        $items = OrderItem::where('order_id', $order->id)->orderBy('id')->get(['id', 'subtotal', 'coupon_applied']);
         $gross = $items->mapWithKeys(fn (OrderItem $item): array => [$item->id => max(0, self::toPaisa($item->subtotal))])->all();
         $totalGross = array_sum($gross);
 
@@ -73,14 +75,23 @@ class RefundCalculator
             return array_map(fn (): int => 0, $gross);
         }
 
-        $discount = min(max(0, self::toPaisa($order->discount)), $totalGross);
-        $shares = [];
+        $coveredIds = $items->where('coupon_applied', true)->pluck('id')->all();
+        $discounted = $coveredIds === [] ? $gross : array_intersect_key($gross, array_flip($coveredIds));
+        $discountedGross = array_sum($discounted);
+
+        if ($discountedGross === 0) {
+            $discounted = $gross;
+            $discountedGross = $totalGross;
+        }
+
+        $discount = min(max(0, self::toPaisa($order->discount)), $discountedGross);
+        $shares = array_map(fn (): int => 0, $gross);
         $remainders = [];
 
-        foreach ($gross as $id => $value) {
+        foreach ($discounted as $id => $value) {
             $exact = $discount * $value;
-            $shares[$id] = intdiv($exact, $totalGross);
-            $remainders[$id] = $exact % $totalGross;
+            $shares[$id] = intdiv($exact, $discountedGross);
+            $remainders[$id] = $exact % $discountedGross;
         }
 
         $leftover = $discount - array_sum($shares);

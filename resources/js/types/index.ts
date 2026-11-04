@@ -285,6 +285,8 @@ export interface Coupon {
     type: CouponType;
     value: number;
     discount_amount?: number;
+    /** The cart lines a selected-items coupon covers; absent means every line. */
+    eligible_keys?: string[] | null;
 }
 
 export interface Cart {

@@ -58,6 +58,10 @@ Route::post('/coupon/validate', function (Request $request) {
         'code' => ['required', 'string'],
         'subtotal' => ['required', 'numeric', 'min:0'],
         'phone' => ['nullable', 'string'],
+        'items' => ['nullable', 'array'],
+        'items.*.product_id' => ['required', 'integer'],
+        'items.*.variant_id' => ['nullable', 'integer'],
+        'items.*.subtotal' => ['required', 'numeric', 'min:0'],
     ]);
 
     $coupon = Coupon::where('code', strtoupper(trim($request->code)))->first();
@@ -99,13 +103,36 @@ Route::post('/coupon/validate', function (Request $request) {
     // covers it; eligibilityError()'s own per-user message is reserved
     // for the logged-in branch, which doesn't carry the same enumeration
     // risk since a request can only ever check its own account's status.
-    $error = $coupon->eligibilityError((float) $request->subtotal, $userId);
+    if ($coupon->appliesToEverything()) {
+        $error = $coupon->eligibilityError((float) $request->subtotal, $userId);
+
+        return $error !== null
+            ? response()->json(['error' => $error], 422)
+            : response()->json(['coupon' => $coupon]);
+    }
+
+    // A selected-items coupon is measured against what it covers. This is
+    // only a preview: checkout recalculates from the real cart.
+    $eligibleLines = $coupon->eligibleLines(array_map(fn (array $item): array => [
+        'product_id' => (int) $item['product_id'],
+        'variant_id' => isset($item['variant_id']) ? (int) $item['variant_id'] : null,
+        'subtotal' => (float) $item['subtotal'],
+    ], $request->input('items', [])));
+
+    if ($eligibleLines === []) {
+        return response()->json(['error' => Coupon::NOT_APPLICABLE_MESSAGE], 422);
+    }
+
+    $error = $coupon->eligibilityError((float) array_sum(array_column($eligibleLines, 'subtotal')), $userId);
 
     if ($error !== null) {
         return response()->json(['error' => $error], 422);
     }
 
-    return response()->json(['coupon' => $coupon]);
+    return response()->json(['coupon' => [
+        ...$coupon->withoutRelations()->toArray(),
+        'eligible_keys' => array_map(fn (array $line): string => $line['product_id'].':'.($line['variant_id'] ?? ''), $eligibleLines),
+    ]]);
 })->middleware('throttle:coupon-check')->name('coupon.validate');
 
 Route::get('/wishlist', [WishlistController::class, 'entry'])->name('wishlist.index');

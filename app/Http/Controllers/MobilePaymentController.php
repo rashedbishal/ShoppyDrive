@@ -220,6 +220,7 @@ class MobilePaymentController extends Controller
                         'product_id' => $item['product_id'],
                         'variant_id' => $item['variant_id'],
                         'flash_sale_item_id' => $flashSaleItemId,
+                        'coupon_applied' => $item['coupon_applied'] ?? null,
                         // FSA-12: the snapshot's server-reconciled bundle
                         // tag (CartManager::revalidatePrices()), as COD and
                         // OrderService already persist it.

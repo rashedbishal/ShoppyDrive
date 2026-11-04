@@ -1,4 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { CouponTargetsCard } from '@/components/admin/CouponTargetsCard';
+import type { CouponTargetProduct } from '@/components/admin/CouponTargetsCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
@@ -25,7 +27,15 @@ function Field({
     );
 }
 
-export default function CouponCreate() {
+type TargetOptions = {
+    categories: { id: number; name: string }[];
+    subCategories: { id: number; name: string; category_id: number }[];
+};
+
+export default function CouponCreate({
+    categories,
+    subCategories,
+}: TargetOptions) {
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
             code: '',
@@ -38,6 +48,10 @@ export default function CouponCreate() {
             starts_at: '',
             expires_at: '',
             is_active: true,
+            applies_to: 'all' as 'all' | 'selected',
+            target_category_ids: [] as number[],
+            target_sub_category_ids: [] as number[],
+            target_products: [] as CouponTargetProduct[],
         });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -52,6 +66,16 @@ export default function CouponCreate() {
             max_uses: [minValue(1)],
             per_user_limit: [minValue(1)],
         });
+
+        if (
+            data.applies_to === 'selected' &&
+            data.target_category_ids.length === 0 &&
+            data.target_sub_category_ids.length === 0 &&
+            data.target_products.length === 0
+        ) {
+            clientErrors.applies_to =
+                'Select at least one category, subcategory or product.';
+        }
 
         if (
             data.starts_at &&
@@ -262,6 +286,15 @@ export default function CouponCreate() {
                                 Active
                             </label>
 
+                            <CouponTargetsCard
+                                value={data}
+                                onChange={(patch) =>
+                                    setData((prev) => ({ ...prev, ...patch }))
+                                }
+                                categories={categories}
+                                subCategories={subCategories}
+                                errors={errors as Record<string, string>}
+                            />
                             <div className="flex gap-2 pt-2">
                                 <Button
                                     type="submit"

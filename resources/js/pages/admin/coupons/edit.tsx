@@ -1,4 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { CouponTargetsCard } from '@/components/admin/CouponTargetsCard';
+import type { CouponTargetProduct } from '@/components/admin/CouponTargetsCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
@@ -17,10 +19,19 @@ type Coupon = {
     /** Bangladesh time, formatted for the date inputs. */
     starts_at_input: string;
     expires_at_input: string;
+    applies_to: 'all' | 'selected';
+    target_category_ids: number[];
+    target_sub_category_ids: number[];
+    target_products: CouponTargetProduct[];
     is_active: boolean;
 };
 
-type Props = { coupon: Coupon };
+type TargetOptions = {
+    categories: { id: number; name: string }[];
+    subCategories: { id: number; name: string; category_id: number }[];
+};
+
+type Props = TargetOptions & { coupon: Coupon };
 
 function Field({
     label,
@@ -42,7 +53,11 @@ function Field({
     );
 }
 
-export default function CouponEdit({ coupon }: Props) {
+export default function CouponEdit({
+    coupon,
+    categories,
+    subCategories,
+}: Props) {
     const { data, setData, put, processing, errors, setError, clearErrors } =
         useForm({
             code: coupon.code,
@@ -59,6 +74,10 @@ export default function CouponEdit({ coupon }: Props) {
             starts_at: coupon.starts_at_input,
             expires_at: coupon.expires_at_input,
             is_active: coupon.is_active,
+            applies_to: coupon.applies_to,
+            target_category_ids: coupon.target_category_ids,
+            target_sub_category_ids: coupon.target_sub_category_ids,
+            target_products: coupon.target_products,
         });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -73,6 +92,16 @@ export default function CouponEdit({ coupon }: Props) {
             max_uses: [minValue(1)],
             per_user_limit: [minValue(1)],
         });
+
+        if (
+            data.applies_to === 'selected' &&
+            data.target_category_ids.length === 0 &&
+            data.target_sub_category_ids.length === 0 &&
+            data.target_products.length === 0
+        ) {
+            clientErrors.applies_to =
+                'Select at least one category, subcategory or product.';
+        }
 
         if (
             data.starts_at &&
@@ -282,6 +311,15 @@ export default function CouponEdit({ coupon }: Props) {
                                 Active
                             </label>
 
+                            <CouponTargetsCard
+                                value={data}
+                                onChange={(patch) =>
+                                    setData((prev) => ({ ...prev, ...patch }))
+                                }
+                                categories={categories}
+                                subCategories={subCategories}
+                                errors={errors as Record<string, string>}
+                            />
                             <div className="flex gap-2 pt-2">
                                 <Button
                                     type="submit"

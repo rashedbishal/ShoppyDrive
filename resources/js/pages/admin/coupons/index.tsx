@@ -21,6 +21,7 @@ type Coupon = {
     type: 'percent' | 'fixed';
     value: number;
     used_count: number;
+    applies_to: 'all' | 'selected';
     max_uses: number | null;
     is_active: boolean;
     expires_at: string | null;
@@ -194,6 +195,9 @@ export default function CouponsIndex({ coupons, filters }: Props) {
                                                 : `৳${coupon.value.toLocaleString()}`}
                                         </p>
                                         <p className="text-xs text-slate-400">
+                                            {coupon.applies_to === 'selected'
+                                                ? 'Selected items · '
+                                                : ''}
                                             {coupon.used_count} used
                                             {coupon.max_uses
                                                 ? ` / ${coupon.max_uses}`

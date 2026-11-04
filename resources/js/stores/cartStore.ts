@@ -4,6 +4,7 @@ import { CART_ITEM_ADDED_EVENT } from '@/lib/add-to-cart-feedback';
 import type { CartItemAddedDetail } from '@/lib/add-to-cart-feedback';
 import { autoAssembleBundles } from '@/lib/cart-bundles';
 import { STORAGE_KEYS } from '@/lib/constants';
+import { getCouponEligibleSubtotal } from '@/lib/coupon';
 import { formatCurrency } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
 import type {
@@ -409,7 +410,12 @@ export const useCartStore = create<CartStoreState>()(
                 );
             },
             getDiscount: () => {
-                return getCouponDiscount(get().coupon, get().getSubtotal());
+                const coupon = get().coupon;
+
+                return getCouponDiscount(
+                    coupon,
+                    coupon ? getCouponEligibleSubtotal(coupon, get().items) : 0,
+                );
             },
             getTotal: () => {
                 const subtotal = get().getSubtotal();

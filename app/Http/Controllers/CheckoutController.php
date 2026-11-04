@@ -11,6 +11,7 @@ use App\Exceptions\InsufficientStockException;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\Address;
 use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Coupon;
 use App\Models\IncompleteOrder;
 use App\Models\Order;
@@ -192,7 +193,7 @@ class CheckoutController extends Controller
         $shippingCost = $this->shippingCalculator->forCartWithBundles($shippingAddress, $cart->items, $subtotal);
 
         try {
-            [$couponId, $couponCode, $couponDiscount] = $this->resolveCoupon($request, $subtotal);
+            [$couponId, $couponCode, $couponDiscount] = $this->resolveCoupon($request, $subtotal, $cart);
         } catch (CouponUnavailableException $e) {
             return back()->withErrors(['coupon_code' => $e->getMessage()])->withInput();
         }
@@ -304,6 +305,8 @@ class CheckoutController extends Controller
 
                     $order->statusHistories()->create(['status' => 'pending', 'notes' => 'Order placed successfully.']);
 
+                    $appliedCoupon = $finalCouponId !== null ? Coupon::find($finalCouponId) : null;
+
                     foreach ($cart->items as $item) {
                         $product = $item->product;
                         $flashSaleItemId = $this->inventory->decrementForOrderItem($order, $item->product_id, $item->variant_id, $item->quantity, (float) $item->price);
@@ -312,6 +315,7 @@ class CheckoutController extends Controller
                             'variant_id' => $item->variant_id,
                             'flash_sale_item_id' => $flashSaleItemId,
                             'bundle_id' => $item->bundle_id,
+                            'coupon_applied' => $this->couponApplied($appliedCoupon, $item),
                             'product_name' => $product->name,
                             'sku' => $item->variant?->sku ?? $product->sku,
                             'price' => $item->price,
@@ -463,13 +467,16 @@ class CheckoutController extends Controller
         int $pointsRedeemed,
         float $pointsDiscountAmount,
     ): string {
-        $itemsSnapshot = $cart->items->map(function ($item) {
+        $appliedCoupon = $couponId !== null ? Coupon::find($couponId) : null;
+
+        $itemsSnapshot = $cart->items->map(function ($item) use ($appliedCoupon) {
             $product = $item->product;
 
             return [
                 'product_id' => $item->product_id,
                 'variant_id' => $item->variant_id,
                 'bundle_id' => $item->bundle_id,
+                'coupon_applied' => $this->couponApplied($appliedCoupon, $item),
                 'product_name' => $product->name,
                 'sku' => $item->variant?->sku ?? $product->sku,
                 'price' => $item->price,
@@ -529,7 +536,7 @@ class CheckoutController extends Controller
      *
      * @throws CouponUnavailableException
      */
-    private function resolveCoupon(PlaceOrderRequest $request, float $subtotal): array
+    private function resolveCoupon(PlaceOrderRequest $request, float $subtotal, Cart $cart): array
     {
         $code = $request->coupon_code ? strtoupper(trim($request->coupon_code)) : null;
         if (! $code) {
@@ -542,17 +549,37 @@ class CheckoutController extends Controller
             throw CouponUnavailableException::because('Invalid coupon code.');
         }
 
-        $error = $coupon->eligibilityError($subtotal, auth()->id(), $request->phone);
+        $eligibleLines = $coupon->eligibleLines($cart->items->map(fn ($item): array => [
+            'product_id' => $item->product_id,
+            'variant_id' => $item->variant_id,
+            'subtotal' => (float) ($item->price * $item->quantity),
+        ])->all());
+
+        if ($eligibleLines === []) {
+            throw CouponUnavailableException::because(Coupon::NOT_APPLICABLE_MESSAGE);
+        }
+
+        $eligibleSubtotal = $coupon->appliesToEverything() ? $subtotal : (float) array_sum(array_column($eligibleLines, 'subtotal'));
+        $error = $coupon->eligibilityError($eligibleSubtotal, auth()->id(), $request->phone);
 
         if ($error !== null) {
             throw CouponUnavailableException::because($error);
         }
 
-        $discount = $coupon->type->value === 'percent'
-            ? min($subtotal, $subtotal * $coupon->value / 100)
-            : min($subtotal, $coupon->value);
+        return [$coupon->id, $coupon->code, $coupon->discountFor($eligibleSubtotal)];
+    }
 
-        return [$coupon->id, $coupon->code, round($discount, 2)];
+    /**
+     * Recorded so refunds can count a selected-items coupon's discount against
+     * the lines it covered. Null for every other order.
+     */
+    private function couponApplied(?Coupon $coupon, CartItem $item): ?bool
+    {
+        if ($coupon === null || $coupon->appliesToEverything()) {
+            return null;
+        }
+
+        return $coupon->appliesToProduct($item->product, $item->variant_id);
     }
 
     private function resolveShippingAddress(PlaceOrderRequest $request): array
