@@ -10,10 +10,9 @@ export type FlashSaleItemData = {
     /** Empty string means "the whole product, every variant" — see FlashSaleItem::findActiveFor(). */
     variant_id: string;
     sale_price: string;
-    stock_limit: string;
     // Denormalized purely for display (so an existing row renders without
     // a fresh search) — the backend only reads product_id/variant_id/
-    // sale_price/stock_limit; these extra fields are harmlessly ignored
+    // sale_price; these extra fields are harmlessly ignored
     // by FlashSaleRequest's rules(), same convention as create-order-modal's
     // OrderLine carrying product_name/variant_attributes alongside the
     // fields CreateOrderRequest actually validates.
@@ -159,9 +158,6 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                 product_id: String(product.id),
                 variant_id: variant ? String(variant.id) : '',
                 sale_price: '',
-                stock_limit: String(
-                    variant ? variant.stock_quantity : product.available_stock,
-                ),
                 product_name: product.name,
                 product_sku: variant?.sku ?? product.sku,
                 available_stock: variant
@@ -323,7 +319,6 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                 ) : (
                     <AnimatePresence initial={false}>
                         {items.map((item, i) => {
-                            const stockError = errors[`items.${i}.stock_limit`];
                             const priceError = errors[`items.${i}.sale_price`];
                             const productError =
                                 errors[`items.${i}.product_id`] ??
@@ -377,30 +372,17 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                                                 </p>
                                             )}
                                         </div>
-                                        <div className="w-full sm:w-36">
-                                            <label className="mb-1 block text-xs font-medium text-slate-600">
-                                                Stock Limit *{' '}
-                                                <span className="text-slate-400">
-                                                    (max {item.available_stock})
-                                                </span>
-                                            </label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                className={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${stockError ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
-                                                value={item.stock_limit}
-                                                onChange={(e) =>
-                                                    updateItem(i, {
-                                                        stock_limit:
-                                                            e.target.value,
-                                                    })
-                                                }
-                                            />
-                                            {stockError && (
-                                                <p className="mt-1 text-xs text-red-500">
-                                                    {stockError}
-                                                </p>
-                                            )}
+                                        <div className="w-full sm:w-28">
+                                            <p className="mb-1 block text-xs font-medium text-slate-600">
+                                                Stock
+                                            </p>
+                                            <p
+                                                className={`flex h-9 items-center text-sm font-medium ${item.available_stock > 0 ? 'text-slate-700' : 'text-red-500'}`}
+                                            >
+                                                {item.available_stock > 0
+                                                    ? `${item.available_stock} available`
+                                                    : 'Out of stock'}
+                                            </p>
                                         </div>
                                         <button
                                             type="button"

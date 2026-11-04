@@ -12,6 +12,7 @@ type FlashSaleItemProduct = {
     price: number;
     sku: string | null;
     stock_quantity: number;
+    available_stock: number;
 };
 
 type FlashSaleItemVariant = {
@@ -27,7 +28,6 @@ type FlashSaleItemRaw = {
     product_id: number;
     variant_id: number | null;
     sale_price: number;
-    stock_limit: number;
     product: FlashSaleItemProduct | null;
     variant: FlashSaleItemVariant | null;
 };
@@ -60,11 +60,10 @@ function toItemData(item: FlashSaleItemRaw): FlashSaleItemData {
         product_id: String(item.product_id),
         variant_id: item.variant_id !== null ? String(item.variant_id) : '',
         sale_price: String(item.sale_price),
-        stock_limit: String(item.stock_limit),
         product_name: item.product?.name ?? '',
         product_sku: item.variant?.sku ?? item.product?.sku ?? null,
         available_stock:
-            item.variant?.stock_quantity ?? item.product?.stock_quantity ?? 0,
+            item.variant?.stock_quantity ?? item.product?.available_stock ?? 0,
         variant_label: item.variant
             ? variantLabel(item.variant.attributes) ||
               item.variant.sku ||
@@ -118,14 +117,8 @@ export default function FlashSaleEdit({ flashSale }: Props) {
             clientErrors.ends_at = 'The end date must be after the start date.';
         }
 
-        if (
-            data.items.some(
-                (item) =>
-                    !item.product_id || !item.sale_price || !item.stock_limit,
-            )
-        ) {
-            clientErrors.items =
-                'Every product row needs a sale price and a stock limit.';
+        if (data.items.some((item) => !item.product_id || !item.sale_price)) {
+            clientErrors.items = 'Every product row needs a sale price.';
         }
 
         return clientErrors;

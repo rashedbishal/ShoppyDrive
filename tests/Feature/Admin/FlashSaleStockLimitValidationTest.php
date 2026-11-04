@@ -2,10 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Exceptions\InsufficientStockException;
 use App\Models\FlashSale;
+use App\Models\FlashSaleItem;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\InventoryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\post;
@@ -28,132 +33,73 @@ function flashSalePayload(array $items): array
     ];
 }
 
-test('creating a flash sale item is rejected when stock_limit exceeds the product\'s real stock', function () {
+test('a flash sale has no quantity of its own, even if one is submitted', function () {
     $product = Product::factory()->create(['stock_quantity' => 4]);
 
     actingAs($this->admin, 'admin');
 
-    $response = post(route('admin.flash-sales.store'), flashSalePayload([
-        ['product_id' => $product->id, 'sale_price' => 500, 'stock_limit' => 5],
-    ]));
+    post(route('admin.flash-sales.store'), flashSalePayload([
+        ['product_id' => $product->id, 'sale_price' => 500, 'stock_limit' => 2],
+    ]))->assertSessionHasNoErrors()->assertRedirect(route('admin.flash-sales.index'));
 
-    $response->assertSessionHasErrors(['items.0.stock_limit']);
-    expect(FlashSale::count())->toBe(0);
+    expect(FlashSale::first()->items()->first()->stock_limit)->toBeNull();
 });
 
-test('creating a flash sale item is accepted when stock_limit exactly matches the product\'s real stock', function () {
-    $product = Product::factory()->create(['stock_quantity' => 4]);
-
-    actingAs($this->admin, 'admin');
-
-    $response = post(route('admin.flash-sales.store'), flashSalePayload([
-        ['product_id' => $product->id, 'sale_price' => 500, 'stock_limit' => 4],
-    ]));
-
-    $response->assertSessionDoesntHaveErrors();
-    $response->assertRedirect(route('admin.flash-sales.index'));
-
-    $flashSale = FlashSale::first();
-    expect($flashSale)->not->toBeNull();
-    expect($flashSale->items()->first()->stock_limit)->toBe(4);
-});
-
-test('creating a flash sale item is accepted when stock_limit is below the product\'s real stock', function () {
-    $product = Product::factory()->create(['stock_quantity' => 10]);
-
-    actingAs($this->admin, 'admin');
-
-    $response = post(route('admin.flash-sales.store'), flashSalePayload([
-        ['product_id' => $product->id, 'sale_price' => 500, 'stock_limit' => 3],
-    ]));
-
-    $response->assertSessionDoesntHaveErrors();
-    expect(FlashSale::first()->items()->first()->stock_limit)->toBe(3);
-});
-
-test('stock_limit is checked against the summed variant stock, not the denormalized column, for a variant product', function () {
-    // The admin product form keeps `stock_quantity` in sync with the
-    // variant sum on save, but this proves the check uses the live
-    // variant sum (available_stock) rather than coincidentally relying on
-    // that denormalized column already being correct.
-    $product = Product::factory()->create(['stock_quantity' => 999]);
-    ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 2]);
-    ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 3]);
-
-    actingAs($this->admin, 'admin');
-
-    // Real available stock is 2 + 3 = 5, not the stale-looking 999 column.
-    $rejected = post(route('admin.flash-sales.store'), flashSalePayload([
-        ['product_id' => $product->id, 'sale_price' => 500, 'stock_limit' => 6],
-    ]));
-    $rejected->assertSessionHasErrors(['items.0.stock_limit']);
-    expect(FlashSale::count())->toBe(0);
-
-    $accepted = post(route('admin.flash-sales.store'), flashSalePayload([
-        ['product_id' => $product->id, 'sale_price' => 500, 'stock_limit' => 5],
-    ]));
-    $accepted->assertSessionDoesntHaveErrors();
-    expect(FlashSale::count())->toBe(1);
-});
-
-test('updating a flash sale item is also rejected when stock_limit exceeds the product\'s real stock', function () {
-    $product = Product::factory()->create(['stock_quantity' => 4]);
-
-    $flashSale = FlashSale::create([
-        'name' => 'Weekend Flash Sale',
-        'starts_at' => now(),
-        'ends_at' => now()->addDays(7),
-        'is_active' => true,
-    ]);
-    $flashSale->items()->create([
-        'product_id' => $product->id,
-        'sale_price' => 500,
-        'stock_limit' => 4,
-    ]);
-
-    actingAs($this->admin, 'admin');
-
-    $response = put(route('admin.flash-sales.update', $flashSale), flashSalePayload([
-        ['product_id' => $product->id, 'sale_price' => 500, 'stock_limit' => 5],
-    ]));
-
-    $response->assertSessionHasErrors(['items.0.stock_limit']);
-    expect($flashSale->items()->first()->stock_limit)->toBe(4);
-});
-
-test('a flash sale item referencing an out-of-stock product can never be given a stock_limit', function () {
+test('a sold out product can stay in a flash sale so the sale can still be saved', function () {
     $product = Product::factory()->create(['stock_quantity' => 0]);
+    $variantProduct = Product::factory()->create(['stock_quantity' => 0]);
+    $variant = ProductVariant::factory()->create(['product_id' => $variantProduct->id, 'stock_quantity' => 0]);
+    $flashSale = FlashSale::factory()->create();
+    $flashSale->items()->create(['product_id' => $product->id, 'sale_price' => 500]);
 
     actingAs($this->admin, 'admin');
 
-    $response = post(route('admin.flash-sales.store'), flashSalePayload([
-        ['product_id' => $product->id, 'sale_price' => 500, 'stock_limit' => 1],
-    ]));
+    put(route('admin.flash-sales.update', $flashSale), flashSalePayload([
+        ['product_id' => $product->id, 'sale_price' => 450],
+        ['product_id' => $variantProduct->id, 'variant_id' => $variant->id, 'sale_price' => 300],
+    ]))->assertSessionHasNoErrors();
 
-    $response->assertSessionHasErrors(['items.0.stock_limit']);
-    expect(FlashSale::count())->toBe(0);
+    expect($flashSale->items()->count())->toBe(2);
 });
 
-test('a variant-specific flash sale item is checked against that variant\'s own stock, not the product\'s total', function () {
-    // The product's summed stock (10) is well above the one variant being
-    // targeted (3) — proves the check uses the specific variant's own
-    // stock_quantity, not the product-wide available_stock, once a
-    // variant_id is given.
-    $product = Product::factory()->create(['stock_quantity' => 999]);
-    $variant = ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 3]);
-    ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 7]);
+test('flash sale pricing runs until main stock runs out, and never past it', function () {
+    $product = Product::factory()->create(['stock_quantity' => 3]);
+    $flashSale = FlashSale::factory()->create([
+        'is_active' => true,
+        'starts_at' => now()->subHour(),
+        'ends_at' => now()->addHour(),
+    ]);
+    $item = $flashSale->items()->create(['product_id' => $product->id, 'sale_price' => 500]);
+    $order = new Order(['order_number' => 'ORD-TEST']);
+    $order->id = 1;
+    $inventory = app(InventoryService::class);
+
+    expect($inventory->decrementForOrderItem($order, $product->id, null, 3, 500))->toBe($item->id)
+        ->and($item->fresh()->sold_count)->toBe(3)
+        ->and($product->fresh()->stock_quantity)->toBe(0);
+
+    expect(fn () => $inventory->decrementForOrderItem($order, $product->id, null, 1, 500))
+        ->toThrow(InsufficientStockException::class);
+});
+
+test('the edit form shows the live stock of a variant product', function () {
+    $product = Product::factory()->create(['stock_quantity' => 100]);
+    ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 3]);
+    $flashSale = FlashSale::factory()->create();
+    $flashSale->items()->create(['product_id' => $product->id, 'sale_price' => 500]);
 
     actingAs($this->admin, 'admin');
 
-    $rejected = post(route('admin.flash-sales.store'), flashSalePayload([
-        ['product_id' => $product->id, 'variant_id' => $variant->id, 'sale_price' => 500, 'stock_limit' => 4],
-    ]));
-    $rejected->assertSessionHasErrors(['items.0.stock_limit']);
-    expect(FlashSale::count())->toBe(0);
+    $this->get(route('admin.flash-sales.edit', $flashSale))->assertInertia(fn (Assert $page) => $page
+        ->where('flashSale.items.0.product.available_stock', 3));
+});
 
-    $accepted = post(route('admin.flash-sales.store'), flashSalePayload([
-        ['product_id' => $product->id, 'variant_id' => $variant->id, 'sale_price' => 500, 'stock_limit' => 3],
-    ]));
-    $accepted->assertSessionDoesntHaveErrors();
-    expect(FlashSale::first()->items()->first()->variant_id)->toBe($variant->id);
+test('the migration clears saved quantities and keeps sold counts', function () {
+    $item = FlashSaleItem::factory()->create(['stock_limit' => 12, 'sold_count' => 7]);
+
+    $migration = require glob(database_path('migrations/*_clear_flash_sale_item_stock_limits.php'))[0];
+    $migration->up();
+
+    expect($item->fresh()->stock_limit)->toBeNull()
+        ->and($item->fresh()->sold_count)->toBe(7);
 });

@@ -7,13 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PRODUCT_GRID_CLASS } from '@/lib/constants';
+import { getSoldPercent } from '@/lib/utils';
 import type { Product } from '@/types';
 
 type FlashSaleItem = {
     id: number;
     sale_price: number;
     sold_count: number;
-    stock_limit: number;
     product: Product;
 };
 
@@ -88,12 +88,6 @@ function CountdownTimer({ endsAt }: { endsAt: string }): React.JSX.Element {
     );
 }
 
-function getSoldPercent(item: FlashSaleItem): number {
-    return item.stock_limit > 0
-        ? Math.min(100, Math.round((item.sold_count / item.stock_limit) * 100))
-        : 0;
-}
-
 function FlashSalesContent({
     activeSale,
     upcomingSales,
@@ -143,7 +137,11 @@ function FlashSalesContent({
                                                 flash_sale_price:
                                                     item.sale_price,
                                             }}
-                                            saleProgress={getSoldPercent(item)}
+                                            saleProgress={getSoldPercent(
+                                                item.sold_count,
+                                                item.product.available_stock ??
+                                                    item.product.stock_quantity,
+                                            )}
                                             saleProgressLabel={`${item.sold_count} sold`}
                                         />
                                     ))}

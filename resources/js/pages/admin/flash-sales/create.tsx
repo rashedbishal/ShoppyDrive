@@ -51,14 +51,8 @@ export default function FlashSaleCreate() {
             clientErrors.ends_at = 'The end date must be after the start date.';
         }
 
-        if (
-            data.items.some(
-                (item) =>
-                    !item.product_id || !item.sale_price || !item.stock_limit,
-            )
-        ) {
-            clientErrors.items =
-                'Every product row needs a sale price and a stock limit.';
+        if (data.items.some((item) => !item.product_id || !item.sale_price)) {
+            clientErrors.items = 'Every product row needs a sale price.';
         }
 
         return clientErrors;

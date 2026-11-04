@@ -190,19 +190,17 @@ class HomeController extends Controller
                 // not meaningful once several items are combined, but
                 // every item in a group shares the same flash_sale_id
                 // regardless), sale_price is that lowest price, and
-                // sold_count/stock_limit are combined across every item
+                // sold_count is combined across every item
                 // for this product so the progress bar reflects the whole
                 // campaign for it, not just whichever one was cheapest.
                 'items' => $itemsByProduct->map(function ($productItems) use ($mapFlashSaleProduct) {
                     $cheapest = $productItems->sortBy('sale_price')->first();
-                    $stockLimits = $productItems->pluck('stock_limit');
 
                     return [
                         'id' => $cheapest->id,
                         'flash_sale_id' => $cheapest->flash_sale_id,
                         'product_id' => $cheapest->product_id,
                         'sale_price' => $cheapest->sale_price,
-                        'stock_limit' => $stockLimits->contains(null) ? null : $stockLimits->sum(),
                         'sold_count' => $productItems->sum('sold_count'),
                         'product' => $mapFlashSaleProduct($cheapest->product),
                     ];

@@ -43,7 +43,7 @@ import {
     PRODUCT_RAIL_CLASS,
 } from '@/lib/constants';
 import { DEFAULT_BANNER_GRADIENT, isCssGradient } from '@/lib/gradient';
-import { isVideoUrl, cn } from '@/lib/utils';
+import { isVideoUrl, cn, getSoldPercent } from '@/lib/utils';
 import categoryRoutes from '@/routes/category';
 import type {
     Brand,
@@ -84,7 +84,6 @@ type HeroSlide = {
 type FlashSaleItem = {
     product: Product;
     sold_count: number;
-    stock_limit: number | null;
 };
 
 const DEFAULT_HERO_AUTOPLAY_SECONDS = 6;
@@ -1045,13 +1044,11 @@ function Home(): React.JSX.Element {
                 item.product.id,
                 {
                     label: `${item.sold_count} sold`,
-                    value:
-                        typeof item.stock_limit === 'number' &&
-                        item.stock_limit > 0
-                            ? Math.round(
-                                  (item.sold_count / item.stock_limit) * 100,
-                              )
-                            : 0,
+                    value: getSoldPercent(
+                        item.sold_count,
+                        item.product.available_stock ??
+                            item.product.stock_quantity,
+                    ),
                 },
             ]),
         );

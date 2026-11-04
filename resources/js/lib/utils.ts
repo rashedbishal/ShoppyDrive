@@ -146,6 +146,16 @@ export function isVideoUrl(url: string): boolean {
     return /\.(mp4|webm|mov|ogg)$/i.test(url);
 }
 
+/** How much of a flash sale item has sold, against what's really still in stock. */
+export function getSoldPercent(
+    soldCount: number,
+    availableStock: number,
+): number {
+    const total = soldCount + Math.max(availableStock, 0);
+
+    return total > 0 ? Math.round((soldCount / total) * 100) : 0;
+}
+
 /** The image an admin chose as the product's default, else its first image. */
 export function getPrimaryImagePath(
     product: Pick<Product, 'images'>,

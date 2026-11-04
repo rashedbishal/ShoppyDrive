@@ -31,12 +31,11 @@ class FlashSaleRequest extends FormRequest
             // product-wide one at pricing/stock-enforcement time).
             'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
             'items.*.sale_price' => ['required', 'numeric', 'min:0'],
-            'items.*.stock_limit' => ['required', 'integer', 'min:1'],
         ];
     }
 
     /**
-     * Three things the plain `rules()` above can't express on their own,
+     * Two things the plain `rules()` above can't express on their own,
      * since each needs to look at an item together with its siblings or
      * with the database — same convention as `Admin\CreateOrderRequest::after()`:
      * guard on prior errors first, iterate `items` by index, add
@@ -46,19 +45,12 @@ class FlashSaleRequest extends FormRequest
      *    `product_id` — the same mismatched-variant concern
      *    `CreateOrderRequest` and `InventoryService::decrementForOrderItem()`
      *    (FSA-01) both already guard against.
-     * 2. `stock_limit` must never promise more units than are really
-     *    available — the product's total stock for a whole-product item,
-     *    or that one variant's own stock for a variant-specific item.
-     *    `InventoryService` always checks real stock before this cap
-     *    regardless, so a `stock_limit` above it could never actually be
-     *    reached — it just silently misrepresents how many units are
-     *    really available at the sale price. This is a one-time snapshot
-     *    check: if stock later drops below an already-saved `stock_limit`,
-     *    this doesn't retroactively catch that — real stock is still
-     *    checked, and still protects against overselling, at checkout.
-     * 3. The same (product, variant) pair can't appear twice in one
-     *    submission — two conflicting prices/limits for the exact same
-     *    thing would just mean the last one silently wins.
+     * 2. The same (product, variant) pair can't appear twice in one
+     *    submission — two conflicting prices for the exact same thing
+     *    would just mean the last one silently wins.
+     *
+     * A flash sale has no quantity of its own: it sells from the product's
+     * main stock, which `InventoryService` checks at checkout.
      *
      * @return array<int, callable(Validator): void>
      */
@@ -75,12 +67,6 @@ class FlashSaleRequest extends FormRequest
                 return;
             }
 
-            // Eager-loads variants so `available_stock` reflects the live
-            // variant sum (same convention every storefront query uses),
-            // not just the denormalized `stock_quantity` column, and so
-            // each item's own variant can be matched without a query per
-            // row — one query for every referenced product, not one per
-            // item.
             $products = Product::with('variants')
                 ->whereIn('id', array_column($items, 'product_id'))
                 ->get()
@@ -109,29 +95,10 @@ class FlashSaleRequest extends FormRequest
 
                 $seenCombinations[$combination] = true;
 
-                $availableStock = $product->available_stock;
-                $subject = "\"{$product->name}\"";
-
-                if ($variantId !== null) {
-                    $variant = $product->variants->firstWhere('id', $variantId);
-
-                    if ($variant === null) {
-                        $validator->errors()->add(
-                            "items.{$index}.variant_id",
-                            'This variant does not belong to the selected product.',
-                        );
-
-                        continue;
-                    }
-
-                    $availableStock = $variant->stock_quantity;
-                    $subject = 'this variant';
-                }
-
-                if ((int) $item['stock_limit'] > $availableStock) {
+                if ($variantId !== null && $product->variants->firstWhere('id', $variantId) === null) {
                     $validator->errors()->add(
-                        "items.{$index}.stock_limit",
-                        "Stock limit can't exceed {$subject}'s current stock ({$availableStock}).",
+                        "items.{$index}.variant_id",
+                        'This variant does not belong to the selected product.',
                     );
                 }
             }

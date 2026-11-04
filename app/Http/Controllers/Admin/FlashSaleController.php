@@ -88,7 +88,6 @@ class FlashSaleController extends Controller
                 'product_id' => $item['product_id'],
                 'variant_id' => $item['variant_id'] ?? null,
                 'sale_price' => $item['sale_price'],
-                'stock_limit' => $item['stock_limit'],
             ]);
         }
 
@@ -98,13 +97,12 @@ class FlashSaleController extends Controller
     public function edit(FlashSale $flashSale): Response
     {
         $flashSale->load([
-            // stock_quantity: the "max" hint for a whole-product (no
-            // variant_id) item — kept in sync with the live variant sum by
-            // the admin product form on save (see
-            // Product::getAvailableStockAttribute()'s own docblock), so
-            // it's accurate here without also eager-loading every
-            // variant just for this one display hint.
+            // The stock shown for a whole-product item comes from the appended
+            // available_stock, which needs variants loaded to give the live
+            // total. The stock_quantity column alone goes stale for a variant
+            // product.
             'items.product:id,name,price,sku,stock_quantity',
+            'items.product.variants:id,product_id,stock_quantity',
             'items.variant:id,product_id,sku,price,stock_quantity,attributes',
         ]);
 
@@ -130,7 +128,6 @@ class FlashSaleController extends Controller
                     'product_id' => $item['product_id'],
                     'variant_id' => $item['variant_id'] ?? null,
                     'sale_price' => $item['sale_price'],
-                    'stock_limit' => $item['stock_limit'],
                 ]);
             }
         }
