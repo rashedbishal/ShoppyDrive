@@ -23,8 +23,29 @@ class AdminDateTime
         return Carbon::parse($value, self::TIMEZONE)->setTimezone(config('app.timezone'));
     }
 
-    public static function toInput(CarbonInterface $moment): string
+    /**
+     * Converts the named fields that hold a value, leaving empty ones as they are.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  list<string>  $fields
+     * @return array<string, mixed>
+     */
+    public static function fieldsFromInput(array $data, array $fields): array
     {
-        return $moment->copy()->setTimezone(self::TIMEZONE)->format('Y-m-d\TH:i');
+        foreach ($fields as $field) {
+            if (! empty($data[$field])) {
+                $data[$field] = self::fromInput($data[$field]);
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * An empty date stays an empty input.
+     */
+    public static function toInput(?CarbonInterface $moment): string
+    {
+        return $moment?->copy()->setTimezone(self::TIMEZONE)->format('Y-m-d\TH:i') ?? '';
     }
 }

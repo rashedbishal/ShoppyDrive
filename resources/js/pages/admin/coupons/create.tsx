@@ -218,7 +218,7 @@ export default function CouponCreate() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <Field
-                                    label="Starts At"
+                                    label="Starts At (Bangladesh time)"
                                     error={errors.starts_at}
                                 >
                                     <input
@@ -231,7 +231,7 @@ export default function CouponCreate() {
                                     />
                                 </Field>
                                 <Field
-                                    label="Expires At"
+                                    label="Expires At (Bangladesh time)"
                                     error={errors.expires_at}
                                 >
                                     <input

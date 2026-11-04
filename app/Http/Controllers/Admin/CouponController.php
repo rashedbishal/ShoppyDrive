@@ -8,6 +8,7 @@ use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CouponRequest;
 use App\Models\Coupon;
+use App\Support\AdminDateTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -35,7 +36,7 @@ class CouponController extends Controller
 
     public function store(CouponRequest $request): RedirectResponse
     {
-        $data = $request->validated();
+        $data = AdminDateTime::fieldsFromInput($request->validated(), ['starts_at', 'expires_at']);
         $data['is_active'] = $data['is_active'] ?? true;
         Coupon::create($data);
 
@@ -44,12 +45,18 @@ class CouponController extends Controller
 
     public function edit(Coupon $coupon): Response
     {
-        return Inertia::render('admin/coupons/edit', ['coupon' => $coupon]);
+        return Inertia::render('admin/coupons/edit', [
+            'coupon' => [
+                ...$coupon->toArray(),
+                'starts_at_input' => AdminDateTime::toInput($coupon->starts_at),
+                'expires_at_input' => AdminDateTime::toInput($coupon->expires_at),
+            ],
+        ]);
     }
 
     public function update(CouponRequest $request, Coupon $coupon): RedirectResponse
     {
-        $coupon->update($request->validated());
+        $coupon->update(AdminDateTime::fieldsFromInput($request->validated(), ['starts_at', 'expires_at']));
 
         return redirect()->route('admin.coupons.index')->with('success', 'Coupon updated.');
     }

@@ -197,7 +197,7 @@ export default function BlogCreate() {
                                     />
                                 </Field>
                                 <Field
-                                    label="Published At"
+                                    label="Published At (Bangladesh time)"
                                     hint="Leave blank to publish immediately"
                                     error={errors.published_at}
                                 >

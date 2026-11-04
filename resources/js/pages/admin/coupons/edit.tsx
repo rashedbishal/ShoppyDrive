@@ -14,20 +14,13 @@ type Coupon = {
     min_order_amount: number | null;
     max_uses: number | null;
     per_user_limit: number | null;
-    starts_at: string | null;
-    expires_at: string | null;
+    /** Bangladesh time, formatted for the date inputs. */
+    starts_at_input: string;
+    expires_at_input: string;
     is_active: boolean;
 };
 
 type Props = { coupon: Coupon };
-
-const toDatetimeLocal = (str: string | null) => {
-    if (!str) {
-        return '';
-    }
-
-    return str.slice(0, 16);
-};
 
 function Field({
     label,
@@ -63,8 +56,8 @@ export default function CouponEdit({ coupon }: Props) {
             per_user_limit: coupon.per_user_limit
                 ? String(coupon.per_user_limit)
                 : '',
-            starts_at: toDatetimeLocal(coupon.starts_at),
-            expires_at: toDatetimeLocal(coupon.expires_at),
+            starts_at: coupon.starts_at_input,
+            expires_at: coupon.expires_at_input,
             is_active: coupon.is_active,
         });
 
@@ -245,7 +238,7 @@ export default function CouponEdit({ coupon }: Props) {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <Field
-                                    label="Starts At"
+                                    label="Starts At (Bangladesh time)"
                                     error={errors.starts_at}
                                 >
                                     <input
@@ -258,7 +251,7 @@ export default function CouponEdit({ coupon }: Props) {
                                     />
                                 </Field>
                                 <Field
-                                    label="Expires At"
+                                    label="Expires At (Bangladesh time)"
                                     error={errors.expires_at}
                                 >
                                     <input

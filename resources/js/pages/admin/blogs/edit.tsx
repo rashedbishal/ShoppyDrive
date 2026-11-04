@@ -7,15 +7,8 @@ import { RouteModal } from '@/components/ui/route-modal';
 import { maxLength, required, validate } from '@/lib/validate';
 import type { Blog } from '@/types';
 
-type Props = { blog: Blog };
-
-const toDatetimeLocal = (str: string | null) => {
-    if (!str) {
-        return '';
-    }
-
-    return str.slice(0, 16);
-};
+/** published_at_input is Bangladesh time, formatted for the date input. */
+type Props = { blog: Blog & { published_at_input: string } };
 
 function Field({
     label,
@@ -56,7 +49,7 @@ export default function BlogEdit({ blog }: Props) {
             meta_title: blog.meta_title ?? '',
             meta_description: blog.meta_description ?? '',
             is_published: blog.is_published,
-            published_at: toDatetimeLocal(blog.published_at),
+            published_at: blog.published_at_input,
         });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -195,7 +188,7 @@ export default function BlogEdit({ blog }: Props) {
                                     />
                                 </Field>
                                 <Field
-                                    label="Published At"
+                                    label="Published At (Bangladesh time)"
                                     hint="Leave blank to publish immediately"
                                     error={errors.published_at}
                                 >

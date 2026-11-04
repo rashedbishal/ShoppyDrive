@@ -8,6 +8,7 @@ use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BlogRequest;
 use App\Models\Blog;
+use App\Support\AdminDateTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -46,6 +47,7 @@ class BlogController extends Controller
             $data['featured_image'] = '/storage/'.$request->file('featured_image')->store('blogs', 'public');
         }
 
+        $data = AdminDateTime::fieldsFromInput($data, ['published_at']);
         $data['is_published'] = $data['is_published'] ?? false;
         if ($data['is_published'] && empty($data['published_at'])) {
             $data['published_at'] = now();
@@ -59,7 +61,10 @@ class BlogController extends Controller
     public function edit(Blog $blog): Response
     {
         return Inertia::render('admin/blogs/edit', [
-            'blog' => $blog,
+            'blog' => [
+                ...$blog->toArray(),
+                'published_at_input' => AdminDateTime::toInput($blog->published_at),
+            ],
         ]);
     }
 
@@ -74,6 +79,7 @@ class BlogController extends Controller
             unset($data['featured_image']);
         }
 
+        $data = AdminDateTime::fieldsFromInput($data, ['published_at']);
         $data['is_published'] = $data['is_published'] ?? false;
         if ($data['is_published'] && empty($data['published_at'])) {
             $data['published_at'] = now();
