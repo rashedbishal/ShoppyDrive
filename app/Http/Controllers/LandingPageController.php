@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Exceptions\InsufficientStockException;
@@ -533,6 +534,22 @@ class LandingPageController extends Controller
     public function downloadInvoice(string $guestToken): HttpResponse
     {
         $order = Order::where('guest_token', $guestToken)->with('items')->firstOrFail();
+
+        // LP-INVOICE-STATUS-001: the same two rules account.php's invoice
+        // route already enforces — an invoice must never imply payment was
+        // received for an order that was cancelled/refunded (order status
+        // stays authoritative) or for a COD order not yet delivered. The
+        // guest_token itself remains this route's access control, unchanged.
+        $status = $order->status->value;
+        $isCod = $order->payment_method->value === 'cod';
+
+        if (in_array($status, ['cancelled', 'refunded'], true)) {
+            abort(403, 'Invoice is not available for cancelled or refunded orders.');
+        }
+
+        if ($isCod && $status !== OrderStatus::DELIVERED->value) {
+            abort(403, 'Invoice is only available after delivery for Cash on Delivery orders.');
+        }
 
         $pdf = Pdf::loadView('invoices.order', ['order' => $order]);
 

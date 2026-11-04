@@ -169,7 +169,15 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    // MED-18: defaults to secure in production (where Hostinger always
+    // serves over HTTPS, enforced separately by the RedirectToHttps
+    // middleware — MED-18A) without requiring SESSION_SECURE_COOKIE to be
+    // set at all; local/testing stay false so plain HTTP development is
+    // unaffected. SESSION_SECURE_COOKIE in .env still overrides either way.
+    // Uses config('app.env'), not app()->environment() directly, so a test
+    // can flip it with a plain config(['app.env' => ...]) — same reasoning
+    // as RedirectToHttps.
+    'secure' => env('SESSION_SECURE_COOKIE', config('app.env') === 'production'),
 
     /*
     |--------------------------------------------------------------------------

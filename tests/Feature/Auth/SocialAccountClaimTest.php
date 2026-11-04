@@ -129,19 +129,25 @@ test('a new Google account with a verified email is created verified', function 
     expect($user->hasVerifiedEmail())->toBeTrue();
 });
 
-test('a new Facebook account must verify its email with the code flow', function () {
+test('a new Facebook account is created unverified but logs straight in, with no OTP challenge', function () {
     Mail::fake();
     Socialite::fake('facebook', claimTestSocialiteUser([
         'id' => 'facebook-new', 'name' => 'New Person', 'email' => 'fbnew@example.com',
     ]));
 
-    $this->get('/auth/facebook/callback')->assertRedirect(route('verification.notice'));
+    // FSA-09 policy update, 2026-11-03: social login is itself the
+    // authentication method and must never be followed by a mandatory
+    // email-OTP challenge — not even for a brand-new, unverified account.
+    $this->get('/auth/facebook/callback')->assertRedirect(config('fortify.home'));
 
     $user = User::where('email', 'fbnew@example.com')->sole();
     $this->assertAuthenticatedAs($user);
+    // The account is still genuinely unverified — Facebook's claim is
+    // never trusted as proof of email ownership. Only the proactive OTP
+    // redirect/send is gone; `email_verified_at` is untouched.
     expect($user->hasVerifiedEmail())->toBeFalse()
         ->and($user->socialAccounts()->where('provider', 'facebook')->exists())->toBeTrue();
-    Mail::assertSent(VerifyEmailCodeMail::class, fn (VerifyEmailCodeMail $mail) => $mail->hasTo('fbnew@example.com'));
+    Mail::assertNotSent(VerifyEmailCodeMail::class);
 });
 
 test('an already linked Facebook identity still logs in', function () {
@@ -154,6 +160,40 @@ test('an already linked Facebook identity still logs in', function () {
     $this->get('/auth/facebook/callback')->assertRedirect(config('fortify.home'));
 
     $this->assertAuthenticatedAs($user);
+});
+
+test('an already linked but still-unverified Facebook identity logs straight in, with no OTP challenge', function () {
+    // FSA-09 policy update: this is exactly the "previously created
+    // Facebook-linked account" case the owner explicitly named — a
+    // standing link, still unverified (e.g. the owner never completed a
+    // first-visit OTP under the old code, or signed up after this fix
+    // without yet verifying), must not be OTP-challenged on repeat login.
+    Mail::fake();
+    $user = User::factory()->unverified()->create(['email' => 'legacy-linked@example.com', 'has_password' => false]);
+    $user->socialAccounts()->create(['provider' => 'facebook', 'provider_id' => 'facebook-legacy-linked']);
+    Socialite::fake('facebook', claimTestSocialiteUser([
+        'id' => 'facebook-legacy-linked', 'name' => 'Legacy Linked', 'email' => 'legacy-linked@example.com',
+    ]));
+
+    $this->get('/auth/facebook/callback')->assertRedirect(config('fortify.home'));
+
+    $this->assertAuthenticatedAs($user);
+    expect($user->refresh()->hasVerifiedEmail())->toBeFalse();
+    Mail::assertNotSent(VerifyEmailCodeMail::class);
+});
+
+test('a new Google account with a missing email_verified claim is created unverified but logs straight in, with no OTP challenge', function () {
+    Mail::fake();
+    Socialite::fake('google', claimTestSocialiteUser([
+        'id' => 'google-unclaimed', 'name' => 'New Google Person', 'email' => 'googlenew@example.com',
+    ]));
+
+    $this->get('/auth/google/callback')->assertRedirect(config('fortify.home'));
+
+    $user = User::where('email', 'googlenew@example.com')->sole();
+    $this->assertAuthenticatedAs($user);
+    expect($user->hasVerifiedEmail())->toBeFalse();
+    Mail::assertNotSent(VerifyEmailCodeMail::class);
 });
 
 test('an unverified account cannot connect a provider from settings', function () {

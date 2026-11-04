@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Exceptions\CouldNotRecordRefundException;
+use App\Exceptions\CourierVerificationRefusedException;
 use App\Exceptions\InsufficientStockException;
 use App\Exceptions\PermanentDeletionRefusedException;
 use App\Http\Controllers\Controller;
@@ -24,6 +25,7 @@ use App\Services\CourierSubmissionService;
 use App\Services\InventoryService;
 use App\Services\ManualOrderPricing;
 use App\Services\OrderDeletionEligibility;
+use App\Services\OrderLostParcelService;
 use App\Services\OrderPermanentDeletionService;
 use App\Services\RefundCalculator;
 use App\Services\RefundService;
@@ -277,12 +279,65 @@ class OrderController extends Controller
                 'steadfast_status_label' => $order->steadfast_status
                     ? CourierOrderStatusMapper::label($order->steadfast_status)
                     : null,
+                // FSA-11: flags an active order whose latest courier report
+                // didn't map to anything recognized (e.g. a lost parcel) —
+                // see possibleLostParcel()'s docblock.
+                'needsCourierInvestigation' => $this->possibleLostParcel($order),
             ]),
             // PAY-RETURN-001
             'refundSummary' => $refunds->summary($order),
             'courierEvidence' => $courierEvidence->displaySummary($order),
             'canVerifyDelivery' => (bool) Auth::guard('admin')->user()?->is_mother,
         ]);
+    }
+
+    /**
+     * FSA-11: no mapped courier status for "lost" exists in either
+     * PATHAO_MAP or STEADFAST_MAP — confirmed against both couriers'
+     * actual reported vocabulary, not just their public docs — so this
+     * can't map a specific transition. `CourierOrderStatusMapper::sync()`
+     * already fails safe for any unrecognized report (records it as
+     * evidence/history, never changes status, never restocks, never
+     * refunds), so the only remaining gap is visibility: this surfaces
+     * exactly that same "unrecognized but active" condition to the admin
+     * viewing the order, so it can be investigated and resolved manually
+     * through the existing refund/return workflows — never automatically.
+     */
+    private function possibleLostParcel(Order $order): bool
+    {
+        if (CourierOrderStatusMapper::isTerminal($order->status)) {
+            return false;
+        }
+
+        if ($order->pathao_order_status !== null && CourierOrderStatusMapper::isUnrecognized('pathao', $order->pathao_order_status)) {
+            return true;
+        }
+
+        return $order->steadfast_status !== null && CourierOrderStatusMapper::isUnrecognized('steadfast', $order->steadfast_status);
+    }
+
+    /**
+     * FSA-11: records the mother admin's confirmed-lost determination.
+     * Never changes order status, never refunds, never restores stock
+     * itself — see OrderLostParcelService's docblock. The admin still
+     * performs the actual cancel (COD) or "Mark as Refunded" (prepaid)
+     * action separately, exactly as before; this only makes that
+     * subsequent action skip the auto-restock it would otherwise do.
+     */
+    public function confirmLostParcel(Request $request, Order $order, OrderLostParcelService $lostParcels): RedirectResponse
+    {
+        $validated = $request->validate([
+            'password' => ['required', 'string'],
+            'note' => ['required', 'string', 'min:10', 'max:2000'],
+        ]);
+
+        try {
+            $lostParcels->confirm(Auth::guard('admin')->user(), $order, $validated['password'], $validated['note']);
+        } catch (CourierVerificationRefusedException $e) {
+            return back()->withErrors([$e->field => $e->getMessage()]);
+        }
+
+        return back()->with('success', 'Parcel confirmed lost. Stock will not be automatically restored when this order is cancelled or refunded.');
     }
 
     /**

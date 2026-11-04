@@ -135,7 +135,13 @@ class InventoryService
         DB::transaction(function () use ($order) {
             $locked = Order::whereKey($order->id)->lockForUpdate()->first();
 
-            if ($locked === null || $locked->stock_restored_at !== null) {
+            // FSA-11: lost_confirmed_at is set only by the mother-admin
+            // "confirm lost" action (Admin\OrderController::confirmLostParcel()),
+            // after existing courier evidence already shows not-delivered —
+            // the goods are gone, not returned, so restocking them would be
+            // wrong. Null for every ordinary order; this changes nothing
+            // about normal cancellation/refund restocking.
+            if ($locked === null || $locked->stock_restored_at !== null || $locked->lost_confirmed_at !== null) {
                 return;
             }
 

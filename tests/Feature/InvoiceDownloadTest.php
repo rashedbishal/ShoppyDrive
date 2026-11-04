@@ -173,3 +173,31 @@ test('a guest landing page order downloads by its private token', function () {
     assertPdfDownload(get(route('lp.invoice', 'private-guest-token')), $order);
     get(route('lp.invoice', 'wrong-token'))->assertNotFound();
 });
+
+// LP-INVOICE-STATUS-001: the guest landing-page invoice route previously had
+// no cancelled/refunded/undelivered-COD restriction at all, unlike the
+// account invoice route above — these mirror that exact coverage for the
+// landing-page route.
+
+test('a cancelled or refunded guest landing-page order has no invoice, for any payment method', function (string $status, string $paymentMethod) {
+    $order = invoiceOrder(User::factory()->create(), $status, $paymentMethod, ['user_id' => null, 'guest_token' => 'lp-blocked-token-'.$status.'-'.$paymentMethod]);
+
+    get(route('lp.invoice', $order->guest_token))->assertForbidden();
+})->with([
+    ['cancelled', 'cod'],
+    ['refunded', 'cod'],
+    ['cancelled', 'mobile_banking'],
+    ['refunded', 'mobile_banking'],
+]);
+
+test('an undelivered guest landing-page cash on delivery order has no invoice yet', function (string $status) {
+    $order = invoiceOrder(User::factory()->create(), $status, 'cod', ['user_id' => null, 'guest_token' => 'lp-undelivered-cod-'.$status]);
+
+    get(route('lp.invoice', $order->guest_token))->assertForbidden();
+})->with(['pending', 'processing', 'shipped']);
+
+test('a prepaid guest landing-page order has an invoice before delivery', function (string $status) {
+    $order = invoiceOrder(User::factory()->create(), $status, 'mobile_banking', ['user_id' => null, 'guest_token' => 'lp-prepaid-'.$status]);
+
+    assertPdfDownload(get(route('lp.invoice', $order->guest_token)), $order);
+})->with(['pending', 'processing', 'shipped', 'delivered']);

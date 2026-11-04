@@ -174,9 +174,9 @@ Each code commit was staged so it contained only its own finding. Each was teste
 | FSA-06 | High | Paid order can be admin-cancelled, then never refunded | COMMITTED, NOT PUSHED `fe6fd58` | Refuses cancel of a paid order, directs to "Mark as Refunded" (Option A, owner-approved). Two pre-existing tests that cancelled a paid order via this now-refused path were found and corrected — see the tracker's FSA-06 notes |
 | FSA-07 | High | Mobile banking: customer can pay and get no order | COMMITTED, NOT PUSHED `9989d1b` | Expiry grace for proven payment + admin unmatched-SMS badge built (2 of 3 owner-approved increments); durable PendingCheckout↔SMS linking deliberately not built |
 | FSA-08 | High | Landing pages for variant products can't sell but can take payment | COMMITTED, NOT PUSHED `dd48b9c` | Blocked at admin save (owner-approved); one existing local dev landing page already affected, not touched — owner decision pending |
-| FSA-09 | Medium | Social login pre-account-takeover | DEPLOYED_UNVERIFIED `8cb8ff7` | Links by email only on Google `email_verified: true`; Facebook never links by email; safe claim of unverified accounts. Follow-up decision: Facebook accounts created before the fix |
+| FSA-09 | Medium | Social login pre-account-takeover | Fix DEPLOYED_UNVERIFIED `8cb8ff7`; audit follow-up + **owner-confirmed login-policy update** IMPLEMENTED_LOCALLY, UNCOMMITTED (2026-11-03) | Links by email only on Google `email_verified: true`; Facebook never links by email; safe claim of unverified accounts — all unchanged. **Policy update, same day:** the owner explicitly decided email OTP must never be required after a successful Facebook or Google login, superseding this file's earlier "recommended remediation" of routing legacy accounts through an OTP challenge on next login — `SocialAuthController` no longer redirects to the OTP-verification notice after a successful social login (Facebook new, Facebook existing, Google new, Google existing, and previously-linked-but-unverified identities all now log straight in); nothing here marks an email verified, links by email more permissively, or touches any existing account/order/loyalty data — the lazy `verified` middleware on `account.php`/`settings.php`/`EnsureCheckoutAccess` is completely unchanged and still gates those routes for every unverified user exactly as before, social or manual. Manual/password registration's own mandatory OTP (`RegisterResponse`) is untouched. `audit:unproven-social-accounts --summary` read-only command remains available; the owner has still not supplied a production affected-account count, and none was estimated from local data. **Accepted residual risk (not resolved, explicitly not claimed as such):** a pre-fix-era compromised Facebook-linked account, if any exist, is not automatically detected, merged, disabled, or forced to re-verify by this change — see tracker FSA-09 notes for the full residual-risk statement |
 | FSA-10 | Medium | Reviews auto-approved, open to unverified accounts | COMMITTED, NOT PUSHED `2ede844` | Requires verified email + defaults every new review to pending moderation (owner-approved) |
-| FSA-11 | Medium | Admin could cancel shipped orders | DEPLOYED_UNVERIFIED `1d16a71` | Refused; courier return report is the path. Follow-up decision: lost parcels |
+| FSA-11 | Medium | Admin could cancel shipped orders | Fix DEPLOYED_UNVERIFIED `1d16a71`; visibility follow-up + **owner-approved skip-restock mechanism** IMPLEMENTED_LOCALLY, UNCOMMITTED (2026-11-03) | Refused; courier return report is the path. Admin order page flags an active order whose latest courier report is unrecognized (possible lost parcel) for manual investigation. **Implemented, same day:** a new nullable `orders.lost_confirmed_at` column, set only by the new mother-admin-only, password-gated `OrderLostParcelService::confirm()` (route `admin.orders.confirmLostParcel`) — it requires the *existing* `CourierEvidenceChain::eligibility()` check to already show every linked consignment verified not-delivered (an unrecognized status alone is refused), is idempotent, and never itself changes order status/payment or restores/removes stock. `InventoryService::restoreForOrder()` gained one extra idempotency condition (`|| $locked->lost_confirmed_at !== null`) so the *next* cancel/refund on that order skips restocking — every other order's restocking is untouched, proved by test. Eligible prepaid refunds still go through the existing, unmodified refund workflow; COD orders are never auto-refunded. 11 new tests in `LostParcelConfirmationTest`, 137/137 regression. **Known limitation, not resolved:** a genuinely `shipped` order still cannot be closed via admin-cancel even once confirmed lost — FSA-11's own original, separate rule refuses admin-cancel of any shipped order unconditionally, so a truly shipped+lost COD parcel has no closure path today; this is pre-existing and was not asked to be fixed this pass. No frontend UI trigger was built — reachable only by direct API call for now |
 | FSA-12 | Low | Mobile-banking orders dropped `bundle_id` | DEPLOYED_UNVERIFIED `9c840f7` | One line in `MobilePaymentController` |
 | FSA-13 | Medium | Newsletter synchronous all-BCC send; attachments never deleted | DEPLOYED_UNVERIFIED `8d17320` | `Bus::batch` of `SendNewsletterChunk` (≤50 BCC), cleanup via batch `then`, daily `newsletter:prune-attachments`. Optional decision: retry from Admin › Failed jobs (MED-03 allow-list) |
 | FSA-14 | Low | Newsletter unsubscribe/status unauthenticated | COMMITTED, NOT PUSHED `c94e9ef` | Priority was raised and implementation approved in a later session (superseding this file's earlier "do not start" note, see above). Token-protected unsubscribe + confirmation flow; public `/newsletter/status` oracle removed entirely |
@@ -194,7 +194,7 @@ Each code commit was staged so it contained only its own finding. Each was teste
 **Earlier audit items.** Detail and evidence are in the tracker.
 - **`DEPLOYED_UNVERIFIED`** (on `origin/main`; deploy succeeded 2026-11-02; production effect unverified): CRIT-01, HIGH-01/02/03, WISHLIST-GUEST, MED-01–10, MED-12–17, MED-18A, LOW-03/04/05/06/08, REF-CAP-TZ-001, INV-STALE-STOCK-001, SEARCH-AUTOCOMPLETE-FT-001, WISHLIST-ADDALL-*.
 - **PARTIALLY_FIXED:** MED-11, MED-20, MEDIA-VIDEO-TYPE-001.
-- **BLOCKED:** MED-18 (production `SESSION_SECURE_COOKIE`), LP-INVOICE-STATUS-001 (business and security rule).
+- **BLOCKED (as of this file's original writing — both have since progressed, see §8 below and the tracker):** MED-18 (production `SESSION_SECURE_COOKIE`), LP-INVOICE-STATUS-001 (business and security rule). MED-18 now has a code default plus live production cookie evidence (§8); LP-INVOICE-STATUS-001 is fully resolved locally (§3 above).
 - **OPEN:** LOW-10 (deferred by the user).
 - **NOT_APPLICABLE:** LOW-07.
 
@@ -282,18 +282,22 @@ None of the 7 contains a SQL error, an HTTP 500, or MySQL error 1191. Optional t
 
 ## 7. Newsletter deployment risk
 
-`deploy.yml` runs `rsync --delete` without excluding `storage/app/private/*`, so every deploy empties `storage/app/private` on production. FSA-13 stores attachments for newsletters still being delivered there.
+**Fixed 2026-11-03 (local, uncommitted, part of a consolidated 5-issue remediation batch) — `deploy.yml` now excludes `storage/app/private/*`** from the rsync step, alongside the pre-existing `storage/app/public/*` exclusion. The owner explicitly authorized implementing this specific change in that batch — that authorization covers the code edit only, not a push or deploy, which remain separately gated as always. The edit itself is done and tested; the "needs separate user approval" note below referred to making the edit, which has now happened. See the tracker's FSA-13 notes (the follow-up bullet) for full detail and the new `DeployWorkflowStorageExclusionTest`.
+
+The original risk this section describes still applies **until this fix is actually pushed and deployed** — the branch carrying it is local-only right now:
+
+`deploy.yml` ran `rsync --delete` without excluding `storage/app/private/*`, so every deploy emptied `storage/app/private` on production. FSA-13 stores attachments for newsletters still being delivered there.
 
 - A deploy during delivery makes the remaining chunks fail closed: nothing incomplete is sent, they land in Failed jobs, and those recipients don't get it.
-- The first deploy of FSA-13 is safe by construction (no batches can exist yet).
-- **Before every later deploy:**
+- The first deploy of FSA-13 was safe by construction (no batches could exist yet).
+- **Before any deploy that still predates this fix:**
   1. Freeze newsletter sending.
   2. Run query 8 and deploy only if it returns 0.
   3. If not 0, check 8b: wait while chunks remain; for failed-only batches, retry (`php artisan queue:retry all`) or accept the loss.
   4. Confirm Q2 shows no waiting `App\Jobs\SendNewsletterChunk`.
   5. Deploy.
   6. Re-run query 8 afterwards.
-- Fixing `deploy.yml` (excluding `storage/app/private/*`) needs separate user approval. **Do not modify `deploy.yml` without it.**
+- **Once this fix's commit is pushed and deployed, this entire freeze/check ritual is no longer necessary** — `storage/app/private` will no longer be touched by rsync at all, in-flight or not.
 
 ## 8. Accepted risks and pending decisions
 
@@ -305,14 +309,16 @@ None of the 7 contains a SQL error, an HTTP 500, or MySQL error 1191. Optional t
   - XSS-SINK-GAP-001 (`Page.content` unpurified, no write path)
   - MED-19, LOW-01, LOW-02, LOW-09
 - **No longer pending — decided and implemented in a later session (corrected 2026-11-03):** FSA-06, FSA-07, FSA-08, FSA-10, FSA-14, FSA-15 all had their business/design decisions made by the owner and are now `COMMITTED, NOT PUSHED` (see §3). This replaces the earlier listing of FSA-06/07/08/10/15 as pending decisions, which was true only at the time this file was first written.
+- **No longer pending — resolved by the 2026-11-03 consolidated 5-issue remediation batch (local, uncommitted):**
+  - **LP-INVOICE-STATUS-001** — turned out to need no new decision at all; the account invoice route's existing cancelled/refunded/undelivered-COD rule just wasn't applied to the guest landing-page invoice route. Now is. See tracker notes.
+  - **MED-18** — `config/session.php`'s `'secure'` now defaults to true in production, false elsewhere, with an explicit `.env` override still possible. **Updated by a later same-day task with real live evidence:** a direct `curl` against `https://shoppydrive.com/` confirmed the actual production session cookie already carries `Secure`, `HttpOnly`, and `SameSite=Lax` today. What remains unverified is only the explicit `.env` value itself (SSH-only, no access from here) — see tracker MED-18 notes for the exact one-line owner command and why live-cookie evidence alone can't distinguish an explicit `.env` setting from Symfony's own HTTPS auto-detection.
+  - **`deploy.yml` storage exclusion** — done, see §7 above.
+- **Decided and implemented, same day (2026-11-03, this task) — previously listed below as pending:**
+  - **FSA-09 social-login OTP policy** — the owner decided email OTP must never be required after a successful Facebook or Google login; implemented in `SocialAuthController` (see §3 table row above for exact behavior and the accepted residual risk). The production affected-account count is still unknown and was deliberately not estimated from local data; `audit:unproven-social-accounts --summary` remains available for the owner to run against production.
+  - **FSA-11 lost-parcel skip-restock** — implemented as `lost_confirmed_at` + `OrderLostParcelService` + one extra guard condition in `InventoryService::restoreForOrder()` (see §3 table row above). A genuinely shipped+lost COD parcel still has no closure path (pre-existing FSA-11 shipped-cancel refusal, not resolved this pass).
 - **Still genuinely pending user decisions:**
   - FSA-02 (sender IDs + forwarder check) — still blocked, unchanged
-  - LP-INVOICE-STATUS-001
-  - FSA-11 lost-parcel rule
-  - FSA-09 handling of pre-fix Facebook accounts
   - FSA-13 retry-from-admin
-  - MED-18 production `SESSION_SECURE_COOKIE`
-  - `deploy.yml` storage exclusion
   - optional test-hygiene fixes (§4)
   - updating the tracker with the 2026-11-03 MySQL results (the full-system-audit ones in §4 — unrelated to the local MySQL run described just below)
 - **Resolved since the last version of this section (2026-11-03, owner-provided local MySQL credentials — this closes the one item the previous correction left open):** FSA-06's `LoyaltyPointsConcurrencyRaceTest` fixture correction was previously only verified by code review, with no credentialed MySQL/MariaDB instance available. It has now been executed for real: a dedicated isolated database (`shoppydrive_test_fsa`, local MySQL 8.0.46) was created, `Tests\SafeTestDatabase` confirmed it as an accepted disposable-database name, and the real `ShoppyDrive` development database was confirmed untouched (73 tables, unchanged) throughout. The 3 adjusted cases: **3/3 passed, 21 assertions**. The complete file afterward: **12/12 passed, 70 assertions**. See the tracker's FSA-06 notes for full detail, including the one privilege gap encountered (the race tests' lock-monitoring query needs the global `PROCESS` privilege, which can't be scoped to one database — handled by running via the owner-authorized local `root` credentials with the target database forced to `shoppydrive_test_fsa`, never touching anything else). **This is local MySQL evidence only — it says nothing about production, which remains a separate, unreachable, remote MariaDB 11.8.9 instance.**

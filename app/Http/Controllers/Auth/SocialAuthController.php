@@ -159,14 +159,23 @@ class SocialAuthController extends Controller
 
         Auth::login($result['user']);
 
-        // Same destination as LoginResponse/RegisterResponse for an
-        // unverified account: the 6-digit code flow.
-        if (! $result['user']->hasVerifiedEmail()) {
-            $result['user']->sendEmailVerificationNotification();
-
-            return redirect()->route('verification.notice');
-        }
-
+        // FSA-09 policy update (2026-11-03, explicit owner decision):
+        // successful social authentication is itself the login method —
+        // it must never be followed by a mandatory email-OTP challenge,
+        // for a brand-new unverified account, a claimed account, or an
+        // existing linked identity that's still unverified. This applies
+        // uniformly to every path that reaches this line, old or new.
+        //
+        // This does not silently grant verified-only access: nothing here
+        // sets `email_verified_at`, and every route that actually requires
+        // it (`account.php`/`settings.php`'s `verified` middleware,
+        // `EnsureCheckoutAccess`) is completely unchanged and still
+        // redirects an unverified user to `verification.notice` the
+        // moment they reach one — exactly the same lazy gate a manual,
+        // password-based unverified registration already goes through.
+        // Only the *proactive* redirect immediately after a successful
+        // social login is removed; manual registration's own immediate
+        // OTP requirement (`RegisterResponse`) is untouched by this file.
         return redirect(config('fortify.home'));
     }
 

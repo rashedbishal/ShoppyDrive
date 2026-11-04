@@ -1,5 +1,6 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
+    AlertTriangle,
     ArrowLeft,
     Ban,
     Globe,
@@ -67,6 +68,7 @@ type Order = {
     steadfast_status: string | null;
     steadfast_status_label: string | null;
     steadfast_sent_at: string | null;
+    needsCourierInvestigation: boolean;
     shipping_address: {
         name: string;
         phone: string;
@@ -384,6 +386,26 @@ export default function OrderShow({
                         </p>
                     </div>
                 </div>
+
+                {order.needsCourierInvestigation && (
+                    <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                        <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                        <div>
+                            <p className="font-medium">
+                                Courier report needs investigation
+                            </p>
+                            <p className="text-amber-700">
+                                The last status this courier reported for
+                                this order (see below) isn&apos;t one we
+                                recognize — possibly a lost parcel. The order
+                                hasn&apos;t been changed automatically.
+                                Contact the courier to confirm what happened,
+                                then resolve this manually through refund or
+                                return as appropriate.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
                     <div className="space-y-5">

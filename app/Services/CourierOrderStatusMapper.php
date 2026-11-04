@@ -77,6 +77,33 @@ class CourierOrderStatusMapper
     }
 
     /**
+     * FSA-11: whether a provider's raw status falls outside this app's
+     * known vocabulary for it. `sync()` already handles this safely on its
+     * own — the raw status is still recorded as evidence/history, but the
+     * order's own status is never changed for anything unrecognized — this
+     * is purely a signal surfaced to admins (e.g. on the order page) that a
+     * report worth investigating manually came in, such as a lost parcel.
+     * Neither courier's confirmed status vocabulary (see PATHAO_MAP/
+     * STEADFAST_MAP) includes a distinct "lost" value today, so this is
+     * the closest safe proxy without inventing one.
+     */
+    public static function isUnrecognized(string $provider, string $rawStatus): bool
+    {
+        return ($provider === 'pathao' ? self::forPathao($rawStatus) : self::forSteadfast($rawStatus)) === null;
+    }
+
+    /**
+     * FSA-11: whether $status is one of this mapper's own terminal
+     * outcomes (see TERMINAL_STATUSES) — exposed so callers outside this
+     * class (e.g. the admin order page) can reuse the same single
+     * definition instead of duplicating the list.
+     */
+    public static function isTerminal(OrderStatus $status): bool
+    {
+        return in_array($status, self::TERMINAL_STATUSES, true);
+    }
+
+    /**
      * Turn a raw courier status (e.g. "assigned_for_delivery") into
      * human-readable text (e.g. "Assigned For Delivery").
      */

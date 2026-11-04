@@ -152,6 +152,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::post('orders/{order}/courier-submissions/{courierSubmission}/confirm-not-created', [OrderCourierController::class, 'confirmCourierNotCreated'])->name('orders.courier.confirmNotCreated')->middleware(AdminSections::middleware('orders', 'update'))->scopeBindings();
     // PAY-RETURN-001: mother-admin-only courier verification (no section permission is enough).
     Route::post('orders/{order}/delivery-verifications', [OrderDeliveryVerificationController::class, 'store'])->name('orders.deliveryVerifications.store')->middleware(['admin.mother', 'throttle:30,15'])->block(10, 10);
+    // FSA-11: mother-admin-only confirmed-lost determination — same pattern as the delivery verification above.
+    Route::post('orders/{order}/confirm-lost', [OrderController::class, 'confirmLostParcel'])->name('orders.confirmLostParcel')->middleware(['admin.mother', 'throttle:30,15'])->block(10, 10);
     Route::get('courier-readiness', [CourierVerificationReadinessController::class, 'index'])->name('courierReadiness.index')->middleware('admin.mother');
     Route::post('courier-readiness', [CourierVerificationReadinessController::class, 'store'])->name('courierReadiness.store')->middleware(['admin.mother', 'throttle:30,15'])->block(10, 10);
 

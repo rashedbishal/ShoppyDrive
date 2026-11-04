@@ -94,6 +94,12 @@ const LOW05_EXEMPT_ADMIN_ROUTES = [
     'admin.orders.deliveryVerifications.store',
     'admin.courierReadiness.index',
     'admin.courierReadiness.store',
+
+    // FSA-11: confirming a parcel lost is mother-admin only, confirmed
+    // gated only by ['admin.mother', 'throttle:30,15'] — the identical
+    // pattern as admin.orders.deliveryVerifications.store above, not the
+    // section-permission system.
+    'admin.orders.confirmLostParcel',
 ];
 
 /**
