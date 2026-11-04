@@ -149,6 +149,45 @@ export function ProductCard({
         });
     };
 
+    /**
+     * Sends a click on any otherwise-inert part of the card to the product
+     * page. Links and buttons inside the card keep their own behaviour.
+     */
+    const handleCardClick = (event: React.MouseEvent<HTMLElement>): void => {
+        if ((event.target as Element).closest('a, button')) {
+            return;
+        }
+
+        // A disabled button ignores pointer events, so its click lands on the
+        // card instead. It must stay inert rather than act as a link.
+        const disabledButton = event.currentTarget
+            .querySelector('button:disabled')
+            ?.getBoundingClientRect();
+
+        if (
+            disabledButton &&
+            event.clientX >= disabledButton.left &&
+            event.clientX <= disabledButton.right &&
+            event.clientY >= disabledButton.top &&
+            event.clientY <= disabledButton.bottom
+        ) {
+            return;
+        }
+
+        // Dragging over the text to copy it ends in a click; that isn't navigation.
+        if (window.getSelection()?.toString()) {
+            return;
+        }
+
+        if (event.ctrlKey || event.metaKey || event.shiftKey) {
+            window.open(productUrl, '_blank', 'noopener');
+
+            return;
+        }
+
+        router.visit(productUrl);
+    };
+
     const media = (
         <div className="relative h-full overflow-hidden bg-[var(--color-surface-alt)]">
             {primaryUrl ? (
@@ -271,8 +310,9 @@ export function ProductCard({
             <article
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
+                onClick={handleCardClick}
                 className={cn(
-                    'group grid grid-cols-1 gap-4 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-card-hover)] sm:grid-cols-[200px_minmax(0,1fr)]',
+                    'group grid cursor-pointer grid-cols-1 gap-4 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-card-hover)] sm:grid-cols-[200px_minmax(0,1fr)]',
                     className,
                 )}
             >
@@ -348,8 +388,9 @@ export function ProductCard({
     return (
         <motion.article
             ref={cardRef}
+            onClick={handleCardClick}
             className={cn(
-                'group flex w-full flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-transform duration-200 hover:shadow-[var(--shadow-card-hover)]',
+                'group flex w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-transform duration-200 hover:shadow-[var(--shadow-card-hover)]',
                 PRODUCT_CARD_HEIGHT,
                 className,
             )}
