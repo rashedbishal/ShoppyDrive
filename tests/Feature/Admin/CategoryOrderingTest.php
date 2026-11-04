@@ -88,3 +88,23 @@ test('the category index page lists every category with no pagination', function
         ->has('categories', 25)
     );
 });
+
+test('the category index page lists categories newest-created first', function () {
+    actingAs($this->admin, 'admin');
+
+    // Deliberately given sort_order values in the opposite order of
+    // creation, so this can't pass by coincidentally matching the
+    // drag-reorder column instead of created_at.
+    $oldest = Category::factory()->create(['sort_order' => 2, 'created_at' => now()->subDays(2)]);
+    $middle = Category::factory()->create(['sort_order' => 1, 'created_at' => now()->subDay()]);
+    $newest = Category::factory()->create(['sort_order' => 0, 'created_at' => now()]);
+
+    $response = $this->get(route('admin.categories.index'));
+
+    $response->assertInertia(fn ($page) => $page
+        ->component('admin/categories/index')
+        ->where('categories.0.id', $newest->id)
+        ->where('categories.1.id', $middle->id)
+        ->where('categories.2.id', $oldest->id)
+    );
+});

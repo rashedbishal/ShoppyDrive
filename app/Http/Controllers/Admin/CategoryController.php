@@ -26,11 +26,20 @@ class CategoryController extends Controller
 
     public function index(Request $request): Response
     {
+        // Newest-created first, per explicit admin request — the trade-off
+        // (accepted, not accidental) is that the existing drag-and-drop
+        // reorder feature (sort_order, see reorder() below) still works and
+        // still persists correctly, but its effect on *this list's order*
+        // no longer survives a reload, since creation date now always
+        // takes priority over a dragged position. sort_order/name stay as
+        // deterministic tiebreakers only, for categories created in the
+        // same instant (e.g. seeded/factory data).
         $categories = Category::withCount([
             'subCategories',
             'products as direct_products_count',
         ])
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
+            ->orderByDesc('created_at')
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
