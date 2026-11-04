@@ -16,6 +16,7 @@ import {
     ProductCard,
     ProductCardSkeleton,
 } from '@/components/shared/ProductCard';
+import { SubcategoryShowcase } from '@/components/shared/SubcategoryShowcase';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -629,6 +630,14 @@ function ProductListingPage({
           ) ?? null)
         : null;
 
+    // Category-page-only: the actual top-level category, not a sub-category
+    // page, not the plain /products listing, and not a promotional-banner
+    // filtered view. Falls back to the existing hero below if the category
+    // couldn't be matched against the filter list for some reason, rather
+    // than showing neither.
+    const showSubcategoryShowcase =
+        category !== null && !isActiveCategorySub && activeTopCategory !== null;
+
     const visibleBrands = showAllBrands ? brands : brands.slice(0, 6);
 
     const sidebarControls = (
@@ -888,73 +897,93 @@ function ProductListingPage({
             <Head title={title} />
 
             <div className="space-y-6 py-6 lg:py-8">
-                <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    {/* The inline colour overrides the class; if it's missing or not
-                        a colour the browser understands, the theme colour remains. */}
-                    <div
-                        className="relative isolate overflow-hidden rounded-[1.75rem] bg-[var(--color-primary)] px-5 py-10 text-center shadow-[var(--shadow-card)] sm:px-10 sm:py-12"
-                        style={
-                            bannerColor
-                                ? { backgroundColor: bannerColor }
-                                : undefined
-                        }
-                    >
-                        {category?.image ? (
-                            <img
-                                src={category.image}
-                                alt=""
-                                aria-hidden="true"
-                                className="absolute inset-0 -z-20 size-full object-cover"
-                            />
+                {showSubcategoryShowcase && activeTopCategory ? (
+                    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <h1 className="font-display text-2xl leading-tight font-semibold tracking-tight break-words text-[var(--color-text-primary)] sm:text-3xl">
+                            {title}
+                        </h1>
+                        {description ? (
+                            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)] sm:text-base">
+                                {description}
+                            </p>
                         ) : null}
-                        {/* Category-colour overlay: lets the photo show through, while
-                            the dark scrim below keeps white text readable on any
-                            photo and with any category colour (incl. light ones). */}
-                        {category?.image ? (
+                        <SubcategoryShowcase
+                            subCategories={
+                                activeTopCategory.sub_categories ?? []
+                            }
+                            onNavigate={handleCategoryNavigate}
+                            className="mt-4"
+                        />
+                    </section>
+                ) : (
+                    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        {/* The inline colour overrides the class; if it's missing or not
+                            a colour the browser understands, the theme colour remains. */}
+                        <div
+                            className="relative isolate overflow-hidden rounded-[1.75rem] bg-[var(--color-primary)] px-5 py-10 text-center shadow-[var(--shadow-card)] sm:px-10 sm:py-12"
+                            style={
+                                bannerColor
+                                    ? { backgroundColor: bannerColor }
+                                    : undefined
+                            }
+                        >
+                            {category?.image ? (
+                                <img
+                                    src={category.image}
+                                    alt=""
+                                    aria-hidden="true"
+                                    className="absolute inset-0 -z-20 size-full object-cover"
+                                />
+                            ) : null}
+                            {/* Category-colour overlay: lets the photo show through, while
+                                the dark scrim below keeps white text readable on any
+                                photo and with any category colour (incl. light ones). */}
+                            {category?.image ? (
+                                <span
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute inset-0 -z-10 bg-[var(--color-primary)] opacity-75"
+                                    style={
+                                        bannerColor
+                                            ? { backgroundColor: bannerColor }
+                                            : undefined
+                                    }
+                                />
+                            ) : null}
                             <span
                                 aria-hidden="true"
-                                className="pointer-events-none absolute inset-0 -z-10 bg-[var(--color-primary)] opacity-75"
-                                style={
-                                    bannerColor
-                                        ? { backgroundColor: bannerColor }
-                                        : undefined
-                                }
+                                className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-black/15 via-black/25 to-black/50"
                             />
-                        ) : null}
-                        <span
-                            aria-hidden="true"
-                            className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-black/15 via-black/25 to-black/50"
-                        />
-                        <span
-                            aria-hidden="true"
-                            className="pointer-events-none absolute -top-24 left-1/2 -z-10 size-80 -translate-x-1/2 rounded-full bg-white opacity-10 blur-3xl"
-                        />
+                            <span
+                                aria-hidden="true"
+                                className="pointer-events-none absolute -top-24 left-1/2 -z-10 size-80 -translate-x-1/2 rounded-full bg-white opacity-10 blur-3xl"
+                            />
 
-                        <div className="mx-auto flex max-w-3xl flex-col items-center">
-                            <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5">
-                                <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
-                                    <SlidersHorizontal className="size-3" />
-                                    Catalog filters
-                                </span>
-                                <span className="text-[11px] font-semibold tracking-[0.22em] text-white/80 uppercase">
-                                    {filters.banner_id
-                                        ? 'Collection'
-                                        : category
-                                          ? 'Category browse'
-                                          : 'All products'}
-                                </span>
+                            <div className="mx-auto flex max-w-3xl flex-col items-center">
+                                <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5">
+                                    <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+                                        <SlidersHorizontal className="size-3" />
+                                        Catalog filters
+                                    </span>
+                                    <span className="text-[11px] font-semibold tracking-[0.22em] text-white/80 uppercase">
+                                        {filters.banner_id
+                                            ? 'Collection'
+                                            : category
+                                              ? 'Category browse'
+                                              : 'All products'}
+                                    </span>
+                                </div>
+                                <h1 className="mt-3 line-clamp-2 font-display text-3xl leading-tight font-semibold tracking-tight break-words text-white drop-shadow-sm sm:text-4xl">
+                                    {title}
+                                </h1>
+                                {description ? (
+                                    <p className="mt-2 line-clamp-2 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">
+                                        {description}
+                                    </p>
+                                ) : null}
                             </div>
-                            <h1 className="mt-3 line-clamp-2 font-display text-3xl leading-tight font-semibold tracking-tight break-words text-white drop-shadow-sm sm:text-4xl">
-                                {title}
-                            </h1>
-                            {description ? (
-                                <p className="mt-2 line-clamp-2 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">
-                                    {description}
-                                </p>
-                            ) : null}
                         </div>
-                    </div>
-                </section>
+                    </section>
+                )}
 
                 <section
                     className={cn(
