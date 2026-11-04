@@ -10,6 +10,7 @@ use App\Models\FlashSale;
 use App\Models\HomepageSetting;
 use App\Models\Product;
 use App\Models\ProductBundle;
+use App\Support\LayoutCache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -192,6 +193,17 @@ class HomeController extends Controller
             'bundleDeals' => $bundleDeals,
             'brands' => $brands,
             'categories' => $categories,
+            // Home-only — previously shared globally by HandleInertiaRequests
+            // on every navigation regardless of destination page. Same
+            // LayoutCache calls, same values, same shape; only moved to
+            // where they're actually consumed (resources/js/pages/Home.tsx).
+            // 'homepage_settings' here is the full section-config object —
+            // it overrides the global once-prop's slimmed (announcement_bar
+            // -only) version for this response only, since page props win
+            // over shared props of the same key.
+            'homepage_settings' => LayoutCache::homepageSettings(),
+            'hero_slides' => LayoutCache::heroSlides(),
+            'promotional_banners' => LayoutCache::promotionalBanners(),
         ]);
     }
 }

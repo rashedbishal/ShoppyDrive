@@ -316,6 +316,7 @@ export function ProductCard({
             >
                 <Link
                     href={productUrl}
+                    prefetch
                     className="block aspect-[4/3] overflow-hidden rounded-xl"
                 >
                     {media}
@@ -328,6 +329,7 @@ export function ProductCard({
                         </p>
                         <Link
                             href={productUrl}
+                            prefetch
                             className="line-clamp-2 text-base font-semibold text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)]"
                         >
                             {product.name}
@@ -371,7 +373,9 @@ export function ProductCard({
                             variant="outline"
                             className="h-10 flex-1 sm:flex-none"
                         >
-                            <Link href={productUrl}>View Details</Link>
+                            <Link href={productUrl} prefetch>
+                                View Details
+                            </Link>
                         </Button>
                     </div>
                 </div>
@@ -411,7 +415,7 @@ export function ProductCard({
             onHoverStart={() => setIsHovered(true)}
             onHoverEnd={() => setIsHovered(false)}
         >
-            <Link href={productUrl} className="block min-h-0 flex-1">
+            <Link href={productUrl} prefetch className="block min-h-0 flex-1">
                 {media}
             </Link>
 
@@ -423,6 +427,7 @@ export function ProductCard({
                     </p>
                     <Link
                         href={productUrl}
+                        prefetch
                         className="line-clamp-2 h-9 text-sm leading-[1.125rem] font-semibold text-[var(--color-text-primary)] transition hover:text-[var(--color-primary)]"
                     >
                         {product.name}

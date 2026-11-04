@@ -318,6 +318,7 @@ export default function Header(): React.JSX.Element {
                         {/* Logo */}
                         <Link
                             href="/"
+                            prefetch
                             className="flex shrink-0 items-center gap-3"
                         >
                             {settings?.logo ? (

@@ -359,6 +359,7 @@ export default function MegaMenu({
                                                         </div>
                                                         <Link
                                                             href={`/category/${activeCategory.slug}`}
+                                                            prefetch
                                                             onClick={onClose}
                                                             className="group relative mt-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--category-color)] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-110"
                                                         >
@@ -413,6 +414,7 @@ export default function MegaMenu({
                                                                         >
                                                                             <Link
                                                                                 href={`/category/${sub.slug}`}
+                                                                                prefetch
                                                                                 onClick={
                                                                                     onClose
                                                                                 }

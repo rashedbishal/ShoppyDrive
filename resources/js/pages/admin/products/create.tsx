@@ -4,6 +4,8 @@ import {
     ProductFormField as Field,
     productInputClass as inputClass,
 } from '@/components/admin/product-form-field';
+import type { SpecificationRow } from '@/components/admin/ProductSpecificationsManager';
+import { ProductSpecificationsManager } from '@/components/admin/ProductSpecificationsManager';
 import type { VariantRow } from '@/components/admin/ProductVariantManager';
 import { ProductVariantManager } from '@/components/admin/ProductVariantManager';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
@@ -47,6 +49,7 @@ export default function ProductCreate({
             sku: '',
             short_description: '',
             description: '',
+            specifications: [] as SpecificationRow[],
             category_id: '',
             sub_category_id: '',
             brand_id: '',
@@ -114,6 +117,18 @@ export default function ProductCreate({
             slug: [required(), maxLength(255)],
             category_id: [required()],
             sub_category_id: [required()],
+        });
+
+        data.specifications.forEach((row, index) => {
+            if (!row.key.trim()) {
+                clientErrors[`specifications.${index}.key`] =
+                    'Key is required.';
+            }
+
+            if (!row.value.trim()) {
+                clientErrors[`specifications.${index}.value`] =
+                    'Value is required.';
+            }
         });
 
         if (!hasVariants) {
@@ -268,6 +283,24 @@ export default function ProductCreate({
                                         }
                                     />
                                 </Field>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm">
+                            <CardContent className="pt-5">
+                                <ProductSpecificationsManager
+                                    specifications={data.specifications}
+                                    onChange={(specifications) =>
+                                        setData(
+                                            'specifications',
+                                            specifications,
+                                        )
+                                    }
+                                    errors={errors}
+                                    onClearError={(field) =>
+                                        clearErrors(field as never)
+                                    }
+                                />
                             </CardContent>
                         </Card>
 

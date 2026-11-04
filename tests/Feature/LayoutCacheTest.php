@@ -65,16 +65,27 @@ test('cached shared props are identical to what the database holds', function ()
 
     $this->get('/order/track'); // warm the cache
 
+    // hero_slides / promotional_banners are Home-only now (HomeController),
+    // not globally shared — asserted absent from a non-Home page below, and
+    // present with the same values on Home in the next assertion.
     $this->get('/order/track')->assertInertia(fn (Assert $page) => $page
         ->where('navCategories.0.name', 'Shoes')
         ->where('navCategories.0.sub_categories.0.name', 'Sneakers')
-        ->where('hero_slides.0.title', 'Big sale')
-        ->where('promotional_banners.0.title', 'Promo')
         ->where('popular_keywords', ['shirt'])
         ->where('homepage_settings.announcement_bar.metadata.free_delivery_amount', 1500)
+        ->missing('homepage_settings.new_arrivals')
+        ->missing('hero_slides')
+        ->missing('promotional_banners')
         ->where('settings.free_delivery_threshold', 1500)
         ->where('settings.shipping_rate_inside_dhaka', 60)
         ->where('settings.shipping_rate_outside_dhaka', 120));
+
+    $this->get('/')->assertInertia(fn (Assert $page) => $page
+        ->where('hero_slides.0.title', 'Big sale')
+        ->where('promotional_banners.0.title', 'Promo')
+        // Home's own homepage_settings overrides the global announcement_bar
+        // -only slice with the full section-config object.
+        ->where('homepage_settings.announcement_bar.metadata.free_delivery_amount', 1500));
 });
 
 // ── Every kind of admin change shows up on the very next page load ───────────
@@ -124,12 +135,12 @@ test('reordering categories (a bulk update) updates the menu immediately', funct
 test('reordering homepage sections (a bulk update) takes effect immediately', function () {
     $a = HomepageSetting::updateOrCreate(['section_key' => 'new_arrivals'], ['section_name' => 'A', 'sort_order' => 0]);
     $b = HomepageSetting::updateOrCreate(['section_key' => 'best_sellers'], ['section_name' => 'B', 'sort_order' => 1]);
-    $this->get('/order/track');
+    $this->get('/'); // Home is the only page these non-announcement_bar sections reach
 
     actingAs(layoutAdmin(), 'admin')->post(route('admin.homepage.reorder'), ['ids' => [$b->id, $a->id]]);
     auth('admin')->logout(); // admins are redirected away from storefront pages
 
-    $this->get('/order/track')->assertInertia(fn (Assert $page) => $page
+    $this->get('/')->assertInertia(fn (Assert $page) => $page
         ->where('homepage_settings.best_sellers.sort_order', 0)
         ->where('homepage_settings.new_arrivals.sort_order', 1));
 });
@@ -146,18 +157,20 @@ test('bulk-deleting popular keywords takes effect immediately', function () {
 
 test('hero slides, promo banners and keywords appear and disappear immediately', function () {
     $this->get('/order/track');
+    $this->get('/');
 
     $slide = HeroSlide::create(['title' => 'Slide', 'image' => '/storage/a.jpg', 'is_active' => true]);
     $banner = PromotionalBanner::create(['title' => 'Banner', 'image' => '/storage/b.jpg', 'is_active' => true]);
     PopularKeyword::create(['keyword' => 'saree', 'is_active' => true]);
     $this->get('/order/track')->assertInertia(fn (Assert $page) => $page
-        ->where('hero_slides.0.title', 'Slide')
-        ->where('promotional_banners.0.title', 'Banner')
         ->where('popular_keywords', ['saree']));
+    $this->get('/')->assertInertia(fn (Assert $page) => $page
+        ->where('hero_slides.0.title', 'Slide')
+        ->where('promotional_banners.0.title', 'Banner'));
 
     $slide->update(['is_active' => false]);
     $banner->delete();
-    $this->get('/order/track')->assertInertia(fn (Assert $page) => $page
+    $this->get('/')->assertInertia(fn (Assert $page) => $page
         ->where('hero_slides', [])
         ->where('promotional_banners', []));
 });
@@ -182,11 +195,12 @@ test('cached layout data survives a real persistent cache store between requests
         foreach ([1, 2] as $ignored) {
             $this->get('/order/track')->assertOk()->assertInertia(fn (Assert $page) => $page
                 ->where('navCategories.0.sub_categories.0.name', 'Sneakers')
-                ->where('hero_slides.0.title', 'Big sale')
-                ->where('promotional_banners.0.title', 'Promo')
                 ->where('popular_keywords', ['shirt'])
                 ->where('settings.site_name', 'ShoppyDrive')
                 ->where('settings.free_delivery_threshold', 1500));
+            $this->get('/')->assertOk()->assertInertia(fn (Assert $page) => $page
+                ->where('hero_slides.0.title', 'Big sale')
+                ->where('promotional_banners.0.title', 'Promo'));
         }
 
         expect(Setting::shippingRateFor(null, null))->toBe(120.0);
@@ -262,8 +276,9 @@ test('existing LayoutCache behavior for categories, homepage data and keywords i
 
     $this->get('/order/track')->assertInertia(fn (Assert $page) => $page
         ->where('navCategories.0.name', 'Shoes')
-        ->where('hero_slides.0.title', 'Big sale')
         ->where('settings.site_name', 'ShoppyDrive'));
+    $this->get('/')->assertInertia(fn (Assert $page) => $page
+        ->where('hero_slides.0.title', 'Big sale'));
 });
 
 test('a secret setting value is absent from the raw persistent cache file on disk', function () {

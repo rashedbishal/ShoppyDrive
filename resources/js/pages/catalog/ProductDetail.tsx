@@ -812,6 +812,48 @@ export default function ProductDetail({
                         </div>
                     </div>
 
+                    {/* Product Specifications */}
+                    {product.specifications &&
+                        product.specifications.length > 0 && (
+                            <div className="mt-10 overflow-hidden rounded-3xl border border-[var(--color-border)] bg-white md:mt-16">
+                                <div className="bg-[var(--color-surface-alt)] px-6 py-4">
+                                    <h3 className="text-base font-bold text-[var(--color-text-primary)] sm:text-lg">
+                                        Product specifications
+                                    </h3>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2">
+                                    {product.specifications.map(
+                                        (spec, index) => {
+                                            const total =
+                                                product.specifications!.length;
+                                            // sm+ is a 2-column grid: the last
+                                            // row is just the final item when
+                                            // the count is odd, or the final
+                                            // two when it's even.
+                                            const isLastRow =
+                                                index >=
+                                                total -
+                                                    (total % 2 === 0 ? 2 : 1);
+
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className={`flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-6 py-3 last:border-b-0 sm:odd:border-r ${isLastRow ? 'sm:border-b-0' : ''}`}
+                                                >
+                                                    <span className="text-sm text-[var(--color-text-muted)]">
+                                                        {spec.key}
+                                                    </span>
+                                                    <span className="text-right text-sm font-bold text-[var(--color-text-primary)]">
+                                                        {spec.value}
+                                                    </span>
+                                                </div>
+                                            );
+                                        },
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                     {/* Tabs Section */}
                     <div className="mt-10 rounded-3xl border border-[var(--color-border)] bg-white p-4 shadow-sm sm:p-6 md:mt-16 md:p-10">
                         <Tabs defaultValue="description" className="w-full">

@@ -49,7 +49,9 @@ import type {
     Brand,
     Category,
     FlashSale as FlashSaleData,
+    HeroSlide as RawHeroSlide,
     Product,
+    PromotionalBanner,
     SharedPageProps,
 } from '@/types';
 
@@ -88,6 +90,14 @@ type FlashSaleItem = {
 const DEFAULT_HERO_AUTOPLAY_SECONDS = 6;
 
 type HomePageProps = SharedPageProps & {
+    // HomeController always includes these (see app/Http/Controllers/HomeController.php) —
+    // optional on SharedPageProps because every other page no longer
+    // receives them, but guaranteed present here. RawHeroSlide (the actual
+    // prop shape from the server) is distinct from this file's own local
+    // `HeroSlide` type below, which is what hero_slides gets mapped into
+    // for the HeroSlider component.
+    hero_slides: RawHeroSlide[];
+    promotional_banners: PromotionalBanner[];
     activeFlashSale: FlashSaleData | null;
     featuredProducts: Product[];
     newArrivals: Product[];

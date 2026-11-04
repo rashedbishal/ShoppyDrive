@@ -198,6 +198,7 @@ export interface Product extends Timestamped, SoftDeletable {
     sku?: string | null;
     short_description?: string | null;
     description?: string | null;
+    specifications?: { key: string; value: string }[] | null;
     category: Category;
     brand?: Brand | null;
     price: number;
@@ -695,9 +696,12 @@ export interface SharedPageProps {
     currencySymbol: string;
     settings: AppSettings;
     navCategories: NavCategory[];
+    /** Every page gets just `{ announcement_bar }`; Home overrides with the full section-config object (see HomeController). */
     homepage_settings: Record<string, HomepageSetting>;
-    hero_slides: HeroSlide[];
-    promotional_banners: PromotionalBanner[];
+    /** Home-only now — absent on every other page (see HomeController). */
+    hero_slides?: HeroSlide[];
+    /** Home-only now — absent on every other page (see HomeController). */
+    promotional_banners?: PromotionalBanner[];
     wishlist_ids: number[];
     cart_shipping_cost: number | null;
     cart_base_shipping_rate: number | null;

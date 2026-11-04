@@ -25,6 +25,8 @@ class ProductRequest extends FormRequest
     // has more than 10 media items is never blocked by this.
     private const MAX_NEW_UPLOADS = 10;
 
+    private const MAX_SPECIFICATIONS = 30;
+
     public function authorize(): bool
     {
         return true;
@@ -47,6 +49,9 @@ class ProductRequest extends FormRequest
             'sku' => ['nullable', 'string', 'max:100'],
             'short_description' => ['nullable', 'string', 'max:500'],
             'description' => ['nullable', 'string'],
+            'specifications' => ['nullable', 'array', 'max:'.self::MAX_SPECIFICATIONS],
+            'specifications.*.key' => ['required_with:specifications', 'string', 'max:100'],
+            'specifications.*.value' => ['required_with:specifications', 'string', 'max:255'],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'sub_category_id' => ['required', 'integer', 'exists:sub_categories,id'],
             'brand_id' => ['nullable', 'integer', 'exists:brands,id'],

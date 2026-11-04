@@ -40,6 +40,7 @@ class Product extends Model
         'sku',
         'description',
         'short_description',
+        'specifications',
         'category_id',
         'sub_category_id',
         'brand_id',
@@ -68,6 +69,7 @@ class Product extends Model
     protected function casts(): array
     {
         return [
+            'specifications' => 'json',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'is_digital' => 'boolean',

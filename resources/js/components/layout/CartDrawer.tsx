@@ -200,6 +200,7 @@ export default function CartDrawer(): React.JSX.Element {
                         ) : (
                             <Link
                                 href={cartRoutes.index.url()}
+                                prefetch
                                 onClick={closeCart}
                                 className="block w-full"
                             >
