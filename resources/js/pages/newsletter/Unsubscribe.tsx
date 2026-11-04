@@ -13,7 +13,10 @@ export default function Unsubscribe({
     email,
     token,
 }: Props): React.JSX.Element {
-    const { post, processing } = useForm({ email: email ?? '', token: token ?? '' });
+    const { post, processing } = useForm({
+        email: email ?? '',
+        token: token ?? '',
+    });
 
     const submit = (e: React.FormEvent): void => {
         e.preventDefault();
@@ -46,9 +49,9 @@ export default function Unsubscribe({
                                 Link invalid or expired
                             </h1>
                             <p className="text-sm leading-6 text-gray-500">
-                                This unsubscribe link isn't valid. If you
-                                still want to stop receiving our emails,
-                                use the link from a more recent newsletter.
+                                This unsubscribe link isn't valid. If you still
+                                want to stop receiving our emails, use the link
+                                from a more recent newsletter.
                             </p>
                         </>
                     )}
@@ -62,8 +65,8 @@ export default function Unsubscribe({
                                 You're unsubscribed
                             </h1>
                             <p className="text-sm leading-6 text-gray-500">
-                                {email} won't receive any more newsletter
-                                emails from us.
+                                {email} won't receive any more newsletter emails
+                                from us.
                             </p>
                         </>
                     )}
@@ -77,9 +80,8 @@ export default function Unsubscribe({
                                 Unsubscribe from our newsletter?
                             </h1>
                             <p className="mb-6 text-sm leading-6 text-gray-500">
-                                {email} will stop receiving newsletter
-                                emails from us. You can subscribe again at
-                                any time.
+                                {email} will stop receiving newsletter emails
+                                from us. You can subscribe again at any time.
                             </p>
 
                             <form onSubmit={submit}>

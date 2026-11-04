@@ -41,18 +41,20 @@ export default function Manage(): React.JSX.Element {
 
                     {submitted ? (
                         <p className="text-sm leading-6 text-gray-500">
-                            If that email is subscribed to our newsletter,
-                            we've sent a link to manage it — check your
-                            inbox.
+                            If that email is subscribed to our newsletter, we've
+                            sent a link to manage it — check your inbox.
                         </p>
                     ) : (
                         <>
                             <p className="mb-6 text-sm leading-6 text-gray-500">
-                                Enter your email and, if it's subscribed,
-                                we'll send you a link to unsubscribe.
+                                Enter your email and, if it's subscribed, we'll
+                                send you a link to unsubscribe.
                             </p>
 
-                            <form onSubmit={submit} className="space-y-3 text-left">
+                            <form
+                                onSubmit={submit}
+                                className="space-y-3 text-left"
+                            >
                                 <label
                                     htmlFor="email"
                                     className="text-sm font-medium text-gray-700"
@@ -75,7 +77,9 @@ export default function Manage(): React.JSX.Element {
                                     disabled={processing}
                                     className="w-full rounded-xl bg-[#c8102e] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#a60d26] disabled:opacity-60"
                                 >
-                                    {processing ? 'Sending…' : 'Send me the link'}
+                                    {processing
+                                        ? 'Sending…'
+                                        : 'Send me the link'}
                                 </button>
                             </form>
                         </>

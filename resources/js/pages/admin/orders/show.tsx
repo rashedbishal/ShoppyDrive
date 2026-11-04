@@ -395,13 +395,13 @@ export default function OrderShow({
                                 Courier report needs investigation
                             </p>
                             <p className="text-amber-700">
-                                The last status this courier reported for
-                                this order (see below) isn&apos;t one we
-                                recognize — possibly a lost parcel. The order
-                                hasn&apos;t been changed automatically.
-                                Contact the courier to confirm what happened,
-                                then resolve this manually through refund or
-                                return as appropriate.
+                                The last status this courier reported for this
+                                order (see below) isn&apos;t one we recognize —
+                                possibly a lost parcel. The order hasn&apos;t
+                                been changed automatically. Contact the courier
+                                to confirm what happened, then resolve this
+                                manually through refund or return as
+                                appropriate.
                             </p>
                         </div>
                     </div>

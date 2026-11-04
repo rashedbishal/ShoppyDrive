@@ -269,8 +269,8 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                         <span className="ml-1 font-normal text-slate-400">
                                             — 1 capture group; leave blank to
                                             accept any sender (FSA-02: the
-                                            allowlist only applies once this
-                                            is set)
+                                            allowlist only applies once this is
+                                            set)
                                         </span>
                                     </label>
                                     <input
