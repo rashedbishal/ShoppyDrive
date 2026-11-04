@@ -1,5 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import { useEffect, useRef } from 'react';
+import { AdminReveal } from '@/components/admin/admin-motion';
 import {
     ProductFormField as Field,
     productInputClass as inputClass,
@@ -295,24 +297,40 @@ export default function ProductEdit({
                     onSubmit={handleSubmit}
                     className="grid gap-5 lg:grid-cols-[1fr_320px]"
                 >
-                    {errorMessages.length > 0 && (
-                        <div ref={errorSummaryRef} className="lg:col-span-2">
-                            <Alert variant="error">
-                                <AlertTitle>
-                                    Couldn't save product — please fix the
-                                    highlighted field
-                                    {errorMessages.length > 1 ? 's' : ''}
-                                </AlertTitle>
-                                <AlertDescription>
-                                    <ul className="list-disc space-y-0.5 pl-4">
-                                        {errorMessages.map((message, i) => (
-                                            <li key={i}>{message}</li>
-                                        ))}
-                                    </ul>
-                                </AlertDescription>
-                            </Alert>
-                        </div>
-                    )}
+                    <AnimatePresence initial={false}>
+                        {errorMessages.length > 0 && (
+                            <AdminReveal
+                                key="error-summary"
+                                className="lg:col-span-2"
+                            >
+                                <div
+                                    ref={errorSummaryRef}
+                                    className="lg:col-span-2"
+                                >
+                                    <Alert variant="error">
+                                        <AlertTitle>
+                                            Couldn't save product — please fix
+                                            the highlighted field
+                                            {errorMessages.length > 1
+                                                ? 's'
+                                                : ''}
+                                        </AlertTitle>
+                                        <AlertDescription>
+                                            <ul className="list-disc space-y-0.5 pl-4">
+                                                {errorMessages.map(
+                                                    (message, i) => (
+                                                        <li key={i}>
+                                                            {message}
+                                                        </li>
+                                                    ),
+                                                )}
+                                            </ul>
+                                        </AlertDescription>
+                                    </Alert>
+                                </div>
+                            </AdminReveal>
+                        )}
+                    </AnimatePresence>
                     <div className="space-y-5">
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
@@ -342,23 +360,37 @@ export default function ProductEdit({
                                         }
                                     />
                                 </Field>
-                                {hasVariants ? (
-                                    <p className="text-xs text-slate-400">
-                                        SKU is set per color/size variant below
-                                        instead, since each variant needs its
-                                        own.
-                                    </p>
-                                ) : (
-                                    <Field label="SKU" error={errors.sku}>
-                                        <input
-                                            className={inputClass(errors.sku)}
-                                            value={data.sku}
-                                            onChange={(e) =>
-                                                setData('sku', e.target.value)
-                                            }
-                                        />
-                                    </Field>
-                                )}
+                                <AnimatePresence initial={false}>
+                                    {hasVariants ? (
+                                        <AdminReveal key="sku-field-a">
+                                            <p className="text-xs text-slate-400">
+                                                SKU is set per color/size
+                                                variant below instead, since
+                                                each variant needs its own.
+                                            </p>
+                                        </AdminReveal>
+                                    ) : (
+                                        <AdminReveal key="sku-field-b">
+                                            <Field
+                                                label="SKU"
+                                                error={errors.sku}
+                                            >
+                                                <input
+                                                    className={inputClass(
+                                                        errors.sku,
+                                                    )}
+                                                    value={data.sku}
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            'sku',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                />
+                                            </Field>
+                                        </AdminReveal>
+                                    )}
+                                </AnimatePresence>
                                 <Field
                                     label="Short Description"
                                     error={errors.short_description}
@@ -414,109 +446,123 @@ export default function ProductEdit({
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4 pt-4">
-                                {(!hasVariants ||
-                                    data.variants.length === 0) && (
-                                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                                        <Field
-                                            label="Price (৳) *"
-                                            error={errors.price}
-                                        >
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                className={inputClass(
-                                                    errors.price,
-                                                )}
-                                                value={data.price}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        'price',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </Field>
-                                        <Field
-                                            label="Compare Price (৳)"
-                                            error={errors.compare_price}
-                                        >
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                className={inputClass(
-                                                    errors.compare_price,
-                                                )}
-                                                value={data.compare_price}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        'compare_price',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </Field>
-                                        <Field
-                                            label="Cost Price (৳)"
-                                            error={errors.cost_price}
-                                        >
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                className={inputClass(
-                                                    errors.cost_price,
-                                                )}
-                                                value={data.cost_price}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        'cost_price',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </Field>
-                                        <Field
-                                            label="Stock Qty *"
-                                            error={errors.stock_quantity}
-                                        >
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                className={inputClass(
-                                                    errors.stock_quantity,
-                                                )}
-                                                value={data.stock_quantity}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        'stock_quantity',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </Field>
-                                        <Field
-                                            label="Low Stock Alert"
-                                            error={errors.low_stock_threshold}
-                                        >
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                className={inputClass(
-                                                    errors.low_stock_threshold,
-                                                )}
-                                                value={data.low_stock_threshold}
-                                                onChange={(e) =>
-                                                    setData(
-                                                        'low_stock_threshold',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </Field>
-                                    </div>
-                                )}
+                                <AnimatePresence initial={false}>
+                                    {(!hasVariants ||
+                                        data.variants.length === 0) && (
+                                        <AdminReveal key="pricing-fields">
+                                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                                                <Field
+                                                    label="Price (৳) *"
+                                                    error={errors.price}
+                                                >
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.01"
+                                                        className={inputClass(
+                                                            errors.price,
+                                                        )}
+                                                        value={data.price}
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                'price',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                    />
+                                                </Field>
+                                                <Field
+                                                    label="Compare Price (৳)"
+                                                    error={errors.compare_price}
+                                                >
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.01"
+                                                        className={inputClass(
+                                                            errors.compare_price,
+                                                        )}
+                                                        value={
+                                                            data.compare_price
+                                                        }
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                'compare_price',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                    />
+                                                </Field>
+                                                <Field
+                                                    label="Cost Price (৳)"
+                                                    error={errors.cost_price}
+                                                >
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.01"
+                                                        className={inputClass(
+                                                            errors.cost_price,
+                                                        )}
+                                                        value={data.cost_price}
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                'cost_price',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                    />
+                                                </Field>
+                                                <Field
+                                                    label="Stock Qty *"
+                                                    error={
+                                                        errors.stock_quantity
+                                                    }
+                                                >
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        className={inputClass(
+                                                            errors.stock_quantity,
+                                                        )}
+                                                        value={
+                                                            data.stock_quantity
+                                                        }
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                'stock_quantity',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                    />
+                                                </Field>
+                                                <Field
+                                                    label="Low Stock Alert"
+                                                    error={
+                                                        errors.low_stock_threshold
+                                                    }
+                                                >
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        className={inputClass(
+                                                            errors.low_stock_threshold,
+                                                        )}
+                                                        value={
+                                                            data.low_stock_threshold
+                                                        }
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                'low_stock_threshold',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                    />
+                                                </Field>
+                                            </div>
+                                        </AdminReveal>
+                                    )}
+                                </AnimatePresence>
 
                                 <div className="border-t border-slate-100 pt-4">
                                     <ProductVariantManager
@@ -539,19 +585,26 @@ export default function ProductEdit({
                                         }
                                         errors={errors}
                                     />
-                                    {hasVariants &&
-                                        data.variants.length > 0 && (
-                                            <p className="mt-3 text-xs text-slate-500">
-                                                Computed from{' '}
-                                                {data.variants.length} variant
-                                                {data.variants.length === 1
-                                                    ? ''
-                                                    : 's'}
-                                                {minVariantPrice !== null
-                                                    ? ` — from ৳${minVariantPrice}`
-                                                    : ' — enter a price for each variant'}
-                                            </p>
-                                        )}
+                                    <AnimatePresence initial={false}>
+                                        {hasVariants &&
+                                            data.variants.length > 0 && (
+                                                <AdminReveal key="computed-pricing">
+                                                    <p className="mt-3 text-xs text-slate-500">
+                                                        Computed from{' '}
+                                                        {data.variants.length}{' '}
+                                                        variant
+                                                        {data.variants
+                                                            .length === 1
+                                                            ? ''
+                                                            : 's'}
+                                                        {minVariantPrice !==
+                                                        null
+                                                            ? ` — from ৳${minVariantPrice}`
+                                                            : ' — enter a price for each variant'}
+                                                    </p>
+                                                </AdminReveal>
+                                            )}
+                                    </AnimatePresence>
                                 </div>
                             </CardContent>
                         </Card>
@@ -791,32 +844,40 @@ export default function ProductEdit({
                                     />
                                     Free Delivery
                                 </label>
-                                {data.free_delivery && (
-                                    <Field
-                                        label="Min Qty for Free Delivery"
-                                        error={errors.free_delivery_min_qty}
-                                    >
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            className={inputClass(
-                                                errors.free_delivery_min_qty,
-                                            )}
-                                            value={data.free_delivery_min_qty}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'free_delivery_min_qty',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="Leave blank = any qty"
-                                        />
-                                        <p className="mt-1 text-xs text-slate-400">
-                                            Leave blank = free delivery for any
-                                            quantity
-                                        </p>
-                                    </Field>
-                                )}
+                                <AnimatePresence initial={false}>
+                                    {data.free_delivery && (
+                                        <AdminReveal key="free-delivery-min">
+                                            <Field
+                                                label="Min Qty for Free Delivery"
+                                                error={
+                                                    errors.free_delivery_min_qty
+                                                }
+                                            >
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    className={inputClass(
+                                                        errors.free_delivery_min_qty,
+                                                    )}
+                                                    value={
+                                                        data.free_delivery_min_qty
+                                                    }
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            'free_delivery_min_qty',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="Leave blank = any qty"
+                                                />
+                                                <p className="mt-1 text-xs text-slate-400">
+                                                    Leave blank = free delivery
+                                                    for any quantity
+                                                </p>
+                                            </Field>
+                                        </AdminReveal>
+                                    )}
+                                </AnimatePresence>
                             </CardContent>
                         </Card>
 

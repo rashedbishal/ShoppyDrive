@@ -1100,3 +1100,81 @@ input[type='radio']:checked:focus-visible {
         animation: dialog-premium-overlay-out 200ms ease-in forwards;
     }
 }
+
+/*
+ * Admin (CMS) motion. Everything here is scoped through `.admin-shell`, which
+ * only AdminLayout renders, or through `.admin-reveal`, which only admin
+ * components use, so none of it reaches the storefront. `body:has()` rather
+ * than a descendant selector, so it also covers dialogs portaled to <body>.
+ * Base-layer rules lose to Tailwind utilities on purpose: an element with its
+ * own `transition-*` class keeps it.
+ */
+@layer base {
+    body:has(.admin-shell) [class*='space-y-'] > * {
+        transition: margin 340ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    body:has(.admin-shell) :is(a, button, input, select, textarea, label) {
+        transition-property:
+            color, background-color, border-color, box-shadow, opacity,
+            transform;
+        transition-duration: 180ms;
+        transition-timing-function: ease-out;
+    }
+
+    body:has(.admin-shell) button:active:not(:disabled) {
+        transform: scale(0.97);
+    }
+}
+
+@keyframes admin-content-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+}
+
+@keyframes admin-message-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+}
+
+.admin-content {
+    animation: admin-content-in 320ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+/* Validation messages and alerts appear on their own, wherever they are rendered. */
+body:has(.admin-shell) :is(p.text-red-500, p.text-red-600, [role='alert']) {
+    animation: admin-message-in 240ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.admin-reveal {
+    transition: margin 340ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: top;
+}
+
+/* A panel's parent gap opens with it instead of appearing all at once. */
+@starting-style {
+    .admin-reveal {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body:has(.admin-shell) [class*='space-y-'] > *,
+    .admin-reveal {
+        transition: none;
+    }
+
+    body:has(.admin-shell) button:active:not(:disabled) {
+        transform: none;
+    }
+
+    .admin-content,
+    body:has(.admin-shell) :is(p.text-red-500, p.text-red-600, [role='alert']) {
+        animation: none;
+    }
+}

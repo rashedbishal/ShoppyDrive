@@ -10,9 +10,11 @@ import {
     X,
 } from 'lucide-react';
 import { useState } from 'react';
+import { AdminReveal } from '@/components/admin/admin-motion';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
+import { useRowKeys } from '@/hooks/use-row-keys';
 import {
     dialogItem,
     dialogOverlayMotion,
@@ -143,7 +145,10 @@ export default function NewsletterCompose({
         }
     };
 
+    const attachmentRowKeys = useRowKeys(attachmentFiles.length);
+
     const removeAttachment = (index: number) => {
+        attachmentRowKeys.removeKey(index);
         setAttachmentFiles((prev) => prev.filter((_, i) => i !== index));
     };
 
@@ -338,331 +343,394 @@ export default function NewsletterCompose({
                 </div>
 
                 {/* CUSTOM EMAIL FORM */}
-                {emailType === 'custom' && (
-                    <Card className="overflow-hidden p-0 shadow-sm">
-                        <div className="space-y-5 p-6">
-                            {/* Subject */}
-                            <div>
-                                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                                    Subject
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Enter email subject…"
-                                    value={customForm.data.subject}
-                                    onChange={(e) =>
-                                        customForm.setData(
-                                            'subject',
-                                            e.target.value,
-                                        )
-                                    }
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
-                                />
-                                {customForm.errors.subject && (
-                                    <p className="mt-1 text-xs text-red-600">
-                                        {customForm.errors.subject}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Body */}
-                            <div>
-                                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                                    Email Body
-                                </label>
-                                <RichTextEditor
-                                    value={customForm.data.body}
-                                    onChange={(html) =>
-                                        customForm.setData('body', html)
-                                    }
-                                />
-                                {customForm.errors.body && (
-                                    <p className="mt-1 text-xs text-red-600">
-                                        {customForm.errors.body}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Attachments */}
-                            <div>
-                                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                                    Attachments{' '}
-                                    <span className="font-normal text-slate-400">
-                                        (optional)
-                                    </span>
-                                </label>
-                                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500 transition hover:border-[#c8102e] hover:text-[#c8102e]">
-                                    <Paperclip className="size-4" />
-                                    <span>Click to attach files</span>
-                                    <input
-                                        type="file"
-                                        multiple
-                                        className="sr-only"
-                                        onChange={(e) => {
-                                            if (e.target.files) {
-                                                setAttachmentFiles((prev) => [
-                                                    ...prev,
-                                                    ...Array.from(
-                                                        e.target.files!,
-                                                    ),
-                                                ]);
-                                            }
-                                        }}
-                                    />
-                                </label>
-                                {attachmentFiles.length > 0 && (
-                                    <div className="mt-2 space-y-1.5">
-                                        {attachmentFiles.map((file, index) => (
-                                            <div
-                                                key={index}
-                                                className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm"
-                                            >
-                                                <span className="truncate text-slate-700">
-                                                    {file.name}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        removeAttachment(index)
-                                                    }
-                                                    className="ml-2 shrink-0 text-slate-400 hover:text-red-500"
-                                                >
-                                                    <X className="size-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
-                            <button
-                                type="button"
-                                onClick={() => setEmailType(null)}
-                                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                            >
-                                Back
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleSend}
-                                disabled={
-                                    !customForm.data.subject.trim() ||
-                                    !customForm.data.body.trim() ||
-                                    customForm.processing
-                                }
-                                className="flex items-center gap-2 rounded-lg bg-[#c8102e] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:opacity-50"
-                            >
-                                <Send className="size-4" />
-                                {customForm.processing
-                                    ? 'Sending…'
-                                    : 'Review & Send'}
-                            </button>
-                        </div>
-                    </Card>
-                )}
-
-                {/* PRODUCT PROMOTION FORM */}
-                {emailType === 'product_promotion' && (
-                    <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-                        <Card className="overflow-hidden p-0 shadow-sm">
-                            <div className="space-y-5 p-6">
-                                {/* Subject */}
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                                        Email Subject
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. Check out our latest product!"
-                                        value={productForm.data.subject}
-                                        onChange={(e) =>
-                                            productForm.setData(
-                                                'subject',
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
-                                    />
-                                    {productForm.errors.subject && (
-                                        <p className="mt-1 text-xs text-red-600">
-                                            {productForm.errors.subject}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Product picker */}
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                                        Select Product
-                                    </label>
-                                    <div className="relative">
-                                        <Select
-                                            value={selectedProductId ?? ''}
+                <AnimatePresence initial={false}>
+                    {emailType === 'custom' && (
+                        <AdminReveal key="custom-email">
+                            <Card className="overflow-hidden p-0 shadow-sm">
+                                <div className="space-y-5 p-6">
+                                    {/* Subject */}
+                                    <div>
+                                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                                            Subject
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="Enter email subject…"
+                                            value={customForm.data.subject}
                                             onChange={(e) =>
-                                                handleProductSelect(
-                                                    Number(e.target.value),
+                                                customForm.setData(
+                                                    'subject',
+                                                    e.target.value,
                                                 )
                                             }
-                                            selectClassName="w-full appearance-none rounded-lg border border-slate-200 px-3 py-2.5 pr-10 text-sm text-slate-800 focus:border-[#c8102e] focus:outline-none focus:ring-1 focus:ring-[#c8102e]"
-                                        >
-                                            <option value="">
-                                                -- Choose a product --
-                                            </option>
-                                            {products.map((p) => (
-                                                <option key={p.id} value={p.id}>
-                                                    {p.name} — ৳
-                                                    {p.price.toLocaleString()}
-                                                </option>
-                                            ))}
-                                        </Select>
+                                            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                        />
+                                        {customForm.errors.subject && (
+                                            <p className="mt-1 text-xs text-red-600">
+                                                {customForm.errors.subject}
+                                            </p>
+                                        )}
                                     </div>
-                                    {productForm.errors.product_id && (
-                                        <p className="mt-1 text-xs text-red-600">
-                                            {productForm.errors.product_id}
-                                        </p>
-                                    )}
+
+                                    {/* Body */}
+                                    <div>
+                                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                                            Email Body
+                                        </label>
+                                        <RichTextEditor
+                                            value={customForm.data.body}
+                                            onChange={(html) =>
+                                                customForm.setData('body', html)
+                                            }
+                                        />
+                                        {customForm.errors.body && (
+                                            <p className="mt-1 text-xs text-red-600">
+                                                {customForm.errors.body}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Attachments */}
+                                    <div>
+                                        <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                                            Attachments{' '}
+                                            <span className="font-normal text-slate-400">
+                                                (optional)
+                                            </span>
+                                        </label>
+                                        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500 transition hover:border-[#c8102e] hover:text-[#c8102e]">
+                                            <Paperclip className="size-4" />
+                                            <span>Click to attach files</span>
+                                            <input
+                                                type="file"
+                                                multiple
+                                                className="sr-only"
+                                                onChange={(e) => {
+                                                    if (e.target.files) {
+                                                        setAttachmentFiles(
+                                                            (prev) => [
+                                                                ...prev,
+                                                                ...Array.from(
+                                                                    e.target
+                                                                        .files!,
+                                                                ),
+                                                            ],
+                                                        );
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                        <AnimatePresence initial={false}>
+                                            {attachmentFiles.length > 0 && (
+                                                <AdminReveal key="attachments">
+                                                    <div className="mt-2 space-y-1.5">
+                                                        <AnimatePresence
+                                                            initial={false}
+                                                        >
+                                                            {attachmentFiles.map(
+                                                                (
+                                                                    file,
+                                                                    index,
+                                                                ) => (
+                                                                    <AdminReveal
+                                                                        key={
+                                                                            attachmentRowKeys
+                                                                                .keys[
+                                                                                index
+                                                                            ]
+                                                                        }
+                                                                    >
+                                                                        <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                                                                            <span className="truncate text-slate-700">
+                                                                                {
+                                                                                    file.name
+                                                                                }
+                                                                            </span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() =>
+                                                                                    removeAttachment(
+                                                                                        index,
+                                                                                    )
+                                                                                }
+                                                                                className="ml-2 shrink-0 text-slate-400 hover:text-red-500"
+                                                                            >
+                                                                                <X className="size-4" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </AdminReveal>
+                                                                ),
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                </AdminReveal>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
                                 </div>
 
-                                {/* Image picker */}
-                                {selectedProduct &&
-                                    selectedProduct.media.length > 0 && (
+                                <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setEmailType(null)}
+                                        className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                    >
+                                        Back
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleSend}
+                                        disabled={
+                                            !customForm.data.subject.trim() ||
+                                            !customForm.data.body.trim() ||
+                                            customForm.processing
+                                        }
+                                        className="flex items-center gap-2 rounded-lg bg-[#c8102e] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:opacity-50"
+                                    >
+                                        <Send className="size-4" />
+                                        {customForm.processing
+                                            ? 'Sending…'
+                                            : 'Review & Send'}
+                                    </button>
+                                </div>
+                            </Card>
+                        </AdminReveal>
+                    )}
+                </AnimatePresence>
+
+                {/* PRODUCT PROMOTION FORM */}
+                <AnimatePresence initial={false}>
+                    {emailType === 'product_promotion' && (
+                        <AdminReveal key="promotion-email">
+                            <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+                                <Card className="overflow-hidden p-0 shadow-sm">
+                                    <div className="space-y-5 p-6">
+                                        {/* Subject */}
                                         <div>
                                             <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                                                Choose Image for Email
+                                                Email Subject
                                             </label>
-                                            <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-                                                {selectedProduct.media.map(
-                                                    (media) => (
-                                                        <button
-                                                            key={media.id}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setSelectedImage(
-                                                                    media.path,
-                                                                );
-                                                                productForm.setData(
-                                                                    'selected_image',
-                                                                    media.path,
-                                                                );
-                                                            }}
-                                                            className={`overflow-hidden rounded-lg border-2 transition ${
-                                                                selectedImage ===
-                                                                media.path
-                                                                    ? 'border-[#c8102e] shadow-md'
-                                                                    : 'border-transparent hover:border-slate-300'
-                                                            }`}
-                                                        >
-                                                            <img
-                                                                src={media.path}
-                                                                alt=""
-                                                                className="aspect-square w-full object-cover"
-                                                            />
-                                                        </button>
-                                                    ),
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                            </div>
-
-                            <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setEmailType(null)}
-                                    className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                                >
-                                    Back
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleSend}
-                                    disabled={
-                                        !productForm.data.subject.trim() ||
-                                        !productForm.data.product_id ||
-                                        productForm.processing
-                                    }
-                                    className="flex items-center gap-2 rounded-lg bg-[#c8102e] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:opacity-50"
-                                >
-                                    <Send className="size-4" />
-                                    {productForm.processing
-                                        ? 'Sending…'
-                                        : 'Review & Send'}
-                                </button>
-                            </div>
-                        </Card>
-
-                        {/* Email preview */}
-                        {selectedProduct && (
-                            <Card className="overflow-hidden p-0 shadow-sm">
-                                <div className="border-b border-slate-100 px-4 py-3">
-                                    <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
-                                        Preview
-                                    </p>
-                                </div>
-                                <div className="overflow-hidden rounded-b-lg bg-[#f4f5f7] p-3">
-                                    <div className="overflow-hidden rounded-xl bg-white shadow-sm">
-                                        {/* Mini header */}
-                                        <div className="bg-[#c8102e] px-4 py-3 text-center">
-                                            <p className="text-sm font-bold text-white">
-                                                ShoppyDrive
-                                            </p>
-                                            <p className="mt-0.5 inline-block rounded-full bg-white/20 px-2 py-0.5 text-[10px] text-white/80">
-                                                Featured Product
-                                            </p>
-                                        </div>
-
-                                        {/* Product image */}
-                                        {selectedImage && (
-                                            <img
-                                                src={selectedImage}
-                                                alt={selectedProduct.name}
-                                                className="w-full object-cover"
-                                                style={{ maxHeight: 160 }}
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Check out our latest product!"
+                                                value={productForm.data.subject}
+                                                onChange={(e) =>
+                                                    productForm.setData(
+                                                        'subject',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                             />
-                                        )}
+                                            {productForm.errors.subject && (
+                                                <p className="mt-1 text-xs text-red-600">
+                                                    {productForm.errors.subject}
+                                                </p>
+                                            )}
+                                        </div>
 
-                                        {/* Details */}
-                                        <div className="p-4">
-                                            <p className="text-xs font-bold text-slate-800">
-                                                {selectedProduct.name}
-                                            </p>
-                                            {selectedProduct.short_description && (
-                                                <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-slate-500">
+                                        {/* Product picker */}
+                                        <div>
+                                            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                                                Select Product
+                                            </label>
+                                            <div className="relative">
+                                                <Select
+                                                    value={
+                                                        selectedProductId ?? ''
+                                                    }
+                                                    onChange={(e) =>
+                                                        handleProductSelect(
+                                                            Number(
+                                                                e.target.value,
+                                                            ),
+                                                        )
+                                                    }
+                                                    selectClassName="w-full appearance-none rounded-lg border border-slate-200 px-3 py-2.5 pr-10 text-sm text-slate-800 focus:border-[#c8102e] focus:outline-none focus:ring-1 focus:ring-[#c8102e]"
+                                                >
+                                                    <option value="">
+                                                        -- Choose a product --
+                                                    </option>
+                                                    {products.map((p) => (
+                                                        <option
+                                                            key={p.id}
+                                                            value={p.id}
+                                                        >
+                                                            {p.name} — ৳
+                                                            {p.price.toLocaleString()}
+                                                        </option>
+                                                    ))}
+                                                </Select>
+                                            </div>
+                                            {productForm.errors.product_id && (
+                                                <p className="mt-1 text-xs text-red-600">
                                                     {
-                                                        selectedProduct.short_description
+                                                        productForm.errors
+                                                            .product_id
                                                     }
                                                 </p>
                                             )}
-                                            <div className="mt-2 flex items-baseline gap-2">
-                                                <span className="text-sm font-black text-[#c8102e]">
-                                                    ৳
-                                                    {selectedProduct.price.toLocaleString()}
-                                                </span>
-                                                {selectedProduct.compare_price && (
-                                                    <span className="text-xs text-slate-400 line-through">
-                                                        ৳
-                                                        {selectedProduct.compare_price.toLocaleString()}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="mt-3 rounded-lg bg-[#1a1a2e] py-1.5 text-center text-[10px] font-bold tracking-widest text-white uppercase">
-                                                View Product
-                                            </div>
                                         </div>
 
-                                        <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 text-center">
-                                            <p className="text-[10px] text-slate-400">
-                                                Sent via ShoppyDrive Newsletter
-                                            </p>
-                                        </div>
+                                        {/* Image picker */}
+                                        {selectedProduct &&
+                                            selectedProduct.media.length >
+                                                0 && (
+                                                <div>
+                                                    <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                                                        Choose Image for Email
+                                                    </label>
+                                                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                                                        {selectedProduct.media.map(
+                                                            (media) => (
+                                                                <button
+                                                                    key={
+                                                                        media.id
+                                                                    }
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setSelectedImage(
+                                                                            media.path,
+                                                                        );
+                                                                        productForm.setData(
+                                                                            'selected_image',
+                                                                            media.path,
+                                                                        );
+                                                                    }}
+                                                                    className={`overflow-hidden rounded-lg border-2 transition ${
+                                                                        selectedImage ===
+                                                                        media.path
+                                                                            ? 'border-[#c8102e] shadow-md'
+                                                                            : 'border-transparent hover:border-slate-300'
+                                                                    }`}
+                                                                >
+                                                                    <img
+                                                                        src={
+                                                                            media.path
+                                                                        }
+                                                                        alt=""
+                                                                        className="aspect-square w-full object-cover"
+                                                                    />
+                                                                </button>
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                     </div>
-                                </div>
-                            </Card>
-                        )}
-                    </div>
-                )}
+
+                                    <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setEmailType(null)}
+                                            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleSend}
+                                            disabled={
+                                                !productForm.data.subject.trim() ||
+                                                !productForm.data.product_id ||
+                                                productForm.processing
+                                            }
+                                            className="flex items-center gap-2 rounded-lg bg-[#c8102e] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:opacity-50"
+                                        >
+                                            <Send className="size-4" />
+                                            {productForm.processing
+                                                ? 'Sending…'
+                                                : 'Review & Send'}
+                                        </button>
+                                    </div>
+                                </Card>
+
+                                {/* Email preview */}
+                                <AnimatePresence initial={false}>
+                                    {selectedProduct && (
+                                        <AdminReveal key="selected-product">
+                                            <Card className="overflow-hidden p-0 shadow-sm">
+                                                <div className="border-b border-slate-100 px-4 py-3">
+                                                    <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                                                        Preview
+                                                    </p>
+                                                </div>
+                                                <div className="overflow-hidden rounded-b-lg bg-[#f4f5f7] p-3">
+                                                    <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+                                                        {/* Mini header */}
+                                                        <div className="bg-[#c8102e] px-4 py-3 text-center">
+                                                            <p className="text-sm font-bold text-white">
+                                                                ShoppyDrive
+                                                            </p>
+                                                            <p className="mt-0.5 inline-block rounded-full bg-white/20 px-2 py-0.5 text-[10px] text-white/80">
+                                                                Featured Product
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Product image */}
+                                                        {selectedImage && (
+                                                            <img
+                                                                src={
+                                                                    selectedImage
+                                                                }
+                                                                alt={
+                                                                    selectedProduct.name
+                                                                }
+                                                                className="w-full object-cover"
+                                                                style={{
+                                                                    maxHeight: 160,
+                                                                }}
+                                                            />
+                                                        )}
+
+                                                        {/* Details */}
+                                                        <div className="p-4">
+                                                            <p className="text-xs font-bold text-slate-800">
+                                                                {
+                                                                    selectedProduct.name
+                                                                }
+                                                            </p>
+                                                            {selectedProduct.short_description && (
+                                                                <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-slate-500">
+                                                                    {
+                                                                        selectedProduct.short_description
+                                                                    }
+                                                                </p>
+                                                            )}
+                                                            <div className="mt-2 flex items-baseline gap-2">
+                                                                <span className="text-sm font-black text-[#c8102e]">
+                                                                    ৳
+                                                                    {selectedProduct.price.toLocaleString()}
+                                                                </span>
+                                                                {selectedProduct.compare_price && (
+                                                                    <span className="text-xs text-slate-400 line-through">
+                                                                        ৳
+                                                                        {selectedProduct.compare_price.toLocaleString()}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="mt-3 rounded-lg bg-[#1a1a2e] py-1.5 text-center text-[10px] font-bold tracking-widest text-white uppercase">
+                                                                View Product
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 text-center">
+                                                            <p className="text-[10px] text-slate-400">
+                                                                Sent via
+                                                                ShoppyDrive
+                                                                Newsletter
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        </AdminReveal>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </AdminReveal>
+                    )}
+                </AnimatePresence>
             </div>
         </>
     );

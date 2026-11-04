@@ -1,6 +1,8 @@
 import { Head, router, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import { GripVertical, Plus, Save, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { AdminFade } from '@/components/admin/admin-motion';
 import { BulkActionBar } from '@/components/admin/bulk-action-bar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -65,89 +67,108 @@ function KeywordRow({
             <Checkbox checked={selected} onCheckedChange={onToggleSelect} />
             <GripVertical className="size-4 shrink-0 text-slate-300" />
 
-            {editing ? (
-                <>
-                    <div className="flex-1">
-                        <input
-                            autoFocus
-                            className={`${inputClass} w-full`}
-                            value={data.keyword}
-                            onChange={(e) => setData('keyword', e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && save()}
-                        />
-                        {errors.keyword && (
-                            <p className="mt-1 text-xs text-red-500">
-                                {errors.keyword}
-                            </p>
-                        )}
-                    </div>
-                    <input
-                        type="number"
-                        min={0}
-                        className={`${inputClass} w-16`}
-                        value={data.sort_order}
-                        onChange={(e) =>
-                            setData('sort_order', Number(e.target.value))
-                        }
-                        title="Sort order"
-                    />
-                    <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs text-slate-600">
-                        <input
-                            type="checkbox"
-                            checked={data.is_active}
-                            onChange={(e) =>
-                                setData('is_active', e.target.checked)
-                            }
-                            className="rounded border-slate-300"
-                        />
-                        Active
-                    </label>
-                    <Button
-                        size="sm"
-                        disabled={processing}
-                        onClick={save}
-                        className="shrink-0 bg-[#c8102e] text-white hover:bg-[#a50d25]"
+            <AnimatePresence initial={false} mode="wait">
+                {editing ? (
+                    <AdminFade
+                        key="row-a"
+                        className="flex min-w-0 flex-1 items-center gap-3"
                     >
-                        <Save className="size-3.5" />
-                    </Button>
-                    <button
-                        type="button"
-                        onClick={() => setEditing(false)}
-                        className="shrink-0 text-xs text-slate-400 hover:text-slate-600"
+                        <>
+                            <div className="flex-1">
+                                <input
+                                    autoFocus
+                                    className={`${inputClass} w-full`}
+                                    value={data.keyword}
+                                    onChange={(e) =>
+                                        setData('keyword', e.target.value)
+                                    }
+                                    onKeyDown={(e) =>
+                                        e.key === 'Enter' && save()
+                                    }
+                                />
+                                {errors.keyword && (
+                                    <p className="mt-1 text-xs text-red-500">
+                                        {errors.keyword}
+                                    </p>
+                                )}
+                            </div>
+                            <input
+                                type="number"
+                                min={0}
+                                className={`${inputClass} w-16`}
+                                value={data.sort_order}
+                                onChange={(e) =>
+                                    setData(
+                                        'sort_order',
+                                        Number(e.target.value),
+                                    )
+                                }
+                                title="Sort order"
+                            />
+                            <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs text-slate-600">
+                                <input
+                                    type="checkbox"
+                                    checked={data.is_active}
+                                    onChange={(e) =>
+                                        setData('is_active', e.target.checked)
+                                    }
+                                    className="rounded border-slate-300"
+                                />
+                                Active
+                            </label>
+                            <Button
+                                size="sm"
+                                disabled={processing}
+                                onClick={save}
+                                className="shrink-0 bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                            >
+                                <Save className="size-3.5" />
+                            </Button>
+                            <button
+                                type="button"
+                                onClick={() => setEditing(false)}
+                                className="shrink-0 text-xs text-slate-400 hover:text-slate-600"
+                            >
+                                Cancel
+                            </button>
+                        </>
+                    </AdminFade>
+                ) : (
+                    <AdminFade
+                        key="row-b"
+                        className="flex min-w-0 flex-1 items-center gap-3"
                     >
-                        Cancel
-                    </button>
-                </>
-            ) : (
-                <>
-                    <button
-                        type="button"
-                        onClick={() => setEditing(true)}
-                        className="flex-1 text-left"
-                    >
-                        <span
-                            className={`text-sm font-medium ${data.is_active ? 'text-slate-800' : 'text-slate-400 line-through'}`}
-                        >
-                            {keyword.keyword}
-                        </span>
-                    </button>
-                    <span className="shrink-0 text-[11px] text-slate-400">
-                        #{keyword.sort_order}
-                    </span>
-                    {!keyword.is_active && (
-                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-400">
-                            hidden
-                        </span>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => onDelete(keyword.id)}
-                        className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
-                    >
-                        <Trash2 className="size-4" />
-                    </button>
-                </>
-            )}
+                        <>
+                            <button
+                                type="button"
+                                onClick={() => setEditing(true)}
+                                className="flex-1 text-left"
+                            >
+                                <span
+                                    className={`text-sm font-medium ${data.is_active ? 'text-slate-800' : 'text-slate-400 line-through'}`}
+                                >
+                                    {keyword.keyword}
+                                </span>
+                            </button>
+                            <span className="shrink-0 text-[11px] text-slate-400">
+                                #{keyword.sort_order}
+                            </span>
+                            {!keyword.is_active && (
+                                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-400">
+                                    hidden
+                                </span>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => onDelete(keyword.id)}
+                                className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                            >
+                                <Trash2 className="size-4" />
+                            </button>
+                        </>
+                    </AdminFade>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

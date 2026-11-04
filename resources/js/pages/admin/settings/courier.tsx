@@ -1,5 +1,7 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import {
     SettingsField,
     settingsInputClass,
@@ -239,11 +241,15 @@ function PathaoCourierCard({ settings }: Props) {
                     >
                         {processing ? 'Saving…' : 'Save'}
                     </Button>
-                    {recentlySuccessful && (
-                        <span className="text-xs font-medium text-emerald-600">
-                            Saved.
-                        </span>
-                    )}
+                    <AnimatePresence initial={false}>
+                        {recentlySuccessful && (
+                            <AdminFade key="saved-0">
+                                <span className="text-xs font-medium text-emerald-600">
+                                    Saved.
+                                </span>
+                            </AdminFade>
+                        )}
+                    </AnimatePresence>
                 </div>
             </form>
         </Card>
@@ -445,12 +451,16 @@ function SteadfastCourierCard({ settings }: Props) {
                                 : 'Check Balance'}
                         </Button>
 
-                        {steadfastBalance !== null && (
-                            <p className="text-xs text-emerald-600">
-                                Connected. Current balance: ৳
-                                {steadfastBalance.toLocaleString()}
-                            </p>
-                        )}
+                        <AnimatePresence initial={false}>
+                            {steadfastBalance !== null && (
+                                <AdminReveal key="balance">
+                                    <p className="text-xs text-emerald-600">
+                                        Connected. Current balance: ৳
+                                        {steadfastBalance.toLocaleString()}
+                                    </p>
+                                </AdminReveal>
+                            )}
+                        </AnimatePresence>
 
                         {steadfastBalanceError && (
                             <p className="text-xs text-red-600">
@@ -467,11 +477,15 @@ function SteadfastCourierCard({ settings }: Props) {
                     >
                         {processing ? 'Saving…' : 'Save'}
                     </Button>
-                    {recentlySuccessful && (
-                        <span className="text-xs font-medium text-emerald-600">
-                            Saved.
-                        </span>
-                    )}
+                    <AnimatePresence initial={false}>
+                        {recentlySuccessful && (
+                            <AdminFade key="saved-1">
+                                <span className="text-xs font-medium text-emerald-600">
+                                    Saved.
+                                </span>
+                            </AdminFade>
+                        )}
+                    </AnimatePresence>
                 </div>
             </form>
         </Card>

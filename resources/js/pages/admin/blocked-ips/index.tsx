@@ -1,6 +1,8 @@
 import { Head, router, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import { Ban, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
+import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { maxLength, required, validate } from '@/lib/validate';
@@ -85,99 +87,118 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                             place new orders and see an error on checkout.
                         </p>
                     </div>
-                    {!formOpen && (
-                        <Button
-                            size="sm"
-                            onClick={openNew}
-                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                        >
-                            <Plus className="mr-1.5 size-4" />
-                            Block an IP
-                        </Button>
-                    )}
+                    <AnimatePresence initial={false}>
+                        {!formOpen && (
+                            <AdminFade key="add-button">
+                                <Button
+                                    size="sm"
+                                    onClick={openNew}
+                                    className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                >
+                                    <Plus className="mr-1.5 size-4" />
+                                    Block an IP
+                                </Button>
+                            </AdminFade>
+                        )}
+                    </AnimatePresence>
                 </div>
 
-                {formOpen && (
-                    <Card className="border-[#c8102e]/20 shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                Block a New IP Address
-                            </CardTitle>
-                            <button
-                                type="button"
-                                onClick={() => setFormOpen(false)}
-                                className="text-slate-400 hover:text-slate-700"
-                            >
-                                <X className="size-4" />
-                            </button>
-                        </CardHeader>
-                        <CardContent className="pt-4">
-                            <form onSubmit={handleSubmit} className="space-y-3">
-                                <div>
-                                    <label className="mb-1 block text-xs font-medium text-slate-600">
-                                        IP Address *
-                                    </label>
-                                    <input
-                                        className={`${inputClass} font-mono`}
-                                        value={data.ip_address}
-                                        onChange={(e) =>
-                                            setData(
-                                                'ip_address',
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="e.g. 203.0.113.5"
-                                        required
-                                    />
-                                    {errors.ip_address && (
-                                        <p className="mt-0.5 text-xs text-red-500">
-                                            {errors.ip_address}
-                                        </p>
-                                    )}
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-medium text-slate-600">
-                                        Reason
-                                        <span className="ml-1 font-normal text-slate-400">
-                                            — optional, visible to admins only
-                                        </span>
-                                    </label>
-                                    <input
-                                        className={inputClass}
-                                        value={data.reason}
-                                        onChange={(e) =>
-                                            setData('reason', e.target.value)
-                                        }
-                                        placeholder="e.g. Repeated fake COD orders"
-                                    />
-                                    {errors.reason && (
-                                        <p className="mt-0.5 text-xs text-red-500">
-                                            {errors.reason}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="flex justify-end gap-2 pt-1">
-                                    <Button
+                <AnimatePresence initial={false}>
+                    {formOpen && (
+                        <AdminReveal key="form">
+                            <Card className="border-[#c8102e]/20 shadow-sm">
+                                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                    <CardTitle className="text-sm font-semibold text-slate-700">
+                                        Block a New IP Address
+                                    </CardTitle>
+                                    <button
                                         type="button"
-                                        variant="outline"
-                                        size="sm"
                                         onClick={() => setFormOpen(false)}
+                                        className="text-slate-400 hover:text-slate-700"
                                     >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        size="sm"
-                                        disabled={processing}
-                                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                        <X className="size-4" />
+                                    </button>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    <form
+                                        onSubmit={handleSubmit}
+                                        className="space-y-3"
                                     >
-                                        {processing ? 'Blocking…' : 'Block IP'}
-                                    </Button>
-                                </div>
-                            </form>
-                        </CardContent>
-                    </Card>
-                )}
+                                        <div>
+                                            <label className="mb-1 block text-xs font-medium text-slate-600">
+                                                IP Address *
+                                            </label>
+                                            <input
+                                                className={`${inputClass} font-mono`}
+                                                value={data.ip_address}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'ip_address',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="e.g. 203.0.113.5"
+                                                required
+                                            />
+                                            {errors.ip_address && (
+                                                <p className="mt-0.5 text-xs text-red-500">
+                                                    {errors.ip_address}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="mb-1 block text-xs font-medium text-slate-600">
+                                                Reason
+                                                <span className="ml-1 font-normal text-slate-400">
+                                                    — optional, visible to
+                                                    admins only
+                                                </span>
+                                            </label>
+                                            <input
+                                                className={inputClass}
+                                                value={data.reason}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'reason',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="e.g. Repeated fake COD orders"
+                                            />
+                                            {errors.reason && (
+                                                <p className="mt-0.5 text-xs text-red-500">
+                                                    {errors.reason}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex justify-end gap-2 pt-1">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setFormOpen(false)
+                                                }
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                type="submit"
+                                                size="sm"
+                                                disabled={processing}
+                                                className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                            >
+                                                {processing
+                                                    ? 'Blocking…'
+                                                    : 'Block IP'}
+                                            </Button>
+                                        </div>
+                                    </form>
+                                </CardContent>
+                            </Card>
+                        </AdminReveal>
+                    )}
+                </AnimatePresence>
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     {blockedIps.length === 0 ? (

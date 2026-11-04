@@ -1,11 +1,14 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { AdminReveal } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { MediaUpload } from '@/components/ui/media-upload';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { useRowKeys } from '@/hooks/use-row-keys';
 import { maxLength, required, validate } from '@/lib/validate';
 
 /** The hero banner's stat strip is a fixed 3-column row — more wouldn't fit. */
@@ -70,7 +73,10 @@ export default function HeroSlideCreate() {
         setData('stats', [...data.stats, { label: '', value: '' }]);
     };
 
+    const statRowKeys = useRowKeys(data.stats.length);
+
     const removeStat = (index: number) => {
+        statRowKeys.removeKey(index);
         setData(
             'stats',
             data.stats.filter((_, i) => i !== index),
@@ -252,62 +258,67 @@ export default function HeroSlideCreate() {
                                     </Button>
                                 </CardHeader>
                                 <CardContent className="space-y-4 pt-4">
-                                    {data.stats.map((stat, index) => (
-                                        <div
-                                            key={index}
-                                            className="flex items-start gap-2"
-                                        >
-                                            <div className="flex-1">
-                                                <Input
-                                                    value={stat.label}
-                                                    onChange={(e) =>
-                                                        updateStat(
-                                                            index,
-                                                            'label',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="Label (e.g. Delivery)"
-                                                    maxLength={30}
-                                                    error={
-                                                        errors[
-                                                            `stats.${index}.label`
-                                                        ]
-                                                    }
-                                                />
-                                            </div>
-                                            <div className="flex-1">
-                                                <Input
-                                                    value={stat.value}
-                                                    onChange={(e) =>
-                                                        updateStat(
-                                                            index,
-                                                            'value',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="Value (e.g. 24h)"
-                                                    maxLength={30}
-                                                    error={
-                                                        errors[
-                                                            `stats.${index}.value`
-                                                        ]
-                                                    }
-                                                />
-                                            </div>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="shrink-0 text-red-400"
-                                                onClick={() =>
-                                                    removeStat(index)
-                                                }
+                                    <AnimatePresence initial={false}>
+                                        {data.stats.map((stat, index) => (
+                                            <AdminReveal
+                                                key={statRowKeys.keys[index]}
                                             >
-                                                <Trash2 className="size-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
+                                                <div className="flex items-start gap-2">
+                                                    <div className="flex-1">
+                                                        <Input
+                                                            value={stat.label}
+                                                            onChange={(e) =>
+                                                                updateStat(
+                                                                    index,
+                                                                    'label',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder="Label (e.g. Delivery)"
+                                                            maxLength={30}
+                                                            error={
+                                                                errors[
+                                                                    `stats.${index}.label`
+                                                                ]
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <Input
+                                                            value={stat.value}
+                                                            onChange={(e) =>
+                                                                updateStat(
+                                                                    index,
+                                                                    'value',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder="Value (e.g. 24h)"
+                                                            maxLength={30}
+                                                            error={
+                                                                errors[
+                                                                    `stats.${index}.value`
+                                                                ]
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="shrink-0 text-red-400"
+                                                        onClick={() =>
+                                                            removeStat(index)
+                                                        }
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </Button>
+                                                </div>
+                                            </AdminReveal>
+                                        ))}
+                                    </AnimatePresence>
                                     {data.stats.length === 0 && (
                                         <p className="py-4 text-center text-xs text-slate-400 italic">
                                             No stats added. The hero banner

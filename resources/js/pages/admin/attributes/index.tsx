@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { AdminFade } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -302,50 +303,62 @@ function AttributeCard({
                     </p>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    {reorderMode ? (
-                        <>
-                            <Button
-                                size="sm"
-                                disabled={reordering}
-                                onClick={confirmReorder}
-                                className="h-8 bg-[#c8102e] px-3 text-xs text-white hover:bg-[#a50d25]"
+                    <AnimatePresence initial={false} mode="wait">
+                        {reorderMode ? (
+                            <AdminFade
+                                key="toolbar-a"
+                                className="flex items-center gap-1.5"
                             >
-                                <Check className="size-3.5" />
-                                Save order
-                            </Button>
-                            <button
-                                type="button"
-                                disabled={reordering}
-                                onClick={cancelReorder}
-                                className="flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                <>
+                                    <Button
+                                        size="sm"
+                                        disabled={reordering}
+                                        onClick={confirmReorder}
+                                        className="h-8 bg-[#c8102e] px-3 text-xs text-white hover:bg-[#a50d25]"
+                                    >
+                                        <Check className="size-3.5" />
+                                        Save order
+                                    </Button>
+                                    <button
+                                        type="button"
+                                        disabled={reordering}
+                                        onClick={cancelReorder}
+                                        className="flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                    >
+                                        <X className="size-3.5" />
+                                        Cancel
+                                    </button>
+                                </>
+                            </AdminFade>
+                        ) : (
+                            <AdminFade
+                                key="toolbar-b"
+                                className="flex items-center gap-1.5"
                             >
-                                <X className="size-3.5" />
-                                Cancel
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            {attribute.values.length > 1 && (
-                                <button
-                                    type="button"
-                                    onClick={startReorder}
-                                    className="flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                                    title="Reorder values"
-                                >
-                                    <GripVertical className="size-3.5" />
-                                    Reorder
-                                </button>
-                            )}
-                            <Button
-                                size="sm"
-                                onClick={() => onAdd(attribute)}
-                                className="h-8 bg-[#c8102e] px-3 text-xs text-white hover:bg-[#a50d25]"
-                            >
-                                <Plus className="size-3.5" />
-                                Add
-                            </Button>
-                        </>
-                    )}
+                                <>
+                                    {attribute.values.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={startReorder}
+                                            className="flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                            title="Reorder values"
+                                        >
+                                            <GripVertical className="size-3.5" />
+                                            Reorder
+                                        </button>
+                                    )}
+                                    <Button
+                                        size="sm"
+                                        onClick={() => onAdd(attribute)}
+                                        className="h-8 bg-[#c8102e] px-3 text-xs text-white hover:bg-[#a50d25]"
+                                    >
+                                        <Plus className="size-3.5" />
+                                        Add
+                                    </Button>
+                                </>
+                            </AdminFade>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
 

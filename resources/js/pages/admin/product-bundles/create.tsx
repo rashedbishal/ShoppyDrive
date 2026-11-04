@@ -1,6 +1,8 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import { Check, Package, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
@@ -320,25 +322,35 @@ export default function ProductBundleCreate() {
                                                 </option>
                                             </Select>
                                         </div>
-                                        {data.discount_type ===
-                                            'fixed_price' && (
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                label="Bundle Price (৳)"
-                                                value={data.bundle_price}
-                                                onChange={(e) => {
-                                                    setData(
-                                                        'bundle_price',
-                                                        e.target.value,
-                                                    );
-                                                    clearErrors('bundle_price');
-                                                }}
-                                                error={errors.bundle_price}
-                                                required
-                                            />
-                                        )}
+                                        <AnimatePresence initial={false}>
+                                            {data.discount_type ===
+                                                'fixed_price' && (
+                                                <AdminReveal key="fixed-price">
+                                                    <Input
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.01"
+                                                        label="Bundle Price (৳)"
+                                                        value={
+                                                            data.bundle_price
+                                                        }
+                                                        onChange={(e) => {
+                                                            setData(
+                                                                'bundle_price',
+                                                                e.target.value,
+                                                            );
+                                                            clearErrors(
+                                                                'bundle_price',
+                                                            );
+                                                        }}
+                                                        error={
+                                                            errors.bundle_price
+                                                        }
+                                                        required
+                                                    />
+                                                </AdminReveal>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -459,139 +471,158 @@ export default function ProductBundleCreate() {
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
-                                            {selectedItems.map((item) => {
-                                                const needsVariant =
-                                                    item.product
-                                                        .has_color_variant ||
-                                                    item.product
-                                                        .has_size_variant;
-                                                // Variants a sibling row already claimed for this same
-                                                // product can't be picked again — keeps every (product,
-                                                // variant) pair in the bundle unique by construction.
-                                                const usedBySiblings =
-                                                    selectedItems
-                                                        .filter(
-                                                            (other) =>
-                                                                other.uid !==
-                                                                    item.uid &&
-                                                                other.product
-                                                                    .id ===
-                                                                    item.product
-                                                                        .id &&
-                                                                other.variant_id,
-                                                        )
-                                                        .map(
-                                                            (other) =>
-                                                                other.variant_id,
-                                                        );
-                                                const availableVariants =
-                                                    item.product.variants.filter(
-                                                        (variant) =>
-                                                            !usedBySiblings.includes(
-                                                                String(
-                                                                    variant.id,
+                                            <AnimatePresence initial={false}>
+                                                {selectedItems.map((item) => {
+                                                    const needsVariant =
+                                                        item.product
+                                                            .has_color_variant ||
+                                                        item.product
+                                                            .has_size_variant;
+                                                    // Variants a sibling row already claimed for this same
+                                                    // product can't be picked again — keeps every (product,
+                                                    // variant) pair in the bundle unique by construction.
+                                                    const usedBySiblings =
+                                                        selectedItems
+                                                            .filter(
+                                                                (other) =>
+                                                                    other.uid !==
+                                                                        item.uid &&
+                                                                    other
+                                                                        .product
+                                                                        .id ===
+                                                                        item
+                                                                            .product
+                                                                            .id &&
+                                                                    other.variant_id,
+                                                            )
+                                                            .map(
+                                                                (other) =>
+                                                                    other.variant_id,
+                                                            );
+                                                    const availableVariants =
+                                                        item.product.variants.filter(
+                                                            (variant) =>
+                                                                !usedBySiblings.includes(
+                                                                    String(
+                                                                        variant.id,
+                                                                    ),
                                                                 ),
-                                                            ),
-                                                    );
+                                                        );
 
-                                                return (
-                                                    <div
-                                                        key={item.uid}
-                                                        className="flex items-end gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-3"
-                                                    >
-                                                        <div className="flex-1">
-                                                            <p className="mb-1 text-xs font-medium text-slate-600">
-                                                                Product
-                                                            </p>
-                                                            <p className="truncate text-sm font-medium text-slate-900">
-                                                                {
-                                                                    item.product
-                                                                        .name
-                                                                }
-                                                            </p>
-                                                        </div>
-                                                        {needsVariant && (
-                                                            <div className="w-44">
-                                                                <label className="mb-1 block text-xs font-medium text-slate-600">
-                                                                    Variant *
-                                                                </label>
-                                                                <Select
-                                                                    selectClassName="h-9 w-full"
-                                                                    value={
-                                                                        item.variant_id
-                                                                    }
-                                                                    onChange={(
-                                                                        e,
-                                                                    ) =>
-                                                                        updateItem(
-                                                                            item.uid,
-                                                                            'variant_id',
-                                                                            e
-                                                                                .target
-                                                                                .value,
-                                                                        )
+                                                    return (
+                                                        <AdminReveal
+                                                            key={item.uid}
+                                                        >
+                                                            <div className="flex items-end gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-3">
+                                                                <div className="flex-1">
+                                                                    <p className="mb-1 text-xs font-medium text-slate-600">
+                                                                        Product
+                                                                    </p>
+                                                                    <p className="truncate text-sm font-medium text-slate-900">
+                                                                        {
+                                                                            item
+                                                                                .product
+                                                                                .name
+                                                                        }
+                                                                    </p>
+                                                                </div>
+                                                                <AnimatePresence
+                                                                    initial={
+                                                                        false
                                                                     }
                                                                 >
-                                                                    <option value="">
-                                                                        — Select
-                                                                        —
-                                                                    </option>
-                                                                    {availableVariants.map(
-                                                                        (
-                                                                            variant,
-                                                                        ) => (
-                                                                            <option
-                                                                                key={
-                                                                                    variant.id
-                                                                                }
-                                                                                value={
-                                                                                    variant.id
-                                                                                }
-                                                                            >
-                                                                                {variantLabel(
-                                                                                    variant,
-                                                                                )}
-                                                                            </option>
-                                                                        ),
+                                                                    {needsVariant && (
+                                                                        <AdminFade key="variant-select">
+                                                                            <div className="w-44">
+                                                                                <label className="mb-1 block text-xs font-medium text-slate-600">
+                                                                                    Variant
+                                                                                    *
+                                                                                </label>
+                                                                                <Select
+                                                                                    selectClassName="h-9 w-full"
+                                                                                    value={
+                                                                                        item.variant_id
+                                                                                    }
+                                                                                    onChange={(
+                                                                                        e,
+                                                                                    ) =>
+                                                                                        updateItem(
+                                                                                            item.uid,
+                                                                                            'variant_id',
+                                                                                            e
+                                                                                                .target
+                                                                                                .value,
+                                                                                        )
+                                                                                    }
+                                                                                >
+                                                                                    <option value="">
+                                                                                        —
+                                                                                        Select
+                                                                                        —
+                                                                                    </option>
+                                                                                    {availableVariants.map(
+                                                                                        (
+                                                                                            variant,
+                                                                                        ) => (
+                                                                                            <option
+                                                                                                key={
+                                                                                                    variant.id
+                                                                                                }
+                                                                                                value={
+                                                                                                    variant.id
+                                                                                                }
+                                                                                            >
+                                                                                                {variantLabel(
+                                                                                                    variant,
+                                                                                                )}
+                                                                                            </option>
+                                                                                        ),
+                                                                                    )}
+                                                                                </Select>
+                                                                            </div>
+                                                                        </AdminFade>
                                                                     )}
-                                                                </Select>
+                                                                </AnimatePresence>
+                                                                <div className="w-24">
+                                                                    <label className="mb-1 block text-xs font-medium text-slate-600">
+                                                                        Qty *
+                                                                    </label>
+                                                                    <input
+                                                                        type="number"
+                                                                        min="1"
+                                                                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                                                        value={
+                                                                            item.quantity
+                                                                        }
+                                                                        onChange={(
+                                                                            e,
+                                                                        ) =>
+                                                                            updateItem(
+                                                                                item.uid,
+                                                                                'quantity',
+                                                                                e
+                                                                                    .target
+                                                                                    .value,
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        removeItem(
+                                                                            item.uid,
+                                                                        )
+                                                                    }
+                                                                    className="mb-0.5 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                                                                >
+                                                                    <Trash2 className="size-4" />
+                                                                </button>
                                                             </div>
-                                                        )}
-                                                        <div className="w-24">
-                                                            <label className="mb-1 block text-xs font-medium text-slate-600">
-                                                                Qty *
-                                                            </label>
-                                                            <input
-                                                                type="number"
-                                                                min="1"
-                                                                className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
-                                                                value={
-                                                                    item.quantity
-                                                                }
-                                                                onChange={(e) =>
-                                                                    updateItem(
-                                                                        item.uid,
-                                                                        'quantity',
-                                                                        e.target
-                                                                            .value,
-                                                                    )
-                                                                }
-                                                            />
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                removeItem(
-                                                                    item.uid,
-                                                                )
-                                                            }
-                                                            className="mb-0.5 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
-                                                        >
-                                                            <Trash2 className="size-4" />
-                                                        </button>
-                                                    </div>
-                                                );
-                                            })}
+                                                        </AdminReveal>
+                                                    );
+                                                })}
+                                            </AnimatePresence>
                                         </div>
                                     )}
                                 </CardContent>

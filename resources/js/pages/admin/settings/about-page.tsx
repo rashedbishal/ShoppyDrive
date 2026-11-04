@@ -1,5 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import { Plus, Trash2 } from 'lucide-react';
+import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import {
     SettingsField,
@@ -10,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { IconPicker } from '@/components/ui/icon-picker';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useRowKeys } from '@/hooks/use-row-keys';
 
 type AboutStat = { value: string; label: string };
 type AboutFeature = { icon: string; label: string };
@@ -66,11 +69,15 @@ export default function AboutPageConfig({ settings }: Props) {
 
     const addStat = () =>
         setData('about_stats', [...data.about_stats, { value: '', label: '' }]);
-    const removeStat = (index: number) =>
+    const statRowKeys = useRowKeys(data.about_stats.length);
+
+    const removeStat = (index: number) => {
+        statRowKeys.removeKey(index);
         setData(
             'about_stats',
             data.about_stats.filter((_, i) => i !== index),
         );
+    };
     const updateStat = (index: number, patch: Partial<AboutStat>) =>
         setData(
             'about_stats',
@@ -84,11 +91,15 @@ export default function AboutPageConfig({ settings }: Props) {
             ...data.about_mission_features,
             { icon: 'package', label: '' },
         ]);
-    const removeFeature = (index: number) =>
+    const featureRowKeys = useRowKeys(data.about_mission_features.length);
+
+    const removeFeature = (index: number) => {
+        featureRowKeys.removeKey(index);
         setData(
             'about_mission_features',
             data.about_mission_features.filter((_, i) => i !== index),
         );
+    };
     const updateFeature = (index: number, patch: Partial<AboutFeature>) =>
         setData(
             'about_mission_features',
@@ -102,11 +113,15 @@ export default function AboutPageConfig({ settings }: Props) {
             ...data.about_values,
             { icon: 'shield-check', title: '', description: '' },
         ]);
-    const removeValue = (index: number) =>
+    const valueRowKeys = useRowKeys(data.about_values.length);
+
+    const removeValue = (index: number) => {
+        valueRowKeys.removeKey(index);
         setData(
             'about_values',
             data.about_values.filter((_, i) => i !== index),
         );
+    };
     const updateValue = (index: number, patch: Partial<AboutValue>) =>
         setData(
             'about_values',
@@ -120,11 +135,15 @@ export default function AboutPageConfig({ settings }: Props) {
             ...data.about_team,
             { name: '', role: '', initials: '' },
         ]);
-    const removeTeamMember = (index: number) =>
+    const teamRowKeys = useRowKeys(data.about_team.length);
+
+    const removeTeamMember = (index: number) => {
+        teamRowKeys.removeKey(index);
         setData(
             'about_team',
             data.about_team.filter((_, i) => i !== index),
         );
+    };
     const updateTeamMember = (index: number, patch: Partial<AboutTeamMember>) =>
         setData(
             'about_team',
@@ -149,11 +168,15 @@ export default function AboutPageConfig({ settings }: Props) {
                         >
                             {processing ? 'Saving…' : 'Save Changes'}
                         </Button>
-                        {recentlySuccessful && (
-                            <span className="text-xs font-medium text-emerald-600">
-                                Saved.
-                            </span>
-                        )}
+                        <AnimatePresence initial={false}>
+                            {recentlySuccessful && (
+                                <AdminFade key="saved-0">
+                                    <span className="text-xs font-medium text-emerald-600">
+                                        Saved.
+                                    </span>
+                                </AdminFade>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
 
@@ -236,39 +259,43 @@ export default function AboutPageConfig({ settings }: Props) {
                         </Button>
                     </CardHeader>
                     <CardContent className="space-y-3 pt-4">
-                        {data.about_stats.map((stat, index) => (
-                            <div key={index} className="flex items-end gap-2">
-                                <Input
-                                    containerClassName="flex-1"
-                                    placeholder="Value (e.g. 50,000+)"
-                                    value={stat.value}
-                                    onChange={(e) =>
-                                        updateStat(index, {
-                                            value: e.target.value,
-                                        })
-                                    }
-                                />
-                                <Input
-                                    containerClassName="flex-1"
-                                    placeholder="Label (e.g. Happy Customers)"
-                                    value={stat.label}
-                                    onChange={(e) =>
-                                        updateStat(index, {
-                                            label: e.target.value,
-                                        })
-                                    }
-                                />
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="shrink-0 text-red-400"
-                                    onClick={() => removeStat(index)}
-                                >
-                                    <Trash2 className="size-4" />
-                                </Button>
-                            </div>
-                        ))}
+                        <AnimatePresence initial={false}>
+                            {data.about_stats.map((stat, index) => (
+                                <AdminReveal key={statRowKeys.keys[index]}>
+                                    <div className="flex items-end gap-2">
+                                        <Input
+                                            containerClassName="flex-1"
+                                            placeholder="Value (e.g. 50,000+)"
+                                            value={stat.value}
+                                            onChange={(e) =>
+                                                updateStat(index, {
+                                                    value: e.target.value,
+                                                })
+                                            }
+                                        />
+                                        <Input
+                                            containerClassName="flex-1"
+                                            placeholder="Label (e.g. Happy Customers)"
+                                            value={stat.label}
+                                            onChange={(e) =>
+                                                updateStat(index, {
+                                                    label: e.target.value,
+                                                })
+                                            }
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="shrink-0 text-red-400"
+                                            onClick={() => removeStat(index)}
+                                        >
+                                            <Trash2 className="size-4" />
+                                        </Button>
+                                    </div>
+                                </AdminReveal>
+                            ))}
+                        </AnimatePresence>
                         {data.about_stats.length === 0 && (
                             <p className="py-4 text-center text-xs text-slate-400 italic">
                                 No stats added. Max 4 recommended.
@@ -335,45 +362,56 @@ export default function AboutPageConfig({ settings }: Props) {
                                 </Button>
                             </div>
                             <div className="space-y-3">
-                                {data.about_mission_features.map(
-                                    (feature, index) => (
-                                        <div
-                                            key={index}
-                                            className="flex items-end gap-2"
-                                        >
-                                            <IconPicker
-                                                className="w-40 shrink-0"
-                                                value={feature.icon}
-                                                onChange={(icon) =>
-                                                    updateFeature(index, {
-                                                        icon,
-                                                    })
-                                                }
-                                            />
-                                            <Input
-                                                containerClassName="flex-1"
-                                                placeholder="Label (e.g. Nationwide Delivery)"
-                                                value={feature.label}
-                                                onChange={(e) =>
-                                                    updateFeature(index, {
-                                                        label: e.target.value,
-                                                    })
-                                                }
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="shrink-0 text-red-400"
-                                                onClick={() =>
-                                                    removeFeature(index)
-                                                }
+                                <AnimatePresence initial={false}>
+                                    {data.about_mission_features.map(
+                                        (feature, index) => (
+                                            <AdminReveal
+                                                key={featureRowKeys.keys[index]}
                                             >
-                                                <Trash2 className="size-4" />
-                                            </Button>
-                                        </div>
-                                    ),
-                                )}
+                                                <div className="flex items-end gap-2">
+                                                    <IconPicker
+                                                        className="w-40 shrink-0"
+                                                        value={feature.icon}
+                                                        onChange={(icon) =>
+                                                            updateFeature(
+                                                                index,
+                                                                {
+                                                                    icon,
+                                                                },
+                                                            )
+                                                        }
+                                                    />
+                                                    <Input
+                                                        containerClassName="flex-1"
+                                                        placeholder="Label (e.g. Nationwide Delivery)"
+                                                        value={feature.label}
+                                                        onChange={(e) =>
+                                                            updateFeature(
+                                                                index,
+                                                                {
+                                                                    label: e
+                                                                        .target
+                                                                        .value,
+                                                                },
+                                                            )
+                                                        }
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="shrink-0 text-red-400"
+                                                        onClick={() =>
+                                                            removeFeature(index)
+                                                        }
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </Button>
+                                                </div>
+                                            </AdminReveal>
+                                        ),
+                                    )}
+                                </AnimatePresence>
                                 {data.about_mission_features.length === 0 && (
                                     <p className="py-4 text-center text-xs text-slate-400 italic">
                                         No feature badges added. Max 4
@@ -400,52 +438,57 @@ export default function AboutPageConfig({ settings }: Props) {
                         </Button>
                     </CardHeader>
                     <CardContent className="space-y-4 pt-4">
-                        {data.about_values.map((value, index) => (
-                            <div
-                                key={index}
-                                className="space-y-2 rounded-xl border border-slate-200 p-4"
-                            >
-                                <div className="flex items-end gap-2">
-                                    <IconPicker
-                                        className="w-40 shrink-0"
-                                        value={value.icon}
-                                        onChange={(icon) =>
-                                            updateValue(index, { icon })
-                                        }
-                                    />
-                                    <Input
-                                        containerClassName="flex-1"
-                                        placeholder="Title (e.g. Trust & Transparency)"
-                                        value={value.title}
-                                        onChange={(e) =>
-                                            updateValue(index, {
-                                                title: e.target.value,
-                                            })
-                                        }
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="shrink-0 text-red-400"
-                                        onClick={() => removeValue(index)}
-                                    >
-                                        <Trash2 className="size-4" />
-                                    </Button>
-                                </div>
-                                <Textarea
-                                    textareaClassName={settingsInputClass}
-                                    rows={2}
-                                    placeholder="Description"
-                                    value={value.description}
-                                    onChange={(e) =>
-                                        updateValue(index, {
-                                            description: e.target.value,
-                                        })
-                                    }
-                                />
-                            </div>
-                        ))}
+                        <AnimatePresence initial={false}>
+                            {data.about_values.map((value, index) => (
+                                <AdminReveal key={valueRowKeys.keys[index]}>
+                                    <div className="space-y-2 rounded-xl border border-slate-200 p-4">
+                                        <div className="flex items-end gap-2">
+                                            <IconPicker
+                                                className="w-40 shrink-0"
+                                                value={value.icon}
+                                                onChange={(icon) =>
+                                                    updateValue(index, { icon })
+                                                }
+                                            />
+                                            <Input
+                                                containerClassName="flex-1"
+                                                placeholder="Title (e.g. Trust & Transparency)"
+                                                value={value.title}
+                                                onChange={(e) =>
+                                                    updateValue(index, {
+                                                        title: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="shrink-0 text-red-400"
+                                                onClick={() =>
+                                                    removeValue(index)
+                                                }
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        </div>
+                                        <Textarea
+                                            textareaClassName={
+                                                settingsInputClass
+                                            }
+                                            rows={2}
+                                            placeholder="Description"
+                                            value={value.description}
+                                            onChange={(e) =>
+                                                updateValue(index, {
+                                                    description: e.target.value,
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                </AdminReveal>
+                            ))}
+                        </AnimatePresence>
                         {data.about_values.length === 0 && (
                             <p className="py-4 text-center text-xs text-slate-400 italic">
                                 No values added. Max 4 recommended.
@@ -469,50 +512,56 @@ export default function AboutPageConfig({ settings }: Props) {
                         </Button>
                     </CardHeader>
                     <CardContent className="space-y-3 pt-4">
-                        {data.about_team.map((member, index) => (
-                            <div key={index} className="flex items-end gap-2">
-                                <Input
-                                    containerClassName="flex-1"
-                                    placeholder="Name"
-                                    value={member.name}
-                                    onChange={(e) =>
-                                        updateTeamMember(index, {
-                                            name: e.target.value,
-                                        })
-                                    }
-                                />
-                                <Input
-                                    containerClassName="flex-1"
-                                    placeholder="Role"
-                                    value={member.role}
-                                    onChange={(e) =>
-                                        updateTeamMember(index, {
-                                            role: e.target.value,
-                                        })
-                                    }
-                                />
-                                <Input
-                                    containerClassName="w-20 shrink-0"
-                                    placeholder="RI"
-                                    maxLength={4}
-                                    value={member.initials}
-                                    onChange={(e) =>
-                                        updateTeamMember(index, {
-                                            initials: e.target.value,
-                                        })
-                                    }
-                                />
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="shrink-0 text-red-400"
-                                    onClick={() => removeTeamMember(index)}
-                                >
-                                    <Trash2 className="size-4" />
-                                </Button>
-                            </div>
-                        ))}
+                        <AnimatePresence initial={false}>
+                            {data.about_team.map((member, index) => (
+                                <AdminReveal key={teamRowKeys.keys[index]}>
+                                    <div className="flex items-end gap-2">
+                                        <Input
+                                            containerClassName="flex-1"
+                                            placeholder="Name"
+                                            value={member.name}
+                                            onChange={(e) =>
+                                                updateTeamMember(index, {
+                                                    name: e.target.value,
+                                                })
+                                            }
+                                        />
+                                        <Input
+                                            containerClassName="flex-1"
+                                            placeholder="Role"
+                                            value={member.role}
+                                            onChange={(e) =>
+                                                updateTeamMember(index, {
+                                                    role: e.target.value,
+                                                })
+                                            }
+                                        />
+                                        <Input
+                                            containerClassName="w-20 shrink-0"
+                                            placeholder="RI"
+                                            maxLength={4}
+                                            value={member.initials}
+                                            onChange={(e) =>
+                                                updateTeamMember(index, {
+                                                    initials: e.target.value,
+                                                })
+                                            }
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="shrink-0 text-red-400"
+                                            onClick={() =>
+                                                removeTeamMember(index)
+                                            }
+                                        >
+                                            <Trash2 className="size-4" />
+                                        </Button>
+                                    </div>
+                                </AdminReveal>
+                            ))}
+                        </AnimatePresence>
                         {data.about_team.length === 0 && (
                             <p className="py-4 text-center text-xs text-slate-400 italic">
                                 No team members added.
@@ -561,11 +610,15 @@ export default function AboutPageConfig({ settings }: Props) {
                     >
                         {processing ? 'Saving…' : 'Save Changes'}
                     </Button>
-                    {recentlySuccessful && (
-                        <span className="text-xs font-medium text-emerald-600">
-                            Saved.
-                        </span>
-                    )}
+                    <AnimatePresence initial={false}>
+                        {recentlySuccessful && (
+                            <AdminFade key="saved-1">
+                                <span className="text-xs font-medium text-emerald-600">
+                                    Saved.
+                                </span>
+                            </AdminFade>
+                        )}
+                    </AnimatePresence>
                 </div>
             </form>
         </>

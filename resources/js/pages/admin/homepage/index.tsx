@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import {
     Check,
     Eye,
@@ -12,6 +13,7 @@ import {
     X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { AdminFade } from '@/components/admin/admin-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -278,44 +280,56 @@ export default function HomepageIndex({ sections }: Props) {
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
-                            {isReordering ? (
-                                <>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="w-full text-slate-500 sm:w-auto"
-                                        onClick={cancelReordering}
-                                        disabled={savingOrder}
+                            <AnimatePresence initial={false} mode="wait">
+                                {isReordering ? (
+                                    <AdminFade
+                                        key="toolbar-a"
+                                        className="flex items-center gap-2"
                                     >
-                                        <X className="mr-1.5 size-4" />
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25] sm:w-auto"
-                                        onClick={confirmReordering}
-                                        disabled={savingOrder}
+                                        <>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="w-full text-slate-500 sm:w-auto"
+                                                onClick={cancelReordering}
+                                                disabled={savingOrder}
+                                            >
+                                                <X className="mr-1.5 size-4" />
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25] sm:w-auto"
+                                                onClick={confirmReordering}
+                                                disabled={savingOrder}
+                                            >
+                                                <Check className="mr-1.5 size-4" />
+                                                {savingOrder
+                                                    ? 'Saving…'
+                                                    : 'Confirm Order'}
+                                            </Button>
+                                        </>
+                                    </AdminFade>
+                                ) : (
+                                    <AdminFade
+                                        key="toolbar-b"
+                                        className="flex items-center gap-2"
                                     >
-                                        <Check className="mr-1.5 size-4" />
-                                        {savingOrder
-                                            ? 'Saving…'
-                                            : 'Confirm Order'}
-                                    </Button>
-                                </>
-                            ) : (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full sm:w-auto"
-                                    onClick={startReordering}
-                                >
-                                    <ListOrdered className="mr-1.5 size-4" />
-                                    Reorder Sections
-                                </Button>
-                            )}
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full sm:w-auto"
+                                            onClick={startReordering}
+                                        >
+                                            <ListOrdered className="mr-1.5 size-4" />
+                                            Reorder Sections
+                                        </Button>
+                                    </AdminFade>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -407,34 +421,43 @@ export default function HomepageIndex({ sections }: Props) {
                                                 <EyeOff className="size-4 text-slate-300" />
                                             )}
                                         </Button>
-                                        {isReordering ? (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-8 text-slate-300 opacity-30"
-                                                title="Finish reordering to edit this section"
-                                                disabled
-                                            >
-                                                <Pencil className="size-4" />
-                                            </Button>
-                                        ) : (
-                                            <Button
-                                                asChild
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-8 text-slate-400 hover:text-slate-600"
-                                            >
-                                                <Link
-                                                    href={route(
-                                                        'admin.homepage.edit',
-                                                        section.id,
-                                                    )}
-                                                >
-                                                    <Pencil className="size-4" />
-                                                </Link>
-                                            </Button>
-                                        )}
+                                        <AnimatePresence
+                                            initial={false}
+                                            mode="wait"
+                                        >
+                                            {isReordering ? (
+                                                <AdminFade key="row-action-a">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="size-8 text-slate-300 opacity-30"
+                                                        title="Finish reordering to edit this section"
+                                                        disabled
+                                                    >
+                                                        <Pencil className="size-4" />
+                                                    </Button>
+                                                </AdminFade>
+                                            ) : (
+                                                <AdminFade key="row-action-b">
+                                                    <Button
+                                                        asChild
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="size-8 text-slate-400 hover:text-slate-600"
+                                                    >
+                                                        <Link
+                                                            href={route(
+                                                                'admin.homepage.edit',
+                                                                section.id,
+                                                            )}
+                                                        >
+                                                            <Pencil className="size-4" />
+                                                        </Link>
+                                                    </Button>
+                                                </AdminFade>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                 </div>
                             ))}

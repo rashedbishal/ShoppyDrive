@@ -1,4 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
     Award,
     Ban,
@@ -594,7 +595,7 @@ export default function AdminLayout({
     const handleLogout = () => router.post(route('admin.logout'));
 
     return (
-        <div className="flex min-h-screen bg-slate-50">
+        <div className="admin-shell flex min-h-screen bg-slate-50">
             {/* Desktop sidebar */}
             <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
                 <SidebarContent
@@ -607,24 +608,42 @@ export default function AdminLayout({
             </aside>
 
             {/* Mobile sidebar overlay */}
-            {sidebarOpen && (
-                <div className="fixed inset-0 z-50 lg:hidden">
+            <AnimatePresence>
+                {sidebarOpen && (
                     <div
-                        className="absolute inset-0 bg-black/40"
-                        onClick={() => setSidebarOpen(false)}
-                    />
-                    <aside className="absolute top-0 left-0 h-full w-56 bg-white shadow-xl">
-                        <SidebarContent
-                            currentUrl={currentUrl}
-                            logoUrl={logoUrl}
-                            admin={admin ?? undefined}
-                            unseenOrdersCount={unseenOrdersCount}
-                            unmatchedSmsCount={unmatchedCount}
-                            onClose={() => setSidebarOpen(false)}
+                        key="mobile-sidebar"
+                        className="fixed inset-0 z-50 lg:hidden"
+                    >
+                        <motion.div
+                            className="absolute inset-0 bg-black/40"
+                            onClick={() => setSidebarOpen(false)}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.25 }}
                         />
-                    </aside>
-                </div>
-            )}
+                        <motion.aside
+                            className="absolute top-0 left-0 h-full w-56 bg-white shadow-xl"
+                            initial={{ x: '-100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '-100%' }}
+                            transition={{
+                                duration: 0.32,
+                                ease: [0.22, 1, 0.36, 1],
+                            }}
+                        >
+                            <SidebarContent
+                                currentUrl={currentUrl}
+                                logoUrl={logoUrl}
+                                admin={admin ?? undefined}
+                                unseenOrdersCount={unseenOrdersCount}
+                                unmatchedSmsCount={unmatchedCount}
+                                onClose={() => setSidebarOpen(false)}
+                            />
+                        </motion.aside>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Main area */}
             <div className="flex min-w-0 flex-1 flex-col">
@@ -673,21 +692,32 @@ export default function AdminLayout({
                 </header>
 
                 {/* Page content */}
-                <main className="flex-1 p-6">{children}</main>
+                <main className="flex-1 p-6">
+                    <div key={page.component} className="admin-content">
+                        {children}
+                    </div>
+                </main>
             </div>
 
             {/* SMS toast notifications */}
-            {toasts.length > 0 && (
-                <div className="fixed right-5 bottom-5 z-50 flex flex-col items-end gap-2.5">
+            <div className="pointer-events-none fixed right-5 bottom-5 z-50 flex flex-col items-end gap-2.5">
+                <AnimatePresence>
                     {toasts.map((toast) => (
-                        <SmsToastItem
+                        <motion.div
                             key={toast.key}
-                            toast={toast}
-                            onDismiss={() => handleDismiss(toast.key)}
-                        />
+                            className="pointer-events-auto"
+                            layout
+                            exit={{ opacity: 0, x: 48, scale: 0.96 }}
+                            transition={{ duration: 0.25, ease: 'easeIn' }}
+                        >
+                            <SmsToastItem
+                                toast={toast}
+                                onDismiss={() => handleDismiss(toast.key)}
+                            />
+                        </motion.div>
                     ))}
-                </div>
-            )}
+                </AnimatePresence>
+            </div>
         </div>
     );
 }

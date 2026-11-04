@@ -1,5 +1,8 @@
+import { AnimatePresence } from 'framer-motion';
 import { Package, Search, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
+import { useRowKeys } from '@/hooks/use-row-keys';
 import { formatCurrency } from '@/lib/utils';
 
 export type FlashSaleItemData = {
@@ -186,7 +189,10 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
         addItem(product, null);
     };
 
+    const itemRowKeys = useRowKeys(items.length);
+
     const removeItem = (index: number) => {
+        itemRowKeys.removeKey(index);
         onChange(items.filter((_, i) => i !== index));
     };
 
@@ -212,72 +218,88 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                     />
                 </div>
 
-                {pendingVariantFor && (
-                    <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-                        <p className="mb-1.5 px-1 text-xs font-semibold text-slate-500">
-                            Apply the flash sale to…
-                        </p>
-                        <div className="max-h-64 space-y-0.5 overflow-y-auto">
-                            <button
-                                type="button"
-                                onClick={() => addItem(pendingVariantFor, null)}
-                                className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50"
-                            >
-                                <span className="font-medium">
-                                    Whole product (all variants)
-                                </span>
-                                <span className="text-xs text-slate-400">
-                                    {formatCurrency(pendingVariantFor.price)} ·
-                                    stock {pendingVariantFor.available_stock}
-                                </span>
-                            </button>
-                            {pendingVariantFor.variants.map((variant) => (
+                <AnimatePresence initial={false}>
+                    {pendingVariantFor && (
+                        <AdminFade
+                            key="variant-picker"
+                            className="absolute z-10 mt-1 w-full origin-top rounded-lg border border-slate-200 bg-white p-2 shadow-lg"
+                        >
+                            <p className="mb-1.5 px-1 text-xs font-semibold text-slate-500">
+                                Apply the flash sale to…
+                            </p>
+                            <div className="max-h-64 space-y-0.5 overflow-y-auto">
                                 <button
-                                    key={variant.id}
                                     type="button"
                                     onClick={() =>
-                                        addItem(pendingVariantFor, variant)
+                                        addItem(pendingVariantFor, null)
                                     }
                                     className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50"
                                 >
-                                    <span>
-                                        {variantLabel(variant.attributes) ||
-                                            variant.sku}
+                                    <span className="font-medium">
+                                        Whole product (all variants)
                                     </span>
                                     <span className="text-xs text-slate-400">
-                                        {formatCurrency(variant.price)} · stock{' '}
-                                        {variant.stock_quantity}
+                                        {formatCurrency(
+                                            pendingVariantFor.price,
+                                        )}{' '}
+                                        · stock{' '}
+                                        {pendingVariantFor.available_stock}
+                                    </span>
+                                </button>
+                                {pendingVariantFor.variants.map((variant) => (
+                                    <button
+                                        key={variant.id}
+                                        type="button"
+                                        onClick={() =>
+                                            addItem(pendingVariantFor, variant)
+                                        }
+                                        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50"
+                                    >
+                                        <span>
+                                            {variantLabel(variant.attributes) ||
+                                                variant.sku}
+                                        </span>
+                                        <span className="text-xs text-slate-400">
+                                            {formatCurrency(variant.price)} ·
+                                            stock {variant.stock_quantity}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        </AdminFade>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence initial={false}>
+                    {!pendingVariantFor && results.length > 0 && (
+                        <AdminFade
+                            key="search-results"
+                            className="absolute z-10 mt-1 max-h-64 w-full origin-top space-y-0.5 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-lg"
+                        >
+                            {results.map((product) => (
+                                <button
+                                    key={product.id}
+                                    type="button"
+                                    onClick={() => handleSelectProduct(product)}
+                                    className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50"
+                                >
+                                    <span className="truncate">
+                                        {product.name}
+                                        {product.variants.length > 0 && (
+                                            <span className="ml-1.5 text-xs text-slate-400">
+                                                ({product.variants.length}{' '}
+                                                variants)
+                                            </span>
+                                        )}
+                                    </span>
+                                    <span className="shrink-0 text-xs text-slate-400">
+                                        {formatCurrency(product.price)}
                                     </span>
                                 </button>
                             ))}
-                        </div>
-                    </div>
-                )}
-
-                {!pendingVariantFor && results.length > 0 && (
-                    <div className="absolute z-10 mt-1 max-h-64 w-full space-y-0.5 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-                        {results.map((product) => (
-                            <button
-                                key={product.id}
-                                type="button"
-                                onClick={() => handleSelectProduct(product)}
-                                className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50"
-                            >
-                                <span className="truncate">
-                                    {product.name}
-                                    {product.variants.length > 0 && (
-                                        <span className="ml-1.5 text-xs text-slate-400">
-                                            ({product.variants.length} variants)
-                                        </span>
-                                    )}
-                                </span>
-                                <span className="shrink-0 text-xs text-slate-400">
-                                    {formatCurrency(product.price)}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-                )}
+                        </AdminFade>
+                    )}
+                </AnimatePresence>
 
                 {!pendingVariantFor &&
                     query.trim() !== '' &&
@@ -299,96 +321,99 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                         No products added yet. Search above to add one.
                     </p>
                 ) : (
-                    items.map((item, i) => {
-                        const stockError = errors[`items.${i}.stock_limit`];
-                        const priceError = errors[`items.${i}.sale_price`];
-                        const productError =
-                            errors[`items.${i}.product_id`] ??
-                            errors[`items.${i}.variant_id`];
+                    <AnimatePresence initial={false}>
+                        {items.map((item, i) => {
+                            const stockError = errors[`items.${i}.stock_limit`];
+                            const priceError = errors[`items.${i}.sale_price`];
+                            const productError =
+                                errors[`items.${i}.product_id`] ??
+                                errors[`items.${i}.variant_id`];
 
-                        return (
-                            <div
-                                key={i}
-                                className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-3 sm:flex-row sm:items-start"
-                            >
-                                <div className="flex min-w-0 flex-1 items-start gap-3">
-                                    <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
-                                        <Package className="size-4" />
+                            return (
+                                <AdminReveal key={itemRowKeys.keys[i]}>
+                                    <div className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-3 sm:flex-row sm:items-start">
+                                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                                            <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
+                                                <Package className="size-4" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-semibold text-slate-800">
+                                                    {item.product_name}
+                                                </p>
+                                                <p className="truncate text-xs text-slate-400">
+                                                    {item.variant_label ??
+                                                        'Whole product (all variants)'}
+                                                    {item.product_sku
+                                                        ? ` · ${item.product_sku}`
+                                                        : ''}
+                                                </p>
+                                                {productError && (
+                                                    <p className="mt-1 text-xs text-red-500">
+                                                        {productError}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="w-full sm:w-32">
+                                            <label className="mb-1 block text-xs font-medium text-slate-600">
+                                                Sale Price (৳) *
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                className={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${priceError ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
+                                                value={item.sale_price}
+                                                onChange={(e) =>
+                                                    updateItem(i, {
+                                                        sale_price:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                            />
+                                            {priceError && (
+                                                <p className="mt-1 text-xs text-red-500">
+                                                    {priceError}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="w-full sm:w-36">
+                                            <label className="mb-1 block text-xs font-medium text-slate-600">
+                                                Stock Limit *{' '}
+                                                <span className="text-slate-400">
+                                                    (max {item.available_stock})
+                                                </span>
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                className={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${stockError ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
+                                                value={item.stock_limit}
+                                                onChange={(e) =>
+                                                    updateItem(i, {
+                                                        stock_limit:
+                                                            e.target.value,
+                                                    })
+                                                }
+                                            />
+                                            {stockError && (
+                                                <p className="mt-1 text-xs text-red-500">
+                                                    {stockError}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeItem(i)}
+                                            className="self-end rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 sm:mt-5 sm:self-auto"
+                                        >
+                                            <Trash2 className="size-4" />
+                                        </button>
                                     </div>
-                                    <div className="min-w-0">
-                                        <p className="truncate text-sm font-semibold text-slate-800">
-                                            {item.product_name}
-                                        </p>
-                                        <p className="truncate text-xs text-slate-400">
-                                            {item.variant_label ??
-                                                'Whole product (all variants)'}
-                                            {item.product_sku
-                                                ? ` · ${item.product_sku}`
-                                                : ''}
-                                        </p>
-                                        {productError && (
-                                            <p className="mt-1 text-xs text-red-500">
-                                                {productError}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="w-full sm:w-32">
-                                    <label className="mb-1 block text-xs font-medium text-slate-600">
-                                        Sale Price (৳) *
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        className={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${priceError ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
-                                        value={item.sale_price}
-                                        onChange={(e) =>
-                                            updateItem(i, {
-                                                sale_price: e.target.value,
-                                            })
-                                        }
-                                    />
-                                    {priceError && (
-                                        <p className="mt-1 text-xs text-red-500">
-                                            {priceError}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="w-full sm:w-36">
-                                    <label className="mb-1 block text-xs font-medium text-slate-600">
-                                        Stock Limit *{' '}
-                                        <span className="text-slate-400">
-                                            (max {item.available_stock})
-                                        </span>
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        className={`h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:outline-none ${stockError ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
-                                        value={item.stock_limit}
-                                        onChange={(e) =>
-                                            updateItem(i, {
-                                                stock_limit: e.target.value,
-                                            })
-                                        }
-                                    />
-                                    {stockError && (
-                                        <p className="mt-1 text-xs text-red-500">
-                                            {stockError}
-                                        </p>
-                                    )}
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => removeItem(i)}
-                                    className="self-end rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 sm:mt-5 sm:self-auto"
-                                >
-                                    <Trash2 className="size-4" />
-                                </button>
-                            </div>
-                        );
-                    })
+                                </AdminReveal>
+                            );
+                        })}
+                    </AnimatePresence>
                 )}
             </div>
         </div>

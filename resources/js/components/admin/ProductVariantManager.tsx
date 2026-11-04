@@ -1,5 +1,7 @@
+import { AnimatePresence } from 'framer-motion';
 import { Star, Trash2, Wand2 } from 'lucide-react';
 import { useState } from 'react';
+import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import { cn } from '@/lib/utils';
 
 type BulkFields = {
@@ -352,443 +354,578 @@ export function ProductVariantManager({
                 </label>
             </div>
 
-            {hasColorVariant && (
-                <div>
-                    <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                        Colors
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        {colorValues.map((color) => {
-                            const active = candidateColorIds.includes(color.id);
-
-                            return (
-                                <button
-                                    key={color.id}
-                                    type="button"
-                                    onClick={() => toggleColorValue(color.id)}
-                                    className={cn(
-                                        'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition',
-                                        active
-                                            ? 'border-[#c8102e] bg-[#c8102e]/10 text-[#c8102e]'
-                                            : 'border-slate-200 text-slate-600 hover:border-slate-300',
-                                    )}
-                                >
-                                    <span
-                                        className="size-3 rounded-full border border-black/10"
-                                        style={{
-                                            backgroundColor:
-                                                color.color_hex || '#ccc',
-                                        }}
-                                    />
-                                    {color.value}
-                                </button>
-                            );
-                        })}
-                        {colorValues.length === 0 && (
-                            <p className="text-xs text-slate-400">
-                                No color values yet — add some under Admin &gt;
-                                Attributes.
+            <AnimatePresence initial={false}>
+                {hasColorVariant && (
+                    <AdminReveal key="colors">
+                        <div>
+                            <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                Colors
                             </p>
-                        )}
-                    </div>
-                </div>
-            )}
+                            <div className="flex flex-wrap gap-2">
+                                {colorValues.map((color) => {
+                                    const active = candidateColorIds.includes(
+                                        color.id,
+                                    );
 
-            {hasSizeVariant && (
-                <div>
-                    <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                        Sizes
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        {sizeValues.map((size) => {
-                            const active = candidateSizeIds.includes(size.id);
-
-                            return (
-                                <button
-                                    key={size.id}
-                                    type="button"
-                                    onClick={() => toggleSizeValue(size.id)}
-                                    className={cn(
-                                        'rounded-full border px-3 py-1.5 text-xs font-medium transition',
-                                        active
-                                            ? 'border-[#c8102e] bg-[#c8102e]/10 text-[#c8102e]'
-                                            : 'border-slate-200 text-slate-600 hover:border-slate-300',
-                                    )}
-                                >
-                                    {size.value}
-                                </button>
-                            );
-                        })}
-                        {sizeValues.length === 0 && (
-                            <p className="text-xs text-slate-400">
-                                No size values yet — add some under Admin &gt;
-                                Attributes.
-                            </p>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {dualMode &&
-                candidateColorIds.length > 0 &&
-                candidateSizeIds.length > 0 && (
-                    <div>
-                        <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                            Combinations
-                        </p>
-                        <p className="mb-2 text-xs text-slate-400">
-                            Check the color/size pairs you actually stock.
-                        </p>
-                        <div className="overflow-x-auto rounded-xl border border-slate-200">
-                            <table className="w-full text-xs">
-                                <thead className="bg-slate-50 text-slate-500">
-                                    <tr>
-                                        <th className="px-3 py-2 text-left font-medium">
-                                            Color \ Size
-                                        </th>
-                                        {candidateSizeIds.map((sizeId) => (
-                                            <th
-                                                key={sizeId}
-                                                className="px-3 py-2 text-center font-medium"
-                                            >
-                                                {valueLabel(sizeId, sizeValues)}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {candidateColorIds.map((colorId) => (
-                                        <tr key={colorId}>
-                                            <td className="flex items-center gap-1.5 px-3 py-2 font-medium whitespace-nowrap text-slate-700">
-                                                <span
-                                                    className="size-3 shrink-0 rounded-full border border-black/10"
-                                                    style={{
-                                                        backgroundColor:
-                                                            colorSwatch(
-                                                                colorId,
-                                                            ) || '#ccc',
-                                                    }}
-                                                />
-                                                {valueLabel(
-                                                    colorId,
-                                                    colorValues,
-                                                )}
-                                            </td>
-                                            {candidateSizeIds.map((sizeId) => {
-                                                const checked = variants.some(
-                                                    (v) =>
-                                                        v.color_value_id ===
-                                                            colorId &&
-                                                        v.size_value_id ===
-                                                            sizeId,
-                                                );
-                                                const locked =
-                                                    checked &&
-                                                    variants.length <= 1;
-
-                                                return (
-                                                    <td
-                                                        key={sizeId}
-                                                        className="px-3 py-2 text-center"
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={checked}
-                                                            disabled={locked}
-                                                            onChange={() =>
-                                                                togglePair(
-                                                                    colorId,
-                                                                    sizeId,
-                                                                )
-                                                            }
-                                                            title={
-                                                                locked
-                                                                    ? "Can't remove the only remaining pair here"
-                                                                    : undefined
-                                                            }
-                                                            className="size-4 rounded border-slate-300 text-[#c8102e] focus:ring-[#c8102e] disabled:opacity-40"
-                                                        />
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-            {variants.length > 1 && (
-                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                    <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                        <Wand2 className="size-3.5" />
-                        Bulk-fill variants
-                    </div>
-                    <p className="mb-3 text-xs text-slate-400">
-                        Fill in whichever fields are the same across every
-                        variant, then apply — fields left blank here won't
-                        change anything. SKU is excluded since it needs to stay
-                        unique per variant.
-                    </p>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        <VariantField label="Price (৳)">
-                            <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="Unchanged"
-                                className={fieldInputClass}
-                                value={bulkFields.price}
-                                onChange={(e) =>
-                                    setBulkFields({
-                                        ...bulkFields,
-                                        price: e.target.value,
-                                    })
-                                }
-                            />
-                        </VariantField>
-                        <VariantField label="Compare price (৳)">
-                            <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="Unchanged"
-                                className={fieldInputClass}
-                                value={bulkFields.compare_price}
-                                onChange={(e) =>
-                                    setBulkFields({
-                                        ...bulkFields,
-                                        compare_price: e.target.value,
-                                    })
-                                }
-                            />
-                        </VariantField>
-                        <VariantField label="Cost price (৳)">
-                            <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="Unchanged"
-                                className={fieldInputClass}
-                                value={bulkFields.cost_price}
-                                onChange={(e) =>
-                                    setBulkFields({
-                                        ...bulkFields,
-                                        cost_price: e.target.value,
-                                    })
-                                }
-                            />
-                        </VariantField>
-                        <VariantField label="Stock qty">
-                            <input
-                                type="number"
-                                min="0"
-                                placeholder="Unchanged"
-                                className={fieldInputClass}
-                                value={bulkFields.stock_quantity}
-                                onChange={(e) =>
-                                    setBulkFields({
-                                        ...bulkFields,
-                                        stock_quantity: e.target.value,
-                                    })
-                                }
-                            />
-                        </VariantField>
-                        <VariantField label="Low stock alert">
-                            <input
-                                type="number"
-                                min="0"
-                                placeholder="Unchanged"
-                                className={fieldInputClass}
-                                value={bulkFields.low_stock_threshold}
-                                onChange={(e) =>
-                                    setBulkFields({
-                                        ...bulkFields,
-                                        low_stock_threshold: e.target.value,
-                                    })
-                                }
-                            />
-                        </VariantField>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={applyBulkFields}
-                        className="mt-3 rounded-lg bg-[#c8102e] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#a50d25]"
-                    >
-                        Apply to all {variants.length} variants
-                    </button>
-                </div>
-            )}
-
-            {variants.length > 0 && (
-                <div className="space-y-3">
-                    {variants.map((row, index) => {
-                        const label = [
-                            hasColorVariant &&
-                                valueLabel(row.color_value_id, colorValues),
-                            hasSizeVariant &&
-                                valueLabel(row.size_value_id, sizeValues),
-                        ]
-                            .filter(Boolean)
-                            .join(' / ');
-                        const swatch = colorSwatch(row.color_value_id);
-
-                        return (
-                            <div
-                                key={`${row.color_value_id}-${row.size_value_id}`}
-                                className={cn(
-                                    'rounded-xl border p-4 transition',
-                                    row.is_default
-                                        ? 'border-[#c8102e]/40 bg-[#c8102e]/[0.03]'
-                                        : 'border-slate-200',
-                                )}
-                            >
-                                <div className="mb-3 flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2">
-                                        {swatch && (
-                                            <span
-                                                className="size-3.5 shrink-0 rounded-full border border-black/10"
-                                                style={{
-                                                    backgroundColor: swatch,
-                                                }}
-                                            />
-                                        )}
-                                        <span className="text-sm font-semibold text-slate-800">
-                                            {label}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
+                                    return (
                                         <button
+                                            key={color.id}
                                             type="button"
-                                            onClick={() => setDefault(index)}
+                                            onClick={() =>
+                                                toggleColorValue(color.id)
+                                            }
                                             className={cn(
-                                                'flex items-center gap-1 text-xs font-medium',
-                                                row.is_default
-                                                    ? 'text-amber-600'
-                                                    : 'text-slate-400 hover:text-slate-600',
+                                                'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition',
+                                                active
+                                                    ? 'border-[#c8102e] bg-[#c8102e]/10 text-[#c8102e]'
+                                                    : 'border-slate-200 text-slate-600 hover:border-slate-300',
                                             )}
                                         >
-                                            <Star
-                                                className={cn(
-                                                    'size-3.5',
-                                                    row.is_default &&
-                                                        'fill-amber-400 text-amber-400',
-                                                )}
+                                            <span
+                                                className="size-3 rounded-full border border-black/10"
+                                                style={{
+                                                    backgroundColor:
+                                                        color.color_hex ||
+                                                        '#ccc',
+                                                }}
                                             />
-                                            {row.is_default
-                                                ? 'Default'
-                                                : 'Set default'}
+                                            {color.value}
                                         </button>
-                                        {variants.length > 1 && (
-                                            <button
-                                                type="button"
-                                                onClick={() => removeRow(index)}
-                                                title="Remove variant"
-                                                className="text-slate-400 hover:text-red-500"
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
+                                    );
+                                })}
+                                {colorValues.length === 0 && (
+                                    <p className="text-xs text-slate-400">
+                                        No color values yet — add some under
+                                        Admin &gt; Attributes.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </AdminReveal>
+                )}
+            </AnimatePresence>
 
-                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                    <VariantField label="SKU">
-                                        <input
-                                            className={fieldInputClass}
-                                            value={row.sku}
-                                            onChange={(e) =>
-                                                updateRow(index, {
-                                                    sku: e.target.value,
-                                                })
+            <AnimatePresence initial={false}>
+                {hasSizeVariant && (
+                    <AdminReveal key="sizes">
+                        <div>
+                            <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                Sizes
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {sizeValues.map((size) => {
+                                    const active = candidateSizeIds.includes(
+                                        size.id,
+                                    );
+
+                                    return (
+                                        <button
+                                            key={size.id}
+                                            type="button"
+                                            onClick={() =>
+                                                toggleSizeValue(size.id)
                                             }
-                                        />
-                                    </VariantField>
-                                    <VariantField label="Price (৳)">
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            className={fieldInputClass}
-                                            value={row.price}
-                                            onChange={(e) =>
-                                                updateRow(index, {
-                                                    price: e.target.value,
-                                                })
-                                            }
-                                        />
-                                    </VariantField>
-                                    <VariantField label="Compare price (৳)">
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            className={fieldInputClass}
-                                            value={row.compare_price}
-                                            onChange={(e) =>
-                                                updateRow(index, {
-                                                    compare_price:
-                                                        e.target.value,
-                                                })
-                                            }
-                                        />
-                                    </VariantField>
-                                    <VariantField label="Cost price (৳)">
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            className={fieldInputClass}
-                                            value={row.cost_price}
-                                            onChange={(e) =>
-                                                updateRow(index, {
-                                                    cost_price: e.target.value,
-                                                })
-                                            }
-                                        />
-                                    </VariantField>
-                                    <VariantField label="Stock qty">
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            className={fieldInputClass}
-                                            value={row.stock_quantity}
-                                            onChange={(e) =>
-                                                updateRow(index, {
-                                                    stock_quantity:
-                                                        e.target.value,
-                                                })
-                                            }
-                                        />
-                                    </VariantField>
-                                    <VariantField label="Low stock alert">
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            className={fieldInputClass}
-                                            value={row.low_stock_threshold}
-                                            onChange={(e) =>
-                                                updateRow(index, {
-                                                    low_stock_threshold:
-                                                        e.target.value,
-                                                })
-                                            }
-                                        />
-                                    </VariantField>
+                                            className={cn(
+                                                'rounded-full border px-3 py-1.5 text-xs font-medium transition',
+                                                active
+                                                    ? 'border-[#c8102e] bg-[#c8102e]/10 text-[#c8102e]'
+                                                    : 'border-slate-200 text-slate-600 hover:border-slate-300',
+                                            )}
+                                        >
+                                            {size.value}
+                                        </button>
+                                    );
+                                })}
+                                {sizeValues.length === 0 && (
+                                    <p className="text-xs text-slate-400">
+                                        No size values yet — add some under
+                                        Admin &gt; Attributes.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </AdminReveal>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence initial={false}>
+                {dualMode &&
+                    candidateColorIds.length > 0 &&
+                    candidateSizeIds.length > 0 && (
+                        <AdminReveal key="combinations">
+                            <div>
+                                <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                    Combinations
+                                </p>
+                                <p className="mb-2 text-xs text-slate-400">
+                                    Check the color/size pairs you actually
+                                    stock.
+                                </p>
+                                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                                    <table className="w-full text-xs">
+                                        <thead className="bg-slate-50 text-slate-500">
+                                            <tr>
+                                                <th className="px-3 py-2 text-left font-medium">
+                                                    Color \ Size
+                                                </th>
+                                                {candidateSizeIds.map(
+                                                    (sizeId) => (
+                                                        <th
+                                                            key={sizeId}
+                                                            className="px-3 py-2 text-center font-medium"
+                                                        >
+                                                            {valueLabel(
+                                                                sizeId,
+                                                                sizeValues,
+                                                            )}
+                                                        </th>
+                                                    ),
+                                                )}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {candidateColorIds.map(
+                                                (colorId) => (
+                                                    <tr key={colorId}>
+                                                        <td className="flex items-center gap-1.5 px-3 py-2 font-medium whitespace-nowrap text-slate-700">
+                                                            <span
+                                                                className="size-3 shrink-0 rounded-full border border-black/10"
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        colorSwatch(
+                                                                            colorId,
+                                                                        ) ||
+                                                                        '#ccc',
+                                                                }}
+                                                            />
+                                                            {valueLabel(
+                                                                colorId,
+                                                                colorValues,
+                                                            )}
+                                                        </td>
+                                                        {candidateSizeIds.map(
+                                                            (sizeId) => {
+                                                                const checked =
+                                                                    variants.some(
+                                                                        (v) =>
+                                                                            v.color_value_id ===
+                                                                                colorId &&
+                                                                            v.size_value_id ===
+                                                                                sizeId,
+                                                                    );
+                                                                const locked =
+                                                                    checked &&
+                                                                    variants.length <=
+                                                                        1;
+
+                                                                return (
+                                                                    <td
+                                                                        key={
+                                                                            sizeId
+                                                                        }
+                                                                        className="px-3 py-2 text-center"
+                                                                    >
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={
+                                                                                checked
+                                                                            }
+                                                                            disabled={
+                                                                                locked
+                                                                            }
+                                                                            onChange={() =>
+                                                                                togglePair(
+                                                                                    colorId,
+                                                                                    sizeId,
+                                                                                )
+                                                                            }
+                                                                            title={
+                                                                                locked
+                                                                                    ? "Can't remove the only remaining pair here"
+                                                                                    : undefined
+                                                                            }
+                                                                            className="size-4 rounded border-slate-300 text-[#c8102e] focus:ring-[#c8102e] disabled:opacity-40"
+                                                                        />
+                                                                    </td>
+                                                                );
+                                                            },
+                                                        )}
+                                                    </tr>
+                                                ),
+                                            )}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
-                        );
-                    })}
-                    {variants.length === 1 && (
-                        <p className="text-xs text-slate-400">
-                            This is the only variant, so it can't be removed
-                            directly — deselect its color/size above, or uncheck
-                            "Enable Color"/"Enable Size", to turn variants off.
-                        </p>
+                        </AdminReveal>
                     )}
-                </div>
-            )}
+            </AnimatePresence>
+
+            <AnimatePresence initial={false}>
+                {variants.length > 1 && (
+                    <AdminReveal key="bulk-fill">
+                        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                            <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                <Wand2 className="size-3.5" />
+                                Bulk-fill variants
+                            </div>
+                            <p className="mb-3 text-xs text-slate-400">
+                                Fill in whichever fields are the same across
+                                every variant, then apply — fields left blank
+                                here won't change anything. SKU is excluded
+                                since it needs to stay unique per variant.
+                            </p>
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                <VariantField label="Price (৳)">
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="Unchanged"
+                                        className={fieldInputClass}
+                                        value={bulkFields.price}
+                                        onChange={(e) =>
+                                            setBulkFields({
+                                                ...bulkFields,
+                                                price: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </VariantField>
+                                <VariantField label="Compare price (৳)">
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="Unchanged"
+                                        className={fieldInputClass}
+                                        value={bulkFields.compare_price}
+                                        onChange={(e) =>
+                                            setBulkFields({
+                                                ...bulkFields,
+                                                compare_price: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </VariantField>
+                                <VariantField label="Cost price (৳)">
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="Unchanged"
+                                        className={fieldInputClass}
+                                        value={bulkFields.cost_price}
+                                        onChange={(e) =>
+                                            setBulkFields({
+                                                ...bulkFields,
+                                                cost_price: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </VariantField>
+                                <VariantField label="Stock qty">
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        placeholder="Unchanged"
+                                        className={fieldInputClass}
+                                        value={bulkFields.stock_quantity}
+                                        onChange={(e) =>
+                                            setBulkFields({
+                                                ...bulkFields,
+                                                stock_quantity: e.target.value,
+                                            })
+                                        }
+                                    />
+                                </VariantField>
+                                <VariantField label="Low stock alert">
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        placeholder="Unchanged"
+                                        className={fieldInputClass}
+                                        value={bulkFields.low_stock_threshold}
+                                        onChange={(e) =>
+                                            setBulkFields({
+                                                ...bulkFields,
+                                                low_stock_threshold:
+                                                    e.target.value,
+                                            })
+                                        }
+                                    />
+                                </VariantField>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={applyBulkFields}
+                                className="mt-3 rounded-lg bg-[#c8102e] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#a50d25]"
+                            >
+                                Apply to all {variants.length} variants
+                            </button>
+                        </div>
+                    </AdminReveal>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence initial={false}>
+                {variants.length > 0 && (
+                    <AdminReveal key="variant-rows">
+                        <div className="space-y-3">
+                            <AnimatePresence initial={false}>
+                                {variants.map((row, index) => {
+                                    const label = [
+                                        hasColorVariant &&
+                                            valueLabel(
+                                                row.color_value_id,
+                                                colorValues,
+                                            ),
+                                        hasSizeVariant &&
+                                            valueLabel(
+                                                row.size_value_id,
+                                                sizeValues,
+                                            ),
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' / ');
+                                    const swatch = colorSwatch(
+                                        row.color_value_id,
+                                    );
+
+                                    return (
+                                        <AdminReveal
+                                            key={`${row.color_value_id}-${row.size_value_id}`}
+                                        >
+                                            <div
+                                                className={cn(
+                                                    'rounded-xl border p-4 transition',
+                                                    row.is_default
+                                                        ? 'border-[#c8102e]/40 bg-[#c8102e]/[0.03]'
+                                                        : 'border-slate-200',
+                                                )}
+                                            >
+                                                <div className="mb-3 flex items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-2">
+                                                        {swatch && (
+                                                            <span
+                                                                className="size-3.5 shrink-0 rounded-full border border-black/10"
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        swatch,
+                                                                }}
+                                                            />
+                                                        )}
+                                                        <span className="text-sm font-semibold text-slate-800">
+                                                            {label}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setDefault(
+                                                                    index,
+                                                                )
+                                                            }
+                                                            className={cn(
+                                                                'flex items-center gap-1 text-xs font-medium',
+                                                                row.is_default
+                                                                    ? 'text-amber-600'
+                                                                    : 'text-slate-400 hover:text-slate-600',
+                                                            )}
+                                                        >
+                                                            <Star
+                                                                className={cn(
+                                                                    'size-3.5',
+                                                                    row.is_default &&
+                                                                        'fill-amber-400 text-amber-400',
+                                                                )}
+                                                            />
+                                                            {row.is_default
+                                                                ? 'Default'
+                                                                : 'Set default'}
+                                                        </button>
+                                                        <AnimatePresence
+                                                            initial={false}
+                                                        >
+                                                            {variants.length >
+                                                                1 && (
+                                                                <AdminFade key="remove-variant">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            removeRow(
+                                                                                index,
+                                                                            )
+                                                                        }
+                                                                        title="Remove variant"
+                                                                        className="text-slate-400 hover:text-red-500"
+                                                                    >
+                                                                        <Trash2 className="size-4" />
+                                                                    </button>
+                                                                </AdminFade>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                                    <VariantField label="SKU">
+                                                        <input
+                                                            className={
+                                                                fieldInputClass
+                                                            }
+                                                            value={row.sku}
+                                                            onChange={(e) =>
+                                                                updateRow(
+                                                                    index,
+                                                                    {
+                                                                        sku: e
+                                                                            .target
+                                                                            .value,
+                                                                    },
+                                                                )
+                                                            }
+                                                        />
+                                                    </VariantField>
+                                                    <VariantField label="Price (৳)">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            className={
+                                                                fieldInputClass
+                                                            }
+                                                            value={row.price}
+                                                            onChange={(e) =>
+                                                                updateRow(
+                                                                    index,
+                                                                    {
+                                                                        price: e
+                                                                            .target
+                                                                            .value,
+                                                                    },
+                                                                )
+                                                            }
+                                                        />
+                                                    </VariantField>
+                                                    <VariantField label="Compare price (৳)">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            className={
+                                                                fieldInputClass
+                                                            }
+                                                            value={
+                                                                row.compare_price
+                                                            }
+                                                            onChange={(e) =>
+                                                                updateRow(
+                                                                    index,
+                                                                    {
+                                                                        compare_price:
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                    },
+                                                                )
+                                                            }
+                                                        />
+                                                    </VariantField>
+                                                    <VariantField label="Cost price (৳)">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            className={
+                                                                fieldInputClass
+                                                            }
+                                                            value={
+                                                                row.cost_price
+                                                            }
+                                                            onChange={(e) =>
+                                                                updateRow(
+                                                                    index,
+                                                                    {
+                                                                        cost_price:
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                    },
+                                                                )
+                                                            }
+                                                        />
+                                                    </VariantField>
+                                                    <VariantField label="Stock qty">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            className={
+                                                                fieldInputClass
+                                                            }
+                                                            value={
+                                                                row.stock_quantity
+                                                            }
+                                                            onChange={(e) =>
+                                                                updateRow(
+                                                                    index,
+                                                                    {
+                                                                        stock_quantity:
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                    },
+                                                                )
+                                                            }
+                                                        />
+                                                    </VariantField>
+                                                    <VariantField label="Low stock alert">
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            className={
+                                                                fieldInputClass
+                                                            }
+                                                            value={
+                                                                row.low_stock_threshold
+                                                            }
+                                                            onChange={(e) =>
+                                                                updateRow(
+                                                                    index,
+                                                                    {
+                                                                        low_stock_threshold:
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                    },
+                                                                )
+                                                            }
+                                                        />
+                                                    </VariantField>
+                                                </div>
+                                            </div>
+                                        </AdminReveal>
+                                    );
+                                })}
+                            </AnimatePresence>
+                            <AnimatePresence initial={false}>
+                                {variants.length === 1 && (
+                                    <AdminReveal key="only-variant">
+                                        <p className="text-xs text-slate-400">
+                                            This is the only variant, so it
+                                            can't be removed directly — deselect
+                                            its color/size above, or uncheck
+                                            "Enable Color"/"Enable Size", to
+                                            turn variants off.
+                                        </p>
+                                    </AdminReveal>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </AdminReveal>
+                )}
+            </AnimatePresence>
 
             {errors?.variants && (
                 <p className="text-xs text-red-500">{errors.variants}</p>

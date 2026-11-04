@@ -1,4 +1,5 @@
 import { router, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import {
     Package,
     Search,
@@ -8,6 +9,7 @@ import {
     X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -523,81 +525,103 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="space-y-2">
                             <Label>Customer</Label>
-                            {selectedCustomer ? (
-                                <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#c8102e]/10 text-[#c8102e]">
-                                        <UserRound className="size-4" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-semibold text-slate-800">
-                                            {selectedCustomer.name}
-                                        </p>
-                                        <p className="truncate text-xs text-slate-500">
-                                            {selectedCustomer.email}
-                                            {selectedCustomer.phone
-                                                ? ` · ${selectedCustomer.phone}`
-                                                : ''}
-                                        </p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={clearCustomer}
-                                        className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
-                                        title="Remove — place as a guest instead"
-                                    >
-                                        <X className="size-4" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div
-                                    ref={customerSearchRef}
-                                    className="relative"
-                                >
-                                    <div className="relative">
-                                        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
-                                        <input
-                                            type="text"
-                                            placeholder="Search an existing customer by name, email or phone (optional)…"
-                                            value={customerQuery}
-                                            onChange={(e) =>
-                                                setCustomerQuery(e.target.value)
-                                            }
-                                            className="h-10 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
-                                        />
-                                    </div>
-                                    {customerResults.length > 0 && (
-                                        <div className="absolute z-10 mt-1 max-h-56 w-full space-y-0.5 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-                                            {customerResults.map((customer) => (
-                                                <button
-                                                    key={customer.id}
-                                                    type="button"
-                                                    onClick={() =>
-                                                        selectCustomer(customer)
-                                                    }
-                                                    className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50"
-                                                >
-                                                    <span className="truncate">
-                                                        {customer.name}
-                                                    </span>
-                                                    <span className="shrink-0 text-xs text-slate-400">
-                                                        {customer.phone ??
-                                                            customer.email}
-                                                    </span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                    {customerQuery.trim() !== '' &&
-                                        !searchingCustomers &&
-                                        customerResults.length === 0 && (
-                                            <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-center text-xs text-slate-400 shadow-lg">
-                                                No matching customer — fill in
-                                                the fields below for a guest
-                                                order.
+                            <AnimatePresence initial={false} mode="wait">
+                                {selectedCustomer ? (
+                                    <AdminReveal key="customer-a">
+                                        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                                            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#c8102e]/10 text-[#c8102e]">
+                                                <UserRound className="size-4" />
                                             </div>
-                                        )}
-                                </div>
-                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-semibold text-slate-800">
+                                                    {selectedCustomer.name}
+                                                </p>
+                                                <p className="truncate text-xs text-slate-500">
+                                                    {selectedCustomer.email}
+                                                    {selectedCustomer.phone
+                                                        ? ` · ${selectedCustomer.phone}`
+                                                        : ''}
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={clearCustomer}
+                                                className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                                                title="Remove — place as a guest instead"
+                                            >
+                                                <X className="size-4" />
+                                            </button>
+                                        </div>
+                                    </AdminReveal>
+                                ) : (
+                                    <AdminReveal key="customer-b">
+                                        <div
+                                            ref={customerSearchRef}
+                                            className="relative"
+                                        >
+                                            <div className="relative">
+                                                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search an existing customer by name, email or phone (optional)…"
+                                                    value={customerQuery}
+                                                    onChange={(e) =>
+                                                        setCustomerQuery(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="h-10 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
+                                                />
+                                            </div>
+                                            <AnimatePresence initial={false}>
+                                                {customerResults.length > 0 && (
+                                                    <AdminFade
+                                                        key="customer-results"
+                                                        className="absolute z-10 mt-1 max-h-56 w-full origin-top space-y-0.5 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2 shadow-lg"
+                                                    >
+                                                        {customerResults.map(
+                                                            (customer) => (
+                                                                <button
+                                                                    key={
+                                                                        customer.id
+                                                                    }
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        selectCustomer(
+                                                                            customer,
+                                                                        )
+                                                                    }
+                                                                    className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50"
+                                                                >
+                                                                    <span className="truncate">
+                                                                        {
+                                                                            customer.name
+                                                                        }
+                                                                    </span>
+                                                                    <span className="shrink-0 text-xs text-slate-400">
+                                                                        {customer.phone ??
+                                                                            customer.email}
+                                                                    </span>
+                                                                </button>
+                                                            ),
+                                                        )}
+                                                    </AdminFade>
+                                                )}
+                                            </AnimatePresence>
+                                            {customerQuery.trim() !== '' &&
+                                                !searchingCustomers &&
+                                                customerResults.length ===
+                                                    0 && (
+                                                    <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-center text-xs text-slate-400 shadow-lg">
+                                                        No matching customer —
+                                                        fill in the fields below
+                                                        for a guest order.
+                                                    </div>
+                                                )}
+                                        </div>
+                                    </AdminReveal>
+                                )}
+                            </AnimatePresence>
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -695,35 +719,52 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                             </div>
                             <div className="space-y-1.5">
                                 <Label htmlFor="co-city">City *</Label>
-                                {isDhaka ? (
-                                    <Select
-                                        id="co-city"
-                                        value={form.data.city}
-                                        onChange={(e) =>
-                                            form.setData('city', e.target.value)
-                                        }
-                                        error={form.errors.city}
-                                    >
-                                        <option value="" disabled>
-                                            Select area…
-                                        </option>
-                                        {DHAKA_CITY_OPTIONS.map((opt) => (
-                                            <option key={opt} value={opt}>
-                                                {opt}
-                                            </option>
-                                        ))}
-                                    </Select>
-                                ) : (
-                                    <Input
-                                        id="co-city"
-                                        value={form.data.city}
-                                        onChange={(e) =>
-                                            form.setData('city', e.target.value)
-                                        }
-                                        disabled={!form.data.state}
-                                        error={form.errors.city}
-                                    />
-                                )}
+                                <AnimatePresence initial={false} mode="wait">
+                                    {isDhaka ? (
+                                        <AdminFade key="city-a">
+                                            <Select
+                                                id="co-city"
+                                                value={form.data.city}
+                                                onChange={(e) =>
+                                                    form.setData(
+                                                        'city',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                error={form.errors.city}
+                                            >
+                                                <option value="" disabled>
+                                                    Select area…
+                                                </option>
+                                                {DHAKA_CITY_OPTIONS.map(
+                                                    (opt) => (
+                                                        <option
+                                                            key={opt}
+                                                            value={opt}
+                                                        >
+                                                            {opt}
+                                                        </option>
+                                                    ),
+                                                )}
+                                            </Select>
+                                        </AdminFade>
+                                    ) : (
+                                        <AdminFade key="city-b">
+                                            <Input
+                                                id="co-city"
+                                                value={form.data.city}
+                                                onChange={(e) =>
+                                                    form.setData(
+                                                        'city',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={!form.data.state}
+                                                error={form.errors.city}
+                                            />
+                                        </AdminFade>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
 
@@ -786,46 +827,52 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                     />
                                 </div>
 
-                                {pendingVariantFor && (
-                                    <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-                                        <p className="mb-1.5 px-1 text-xs font-semibold text-slate-500">
-                                            Choose a variant of{' '}
-                                            {pendingVariantFor.name}
-                                        </p>
-                                        <div className="max-h-56 space-y-0.5 overflow-y-auto">
-                                            {pendingVariantFor.variants.map(
-                                                (variant) => (
-                                                    <button
-                                                        key={variant.id}
-                                                        type="button"
-                                                        onClick={() =>
-                                                            addLine(
-                                                                pendingVariantFor,
-                                                                variant,
-                                                            )
-                                                        }
-                                                        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50"
-                                                    >
-                                                        <span>
-                                                            {variantLabel(
-                                                                variant.attributes,
-                                                            ) || variant.sku}
-                                                        </span>
-                                                        <span className="text-xs text-slate-400">
-                                                            {formatCurrency(
-                                                                variant.price,
-                                                            )}{' '}
-                                                            · stock{' '}
-                                                            {
-                                                                variant.stock_quantity
+                                <AnimatePresence initial={false}>
+                                    {pendingVariantFor && (
+                                        <AdminFade
+                                            key="variant-picker"
+                                            className="absolute z-10 mt-1 w-full origin-top rounded-lg border border-slate-200 bg-white p-2 shadow-lg"
+                                        >
+                                            <p className="mb-1.5 px-1 text-xs font-semibold text-slate-500">
+                                                Choose a variant of{' '}
+                                                {pendingVariantFor.name}
+                                            </p>
+                                            <div className="max-h-56 space-y-0.5 overflow-y-auto">
+                                                {pendingVariantFor.variants.map(
+                                                    (variant) => (
+                                                        <button
+                                                            key={variant.id}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                addLine(
+                                                                    pendingVariantFor,
+                                                                    variant,
+                                                                )
                                                             }
-                                                        </span>
-                                                    </button>
-                                                ),
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
+                                                            className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50"
+                                                        >
+                                                            <span>
+                                                                {variantLabel(
+                                                                    variant.attributes,
+                                                                ) ||
+                                                                    variant.sku}
+                                                            </span>
+                                                            <span className="text-xs text-slate-400">
+                                                                {formatCurrency(
+                                                                    variant.price,
+                                                                )}{' '}
+                                                                · stock{' '}
+                                                                {
+                                                                    variant.stock_quantity
+                                                                }
+                                                            </span>
+                                                        </button>
+                                                    ),
+                                                )}
+                                            </div>
+                                        </AdminFade>
+                                    )}
+                                </AnimatePresence>
 
                                 {!pendingVariantFor &&
                                     productResults.length > 0 && (
@@ -894,108 +941,118 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                         </p>
                                     </div>
                                 ) : (
-                                    lines.map((line, index) => (
-                                        <div
-                                            key={`${line.product_id}-${line.variant_id}`}
-                                            className="flex items-center gap-3 rounded-xl border border-slate-200 p-3"
-                                        >
-                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
-                                                <Package className="size-4" />
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="truncate text-sm font-semibold text-slate-800">
-                                                    {line.product_name}
-                                                </p>
-                                                {line.variant_attributes && (
-                                                    <p className="truncate text-xs text-slate-400">
-                                                        {variantLabel(
-                                                            line.variant_attributes,
-                                                        )}
-                                                    </p>
-                                                )}
-                                                <input
-                                                    type="number"
-                                                    min={0}
-                                                    step="0.01"
-                                                    value={line.price}
-                                                    onChange={(e) =>
-                                                        updateLine(index, {
-                                                            price:
-                                                                parseFloat(
-                                                                    e.target
-                                                                        .value,
-                                                                ) || 0,
-                                                            price_touched: true,
-                                                        })
-                                                    }
-                                                    className="mt-1 h-7 w-24 rounded border border-slate-200 px-1.5 text-xs focus:border-[#c8102e] focus:outline-none"
-                                                />
-                                                {((line.calculated_price !==
-                                                    null &&
-                                                    differs(
-                                                        line.price,
-                                                        line.calculated_price,
-                                                    )) ||
-                                                    formErrors[
-                                                        `items.${index}.price_override_reason`
-                                                    ]) && (
-                                                    <div className="mt-1.5 space-y-1">
-                                                        {line.calculated_price !==
-                                                            null && (
-                                                            <p className="text-xs text-slate-500">
-                                                                Calculated
-                                                                price:{' '}
-                                                                {formatCurrency(
-                                                                    line.calculated_price,
+                                    <AnimatePresence initial={false}>
+                                        {lines.map((line, index) => (
+                                            <AdminReveal
+                                                key={`${line.product_id}-${line.variant_id}`}
+                                            >
+                                                <div className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
+                                                        <Package className="size-4" />
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate text-sm font-semibold text-slate-800">
+                                                            {line.product_name}
+                                                        </p>
+                                                        {line.variant_attributes && (
+                                                            <p className="truncate text-xs text-slate-400">
+                                                                {variantLabel(
+                                                                    line.variant_attributes,
                                                                 )}
                                                             </p>
                                                         )}
-                                                        <Input
-                                                            aria-label="Reason for changing the price"
-                                                            placeholder="Reason for changing the price"
-                                                            value={
-                                                                line.price_override_reason
-                                                            }
+                                                        <input
+                                                            type="number"
+                                                            min={0}
+                                                            step="0.01"
+                                                            value={line.price}
                                                             onChange={(e) =>
                                                                 updateLine(
                                                                     index,
                                                                     {
-                                                                        price_override_reason:
-                                                                            e
-                                                                                .target
-                                                                                .value,
+                                                                        price:
+                                                                            parseFloat(
+                                                                                e
+                                                                                    .target
+                                                                                    .value,
+                                                                            ) ||
+                                                                            0,
+                                                                        price_touched: true,
                                                                     },
                                                                 )
                                                             }
-                                                            error={
-                                                                formErrors[
-                                                                    `items.${index}.price_override_reason`
-                                                                ]
-                                                            }
+                                                            className="mt-1 h-7 w-24 rounded border border-slate-200 px-1.5 text-xs focus:border-[#c8102e] focus:outline-none"
                                                         />
+                                                        {((line.calculated_price !==
+                                                            null &&
+                                                            differs(
+                                                                line.price,
+                                                                line.calculated_price,
+                                                            )) ||
+                                                            formErrors[
+                                                                `items.${index}.price_override_reason`
+                                                            ]) && (
+                                                            <div className="mt-1.5 space-y-1">
+                                                                {line.calculated_price !==
+                                                                    null && (
+                                                                    <p className="text-xs text-slate-500">
+                                                                        Calculated
+                                                                        price:{' '}
+                                                                        {formatCurrency(
+                                                                            line.calculated_price,
+                                                                        )}
+                                                                    </p>
+                                                                )}
+                                                                <Input
+                                                                    aria-label="Reason for changing the price"
+                                                                    placeholder="Reason for changing the price"
+                                                                    value={
+                                                                        line.price_override_reason
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        updateLine(
+                                                                            index,
+                                                                            {
+                                                                                price_override_reason:
+                                                                                    e
+                                                                                        .target
+                                                                                        .value,
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                    error={
+                                                                        formErrors[
+                                                                            `items.${index}.price_override_reason`
+                                                                        ]
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                            <QuantityStepper
-                                                value={line.quantity}
-                                                onChange={(val) =>
-                                                    updateLine(index, {
-                                                        quantity: val,
-                                                    })
-                                                }
-                                                className="h-9 scale-90"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    removeLine(index)
-                                                }
-                                                className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </button>
-                                        </div>
-                                    ))
+                                                    <QuantityStepper
+                                                        value={line.quantity}
+                                                        onChange={(val) =>
+                                                            updateLine(index, {
+                                                                quantity: val,
+                                                            })
+                                                        }
+                                                        className="h-9 scale-90"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            removeLine(index)
+                                                        }
+                                                        className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </button>
+                                                </div>
+                                            </AdminReveal>
+                                        ))}
+                                    </AnimatePresence>
                                 )}
                             </div>
                         </div>

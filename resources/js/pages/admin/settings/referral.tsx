@@ -1,4 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
+import { AdminFade } from '@/components/admin/admin-motion';
 import {
     SettingsField,
     settingsInputClass,
@@ -430,11 +432,15 @@ export default function ReferralConfig({ settings }: Props) {
                         >
                             {processing ? 'Saving…' : 'Save'}
                         </Button>
-                        {recentlySuccessful && (
-                            <span className="text-xs font-medium text-emerald-600">
-                                Saved.
-                            </span>
-                        )}
+                        <AnimatePresence initial={false}>
+                            {recentlySuccessful && (
+                                <AdminFade key="saved-0">
+                                    <span className="text-xs font-medium text-emerald-600">
+                                        Saved.
+                                    </span>
+                                </AdminFade>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </form>
             </div>

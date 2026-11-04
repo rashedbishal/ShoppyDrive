@@ -1,5 +1,7 @@
 import { Link, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import { ShieldCheck } from 'lucide-react';
+import { AdminReveal } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -226,20 +228,30 @@ export default function DeliveryVerificationDialog({
                                     </option>
                                 </select>
                             </label>
-                            {isCod && form.data.outcome === 'full_delivery' && (
-                                <Input
-                                    label={`COD amount the courier collected (must be ৳${Math.round(order.total)})`}
-                                    inputMode="decimal"
-                                    value={form.data.verified_collected_amount}
-                                    onChange={(e) =>
-                                        form.setData(
-                                            'verified_collected_amount',
-                                            e.target.value,
-                                        )
-                                    }
-                                    error={errors.verified_collected_amount}
-                                />
-                            )}
+                            <AnimatePresence initial={false}>
+                                {isCod &&
+                                    form.data.outcome === 'full_delivery' && (
+                                        <AdminReveal key="cod-amount">
+                                            <Input
+                                                label={`COD amount the courier collected (must be ৳${Math.round(order.total)})`}
+                                                inputMode="decimal"
+                                                value={
+                                                    form.data
+                                                        .verified_collected_amount
+                                                }
+                                                onChange={(e) =>
+                                                    form.setData(
+                                                        'verified_collected_amount',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                error={
+                                                    errors.verified_collected_amount
+                                                }
+                                            />
+                                        </AdminReveal>
+                                    )}
+                            </AnimatePresence>
                         </>
                     ) : (
                         <label className="block text-xs font-semibold text-slate-700">

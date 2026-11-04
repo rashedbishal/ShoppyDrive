@@ -1,5 +1,7 @@
 import { useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import { ShieldAlert } from 'lucide-react';
+import { AdminReveal } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -78,95 +80,117 @@ export default function PermanentOrderDeleteDialog({
                     </p>
                 )}
 
-                {!confirmedForThisOrder ? (
-                    <form
-                        className="space-y-3"
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            step1.post(
-                                route(
-                                    'admin.orders.permanentDelete.confirm',
-                                    order.id,
-                                ),
-                                {
-                                    preserveScroll: true,
-                                    preserveState: true,
-                                    onFinish: () => step1.reset('password'),
-                                },
-                            );
-                        }}
-                    >
-                        <p className="text-xs font-semibold text-slate-700">
-                            Step 1 of 2 — confirm your password
-                        </p>
-                        <Input
-                            type="password"
-                            label="Your password"
-                            autoComplete="current-password"
-                            value={step1.data.password}
-                            onChange={(e) =>
-                                step1.setData('password', e.target.value)
-                            }
-                            error={step1.errors.password}
-                        />
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={step1.processing || !step1.data.password}
-                        >
-                            Continue
-                        </Button>
-                    </form>
-                ) : (
-                    <form
-                        className="space-y-3"
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            step2.delete(
-                                route('admin.orders.forceDelete', order.id),
-                                {
-                                    preserveScroll: true,
-                                    onSuccess: () => close(),
-                                    onFinish: () => step2.reset('password'),
-                                },
-                            );
-                        }}
-                    >
-                        <p className="text-xs font-semibold text-slate-700">
-                            Step 2 of 2 — confirm again within 5 minutes
-                        </p>
-                        <Input
-                            type="password"
-                            label="Your password, again"
-                            autoComplete="current-password"
-                            value={step2.data.password}
-                            onChange={(e) =>
-                                step2.setData('password', e.target.value)
-                            }
-                            error={step2.errors.password}
-                        />
-                        <Input
-                            label={`Type the order number (${order.order_number})`}
-                            autoComplete="off"
-                            value={step2.data.order_number}
-                            onChange={(e) =>
-                                step2.setData('order_number', e.target.value)
-                            }
-                            error={step2.errors.order_number}
-                        />
-                        <Button
-                            type="submit"
-                            className="w-full bg-red-600 text-white hover:bg-red-700"
-                            disabled={
-                                step2.processing ||
-                                !step2.data.password ||
-                                !step2.data.order_number
-                            }
-                        >
-                            Delete permanently
-                        </Button>
-                    </form>
-                )}
+                <AnimatePresence initial={false} mode="wait">
+                    {!confirmedForThisOrder ? (
+                        <AdminReveal key="step-a">
+                            <form
+                                className="space-y-3"
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    step1.post(
+                                        route(
+                                            'admin.orders.permanentDelete.confirm',
+                                            order.id,
+                                        ),
+                                        {
+                                            preserveScroll: true,
+                                            preserveState: true,
+                                            onFinish: () =>
+                                                step1.reset('password'),
+                                        },
+                                    );
+                                }}
+                            >
+                                <p className="text-xs font-semibold text-slate-700">
+                                    Step 1 of 2 — confirm your password
+                                </p>
+                                <Input
+                                    type="password"
+                                    label="Your password"
+                                    autoComplete="current-password"
+                                    value={step1.data.password}
+                                    onChange={(e) =>
+                                        step1.setData(
+                                            'password',
+                                            e.target.value,
+                                        )
+                                    }
+                                    error={step1.errors.password}
+                                />
+                                <Button
+                                    type="submit"
+                                    className="w-full"
+                                    disabled={
+                                        step1.processing || !step1.data.password
+                                    }
+                                >
+                                    Continue
+                                </Button>
+                            </form>
+                        </AdminReveal>
+                    ) : (
+                        <AdminReveal key="step-b">
+                            <form
+                                className="space-y-3"
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    step2.delete(
+                                        route(
+                                            'admin.orders.forceDelete',
+                                            order.id,
+                                        ),
+                                        {
+                                            preserveScroll: true,
+                                            onSuccess: () => close(),
+                                            onFinish: () =>
+                                                step2.reset('password'),
+                                        },
+                                    );
+                                }}
+                            >
+                                <p className="text-xs font-semibold text-slate-700">
+                                    Step 2 of 2 — confirm again within 5 minutes
+                                </p>
+                                <Input
+                                    type="password"
+                                    label="Your password, again"
+                                    autoComplete="current-password"
+                                    value={step2.data.password}
+                                    onChange={(e) =>
+                                        step2.setData(
+                                            'password',
+                                            e.target.value,
+                                        )
+                                    }
+                                    error={step2.errors.password}
+                                />
+                                <Input
+                                    label={`Type the order number (${order.order_number})`}
+                                    autoComplete="off"
+                                    value={step2.data.order_number}
+                                    onChange={(e) =>
+                                        step2.setData(
+                                            'order_number',
+                                            e.target.value,
+                                        )
+                                    }
+                                    error={step2.errors.order_number}
+                                />
+                                <Button
+                                    type="submit"
+                                    className="w-full bg-red-600 text-white hover:bg-red-700"
+                                    disabled={
+                                        step2.processing ||
+                                        !step2.data.password ||
+                                        !step2.data.order_number
+                                    }
+                                >
+                                    Delete permanently
+                                </Button>
+                            </form>
+                        </AdminReveal>
+                    )}
+                </AnimatePresence>
             </DialogContent>
         </Dialog>
     );

@@ -1,4 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import {
     AlertTriangle,
     ArrowLeft,
@@ -14,6 +15,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
+import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import CourierSubmissionPanel from '@/components/admin/CourierSubmissionPanel';
 import type { CourierSubmission } from '@/components/admin/CourierSubmissionPanel';
 import DeliveryVerificationDialog from '@/components/admin/DeliveryVerificationDialog';
@@ -838,171 +840,236 @@ export default function OrderShow({
                                     <MapPin className="size-4" /> Shipping
                                     Address
                                 </CardTitle>
-                                {!isEditingAddress && (
-                                    <button
-                                        type="button"
-                                        onClick={startEditingAddress}
-                                        disabled={courierUnresolved}
-                                        title={
-                                            courierUnresolved
-                                                ? courierUnresolvedNote
-                                                : undefined
-                                        }
-                                        className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        <Pencil className="size-3.5" /> Edit
-                                    </button>
-                                )}
+                                <AnimatePresence initial={false}>
+                                    {!isEditingAddress && (
+                                        <AdminFade key="edit-address-button">
+                                            <button
+                                                type="button"
+                                                onClick={startEditingAddress}
+                                                disabled={courierUnresolved}
+                                                title={
+                                                    courierUnresolved
+                                                        ? courierUnresolvedNote
+                                                        : undefined
+                                                }
+                                                className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                <Pencil className="size-3.5" />{' '}
+                                                Edit
+                                            </button>
+                                        </AdminFade>
+                                    )}
+                                </AnimatePresence>
                             </CardHeader>
                             <CardContent className="pt-4">
-                                {isEditingAddress ? (
-                                    <form
-                                        onSubmit={handleSaveAddress}
-                                        className="space-y-3"
-                                    >
-                                        <div>
-                                            <p className="mb-1 text-xs font-medium text-slate-500">
-                                                Recipient name
-                                            </p>
-                                            <p className="text-sm font-semibold text-slate-800">
-                                                {order.shipping_address.name}
-                                            </p>
-                                            <p className="mt-0.5 text-xs text-slate-400">
-                                                Not editable here.
-                                            </p>
-                                        </div>
-                                        <Input
-                                            label="Phone"
-                                            value={addressData.phone}
-                                            onChange={(e) =>
-                                                setAddressData(
-                                                    'phone',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            error={addressErrors.phone}
-                                        />
-                                        <Input
-                                            label="Address line 1"
-                                            value={addressData.address_line1}
-                                            onChange={(e) =>
-                                                setAddressData(
-                                                    'address_line1',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            error={addressErrors.address_line1}
-                                        />
-                                        <Input
-                                            label="Address line 2"
-                                            value={addressData.address_line2}
-                                            onChange={(e) =>
-                                                setAddressData(
-                                                    'address_line2',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            error={addressErrors.address_line2}
-                                        />
-                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                            <Input
-                                                label="City"
-                                                value={addressData.city}
-                                                onChange={(e) =>
-                                                    setAddressData(
-                                                        'city',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                error={addressErrors.city}
-                                            />
-                                            <Input
-                                                label="District / State"
-                                                value={addressData.state}
-                                                onChange={(e) =>
-                                                    setAddressData(
-                                                        'state',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                error={addressErrors.state}
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                            <Input
-                                                label="Postal code"
-                                                value={addressData.postal_code}
-                                                onChange={(e) =>
-                                                    setAddressData(
-                                                        'postal_code',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                error={
-                                                    addressErrors.postal_code
-                                                }
-                                            />
-                                            <Input
-                                                label="Country"
-                                                value={addressData.country}
-                                                onChange={(e) =>
-                                                    setAddressData(
-                                                        'country',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                error={addressErrors.country}
-                                            />
-                                        </div>
-                                        <div className="flex gap-2 pt-1">
-                                            <Button
-                                                type="submit"
-                                                disabled={addressProcessing}
-                                                className="flex-1 bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                <AnimatePresence initial={false} mode="wait">
+                                    {isEditingAddress ? (
+                                        <AdminReveal key="address-a">
+                                            <form
+                                                onSubmit={handleSaveAddress}
+                                                className="space-y-3"
                                             >
-                                                {addressProcessing
-                                                    ? 'Saving…'
-                                                    : 'Save address'}
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                disabled={addressProcessing}
-                                                onClick={cancelEditingAddress}
-                                            >
-                                                <X className="size-4" />
-                                            </Button>
-                                        </div>
-                                    </form>
-                                ) : (
-                                    <div className="space-y-0.5 text-sm text-slate-700">
-                                        <p className="font-semibold">
-                                            {order.shipping_address.name}
-                                        </p>
-                                        <p>{order.shipping_address.phone}</p>
-                                        <p>
-                                            {
-                                                order.shipping_address
-                                                    .address_line1
-                                            }
-                                        </p>
-                                        {order.shipping_address
-                                            .address_line2 && (
-                                            <p>
-                                                {
-                                                    order.shipping_address
-                                                        .address_line2
-                                                }
-                                            </p>
-                                        )}
-                                        <p>
-                                            {order.shipping_address.city},{' '}
-                                            {order.shipping_address.state}{' '}
-                                            {order.shipping_address.postal_code}
-                                        </p>
-                                        <p>{order.shipping_address.country}</p>
-                                    </div>
-                                )}
+                                                <div>
+                                                    <p className="mb-1 text-xs font-medium text-slate-500">
+                                                        Recipient name
+                                                    </p>
+                                                    <p className="text-sm font-semibold text-slate-800">
+                                                        {
+                                                            order
+                                                                .shipping_address
+                                                                .name
+                                                        }
+                                                    </p>
+                                                    <p className="mt-0.5 text-xs text-slate-400">
+                                                        Not editable here.
+                                                    </p>
+                                                </div>
+                                                <Input
+                                                    label="Phone"
+                                                    value={addressData.phone}
+                                                    onChange={(e) =>
+                                                        setAddressData(
+                                                            'phone',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    error={addressErrors.phone}
+                                                />
+                                                <Input
+                                                    label="Address line 1"
+                                                    value={
+                                                        addressData.address_line1
+                                                    }
+                                                    onChange={(e) =>
+                                                        setAddressData(
+                                                            'address_line1',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    error={
+                                                        addressErrors.address_line1
+                                                    }
+                                                />
+                                                <Input
+                                                    label="Address line 2"
+                                                    value={
+                                                        addressData.address_line2
+                                                    }
+                                                    onChange={(e) =>
+                                                        setAddressData(
+                                                            'address_line2',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    error={
+                                                        addressErrors.address_line2
+                                                    }
+                                                />
+                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                    <Input
+                                                        label="City"
+                                                        value={addressData.city}
+                                                        onChange={(e) =>
+                                                            setAddressData(
+                                                                'city',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        error={
+                                                            addressErrors.city
+                                                        }
+                                                    />
+                                                    <Input
+                                                        label="District / State"
+                                                        value={
+                                                            addressData.state
+                                                        }
+                                                        onChange={(e) =>
+                                                            setAddressData(
+                                                                'state',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        error={
+                                                            addressErrors.state
+                                                        }
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                    <Input
+                                                        label="Postal code"
+                                                        value={
+                                                            addressData.postal_code
+                                                        }
+                                                        onChange={(e) =>
+                                                            setAddressData(
+                                                                'postal_code',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        error={
+                                                            addressErrors.postal_code
+                                                        }
+                                                    />
+                                                    <Input
+                                                        label="Country"
+                                                        value={
+                                                            addressData.country
+                                                        }
+                                                        onChange={(e) =>
+                                                            setAddressData(
+                                                                'country',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        error={
+                                                            addressErrors.country
+                                                        }
+                                                    />
+                                                </div>
+                                                <div className="flex gap-2 pt-1">
+                                                    <Button
+                                                        type="submit"
+                                                        disabled={
+                                                            addressProcessing
+                                                        }
+                                                        className="flex-1 bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                                    >
+                                                        {addressProcessing
+                                                            ? 'Saving…'
+                                                            : 'Save address'}
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        disabled={
+                                                            addressProcessing
+                                                        }
+                                                        onClick={
+                                                            cancelEditingAddress
+                                                        }
+                                                    >
+                                                        <X className="size-4" />
+                                                    </Button>
+                                                </div>
+                                            </form>
+                                        </AdminReveal>
+                                    ) : (
+                                        <AdminReveal key="address-b">
+                                            <div className="space-y-0.5 text-sm text-slate-700">
+                                                <p className="font-semibold">
+                                                    {
+                                                        order.shipping_address
+                                                            .name
+                                                    }
+                                                </p>
+                                                <p>
+                                                    {
+                                                        order.shipping_address
+                                                            .phone
+                                                    }
+                                                </p>
+                                                <p>
+                                                    {
+                                                        order.shipping_address
+                                                            .address_line1
+                                                    }
+                                                </p>
+                                                {order.shipping_address
+                                                    .address_line2 && (
+                                                    <p>
+                                                        {
+                                                            order
+                                                                .shipping_address
+                                                                .address_line2
+                                                        }
+                                                    </p>
+                                                )}
+                                                <p>
+                                                    {
+                                                        order.shipping_address
+                                                            .city
+                                                    }
+                                                    ,{' '}
+                                                    {
+                                                        order.shipping_address
+                                                            .state
+                                                    }{' '}
+                                                    {
+                                                        order.shipping_address
+                                                            .postal_code
+                                                    }
+                                                </p>
+                                                <p>
+                                                    {
+                                                        order.shipping_address
+                                                            .country
+                                                    }
+                                                </p>
+                                            </div>
+                                        </AdminReveal>
+                                    )}
+                                </AnimatePresence>
                             </CardContent>
                         </Card>
 

@@ -1,4 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import {
     AlertTriangle,
     ArrowLeft,
@@ -9,6 +10,7 @@ import {
     Truck,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -421,46 +423,60 @@ export default function ConvertIncompleteOrder({
                                     </div>
                                     <div className="space-y-1.5">
                                         <Label htmlFor="city">City *</Label>
-                                        {isDhaka ? (
-                                            <Select
-                                                id="city"
-                                                value={form.data.city}
-                                                onChange={(e) =>
-                                                    form.setData(
-                                                        'city',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                error={form.errors.city}
-                                            >
-                                                <option value="" disabled>
-                                                    Select area…
-                                                </option>
-                                                {DHAKA_CITY_OPTIONS.map(
-                                                    (opt) => (
+                                        <AnimatePresence
+                                            initial={false}
+                                            mode="wait"
+                                        >
+                                            {isDhaka ? (
+                                                <AdminFade key="city-a">
+                                                    <Select
+                                                        id="city"
+                                                        value={form.data.city}
+                                                        onChange={(e) =>
+                                                            form.setData(
+                                                                'city',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        error={form.errors.city}
+                                                    >
                                                         <option
-                                                            key={opt}
-                                                            value={opt}
+                                                            value=""
+                                                            disabled
                                                         >
-                                                            {opt}
+                                                            Select area…
                                                         </option>
-                                                    ),
-                                                )}
-                                            </Select>
-                                        ) : (
-                                            <Input
-                                                id="city"
-                                                value={form.data.city}
-                                                onChange={(e) =>
-                                                    form.setData(
-                                                        'city',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                disabled={!form.data.state}
-                                                error={form.errors.city}
-                                            />
-                                        )}
+                                                        {DHAKA_CITY_OPTIONS.map(
+                                                            (opt) => (
+                                                                <option
+                                                                    key={opt}
+                                                                    value={opt}
+                                                                >
+                                                                    {opt}
+                                                                </option>
+                                                            ),
+                                                        )}
+                                                    </Select>
+                                                </AdminFade>
+                                            ) : (
+                                                <AdminFade key="city-b">
+                                                    <Input
+                                                        id="city"
+                                                        value={form.data.city}
+                                                        onChange={(e) =>
+                                                            form.setData(
+                                                                'city',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            !form.data.state
+                                                        }
+                                                        error={form.errors.city}
+                                                    />
+                                                </AdminFade>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                 </div>
 
@@ -526,47 +542,52 @@ export default function ConvertIncompleteOrder({
                                         />
                                     </div>
 
-                                    {pendingVariantFor && (
-                                        <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-                                            <p className="mb-1.5 px-1 text-xs font-semibold text-slate-500">
-                                                Choose a variant of{' '}
-                                                {pendingVariantFor.name}
-                                            </p>
-                                            <div className="max-h-56 space-y-0.5 overflow-y-auto">
-                                                {pendingVariantFor.variants.map(
-                                                    (variant) => (
-                                                        <button
-                                                            key={variant.id}
-                                                            type="button"
-                                                            onClick={() =>
-                                                                addLine(
-                                                                    pendingVariantFor,
-                                                                    variant,
-                                                                )
-                                                            }
-                                                            className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50"
-                                                        >
-                                                            <span>
-                                                                {variantLabel(
-                                                                    variant.attributes,
-                                                                ) ||
-                                                                    variant.sku}
-                                                            </span>
-                                                            <span className="text-xs text-slate-400">
-                                                                {formatCurrency(
-                                                                    variant.price,
-                                                                )}{' '}
-                                                                · stock{' '}
-                                                                {
-                                                                    variant.stock_quantity
+                                    <AnimatePresence initial={false}>
+                                        {pendingVariantFor && (
+                                            <AdminFade
+                                                key="variant-picker"
+                                                className="absolute z-10 mt-1 w-full origin-top rounded-lg border border-slate-200 bg-white p-2 shadow-lg"
+                                            >
+                                                <p className="mb-1.5 px-1 text-xs font-semibold text-slate-500">
+                                                    Choose a variant of{' '}
+                                                    {pendingVariantFor.name}
+                                                </p>
+                                                <div className="max-h-56 space-y-0.5 overflow-y-auto">
+                                                    {pendingVariantFor.variants.map(
+                                                        (variant) => (
+                                                            <button
+                                                                key={variant.id}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    addLine(
+                                                                        pendingVariantFor,
+                                                                        variant,
+                                                                    )
                                                                 }
-                                                            </span>
-                                                        </button>
-                                                    ),
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
+                                                                className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-50"
+                                                            >
+                                                                <span>
+                                                                    {variantLabel(
+                                                                        variant.attributes,
+                                                                    ) ||
+                                                                        variant.sku}
+                                                                </span>
+                                                                <span className="text-xs text-slate-400">
+                                                                    {formatCurrency(
+                                                                        variant.price,
+                                                                    )}{' '}
+                                                                    · stock{' '}
+                                                                    {
+                                                                        variant.stock_quantity
+                                                                    }
+                                                                </span>
+                                                            </button>
+                                                        ),
+                                                    )}
+                                                </div>
+                                            </AdminFade>
+                                        )}
+                                    </AnimatePresence>
 
                                     {!pendingVariantFor &&
                                         results.length > 0 && (
@@ -632,53 +653,62 @@ export default function ConvertIncompleteOrder({
                                             </p>
                                         </div>
                                     ) : (
-                                        lines.map((line, index) => (
-                                            <div
-                                                key={`${line.product_id}-${line.variant_id}`}
-                                                className="flex items-center gap-3 rounded-xl border border-slate-200 p-3"
-                                            >
-                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
-                                                    <Package className="size-4" />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="truncate text-sm font-semibold text-slate-800">
-                                                        {line.product_name}
-                                                    </p>
-                                                    {line.variant_attributes && (
-                                                        <p className="truncate text-xs text-slate-400">
-                                                            {variantLabel(
-                                                                line.variant_attributes,
-                                                            )}
-                                                        </p>
-                                                    )}
-                                                    <p className="text-xs text-slate-400">
-                                                        {formatCurrency(
-                                                            line.price,
-                                                        )}{' '}
-                                                        each
-                                                    </p>
-                                                </div>
-                                                <QuantityStepper
-                                                    value={line.quantity}
-                                                    onChange={(val) =>
-                                                        updateQuantity(
-                                                            index,
-                                                            val,
-                                                        )
-                                                    }
-                                                    className="h-9 scale-90"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        removeLine(index)
-                                                    }
-                                                    className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                        <AnimatePresence initial={false}>
+                                            {lines.map((line, index) => (
+                                                <AdminReveal
+                                                    key={`${line.product_id}-${line.variant_id}`}
                                                 >
-                                                    <Trash2 className="size-4" />
-                                                </button>
-                                            </div>
-                                        ))
+                                                    <div className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
+                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
+                                                            <Package className="size-4" />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="truncate text-sm font-semibold text-slate-800">
+                                                                {
+                                                                    line.product_name
+                                                                }
+                                                            </p>
+                                                            {line.variant_attributes && (
+                                                                <p className="truncate text-xs text-slate-400">
+                                                                    {variantLabel(
+                                                                        line.variant_attributes,
+                                                                    )}
+                                                                </p>
+                                                            )}
+                                                            <p className="text-xs text-slate-400">
+                                                                {formatCurrency(
+                                                                    line.price,
+                                                                )}{' '}
+                                                                each
+                                                            </p>
+                                                        </div>
+                                                        <QuantityStepper
+                                                            value={
+                                                                line.quantity
+                                                            }
+                                                            onChange={(val) =>
+                                                                updateQuantity(
+                                                                    index,
+                                                                    val,
+                                                                )
+                                                            }
+                                                            className="h-9 scale-90"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                removeLine(
+                                                                    index,
+                                                                )
+                                                            }
+                                                            className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                                        >
+                                                            <Trash2 className="size-4" />
+                                                        </button>
+                                                    </div>
+                                                </AdminReveal>
+                                            ))}
+                                        </AnimatePresence>
                                     )}
                                 </div>
 

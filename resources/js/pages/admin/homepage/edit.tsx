@@ -1,4 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft,
     Award,
@@ -12,6 +13,7 @@ import {
     Trash2,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import { AdminTableRow } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -660,43 +662,47 @@ export default function HomepageEdit({
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-100">
-                                                        {data.featured_products.map(
-                                                            (product) => (
-                                                                <tr
-                                                                    key={
-                                                                        product.id
-                                                                    }
-                                                                    className="transition hover:bg-slate-50/50"
-                                                                >
-                                                                    <td className="px-4 py-3 font-medium text-slate-900">
-                                                                        {
-                                                                            product.name
+                                                        <AnimatePresence
+                                                            initial={false}
+                                                        >
+                                                            {data.featured_products.map(
+                                                                (product) => (
+                                                                    <AdminTableRow
+                                                                        key={
+                                                                            product.id
                                                                         }
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-right text-slate-600">
-                                                                        ৳
-                                                                        {Number(
-                                                                            product.price,
-                                                                        ).toFixed(
-                                                                            0,
-                                                                        )}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-right">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() =>
-                                                                                removeFeaturedProduct(
-                                                                                    product.id,
-                                                                                )
+                                                                        className="transition hover:bg-slate-50/50"
+                                                                    >
+                                                                        <td className="px-4 py-3 font-medium text-slate-900">
+                                                                            {
+                                                                                product.name
                                                                             }
-                                                                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
-                                                                        >
-                                                                            <Trash2 className="size-4" />
-                                                                        </button>
-                                                                    </td>
-                                                                </tr>
-                                                            ),
-                                                        )}
+                                                                        </td>
+                                                                        <td className="px-4 py-3 text-right text-slate-600">
+                                                                            ৳
+                                                                            {Number(
+                                                                                product.price,
+                                                                            ).toFixed(
+                                                                                0,
+                                                                            )}
+                                                                        </td>
+                                                                        <td className="px-4 py-3 text-right">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() =>
+                                                                                    removeFeaturedProduct(
+                                                                                        product.id,
+                                                                                    )
+                                                                                }
+                                                                                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                                                                            >
+                                                                                <Trash2 className="size-4" />
+                                                                            </button>
+                                                                        </td>
+                                                                    </AdminTableRow>
+                                                                ),
+                                                            )}
+                                                        </AnimatePresence>
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -826,43 +832,47 @@ export default function HomepageEdit({
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-100">
-                                                        {data.section_products.map(
-                                                            (product) => (
-                                                                <tr
-                                                                    key={
-                                                                        product.id
-                                                                    }
-                                                                    className="transition hover:bg-slate-50/50"
-                                                                >
-                                                                    <td className="px-4 py-3 font-medium text-slate-900">
-                                                                        {
-                                                                            product.name
+                                                        <AnimatePresence
+                                                            initial={false}
+                                                        >
+                                                            {data.section_products.map(
+                                                                (product) => (
+                                                                    <AdminTableRow
+                                                                        key={
+                                                                            product.id
                                                                         }
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-right text-slate-600">
-                                                                        ৳
-                                                                        {Number(
-                                                                            product.price,
-                                                                        ).toFixed(
-                                                                            0,
-                                                                        )}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-right">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() =>
-                                                                                removeSectionProduct(
-                                                                                    product.id,
-                                                                                )
+                                                                        className="transition hover:bg-slate-50/50"
+                                                                    >
+                                                                        <td className="px-4 py-3 font-medium text-slate-900">
+                                                                            {
+                                                                                product.name
                                                                             }
-                                                                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
-                                                                        >
-                                                                            <Trash2 className="size-4" />
-                                                                        </button>
-                                                                    </td>
-                                                                </tr>
-                                                            ),
-                                                        )}
+                                                                        </td>
+                                                                        <td className="px-4 py-3 text-right text-slate-600">
+                                                                            ৳
+                                                                            {Number(
+                                                                                product.price,
+                                                                            ).toFixed(
+                                                                                0,
+                                                                            )}
+                                                                        </td>
+                                                                        <td className="px-4 py-3 text-right">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() =>
+                                                                                    removeSectionProduct(
+                                                                                        product.id,
+                                                                                    )
+                                                                                }
+                                                                                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                                                                            >
+                                                                                <Trash2 className="size-4" />
+                                                                            </button>
+                                                                        </td>
+                                                                    </AdminTableRow>
+                                                                ),
+                                                            )}
+                                                        </AnimatePresence>
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -975,35 +985,39 @@ export default function HomepageEdit({
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-100">
-                                                        {data.section_brands.map(
-                                                            (brand) => (
-                                                                <tr
-                                                                    key={
-                                                                        brand.id
-                                                                    }
-                                                                    className="transition hover:bg-slate-50/50"
-                                                                >
-                                                                    <td className="px-4 py-3 font-medium text-slate-900">
-                                                                        {
-                                                                            brand.name
+                                                        <AnimatePresence
+                                                            initial={false}
+                                                        >
+                                                            {data.section_brands.map(
+                                                                (brand) => (
+                                                                    <AdminTableRow
+                                                                        key={
+                                                                            brand.id
                                                                         }
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-right">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() =>
-                                                                                removeSectionBrand(
-                                                                                    brand.id,
-                                                                                )
+                                                                        className="transition hover:bg-slate-50/50"
+                                                                    >
+                                                                        <td className="px-4 py-3 font-medium text-slate-900">
+                                                                            {
+                                                                                brand.name
                                                                             }
-                                                                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
-                                                                        >
-                                                                            <Trash2 className="size-4" />
-                                                                        </button>
-                                                                    </td>
-                                                                </tr>
-                                                            ),
-                                                        )}
+                                                                        </td>
+                                                                        <td className="px-4 py-3 text-right">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() =>
+                                                                                    removeSectionBrand(
+                                                                                        brand.id,
+                                                                                    )
+                                                                                }
+                                                                                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                                                                            >
+                                                                                <Trash2 className="size-4" />
+                                                                            </button>
+                                                                        </td>
+                                                                    </AdminTableRow>
+                                                                ),
+                                                            )}
+                                                        </AnimatePresence>
                                                     </tbody>
                                                 </table>
                                             </div>

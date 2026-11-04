@@ -1,4 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import {
     ChevronDown,
     ChevronUp,
@@ -7,10 +8,12 @@ import {
     Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
+import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import { useRowKeys } from '@/hooks/use-row-keys';
 import { maxLength, pattern, required, validate } from '@/lib/validate';
 
 type Product = { id: number; name: string; price: number };
@@ -82,29 +85,43 @@ function SectionWrap({
                     <span className="text-sm font-semibold text-slate-700">
                         {title}
                     </span>
-                    {!enabled && (
-                        <span className="text-[10px] tracking-wide text-slate-400 uppercase">
-                            hidden on page
-                        </span>
-                    )}
-                </div>
-                {enabled && (
-                    <button
-                        type="button"
-                        onClick={() => setOpen((v) => !v)}
-                        className="text-slate-400 hover:text-slate-600"
-                    >
-                        {open ? (
-                            <ChevronUp className="size-4" />
-                        ) : (
-                            <ChevronDown className="size-4" />
+                    <AnimatePresence initial={false}>
+                        {!enabled && (
+                            <AdminFade key="hidden-label">
+                                <span className="text-[10px] tracking-wide text-slate-400 uppercase">
+                                    hidden on page
+                                </span>
+                            </AdminFade>
                         )}
-                    </button>
-                )}
+                    </AnimatePresence>
+                </div>
+                <AnimatePresence initial={false}>
+                    {enabled && (
+                        <AdminFade key="collapse-button">
+                            <button
+                                type="button"
+                                onClick={() => setOpen((v) => !v)}
+                                className="text-slate-400 hover:text-slate-600"
+                            >
+                                {open ? (
+                                    <ChevronUp className="size-4" />
+                                ) : (
+                                    <ChevronDown className="size-4" />
+                                )}
+                            </button>
+                        </AdminFade>
+                    )}
+                </AnimatePresence>
             </div>
-            {enabled && open && (
-                <CardContent className="space-y-3 pt-4">{children}</CardContent>
-            )}
+            <AnimatePresence initial={false}>
+                {enabled && open && (
+                    <AdminReveal key="section-body">
+                        <CardContent className="space-y-3 pt-4">
+                            {children}
+                        </CardContent>
+                    </AdminReveal>
+                )}
+            </AnimatePresence>
         </Card>
     );
 }
@@ -130,6 +147,9 @@ export default function LandingPageEdit({
         });
 
     const sec = data.sections;
+    const benefitRowKeys = useRowKeys(sec.benefits.items.length);
+    const testimonialRowKeys = useRowKeys(sec.testimonials.items.length);
+    const faqRowKeys = useRowKeys(sec.faq.items.length);
     const setSec = (patch: Partial<Sections>) =>
         setData('sections', { ...sec, ...patch });
 
@@ -391,46 +411,55 @@ export default function LandingPageEdit({
                         <div>
                             <label className={labelClass}>Bullet Points</label>
                             <div className="space-y-2">
-                                {sec.benefits.items.map((item, i) => (
-                                    <div
-                                        key={i}
-                                        className="flex items-center gap-2"
-                                    >
-                                        <input
-                                            className={inputClass}
-                                            value={item}
-                                            onChange={(e) => {
-                                                const items = [
-                                                    ...sec.benefits.items,
-                                                ];
-                                                items[i] = e.target.value;
-                                                setSec({
-                                                    benefits: {
-                                                        ...sec.benefits,
-                                                        items,
-                                                    },
-                                                });
-                                            }}
-                                            placeholder={`Benefit ${i + 1}`}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setSec({
-                                                    benefits: {
-                                                        ...sec.benefits,
-                                                        items: sec.benefits.items.filter(
-                                                            (_, j) => j !== i,
-                                                        ),
-                                                    },
-                                                })
-                                            }
-                                            className="shrink-0 text-slate-400 hover:text-red-500"
+                                <AnimatePresence initial={false}>
+                                    {sec.benefits.items.map((item, i) => (
+                                        <AdminReveal
+                                            key={benefitRowKeys.keys[i]}
                                         >
-                                            <Trash2 className="size-4" />
-                                        </button>
-                                    </div>
-                                ))}
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    className={inputClass}
+                                                    value={item}
+                                                    onChange={(e) => {
+                                                        const items = [
+                                                            ...sec.benefits
+                                                                .items,
+                                                        ];
+                                                        items[i] =
+                                                            e.target.value;
+                                                        setSec({
+                                                            benefits: {
+                                                                ...sec.benefits,
+                                                                items,
+                                                            },
+                                                        });
+                                                    }}
+                                                    placeholder={`Benefit ${i + 1}`}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        benefitRowKeys.removeKey(
+                                                            i,
+                                                        );
+                                                        setSec({
+                                                            benefits: {
+                                                                ...sec.benefits,
+                                                                items: sec.benefits.items.filter(
+                                                                    (_, j) =>
+                                                                        j !== i,
+                                                                ),
+                                                            },
+                                                        });
+                                                    }}
+                                                    className="shrink-0 text-slate-400 hover:text-red-500"
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </button>
+                                            </div>
+                                        </AdminReveal>
+                                    ))}
+                                </AnimatePresence>
                                 <button
                                     type="button"
                                     onClick={() =>
@@ -506,26 +535,33 @@ export default function LandingPageEdit({
                                 Use product's own description
                             </label>
                         </div>
-                        {!sec.description.use_product_description && (
-                            <div>
-                                <label className={labelClass}>
-                                    Custom Content (HTML allowed)
-                                </label>
-                                <textarea
-                                    rows={6}
-                                    className={textareaClass}
-                                    value={sec.description.custom_content}
-                                    onChange={(e) =>
-                                        setSec({
-                                            description: {
-                                                ...sec.description,
-                                                custom_content: e.target.value,
-                                            },
-                                        })
-                                    }
-                                />
-                            </div>
-                        )}
+                        <AnimatePresence initial={false}>
+                            {!sec.description.use_product_description && (
+                                <AdminReveal key="custom-description">
+                                    <div>
+                                        <label className={labelClass}>
+                                            Custom Content (HTML allowed)
+                                        </label>
+                                        <textarea
+                                            rows={6}
+                                            className={textareaClass}
+                                            value={
+                                                sec.description.custom_content
+                                            }
+                                            onChange={(e) =>
+                                                setSec({
+                                                    description: {
+                                                        ...sec.description,
+                                                        custom_content:
+                                                            e.target.value,
+                                                    },
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                </AdminReveal>
+                            )}
+                        </AnimatePresence>
                     </SectionWrap>
 
                     {/* Gallery */}
@@ -590,100 +626,107 @@ export default function LandingPageEdit({
                                 }
                             />
                         </div>
-                        {sec.testimonials.items.map((item, i) => (
-                            <div
-                                key={i}
-                                className="space-y-2 rounded-lg border border-slate-100 p-3"
-                            >
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-slate-600">
-                                        Review #{i + 1}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setSec({
-                                                testimonials: {
-                                                    ...sec.testimonials,
-                                                    items: sec.testimonials.items.filter(
-                                                        (_, j) => j !== i,
+                        <AnimatePresence initial={false}>
+                            {sec.testimonials.items.map((item, i) => (
+                                <AdminReveal key={testimonialRowKeys.keys[i]}>
+                                    <div className="space-y-2 rounded-lg border border-slate-100 p-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-semibold text-slate-600">
+                                                Review #{i + 1}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    testimonialRowKeys.removeKey(
+                                                        i,
+                                                    );
+                                                    setSec({
+                                                        testimonials: {
+                                                            ...sec.testimonials,
+                                                            items: sec.testimonials.items.filter(
+                                                                (_, j) =>
+                                                                    j !== i,
+                                                            ),
+                                                        },
+                                                    });
+                                                }}
+                                                className="text-slate-400 hover:text-red-500"
+                                            >
+                                                <Trash2 className="size-3.5" />
+                                            </button>
+                                        </div>
+                                        <input
+                                            className={inputClass}
+                                            value={item.name}
+                                            onChange={(e) => {
+                                                const items = [
+                                                    ...sec.testimonials.items,
+                                                ];
+                                                items[i] = {
+                                                    ...items[i],
+                                                    name: e.target.value,
+                                                };
+                                                setSec({
+                                                    testimonials: {
+                                                        ...sec.testimonials,
+                                                        items,
+                                                    },
+                                                });
+                                            }}
+                                            placeholder="Customer name"
+                                        />
+                                        <Select
+                                            selectClassName={inputClass}
+                                            value={item.rating}
+                                            onChange={(e) => {
+                                                const items = [
+                                                    ...sec.testimonials.items,
+                                                ];
+                                                items[i] = {
+                                                    ...items[i],
+                                                    rating: Number(
+                                                        e.target.value,
                                                     ),
-                                                },
-                                            })
-                                        }
-                                        className="text-slate-400 hover:text-red-500"
-                                    >
-                                        <Trash2 className="size-3.5" />
-                                    </button>
-                                </div>
-                                <input
-                                    className={inputClass}
-                                    value={item.name}
-                                    onChange={(e) => {
-                                        const items = [
-                                            ...sec.testimonials.items,
-                                        ];
-                                        items[i] = {
-                                            ...items[i],
-                                            name: e.target.value,
-                                        };
-                                        setSec({
-                                            testimonials: {
-                                                ...sec.testimonials,
-                                                items,
-                                            },
-                                        });
-                                    }}
-                                    placeholder="Customer name"
-                                />
-                                <Select
-                                    selectClassName={inputClass}
-                                    value={item.rating}
-                                    onChange={(e) => {
-                                        const items = [
-                                            ...sec.testimonials.items,
-                                        ];
-                                        items[i] = {
-                                            ...items[i],
-                                            rating: Number(e.target.value),
-                                        };
-                                        setSec({
-                                            testimonials: {
-                                                ...sec.testimonials,
-                                                items,
-                                            },
-                                        });
-                                    }}
-                                >
-                                    {[5, 4, 3, 2, 1].map((r) => (
-                                        <option key={r} value={r}>
-                                            {r} Stars
-                                        </option>
-                                    ))}
-                                </Select>
-                                <textarea
-                                    rows={2}
-                                    className={textareaClass}
-                                    value={item.text}
-                                    onChange={(e) => {
-                                        const items = [
-                                            ...sec.testimonials.items,
-                                        ];
-                                        items[i] = {
-                                            ...items[i],
-                                            text: e.target.value,
-                                        };
-                                        setSec({
-                                            testimonials: {
-                                                ...sec.testimonials,
-                                                items,
-                                            },
-                                        });
-                                    }}
-                                    placeholder="Review text…"
-                                />
-                            </div>
-                        ))}
+                                                };
+                                                setSec({
+                                                    testimonials: {
+                                                        ...sec.testimonials,
+                                                        items,
+                                                    },
+                                                });
+                                            }}
+                                        >
+                                            {[5, 4, 3, 2, 1].map((r) => (
+                                                <option key={r} value={r}>
+                                                    {r} Stars
+                                                </option>
+                                            ))}
+                                        </Select>
+                                        <textarea
+                                            rows={2}
+                                            className={textareaClass}
+                                            value={item.text}
+                                            onChange={(e) => {
+                                                const items = [
+                                                    ...sec.testimonials.items,
+                                                ];
+                                                items[i] = {
+                                                    ...items[i],
+                                                    text: e.target.value,
+                                                };
+                                                setSec({
+                                                    testimonials: {
+                                                        ...sec.testimonials,
+                                                        items,
+                                                    },
+                                                });
+                                            }}
+                                            placeholder="Review text…"
+                                        />
+                                    </div>
+                                </AdminReveal>
+                            ))}
+                        </AnimatePresence>
                         <button
                             type="button"
                             onClick={() =>
@@ -728,61 +771,72 @@ export default function LandingPageEdit({
                                 }
                             />
                         </div>
-                        {sec.faq.items.map((item, i) => (
-                            <div
-                                key={i}
-                                className="space-y-2 rounded-lg border border-slate-100 p-3"
-                            >
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-slate-600">
-                                        Q&A #{i + 1}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setSec({
-                                                faq: {
-                                                    ...sec.faq,
-                                                    items: sec.faq.items.filter(
-                                                        (_, j) => j !== i,
-                                                    ),
-                                                },
-                                            })
-                                        }
-                                        className="text-slate-400 hover:text-red-500"
-                                    >
-                                        <Trash2 className="size-3.5" />
-                                    </button>
-                                </div>
-                                <input
-                                    className={inputClass}
-                                    value={item.question}
-                                    onChange={(e) => {
-                                        const items = [...sec.faq.items];
-                                        items[i] = {
-                                            ...items[i],
-                                            question: e.target.value,
-                                        };
-                                        setSec({ faq: { ...sec.faq, items } });
-                                    }}
-                                    placeholder="Question"
-                                />
-                                <textarea
-                                    rows={2}
-                                    className={textareaClass}
-                                    value={item.answer}
-                                    onChange={(e) => {
-                                        const items = [...sec.faq.items];
-                                        items[i] = {
-                                            ...items[i],
-                                            answer: e.target.value,
-                                        };
-                                        setSec({ faq: { ...sec.faq, items } });
-                                    }}
-                                    placeholder="Answer"
-                                />
-                            </div>
-                        ))}
+                        <AnimatePresence initial={false}>
+                            {sec.faq.items.map((item, i) => (
+                                <AdminReveal key={faqRowKeys.keys[i]}>
+                                    <div className="space-y-2 rounded-lg border border-slate-100 p-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-semibold text-slate-600">
+                                                Q&A #{i + 1}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    faqRowKeys.removeKey(i);
+                                                    setSec({
+                                                        faq: {
+                                                            ...sec.faq,
+                                                            items: sec.faq.items.filter(
+                                                                (_, j) =>
+                                                                    j !== i,
+                                                            ),
+                                                        },
+                                                    });
+                                                }}
+                                                className="text-slate-400 hover:text-red-500"
+                                            >
+                                                <Trash2 className="size-3.5" />
+                                            </button>
+                                        </div>
+                                        <input
+                                            className={inputClass}
+                                            value={item.question}
+                                            onChange={(e) => {
+                                                const items = [
+                                                    ...sec.faq.items,
+                                                ];
+                                                items[i] = {
+                                                    ...items[i],
+                                                    question: e.target.value,
+                                                };
+                                                setSec({
+                                                    faq: { ...sec.faq, items },
+                                                });
+                                            }}
+                                            placeholder="Question"
+                                        />
+                                        <textarea
+                                            rows={2}
+                                            className={textareaClass}
+                                            value={item.answer}
+                                            onChange={(e) => {
+                                                const items = [
+                                                    ...sec.faq.items,
+                                                ];
+                                                items[i] = {
+                                                    ...items[i],
+                                                    answer: e.target.value,
+                                                };
+                                                setSec({
+                                                    faq: { ...sec.faq, items },
+                                                });
+                                            }}
+                                            placeholder="Answer"
+                                        />
+                                    </div>
+                                </AdminReveal>
+                            ))}
+                        </AnimatePresence>
                         <button
                             type="button"
                             onClick={() =>

@@ -1,4 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
     History,
     LogIn,
@@ -14,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
+import { dialogOverlayMotion, dialogPanel } from '@/lib/dialog-motion';
 import type { PaginatedData } from '@/types';
 
 type Causer = {
@@ -74,8 +76,18 @@ function ClearLogsModal({ onClose }: { onClose: () => void }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-            <div className="relative z-10 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+            <motion.div
+                className="absolute inset-0 bg-black/40"
+                onClick={onClose}
+                {...dialogOverlayMotion}
+            />
+            <motion.div
+                variants={dialogPanel}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="relative z-10 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+            >
                 <div className="mb-4 flex items-start gap-3">
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
                         <ShieldAlert className="size-5 text-red-600" />
@@ -134,7 +146,7 @@ function ClearLogsModal({ onClose }: { onClose: () => void }) {
                         {processing ? 'Clearing…' : 'Clear All Logs'}
                     </Button>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 }
@@ -170,7 +182,14 @@ export default function AuditTrailIndex({
         <>
             <Head title="Audit Trail — Admin" />
 
-            {clearing && <ClearLogsModal onClose={() => setClearing(false)} />}
+            <AnimatePresence>
+                {clearing && (
+                    <ClearLogsModal
+                        key="clear-logs"
+                        onClose={() => setClearing(false)}
+                    />
+                )}
+            </AnimatePresence>
 
             <div className="space-y-5">
                 <div className="flex items-center justify-between">

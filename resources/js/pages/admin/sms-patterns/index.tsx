@@ -1,6 +1,8 @@
 import { Head, router, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import { Edit2, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
+import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import { BulkActionBar } from '@/components/admin/bulk-action-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -163,254 +165,285 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                             Nagad SMS
                         </p>
                     </div>
-                    {editingId === null && (
-                        <Button
-                            size="sm"
-                            onClick={openNew}
-                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                        >
-                            <Plus className="mr-1.5 size-4" />
-                            Add Pattern
-                        </Button>
-                    )}
+                    <AnimatePresence initial={false}>
+                        {editingId === null && (
+                            <AdminFade key="add-button">
+                                <Button
+                                    size="sm"
+                                    onClick={openNew}
+                                    className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                >
+                                    <Plus className="mr-1.5 size-4" />
+                                    Add Pattern
+                                </Button>
+                            </AdminFade>
+                        )}
+                    </AnimatePresence>
                 </div>
 
-                {editingId !== null && (
-                    <Card className="border-[#c8102e]/20 shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
-                            <CardTitle className="text-sm font-semibold text-slate-700">
-                                {editingId === 'new'
-                                    ? 'Add New Pattern'
-                                    : 'Edit Pattern'}
-                            </CardTitle>
-                            <button
-                                type="button"
-                                onClick={() => setEditingId(null)}
-                                className="text-slate-400 hover:text-slate-700"
-                            >
-                                <X className="size-4" />
-                            </button>
-                        </CardHeader>
-                        <CardContent className="pt-4">
-                            <form onSubmit={handleSubmit} className="space-y-3">
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    <div>
-                                        <label className="mb-1 block text-xs font-medium text-slate-600">
-                                            Provider *
-                                        </label>
-                                        <Select
-                                            selectClassName={inputClass}
-                                            value={data.provider}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'provider',
-                                                    e.target.value as
-                                                        | 'bkash'
-                                                        | 'nagad',
-                                                )
-                                            }
-                                            required
-                                        >
-                                            <option value="bkash">Bkash</option>
-                                            <option value="nagad">Nagad</option>
-                                        </Select>
-                                    </div>
-                                    <div>
-                                        <label className="mb-1 block text-xs font-medium text-slate-600">
-                                            Pattern Name *
-                                        </label>
-                                        <input
-                                            className={inputClass}
-                                            value={data.name}
-                                            onChange={(e) =>
-                                                setData('name', e.target.value)
-                                            }
-                                            placeholder="e.g. Bkash Money Received"
-                                            required
-                                        />
-                                        {errors.name && (
-                                            <p className="mt-0.5 text-xs text-red-500">
-                                                {errors.name}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="mb-1 block text-xs font-medium text-slate-600">
-                                        Identifier *
-                                        <span className="ml-1 font-normal text-slate-400">
-                                            — unique text that appears in this
-                                            SMS format
-                                        </span>
-                                    </label>
-                                    <input
-                                        className={inputClass}
-                                        value={data.identifier}
-                                        onChange={(e) =>
-                                            setData(
-                                                'identifier',
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder='e.g. "TrxID" or "Cash In Received."'
-                                        required
-                                    />
-                                    {errors.identifier && (
-                                        <p className="mt-0.5 text-xs text-red-500">
-                                            {errors.identifier}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="mb-1 block text-xs font-medium text-slate-600">
-                                        Sender Regex
-                                        <span className="ml-1 font-normal text-slate-400">
-                                            — 1 capture group; leave blank to
-                                            accept any sender (FSA-02: the
-                                            allowlist only applies once this is
-                                            set)
-                                        </span>
-                                    </label>
-                                    <input
-                                        className={`${inputClass} font-mono text-xs`}
-                                        value={data.sender_regex ?? ''}
-                                        onChange={(e) =>
-                                            setData(
-                                                'sender_regex',
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="e.g. (bKash) — leave blank for unrestricted"
-                                    />
-                                    {errors.sender_regex && (
-                                        <p className="mt-0.5 text-xs text-red-500">
-                                            {errors.sender_regex}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    <div>
-                                        <label className="mb-1 block text-xs font-medium text-slate-600">
-                                            TxnID Regex *
-                                            <span className="ml-1 font-normal text-slate-400">
-                                                — 1 capture group
-                                            </span>
-                                        </label>
-                                        <input
-                                            className={`${inputClass} font-mono text-xs`}
-                                            value={data.txn_id_regex}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'txn_id_regex',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="TrxID\s+([A-Z0-9]+)"
-                                            required
-                                        />
-                                        {errors.txn_id_regex && (
-                                            <p className="mt-0.5 text-xs text-red-500">
-                                                {errors.txn_id_regex}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <label className="mb-1 block text-xs font-medium text-slate-600">
-                                            Amount Regex *
-                                            <span className="ml-1 font-normal text-slate-400">
-                                                — 1 capture group
-                                            </span>
-                                        </label>
-                                        <input
-                                            className={`${inputClass} font-mono text-xs`}
-                                            value={data.amount_regex}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'amount_regex',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="received Tk\s+([\d,]+(?:\.\d+)?)"
-                                            required
-                                        />
-                                        {errors.amount_regex && (
-                                            <p className="mt-0.5 text-xs text-red-500">
-                                                {errors.amount_regex}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="mb-1 block text-xs font-medium text-slate-600">
-                                            Sort Order
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min={0}
-                                            className={inputClass}
-                                            value={data.sort_order}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'sort_order',
-                                                    parseInt(e.target.value) ||
-                                                        0,
-                                                )
-                                            }
-                                        />
-                                    </div>
-                                    {editingId !== 'new' && (
-                                        <div className="flex items-end gap-2 pb-0.5">
-                                            <label className="flex cursor-pointer items-center gap-2">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={data.is_active}
+                <AnimatePresence initial={false}>
+                    {editingId !== null && (
+                        <AdminReveal key="form">
+                            <Card className="border-[#c8102e]/20 shadow-sm">
+                                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                    <CardTitle className="text-sm font-semibold text-slate-700">
+                                        {editingId === 'new'
+                                            ? 'Add New Pattern'
+                                            : 'Edit Pattern'}
+                                    </CardTitle>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditingId(null)}
+                                        className="text-slate-400 hover:text-slate-700"
+                                    >
+                                        <X className="size-4" />
+                                    </button>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    <form
+                                        onSubmit={handleSubmit}
+                                        className="space-y-3"
+                                    >
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            <div>
+                                                <label className="mb-1 block text-xs font-medium text-slate-600">
+                                                    Provider *
+                                                </label>
+                                                <Select
+                                                    selectClassName={inputClass}
+                                                    value={data.provider}
                                                     onChange={(e) =>
                                                         setData(
-                                                            'is_active',
-                                                            e.target.checked,
+                                                            'provider',
+                                                            e.target.value as
+                                                                | 'bkash'
+                                                                | 'nagad',
                                                         )
                                                     }
-                                                    className="rounded border-slate-300"
+                                                    required
+                                                >
+                                                    <option value="bkash">
+                                                        Bkash
+                                                    </option>
+                                                    <option value="nagad">
+                                                        Nagad
+                                                    </option>
+                                                </Select>
+                                            </div>
+                                            <div>
+                                                <label className="mb-1 block text-xs font-medium text-slate-600">
+                                                    Pattern Name *
+                                                </label>
+                                                <input
+                                                    className={inputClass}
+                                                    value={data.name}
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            'name',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="e.g. Bkash Money Received"
+                                                    required
                                                 />
-                                                <span className="text-sm text-slate-700">
-                                                    Active
+                                                {errors.name && (
+                                                    <p className="mt-0.5 text-xs text-red-500">
+                                                        {errors.name}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1 block text-xs font-medium text-slate-600">
+                                                Identifier *
+                                                <span className="ml-1 font-normal text-slate-400">
+                                                    — unique text that appears
+                                                    in this SMS format
                                                 </span>
                                             </label>
+                                            <input
+                                                className={inputClass}
+                                                value={data.identifier}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'identifier',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder='e.g. "TrxID" or "Cash In Received."'
+                                                required
+                                            />
+                                            {errors.identifier && (
+                                                <p className="mt-0.5 text-xs text-red-500">
+                                                    {errors.identifier}
+                                                </p>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
 
-                                <div className="flex justify-end gap-2 pt-1">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setEditingId(null)}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        size="sm"
-                                        disabled={processing}
-                                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                                    >
-                                        {processing
-                                            ? 'Saving…'
-                                            : editingId === 'new'
-                                              ? 'Add Pattern'
-                                              : 'Save Changes'}
-                                    </Button>
-                                </div>
-                            </form>
-                        </CardContent>
-                    </Card>
-                )}
+                                        <div>
+                                            <label className="mb-1 block text-xs font-medium text-slate-600">
+                                                Sender Regex
+                                                <span className="ml-1 font-normal text-slate-400">
+                                                    — 1 capture group; leave
+                                                    blank to accept any sender
+                                                    (FSA-02: the allowlist only
+                                                    applies once this is set)
+                                                </span>
+                                            </label>
+                                            <input
+                                                className={`${inputClass} font-mono text-xs`}
+                                                value={data.sender_regex ?? ''}
+                                                onChange={(e) =>
+                                                    setData(
+                                                        'sender_regex',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="e.g. (bKash) — leave blank for unrestricted"
+                                            />
+                                            {errors.sender_regex && (
+                                                <p className="mt-0.5 text-xs text-red-500">
+                                                    {errors.sender_regex}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            <div>
+                                                <label className="mb-1 block text-xs font-medium text-slate-600">
+                                                    TxnID Regex *
+                                                    <span className="ml-1 font-normal text-slate-400">
+                                                        — 1 capture group
+                                                    </span>
+                                                </label>
+                                                <input
+                                                    className={`${inputClass} font-mono text-xs`}
+                                                    value={data.txn_id_regex}
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            'txn_id_regex',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="TrxID\s+([A-Z0-9]+)"
+                                                    required
+                                                />
+                                                {errors.txn_id_regex && (
+                                                    <p className="mt-0.5 text-xs text-red-500">
+                                                        {errors.txn_id_regex}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <label className="mb-1 block text-xs font-medium text-slate-600">
+                                                    Amount Regex *
+                                                    <span className="ml-1 font-normal text-slate-400">
+                                                        — 1 capture group
+                                                    </span>
+                                                </label>
+                                                <input
+                                                    className={`${inputClass} font-mono text-xs`}
+                                                    value={data.amount_regex}
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            'amount_regex',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="received Tk\s+([\d,]+(?:\.\d+)?)"
+                                                    required
+                                                />
+                                                {errors.amount_regex && (
+                                                    <p className="mt-0.5 text-xs text-red-500">
+                                                        {errors.amount_regex}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="mb-1 block text-xs font-medium text-slate-600">
+                                                    Sort Order
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min={0}
+                                                    className={inputClass}
+                                                    value={data.sort_order}
+                                                    onChange={(e) =>
+                                                        setData(
+                                                            'sort_order',
+                                                            parseInt(
+                                                                e.target.value,
+                                                            ) || 0,
+                                                        )
+                                                    }
+                                                />
+                                            </div>
+                                            <AnimatePresence initial={false}>
+                                                {editingId !== 'new' && (
+                                                    <AdminFade key="active-toggle">
+                                                        <div className="flex items-end gap-2 pb-0.5">
+                                                            <label className="flex cursor-pointer items-center gap-2">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={
+                                                                        data.is_active
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        setData(
+                                                                            'is_active',
+                                                                            e
+                                                                                .target
+                                                                                .checked,
+                                                                        )
+                                                                    }
+                                                                    className="rounded border-slate-300"
+                                                                />
+                                                                <span className="text-sm text-slate-700">
+                                                                    Active
+                                                                </span>
+                                                            </label>
+                                                        </div>
+                                                    </AdminFade>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+
+                                        <div className="flex justify-end gap-2 pt-1">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setEditingId(null)
+                                                }
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                type="submit"
+                                                size="sm"
+                                                disabled={processing}
+                                                className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                            >
+                                                {processing
+                                                    ? 'Saving…'
+                                                    : editingId === 'new'
+                                                      ? 'Add Pattern'
+                                                      : 'Save Changes'}
+                                            </Button>
+                                        </div>
+                                    </form>
+                                </CardContent>
+                            </Card>
+                        </AdminReveal>
+                    )}
+                </AnimatePresence>
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     <BulkActionBar

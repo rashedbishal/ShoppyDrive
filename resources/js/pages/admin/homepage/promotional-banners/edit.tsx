@@ -1,4 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft,
     Check,
@@ -9,6 +10,7 @@ import {
     Trash2,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import { AdminReveal, AdminTableRow } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GradientPicker } from '@/components/ui/gradient-picker';
@@ -385,41 +387,47 @@ export default function PromotionalBannerEdit({
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100">
-                                                    {selectedProducts.map(
-                                                        (product) => (
-                                                            <tr
-                                                                key={product.id}
-                                                                className="transition hover:bg-slate-50/50"
-                                                            >
-                                                                <td className="px-4 py-3 font-medium text-slate-900">
-                                                                    {
-                                                                        product.name
+                                                    <AnimatePresence
+                                                        initial={false}
+                                                    >
+                                                        {selectedProducts.map(
+                                                            (product) => (
+                                                                <AdminTableRow
+                                                                    key={
+                                                                        product.id
                                                                     }
-                                                                </td>
-                                                                <td className="px-4 py-3 text-right text-slate-600">
-                                                                    ৳
-                                                                    {Number(
-                                                                        product.price,
-                                                                    ).toFixed(
-                                                                        0,
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-4 py-3 text-right">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            removeProduct(
-                                                                                product.id,
-                                                                            )
+                                                                    className="transition hover:bg-slate-50/50"
+                                                                >
+                                                                    <td className="px-4 py-3 font-medium text-slate-900">
+                                                                        {
+                                                                            product.name
                                                                         }
-                                                                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
-                                                                    >
-                                                                        <Trash2 className="size-4" />
-                                                                    </button>
-                                                                </td>
-                                                            </tr>
-                                                        ),
-                                                    )}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-right text-slate-600">
+                                                                        ৳
+                                                                        {Number(
+                                                                            product.price,
+                                                                        ).toFixed(
+                                                                            0,
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-right">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                removeProduct(
+                                                                                    product.id,
+                                                                                )
+                                                                            }
+                                                                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                                                                        >
+                                                                            <Trash2 className="size-4" />
+                                                                        </button>
+                                                                    </td>
+                                                                </AdminTableRow>
+                                                            ),
+                                                        )}
+                                                    </AnimatePresence>
                                                 </tbody>
                                             </table>
                                         </div>
@@ -452,13 +460,18 @@ export default function PromotionalBannerEdit({
                                             error={errors.href}
                                             disabled={hasProducts}
                                         />
-                                        {hasProducts && (
-                                            <p className="text-xs text-slate-400">
-                                                Auto-set to show this banner's
-                                                products. Remove all products to
-                                                enter a custom link.
-                                            </p>
-                                        )}
+                                        <AnimatePresence initial={false}>
+                                            {hasProducts && (
+                                                <AdminReveal key="has-products">
+                                                    <p className="text-xs text-slate-400">
+                                                        Auto-set to show this
+                                                        banner's products.
+                                                        Remove all products to
+                                                        enter a custom link.
+                                                    </p>
+                                                </AdminReveal>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                     <GradientPicker
                                         label="Overlay Gradient"
