@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { DEFAULT_BANNER_GRADIENT, isCssGradient } from '@/lib/gradient';
 import type { PromotionalBanner } from '@/types';
 
 type Props = {
@@ -21,26 +21,29 @@ export default function PromotionalBannersIndex({ banners }: Props) {
         <>
             <Head title="Promotional Banners — Admin" />
             <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <Button
-                        asChild
-                        variant="ghost"
-                        size="icon"
-                        className="rounded-full"
-                    >
-                        <Link href={route('admin.homepage.index')}>
-                            <ArrowLeft className="size-5" />
-                        </Link>
-                    </Button>
-                    <div className="flex-1">
-                        <h1 className="text-2xl font-bold text-slate-900">
-                            Promotional Banners
-                        </h1>
-                        <p className="text-sm text-slate-500">
-                            Wide visual banners shown between product sections.
-                        </p>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div className="flex items-center gap-4">
+                        <Button
+                            asChild
+                            variant="ghost"
+                            size="icon"
+                            className="shrink-0 rounded-full"
+                        >
+                            <Link href={route('admin.homepage.index')}>
+                                <ArrowLeft className="size-5" />
+                            </Link>
+                        </Button>
+                        <div className="flex-1">
+                            <h1 className="text-2xl font-bold text-slate-900">
+                                Promotional Banners
+                            </h1>
+                            <p className="text-sm text-slate-500">
+                                Wide visual banners shown between product
+                                sections.
+                            </p>
+                        </div>
                     </div>
-                    <Button asChild>
+                    <Button asChild className="w-full sm:ml-auto sm:w-auto">
                         <Link href={route('admin.promotional-banners.create')}>
                             <Plus className="mr-2 size-4" />
                             Add New Banner
@@ -64,10 +67,14 @@ export default function PromotionalBannersIndex({ banners }: Props) {
                                             className="h-full w-full object-cover"
                                         />
                                         <div
-                                            className={cn(
-                                                'absolute inset-0 bg-gradient-to-r opacity-60',
-                                                banner.accent,
-                                            )}
+                                            className="absolute inset-0"
+                                            style={{
+                                                backgroundImage: isCssGradient(
+                                                    banner.accent,
+                                                )
+                                                    ? banner.accent
+                                                    : DEFAULT_BANNER_GRADIENT,
+                                            }}
                                         />
                                         {!banner.is_active && (
                                             <div className="absolute inset-0 flex items-center justify-center bg-black/40">

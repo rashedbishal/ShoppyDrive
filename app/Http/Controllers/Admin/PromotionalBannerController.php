@@ -16,6 +16,15 @@ use Inertia\Response;
 
 class PromotionalBannerController extends Controller
 {
+    /** Keeps the badge pill from wrapping or overflowing the card at any breakpoint. */
+    private const BADGE_MAX_LENGTH = 40;
+
+    /** The banner renders two per row, so the headline has roughly half the hero's width to work with. */
+    private const TITLE_MAX_LENGTH = 80;
+
+    /** Clamped to 2 lines on the storefront; longer text would just get cut off. */
+    private const DESCRIPTION_MAX_LENGTH = 150;
+
     public function index(): Response
     {
         return Inertia::render('admin/homepage/promotional-banners/index', [
@@ -31,11 +40,11 @@ class PromotionalBannerController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'title' => ['required', 'string', 'max:'.self::TITLE_MAX_LENGTH],
+            'description' => ['nullable', 'string', 'max:'.self::DESCRIPTION_MAX_LENGTH],
             'image' => ['nullable', new RasterImageOrUrl],
             'href' => ['nullable', 'string', 'max:255'],
-            'badge' => ['nullable', 'string', 'max:100'],
+            'badge' => ['nullable', 'string', 'max:'.self::BADGE_MAX_LENGTH],
             'accent' => ['nullable', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
             'sort_order' => ['required', 'integer'],
@@ -63,11 +72,11 @@ class PromotionalBannerController extends Controller
     public function update(Request $request, PromotionalBanner $promotionalBanner): RedirectResponse
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'title' => ['required', 'string', 'max:'.self::TITLE_MAX_LENGTH],
+            'description' => ['nullable', 'string', 'max:'.self::DESCRIPTION_MAX_LENGTH],
             'image' => ['nullable', new RasterImageOrUrl],
             'href' => ['nullable', 'string', 'max:255'],
-            'badge' => ['nullable', 'string', 'max:100'],
+            'badge' => ['nullable', 'string', 'max:'.self::BADGE_MAX_LENGTH],
             'accent' => ['nullable', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
             'sort_order' => ['required', 'integer'],
@@ -87,6 +96,13 @@ class PromotionalBannerController extends Controller
 
         if ($request->hasFile('image')) {
             $validated['image'] = '/storage/'.$request->file('image')->store('promotional-banners', 'public');
+        } elseif (blank($validated['image'] ?? null)) {
+            // The admin cleared the image without picking a replacement — RasterImageOrUrl
+            // accepts a blank value as "keep as-is", so an empty string here means the
+            // field was explicitly emptied, not merely left untouched (the client always
+            // resends the current path otherwise). The column isn't nullable, so fall back
+            // to the same placeholder used when a banner is first created without an image.
+            $validated['image'] = '/placeholder.svg';
         } else {
             unset($validated['image']);
         }

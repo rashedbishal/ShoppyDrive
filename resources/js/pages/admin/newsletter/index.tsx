@@ -87,7 +87,7 @@ export default function NewsletterIndex({
             <Head title="Newsletter — Admin" />
             <div className="space-y-5">
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900">
                             Newsletter
@@ -98,7 +98,7 @@ export default function NewsletterIndex({
                     </div>
                     <Link
                         href={route('admin.newsletter.compose')}
-                        className="flex items-center gap-1.5 rounded-lg bg-[#c8102e] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#a50d25]"
+                        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#c8102e] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#a50d25] sm:w-auto"
                     >
                         <Mail className="size-4" />
                         Send Email

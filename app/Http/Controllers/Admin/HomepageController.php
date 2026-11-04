@@ -133,7 +133,17 @@ class HomepageController extends Controller
         return redirect()->route('admin.homepage.index')->with('success', 'Homepage section updated.');
     }
 
-    public function reorder(Request $request): RedirectResponse
+    public function toggleVisibility(HomepageSetting $setting): JsonResponse
+    {
+        $setting->update(['is_visible' => ! $setting->is_visible]);
+
+        // Plain JSON, not a redirect: the admin list already flips the icon
+        // optimistically, so a full Inertia visit back to the index page
+        // would re-fetch and re-render every section just to toggle one.
+        return response()->json(['is_visible' => $setting->is_visible]);
+    }
+
+    public function reorder(Request $request): JsonResponse
     {
         $ids = $request->validate([
             'ids' => ['required', 'array'],
@@ -147,7 +157,11 @@ class HomepageController extends Controller
         // Bulk update() fires no model events, so clear the cache here.
         LayoutCache::forget(...HomepageSetting::LAYOUT_CACHE_KEYS);
 
-        return redirect()->route('admin.homepage.index');
+        // Plain JSON, not a redirect: the admin list persists this from a
+        // background fetch once the reorder is confirmed, and already holds
+        // the new order locally — a redirect would just be followed as a
+        // second, unused full-page fetch.
+        return response()->json(['ids' => $ids]);
     }
 
     public function searchProducts(Request $request): JsonResponse

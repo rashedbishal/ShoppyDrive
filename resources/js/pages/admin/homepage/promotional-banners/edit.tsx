@@ -11,10 +11,12 @@ import {
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GradientPicker } from '@/components/ui/gradient-picker';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { DEFAULT_BANNER_GRADIENT, isCssGradient } from '@/lib/gradient';
 import { cn } from '@/lib/utils';
 import { maxLength, required, validate } from '@/lib/validate';
 import type { PromotionalBanner } from '@/types';
@@ -42,9 +44,9 @@ export default function PromotionalBannerEdit({
             image: banner.image as File | string | null,
             href: banner.href ?? '',
             badge: banner.badge ?? '',
-            accent:
-                banner.accent ??
-                'from-secondary/90 via-secondary/70 to-secondary/20',
+            accent: isCssGradient(banner.accent)
+                ? banner.accent
+                : DEFAULT_BANNER_GRADIENT,
             is_active: banner.is_active,
             sort_order: String(banner.sort_order),
             products: bannerProducts.map((p) => p.id),
@@ -141,9 +143,10 @@ export default function PromotionalBannerEdit({
         clearErrors();
 
         const clientErrors = validate(data, {
-            title: [required(), maxLength(255)],
+            title: [required(), maxLength(80)],
+            description: [maxLength(150)],
             href: [maxLength(255)],
-            badge: [maxLength(100)],
+            badge: [maxLength(40)],
         });
 
         if (Object.keys(clientErrors).length > 0) {
@@ -187,270 +190,328 @@ export default function PromotionalBannerEdit({
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
-                    <Card>
-                        <CardHeader className="border-b border-slate-100 pb-4">
-                            <CardTitle className="text-base font-semibold">
-                                Banner Content
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 pt-6">
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <Input
-                                    label="Badge"
-                                    value={data.badge}
-                                    onChange={(e) => {
-                                        setData('badge', e.target.value);
-                                        clearErrors('badge');
-                                    }}
-                                    placeholder="e.g. New arrivals"
-                                    error={errors.badge}
-                                />
-                                <Input
-                                    label="Title"
-                                    value={data.title}
-                                    onChange={(e) => {
-                                        setData('title', e.target.value);
-                                        clearErrors('title');
-                                    }}
-                                    placeholder="Banner headline"
-                                    error={errors.title}
-                                    required
-                                />
-                            </div>
-                            <Textarea
-                                label="Description"
-                                value={data.description}
-                                onChange={(e) => {
-                                    setData('description', e.target.value);
-                                    clearErrors('description');
-                                }}
-                                placeholder="Brief supporting text"
-                                error={errors.description}
-                                rows={4}
-                            />
-                            <div className="space-y-2">
-                                <p className="text-sm font-medium text-text-primary">
-                                    Banner Image
-                                </p>
-                                <p className="text-xs text-slate-400">
-                                    Upload a new image to replace the current
-                                    one. Leave as-is to keep the existing image.
-                                </p>
-                                <ImageUpload
-                                    value={data.image}
-                                    onChange={(file) => {
-                                        setData('image', file ?? banner.image);
-                                        clearErrors('image');
-                                    }}
-                                    error={errors.image}
-                                    hint="Best resolution: 1200×800px (3:2) landscape, minimum 800×600px. Banners display two per row and crop to fill, so keep key content centered."
-                                    previewClassName="h-48"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <Input
-                                    label="Link URL"
-                                    value={
-                                        hasProducts
-                                            ? `/products?banner_id=${banner.id}`
-                                            : data.href
-                                    }
-                                    onChange={(e) => {
-                                        setData('href', e.target.value);
-                                        clearErrors('href');
-                                    }}
-                                    placeholder="/products?sort=..."
-                                    error={errors.href}
-                                    disabled={hasProducts}
-                                />
-                                {hasProducts && (
-                                    <p className="text-xs text-slate-400">
-                                        Auto-set to show this banner's products.
-                                        Remove all products to enter a custom
-                                        link.
-                                    </p>
-                                )}
-                            </div>
-                            <Input
-                                label="Tailwind Accent Gradient"
-                                value={data.accent}
-                                onChange={(e) => {
-                                    setData('accent', e.target.value);
-                                    clearErrors('accent');
-                                }}
-                                placeholder="from-secondary/90 via-secondary/70 to-secondary/20"
-                                error={errors.accent}
-                            />
-                        </CardContent>
-                    </Card>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+                        <div className="space-y-5">
+                            <Card>
+                                <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardTitle className="text-base font-semibold">
+                                        Banner Content
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4 pt-4">
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <Input
+                                            label="Badge"
+                                            value={data.badge}
+                                            onChange={(e) => {
+                                                setData(
+                                                    'badge',
+                                                    e.target.value,
+                                                );
+                                                clearErrors('badge');
+                                            }}
+                                            placeholder="e.g. New arrivals"
+                                            error={errors.badge}
+                                            maxLength={40}
+                                            hint={`${data.badge.length}/40`}
+                                        />
+                                        <Input
+                                            label="Title"
+                                            value={data.title}
+                                            onChange={(e) => {
+                                                setData(
+                                                    'title',
+                                                    e.target.value,
+                                                );
+                                                clearErrors('title');
+                                            }}
+                                            placeholder="Banner headline"
+                                            error={errors.title}
+                                            required
+                                            maxLength={80}
+                                            hint={`${data.title.length}/80`}
+                                        />
+                                    </div>
+                                    <Textarea
+                                        label="Description"
+                                        value={data.description}
+                                        onChange={(e) => {
+                                            setData(
+                                                'description',
+                                                e.target.value,
+                                            );
+                                            clearErrors('description');
+                                        }}
+                                        placeholder="Brief supporting text"
+                                        error={errors.description}
+                                        rows={4}
+                                        maxLength={150}
+                                        hint={`${data.description.length}/150`}
+                                    />
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-text-primary">
+                                            Banner Image
+                                        </p>
+                                        <p className="text-xs text-slate-400">
+                                            Upload a new image to replace the
+                                            current one. Leave as-is to keep the
+                                            existing image.
+                                        </p>
+                                        <ImageUpload
+                                            value={data.image}
+                                            onChange={(file) => {
+                                                setData('image', file);
+                                                clearErrors('image');
+                                            }}
+                                            error={errors.image}
+                                            hint="Best resolution: 1200×800px (3:2) landscape, minimum 800×600px. Banners display two per row and crop to fill, so keep key content centered."
+                                            previewClassName="h-48"
+                                        />
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                    {/* Product Picker */}
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
-                            <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                                <Package className="size-4 text-emerald-500" />
-                                Banner Products
-                            </CardTitle>
-                            <div ref={searchRef} className="relative w-72">
-                                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
-                                <Input
-                                    placeholder="Search products..."
-                                    className="h-9 pl-9"
-                                    value={searchQuery}
-                                    onChange={(e) =>
-                                        setSearchQuery(e.target.value)
-                                    }
-                                />
-                                {(searching || searchResults.length > 0) && (
-                                    <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
-                                        {searching && (
-                                            <p className="px-4 py-3 text-sm text-slate-400">
-                                                Searching...
+                            {/* Product Picker */}
+                            <Card>
+                                <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                                        <Package className="size-4 text-emerald-500" />
+                                        Banner Products
+                                    </CardTitle>
+                                    <div
+                                        ref={searchRef}
+                                        className="relative w-full sm:w-72"
+                                    >
+                                        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+                                        <Input
+                                            placeholder="Search products..."
+                                            className="h-9 pl-9"
+                                            value={searchQuery}
+                                            onChange={(e) =>
+                                                setSearchQuery(e.target.value)
+                                            }
+                                        />
+                                        {(searching ||
+                                            searchResults.length > 0) && (
+                                            <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                                                {searching && (
+                                                    <p className="px-4 py-3 text-sm text-slate-400">
+                                                        Searching...
+                                                    </p>
+                                                )}
+                                                {!searching &&
+                                                    searchResults.map(
+                                                        (product) => {
+                                                            const alreadyAdded =
+                                                                selectedProducts.some(
+                                                                    (p) =>
+                                                                        p.id ===
+                                                                        product.id,
+                                                                );
+
+                                                            return (
+                                                                <button
+                                                                    key={
+                                                                        product.id
+                                                                    }
+                                                                    type="button"
+                                                                    disabled={
+                                                                        alreadyAdded
+                                                                    }
+                                                                    className={cn(
+                                                                        'flex w-full items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5 text-left last:border-0',
+                                                                        alreadyAdded
+                                                                            ? 'cursor-not-allowed bg-slate-50 opacity-50'
+                                                                            : 'group cursor-pointer hover:bg-slate-50',
+                                                                    )}
+                                                                    onClick={() =>
+                                                                        !alreadyAdded &&
+                                                                        addProduct(
+                                                                            product,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <p className="truncate text-sm font-medium text-slate-900">
+                                                                            {
+                                                                                product.name
+                                                                            }
+                                                                        </p>
+                                                                        <p className="text-xs text-slate-500">
+                                                                            ৳
+                                                                            {
+                                                                                product.price
+                                                                            }
+                                                                        </p>
+                                                                    </div>
+                                                                    {alreadyAdded ? (
+                                                                        <Check className="size-4 shrink-0 text-emerald-500" />
+                                                                    ) : (
+                                                                        <Plus className="size-4 shrink-0 text-slate-400 group-hover:text-slate-700" />
+                                                                    )}
+                                                                </button>
+                                                            );
+                                                        },
+                                                    )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    {selectedProducts.length === 0 ? (
+                                        <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
+                                            <Package className="mx-auto mb-3 size-10 text-slate-300" />
+                                            <p className="text-slate-500">
+                                                No products added yet.
+                                            </p>
+                                            <p className="text-xs text-slate-400">
+                                                Search and add products —
+                                                "Explore now" will link to them.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="overflow-hidden rounded-lg border border-slate-200">
+                                            <table className="w-full text-sm">
+                                                <thead className="border-b border-slate-200 bg-slate-50">
+                                                    <tr>
+                                                        <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                                                            Product
+                                                        </th>
+                                                        <th className="w-28 px-4 py-3 text-right font-semibold text-slate-700">
+                                                            Price
+                                                        </th>
+                                                        <th className="w-12" />
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {selectedProducts.map(
+                                                        (product) => (
+                                                            <tr
+                                                                key={product.id}
+                                                                className="transition hover:bg-slate-50/50"
+                                                            >
+                                                                <td className="px-4 py-3 font-medium text-slate-900">
+                                                                    {
+                                                                        product.name
+                                                                    }
+                                                                </td>
+                                                                <td className="px-4 py-3 text-right text-slate-600">
+                                                                    ৳
+                                                                    {Number(
+                                                                        product.price,
+                                                                    ).toFixed(
+                                                                        0,
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-4 py-3 text-right">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            removeProduct(
+                                                                                product.id,
+                                                                            )
+                                                                        }
+                                                                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                                                                    >
+                                                                        <Trash2 className="size-4" />
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        ),
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="space-y-5">
+                            <Card>
+                                <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardTitle className="text-base font-semibold">
+                                        Call to Action
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4 pt-4">
+                                    <div className="space-y-1">
+                                        <Input
+                                            label="Link URL"
+                                            value={
+                                                hasProducts
+                                                    ? `/products?banner_id=${banner.id}`
+                                                    : data.href
+                                            }
+                                            onChange={(e) => {
+                                                setData('href', e.target.value);
+                                                clearErrors('href');
+                                            }}
+                                            placeholder="/products?sort=..."
+                                            error={errors.href}
+                                            disabled={hasProducts}
+                                        />
+                                        {hasProducts && (
+                                            <p className="text-xs text-slate-400">
+                                                Auto-set to show this banner's
+                                                products. Remove all products to
+                                                enter a custom link.
                                             </p>
                                         )}
-                                        {!searching &&
-                                            searchResults.map((product) => {
-                                                const alreadyAdded =
-                                                    selectedProducts.some(
-                                                        (p) =>
-                                                            p.id === product.id,
-                                                    );
-
-                                                return (
-                                                    <button
-                                                        key={product.id}
-                                                        type="button"
-                                                        disabled={alreadyAdded}
-                                                        className={cn(
-                                                            'flex w-full items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5 text-left last:border-0',
-                                                            alreadyAdded
-                                                                ? 'cursor-not-allowed bg-slate-50 opacity-50'
-                                                                : 'group cursor-pointer hover:bg-slate-50',
-                                                        )}
-                                                        onClick={() =>
-                                                            !alreadyAdded &&
-                                                            addProduct(product)
-                                                        }
-                                                    >
-                                                        <div className="min-w-0 flex-1">
-                                                            <p className="truncate text-sm font-medium text-slate-900">
-                                                                {product.name}
-                                                            </p>
-                                                            <p className="text-xs text-slate-500">
-                                                                ৳{product.price}
-                                                            </p>
-                                                        </div>
-                                                        {alreadyAdded ? (
-                                                            <Check className="size-4 shrink-0 text-emerald-500" />
-                                                        ) : (
-                                                            <Plus className="size-4 shrink-0 text-slate-400 group-hover:text-slate-700" />
-                                                        )}
-                                                    </button>
-                                                );
-                                            })}
                                     </div>
-                                )}
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                            {selectedProducts.length === 0 ? (
-                                <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
-                                    <Package className="mx-auto mb-3 size-10 text-slate-300" />
-                                    <p className="text-slate-500">
-                                        No products added yet.
-                                    </p>
-                                    <p className="text-xs text-slate-400">
-                                        Search and add products — "Explore now"
-                                        will link to them.
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="overflow-hidden rounded-lg border border-slate-200">
-                                    <table className="w-full text-sm">
-                                        <thead className="border-b border-slate-200 bg-slate-50">
-                                            <tr>
-                                                <th className="px-4 py-3 text-left font-semibold text-slate-700">
-                                                    Product
-                                                </th>
-                                                <th className="w-28 px-4 py-3 text-right font-semibold text-slate-700">
-                                                    Price
-                                                </th>
-                                                <th className="w-12" />
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {selectedProducts.map((product) => (
-                                                <tr
-                                                    key={product.id}
-                                                    className="transition hover:bg-slate-50/50"
-                                                >
-                                                    <td className="px-4 py-3 font-medium text-slate-900">
-                                                        {product.name}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right text-slate-600">
-                                                        ৳
-                                                        {Number(
-                                                            product.price,
-                                                        ).toFixed(0)}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                removeProduct(
-                                                                    product.id,
-                                                                )
-                                                            }
-                                                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
-                                                        >
-                                                            <Trash2 className="size-4" />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                                    <GradientPicker
+                                        label="Overlay Gradient"
+                                        value={data.accent}
+                                        onChange={(value) => {
+                                            setData('accent', value);
+                                            clearErrors('accent');
+                                        }}
+                                        hint="Darkens the image left-to-right so the text stays readable."
+                                        error={errors.accent}
+                                    />
+                                </CardContent>
+                            </Card>
 
-                    <Card>
-                        <CardHeader className="border-b border-slate-100 pb-4">
-                            <CardTitle className="text-base font-semibold">
-                                Settings
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex items-center gap-8 pt-6">
-                            <div className="flex items-center gap-2">
-                                <label className="text-sm font-medium text-slate-700">
-                                    Active
-                                </label>
-                                <Switch
-                                    checked={data.is_active}
-                                    onCheckedChange={(checked) =>
-                                        setData('is_active', checked)
-                                    }
-                                />
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <label className="text-sm font-medium text-slate-700">
-                                    Sort Order
-                                </label>
-                                <Input
-                                    type="number"
-                                    className="w-20"
-                                    value={data.sort_order}
-                                    onChange={(e) => {
-                                        setData('sort_order', e.target.value);
-                                        clearErrors('sort_order');
-                                    }}
-                                    error={errors.sort_order}
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
+                            <Card>
+                                <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardTitle className="text-base font-semibold">
+                                        Settings
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4 pt-4">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm font-medium text-slate-700">
+                                            Active
+                                        </label>
+                                        <Switch
+                                            checked={data.is_active}
+                                            onCheckedChange={(checked) =>
+                                                setData('is_active', checked)
+                                            }
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-slate-700">
+                                            Sort Order
+                                        </label>
+                                        <Input
+                                            type="number"
+                                            value={data.sort_order}
+                                            onChange={(e) => {
+                                                setData(
+                                                    'sort_order',
+                                                    e.target.value,
+                                                );
+                                                clearErrors('sort_order');
+                                            }}
+                                            error={errors.sort_order}
+                                        />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
 
                     <div className="flex items-center gap-3">
                         <Button

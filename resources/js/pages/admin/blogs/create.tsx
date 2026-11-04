@@ -92,35 +92,37 @@ export default function BlogCreate() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-4">
-                            <Field label="Title *" error={errors.title}>
-                                <input
-                                    className={inputClass(errors.title)}
-                                    value={data.title}
-                                    placeholder="e.g. 5 Tips for Smarter Online Shopping"
-                                    onChange={(e) => {
-                                        setData((prev) => ({
-                                            ...prev,
-                                            title: e.target.value,
-                                            slug: slugify(e.target.value),
-                                        }));
-                                    }}
-                                />
-                            </Field>
+                            <div className="grid grid-cols-2 gap-4">
+                                <Field label="Title *" error={errors.title}>
+                                    <input
+                                        className={inputClass(errors.title)}
+                                        value={data.title}
+                                        placeholder="e.g. 5 Tips for Smarter Online Shopping"
+                                        onChange={(e) => {
+                                            setData((prev) => ({
+                                                ...prev,
+                                                title: e.target.value,
+                                                slug: slugify(e.target.value),
+                                            }));
+                                        }}
+                                    />
+                                </Field>
 
-                            <Field
-                                label="Slug *"
-                                hint="Used in the URL — auto-generated from title"
-                                error={errors.slug}
-                            >
-                                <input
-                                    className={inputClass(errors.slug)}
-                                    value={data.slug}
-                                    placeholder="e.g. 5-tips-for-smarter-online-shopping"
-                                    onChange={(e) =>
-                                        setData('slug', e.target.value)
-                                    }
-                                />
-                            </Field>
+                                <Field
+                                    label="Slug *"
+                                    hint="Used in the URL — auto-generated from title"
+                                    error={errors.slug}
+                                >
+                                    <input
+                                        className={inputClass(errors.slug)}
+                                        value={data.slug}
+                                        placeholder="e.g. 5-tips-for-smarter-online-shopping"
+                                        onChange={(e) =>
+                                            setData('slug', e.target.value)
+                                        }
+                                    />
+                                </Field>
+                            </div>
 
                             <Field
                                 label="Author Name"

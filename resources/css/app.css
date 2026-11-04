@@ -736,6 +736,19 @@
         color: #1a1a2e;
     }
 
+    /* The default ::selection above (translucent brand red + dark navy text) reads
+       fine on the site's normal light surfaces, but is nearly invisible against the
+       dark/colorful surfaces used for the hero slider, flash sale strip, newsletter
+       card and promotional banners — a dark highlight over an already-dark background.
+       True per-background contrast would mean sampling an arbitrary admin-picked
+       image/gradient at selection time, which CSS can't do reliably across browsers.
+       Instead, any container known to render light text on a dark/colorful background
+       opts into this high-contrast variant explicitly via the `selection-light` class. */
+    .selection-light ::selection {
+        background-color: rgba(255, 255, 255, 0.3);
+        color: #fff;
+    }
+
     :focus-visible {
         outline: 2px solid var(--color-primary);
         outline-offset: 2px;

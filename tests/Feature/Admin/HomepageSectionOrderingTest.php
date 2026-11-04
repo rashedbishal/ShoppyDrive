@@ -31,11 +31,14 @@ test('admin can drag-reorder homepage sections and the new order persists', func
         'is_visible' => true, 'sort_order' => 2,
     ]);
 
+    // A plain JSON response, not a redirect: the admin list persists this
+    // from a background fetch once reordering is confirmed, and already
+    // holds the new order locally.
     $response = $this->post(route('admin.homepage.reorder'), [
         'ids' => [$third->id, $first->id, $second->id],
     ]);
 
-    $response->assertRedirect(route('admin.homepage.index'));
+    $response->assertOk();
 
     expect($third->refresh()->sort_order)->toBe(0);
     expect($first->refresh()->sort_order)->toBe(1);
@@ -55,6 +58,31 @@ test('reorder rejects ids that do not belong to an existing homepage section', f
     ]);
 
     $response->assertInvalid(['ids.1']);
+});
+
+test('admin can toggle a homepage section visible from the list without opening its edit page', function () {
+    actingAs($this->admin, 'admin');
+
+    $section = HomepageSetting::create([
+        'section_key' => 'categories', 'section_name' => 'Categories',
+        'is_visible' => true, 'sort_order' => 0,
+    ]);
+
+    // A plain JSON response, not a redirect: the admin list flips the icon
+    // optimistically from a background fetch, so a full Inertia visit back
+    // to the index page would re-render the whole section list just to
+    // toggle one field.
+    $response = $this->patch(route('admin.homepage.toggle-visibility', $section));
+
+    $response->assertOk();
+    $response->assertJson(['is_visible' => false]);
+    expect($section->refresh()->is_visible)->toBeFalse();
+
+    $response = $this->patch(route('admin.homepage.toggle-visibility', $section));
+
+    $response->assertOk();
+    $response->assertJson(['is_visible' => true]);
+    expect($section->refresh()->is_visible)->toBeTrue();
 });
 
 test('the storefront homepage exposes each section sort_order so the client can render them in that order', function () {

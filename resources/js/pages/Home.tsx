@@ -1,5 +1,6 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import type { PanInfo } from 'framer-motion';
 import {
     ArrowRight,
     BadgeCheck,
@@ -41,6 +42,7 @@ import {
     PRODUCT_GRID_CLASS,
     PRODUCT_RAIL_CLASS,
 } from '@/lib/constants';
+import { DEFAULT_BANNER_GRADIENT, isCssGradient } from '@/lib/gradient';
 import { isVideoUrl, cn } from '@/lib/utils';
 import categoryRoutes from '@/routes/category';
 import type {
@@ -161,8 +163,29 @@ function HeroSlider({
     autoplaySeconds,
 }: HeroSliderProps): React.JSX.Element {
     const prefersReducedMotion = useReducedMotion();
-    const [activeIndex, setActiveIndex] = useState(0);
+    // `direction` drives which side the slide enters/exits from (1 = forward,
+    // -1 = backward), kept alongside the index so a swipe continues sliding
+    // the way it was dragged instead of snapping back to center before the
+    // next slide crossfades in.
+    const [[activeIndex, direction], setSlide] = useState<[number, number]>([
+        0, 1,
+    ]);
     const [isPaused, setIsPaused] = useState(false);
+
+    const goToIndex = (index: number, dir: number): void => {
+        setSlide([index, dir]);
+    };
+
+    const goToPrevious = (): void => {
+        setSlide(([current]) => [
+            current === 0 ? slides.length - 1 : current - 1,
+            -1,
+        ]);
+    };
+
+    const goToNext = (): void => {
+        setSlide(([current]) => [(current + 1) % slides.length, 1]);
+    };
 
     useEffect(() => {
         if (prefersReducedMotion || slides.length <= 1 || isPaused) {
@@ -170,43 +193,88 @@ function HeroSlider({
         }
 
         const intervalId = window.setInterval(() => {
-            setActiveIndex((current) => (current + 1) % slides.length);
+            setSlide(([current]) => [(current + 1) % slides.length, 1]);
         }, autoplaySeconds * 1000);
 
         return () => window.clearInterval(intervalId);
     }, [isPaused, prefersReducedMotion, slides.length, autoplaySeconds]);
 
-    const goToPrevious = (): void => {
-        setActiveIndex((current) =>
-            current === 0 ? slides.length - 1 : current - 1,
-        );
+    const SWIPE_DISTANCE_THRESHOLD = 60;
+    const SWIPE_VELOCITY_THRESHOLD = 400;
+
+    const handleDragStart = (): void => {
+        setIsPaused(true);
     };
 
-    const goToNext = (): void => {
-        setActiveIndex((current) => (current + 1) % slides.length);
+    const handleDragEnd = (
+        _event: MouseEvent | TouchEvent | PointerEvent,
+        info: PanInfo,
+    ): void => {
+        setIsPaused(false);
+
+        if (
+            info.offset.x < -SWIPE_DISTANCE_THRESHOLD ||
+            info.velocity.x < -SWIPE_VELOCITY_THRESHOLD
+        ) {
+            goToNext();
+        } else if (
+            info.offset.x > SWIPE_DISTANCE_THRESHOLD ||
+            info.velocity.x > SWIPE_VELOCITY_THRESHOLD
+        ) {
+            goToPrevious();
+        }
+    };
+
+    const slideVariants = {
+        enter: (dir: number) => ({
+            x: dir > 0 ? '100%' : '-100%',
+            opacity: 0,
+        }),
+        center: { x: 0, opacity: 1 },
+        exit: (dir: number) => ({
+            x: dir > 0 ? '-100%' : '100%',
+            opacity: 0,
+        }),
     };
 
     const activeSlide = slides[activeIndex];
 
     return (
         <section
-            className="group relative rounded-[1.25rem] bg-[var(--color-secondary)] text-white shadow-[var(--shadow-modal)] [clip-path:inset(0_round_1.25rem)]"
+            className="group selection-light relative rounded-[1.25rem] bg-[var(--color-secondary)] text-white shadow-[var(--shadow-modal)] [clip-path:inset(0_round_1.25rem)]"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
             aria-label="Homepage hero banner"
         >
             <div className="relative min-h-[42vh] sm:min-h-[60vh] lg:min-h-[75vh]">
-                <AnimatePresence mode="wait" initial={false}>
+                <AnimatePresence initial={false} custom={direction}>
                     <motion.div
                         key={activeSlide.id}
-                        className="absolute inset-0"
-                        initial={{ opacity: 0, scale: 1.02 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 1.02 }}
+                        custom={direction}
+                        className={cn(
+                            'absolute inset-0',
+                            slides.length > 1 &&
+                                !prefersReducedMotion &&
+                                'cursor-grab active:cursor-grabbing',
+                        )}
+                        variants={slideVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
                         transition={{
-                            duration: MOTION.modal.duration,
-                            ease: 'easeOut',
+                            x: { type: 'spring', stiffness: 300, damping: 32 },
+                            opacity: { duration: 0.2 },
                         }}
+                        drag={
+                            slides.length > 1 && !prefersReducedMotion
+                                ? 'x'
+                                : false
+                        }
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.65}
+                        dragMomentum={false}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
                     >
                         {isVideoUrl(activeSlide.image) ? (
                             <video
@@ -320,19 +388,21 @@ function HeroSlider({
                                     ease: 'easeOut',
                                 }}
                             >
-                                {activeSlide.stats.slice(0, 3).map((stat, index) => (
-                                    <div
-                                        key={`${stat.label}-${index}`}
-                                        className="min-w-0 rounded-xl border border-white/10 bg-white/10 px-2.5 py-2 backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3"
-                                    >
-                                        <p className="truncate text-[10px] tracking-[0.15em] text-white/60 uppercase sm:text-xs sm:tracking-[0.2em]">
-                                            {stat.label}
-                                        </p>
-                                        <p className="mt-0.5 truncate text-xs font-semibold text-white sm:mt-1 sm:text-sm">
-                                            {stat.value}
-                                        </p>
-                                    </div>
-                                ))}
+                                {activeSlide.stats
+                                    .slice(0, 3)
+                                    .map((stat, index) => (
+                                        <div
+                                            key={`${stat.label}-${index}`}
+                                            className="min-w-0 rounded-xl border border-white/10 bg-white/10 px-2.5 py-2 backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3"
+                                        >
+                                            <p className="truncate text-[10px] tracking-[0.15em] text-white/60 uppercase sm:text-xs sm:tracking-[0.2em]">
+                                                {stat.label}
+                                            </p>
+                                            <p className="mt-0.5 truncate text-xs font-semibold text-white sm:mt-1 sm:text-sm">
+                                                {stat.value}
+                                            </p>
+                                        </div>
+                                    ))}
                             </motion.div>
                         </div>
                     </motion.div>
@@ -357,12 +427,17 @@ function HeroSlider({
                             <ChevronRight className="size-4 sm:size-5" />
                         </button>
 
-                        <div className="absolute right-4 bottom-4 z-20 flex items-center gap-1.5 sm:right-6 sm:bottom-6">
+                        <div className="absolute right-4 bottom-4 z-20 flex items-center gap-1.5 sm:right-10 sm:bottom-6 lg:right-14">
                             {slides.map((slide, index) => (
                                 <button
                                     key={slide.id}
                                     type="button"
-                                    onClick={() => setActiveIndex(index)}
+                                    onClick={() =>
+                                        goToIndex(
+                                            index,
+                                            index > activeIndex ? 1 : -1,
+                                        )
+                                    }
                                     aria-label={`Go to slide ${index + 1}`}
                                     aria-current={index === activeIndex}
                                     className={cn(
@@ -377,7 +452,7 @@ function HeroSlider({
                     </>
                 ) : null}
 
-                <div className="absolute bottom-4 left-4 z-20 flex max-w-[calc(100%-5rem)] items-center gap-2 truncate rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs text-white/90 backdrop-blur-md sm:bottom-6 sm:left-6">
+                <div className="absolute bottom-4 left-4 z-20 flex max-w-[calc(100%-5rem)] items-center gap-2 truncate rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs text-white/90 backdrop-blur-md sm:bottom-6 sm:left-10 sm:max-w-[calc(100%-8rem)] lg:left-14 lg:max-w-[calc(100%-10rem)]">
                     <Truck className="size-4 shrink-0 text-[var(--color-accent)]" />
                     <span className="truncate">
                         Nationwide delivery across Bangladesh
@@ -849,7 +924,7 @@ function NewsletterForm(): React.JSX.Element {
     };
 
     return (
-        <Card className="overflow-hidden border-[var(--color-border)] bg-[var(--color-secondary)] text-white shadow-[var(--shadow-card-hover)]">
+        <Card className="selection-light overflow-hidden border-[var(--color-border)] bg-[var(--color-secondary)] text-white shadow-[var(--shadow-card-hover)]">
             <CardContent className="grid gap-8 px-6 py-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-8 lg:py-8">
                 <div className="space-y-4">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold tracking-[0.22em] text-white/75 uppercase">
@@ -1038,7 +1113,7 @@ function Home(): React.JSX.Element {
             node: getSection('flash_sale')?.is_visible &&
                 flashSale &&
                 flashSale.items.length > 0 && (
-                    <section className="bg-[var(--color-secondary)] py-12 text-white lg:py-16">
+                    <section className="selection-light bg-[var(--color-secondary)] py-12 text-white lg:py-16">
                         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                                 <div className="space-y-2">
@@ -1120,7 +1195,7 @@ function Home(): React.JSX.Element {
                                 <Link
                                     key={banner.id}
                                     href={banner.href || '#'}
-                                    className="group relative overflow-hidden rounded-[2rem] bg-[var(--color-secondary)] shadow-[var(--shadow-card)]"
+                                    className="group selection-light relative min-w-0 overflow-hidden rounded-[2rem] bg-[var(--color-secondary)] shadow-[var(--shadow-card)]"
                                 >
                                     <img
                                         src={banner.image}
@@ -1130,30 +1205,37 @@ function Home(): React.JSX.Element {
                                         className="h-full min-h-[18rem] w-full object-cover transition duration-500 group-hover:scale-105"
                                     />
                                     <div
-                                        className={cn(
-                                            'absolute inset-0 bg-gradient-to-r',
-                                            banner.accent ||
-                                                'from-secondary/90 via-secondary/70 to-secondary/20',
-                                        )}
+                                        className="absolute inset-0"
+                                        style={{
+                                            backgroundImage: isCssGradient(
+                                                banner.accent,
+                                            )
+                                                ? banner.accent
+                                                : DEFAULT_BANNER_GRADIENT,
+                                        }}
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-                                    <div className="absolute inset-0 flex flex-col justify-end p-6 text-white sm:p-8">
+                                    <div className="absolute inset-0 flex min-w-0 flex-col justify-end overflow-hidden p-6 text-white sm:p-8">
                                         {banner.badge && (
-                                            <Badge className="mb-4 w-fit bg-white/10 text-white backdrop-blur-md">
-                                                {banner.badge}
+                                            <Badge className="mb-4 w-fit max-w-full bg-white/10 text-white backdrop-blur-md">
+                                                <span className="truncate">
+                                                    {banner.badge}
+                                                </span>
                                             </Badge>
                                         )}
-                                        <h3 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                                        <h3 className="line-clamp-2 font-display text-2xl leading-tight font-semibold tracking-tight break-words sm:text-3xl lg:text-4xl">
                                             {banner.title}
                                         </h3>
                                         {banner.description && (
-                                            <p className="mt-2 max-w-lg text-sm leading-7 text-white/80 sm:text-base">
+                                            <p className="mt-2 line-clamp-2 max-w-lg text-sm leading-6 break-words text-white/80 sm:text-base sm:leading-7">
                                                 {banner.description}
                                             </p>
                                         )}
-                                        <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-white">
-                                            Explore now
-                                            <ArrowRight className="size-4 transition group-hover:translate-x-1" />
+                                        <div className="mt-5 inline-flex max-w-full shrink-0 items-center gap-2 text-sm font-semibold text-white">
+                                            <span className="truncate">
+                                                Explore now
+                                            </span>
+                                            <ArrowRight className="size-4 shrink-0 transition group-hover:translate-x-1" />
                                         </div>
                                     </div>
                                 </Link>

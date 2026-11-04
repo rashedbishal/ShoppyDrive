@@ -136,7 +136,7 @@ export default function AboutPageConfig({ settings }: Props) {
     return (
         <>
             <Head title="About Page — Admin" />
-            <form onSubmit={handleSubmit} className="max-w-4xl space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h1 className="text-xl font-bold text-slate-900">
                         About Page

@@ -119,7 +119,7 @@ export default function ProductsIndex({
             <Head title="Products — Admin" />
 
             <div className="space-y-5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900">
                             Products
@@ -131,7 +131,7 @@ export default function ProductsIndex({
                     <Button
                         asChild
                         size="sm"
-                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                        className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25] sm:w-auto"
                     >
                         <Link href={route('admin.products.create')}>
                             <Plus className="mr-1.5 size-4" /> Add Product

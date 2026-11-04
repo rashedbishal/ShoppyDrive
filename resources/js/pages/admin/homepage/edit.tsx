@@ -292,12 +292,9 @@ export default function HomepageEdit({
                     </div>
                 </div>
 
-                <form
-                    onSubmit={handleSubmit}
-                    className="max-w-4xl space-y-6 pb-20"
-                >
-                    <div className="grid gap-6 lg:grid-cols-3">
-                        <div className="space-y-6 lg:col-span-2">
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+                        <div className="space-y-5">
                             {isAnnouncementBar ? (
                                 <Card>
                                     <CardHeader className="border-b border-slate-100 pb-4">
@@ -305,7 +302,7 @@ export default function HomepageEdit({
                                             Announcement Bar Content
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-4 pt-6">
+                                    <CardContent className="space-y-4 pt-4">
                                         <Input
                                             label="Announcement Message"
                                             value={data.title}
@@ -397,7 +394,7 @@ export default function HomepageEdit({
                                             Hero Slider Settings
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-4 pt-6">
+                                    <CardContent className="space-y-4 pt-4">
                                         <p className="text-sm text-slate-500">
                                             Slide content (images, titles,
                                             descriptions, CTAs) is managed under{' '}
@@ -450,7 +447,7 @@ export default function HomepageEdit({
                                             Promotional Banners
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="pt-6">
+                                    <CardContent className="pt-4">
                                         <p className="text-sm text-slate-500">
                                             Banner content (images, titles,
                                             links) is managed under{' '}
@@ -475,7 +472,7 @@ export default function HomepageEdit({
                                             Section Content
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-4 pt-6">
+                                    <CardContent className="space-y-4 pt-4">
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Input
                                                 label="Eyebrow (optional)"
@@ -549,14 +546,14 @@ export default function HomepageEdit({
 
                             {isFeaturedProducts && (
                                 <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                         <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                             <Star className="size-4 fill-amber-500 text-amber-500" />
                                             Featured Products
                                         </CardTitle>
                                         <div
                                             ref={searchContainerRef}
-                                            className="relative w-72"
+                                            className="relative w-full sm:w-72"
                                         >
                                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                             <Input
@@ -635,7 +632,7 @@ export default function HomepageEdit({
                                             )}
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="pt-6">
+                                    <CardContent className="pt-4">
                                         {data.featured_products.length === 0 ? (
                                             <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
                                                 <Star className="mx-auto mb-3 size-10 text-slate-300" />
@@ -710,7 +707,7 @@ export default function HomepageEdit({
 
                             {isProductSection && (
                                 <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                         <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                             {isNewArrivals ? (
                                                 <Package className="size-4 text-emerald-500" />
@@ -723,7 +720,7 @@ export default function HomepageEdit({
                                         </CardTitle>
                                         <div
                                             ref={searchContainerRef}
-                                            className="relative w-72"
+                                            className="relative w-full sm:w-72"
                                         >
                                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                             <Input
@@ -802,7 +799,7 @@ export default function HomepageEdit({
                                             )}
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="pt-6">
+                                    <CardContent className="pt-4">
                                         {data.section_products.length === 0 ? (
                                             <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
                                                 <ShoppingBag className="mx-auto mb-3 size-10 text-slate-300" />
@@ -876,14 +873,14 @@ export default function HomepageEdit({
 
                             {isBrands && (
                                 <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                         <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                             <ShoppingBag className="size-4 text-violet-500" />
                                             Featured Brands
                                         </CardTitle>
                                         <div
                                             ref={brandSearchRef}
-                                            className="relative w-72"
+                                            className="relative w-full sm:w-72"
                                         >
                                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                             <Input
@@ -954,7 +951,7 @@ export default function HomepageEdit({
                                             )}
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="pt-6">
+                                    <CardContent className="pt-4">
                                         {data.section_brands.length === 0 ? (
                                             <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
                                                 <ShoppingBag className="mx-auto mb-3 size-10 text-slate-300" />
@@ -1022,7 +1019,7 @@ export default function HomepageEdit({
                                             Flash Sale
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="pt-6">
+                                    <CardContent className="pt-4">
                                         <p className="text-sm text-slate-500">
                                             The sale's schedule, products, and
                                             pricing are managed under{' '}
@@ -1048,14 +1045,14 @@ export default function HomepageEdit({
                             )}
                         </div>
 
-                        <div className="space-y-6">
+                        <div className="space-y-5">
                             <Card>
                                 <CardHeader className="border-b border-slate-100 pb-4">
                                     <CardTitle className="text-base font-semibold">
                                         Settings
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-6 pt-6">
+                                <CardContent className="space-y-4 pt-4">
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
                                             <p className="text-sm font-medium text-slate-700">
@@ -1075,27 +1072,27 @@ export default function HomepageEdit({
                                     </div>
                                 </CardContent>
                             </Card>
-
-                            <div className="flex flex-col gap-3">
-                                <Button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="w-full"
-                                >
-                                    <Save className="mr-2 size-4" />
-                                    {processing ? 'Saving...' : 'Save Changes'}
-                                </Button>
-                                <Button
-                                    asChild
-                                    variant="ghost"
-                                    className="w-full text-slate-500"
-                                >
-                                    <Link href={route('admin.homepage.index')}>
-                                        Cancel
-                                    </Link>
-                                </Button>
-                            </div>
                         </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="px-8"
+                        >
+                            <Save className="mr-2 size-4" />
+                            {processing ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                        <Button
+                            asChild
+                            variant="ghost"
+                            className="text-slate-500"
+                        >
+                            <Link href={route('admin.homepage.index')}>
+                                Cancel
+                            </Link>
+                        </Button>
                     </div>
                 </form>
             </div>

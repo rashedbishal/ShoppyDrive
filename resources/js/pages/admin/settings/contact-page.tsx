@@ -46,7 +46,7 @@ export default function ContactPageConfig({ settings }: Props) {
     return (
         <>
             <Head title="Contact Page — Admin" />
-            <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900">

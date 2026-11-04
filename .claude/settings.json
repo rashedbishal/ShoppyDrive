@@ -4,7 +4,11 @@
       "ClaudeInChromeDomain(192.168.0.113:8000)",
       "Bash(xargs -I{} cat {})",
       "Bash(php -r ' *)",
-      "Bash(composer test *)"
+      "Bash(composer test *)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm run build)",
+      "Bash(node -e \"console.log\\(Object.keys\\(require\\('lucide-react'\\)\\).filter\\(k => /ArrowUpDown|GripVertical|Check|X$/.test\\(k\\)\\).slice\\(0,20\\)\\)\")",
+      "Bash(awk 'NR==900,NR==965' resources/js/pages/Home.tsx)",
+      "Bash(awk -F: '$1 < 962')"
     ]
   }
 }

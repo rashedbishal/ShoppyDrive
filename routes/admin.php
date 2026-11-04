@@ -239,6 +239,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->n
     Route::get('homepage/brands/search', [HomepageController::class, 'searchBrands'])->name('homepage.brands.search')->middleware(AdminSections::middleware('homepage', 'view'));
     Route::get('homepage/{setting}/edit', [HomepageController::class, 'edit'])->name('homepage.edit')->middleware(AdminSections::middleware('homepage', 'update'));
     Route::put('homepage/{setting}', [HomepageController::class, 'update'])->name('homepage.update')->middleware(AdminSections::middleware('homepage', 'update'));
+    Route::patch('homepage/{setting}/toggle-visibility', [HomepageController::class, 'toggleVisibility'])->name('homepage.toggle-visibility')->middleware(AdminSections::middleware('homepage', 'update'));
 
     // Newsletter
     Route::get('newsletter', [AdminNewsletterController::class, 'index'])->name('newsletter.index')->middleware(AdminSections::middleware('newsletter', 'view'));
