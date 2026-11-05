@@ -184,6 +184,14 @@ jobs:
       # server presents with no verification — a known, accepted risk (M1 in
       # the DEPLOY-SAFETY-001 audit) — rather than require the known_hosts
       # setup before every future deploy can proceed.
+      #
+      # SEC-022: internal docs (audit reports, tracker, handoff with the SSH
+      # host), tests and AI-agent config are never deployed. The root-anchored
+      # list must match CourierVerificationReadinessService::EXCLUDED_PATHS,
+      # or the courier release fingerprint will never match the server
+      # (enforced by DeployWorkflowInternalFilesExclusionTest). rsync's
+      # --delete never removes excluded paths, so the post-deploy step deletes
+      # any copies that earlier deploys left behind.
       - name: Sync files to server
         env:
           RSYNC_RSH: ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }}
@@ -201,6 +209,17 @@ jobs:
             --exclude='storage/framework/views/*' \
             --exclude='storage/logs/*' \
             --exclude='bootstrap/cache/*.php' \
+            --exclude='/docs' \
+            --exclude='/tests' \
+            --exclude='/.claude' \
+            --exclude='/.agents' \
+            --exclude='/.codex' \
+            --exclude='/.gemini' \
+            --exclude='/CLAUDE.md' \
+            --exclude='/AGENTS.md' \
+            --exclude='/GEMINI.md' \
+            --exclude='/.mcp.json' \
+            --exclude='/boost.json' \
             ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/
 
       # ── 7. Post-deploy artisan commands ──────────────────────────────────────
@@ -227,6 +246,9 @@ jobs:
                 exit 1
               fi
             done
+
+            # SEC-022: remove internal files that deploys before this fix shipped.
+            rm -rf docs tests .claude .agents .codex .gemini CLAUDE.md AGENTS.md GEMINI.md .mcp.json boost.json
 
             mkdir -p bootstrap/cache storage/framework/{sessions,views,cache/data} storage/logs
             # DEPLOY-SAFETY-001 (Tier 1): no longer swallowed with `|| true` —

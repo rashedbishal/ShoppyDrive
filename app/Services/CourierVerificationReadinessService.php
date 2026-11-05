@@ -38,7 +38,8 @@ class CourierVerificationReadinessService
 
     /**
      * Never part of the release fingerprint: secrets, runtime data and build
-     * output that is not in git (vendor/, public/build/, generated route files).
+     * output that is not in git (vendor/, public/build/, generated route files),
+     * plus everything deploy.yml never ships to the server (UNDEPLOYED_PATHS).
      *
      * @var list<string>
      */
@@ -46,6 +47,18 @@ class CourierVerificationReadinessService
         '.git', '.github', '.env', 'node_modules', 'vendor', 'storage', 'bootstrap/cache',
         'public/build', 'public/storage', 'public/hot',
         'resources/js/ziggy.js', 'resources/js/actions', 'resources/js/routes',
+        ...self::UNDEPLOYED_PATHS,
+    ];
+
+    /**
+     * SEC-022: tracked in git but excluded from deploy.yml's rsync (internal
+     * docs, tests, AI-agent config). Must match that exclude list exactly.
+     *
+     * @var list<string>
+     */
+    public const UNDEPLOYED_PATHS = [
+        'docs', 'tests', '.claude', '.agents', '.codex', '.gemini',
+        'CLAUDE.md', 'AGENTS.md', 'GEMINI.md', '.mcp.json', 'boost.json',
     ];
 
     /** Directories whose cached bytecode the OPcache probe inspects. */

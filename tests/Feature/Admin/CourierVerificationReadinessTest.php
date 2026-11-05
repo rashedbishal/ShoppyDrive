@@ -102,16 +102,16 @@ test('the release fingerprint covers deployed tracked files and nothing excluded
         File::ensureDirectoryExists(dirname("{$root}/{$path}"));
         File::put("{$root}/{$path}", $content);
     };
-    foreach (['app/A.php', 'resources/js/pages/x.tsx', 'composer.json', 'artisan', 'docs/n.md', 'public/robots.txt'] as $included) {
+    foreach (['app/A.php', 'resources/js/pages/x.tsx', 'composer.json', 'artisan', 'routes/web.php', 'public/robots.txt'] as $included) {
         $write($included);
     }
-    foreach (['.env', 'vendor/v.php', 'storage/logs/l.log', 'bootstrap/cache/config.php', 'public/build/m.json', 'resources/js/ziggy.js', 'resources/js/actions/a.ts', 'node_modules/n.js'] as $excluded) {
+    foreach (['.env', 'vendor/v.php', 'storage/logs/l.log', 'bootstrap/cache/config.php', 'public/build/m.json', 'resources/js/ziggy.js', 'resources/js/actions/a.ts', 'node_modules/n.js', 'docs/n.md', 'tests/T.php', 'CLAUDE.md'] as $excluded) {
         $write($excluded);
     }
 
     $service = new CourierVerificationReadinessService;
     $files = $service->fingerprintFiles($root);
-    expect(array_keys($files))->toEqualCanonicalizing(['app/A.php', 'resources/js/pages/x.tsx', 'composer.json', 'artisan', 'docs/n.md', 'public/robots.txt']);
+    expect(array_keys($files))->toEqualCanonicalizing(['app/A.php', 'resources/js/pages/x.tsx', 'composer.json', 'artisan', 'routes/web.php', 'public/robots.txt']);
 
     $before = CourierVerificationReadinessService::combine($files);
     $write('resources/js/pages/x.tsx', 'changed');
