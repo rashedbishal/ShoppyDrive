@@ -56,12 +56,31 @@ class DrainQueueCommand extends Command
      * nothing else would show it). Written first, before any check or
      * early return, so it reflects "the scheduler fired" rather than
      * "there happened to be a job."
+     *
+     * Stored as a plain Unix timestamp, never a Carbon object: the file
+     * cache store has `serializable_classes` disabled, so an object reads
+     * back as __PHP_Incomplete_Class and crashed the dashboard.
      */
     public const LAST_RUN_CACHE_KEY = 'ops:queue_last_drained_at';
 
+    /**
+     * Seconds since the scheduler last ran this command, or null if it has
+     * never run (or the stored value is unreadable, e.g. a legacy object).
+     */
+    public static function lastDrainedSecondsAgo(): ?int
+    {
+        $lastRunTimestamp = Cache::get(self::LAST_RUN_CACHE_KEY);
+
+        if (! is_int($lastRunTimestamp)) {
+            return null;
+        }
+
+        return max(0, now()->getTimestamp() - $lastRunTimestamp);
+    }
+
     public function handle(): int
     {
-        Cache::forever(self::LAST_RUN_CACHE_KEY, now());
+        Cache::forever(self::LAST_RUN_CACHE_KEY, now()->getTimestamp());
 
         /** @var DatabaseQueue $queue */
         $queue = Queue::connection(self::CONNECTION);

@@ -7,7 +7,10 @@ use App\Models\Order;
 use App\Models\OrderRefund;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Process;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -139,10 +142,38 @@ test('BE-009: an order placed in the Dhaka early morning still counts as today, 
 test('OPS-002: the dashboard reports when the queue was last drained and the oldest pending job\'s age', function () {
     actingAs($this->admin, 'admin');
 
-    Cache::forever(DrainQueueCommand::LAST_RUN_CACHE_KEY, now()->subMinutes(3));
+    Cache::forever(DrainQueueCommand::LAST_RUN_CACHE_KEY, now()->subMinutes(3)->getTimestamp());
 
     $this->get(route('admin.dashboard'))
         ->assertInertia(fn (Assert $page) => $page
             ->where('stats.queue_last_drained_seconds_ago', fn ($seconds) => $seconds >= 180)
             ->where('stats.queue_oldest_job_seconds', null));
+});
+
+test('OPS-002: the queue heartbeat survives the real file cache store, and a legacy Carbon entry no longer crashes the dashboard', function () {
+    // The in-memory test store never serializes; production's file store
+    // has cache.serializable_classes disabled, so a cached Carbon object
+    // read back as __PHP_Incomplete_Class and 500'd the admin dashboard.
+    $directory = sys_get_temp_dir().'/queue-heartbeat-test-'.uniqid();
+    config(['cache.default' => 'file', 'cache.stores.file.path' => $directory, 'queue.default' => 'database']);
+    Cache::purge('file');
+    Process::fake();
+    actingAs($this->admin, 'admin');
+
+    try {
+        // The value the previous release wrote to production's cache.
+        Cache::forever(DrainQueueCommand::LAST_RUN_CACHE_KEY, now());
+
+        $this->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('stats.queue_last_drained_seconds_ago', null));
+
+        Artisan::call('app:drain-queue');
+
+        $this->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('stats.queue_last_drained_seconds_ago', fn ($seconds) => is_int($seconds) && $seconds >= 0 && $seconds < 60));
+    } finally {
+        File::deleteDirectory($directory);
+    }
 });

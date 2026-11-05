@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -120,7 +119,7 @@ class DashboardController extends Controller
                 // OPS-002: a stalled cron (so the queue never drains) creates
                 // no failed_jobs rows at all — nothing above would show it.
                 'queue_last_drained_seconds_ago' => Auth::guard('admin')->user()->canAccess('failed_jobs')
-                    ? Cache::get(DrainQueueCommand::LAST_RUN_CACHE_KEY)?->diffInSeconds(now())
+                    ? DrainQueueCommand::lastDrainedSecondsAgo()
                     : null,
                 'queue_oldest_job_seconds' => Auth::guard('admin')->user()->canAccess('failed_jobs')
                     ? DrainQueueCommand::oldestPendingJobAgeSeconds()
