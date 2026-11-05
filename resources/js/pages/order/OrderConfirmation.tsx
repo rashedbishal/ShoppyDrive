@@ -34,6 +34,17 @@ export default function OrderConfirmation({
 }: OrderConfirmationProps): React.JSX.Element {
     const clearCart = useCartStore((state) => state.clearCart);
 
+    // BIZ-030: this hardcoded "Total Paid" regardless of payment_status —
+    // every COD order (unpaid until the courier collects it) told the
+    // customer they'd already paid, with nothing saying to pay the
+    // courier, inviting refusals at the door.
+    const totalLabel =
+        order.payment_status === 'paid'
+            ? 'Total Paid'
+            : order.payment_status === 'refunded'
+              ? 'Total Refunded'
+              : 'Total Due on Delivery';
+
     const canDownloadInvoice = (() => {
         if (order.status === 'cancelled' || order.status === 'refunded') {
             return false;
@@ -151,7 +162,7 @@ export default function OrderConfirmation({
                             </div>
                             <div className="flex items-center justify-between border-t border-[var(--color-border)] pt-4">
                                 <span className="font-bold text-[var(--color-text-primary)]">
-                                    Total Paid
+                                    {totalLabel}
                                 </span>
                                 <span className="text-xl font-bold text-[var(--color-primary)]">
                                     {formatCurrency(order.total)}
