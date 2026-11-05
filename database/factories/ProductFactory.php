@@ -32,7 +32,10 @@ class ProductFactory extends Factory
             'sub_category_id' => SubCategory::factory(),
             'price' => fake()->randomFloat(2, 10, 1000),
             'compare_price' => fake()->optional()->randomFloat(2, 1000, 2000),
-            'stock_quantity' => fake()->numberBetween(0, 500),
+            // Never randomly out of stock: a random 0 or 1 made order-placing
+            // tests that buy 2 fail at random (TEST-FLAKE-001). Tests that need
+            // an out-of-stock product set stock_quantity explicitly.
+            'stock_quantity' => fake()->numberBetween(100, 500),
             'is_active' => true,
             // An active product always has a publish time — admin create and
             // update set it to now() — so the default is a live product.
