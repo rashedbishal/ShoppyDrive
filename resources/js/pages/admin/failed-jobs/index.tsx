@@ -100,9 +100,7 @@ export default function FailedJobsIndex({
                           ? 'Every currently retryable failed job will run again. If any of their emails reached the mail server before failing, those customers may receive it twice.'
                           : 'The record is removed from this list. The job will not run again.'
                 }
-                confirmLabel={
-                    pending?.type === 'delete' ? 'Delete' : 'Retry'
-                }
+                confirmLabel={pending?.type === 'delete' ? 'Delete' : 'Retry'}
                 onConfirm={handleConfirm}
                 processing={processing}
             />

@@ -503,8 +503,7 @@ function SidebarContent({
                                     {item.label}
                                     <span className="ml-auto flex items-center gap-1.5">
                                         {/* OPS-005: the forwarder phone is a single point of failure with no other liveness signal. */}
-                                        {item.href ===
-                                            '/admin/received-sms' &&
+                                        {item.href === '/admin/received-sms' &&
                                             forwarderSeemsDown && (
                                                 <span title="No payment SMS received in a while — check the forwarder phone">
                                                     <TriangleAlert className="size-3.5 shrink-0 text-amber-500" />

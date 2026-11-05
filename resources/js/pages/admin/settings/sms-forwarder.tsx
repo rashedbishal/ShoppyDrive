@@ -181,8 +181,8 @@ export default function SmsForwarderSettings({
                                     Regenerate Token
                                 </Button>
                                 <p className="mt-2 text-xs text-slate-400">
-                                    Regenerating will invalidate the old
-                                    token. You must update your Android app
+                                    Regenerating will invalidate the old token.
+                                    You must update your Android app
                                     immediately.
                                 </p>
                             </div>
