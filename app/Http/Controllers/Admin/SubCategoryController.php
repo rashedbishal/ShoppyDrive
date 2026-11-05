@@ -43,7 +43,7 @@ class SubCategoryController extends Controller
     public function create(): Response
     {
         return Inertia::render('admin/sub-categories/create', [
-            'categories' => Category::orderBy('name')->get(['id', 'name']),
+            'categories' => Category::active()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -64,9 +64,17 @@ class SubCategoryController extends Controller
 
     public function edit(SubCategory $subCategory): Response
     {
+        // Active categories to choose from, plus this sub-category's own
+        // current one even if it's since been deactivated — otherwise the
+        // dropdown would have no option matching its actual saved value.
+        $categories = Category::query()
+            ->where(fn ($query) => $query->where('is_active', true)->orWhere('id', $subCategory->category_id))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return Inertia::render('admin/sub-categories/edit', [
             'subCategory' => $subCategory,
-            'categories' => Category::orderBy('name')->get(['id', 'name']),
+            'categories' => $categories,
         ]);
     }
 

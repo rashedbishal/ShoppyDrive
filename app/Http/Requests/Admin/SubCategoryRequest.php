@@ -6,6 +6,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Rules\RasterImageOrUrl;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SubCategoryRequest extends FormRequest
 {
@@ -16,7 +17,8 @@ class SubCategoryRequest extends FormRequest
 
     public function rules(): array
     {
-        $subCategoryId = $this->route('sub_category')?->id;
+        $subCategory = $this->route('sub_category');
+        $subCategoryId = $subCategory?->id;
 
         return [
             'name' => ['required', 'string', 'max:255'],
@@ -26,7 +28,18 @@ class SubCategoryRequest extends FormRequest
                 'max:255',
                 'unique:sub_categories,slug,'.($subCategoryId ?? 'NULL').',id,deleted_at,NULL',
             ],
-            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            // A sub-category must not be (re-)created under an inactive
+            // parent — but editing one that's already under a category
+            // deactivated since it was created must not break on an
+            // unrelated field change, so its own current category_id is
+            // still allowed even if that category is now inactive.
+            'category_id' => [
+                'required',
+                'integer',
+                Rule::exists('categories', 'id')->where(fn ($query) => $query
+                    ->where('is_active', true)
+                    ->when($subCategory?->category_id, fn ($query, $currentId) => $query->orWhere('id', $currentId))),
+            ],
             'description' => ['nullable', 'string'],
             'image' => ['nullable', new RasterImageOrUrl],
             'is_active' => ['boolean'],
