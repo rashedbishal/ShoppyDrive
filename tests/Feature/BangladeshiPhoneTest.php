@@ -33,6 +33,14 @@ test('the cleaner turns every common way of writing a number into the local form
     'country code without +' => '8801712345678',
     'brackets and dots' => '(017) 1234.5678',
     'already local' => '01712345678',
+    // Bangla digits are converted first, so every form above also works in Bangla.
+    'Bangla country code' => '+৮৮০১৭১২৩৪৫৬৭৮',
+    'Bangla country code, spaced and dashed' => '+৮৮০ ১৭১২-৩৪৫৬৭৮',
+    'Bangla international 00 prefix' => '০০৮৮০১৭১২৩৪৫৬৭৮',
+    'Bangla country code without +' => '৮৮০১৭১২৩৪৫৬৭৮',
+    'Bangla with brackets and dots' => '(০১৭) ১২৩৪.৫৬৭৮',
+    'mixed Bangla and English digits' => '০১৭12৩45৬78',
+    'English prefix, Bangla number' => '+880 ১৭১২-৩৪৫৬৭৮',
 ]);
 
 test('the cleaner never reshapes letters or other junk into a valid number', function (string $input) {
@@ -58,7 +66,7 @@ test('checkout accepts a number typed in Bangla digits or with +880 and stores t
         ->assertSessionHasNoErrors();
 
     expect(Order::firstOrFail()->shipping_address['phone'])->toBe('01712345678');
-})->with(['০১৭১২৩৪৫৬৭৮', '+880 1712-345678']);
+})->with(['০১৭১২৩৪৫৬৭৮', '+880 1712-345678', '+৮৮০ ১৭১২-৩৪৫৬৭৮']);
 
 test('a landing page order accepts Bangla digits', function () {
     $product = Product::factory()->create(['price' => 100]);
