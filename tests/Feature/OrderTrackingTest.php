@@ -39,6 +39,30 @@ test('an order with an email on file can still be tracked by email, unchanged', 
         ->where('error', null));
 });
 
+test('SEC-006: tracking never sends the IP, user agent, or status-history notes that can name staff', function () {
+    $order = createTrackableOrder(['email' => 'buyer@example.com']);
+    $order->forceFill(['ip_address' => '203.0.113.7', 'user_agent' => 'SomeBrowser/1.0'])->save();
+    $order->statusHistories()->create(['status' => 'refunded', 'notes' => 'Marked as refunded by Jane Admin: ৳500.00 via bKash.']);
+
+    $response = $this->get(route('order.track', [
+        'order_number' => $order->order_number,
+        'email' => 'buyer@example.com',
+    ]));
+
+    $response->assertInertia(fn ($page) => $page
+        ->where('order.order_number', $order->order_number)
+        ->missing('order.ip_address')
+        ->missing('order.user_agent')
+        ->missing('order.guest_token')
+        ->has('order.status_histories', 1, fn ($history) => $history
+            ->where('status', 'refunded')
+            ->has('created_at')
+            ->missing('notes')
+            ->etc()
+        )
+        ->etc());
+});
+
 test('a guest order with no email on file can be tracked by phone number instead', function () {
     $order = createTrackableOrder(); // email left as '' — phone-only guest order
 

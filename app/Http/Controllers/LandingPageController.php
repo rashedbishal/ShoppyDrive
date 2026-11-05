@@ -533,7 +533,33 @@ class LandingPageController extends Controller
         }
 
         return Inertia::render('landing/LandingConfirmation', [
-            'order' => $order,
+            // SEC-006: the raw model was sent here directly — guest_token
+            // itself (already a separate prop below), ip_address, every
+            // status-history note (some name the admin who actioned it),
+            // and whatever else isn't $hidden on Order. Exactly the fields
+            // LandingConfirmation.tsx renders instead.
+            'order' => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'status' => $order->status->value,
+                'payment_status' => $order->payment_status->value,
+                'payment_method' => $order->payment_method->value,
+                'subtotal' => (float) $order->subtotal,
+                'shipping_cost' => (float) $order->shipping_cost,
+                'discount' => (float) $order->discount,
+                'total' => (float) $order->total,
+                'shipping_address' => array_intersect_key(
+                    (array) $order->shipping_address,
+                    array_flip(['name', 'phone', 'address_line1', 'address_line2', 'city', 'state']),
+                ),
+                'items' => $order->items->map(fn ($item) => [
+                    'id' => $item->id,
+                    'product_name' => $item->product_name,
+                    'price' => (float) $item->price,
+                    'quantity' => $item->quantity,
+                    'subtotal' => (float) $item->subtotal,
+                ])->values()->all(),
+            ],
             'guestToken' => $guestToken,
             'siteName' => Setting::find('site_name')?->value ?? config('app.name'),
             'siteLogo' => Setting::find('logo')?->value,

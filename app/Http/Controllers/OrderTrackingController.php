@@ -46,10 +46,47 @@ class OrderTrackingController extends Controller
         }
 
         return Inertia::render('order/TrackOrder', [
-            'order' => $order,
+            'order' => $order ? $this->payload($order) : null,
             'error' => $error,
             'prefill_order_number' => $orderNumber ?? '',
         ]);
+    }
+
+    /**
+     * SEC-006: the raw model was sent here directly, with only guest_token
+     * hidden — anyone holding the order number and the phone/email on the
+     * parcel label (both printed on the courier's own label) got back the
+     * buyer's IP, browser, full address, and every status-history note,
+     * some of which name the admin who actioned it (e.g.
+     * RefundService::record()'s "Marked as refunded by {admin name}...").
+     * Exactly the fields TrackOrder.tsx renders, nothing else — same
+     * pattern as OrderConfirmationAccess::payload() for the confirmation
+     * page. account/OrderDetail.tsx (logged-in, the order's own owner)
+     * still gets the raw model and its history notes — a separate,
+     * narrower concern (the customer seeing staff names on their own
+     * order) left untouched here.
+     *
+     * @return array<string, mixed>
+     */
+    private function payload(Order $order): array
+    {
+        return [
+            'order_number' => $order->order_number,
+            'status' => $order->status->value,
+            'created_at' => $order->created_at?->toISOString(),
+            'total' => (float) $order->total,
+            'tracking_number' => $order->tracking_number,
+            'items' => $order->items->map(fn ($item) => [
+                'id' => $item->id,
+                'product_name' => $item->product_name,
+                'quantity' => $item->quantity,
+                'subtotal' => (float) $item->subtotal,
+            ])->values()->all(),
+            'status_histories' => $order->statusHistories->map(fn ($history) => [
+                'status' => $history->status,
+                'created_at' => $history->created_at?->toISOString(),
+            ])->values()->all(),
+        ];
     }
 
     /**

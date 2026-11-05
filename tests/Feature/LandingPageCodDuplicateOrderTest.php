@@ -173,3 +173,22 @@ test('mobile banking duplicate submission with the same token does not create a 
     expect(PendingCheckout::firstOrFail()->token)->toBe($originalToken);
     $second->assertSessionHas('lp_pending_payment.token', $originalToken);
 });
+
+test('SEC-006: the landing-page confirmation page never sends the IP, user agent, or status-history notes', function () {
+    Mail::fake();
+    post(route('lp.order', $this->page->slug), codOrderPayload((string) Str::uuid()))->assertRedirect();
+
+    $order = Order::firstOrFail();
+    $order->forceFill(['ip_address' => '203.0.113.7', 'user_agent' => 'SomeBrowser/1.0'])->save();
+    $order->statusHistories()->create(['status' => 'refunded', 'notes' => 'Marked as refunded by Jane Admin: ৳500.00 via bKash.']);
+
+    $response = $this->get(route('lp.confirmation', $order->guest_token));
+
+    $response->assertInertia(fn ($page) => $page
+        ->where('order.order_number', $order->order_number)
+        ->missing('order.ip_address')
+        ->missing('order.user_agent')
+        ->missing('order.guest_token')
+        ->missing('order.status_histories')
+        ->etc());
+});
