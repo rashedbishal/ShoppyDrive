@@ -182,6 +182,14 @@ class DrainQueueCommand extends Command
     }
 
     /**
+     * OPS-003: at 30s, all 3 tries were used up within a couple of minutes
+     * — not enough slack to survive a brief mail-provider outage. 300s
+     * spreads them over up to ~10 minutes instead, still well under the
+     * 1440-minute window admins are expected to notice and retry manually.
+     */
+    private const BACKOFF_SECONDS = 300;
+
+    /**
      * One `queue:work --once` run against the default database queue, with
      * the same retry policy the scheduled daemon used. `--sleep=0` stops the
      * child sleeping if another process took the job between our pending
@@ -200,7 +208,7 @@ class DrainQueueCommand extends Command
             '--once',
             '--sleep=0',
             '--tries=3',
-            '--backoff=30',
+            '--backoff='.self::BACKOFF_SECONDS,
         ];
     }
 }

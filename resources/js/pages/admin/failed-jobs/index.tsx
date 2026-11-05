@@ -26,7 +26,9 @@ type Props = {
     canDelete: boolean;
 };
 
-type PendingAction = { type: 'retry' | 'delete'; job: FailedJob };
+type PendingAction =
+    | { type: 'retry' | 'delete'; job: FailedJob }
+    | { type: 'retry-all' };
 
 export default function FailedJobsIndex({
     failedJobs,
@@ -60,6 +62,12 @@ export default function FailedJobsIndex({
                 { confirmed: true },
                 options,
             );
+        } else if (pending.type === 'retry-all') {
+            router.post(
+                route('admin.failed-jobs.retryAll'),
+                { confirmed: true },
+                options,
+            );
         } else {
             router.delete(
                 route('admin.failed-jobs.destroy', pending.job.uuid),
@@ -81,29 +89,47 @@ export default function FailedJobsIndex({
                 title={
                     pending?.type === 'retry'
                         ? 'Retry this job?'
-                        : 'Delete this record?'
+                        : pending?.type === 'retry-all'
+                          ? 'Retry every retryable failed job?'
+                          : 'Delete this record?'
                 }
                 description={
                     pending?.type === 'retry'
                         ? `${pending.job.job} will run again. If the email reached the mail server before failing, the customer may receive it twice.`
-                        : 'The record is removed from this list. The job will not run again.'
+                        : pending?.type === 'retry-all'
+                          ? 'Every currently retryable failed job will run again. If any of their emails reached the mail server before failing, those customers may receive it twice.'
+                          : 'The record is removed from this list. The job will not run again.'
                 }
-                confirmLabel={pending?.type === 'retry' ? 'Retry' : 'Delete'}
+                confirmLabel={
+                    pending?.type === 'delete' ? 'Delete' : 'Retry'
+                }
                 onConfirm={handleConfirm}
                 processing={processing}
             />
 
             <div className="space-y-5">
-                <div>
-                    <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                        <TriangleAlert className="size-5 text-slate-400" />
-                        Failed Jobs
-                    </h1>
-                    <p className="text-sm text-slate-500">
-                        {failedJobs.total} background{' '}
-                        {failedJobs.total === 1 ? 'job' : 'jobs'} failed after
-                        every retry
-                    </p>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900">
+                            <TriangleAlert className="size-5 text-slate-400" />
+                            Failed Jobs
+                        </h1>
+                        <p className="text-sm text-slate-500">
+                            {failedJobs.total} background{' '}
+                            {failedJobs.total === 1 ? 'job' : 'jobs'} failed
+                            after every retry
+                        </p>
+                    </div>
+                    {canRetry && failedJobs.total > 0 && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPending({ type: 'retry-all' })}
+                        >
+                            <RotateCcw className="size-4" />
+                            Retry All
+                        </Button>
+                    )}
                 </div>
 
                 {flash?.success && (

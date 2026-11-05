@@ -183,6 +183,42 @@ test('retrying twice queues the job once', function () {
     expect(Activity::query()->where('event', 'failed_job_retried')->count())->toBe(1);
 });
 
+// ── OPS-003: retrying a whole backlog shouldn't take one click per row ──────
+
+test('retry all retries every retryable job in one request', function () {
+    actingAs(jobsAdmin(['view', 'update']), 'admin');
+    failedJobRow(AbandonedCartReminderJob::class);
+    failedJobRow(AbandonedCartReminderJob::class);
+    failedJobRow('App\\Jobs\\SomeUnknownJob'); // not on the retryable allow-list
+
+    $this->post(route('admin.failed-jobs.retryAll'), ['confirmed' => true])
+        ->assertSessionHas('success', '2 job(s) queued to run again.');
+
+    expect(DB::table('jobs')->count())->toBe(2);
+    expect(DB::table('failed_jobs')->count())->toBe(1);
+    expect(Activity::query()->where('event', 'failed_job_retried')->count())->toBe(2);
+});
+
+test('retry all reports nothing retryable when the backlog has no eligible jobs', function () {
+    actingAs(jobsAdmin(['view', 'update']), 'admin');
+    failedJobRow('App\\Jobs\\SomeUnknownJob');
+
+    $this->post(route('admin.failed-jobs.retryAll'), ['confirmed' => true])
+        ->assertSessionHas('error', 'No retryable failed jobs were found.');
+
+    expect(DB::table('jobs')->count())->toBe(0);
+    expect(DB::table('failed_jobs')->count())->toBe(1);
+});
+
+test('view-only staff cannot retry all', function () {
+    actingAs(jobsAdmin(['view']), 'admin');
+    failedJobRow(AbandonedCartReminderJob::class);
+
+    $this->post(route('admin.failed-jobs.retryAll'), ['confirmed' => true])->assertForbidden();
+
+    expect(DB::table('failed_jobs')->count())->toBe(1);
+});
+
 test('a real failed email fails visibly, then sends once when retried', function () {
     $admin = jobsAdmin(['view', 'update']);
     queueConfirmedOrderMail();

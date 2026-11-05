@@ -69,6 +69,47 @@ class FailedJobController extends Controller
         };
     }
 
+    /**
+     * OPS-003: retrying one row at a time doesn't scale once a mail outage
+     * fails a whole backlog at once. Retries every currently-retryable
+     * failed job, one at a time, under the same lock+check each single
+     * retry uses — a job that becomes unsafe to retry between the listing
+     * and this request (e.g. already retried by someone else) is skipped,
+     * not retried twice.
+     */
+    public function retryAll(Request $request): RedirectResponse
+    {
+        $request->validate(['confirmed' => ['accepted']]);
+
+        $uuids = $this->failedJobs()->pluck('uuid');
+        $retried = 0;
+
+        foreach ($uuids as $uuid) {
+            $outcome = DB::transaction(function () use ($uuid): bool {
+                $failedJob = $this->failedJobs()->where('uuid', $uuid)->lockForUpdate()->first();
+
+                if ($failedJob === null || ! FailedJobSummary::canRetry($failedJob)) {
+                    return false;
+                }
+
+                Artisan::call('queue:retry', ['id' => [$uuid]]);
+                $this->audit('failed_job_retried', 'retried', $failedJob);
+
+                return true;
+            });
+
+            if ($outcome) {
+                $retried++;
+            }
+        }
+
+        if ($retried === 0) {
+            return back()->with('error', 'No retryable failed jobs were found.');
+        }
+
+        return back()->with('success', "{$retried} job(s) queued to run again.");
+    }
+
     public function destroy(Request $request, string $uuid): RedirectResponse
     {
         $request->validate(['confirmed' => ['accepted']]);
