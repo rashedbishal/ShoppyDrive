@@ -46,7 +46,10 @@ class ProductListingController extends Controller
                 'subCategory',
                 'brand',
                 'images',
-                'variants',
+                // PERF-001: variants.media, not just variants — the
+                // appended `image` accessor on ProductVariant lazy-loads
+                // its own media relation during serialization otherwise.
+                'variants.media',
             ])
             ->withCount([
                 'reviews as reviews_count' => static fn ($reviewQuery) => $reviewQuery->where('is_approved', true),

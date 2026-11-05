@@ -142,7 +142,9 @@ class ProductController extends Controller
     {
         // FSA-04: cost_price is hidden on both models for storefront
         // responses; the edit form is the one screen that needs it.
-        $product->load(['media', 'variants', 'category:id,name', 'subCategory:id,name', 'brand:id,name'])
+        // PERF-001: variants.media — ProductVariant's appended `image`
+        // accessor otherwise lazy-loads it per variant on serialization.
+        $product->load(['media', 'variants.media', 'category:id,name', 'subCategory:id,name', 'brand:id,name'])
             ->makeVisible('cost_price');
         $product->variants->each->makeVisible('cost_price');
 

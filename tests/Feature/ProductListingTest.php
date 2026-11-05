@@ -11,6 +11,7 @@ use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
@@ -112,4 +113,21 @@ it('shows a product with no active flash sale at its regular price in the listin
         ->assertInertia(fn (Assert $page) => $page
             ->where('products.data.0.in_flash_sale', false)
             ->where('products.data.0.flash_sale_price', null));
+});
+
+/*
+ * PERF-001: ProductVariant::$appends = ['image'] reads its own `media`
+ * relation on serialization — without eager-loading variants.media, that's
+ * one extra query per variant across the whole page (12 products x 6
+ * variants measured 101 queries in the audit).
+ */
+it('does not run one query per variant on the product listing', function (): void {
+    Product::factory()->count(12)->create(['is_active' => true, 'published_at' => now()->subDay()])
+        ->each(fn (Product $product) => ProductVariant::factory()->count(6)->create(['product_id' => $product->id]));
+
+    DB::enableQueryLog();
+    $this->get(route('products.index'))->assertOk();
+    $count = count(DB::getQueryLog());
+
+    expect($count)->toBeLessThan(40);
 });

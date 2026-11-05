@@ -24,7 +24,10 @@ class ProductController extends Controller
             'brand',
             'images',
             'media',
-            'variants',
+            // PERF-001: variants.media, not just variants — the appended
+            // `image` accessor on ProductVariant lazy-loads its own media
+            // relation during serialization otherwise.
+            'variants.media',
             'tags',
             // Capped at the 50 most recent for display only — the
             // aggregates below are computed independently of this limit.
@@ -86,7 +89,7 @@ class ProductController extends Controller
             ->published()
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
-            ->with(['images', 'brand', 'variants'])
+            ->with(['images', 'brand', 'variants.media'])
             ->withCount(['reviews as reviews_count' => fn ($q) => $q->where('is_approved', true)])
             ->withAvg(['reviews as average_rating' => fn ($q) => $q->where('is_approved', true)], 'rating')
             ->limit(8)

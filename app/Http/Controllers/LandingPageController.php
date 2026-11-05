@@ -48,7 +48,9 @@ class LandingPageController extends Controller
             ->where('is_active', true)
             ->whereHas('product', fn ($q) => $q->active()->published())
             ->with([
-                'product' => fn ($q) => $q->with(['media', 'variants']),
+                // PERF-001: variants.media — ProductVariant's appended
+                // `image` accessor otherwise lazy-loads it per variant.
+                'product' => fn ($q) => $q->with(['media', 'variants.media']),
             ])
             ->firstOrFail();
 

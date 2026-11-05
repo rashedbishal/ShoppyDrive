@@ -25,7 +25,10 @@ class HomeController extends Controller
             // null and crash the frontend's product card rendering.
             'items' => static function ($query): void {
                 $query->whereHas('product', static fn ($productQuery) => $productQuery->active()->published())
-                    ->with(['product.brand', 'product.images', 'product.variants']);
+                    // PERF-001: ProductVariant::$appends = ['image'] lazy-loads
+                    // its own `media` relation during serialization if not
+                    // eager-loaded — one query per variant otherwise.
+                    ->with(['product.brand', 'product.images', 'product.variants.media']);
             },
         ])
             ->where('is_active', true)
@@ -55,7 +58,10 @@ class HomeController extends Controller
             $product->flash_sale_price = $productItems->min('sale_price');
         }
 
-        $productEagerLoads = ['brand', 'images', 'category', 'variants'];
+        // PERF-001: variants.media, not just variants — ProductVariant's
+        // appended `image` accessor lazy-loads its own media relation
+        // during serialization otherwise, one query per variant.
+        $productEagerLoads = ['brand', 'images', 'category', 'variants.media'];
 
         // Load CMS section settings for dynamic sections
         $sectionSettings = HomepageSetting::whereIn('section_key', ['new_arrivals', 'best_sellers', 'brands'])

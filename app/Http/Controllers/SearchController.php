@@ -42,7 +42,9 @@ class SearchController extends Controller
         $products = Product::query()
             ->active()
             ->published()
-            ->with(['images', 'brand', 'category', 'variants'])
+            // PERF-001: variants.media — ProductVariant's appended `image`
+            // accessor otherwise lazy-loads it per variant on serialization.
+            ->with(['images', 'brand', 'category', 'variants.media'])
             ->withCount(['reviews as reviews_count' => fn ($q) => $q->where('is_approved', true)])
             ->withAvg(['reviews as average_rating' => fn ($q) => $q->where('is_approved', true)], 'rating')
             ->when($query !== '' && ! SearchTerm::isSearchable($query), fn ($q) => $q->whereRaw('1 = 0'))

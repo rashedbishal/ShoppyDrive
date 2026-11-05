@@ -33,7 +33,9 @@ class BrandController extends Controller
             ->active()
             ->published()
             ->where('brand_id', $brand->id)
-            ->with(['category', 'images', 'variants'])
+            // PERF-001: variants.media — ProductVariant's appended `image`
+            // accessor otherwise lazy-loads it per variant on serialization.
+            ->with(['category', 'images', 'variants.media'])
             ->withCount([
                 'reviews as reviews_count' => static fn ($query) => $query->where('is_approved', true),
             ])
