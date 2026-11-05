@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useNow } from '@/hooks/use-now';
 
 interface FlashSaleCountdownProps {
     ends_at: string;
@@ -12,8 +13,8 @@ interface TimeLeft {
     seconds: number;
 }
 
-function calculateTimeLeft(ends_at: string): TimeLeft | null {
-    const difference = +new Date(ends_at) - +new Date();
+function calculateTimeLeft(ends_at: string, nowMs: number): TimeLeft | null {
+    const difference = +new Date(ends_at) - nowMs;
 
     if (difference <= 0) {
         return null;
@@ -31,25 +32,13 @@ export function FlashSaleCountdown({
     ends_at,
     className,
 }: FlashSaleCountdownProps): React.JSX.Element {
-    // Computed eagerly (not starting at null) so the very first render —
-    // including the server-rendered HTML, since this page is SSR'd — shows
-    // the real time left immediately. Starting at null and only
-    // calculating inside an effect meant every page load visibly flashed
-    // "SALE ENDED" first, since that's what null renders as below, until
-    // the effect ran a moment later and corrected it.
-    const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(() =>
-        calculateTimeLeft(ends_at),
-    );
-
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- re-syncs if `ends_at` itself changes after mount, not a duplicate of the lazy initial state above
-        setTimeLeft(calculateTimeLeft(ends_at));
-        const timer = setInterval(() => {
-            setTimeLeft(calculateTimeLeft(ends_at));
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, [ends_at]);
+    const nowMs = useNow();
+    // Zeros, not "SALE ENDED", for the moment before the browser's clock is
+    // read, so a page load never flashes the sale as over.
+    const timeLeft: TimeLeft | null =
+        nowMs === null
+            ? { days: 0, hours: 0, minutes: 0, seconds: 0 }
+            : calculateTimeLeft(ends_at, nowMs);
 
     if (!timeLeft) {
         return (

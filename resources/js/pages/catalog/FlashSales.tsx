@@ -1,11 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowRight, Clock3, Zap } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { PageHero } from '@/components/shared/PageHero';
 import { ProductCard } from '@/components/shared/ProductCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useNow } from '@/hooks/use-now';
 import { PRODUCT_GRID_CLASS } from '@/lib/constants';
 import { getSoldPercent } from '@/lib/utils';
 import type { Product } from '@/types';
@@ -33,16 +34,14 @@ type FlashSalesPageProps = {
 };
 
 function CountdownTimer({ endsAt }: { endsAt: string }): React.JSX.Element {
-    const [now, setNow] = useState(() => new Date());
-
-    useEffect(() => {
-        const id = window.setInterval(() => setNow(new Date()), 1000);
-
-        return () => window.clearInterval(id);
-    }, []);
+    const nowMs = useNow();
 
     const remaining = useMemo(() => {
-        const diff = Math.max(0, new Date(endsAt).getTime() - now.getTime());
+        // Not ended yet while the browser's clock hasn't been read (see useNow).
+        const diff =
+            nowMs === null
+                ? 1
+                : Math.max(0, new Date(endsAt).getTime() - nowMs);
         const total = Math.floor(diff / 1000);
 
         return {
@@ -52,7 +51,7 @@ function CountdownTimer({ endsAt }: { endsAt: string }): React.JSX.Element {
             minutes: Math.floor((total % 3_600) / 60),
             seconds: total % 60,
         };
-    }, [endsAt, now]);
+    }, [endsAt, nowMs]);
 
     if (remaining.diff <= 0) {
         return (
@@ -205,6 +204,8 @@ function FlashSalesContent({
                                                         {
                                                             month: 'short',
                                                             day: 'numeric',
+                                                            timeZone:
+                                                                'Asia/Dhaka',
                                                         },
                                                     )}
                                                 </p>
