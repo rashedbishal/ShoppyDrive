@@ -1,3 +1,4 @@
+import { toast as showToast } from 'sonner';
 import { create } from 'zustand';
 import { STORAGE_KEYS } from '@/lib/constants';
 import type { FlashToast, UiState, UiStateToast } from '@/types';
@@ -100,6 +101,12 @@ export const useUiStore = create<UiStoreState>()((set, get) => ({
         set((state) => ({
             toasts: [...state.toasts, nextToast],
         }));
+
+        showToast[nextToast.type](nextToast.title ?? nextToast.message, {
+            id,
+            description: nextToast.title ? nextToast.message : undefined,
+            duration,
+        });
 
         globalThis.setTimeout(() => {
             get().removeToast(id);
