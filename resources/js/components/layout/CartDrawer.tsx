@@ -7,7 +7,7 @@ import { Drawer } from '@/components/ui/drawer';
 import { EmptyState } from '@/components/ui/empty-state';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { groupCartItems } from '@/lib/cart-bundles';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
 import cartRoutes from '@/routes/cart';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -349,6 +349,12 @@ function DrawerCartRow({
     onRemove,
     compact = false,
 }: DrawerCartRowProps): React.JSX.Element {
+    // Same order as the cart page: a cart from the server has no primary_image_url.
+    const imageUrl =
+        item.variant?.image ||
+        item.product.primary_image_url ||
+        getPrimaryImagePath(item.product);
+
     return (
         <div
             className={
@@ -366,9 +372,9 @@ function DrawerCartRow({
                         : 'flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[var(--color-surface-alt)]'
                 }
             >
-                {item.product.primary_image_url ? (
+                {imageUrl ? (
                     <img
-                        src={item.product.primary_image_url}
+                        src={imageUrl}
                         alt={item.product.name}
                         className="size-full object-cover"
                         loading="lazy"
