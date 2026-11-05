@@ -40,8 +40,7 @@ class SearchController extends Controller
         $minimumRating = $request->filled('rating') ? $request->integer('rating') : null;
 
         $products = Product::query()
-            ->active()
-            ->published()
+            ->visible()
             // PERF-001: variants.media — ProductVariant's appended `image`
             // accessor otherwise lazy-loads it per variant on serialization.
             ->with(['images', 'brand', 'category', 'variants.media'])
@@ -100,12 +99,12 @@ class SearchController extends Controller
         $brands = Brand::query()
             ->active()
             ->withCount([
-                'products as products_count' => static fn ($q) => $q->active()->published(),
+                'products as products_count' => static fn ($q) => $q->visible(),
             ])
             ->orderBy('name')
             ->get();
 
-        $catalogMaxPrice = (int) (Product::query()->active()->published()->max('price') ?? 50000);
+        $catalogMaxPrice = (int) (Product::query()->visible()->max('price') ?? 50000);
 
         return Inertia::render('search/SearchResults', [
             'query' => $query,
@@ -140,8 +139,7 @@ class SearchController extends Controller
 
         return response()->json(SearchSuggestionCache::remember($query, function () use ($query): array {
             $matchedProducts = Product::query()
-                ->active()
-                ->published()
+                ->visible()
                 ->with(['images'])
                 ->where(fn ($q) => ProductSearchQuery::apply($q, $query, includeShortDescription: false))
                 ->orderByDesc('is_featured')
@@ -186,6 +184,9 @@ class SearchController extends Controller
 
             $subcategories = SubCategory::query()
                 ->active()
+                // A sub-category whose parent category is now inactive
+                // must not be suggested either — its own URL 404s.
+                ->whereHas('category', fn ($q) => $q->where('is_active', true))
                 ->where('name', 'like', "%{$query}%")
                 ->with(['category:id,name,slug'])
                 ->limit(3)

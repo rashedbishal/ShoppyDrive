@@ -19,7 +19,7 @@ class BundleController extends Controller
                 // since being added — otherwise `item.product` would be null and
                 // crash the frontend's add-to-cart handler.
                 'items' => static function ($query): void {
-                    $query->whereHas('product', static fn ($productQuery) => $productQuery->active()->published())
+                    $query->whereHas('product', static fn ($productQuery) => $productQuery->visible())
                         ->with([
                             'product' => static function ($productQuery): void {
                                 $productQuery->with(['brand', 'images']);

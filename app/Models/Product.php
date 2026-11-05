@@ -243,13 +243,42 @@ class Product extends Model
     }
 
     /**
-     * FSA-05: the instance form of `active()->published()` — whether a
-     * customer may see or buy this product right now.
+     * Deactivating a brand/category/sub-category must hide every product
+     * under it too — a product's own is_active/published_at alone isn't
+     * enough. category_id is never null; sub_category_id and brand_id can
+     * be, so those two are only checked when actually set.
+     */
+    public function scopeTaxonomyActive($query)
+    {
+        return $query
+            ->whereHas('category', fn ($q) => $q->where('is_active', true))
+            ->where(fn ($q) => $q->whereNull('sub_category_id')->orWhereHas('subCategory', fn ($q) => $q->where('is_active', true)))
+            ->where(fn ($q) => $q->whereNull('brand_id')->orWhereHas('brand', fn ($q) => $q->where('is_active', true)));
+    }
+
+    /**
+     * The one scope storefront listings should use instead of
+     * `active()->published()` alone — see `isPubliclyVisible()`, its
+     * instance-form equivalent.
+     */
+    public function scopeVisible($query)
+    {
+        return $query->active()->published()->taxonomyActive();
+    }
+
+    /**
+     * FSA-05: the instance form of `visible()` — whether a customer may see
+     * or buy this product right now. Also false once this product's own
+     * brand, category or sub-category has been deactivated, even though
+     * none of this product's own columns changed.
      */
     public function isPubliclyVisible(): bool
     {
         return $this->is_active
             && $this->published_at !== null
-            && ! $this->published_at->isFuture();
+            && ! $this->published_at->isFuture()
+            && $this->category?->is_active === true
+            && ($this->sub_category_id === null || $this->subCategory?->is_active === true)
+            && ($this->brand_id === null || $this->brand?->is_active === true);
     }
 }

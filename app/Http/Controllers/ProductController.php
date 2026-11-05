@@ -85,8 +85,7 @@ class ProductController extends Controller
         }
 
         $relatedProducts = Product::query()
-            ->active()
-            ->published()
+            ->visible()
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->with(['images', 'brand', 'variants.media'])

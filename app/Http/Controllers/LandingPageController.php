@@ -46,7 +46,7 @@ class LandingPageController extends Controller
         // 500 instead of 404 when `page->product` turns out to be null.
         $page = LandingPage::where('slug', $slug)
             ->where('is_active', true)
-            ->whereHas('product', fn ($q) => $q->active()->published())
+            ->whereHas('product', fn ($q) => $q->visible())
             ->with([
                 // PERF-001: variants.media — ProductVariant's appended
                 // `image` accessor otherwise lazy-loads it per variant.
@@ -98,7 +98,7 @@ class LandingPageController extends Controller
     {
         $page = LandingPage::where('slug', $slug)
             ->where('is_active', true)
-            ->whereHas('product', fn ($q) => $q->active()->published())
+            ->whereHas('product', fn ($q) => $q->visible())
             ->with('product')
             ->firstOrFail();
         $product = $page->product;

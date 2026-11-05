@@ -17,7 +17,7 @@ class BrandController extends Controller
         $brands = Brand::query()
             ->active()
             ->withCount([
-                'products as products_count' => static fn ($query) => $query->active()->published(),
+                'products as products_count' => static fn ($query) => $query->visible(),
             ])
             ->orderByDesc('id')
             ->get();
@@ -29,9 +29,13 @@ class BrandController extends Controller
 
     public function show(Brand $brand): Response
     {
+        // Implicit route-model binding resolves any brand by slug
+        // regardless of status — an inactive brand's URL must 404, not
+        // just be hidden from the /brands index.
+        abort_unless($brand->is_active, 404);
+
         $products = Product::query()
-            ->active()
-            ->published()
+            ->visible()
             ->where('brand_id', $brand->id)
             // PERF-001: variants.media — ProductVariant's appended `image`
             // accessor otherwise lazy-loads it per variant on serialization.
@@ -61,7 +65,7 @@ class BrandController extends Controller
         }
 
         $brandWithCount = $brand->loadCount([
-            'products as products_count' => static fn ($query) => $query->active()->published(),
+            'products as products_count' => static fn ($query) => $query->visible(),
         ]);
 
         return Inertia::render('catalog/BrandDetail', [

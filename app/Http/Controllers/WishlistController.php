@@ -40,7 +40,7 @@ class WishlistController extends Controller
         $items = Wishlist::where('user_id', $request->user()->id)
             // PERF-001: variants.media — ProductVariant's appended `image`
             // accessor otherwise lazy-loads it per variant on serialization.
-            ->with(['product' => fn ($q) => $q->with(['images', 'brand', 'category', 'variants.media'])])
+            ->with(['product' => fn ($q) => $q->with(['images', 'brand', 'category', 'subCategory', 'variants.media'])])
             ->get();
 
         $currencySymbol = config('app.currency_symbol', '৳');
@@ -53,7 +53,7 @@ class WishlistController extends Controller
         );
 
         $products = $items
-            ->filter(fn ($item) => $item->product !== null)
+            ->filter(fn ($item) => $item->product !== null && $item->product->isPubliclyVisible())
             ->map(function ($item) use ($currencySymbol, $flashPrices) {
                 $product = $item->product;
                 $primaryImage = $product->images->firstWhere('is_primary', true) ?? $product->images->first();
@@ -153,7 +153,7 @@ class WishlistController extends Controller
             User::query()->whereKey($user->id)->lockForUpdate()->first();
 
             $productIds = Wishlist::where('user_id', $user->id)->pluck('product_id');
-            $buyable = Product::query()->active()->published()->whereKey($productIds)->withExists('variants')->get();
+            $buyable = Product::query()->visible()->whereKey($productIds)->withExists('variants')->get();
             $addable = $buyable->where('variants_exists', false)->pluck('id');
 
             $cart = null;

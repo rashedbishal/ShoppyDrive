@@ -27,7 +27,7 @@ class GenerateSitemapCommand extends Command
             $sitemap->add(Url::create('/category/'.$category->slug));
         });
 
-        Product::active()->published()->get()->each(function (Product $product) use ($sitemap) {
+        Product::visible()->get()->each(function (Product $product) use ($sitemap) {
             $sitemap->add(Url::create('/product/'.$product->slug));
         });
 

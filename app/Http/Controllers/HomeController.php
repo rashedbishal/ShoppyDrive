@@ -24,7 +24,7 @@ class HomeController extends Controller
             // being added to the sale — otherwise `item.product` would be
             // null and crash the frontend's product card rendering.
             'items' => static function ($query): void {
-                $query->whereHas('product', static fn ($productQuery) => $productQuery->active()->published())
+                $query->whereHas('product', static fn ($productQuery) => $productQuery->visible())
                     // PERF-001: ProductVariant::$appends = ['image'] lazy-loads
                     // its own `media` relation during serialization if not
                     // eager-loaded — one query per variant otherwise.
@@ -68,8 +68,7 @@ class HomeController extends Controller
             ->get()
             ->keyBy('section_key');
 
-        $featuredProducts = Product::active()
-            ->published()
+        $featuredProducts = Product::visible()
             ->featured()
             ->with($productEagerLoads)
             ->withCount(['reviews as reviews_count' => static fn ($q) => $q->where('is_approved', true)])
@@ -81,8 +80,7 @@ class HomeController extends Controller
         $newArrivalIds = is_array($newArrivalsMeta) ? ($newArrivalsMeta['product_ids'] ?? []) : [];
 
         if (! empty($newArrivalIds)) {
-            $newArrivals = Product::active()
-                ->published()
+            $newArrivals = Product::visible()
                 ->whereIn('id', $newArrivalIds)
                 ->with($productEagerLoads)
                 ->withCount(['reviews as reviews_count' => static fn ($q) => $q->where('is_approved', true)])
@@ -98,8 +96,7 @@ class HomeController extends Controller
         $bestSellerIds = is_array($bestSellersMeta) ? ($bestSellersMeta['product_ids'] ?? []) : [];
 
         if (! empty($bestSellerIds)) {
-            $bestSellers = Product::active()
-                ->published()
+            $bestSellers = Product::visible()
                 ->whereIn('id', $bestSellerIds)
                 ->with($productEagerLoads)
                 ->withCount(['reviews as reviews_count' => static fn ($q) => $q->where('is_approved', true)])
@@ -131,7 +128,7 @@ class HomeController extends Controller
                 // bundles whose component product was deleted/deactivated
                 // since being added.
                 'items' => static function ($query): void {
-                    $query->whereHas('product', static fn ($productQuery) => $productQuery->active()->published())
+                    $query->whereHas('product', static fn ($productQuery) => $productQuery->visible())
                         ->with(['product.images', 'variant']);
                 },
             ])

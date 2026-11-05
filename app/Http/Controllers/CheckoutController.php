@@ -177,8 +177,10 @@ class CheckoutController extends Controller
 
         $cart = $this->cartManager->withoutDuplicateRows($cart);
 
-        // Eager-load products so free_delivery checks don't N+1
-        $cart->load('items.product');
+        // Eager-load products so free_delivery checks don't N+1; category/
+        // subCategory/brand too, since validItems() below now calls
+        // isPubliclyVisible(), which reads all three per item.
+        $cart->load('items.product.category', 'items.product.subCategory', 'items.product.brand');
 
         // Drops items whose product was deleted/deactivated since being
         // added to the cart — every downstream read of `$cart->items`

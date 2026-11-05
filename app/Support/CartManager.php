@@ -25,18 +25,19 @@ use Illuminate\Support\Facades\DB;
  */
 class CartManager
 {
-    private const CART_RELATIONS = ['coupon', 'items.product.images', 'items.variant.media', 'items.bundle'];
+    // items.product.category/subCategory/brand: isPubliclyVisible() reads
+    // all three inside validItems()'s per-item filter — without this,
+    // each cart item lazy-loads its own three relations separately.
+    private const CART_RELATIONS = [
+        'coupon', 'items.product.images', 'items.product.category', 'items.product.subCategory', 'items.product.brand',
+        'items.variant.media', 'items.bundle',
+    ];
 
     public function __construct(private readonly BundleService $bundles) {}
 
     public function getCurrentCart(Request $request): ?Cart
     {
-        $query = Cart::query()->with([
-            'coupon',
-            'items.product.images',
-            'items.variant.media',
-            'items.bundle',
-        ]);
+        $query = Cart::query()->with(self::CART_RELATIONS);
 
         if ($request->user() !== null) {
             return $query->where('user_id', $request->user()->id)->first();
@@ -227,7 +228,7 @@ class CartManager
         // Same filter checkout priced with (validItems), so a row it
         // deliberately dropped — deleted, hidden (FSA-05) or a foreign
         // variant (FSA-01) — isn't mistaken for a concurrent change.
-        $lockedItems = $this->validItems($locked->setRelation('items', $locked->items()->with(['product', 'variant'])->get()));
+        $lockedItems = $this->validItems($locked->setRelation('items', $locked->items()->with(['product.category', 'product.subCategory', 'product.brand', 'variant'])->get()));
 
         if ($snapshot($cart->items) !== $snapshot($lockedItems)) {
             throw new CartChangedException('Your cart changed while placing this order. Please review it and try again.');

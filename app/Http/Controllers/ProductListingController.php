@@ -26,11 +26,18 @@ class ProductListingController extends Controller
 
     public function category(string $slug, Request $request): Response
     {
-        $category = Category::where('slug', $slug)->first();
+        // An inactive category/sub-category's URL must 404, not just hide
+        // from menus — and a sub-category whose own parent category was
+        // deactivated must 404 too, even if the sub-category itself is
+        // still marked active.
+        $category = Category::where('slug', $slug)->where('is_active', true)->first();
         $subCategory = null;
 
         if (! $category) {
-            $subCategory = SubCategory::where('slug', $slug)->firstOrFail();
+            $subCategory = SubCategory::where('slug', $slug)
+                ->where('is_active', true)
+                ->whereHas('category', fn ($q) => $q->where('is_active', true))
+                ->firstOrFail();
         }
 
         return $this->catalogResponse($request, $category, $subCategory, route('category.show', $slug));
@@ -39,8 +46,7 @@ class ProductListingController extends Controller
     private function catalogResponse(Request $request, ?Category $category, ?SubCategory $subCategory, string $listingUrl): Response
     {
         $query = Product::query()
-            ->active()
-            ->published()
+            ->visible()
             ->with([
                 'category',
                 'subCategory',

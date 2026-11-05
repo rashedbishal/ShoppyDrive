@@ -23,7 +23,7 @@ class FlashSaleController extends Controller
                 // being added to the sale — otherwise `item.product` would be
                 // null and crash the frontend's product card rendering.
                 'items' => static function ($query): void {
-                    $query->whereHas('product', static fn ($productQuery) => $productQuery->active()->published())
+                    $query->whereHas('product', static fn ($productQuery) => $productQuery->visible())
                         ->with([
                             'product' => static function ($productQuery): void {
                                 $productQuery->with(['brand', 'images', 'variants.media'])
@@ -47,8 +47,7 @@ class FlashSaleController extends Controller
             ->get();
 
         $featuredProducts = Product::query()
-            ->active()
-            ->published()
+            ->visible()
             ->featured()
             ->with(['brand', 'images', 'variants.media'])
             ->withCount([

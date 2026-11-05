@@ -41,7 +41,7 @@ final class CatalogFilterCache
         return self::remember('categories', fn () => Category::query()
             ->active()
             ->withCount([
-                'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
+                'products as products_count' => static fn ($productQuery) => $productQuery->visible(),
             ])
             ->with([
                 'subCategories' => static function ($childQuery): void {
@@ -49,7 +49,7 @@ final class CatalogFilterCache
                         ->active()
                         ->orderBy('sort_order')
                         ->withCount([
-                            'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
+                            'products as products_count' => static fn ($productQuery) => $productQuery->visible(),
                         ]);
                 },
             ])
@@ -65,7 +65,7 @@ final class CatalogFilterCache
         return self::remember('brands', fn () => Brand::query()
             ->active()
             ->withCount([
-                'products as products_count' => static fn ($productQuery) => $productQuery->active()->published(),
+                'products as products_count' => static fn ($productQuery) => $productQuery->visible(),
             ])
             ->orderBy('name')
             ->get());
@@ -87,8 +87,7 @@ final class CatalogFilterCache
     public static function maxPrice(): int
     {
         return self::remember('max_price', fn () => (int) (Product::query()
-            ->active()
-            ->published()
+            ->visible()
             ->max('price') ?? 0));
     }
 
