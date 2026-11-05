@@ -206,7 +206,10 @@ class CheckoutController extends Controller
         try {
             [$couponId, $couponCode, $couponDiscount] = $this->resolveCoupon($request, $subtotal, $cart);
         } catch (CouponUnavailableException $e) {
-            return back()->withErrors(['coupon_code' => $e->getMessage()])->withInput();
+            // BIZ-013: withErrors(['coupon_code' => ...]) alone is invisible
+            // here — no field on this page renders that key — so it needs
+            // the same banner flash the 'items' refusals above already use.
+            return back()->withErrors(['coupon_code' => $e->getMessage()])->with('error', $e->getMessage())->withInput();
         }
 
         // CHECKOUT-COD-002: same order_token/Cache::lock() idempotency
@@ -243,8 +246,12 @@ class CheckoutController extends Controller
             // hasn't finished yet — never fall through to creating a second
             // order/PendingCheckout; ask the customer to wait rather than
             // guess at what happened.
+            // BIZ-013: same visibility issue as the coupon_code refusals below.
+            $message = 'Your order is still being processed. Please wait a moment and try again.';
+
             return back()
-                ->withErrors(['order_token' => 'Your order is still being processed. Please wait a moment and try again.'])
+                ->withErrors(['order_token' => $message])
+                ->with('error', $message)
                 ->withInput();
         }
     }
@@ -380,7 +387,7 @@ class CheckoutController extends Controller
                     ->with('error', $e->getMessage())
                     ->withInput();
             } catch (CouponUnavailableException $e) {
-                return back()->withErrors(['coupon_code' => $e->getMessage()])->withInput();
+                return back()->withErrors(['coupon_code' => $e->getMessage()])->with('error', $e->getMessage())->withInput();
             } catch (CartChangedException $e) {
                 return back()->with('error', $e->getMessage());
             }

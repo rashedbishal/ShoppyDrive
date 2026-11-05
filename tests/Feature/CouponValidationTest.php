@@ -44,6 +44,22 @@ test('a coupon below its minimum order amount is rejected', function () {
     expect($coupon->refresh()->used_count)->toBe(0);
 });
 
+test('BIZ-013: a coupon rejected at submission flashes a visible error, not just the invisible error bag', function () {
+    // Checkout.tsx only renders field-level errors for the named
+    // shipping-address inputs — nothing reads a coupon_code key from the
+    // Inertia errors bag, so a rejection needs the same `error` session
+    // flash the page's banner already reads for other refusals.
+    $user = User::factory()->create();
+    $coupon = Coupon::factory()->create(['min_order_amount' => 500]);
+    $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 10]);
+
+    Cart::query()->where('user_id', $user->id)->delete();
+    $response = $this->actingAs($user)->post(route('checkout.store'), couponCheckoutPayload($product, 1, $coupon->code));
+
+    $response->assertSessionHasErrors('coupon_code');
+    expect($response->getSession()->get('error'))->not->toBeNull();
+});
+
 test('a coupon outside its start/end window is rejected', function () {
     $user = User::factory()->create();
     $futureCoupon = Coupon::factory()->create(['starts_at' => now()->addDay()]);

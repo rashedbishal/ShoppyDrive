@@ -691,6 +691,19 @@ export default function Checkout({
             {
                 onError: (errors) => {
                     form.setError(errors as any);
+
+                    // BIZ-013: the server only rejects an applied coupon at
+                    // this point if it just stopped being valid (expired,
+                    // deactivated, cap hit) between being applied and
+                    // submitting — keeping it "applied" on screen would
+                    // just repeat the same rejection on retry.
+                    if ('coupon_code' in errors) {
+                        applyCoupon(null);
+                        setCouponError(
+                            (errors as Record<string, string>).coupon_code,
+                        );
+                    }
+
                     setSubmitting(false);
                 },
                 onSuccess: () => {
