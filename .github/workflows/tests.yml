@@ -48,3 +48,63 @@ jobs:
       # external database service is needed here.
       - name: Run Pint and the full Pest suite
         run: composer test
+
+  # INFRA-003: the suite above runs on SQLite, so without this the first
+  # MariaDB run of every migration was production's `migrate --force`, where
+  # a failed DDL statement doesn't roll back. Runs every migration on a fresh
+  # MariaDB matching production's major/minor version (11.8). Visibility only:
+  # deploy.yml does not wait for this workflow.
+  mariadb-migrations:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: shoppydrive_test_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: shoppydrive_test_ci
+      DB_USERNAME: root
+      DB_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo, pdo_mysql, gd, zip, bcmath
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Confirm the target is the disposable CI database
+        run: |
+          php -r 'exit(str_starts_with(getenv("DB_DATABASE"), "shoppydrive_test_") ? 0 : 1);'
+          php artisan db:show
+
+      # The same command deploy.yml runs on production.
+      - name: Run every migration on MariaDB
+        run: php artisan migrate --force
+
+      - name: Show the migration status
+        run: php artisan migrate:status
+
+      - name: A second run must have nothing left to migrate
+        run: php artisan migrate --force | tee migrate-again.log && grep -q 'Nothing to migrate' migrate-again.log
