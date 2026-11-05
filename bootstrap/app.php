@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuthenticateAdminSession;
 use App\Http\Middleware\BlockBlockedIp;
 use App\Http\Middleware\CaptureTrafficSource;
 use App\Http\Middleware\EnsureAccountNotAnonymized;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin' => EnsureAdmin::class,
+            'admin.session' => AuthenticateAdminSession::class,
             'admin.can' => EnsureAdminPermission::class,
             'admin.mother' => EnsureMotherAdmin::class,
             'redirect-customer-from-admin' => RedirectCustomerFromAdmin::class,

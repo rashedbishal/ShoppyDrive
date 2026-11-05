@@ -83,7 +83,10 @@ $guardResource = function (PendingResourceRegistration $resource, string $sectio
 // SEC-021: same history-encryption rationale as routes/account.php — the
 // admin panel's own back-button exposure after logout is at least as
 // sensitive (every customer's orders/PII, settings, secrets).
-Route::middleware(['redirect-customer-from-admin', 'admin', 'inertia.encrypt'])->prefix('admin')->name('admin.')->group(function () use ($guardResource): void {
+// SEC-005: 'admin.session' must come after 'admin' (which guarantees a
+// logged-in admin exists) — it forces a stolen/left-open session to log
+// out the moment that account's password changes elsewhere.
+Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'inertia.encrypt'])->prefix('admin')->name('admin.')->group(function () use ($guardResource): void {
     Route::get('/', fn () => redirect()->route('admin.dashboard'))->name('index');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 

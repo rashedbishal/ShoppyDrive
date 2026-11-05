@@ -194,13 +194,17 @@ test('an admin cannot delete their own account', function () {
 
 // ── Sanity: normal operations still work ─────────────────────────────────────
 
-test('both mother and regular admins can still view the admins index', function () {
-    $mother = createMotherAdmin();
-    $regular = regularAdmin();
-
-    actingAs($mother, 'admin');
+test('the mother admin can still view the admins index', function () {
+    actingAs(createMotherAdmin(), 'admin');
     $this->get(route('admin.admins.index'))->assertOk();
+});
 
-    actingAs($regular, 'admin');
+test('a regular admin can still view the admins index', function () {
+    // A fresh request cycle per admin — SEC-005's AuthenticateAdminSession
+    // fingerprints the session to one specific admin's password hash;
+    // switching which admin actingAs() authenticates as mid-test (sharing
+    // one session) isn't something a real login/logout cycle would ever
+    // do, since logout always invalidates the session first.
+    actingAs(regularAdmin(), 'admin');
     $this->get(route('admin.admins.index'))->assertOk();
 });

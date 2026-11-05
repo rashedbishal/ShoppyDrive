@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\AuthenticateAdminSession;
 use App\Models\Admin;
 use App\Support\AdminSections;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -42,7 +44,7 @@ class AdminController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:admins,email'],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => ['required', 'confirmed', Password::default()],
             'permissions' => ['nullable', 'array'],
         ]);
 
@@ -70,10 +72,22 @@ class AdminController extends Controller
     {
         $this->authorizeManageTarget($admin);
 
+        $currentAdmin = Auth::guard('admin')->user();
+        $isSelfEdit = $currentAdmin->id === $admin->id;
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:admins,email,'.$admin->id],
-            'password' => ['nullable', 'confirmed', Password::min(8)],
+            'password' => ['nullable', 'confirmed', Password::default()],
+            // SEC-010: a left-open or hijacked session could otherwise
+            // change its own password with nothing proving it's really
+            // the account holder — same requirement the customer-facing
+            // password change already has (PasswordUpdateRequest).
+            // Resetting a *different* admin's password (the mother's
+            // privileged action, not a self-edit) is unaffected.
+            'current_password' => $isSelfEdit && $request->filled('password')
+                ? ['required', 'string', 'current_password:admin']
+                : ['sometimes'],
             'permissions' => ['nullable', 'array'],
         ]);
 
@@ -91,7 +105,6 @@ class AdminController extends Controller
         // access) — so a non-mother editing their own account can never
         // grant themselves access this way, mirroring is_mother's mass
         // assignment protection.
-        $currentAdmin = Auth::guard('admin')->user();
         if ($currentAdmin->is_mother && ! $admin->is_mother) {
             $permissions = AdminSections::sanitize($request->input('permissions', []));
 
@@ -106,6 +119,25 @@ class AdminController extends Controller
 
         if ($admin->wasChanged('password')) {
             $admin->logPasswordChange();
+
+            // SEC-005: a stolen or shared-computer session kept working
+            // after a password change, including via a remember-me cookie.
+            // AuthenticateAdminSession (routes/admin.php) stops the session
+            // side on its next request for every *other* session — but
+            // when $admin is editing their own password, their current
+            // request's session already stored the old hash earlier in
+            // this same request, so without this it would also log itself
+            // out. setRememberToken() isn't mass-assignable (by design),
+            // so it's set directly rather than through $data above.
+            $admin->setRememberToken(Str::random(60));
+            $admin->save();
+
+            if ($isSelfEdit) {
+                $request->session()->put(AuthenticateAdminSession::SESSION_KEY, [
+                    'id' => $admin->getAuthIdentifier(),
+                    'hash' => $admin->password,
+                ]);
+            }
         }
 
         return redirect()->route('admin.admins.index')->with('success', 'Admin account updated successfully.');
