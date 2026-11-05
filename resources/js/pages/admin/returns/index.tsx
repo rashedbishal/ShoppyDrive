@@ -71,10 +71,17 @@ export default function ReturnsIndex({ returns, filters }: Props) {
     };
 
     const handleReject = (id: number) => {
-        const admin_note =
-            prompt(
-                'Optional note to the customer explaining why this was rejected:',
-            ) ?? '';
+        const admin_note = prompt(
+            'Optional note to the customer explaining why this was rejected:',
+        );
+
+        // BIZ-029: prompt() returns null when the admin presses Cancel —
+        // treating that the same as an empty note submitted the rejection
+        // anyway, with no way to back out.
+        if (admin_note === null) {
+            return;
+        }
+
         router.patch(route('admin.returns.reject', id), { admin_note });
     };
 
