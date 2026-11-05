@@ -18,6 +18,10 @@ export function useSmsPolling() {
     // (ReceivedSmsController::UNMATCHED_STALE_MINUTES), piggybacking on this
     // same poll — not a new endpoint or table.
     const [unmatchedCount, setUnmatchedCount] = useState(0);
+    // OPS-005: true once the forwarder phone hasn't sent anything in a long
+    // time (ReceivedSmsController::FORWARDER_SILENT_MINUTES) — the only
+    // liveness signal for this single point of failure.
+    const [forwarderSeemsDown, setForwarderSeemsDown] = useState(false);
     // true after the first successful response — prevents toasting stale SMS on startup
     const initializedRef = useRef(false);
 
@@ -58,6 +62,7 @@ export function useSmsPolling() {
             let data: {
                 sms: Omit<SmsToast, 'key'>[];
                 unmatched_count?: number;
+                forwarder_seems_down?: boolean;
             };
 
             try {
@@ -72,6 +77,10 @@ export function useSmsPolling() {
 
             if (typeof data.unmatched_count === 'number') {
                 setUnmatchedCount(data.unmatched_count);
+            }
+
+            if (typeof data.forwarder_seems_down === 'boolean') {
+                setForwarderSeemsDown(data.forwarder_seems_down);
             }
 
             const isFirstPoll = !initializedRef.current;
@@ -109,5 +118,5 @@ export function useSmsPolling() {
         };
     }, []);
 
-    return { toasts, dismiss, unmatchedCount };
+    return { toasts, dismiss, unmatchedCount, forwarderSeemsDown };
 }

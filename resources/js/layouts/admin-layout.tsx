@@ -404,6 +404,7 @@ function SidebarContent({
     admin,
     unseenOrdersCount,
     unmatchedSmsCount,
+    forwarderSeemsDown,
     onClose,
 }: {
     currentUrl: string;
@@ -411,6 +412,7 @@ function SidebarContent({
     admin?: CurrentAdmin;
     unseenOrdersCount?: number | null;
     unmatchedSmsCount?: number;
+    forwarderSeemsDown?: boolean;
     onClose?: () => void;
 }) {
     const mostSpecificMatch = findMostSpecificMatch(currentUrl);
@@ -500,6 +502,14 @@ function SidebarContent({
                                     <Icon className="size-4 shrink-0" />
                                     {item.label}
                                     <span className="ml-auto flex items-center gap-1.5">
+                                        {/* OPS-005: the forwarder phone is a single point of failure with no other liveness signal. */}
+                                        {item.href ===
+                                            '/admin/received-sms' &&
+                                            forwarderSeemsDown && (
+                                                <span title="No payment SMS received in a while — check the forwarder phone">
+                                                    <TriangleAlert className="size-3.5 shrink-0 text-amber-500" />
+                                                </span>
+                                            )}
                                         {unseenCount > 0 && (
                                             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c8102e] px-1.5 text-[11px] font-bold text-white">
                                                 {unseenCount > 99
@@ -589,7 +599,8 @@ export default function AdminLayout({
     const logoUrl = (page.props.settings as AppSettings)?.logo ?? null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [hasMobileLogoError, setHasMobileLogoError] = useState(false);
-    const { toasts, dismiss, unmatchedCount } = useSmsPolling();
+    const { toasts, dismiss, unmatchedCount, forwarderSeemsDown } =
+        useSmsPolling();
     const handleDismiss = useCallback((key: number) => dismiss(key), [dismiss]);
 
     // Prefetched pages (e.g. Add Product) hold form options such as categories.
@@ -617,6 +628,7 @@ export default function AdminLayout({
                     admin={admin ?? undefined}
                     unseenOrdersCount={unseenOrdersCount}
                     unmatchedSmsCount={unmatchedCount}
+                    forwarderSeemsDown={forwarderSeemsDown}
                 />
             </aside>
 
@@ -651,6 +663,7 @@ export default function AdminLayout({
                                 admin={admin ?? undefined}
                                 unseenOrdersCount={unseenOrdersCount}
                                 unmatchedSmsCount={unmatchedCount}
+                                forwarderSeemsDown={forwarderSeemsDown}
                                 onClose={() => setSidebarOpen(false)}
                             />
                         </motion.aside>

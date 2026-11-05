@@ -27,9 +27,21 @@ class ReceivedSmsController extends Controller
     private const UNMATCHED_STALE_MINUTES = 30;
 
     /**
+     * OPS-005: the Android forwarder phone (a single point of failure) can
+     * go silent — dead battery, no signal, app crashed — without ever
+     * producing an unmatched SMS to count, so UNMATCHED_STALE_MINUTES above
+     * stays at 0 regardless and looks healthy. Six hours is deliberately
+     * loose: a real store can plausibly see zero bKash/Nagad payments for
+     * stretches of a slow day/night, and this only needs to catch "the
+     * phone has clearly been off for a while," not flag every quiet hour.
+     */
+    private const FORWARDER_SILENT_MINUTES = 360;
+
+    /**
      * Lightweight poll endpoint for the admin layout toast notifications.
      * Returns SMS records with id > after, capped at 10, plus a running
-     * count of stale unmatched SMS (FSA-07) for the sidebar badge — both
+     * count of stale unmatched SMS (FSA-07) and how long it's been since
+     * any SMS arrived at all (OPS-005) for the sidebar badge — both
      * piggyback on the same 5-second poll already running; no new route,
      * table, or dashboard.
      * Route: GET /admin/sms/poll
@@ -47,7 +59,15 @@ class ReceivedSmsController extends Controller
             ->where('received_at', '<=', now()->subMinutes(self::UNMATCHED_STALE_MINUTES))
             ->count();
 
-        return response()->json(['sms' => $sms, 'unmatched_count' => $unmatchedCount]);
+        $lastReceivedAt = ReceivedSms::max('received_at');
+
+        return response()->json([
+            'sms' => $sms,
+            'unmatched_count' => $unmatchedCount,
+            'forwarder_seems_down' => $lastReceivedAt === null
+                ? false // never configured/used yet — not this phone's problem to report
+                : now()->diffInMinutes($lastReceivedAt, true) >= self::FORWARDER_SILENT_MINUTES,
+        ]);
     }
 
     public function index(Request $request): Response

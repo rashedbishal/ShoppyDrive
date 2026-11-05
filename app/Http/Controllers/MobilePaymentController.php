@@ -295,8 +295,13 @@ class MobilePaymentController extends Controller
                 $msg === 'expired' => redirect()->route('checkout.index')
                     ->with('error', 'Payment session expired.'),
 
+                // OPS-005: this can mean the ID was mistyped, or that the
+                // SMS simply hasn't reached us yet (forwarding can lag or
+                // occasionally miss) — the app has no way to tell which,
+                // so the message no longer flatly implies the customer is
+                // wrong.
                 $msg === 'not_found' => back()->withErrors([
-                    'transaction_id' => "Transaction ID not found in our {$providerLabel} records. Please double-check the ID from your SMS and try again.",
+                    'transaction_id' => "We haven't received this Transaction ID yet. Please double-check it from your {$providerLabel} SMS. If you paid recently, this can take a few minutes to arrive — wait a moment and try again, or contact support if it still doesn't go through.",
                 ]),
 
                 $msg === 'wrong_provider' => back()->withErrors([

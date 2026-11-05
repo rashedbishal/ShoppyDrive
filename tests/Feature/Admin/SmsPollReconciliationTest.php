@@ -57,3 +57,27 @@ test('the poll response still returns the existing sms list unchanged alongside 
         ->assertJson(['unmatched_count' => 0])
         ->assertJsonFragment(['id' => $sms->id]);
 });
+
+// ── OPS-005: a dead forwarder phone creates no unmatched SMS at all, so the count above can't catch it ──
+
+test('forwarder_seems_down is false when an SMS has arrived recently', function () {
+    receivedSmsAt(now()->subMinutes(5));
+
+    actingAs($this->admin, 'admin')
+        ->getJson(route('admin.sms.poll'))
+        ->assertJson(['forwarder_seems_down' => false]);
+});
+
+test('forwarder_seems_down is true once nothing has arrived for a long time, even with zero unmatched', function () {
+    receivedSmsAt(now()->subHours(7), matched: true);
+
+    actingAs($this->admin, 'admin')
+        ->getJson(route('admin.sms.poll'))
+        ->assertJson(['unmatched_count' => 0, 'forwarder_seems_down' => true]);
+});
+
+test('forwarder_seems_down is false when no SMS has ever been received at all', function () {
+    actingAs($this->admin, 'admin')
+        ->getJson(route('admin.sms.poll'))
+        ->assertJson(['forwarder_seems_down' => false]);
+});
