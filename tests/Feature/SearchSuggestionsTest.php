@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\FlashSale;
+use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Support\ProductSearchQuery;
 use Illuminate\Support\Collection;
@@ -183,6 +185,42 @@ describe('on MySQL with the real FULLTEXT index', function () {
         expect($nameOnly->toSql())->toContain('match (`name`, `short_description`) against')->toContain('`name` like');
         expect($main->toSql())->toContain('match (`name`, `short_description`) against')->not->toContain('`name` like');
     });
+});
+
+test('a product on an active flash sale suggests its sale price, not the regular one', function () {
+    $product = suggestedProduct(['name' => 'Comfy T-Shirt', 'price' => 2000]);
+    $flashSale = FlashSale::factory()->create([
+        'starts_at' => now()->subHour(),
+        'ends_at' => now()->addHour(),
+        'is_active' => true,
+    ]);
+    FlashSaleItem::factory()->create([
+        'flash_sale_id' => $flashSale->id,
+        'product_id' => $product->id,
+        'variant_id' => null,
+        'sale_price' => 1500,
+    ]);
+
+    $response = test()->getJson('/api/search/suggestions?q=comfy');
+
+    $response->assertOk();
+    $suggested = collect($response->json('products'))->firstWhere('id', $product->id);
+    expect($suggested)->not->toBeNull();
+    expect($suggested['in_flash_sale'])->toBeTrue();
+    expect($suggested['flash_sale_price'])->toEqual(1500);
+});
+
+test('a product with no active flash sale suggests its regular price', function () {
+    $product = suggestedProduct(['name' => 'Plain Mug', 'price' => 500]);
+
+    $response = test()->getJson('/api/search/suggestions?q=plain');
+
+    $response->assertOk();
+    $suggested = collect($response->json('products'))->firstWhere('id', $product->id);
+    expect($suggested)->not->toBeNull();
+    expect($suggested['in_flash_sale'])->toBeFalse();
+    expect($suggested['flash_sale_price'])->toBeNull();
+    expect($suggested['price'])->toBe(500);
 });
 
 describe('on SQLite', function () {

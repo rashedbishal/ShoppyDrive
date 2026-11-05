@@ -27,6 +27,8 @@ interface SuggestionProduct {
     compare_price?: number | null;
     primary_image_url?: string | null;
     images?: { path: string }[];
+    in_flash_sale?: boolean;
+    flash_sale_price?: number | null;
 }
 
 interface SuggestionBrand {
@@ -343,67 +345,99 @@ export function SearchBar({
                                     <>
                                         <SectionHeader label="Products" />
                                         <ul className="px-2 pb-1">
-                                            {products.map((product, i) => (
-                                                <li key={product.id}>
-                                                    <Link
-                                                        href={route(
-                                                            'product.show',
-                                                            product.slug,
-                                                        )}
-                                                        onClick={() =>
-                                                            setIsFocused(false)
-                                                        }
-                                                        className={`flex items-center gap-3 rounded-xl p-2.5 transition-colors ${
-                                                            activeIndex ===
-                                                            productStart + i
-                                                                ? 'bg-gray-50'
-                                                                : 'hover:bg-gray-50'
-                                                        }`}
-                                                    >
-                                                        <div className="size-11 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
-                                                            {imgSrc(product) ? (
-                                                                <img
-                                                                    src={
-                                                                        imgSrc(
-                                                                            product,
-                                                                        )!
-                                                                    }
-                                                                    alt={
+                                            {products.map((product, i) => {
+                                                // Matches ProductCard's own
+                                                // isFlashPriced/currentPrice
+                                                // logic, so this dropdown
+                                                // never shows a different
+                                                // price than the product
+                                                // actually sells for right now.
+                                                const isFlashPriced =
+                                                    Boolean(
+                                                        product.in_flash_sale,
+                                                    ) &&
+                                                    typeof product.flash_sale_price ===
+                                                        'number';
+                                                const currentPrice =
+                                                    isFlashPriced
+                                                        ? (product.flash_sale_price as number)
+                                                        : product.price;
+                                                const originalPrice =
+                                                    product.compare_price &&
+                                                    product.compare_price >
+                                                        currentPrice
+                                                        ? product.compare_price
+                                                        : product.price >
+                                                            currentPrice
+                                                          ? product.price
+                                                          : null;
+
+                                                return (
+                                                    <li key={product.id}>
+                                                        <Link
+                                                            href={route(
+                                                                'product.show',
+                                                                product.slug,
+                                                            )}
+                                                            onClick={() =>
+                                                                setIsFocused(
+                                                                    false,
+                                                                )
+                                                            }
+                                                            className={`flex items-center gap-3 rounded-xl p-2.5 transition-colors ${
+                                                                activeIndex ===
+                                                                productStart + i
+                                                                    ? 'bg-gray-50'
+                                                                    : 'hover:bg-gray-50'
+                                                            }`}
+                                                        >
+                                                            <div className="size-11 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
+                                                                {imgSrc(
+                                                                    product,
+                                                                ) ? (
+                                                                    <img
+                                                                        src={
+                                                                            imgSrc(
+                                                                                product,
+                                                                            )!
+                                                                        }
+                                                                        alt={
+                                                                            product.name
+                                                                        }
+                                                                        className="size-full object-cover"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="flex size-full items-center justify-center text-gray-300">
+                                                                        <SearchIcon className="size-4" />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="truncate text-sm font-medium text-gray-900">
+                                                                    {
                                                                         product.name
                                                                     }
-                                                                    className="size-full object-cover"
-                                                                />
-                                                            ) : (
-                                                                <div className="flex size-full items-center justify-center text-gray-300">
-                                                                    <SearchIcon className="size-4" />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                            <p className="truncate text-sm font-medium text-gray-900">
-                                                                {product.name}
-                                                            </p>
-                                                            <div className="mt-0.5 flex items-center gap-1.5">
-                                                                <span className="text-sm font-bold text-[#c8102e]">
-                                                                    {formatCurrency(
-                                                                        product.price,
-                                                                    )}
-                                                                </span>
-                                                                {product.compare_price &&
-                                                                    product.compare_price >
-                                                                        product.price && (
+                                                                </p>
+                                                                <div className="mt-0.5 flex items-center gap-1.5">
+                                                                    <span className="text-sm font-bold text-[#c8102e]">
+                                                                        {formatCurrency(
+                                                                            currentPrice,
+                                                                        )}
+                                                                    </span>
+                                                                    {originalPrice && (
                                                                         <span className="text-xs text-gray-400 line-through">
                                                                             {formatCurrency(
-                                                                                product.compare_price,
+                                                                                originalPrice,
                                                                             )}
                                                                         </span>
                                                                     )}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <ArrowRight className="size-4 shrink-0 text-gray-300" />
-                                                    </Link>
-                                                </li>
-                                            ))}
+                                                            <ArrowRight className="size-4 shrink-0 text-gray-300" />
+                                                        </Link>
+                                                    </li>
+                                                );
+                                            })}
                                         </ul>
                                     </>
                                 )}

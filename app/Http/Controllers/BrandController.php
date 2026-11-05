@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Brand;
+use App\Models\FlashSaleItem;
 use App\Models\Product;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -43,6 +44,19 @@ class BrandController extends Controller
             ->orderByDesc('published_at')
             ->paginate(12)
             ->withQueryString();
+
+        // Same gap as the listing/search pages: never looked up a flash
+        // sale for the products it shows.
+        $flashPrices = FlashSaleItem::activePricesForProducts(
+            $products->getCollection()->pluck('id')->all(),
+        );
+
+        foreach ($products as $product) {
+            $flash = $flashPrices[$product->id] ?? null;
+            $product->in_flash_sale = $flash !== null;
+            $product->flash_sale_price = $flash['price'] ?? null;
+            $product->flash_sale_ends_at = $flash['ends_at'] ?? null;
+        }
 
         $brandWithCount = $brand->loadCount([
             'products as products_count' => static fn ($query) => $query->active()->published(),

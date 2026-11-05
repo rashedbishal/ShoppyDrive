@@ -8,6 +8,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Exceptions\InsufficientStockException;
+use App\Models\FlashSaleItem;
 use App\Models\LandingPage;
 use App\Models\Order;
 use App\Models\Payment;
@@ -591,15 +592,34 @@ class LandingPageController extends Controller
         return $pdf->download("invoice-{$order->order_number}.pdf");
     }
 
+    /**
+     * BIZ-016: this page showed the plain price/compare_price unconditionally
+     * — placeOrder() below already charges the correct, flash-sale-aware
+     * price via CartManager::resolvePrice() (line ~207), so a product on an
+     * active flash sale was charged correctly but *displayed* at the
+     * regular price, including in this page's own on-screen subtotal
+     * preview (LandingPage.tsx's `product.price * qty`). `price` here is
+     * now the same effective price placeOrder() would charge, and
+     * `compare_price` is whichever of the stored compare_price or the
+     * regular price is actually higher than that, so the existing
+     * strike-through already works without any extra frontend field.
+     */
     private function serializeProduct(mixed $product): array
     {
+        $flashItem = FlashSaleItem::findActiveFor($product->id, null);
+        $effectivePrice = (float) ($flashItem?->sale_price ?? $product->price);
+
         return [
             'id' => $product->id,
             'name' => $product->name,
             'description' => $product->description,
             'short_description' => $product->short_description,
-            'price' => $product->price,
-            'compare_price' => $product->compare_price,
+            'price' => $effectivePrice,
+            'compare_price' => $product->compare_price && (float) $product->compare_price > $effectivePrice
+                ? $product->compare_price
+                : ((float) $product->price > $effectivePrice ? $product->price : null),
+            'in_flash_sale' => $flashItem !== null,
+            'flash_sale_price' => $flashItem?->sale_price,
             'free_delivery' => $product->free_delivery,
             'free_delivery_min_qty' => $product->free_delivery_min_qty,
             'media' => $product->media->map(fn ($m) => [
@@ -608,13 +628,21 @@ class LandingPageController extends Controller
                 'type' => $m->type,
                 'is_primary' => $m->is_primary,
             ])->values(),
-            'variants' => $product->variants->map(fn ($v) => [
-                'id' => $v->id,
-                'sku' => $v->sku,
-                'price' => $v->price ?? $product->price,
-                'stock_quantity' => $v->stock_quantity,
-                'attributes' => $v->attributes,
-            ])->values(),
+            'variants' => $product->variants->map(function ($v) use ($product) {
+                $variantFlashItem = FlashSaleItem::findActiveFor($product->id, $v->id);
+                $regularVariantPrice = (float) ($v->price ?? $product->price);
+                $effectiveVariantPrice = (float) ($variantFlashItem?->sale_price ?? $regularVariantPrice);
+
+                return [
+                    'id' => $v->id,
+                    'sku' => $v->sku,
+                    'price' => $effectiveVariantPrice,
+                    'stock_quantity' => $v->stock_quantity,
+                    'attributes' => $v->attributes,
+                    'in_flash_sale' => $variantFlashItem !== null,
+                    'flash_sale_price' => $variantFlashItem?->sale_price,
+                ];
+            })->values(),
         ];
     }
 }

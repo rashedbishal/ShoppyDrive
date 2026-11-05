@@ -40,6 +40,8 @@ type Props = {
         short_description: string | null;
         price: number;
         compare_price: number | null;
+        in_flash_sale?: boolean;
+        flash_sale_price?: number | null;
         free_delivery: boolean;
         free_delivery_min_qty: number | null;
         media: ProductMedia[];

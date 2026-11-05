@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\FlashSale;
+use App\Models\FlashSaleItem;
 use App\Models\HomepageSetting;
 use App\Models\Product;
 use App\Models\ProductBundle;
@@ -134,6 +135,24 @@ class HomeController extends Controller
             ->take(3)
             ->values();
 
+        // BIZ (flash-sale price consistency): $itemsByProduct's mutation
+        // above only touches the Product instances loaded via the flash
+        // sale's own `items.product` eager load — $featuredProducts,
+        // $newArrivals and $bestSellers are three entirely separate
+        // queries, so those are different PHP objects for the same DB
+        // rows and never received `in_flash_sale`/`flash_sale_price` at
+        // all. $mapProduct looks the price up by id instead of trusting a
+        // dynamic property that may have been set on a different
+        // instance representing the same product.
+        $flashPricesForSections = FlashSaleItem::activePricesForProducts(
+            $featuredProducts->pluck('id')
+                ->merge($newArrivals->pluck('id'))
+                ->merge($bestSellers->pluck('id'))
+                ->unique()
+                ->values()
+                ->all(),
+        );
+
         $categories = Category::active()
             ->withCount('products')
             ->orderBy('sort_order')
@@ -142,9 +161,15 @@ class HomeController extends Controller
 
         $currencySymbol = config('app.currency_symbol', '৳');
 
-        $mapProduct = function (Product $product) use ($currencySymbol): array {
+        $mapProduct = function (Product $product) use ($currencySymbol, $flashPricesForSections): array {
             $primaryImage = $product->images->firstWhere('is_primary', true) ?? $product->images->first();
             $primaryImageUrl = $primaryImage?->path;
+            // Falls back to the dynamic property for a product this
+            // closure is called on that wasn't part of the lookup built
+            // above (the flash-sale carousel's own products, via
+            // $mapFlashSaleProduct below, which already correctly set it
+            // on this exact instance).
+            $flash = $flashPricesForSections[$product->id] ?? null;
 
             $discountPercentage = null;
             if ($product->compare_price && $product->compare_price > $product->price) {
@@ -164,8 +189,8 @@ class HomeController extends Controller
                 'videos' => [],
                 'attributes' => [],
                 'tags' => [],
-                'in_flash_sale' => $product->in_flash_sale ?? false,
-                'flash_sale_price' => $product->flash_sale_price ?? null,
+                'in_flash_sale' => $flash !== null || ($product->in_flash_sale ?? false),
+                'flash_sale_price' => $flash['price'] ?? $product->flash_sale_price ?? null,
             ]);
         };
 

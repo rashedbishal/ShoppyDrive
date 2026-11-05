@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\FlashSale;
+use App\Models\FlashSaleItem;
 use App\Models\Product;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -58,6 +59,21 @@ class FlashSaleController extends Controller
             ], 'rating')
             ->limit(8)
             ->get();
+
+        // This page's own "Featured Products" section is a separate query
+        // from $activeSale's items above, so a featured product that also
+        // happens to be on the active sale (e.g. one the admin marked
+        // featured specifically because it's on sale) never got the
+        // sale's price here — the same instance-identity gap
+        // HomeController had for its equivalent sections.
+        $flashPrices = FlashSaleItem::activePricesForProducts($featuredProducts->pluck('id')->all());
+
+        foreach ($featuredProducts as $product) {
+            $flash = $flashPrices[$product->id] ?? null;
+            $product->in_flash_sale = $flash !== null;
+            $product->flash_sale_price = $flash['price'] ?? null;
+            $product->flash_sale_ends_at = $flash['ends_at'] ?? null;
+        }
 
         return Inertia::render('catalog/FlashSales', [
             'activeSale' => $activeSale,

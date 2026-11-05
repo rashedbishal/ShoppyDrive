@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Models\PromotionalBanner;
 use App\Models\Review;
@@ -147,6 +148,23 @@ class ProductListingController extends Controller
         $products = $query
             ->paginate(12)
             ->withQueryString();
+
+        // Batched for just this page's ~12 products (not the whole filtered
+        // set) — one extra query here, not one per product. Without this,
+        // ProductCard fell back to the plain price column, showing it stale
+        // for anything actually on an active flash sale right now (the
+        // product detail page, via ProductController, already got this
+        // right).
+        $flashPrices = FlashSaleItem::activePricesForProducts(
+            $products->getCollection()->pluck('id')->all(),
+        );
+
+        foreach ($products as $product) {
+            $flash = $flashPrices[$product->id] ?? null;
+            $product->in_flash_sale = $flash !== null;
+            $product->flash_sale_price = $flash['price'] ?? null;
+            $product->flash_sale_ends_at = $flash['ends_at'] ?? null;
+        }
 
         // Wrapped in closures (not eagerly queried above) so a filter-triggered
         // partial reload — which only asks for `products`/`filters`, see

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\FlashSale;
+use App\Models\FlashSaleItem;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -159,6 +161,30 @@ test('the wishlist page skips a product that has been deleted', function () {
 
     actingAs($user)->get(route('account.wishlist'))
         ->assertInertia(fn (AssertableInertia $page) => $page->has('wishlist', 1)->where('wishlist.0.id', $kept->id));
+});
+
+test('the wishlist page shows a saved product\'s active flash-sale price, not its regular one', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 2000]);
+    Wishlist::create(['user_id' => $user->id, 'product_id' => $product->id]);
+
+    $flashSale = FlashSale::factory()->create([
+        'starts_at' => now()->subHour(),
+        'ends_at' => now()->addHour(),
+        'is_active' => true,
+    ]);
+    FlashSaleItem::factory()->create([
+        'flash_sale_id' => $flashSale->id,
+        'product_id' => $product->id,
+        'variant_id' => null,
+        'sale_price' => 1000,
+    ]);
+
+    actingAs($user)->get(route('account.wishlist'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('wishlist.0.in_flash_sale', true)
+            ->where('wishlist.0.flash_sale_price', 1000)
+            ->where('wishlist.0.price', 2000));
 });
 
 test('moving items still works when a saved product has been deleted', function () {

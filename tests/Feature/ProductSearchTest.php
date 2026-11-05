@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Models\Brand;
+use App\Models\FlashSale;
+use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Support\ProductSearchQuery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -222,4 +224,26 @@ test('a search consisting only of a common English stopword matches nothing via 
             'products.data',
             fn ($data) => $data->pluck('name')->all() === ['The North Face Jacket']
         ));
+});
+
+test('search results show a product on an active flash sale at its sale price', function () {
+    $product = createSearchableProduct(['name' => 'Comfy T-Shirt', 'price' => 2000]);
+    $flashSale = FlashSale::factory()->create([
+        'starts_at' => now()->subHour(),
+        'ends_at' => now()->addHour(),
+        'is_active' => true,
+    ]);
+    FlashSaleItem::factory()->create([
+        'flash_sale_id' => $flashSale->id,
+        'product_id' => $product->id,
+        'variant_id' => null,
+        'sale_price' => 1500,
+    ]);
+
+    $this->get(route('search', ['q' => 'comfy']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('products.data.0.in_flash_sale', true)
+            ->where('products.data.0.flash_sale_price', 1500)
+            ->where('products.data.0.price', 2000));
 });

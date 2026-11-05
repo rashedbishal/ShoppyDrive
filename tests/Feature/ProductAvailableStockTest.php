@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Models\Brand;
 use App\Models\Cart;
+use App\Models\FlashSale;
+use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
@@ -113,6 +115,45 @@ test('a product without variants keeps using its own stock', function (Closure $
     [$url, $path] = $surface($product);
 
     expect(collect(pageProducts($url, $path))->firstWhere('id', $product->id)['available_stock'])->toBe(9);
+})->with(storefrontSurfaces());
+
+/**
+ * Every surface this product can appear on must agree on its price while a
+ * flash sale is active — found via an owner report that the product card
+ * and search still showed the regular price while the detail page (the
+ * only surface that originally looked the sale up) showed the sale price.
+ * Each of these controllers queries its products separately from the
+ * active FlashSale's own item list, so a naive "mutate the product
+ * instance the flash sale loaded" fix (HomeController's original
+ * approach, still used for its own dedicated flash-sale carousel) silently
+ * does nothing for a *different* instance of the same database row loaded
+ * by a second query — exactly what every surface here is.
+ */
+test('a product on an active flash sale shows its sale price on every storefront surface', function (Closure $surface) {
+    $product = Product::factory()->create([
+        'price' => 2000,
+        'is_featured' => true,
+        'published_at' => now()->subDay(),
+    ]);
+    $flashSale = FlashSale::factory()->create([
+        'starts_at' => now()->subHour(),
+        'ends_at' => now()->addHour(),
+        'is_active' => true,
+    ]);
+    FlashSaleItem::factory()->create([
+        'flash_sale_id' => $flashSale->id,
+        'product_id' => $product->id,
+        'variant_id' => null,
+        'sale_price' => 1000,
+    ]);
+    [$url, $path] = $surface($product);
+
+    $card = collect(pageProducts($url, $path))->firstWhere('id', $product->id);
+
+    expect($card)->not->toBeNull();
+    expect($card['in_flash_sale'])->toBeTrue();
+    expect((float) $card['flash_sale_price'])->toBe(1000.0);
+    expect((float) $card['price'])->toBe(2000.0);
 })->with(storefrontSurfaces());
 
 test('the product page and wishlist report variant stock', function () {

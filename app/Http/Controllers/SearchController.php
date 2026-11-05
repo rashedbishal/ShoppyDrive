@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\SubCategory;
@@ -75,6 +76,20 @@ class SearchController extends Controller
             ->paginate(12)
             ->withQueryString();
 
+        // Same gap as ProductListingController's listing grid, same fix:
+        // batched for just this page's ~12 products, one extra query, not
+        // one per product.
+        $flashPrices = FlashSaleItem::activePricesForProducts(
+            $products->getCollection()->pluck('id')->all(),
+        );
+
+        foreach ($products as $product) {
+            $flash = $flashPrices[$product->id] ?? null;
+            $product->in_flash_sale = $flash !== null;
+            $product->flash_sale_price = $flash['price'] ?? null;
+            $product->flash_sale_ends_at = $flash['ends_at'] ?? null;
+        }
+
         $categories = Category::query()
             ->active()
             ->orderBy('sort_order')
@@ -122,15 +137,27 @@ class SearchController extends Controller
         }
 
         return response()->json(SearchSuggestionCache::remember($query, function () use ($query): array {
-            $products = Product::query()
+            $matchedProducts = Product::query()
                 ->active()
                 ->published()
                 ->with(['images'])
                 ->where(fn ($q) => ProductSearchQuery::apply($q, $query, includeShortDescription: false))
                 ->orderByDesc('is_featured')
                 ->limit(4)
-                ->get()
-                ->map(fn ($p) => [
+                ->get();
+
+            // Same gap as the listing/search-results pages, same fix — only
+            // a handful of rows here, so one extra query for all of them.
+            // This result is itself cached (below) for up to 5 minutes, so
+            // a sale starting or ending can lag here by that long, the same
+            // backstop staleness SearchSuggestionCache already accepts for
+            // a product's scheduled published_at.
+            $flashPrices = FlashSaleItem::activePricesForProducts($matchedProducts->pluck('id')->all());
+
+            $products = $matchedProducts->map(function ($p) use ($flashPrices) {
+                $flash = $flashPrices[$p->id] ?? null;
+
+                return [
                     'id' => $p->id,
                     'name' => $p->name,
                     'slug' => $p->slug,
@@ -138,7 +165,10 @@ class SearchController extends Controller
                     'compare_price' => $p->compare_price,
                     'primary_image_url' => $p->primaryImagePath(),
                     'images' => $p->images->map(fn ($i) => ['path' => $i->path])->values(),
-                ]);
+                    'in_flash_sale' => $flash !== null,
+                    'flash_sale_price' => $flash['price'] ?? null,
+                ];
+            });
 
             $brands = Brand::query()
                 ->active()

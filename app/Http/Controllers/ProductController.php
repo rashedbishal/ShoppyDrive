@@ -90,6 +90,18 @@ class ProductController extends Controller
             ->limit(8)
             ->get();
 
+        // Same gap as the listing/search/brand/featured-products surfaces:
+        // "related products" here is its own separate query from the main
+        // product above and never got a flash-sale lookup at all.
+        $relatedFlashPrices = FlashSaleItem::activePricesForProducts($relatedProducts->pluck('id')->all());
+
+        foreach ($relatedProducts as $related) {
+            $flash = $relatedFlashPrices[$related->id] ?? null;
+            $related->in_flash_sale = $flash !== null;
+            $related->flash_sale_price = $flash['price'] ?? null;
+            $related->flash_sale_ends_at = $flash['ends_at'] ?? null;
+        }
+
         // The single source of truth for "is this on flash sale" (same
         // method CartManager::resolvePrice() and InventoryService use) —
         // without this, the detail page always showed the regular price,

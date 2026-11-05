@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Wishlist;
@@ -42,9 +43,16 @@ class WishlistController extends Controller
 
         $currencySymbol = config('app.currency_symbol', '৳');
 
+        // Same gap as every other storefront listing surface: this was
+        // hardcoded to false/null unconditionally, so a wishlisted product
+        // on an active flash sale always showed its regular price here.
+        $flashPrices = FlashSaleItem::activePricesForProducts(
+            $items->filter(fn ($item) => $item->product !== null)->pluck('product.id')->all(),
+        );
+
         $products = $items
             ->filter(fn ($item) => $item->product !== null)
-            ->map(function ($item) use ($currencySymbol) {
+            ->map(function ($item) use ($currencySymbol, $flashPrices) {
                 $product = $item->product;
                 $primaryImage = $product->images->firstWhere('is_primary', true) ?? $product->images->first();
 
@@ -52,6 +60,8 @@ class WishlistController extends Controller
                 if ($product->compare_price && $product->compare_price > $product->price) {
                     $discountPercentage = (int) round((($product->compare_price - $product->price) / $product->compare_price) * 100);
                 }
+
+                $flash = $flashPrices[$product->id] ?? null;
 
                 return array_merge($product->toArray(), [
                     'primary_image_url' => $primaryImage?->path,
@@ -66,8 +76,9 @@ class WishlistController extends Controller
                     'videos' => [],
                     'attributes' => [],
                     'tags' => [],
-                    'in_flash_sale' => false,
-                    'flash_sale_price' => null,
+                    'in_flash_sale' => $flash !== null,
+                    'flash_sale_price' => $flash['price'] ?? null,
+                    'flash_sale_ends_at' => $flash['ends_at'] ?? null,
                     'reviews_count' => 0,
                     'average_rating' => null,
                 ]);

@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 class FlashSaleItem extends Model
 {
@@ -89,5 +90,50 @@ class FlashSaleItem extends Model
                     <=> [$bSpecific, (float) $b->sale_price, $b->flashSale->starts_at->timestamp];
             })
             ->first();
+    }
+
+    /**
+     * Batched version of findActiveFor($productId, null) — one query for
+     * many products instead of one query per product, for a listing/search
+     * results page showing several at once. Mirrors that exact call's
+     * product-wide-only scope (variant_id IS NULL): a product with only a
+     * variant-specific item and no product-wide one is correctly reported
+     * as not on sale here, same as the product detail page's own
+     * card-level fields (ProductController) — this exists so every place
+     * that shows one price per product agrees with the one place
+     * (ProductController, for in_flash_sale/flash_sale_price at the
+     * product level) that already got it right. Same stock-exhaustion
+     * exclusion and lowest-price tie-break as findActiveFor().
+     *
+     * @param  list<int>  $productIds
+     * @return array<int, array{price: float, ends_at: Carbon}>
+     */
+    public static function activePricesForProducts(array $productIds): array
+    {
+        if ($productIds === []) {
+            return [];
+        }
+
+        return static::query()
+            ->whereIn('product_id', $productIds)
+            ->whereNull('variant_id')
+            ->whereHas('flashSale', function ($query) {
+                $query->where('is_active', true)
+                    ->where('starts_at', '<=', now())
+                    ->where('ends_at', '>=', now());
+            })
+            ->with('flashSale')
+            ->get()
+            ->filter(fn (self $item): bool => $item->stock_limit === null || $item->sold_count < $item->stock_limit)
+            ->groupBy('product_id')
+            ->map(function ($items): array {
+                $cheapest = $items->sortBy('sale_price')->first();
+
+                return [
+                    'price' => (float) $cheapest->sale_price,
+                    'ends_at' => $cheapest->flashSale->ends_at,
+                ];
+            })
+            ->all();
     }
 }

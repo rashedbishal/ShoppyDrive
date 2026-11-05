@@ -6,6 +6,8 @@ use App\Enums\AttributeType;
 use App\Models\Attribute;
 use App\Models\AttributeValue;
 use App\Models\Category;
+use App\Models\FlashSale;
+use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -78,4 +80,36 @@ it('includes each product\'s variants, with the default flagged, on the listing 
         ->assertInertia(fn (Assert $page) => $page
             ->has('products.data', 1)
             ->where('products.data.0.variants.0.is_default', true));
+});
+
+it('shows a product on an active flash sale at its sale price in the listing grid', function (): void {
+    $product = Product::factory()->create(['price' => 2000, 'published_at' => now()->subDay()]);
+    $flashSale = FlashSale::factory()->create([
+        'starts_at' => now()->subHour(),
+        'ends_at' => now()->addHour(),
+        'is_active' => true,
+    ]);
+    FlashSaleItem::factory()->create([
+        'flash_sale_id' => $flashSale->id,
+        'product_id' => $product->id,
+        'variant_id' => null,
+        'sale_price' => 1500,
+    ]);
+
+    $this->get(route('products.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('products.data.0.in_flash_sale', true)
+            ->where('products.data.0.flash_sale_price', 1500)
+            ->where('products.data.0.price', 2000));
+});
+
+it('shows a product with no active flash sale at its regular price in the listing grid', function (): void {
+    Product::factory()->create(['price' => 800, 'published_at' => now()->subDay()]);
+
+    $this->get(route('products.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('products.data.0.in_flash_sale', false)
+            ->where('products.data.0.flash_sale_price', null));
 });
