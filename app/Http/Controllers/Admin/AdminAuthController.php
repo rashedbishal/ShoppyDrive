@@ -58,6 +58,12 @@ class AdminAuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        // SEC-021: must come after invalidate() above — that flushes all
+        // session attributes, so calling this any earlier (e.g. from a
+        // Logout event listener, which fires before invalidate() here)
+        // would just get wiped before the next request ever reads it.
+        Inertia::clearHistory();
+
         return redirect()->route('admin.login');
     }
 }

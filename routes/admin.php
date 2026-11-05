@@ -80,7 +80,10 @@ $guardResource = function (PendingResourceRegistration $resource, string $sectio
  * `content-images.store` (a shared rich-text-editor upload helper used
  * across several sections, not worth gating on its own).
  */
-Route::middleware(['redirect-customer-from-admin', 'admin'])->prefix('admin')->name('admin.')->group(function () use ($guardResource): void {
+// SEC-021: same history-encryption rationale as routes/account.php — the
+// admin panel's own back-button exposure after logout is at least as
+// sensitive (every customer's orders/PII, settings, secrets).
+Route::middleware(['redirect-customer-from-admin', 'admin', 'inertia.encrypt'])->prefix('admin')->name('admin.')->group(function () use ($guardResource): void {
     Route::get('/', fn () => redirect()->route('admin.dashboard'))->name('index');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
