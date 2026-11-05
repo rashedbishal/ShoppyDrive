@@ -1,5 +1,7 @@
 # ShoppyDrive — Project Handoff (2026-11-03)
 
+> **Superseded in part (2026-11-06):** the Git and deploy facts below are out of date. `origin/main` is now `df39721`, and production runs `8193cfb` (deploy run `42046689296`). The `df39721` deploy failed on a flaky test, since fixed locally. Everything this file calls "committed, not pushed" or "uncommitted" is now deployed and unverified. See the "Reconciliation (2026-11-06)" note at the top of `docs/SHAPPYDRIVE_AUDIT_REMEDIATION_TRACKER.md`, which is the status source of truth. The 2026-11-05 audit's findings live in `docs/forensic-audit/`.
+
 **Read this first in any new session.** It assumes **no memory of earlier conversations**. Facts below were verified in the 2026-11-03 session. Re-verify Git and database state before acting.
 
 Read order:
