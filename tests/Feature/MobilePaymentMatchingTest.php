@@ -10,17 +10,18 @@ use App\Models\Order;
 use App\Models\PendingCheckout;
 use App\Models\Product;
 use App\Models\ReceivedSms;
+use App\Models\Setting;
 use App\Models\SmsPattern;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
-function startMobileBankingCheckout(TestCase $test, User $user, Product $product, int $quantity = 1): PendingCheckout
+function startMobileBankingCheckout(TestCase $test, User $user, Product $product, int $quantity = 1, array $overrides = []): PendingCheckout
 {
     Cart::query()->where('user_id', $user->id)->delete();
 
-    $test->actingAs($user)->post(route('checkout.store'), [
+    $test->actingAs($user)->post(route('checkout.store'), array_merge([
         'name' => 'Mobile Test',
         'email' => $user->email,
         'phone' => '01700000000',
@@ -33,7 +34,7 @@ function startMobileBankingCheckout(TestCase $test, User $user, Product $product
         'items' => [
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => $quantity],
         ],
-    ])->assertRedirect();
+    ], $overrides))->assertRedirect();
 
     return PendingCheckout::query()->where('user_id', $user->id)->latest('id')->firstOrFail();
 }
@@ -89,6 +90,53 @@ test('a late submission is accepted when the matching SMS genuinely arrived with
     expect(Order::query()->count())->toBe(1);
     expect(Order::query()->firstOrFail()->payment_status->value)->toBe('paid');
     expect($pending->fresh()->expires_at->equalTo($originalExpiry))->toBeTrue();
+});
+
+/*
+ * BIZ-010: the FSA-07 grace above re-admits a late submission even after
+ * its PendingCheckout's points hold has released (PendingCheckout::
+ * scopeHoldingPointsFor() stops counting it once expired), so the same
+ * points can legitimately be redeemed again elsewhere in the gap. The late
+ * confirmation must not then debit points that are no longer there.
+ */
+test('a late mobile payment confirmation does not double-debit points already spent elsewhere during the lapsed hold', function () {
+    Setting::updateOrCreate(['key' => 'points_redeem_value_bdt'], ['value' => 1, 'group' => 'referral']);
+    Setting::updateOrCreate(['key' => 'points_redeem_max_percent'], ['value' => 50, 'group' => 'referral']);
+    $user = User::factory()->create(['points_balance' => 100]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 50]);
+
+    $pending = startMobileBankingCheckout($this, $user, $product, 1, [
+        'redeem_points' => true, 'points_to_redeem' => 100,
+    ]);
+    $amount = (float) $pending->checkout_data['total'];
+    $originalExpiry = $pending->expires_at->clone();
+
+    ReceivedSms::create([
+        'sender' => '01799999999', 'provider' => 'bkash', 'content' => 'TrxID LATE777',
+        'received_at' => $originalExpiry->clone()->subMinutes(5),
+        'parsed_transaction_id' => 'LATE777', 'parsed_amount' => $amount, 'is_matched' => false,
+    ]);
+
+    $this->travelTo($originalExpiry->clone()->addMinute());
+
+    // The hold has lapsed, so the same points legitimately pay for a second order.
+    $this->actingAs($user)->post(route('checkout.store'), [
+        'name' => 'Mobile Test', 'email' => $user->email, 'phone' => '01700000000',
+        'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
+        'payment_method' => 'cod', 'order_token' => (string) Str::uuid(),
+        'redeem_points' => true, 'points_to_redeem' => 100,
+        'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
+    ])->assertRedirect();
+    expect((int) $user->fresh()->points_balance)->toBe(0);
+
+    // The FSA-07 grace then accepts the first checkout's late submission.
+    $this->actingAs($user)->post(route('payment.mobile.submit', $pending->token), [
+        'provider' => 'bkash', 'transaction_id' => 'LATE777',
+    ]);
+
+    expect((int) $user->fresh()->points_balance)->toBe(0)
+        ->and(Order::query()->count())->toBe(2)
+        ->and(Order::query()->latest('id')->first()->statusHistories()->where('notes', 'like', '%could not be applied%')->exists())->toBeTrue();
 });
 
 test('an SMS received after the original expiry is refused, not treated as proof of timely payment', function () {

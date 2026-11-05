@@ -17,6 +17,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * The general points ledger: earning (orders, registration, reviews, daily
@@ -128,6 +129,31 @@ class LoyaltyPointsService
     public function debitPointsForOrder(Order $order, User $lockedUser, int $points, float $amount): void
     {
         if ($points <= 0) {
+            return;
+        }
+
+        // BIZ-010: MobilePaymentController's FSA-07 late-payment grace can
+        // confirm an order after its PendingCheckout's points hold already
+        // expired and released (scopeHoldingPointsFor), letting the same
+        // points be legitimately redeemed again elsewhere in the gap.
+        // Debiting what's no longer there would drive the balance negative
+        // and silently double the discount's cost. The order itself was
+        // already priced and paid with the discount applied, so it still
+        // completes — only the (now unsafe) debit is skipped, flagged for
+        // admin follow-up instead.
+        if ($lockedUser->points_balance < $points) {
+            Log::warning('[Loyalty] Skipped a points debit that would have gone negative', [
+                'order_id' => $order->id,
+                'user_id' => $lockedUser->id,
+                'requested_points' => $points,
+                'current_balance' => $lockedUser->points_balance,
+            ]);
+
+            $order->statusHistories()->create([
+                'status' => $order->status->value,
+                'notes' => "Points redemption (-{$points}) could not be applied: balance was already insufficient when this order was confirmed. Review manually.",
+            ]);
+
             return;
         }
 
