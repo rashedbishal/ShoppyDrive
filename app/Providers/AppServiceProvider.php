@@ -11,6 +11,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
@@ -88,7 +89,7 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureErrorPages(): void
     {
-        Inertia::handleExceptionsUsing(function (ExceptionResponse $response): ?ExceptionResponse {
+        Inertia::handleExceptionsUsing(function (ExceptionResponse $response): ExceptionResponse|RedirectResponse|null {
             $status = $response->statusCode();
             $request = $response->request;
 
@@ -98,6 +99,22 @@ class AppServiceProvider extends ServiceProvider
 
             if ($request->is('api/*', 'storage/*') || ($request->expectsJson() && ! $request->header('X-Inertia'))) {
                 return null;
+            }
+
+            // FE-007: an expired session (CSRF 419) on a form submit used to
+            // replace the form with the error page, losing everything the
+            // customer typed (landing-page orders, checkout addresses), and
+            // that page's Refresh then re-requested a POST-only URL (405).
+            // Inertia form submissions keep their state on a redirect back,
+            // and that response carries a fresh XSRF token, so pressing the
+            // button again works. The order token still prevents duplicates.
+            if ($status === 419 && $request->header('X-Inertia') && ! $request->isMethod('GET')) {
+                Inertia::flash('toast', [
+                    'type' => 'error',
+                    'message' => 'Your session expired for security. Your details are still here — please press the button again.',
+                ]);
+
+                return back();
             }
 
             if ($status === 500 && config('app.debug')) {
