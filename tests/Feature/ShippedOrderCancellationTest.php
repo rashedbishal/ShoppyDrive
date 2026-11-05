@@ -173,6 +173,25 @@ test('a delivered order is still refused', function () {
         ->and(fsa11Ledgers($order))->toBe(FSA11_UNTOUCHED);
 });
 
+/*
+ * BIZ-007: Steadfast's confirmed status vocabulary has no SHIPPED-equivalent
+ * value, so a Steadfast order stays at PROCESSING for its whole transit —
+ * the SHIPPED check alone never catches it. A real consignment ID is the
+ * courier-agnostic signal cancel must also check.
+ */
+test('an admin cannot cancel a processing order that already has a Steadfast consignment', function () {
+    $order = fsa11Order(['status' => OrderStatus::PROCESSING, 'pathao_consignment_id' => null, 'steadfast_consignment_id' => 'STEADFAST-BIZ7']);
+
+    $this->actingAs($this->admin, 'admin')
+        ->patch(route('admin.orders.cancel', $order), ['reason' => 'customer asked'])
+        ->assertSessionHas('error', OrderController::COURIER_CANCEL_MESSAGE);
+
+    $order->refresh();
+    expect($order->status)->toBe(OrderStatus::PROCESSING)
+        ->and($order->stock_restored_at)->toBeNull()
+        ->and(fsa11Ledgers($order))->toBe(FSA11_UNTOUCHED);
+});
+
 test('an unresolved courier submission still blocks cancelling a processing order', function () {
     $order = fsa11Order(['status' => OrderStatus::PROCESSING, 'pathao_consignment_id' => null]);
     CourierSubmission::factory()->forOrder($order)->create();

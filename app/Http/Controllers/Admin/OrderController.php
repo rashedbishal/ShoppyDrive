@@ -464,6 +464,15 @@ class OrderController extends Controller
     public const SHIPPED_CANCEL_MESSAGE = 'This order has shipped and is with the courier, so it can\'t be cancelled here. Cancel it or request a return in the courier\'s portal; the order is cancelled and its stock restored automatically when the courier reports the cancellation or return.';
 
     /**
+     * BIZ-007: Steadfast's confirmed status vocabulary
+     * (CourierOrderStatusMapper::STEADFAST_MAP) has no SHIPPED-equivalent
+     * value, so a Steadfast order sits at PROCESSING for its entire transit
+     * — the SHIPPED check below never catches it. A non-null consignment ID
+     * is the courier-agnostic signal that the parcel is actually booked.
+     */
+    public const COURIER_CANCEL_MESSAGE = 'This order has a courier consignment and may already be with the courier, so it can\'t be cancelled here. Cancel it or request a return in the courier\'s portal; the order is cancelled and its stock restored automatically when the courier reports the cancellation or return.';
+
+    /**
      * FSA-06: a paid order (e.g. mobile banking, created paid at checkout)
      * must not be cancelled directly here — "Mark as Refunded" is the
      * action that actually gives the money back, so admin-initiated
@@ -499,6 +508,10 @@ class OrderController extends Controller
             // and restocks it — through CourierOrderStatusMapper::sync().
             if ($lockedOrder->status === OrderStatus::SHIPPED) {
                 return self::SHIPPED_CANCEL_MESSAGE;
+            }
+
+            if ($lockedOrder->pathao_consignment_id !== null || $lockedOrder->steadfast_consignment_id !== null) {
+                return self::COURIER_CANCEL_MESSAGE;
             }
 
             // FSA-06: a paid order must go through "Mark as Refunded"
