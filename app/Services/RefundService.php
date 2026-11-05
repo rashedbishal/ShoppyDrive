@@ -173,9 +173,14 @@ class RefundService
      */
     private function record(Admin $admin, Order $order, int $amountPaisa, string $method, string $source, ?int $returnRequestId, bool $closesOrder, string $historyNote): OrderRefund
     {
-        $collected = (int) $this->calculator->collectedPaisa($order);
+        // BIZ-008: payment is "fully refunded" once the refundable cap (which
+        // already excludes non-refundable shipping/tax) has been paid out —
+        // comparing against the raw collected amount (shipping included)
+        // meant a full refund could never reach it, leaving payment_status
+        // stuck at PAID and the order still counted as revenue.
+        $cap = (int) $this->calculator->capPaisa($order);
         $refundedAfter = $this->calculator->refundedPaisa($order, lock: true) + $amountPaisa;
-        $paymentRefunded = $collected > 0 && $refundedAfter >= $collected;
+        $paymentRefunded = $cap > 0 && $refundedAfter >= $cap;
 
         $previousStatus = $order->status;
         $previousPayment = $order->payment_status;

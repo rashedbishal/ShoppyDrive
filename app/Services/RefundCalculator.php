@@ -137,6 +137,29 @@ class RefundCalculator
         return max(0, min($collected - self::toPaisa($order->shipping_cost) - self::toPaisa($order->tax), $this->productNetPaisa($order)));
     }
 
+    /**
+     * BIZ-008: lets callers outside this service (the admin dashboard) net
+     * revenue against partial refunds without reading the OrderRefund
+     * ledger directly — CourierDeliveryEvidenceArchTest confines that model
+     * to RefundService/RefundCalculator/LoyaltyPointsService/Order.
+     *
+     * @param  array<int, int>  $orderIds
+     * @return array<int, float>
+     */
+    public function refundedAmountsFor(array $orderIds): array
+    {
+        if ($orderIds === []) {
+            return [];
+        }
+
+        return OrderRefund::whereIn('order_id', $orderIds)
+            ->selectRaw('order_id, SUM(amount) as refunded')
+            ->groupBy('order_id')
+            ->pluck('refunded', 'order_id')
+            ->map(fn ($value) => (float) $value)
+            ->all();
+    }
+
     public function refundedPaisa(Order $order, bool $lock = false): int
     {
         $query = OrderRefund::where('order_id', $order->id);

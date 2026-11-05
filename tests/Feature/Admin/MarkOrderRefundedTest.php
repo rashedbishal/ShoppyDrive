@@ -60,7 +60,9 @@ test('admin can mark a paid order as refunded', function () {
 
     $response->assertRedirect()->assertSessionHas('success');
     expect($this->order->refresh()->status->value)->toBe('refunded')
-        ->and($this->order->payment_status)->toBe(PaymentStatus::PAID) // 560 collected, 500 refunded
+        // BIZ-008: the 500 refund equals the full refundable cap (product
+        // value, shipping excluded), so payment is fully refunded too.
+        ->and($this->order->payment_status)->toBe(PaymentStatus::REFUNDED)
         ->and($this->order->statusHistories()->latest('id')->first()->notes)->toContain('refunded')->toContain('500.00')->toContain('bKash');
 
     $refund = OrderRefund::sole();

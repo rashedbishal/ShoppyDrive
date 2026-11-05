@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Order;
+use App\Models\OrderRefund;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -91,6 +92,27 @@ test('order count stats are unaffected and still count every order', function ()
 
     $this->get(route('admin.dashboard'))
         ->assertInertia(fn (Assert $page) => $page->where('stats.today_orders', 2));
+});
+
+test('BIZ-008: a partially refunded order\'s revenue is reduced by the amount already refunded', function () {
+    actingAs($this->admin, 'admin');
+
+    $order = dashboardOrder(['total' => 1000, 'payment_status' => 'paid', 'status' => 'delivered']);
+    OrderRefund::create([
+        'order_id' => $order->id,
+        'source' => 'return',
+        'amount' => 300,
+        'method' => 'bKash',
+        'previous_order_status' => 'delivered',
+        'resulting_order_status' => 'delivered',
+        'previous_payment_status' => 'paid',
+        'resulting_payment_status' => 'paid',
+    ]);
+
+    $this->get(route('admin.dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('stats.today_revenue', 700)
+            ->where('chartData.6.revenue', 700));
 });
 
 test('BE-009: an order placed in the Dhaka early morning still counts as today, not the UTC day it falls in', function () {

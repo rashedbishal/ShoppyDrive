@@ -170,7 +170,10 @@ test('a return refund then a whole-order refund share one ledger and never excee
     $order->refresh();
     expect((float) OrderRefund::where('order_id', $order->id)->sum('amount'))->toBe(900.0)
         ->and($order->status)->toBe(OrderStatus::REFUNDED)
-        ->and($order->payment_status)->toBe(PaymentStatus::PAID); // 960 collected, 60 shipping kept
+        // BIZ-008: payment is "fully refunded" once the refundable cap (900,
+        // product value net of discount) is reached — shipping is never
+        // refundable, so the cap itself already excludes it.
+        ->and($order->payment_status)->toBe(PaymentStatus::REFUNDED);
 });
 
 test('no return refund can be recorded once the order was refunded as a whole', function () {
@@ -237,7 +240,9 @@ test('a full return through the admin route writes the order status history and 
 
     $refund = OrderRefund::sole();
     expect($order->refresh()->status)->toBe(OrderStatus::REFUNDED)
-        ->and($order->payment_status)->toBe(PaymentStatus::PAID)
+        // BIZ-008: a full return refunds the whole product cap, so payment
+        // flips to REFUNDED too (shipping is never part of the cap).
+        ->and($order->payment_status)->toBe(PaymentStatus::REFUNDED)
         ->and($refund->return_request_id)->toBe($returnRequest->id)
         ->and($refund->admin_id)->toBe($admin->id)
         ->and($refund->resulting_order_status)->toBe('refunded')

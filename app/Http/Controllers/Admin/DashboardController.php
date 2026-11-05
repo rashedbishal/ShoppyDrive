@@ -12,8 +12,10 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\User;
+use App\Services\RefundCalculator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -21,6 +23,8 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    public function __construct(private readonly RefundCalculator $refundCalculator) {}
+
     public function __invoke(): Response
     {
         // BE-09: "today" means the Dhaka calendar day, not the UTC one the
@@ -30,8 +34,8 @@ class DashboardController extends Controller
         $dhakaYesterday = $dhakaToday->copy()->subDay();
         $weekAgo = Carbon::now()->subDays(7);
 
-        $todayRevenue = $this->collectedRevenueQuery()->whereBetween('created_at', $this->utcDayRange($dhakaToday))->sum('total');
-        $yesterdayRevenue = $this->collectedRevenueQuery()->whereBetween('created_at', $this->utcDayRange($dhakaYesterday))->sum('total');
+        $todayRevenue = $this->netRevenue($this->collectedRevenueQuery()->whereBetween('created_at', $this->utcDayRange($dhakaToday)));
+        $yesterdayRevenue = $this->netRevenue($this->collectedRevenueQuery()->whereBetween('created_at', $this->utcDayRange($dhakaYesterday)));
         $todayOrders = Order::whereBetween('created_at', $this->utcDayRange($dhakaToday))->count();
         $yesterdayOrders = Order::whereBetween('created_at', $this->utcDayRange($dhakaYesterday))->count();
         $totalCustomers = User::count();
@@ -49,10 +53,11 @@ class DashboardController extends Controller
         // thinks the stored UTC timestamp falls on.
         $revenueRows = $this->collectedRevenueQuery()
             ->where('created_at', '>=', $dhakaToday->copy()->subDays(6)->utc())
-            ->get(['created_at', 'total']);
+            ->get(['id', 'created_at', 'total']);
+        $refundedByOrder = $this->refundedAmountsFor($revenueRows->pluck('id'));
         $revenueByDate = $revenueRows->groupBy(fn (Order $order) => $order->created_at->copy()->timezone('Asia/Dhaka')->toDateString());
 
-        $chartData = collect(range(6, 0))->map(function (int $daysAgo) use ($dhakaToday, $revenueByDate): array {
+        $chartData = collect(range(6, 0))->map(function (int $daysAgo) use ($dhakaToday, $revenueByDate, $refundedByOrder): array {
             $date = $dhakaToday->copy()->subDays($daysAgo);
             $key = $date->toDateString();
             $rows = $revenueByDate->get($key);
@@ -60,7 +65,7 @@ class DashboardController extends Controller
             return [
                 'date' => $key,
                 'label' => $date->format('D'),
-                'revenue' => $rows ? (float) $rows->sum('total') : 0,
+                'revenue' => $rows ? (float) $rows->sum(fn (Order $order) => (float) $order->total - ($refundedByOrder[$order->id] ?? 0.0)) : 0,
                 'orders' => $rows ? $rows->count() : 0,
             ];
         })->values();
@@ -122,14 +127,38 @@ class DashboardController extends Controller
 
     /**
      * LOW-08: revenue stats must reflect money actually collected, not every
-     * order placed. Excludes unpaid orders and cancelled orders; a fully
-     * refunded order is already excluded because its payment_status moves
-     * off PAID (RefundService), so no separate check is needed for it here.
+     * order placed. Excludes unpaid orders and cancelled orders. A fully
+     * refunded order is excluded too, because RefundService now flips
+     * payment_status off PAID once the refundable cap is reached (BIZ-008);
+     * a partially refunded order stays PAID, so netRevenue() still has to
+     * subtract its ledger refunds itself.
      */
     private function collectedRevenueQuery(): Builder
     {
         return Order::where('payment_status', PaymentStatus::PAID)
             ->where('status', '!=', OrderStatus::CANCELLED);
+    }
+
+    /**
+     * BIZ-008: sum(total) over-counts a partially refunded order by the
+     * amount already paid back, even though its payment_status is still
+     * PAID (correctly — the refund hasn't reached the cap yet).
+     */
+    private function netRevenue(Builder $query): float
+    {
+        $orders = $query->get(['id', 'total']);
+        $refundedByOrder = $this->refundedAmountsFor($orders->pluck('id'));
+
+        return (float) $orders->sum(fn (Order $order) => (float) $order->total - ($refundedByOrder[$order->id] ?? 0.0));
+    }
+
+    /**
+     * @param  Collection<int, int>  $orderIds
+     * @return array<int, float>
+     */
+    private function refundedAmountsFor(Collection $orderIds): array
+    {
+        return $this->refundCalculator->refundedAmountsFor($orderIds->all());
     }
 
     /**
