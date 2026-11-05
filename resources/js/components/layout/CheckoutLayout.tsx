@@ -20,11 +20,8 @@ export default function CheckoutLayout({
                         &copy; {new Date().getFullYear()} ShoppyDrive. All
                         rights reserved.
                     </p>
+                    {/* BIZ-031: only these two payment methods are actually accepted — SSLCommerz/Visa/Mastercard were a placeholder left in. */}
                     <div className="flex items-center justify-center gap-6 opacity-50 grayscale">
-                        {/* Placeholder for payment logos */}
-                        <span className="text-[10px] font-bold tracking-tighter uppercase">
-                            SSLCommerz
-                        </span>
                         <span className="text-[10px] font-bold tracking-tighter uppercase">
                             bKash
                         </span>
@@ -32,10 +29,7 @@ export default function CheckoutLayout({
                             Nagad
                         </span>
                         <span className="text-[10px] font-bold tracking-tighter uppercase">
-                            Visa
-                        </span>
-                        <span className="text-[10px] font-bold tracking-tighter uppercase">
-                            Mastercard
+                            Cash on Delivery
                         </span>
                     </div>
                 </div>
