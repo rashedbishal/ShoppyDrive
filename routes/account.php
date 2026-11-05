@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 // SEC-021: encrypts this history state in the browser, so a shared PC's
 // next user pressing Back after the customer logs out gets undecryptable
 // data instead of their orders/profile/addresses straight from history.
-Route::middleware(['auth', 'verified', 'auth.session', 'account.active', 'inertia.encrypt'])->prefix('account')->group(function () {
+Route::middleware(['auth', 'verified', 'auth.session', 'account.active', 'history.encrypt'])->prefix('account')->group(function () {
     Route::get('/', function (Request $request) {
         $user = $request->user();
 

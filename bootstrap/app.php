@@ -3,6 +3,7 @@
 use App\Http\Middleware\AuthenticateAdminSession;
 use App\Http\Middleware\BlockBlockedIp;
 use App\Http\Middleware\CaptureTrafficSource;
+use App\Http\Middleware\ConditionallyEncryptHistory;
 use App\Http\Middleware\EnsureAccountNotAnonymized;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureAdminPermission;
@@ -36,6 +37,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.can' => EnsureAdminPermission::class,
             'admin.mother' => EnsureMotherAdmin::class,
             'redirect-customer-from-admin' => RedirectCustomerFromAdmin::class,
+            // SEC-021: a separate alias, not a same-named override of
+            // inertia-laravel's own 'inertia.encrypt' — that package
+            // registers its alias from its own service provider's boot(),
+            // which runs after this configuration and would win the
+            // conflict, silently reverting to unconditional encryption.
+            // See ConditionallyEncryptHistory's own docblock for why this
+            // needs to be conditional at all.
+            'history.encrypt' => ConditionallyEncryptHistory::class,
             'checkout.access' => EnsureCheckoutAccess::class,
             'fortify.throttle' => ThrottleFortifyActions::class,
             'account.active' => EnsureAccountNotAnonymized::class,
