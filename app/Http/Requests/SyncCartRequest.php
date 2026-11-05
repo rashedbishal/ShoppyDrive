@@ -42,9 +42,12 @@ class SyncCartRequest extends FormRequest
                     }
                 },
             ],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            // BIZ-011: matches PlaceOrderRequest's cap — an unbounded
+            // quantity reaches the DB layer and 500s on MariaDB's INT
+            // overflow instead of failing validation here.
+            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:100'],
             'items.*.bundle_id' => ['nullable', 'integer', 'exists:product_bundles,id'],
-            'items.*.bundle_unit_quantity' => ['nullable', 'integer', 'min:1'],
+            'items.*.bundle_unit_quantity' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];
     }
 }

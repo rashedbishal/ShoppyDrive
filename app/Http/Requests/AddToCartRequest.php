@@ -26,7 +26,10 @@ class AddToCartRequest extends FormRequest
                 ->where('published_at', '<=', now())
                 ->whereNull('deleted_at'))],
             'variant_id' => ['nullable', 'exists:product_variants,id', new VariantBelongsToProduct],
-            'quantity' => ['required', 'integer', 'min:1'],
+            // BIZ-011: matches PlaceOrderRequest's cap — an unbounded
+            // quantity reaches the DB layer and 500s on MariaDB's INT
+            // overflow instead of failing validation here.
+            'quantity' => ['required', 'integer', 'min:1', 'max:100'],
         ];
     }
 

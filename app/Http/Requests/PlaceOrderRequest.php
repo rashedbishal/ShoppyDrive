@@ -55,7 +55,11 @@ class PlaceOrderRequest extends FormRequest
             'items' => ['nullable', 'array'],
             'items.*.product_id' => ['required_with:items', 'integer', 'exists:products,id'],
             'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id', new VariantBelongsToProduct],
-            'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
+            // BIZ-011: no upper bound let a huge quantity (e.g. 3000000000)
+            // reach the DB layer, which 500s on MariaDB's INT overflow
+            // instead of failing validation — matches the landing page's
+            // existing single-product cap.
+            'items.*.quantity' => ['required_with:items', 'integer', 'min:1', 'max:100'],
             'items.*.bundle_id' => ['nullable', 'integer', 'exists:product_bundles,id'],
             'items.*.bundle_unit_quantity' => ['nullable', 'integer', 'min:1'],
             // BIZ-001: what the checkout page displayed for this line, used

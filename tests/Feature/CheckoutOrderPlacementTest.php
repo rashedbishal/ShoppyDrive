@@ -67,3 +67,22 @@ test('authenticated user can place an order from checkout using submitted cart i
         'product_id' => $product->id,
     ]);
 });
+
+/*
+ * BIZ-011: an unbounded quantity reached the DB layer and 500s on MariaDB's
+ * INT overflow (hidden by SQLite in CI) instead of failing validation here.
+ */
+test('an absurd quantity fails validation instead of reaching the database', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 299, 'stock_quantity' => 10]);
+    Cart::query()->where('user_id', $user->id)->delete();
+
+    $this->actingAs($user)->post(route('checkout.store'), [
+        'name' => 'Checkout User', 'email' => $user->email, 'phone' => '01700000000',
+        'address_line1' => 'House 12, Road 7', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
+        'payment_method' => 'cod', 'order_token' => (string) Str::uuid(),
+        'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 3_000_000_000]],
+    ])->assertSessionHasErrors('items.0.quantity');
+
+    expect(Order::query()->count())->toBe(0);
+});
