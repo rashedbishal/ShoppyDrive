@@ -274,6 +274,20 @@ router.on('navigate', (event) => {
     // writes this attribute on the initial load. Keep it in sync with the
     // server-resolved CMS theme after every subsequent visit as well.
     document.documentElement.dataset.theme = props.theme as string | undefined;
+
+    // FE-005: a 500/503 response skips shared props entirely
+    // (AppServiceProvider::configureErrorPages() calls Inertia::flushShared()
+    // for server errors — the database or shared props may be exactly
+    // what's failing), so `auth` isn't merely `{ user: null }` there, it's
+    // missing from `props` altogether. `props.auth?.user?.id ?? null`
+    // can't tell "the server confirmed you're a guest" apart from "the
+    // server couldn't tell us anything" — treating the latter as a real
+    // logout cleared a logged-in customer's cart on every server error.
+    // Only a response that actually included `auth` gets to decide this.
+    if (!('auth' in props)) {
+        return;
+    }
+
     const currentUserId = props.auth?.user?.id ?? null;
     const stored = localStorage.getItem(LAST_USER_KEY);
     const currentCart = props.cart ?? null;

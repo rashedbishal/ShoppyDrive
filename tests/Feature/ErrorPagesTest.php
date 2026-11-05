@@ -61,7 +61,13 @@ test('server errors render the themed 500 page when debug mode is off', function
         ->assertInertia(fn (Assert $page) => $page
             ->component('errors/ErrorPage')
             ->where('status', 500)
-            ->missing('settings'));
+            ->missing('settings')
+            // FE-005: `auth` isn't dropped to null here, it's absent
+            // entirely — resources/js/app.tsx's navigation handler must
+            // tell this apart from a real "you are a guest" response
+            // (`auth.user: null`), or it wipes a logged-in customer's
+            // cart on every server error.
+            ->missing('auth'));
 });
 
 test('server errors keep the laravel debug screen when debug mode is on', function () {
