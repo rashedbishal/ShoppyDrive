@@ -177,6 +177,25 @@ jobs:
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "bash -s -- '${{ secrets.DEPLOY_PATH }}' env-file"
 
+      # INFRA-001: rsync writes files in place and migrations run afterwards,
+      # so without this, customers hit half-copied code or code ahead of its
+      # schema for a minute or two. The page is pre-rendered, so it is served
+      # without booting the half-copied app; the browser retries every 15s.
+      # Webhooks and the SMS forwarder stay open (bootstrap/app.php). If the
+      # optional MAINTENANCE_BYPASS_SECRET secret is set, visiting
+      # https://shoppydrive.com/<secret> lets the owner see the site anyway.
+      # Switched off at the end of the post-deploy script, or by the
+      # failure step below if any later step fails.
+      - name: Enable maintenance mode
+        id: maintenance
+        env:
+          BYPASS_SECRET: ${{ secrets.MAINTENANCE_BYPASS_SECRET }}
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            -p ${{ secrets.SSH_PORT }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "cd '${{ secrets.DEPLOY_PATH }}' && php artisan down --render='errors::503' --retry=60 --refresh=15 ${BYPASS_SECRET:+--secret=$BYPASS_SECRET}"
+
       # DEPLOY-SAFETY-001 (Tier 1): SSH host-key pinning was added then
       # explicitly reverted the same day by user decision after it correctly
       # failed closed (no verified SSH_KNOWN_HOSTS secret was configured),
@@ -209,6 +228,8 @@ jobs:
             --exclude='storage/framework/views/*' \
             --exclude='storage/logs/*' \
             --exclude='bootstrap/cache/*.php' \
+            --exclude='storage/framework/down' \
+            --exclude='storage/framework/maintenance.php' \
             --exclude='/docs' \
             --exclude='/tests' \
             --exclude='/.claude' \
@@ -281,7 +302,22 @@ jobs:
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
-            php artisan event:cache"
+            php artisan event:cache
+
+            # INFRA-001: everything is in place, so end maintenance mode.
+            php artisan up"
+
+      # INFRA-001: never leave the site on the maintenance page because a
+      # step after it failed. If the new code can't even boot artisan, the
+      # maintenance files are removed directly. This brings the (possibly
+      # broken) site back up; the run still fails so a human looks at it.
+      - name: Bring the site back up after a failed deploy
+        if: failure() && steps.maintenance.outcome == 'success'
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            -p ${{ secrets.SSH_PORT }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "cd '${{ secrets.DEPLOY_PATH }}' && (php artisan up || rm -f storage/framework/down storage/framework/maintenance.php)"
 
       # MED-15: the new code is already live here, so this can only fail the
       # run and alert a human. It can't roll anything back.
