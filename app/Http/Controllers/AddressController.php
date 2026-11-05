@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Address;
+use App\Support\BangladeshiPhone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -81,10 +82,16 @@ class AddressController extends Controller
         // below would throw on a key that was never sent.
         $request->merge(['is_default' => $request->boolean('is_default')]);
 
+        // FE-012: same cleaning and rule as checkout, so a saved address
+        // can never fail checkout later because of its phone format.
+        if (is_string($request->input('phone'))) {
+            $request->merge(['phone' => BangladeshiPhone::normalize($request->input('phone'))]);
+        }
+
         return $request->validate([
             'label' => ['nullable', 'string', 'max:100'],
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'regex:'.BangladeshiPhone::PATTERN],
             'address_line1' => ['required', 'string', 'max:255'],
             'address_line2' => ['nullable', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:255'],
@@ -92,6 +99,8 @@ class AddressController extends Controller
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['required', 'string', 'max:100'],
             'is_default' => ['boolean'],
+        ], [
+            'phone.regex' => BangladeshiPhone::INVALID_MESSAGE,
         ]);
     }
 }

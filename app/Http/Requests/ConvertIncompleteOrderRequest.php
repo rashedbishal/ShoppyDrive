@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Concerns\NormalizesBangladeshiPhone;
 use App\Rules\VariantBelongsToProduct;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ConvertIncompleteOrderRequest extends FormRequest
 {
+    use NormalizesBangladeshiPhone;
+
     public function authorize(): bool
     {
         return true;

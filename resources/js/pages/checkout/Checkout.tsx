@@ -41,6 +41,7 @@ import {
 import { groupCartItems } from '@/lib/cart-bundles';
 import { getCouponEligibleSubtotal, toCouponPreviewItems } from '@/lib/coupon';
 import { getXsrfToken } from '@/lib/csrf';
+import { normalizeBdPhoneInput } from '@/lib/phone';
 import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import type { Address, CartItem, Coupon, SharedPageProps } from '@/types';
@@ -967,14 +968,16 @@ export default function Checkout({
                                         onChange={(e) =>
                                             form.setData(
                                                 'phone',
-                                                e.target.value
-                                                    .replace(/\D/g, '')
-                                                    .slice(0, 11),
+                                                normalizeBdPhoneInput(
+                                                    e.target.value,
+                                                ),
                                             )
                                         }
                                         placeholder="01712345678"
                                         className="h-11 rounded-xl"
-                                        maxLength={11}
+                                        // FE-012: room to paste "+880 1712-345678"; the
+                                        // cleaner shortens it to 11 digits.
+                                        maxLength={20}
                                         pattern="01[3-9][0-9]{8}"
                                         title="Enter an 11-digit Bangladeshi phone number, e.g. 01712345678"
                                         required

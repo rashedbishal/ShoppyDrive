@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Support\BangladeshiPhone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -140,7 +141,8 @@ class OrderTrackingController extends Controller
      */
     private function normalizePhone(string $phone): string
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+        // FE-012: Bangla digits (০–৯) become 0–9 first.
+        $digits = preg_replace('/\D+/', '', (string) BangladeshiPhone::normalize($phone)) ?? '';
 
         return substr($digits, -10);
     }

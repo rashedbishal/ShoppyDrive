@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Concerns\NormalizesBangladeshiPhone;
 use App\Models\ProductVariant;
 use App\Services\ManualOrderPricing;
 use Illuminate\Contracts\Validation\Validator;
@@ -11,6 +12,8 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class CreateOrderRequest extends FormRequest
 {
+    use NormalizesBangladeshiPhone;
+
     /** @var array{prices: array<int, float>, subtotal: float, shipping_cost: float, discount: float}|null */
     private ?array $calculatedPricing = null;
 

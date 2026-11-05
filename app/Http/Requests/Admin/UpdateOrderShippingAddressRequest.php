@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Concerns\NormalizesBangladeshiPhone;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateOrderShippingAddressRequest extends FormRequest
 {
+    use NormalizesBangladeshiPhone;
+
     public function authorize(): bool
     {
         return true;
