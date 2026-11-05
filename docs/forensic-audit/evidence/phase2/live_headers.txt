@@ -1,0 +1,15 @@
+HTTP/2 200 
+cache-control: no-cache, private
+x-content-type-options: nosniff
+x-frame-options: SAMEORIGIN
+referrer-policy: strict-origin-when-cross-origin
+set-cookie: XSRF-TOKEN=****; expires=Thu, 05 Nov 2026 02:52:15 GMT; Max-Age=7200; path=/; secure; samesite=lax
+set-cookie: shoppydrive-session=****; expires=Thu, 05 Nov 2026 02:52:15 GMT; Max-Age=7200; path=/; secure; httponly; samesite=lax
+set-cookie: sd_traffic_source=****; expires=Sat, 05 Dec 2026 00:52:15 GMT; Max-Age=2592000; path=/; secure; httponly; samesite=lax
+set-cookie: sd_traffic_referrer=****; expires=Sat, 05 Dec 2026 00:52:15 GMT; Max-Age=2592000; path=/; secure; httponly; samesite=lax
+set-cookie: sd_last_seen=****; expires=Fri, 06 Nov 2026 00:52:15 GMT; Max-Age=86400; path=/; secure; httponly; samesite=lax
+platform: hostinger
+server: hcdn
+x-hcdn-request-id: 7a58924e50eedbd57d02e1a5fb0ed6cf-mum-edge9
+x-hcdn-cache-status: DYNAMIC
+x-hcdn-upstream-rt: 0.266

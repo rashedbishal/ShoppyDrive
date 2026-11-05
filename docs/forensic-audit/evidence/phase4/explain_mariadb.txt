@@ -1,0 +1,7 @@
+ERROR 1191 (HY000) at line 1: Can't find FULLTEXT index matching the column list
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	orders	range	orders_created_at_index	orders_created_at_index	5	NULL	1	Using where; Using index
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	orders	ALL	NULL	NULL	NULL	NULL	1	Using where
+1	SIMPLE	products	ALL	NULL	NULL	NULL	NULL	1	Using where
+1	SIMPLE	products	fulltext	products_name_short_description_fulltext	products_name_short_description_fulltext	0		1	Using where

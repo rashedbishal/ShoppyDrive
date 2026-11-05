@@ -1,0 +1,11 @@
+symfony/http-foundation | - | CVE-2026-118514 | CVE-2026-118514: HEAD Requests Bypass the methods Option of security.access_control Rules 
+symfony/http-foundation | - | NO CVE | Path Rules Enforced in Front of PHP Can Be Bypassed by Appending the Path to the Script Na
+symfony/http-foundation | - | NO CVE | The "private_ranges" Trusted Proxies Shortcut Trusts Clients Presenting an IPv4-Mapped, 6t
+symfony/http-foundation | - | NO CVE | Generated URLs Can Point to a Host Chosen by the Client
+symfony/http-kernel | - | NO CVE | Inline Fragments Let Untrusted Forwarded Headers Set the Host, Scheme and Port of the URLs
+symfony/routing | - | CVE-2026-118516 | CVE-2026-118516: Host Placeholders Can Match the Start of the Path in Compiled URL Matcher
+symfony/serializer | - | CVE-2026-118515 | CVE-2026-118515: The Serializer Builds UploadedFile Objects From Request Data, Letting a C
+symfony/serializer | - | NO CVE | DataUriNormalizer Opens Data URIs With a Non-Lowercase Scheme as Local Files, Letting a Cl
+symfony/serializer | - | NO CVE | ObjectNormalizer Dotted-Key Property-Path Traversal Bypasses #[Ignore] on Nested Objects
+symfony/yaml | - | NO CVE | Exponential and Quadratic Parse Times in the YAML Parser Let a Single Document Hold a Proc
+abandoned: {'nunomaduro/pao': 'laravel/pao'}

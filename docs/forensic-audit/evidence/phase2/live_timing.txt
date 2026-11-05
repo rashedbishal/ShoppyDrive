@@ -1,0 +1,6 @@
+/ 200 ttfb=0.920873s total=0.963404s size=21155
+/ 200 ttfb=0.425195s total=0.466828s size=21155
+/products 200 ttfb=0.440937s total=0.482300s size=20624
+/products 200 ttfb=0.431223s total=0.472785s size=20624
+/product/bamboo-kung-fu-battle-toy-set-with-2-figures-battle-platform 200 ttfb=0.421764s total=0.456606s size=17915
+/product/bamboo-kung-fu-battle-toy-set-with-2-figures-battle-platform 200 ttfb=0.414108s total=0.453143s size=17915

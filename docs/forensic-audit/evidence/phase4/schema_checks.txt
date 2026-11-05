@@ -1,0 +1,120 @@
+db=ShoppyDrive
+== FK delete rules
+RESTRICT coupon_uses.user_id -> users
+RESTRICT coupon_uses.order_id -> orders
+RESTRICT coupon_uses.coupon_id -> coupons
+RESTRICT courier_delivery_evidence.order_id -> orders
+RESTRICT order_delivery_verifications.order_id -> orders
+RESTRICT order_refunds.order_id -> orders
+RESTRICT orders.user_id -> users
+RESTRICT payments.order_id -> orders
+RESTRICT referral_point_transactions.user_id -> users
+RESTRICT return_requests.order_id -> orders
+RESTRICT return_requests.user_id -> users
+RESTRICT users.referral_discount_used_order_id -> orders
+RESTRICT users.referred_by_id -> users
+CASCADE addresses.user_id -> users
+CASCADE cart_items.product_id -> products
+CASCADE cart_items.variant_id -> product_variants
+CASCADE carts.user_id -> users
+CASCADE coupon_category.category_id -> categories
+CASCADE coupon_category.coupon_id -> coupons
+CASCADE coupon_product_targets.coupon_id -> coupons
+CASCADE coupon_product_targets.product_id -> products
+CASCADE coupon_product_targets.variant_id -> product_variants
+CASCADE coupon_sub_category.coupon_id -> coupons
+CASCADE flash_sale_items.flash_sale_id -> flash_sales
+CASCADE flash_sale_items.product_id -> products
+CASCADE flash_sale_items.variant_id -> product_variants
+CASCADE inventory_logs.variant_id -> product_variants
+CASCADE inventory_logs.product_id -> products
+CASCADE landing_pages.product_id -> products
+CASCADE order_items.order_id -> orders
+CASCADE order_status_histories.order_id -> orders
+CASCADE product_attribute_values.product_id -> products
+CASCADE product_bundle_items.product_id -> products
+CASCADE product_media.product_id -> products
+CASCADE product_media.variant_id -> product_variants
+CASCADE product_questions.user_id -> users
+CASCADE product_questions.product_id -> products
+CASCADE product_tags.product_id -> products
+CASCADE product_variants.product_id -> products
+CASCADE products.category_id -> categories
+CASCADE products.brand_id -> brands
+CASCADE promotional_banner_product.product_id -> products
+CASCADE review_votes.user_id -> users
+CASCADE reviews.order_id -> orders
+CASCADE reviews.product_id -> products
+CASCADE reviews.user_id -> users
+CASCADE social_accounts.user_id -> users
+CASCADE stock_reservations.product_id -> products
+CASCADE stock_reservations.user_id -> users
+CASCADE stock_reservations.variant_id -> product_variants
+CASCADE sub_categories.category_id -> categories
+CASCADE wishlists.variant_id -> product_variants
+CASCADE wishlists.product_id -> products
+CASCADE wishlists.user_id -> users
+SET NULL blocked_ips.blocked_by -> admins
+SET NULL carts.coupon_id -> coupons
+SET NULL courier_submissions.resolved_by_admin_id -> admins
+SET NULL courier_submissions.order_id -> orders
+SET NULL courier_submissions.claimed_by_admin_id -> admins
+SET NULL incomplete_orders.user_id -> users
+SET NULL inventory_logs.created_by -> users
+SET NULL order_items.variant_id -> product_variants
+SET NULL order_items.product_id -> products
+SET NULL order_status_histories.created_by -> users
+SET NULL orders.coupon_id -> coupons
+SET NULL pending_checkouts.user_id -> users
+SET NULL product_bundle_items.variant_id -> product_variants
+SET NULL product_questions.answered_by -> users
+SET NULL received_sms.matched_order_id -> orders
+SET NULL referral_point_transactions.referred_user_id -> users
+SET NULL referral_point_transactions.order_id -> orders
+== *_id columns with no index and no FK
+activity_log.causer_id
+activity_log.subject_id
+courier_delivery_evidence.consignment_id
+courier_delivery_evidence.history_watermark_id
+courier_submissions.returned_consignment_id
+courier_verification_readiness.admin_id
+courier_verification_readiness.deploy_run_id
+inventory_logs.reference_id
+notifications.notifiable_id
+order_deletion_audits.customer_id
+order_delivery_verifications.admin_id
+order_delivery_verifications.consignment_id
+order_delivery_verifications.evidence_max_id
+order_delivery_verifications.history_max_id
+order_refunds.admin_id
+payments.transaction_id
+social_accounts.provider_id
+== money-like columns type
+bigint unsigned users.referral_discount_used_order_id
+int job_batches.total_jobs
+int users.points_balance
+json orders.shipping_address
+varchar(255) product_bundles.discount_type
+varchar(255) return_requests.refund_method
+varchar(255) sms_patterns.amount_regex
+== tables without PK
+== non-InnoDB or non-utf8mb4
+== unique indexes on key tables
+coupons coupons_code_unique(code)
+order_refunds order_refunds_return_request_id_unique(return_request_id)
+orders orders_guest_token_unique(guest_token)
+orders orders_order_number_unique(order_number)
+orders orders_pathao_consignment_id_unique(pathao_consignment_id)
+orders orders_steadfast_consignment_id_unique(steadfast_consignment_id)
+pending_checkouts pending_checkouts_guest_token_unique(guest_token)
+pending_checkouts pending_checkouts_token_unique(token)
+product_variants product_variants_product_color_size_unique(product_id,color_value_id,size_value_id)
+product_variants product_variants_sku_unique(sku)
+products products_sku_unique(sku)
+products products_slug_unique(slug)
+wishlists wishlists_user_id_product_id_unique(user_id,product_id)
+== all tables with sms/payment
+order_refunds
+payments
+received_sms
+sms_patterns

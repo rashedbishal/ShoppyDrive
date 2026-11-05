@@ -1,0 +1,14 @@
+after login                "/"
+server cart after add      "cart_items=1"
+break                      "broken"
+clicked                    "http://localhost:8001/product/audit-phone"
+page text                  "ShoppyDrive 500 ERROR 500 Something went wrong An unexpected error happened on our side. Our team has been notified — please try again in a moment. Go back Try "
+path                       "/product/audit-phone"
+sync posts after error     ["{\"merge\":false,\"items\":[]}"]
+server cart after error    "cart_items=0"
+fix                        "fixed"
+cart page after reload     true
+server cart final          "cart_items=0"
+--- back after logout      ""
+orders page path           "/account/orders"
+after logout               "/"

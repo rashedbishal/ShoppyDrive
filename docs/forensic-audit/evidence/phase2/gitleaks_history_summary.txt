@@ -1,0 +1,3 @@
+history findings 2
+1 generic-api-key .agents/skills/laravel-best-practices/rules/config.md
+1 generic-api-key .claude/skills/laravel-best-practices/rules/config.md

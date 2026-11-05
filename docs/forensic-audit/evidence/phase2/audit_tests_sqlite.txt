@@ -1,0 +1,26 @@
+tests 26 passed 1 failed 25
+FAIL _verification_code_sent_to_one_email_must_not_verify_a_different_email | Failed asserting that true is false.
+FAIL st::__S02_customer_OAuth_tokens_must_not_reach_the_admin_customer_page | Expecting '{"errors":{},"name":"ShoppyDr…s":[]}' not to contain 'audit-canary'.
+FAIL t::__S03_customer_OAuth_tokens_must_not_reach_the_customer_own_browser | Expecting '{"errors":{},"name":"ShoppyDr…0Z"}]}' not to contain 'audit-canary'.
+FAIL :__S04_a_view_only_SMS_forwarder_admin_must_not_receive_the_full_token | Failed asserting that true is false.
+FAIL assword_reset_links_must_not_use_a_Host_header_chosen_by_the_requester | Expecting 'http://evil.example/reset-pas…e.test' not to contain 'evil.example'.
+FAIL uditTest::__S06_logging_out_of_admin_when_not_logged_in_must_not_crash | Failed asserting that 500 is less than 500.
+FAIL ntrolAuditTest::__S07_an_array_in_the_login_email_field_must_not_crash | Failed asserting that 500 is less than 500.
+FAIL 01_a_forged_SMS_from_an_unknown_phone_number_must_not_pay_for_an_order | Failed asserting that 1 is identical to 0.
+FAIL t::__A02_COD_must_not_charge_more_than_the_price_the_customer_last_saw | Failed asserting that 1 is identical to 0.
+FAIL olding_a_complete_bundle_must_be_able_to_check_out_with_the_UI_payload | Failed asserting that 0 is identical to 1.
+FAIL 04a_converting_an_incomplete_order_must_not_sell_more_than_is_in_stock | Failed asserting that 1 is identical to 0.
+FAIL verting_then_cancelling_an_incomplete_order_must_leave_stock_unchanged | Failed asserting that 5 is identical to 3.
+FAIL est::__A05_a_customer_must_not_be_able_to_cancel_an_already_paid_order | Failed asserting that two strings are identical. --- Expected +++ Actual @@ @@ -'pending' +'cancelled'
+FAIL _admin_must_not_be_able_to_cancel_an_order_already_handed_to_Steadfast | Failed asserting that two strings are identical. --- Expected +++ Actual @@ @@ -'pending' +'cancelled'
+FAIL allowed_only_the_About_page_must_not_receive_courier_and_OAuth_secrets | Expecting '{"pathao_password":"audit-can…nary"}' not to contain 'audit-canary'.
+FAIL er_tracking_must_not_expose_IP_address__browser_details_or_staff_notes | Expecting '{"id":1,"order_number":"ORD-A…s":[]}' not to contain '203.0.113.9'.
+FAIL lidation_must_not_reveal_usage_counts_and_limits_to_anonymous_visitors | Expecting […] not to have key 'used_count'.
+FAIL mobile_banking_must_refuse_to_take_payment_for_an_out_of_stock_product | Failed asserting that 1 is identical to 0.
+FAIL _deleted_product_in_a_guest_cart_must_give_a_clear_response__not_a_404 | Expecting 404 not to be 404.
+FAIL a_retried_checkout_token_must_not_put_purchased_items_back_in_the_cart | Failed asserting that 1 is identical to 0.
+FAIL mer_coupon_limit_must_apply_when_the_same_person_checks_out_as_a_guest | Failed asserting that 2 is identical to 1.
+FAIL _array_in_the_order_tracking_phone_field_must_not_cause_a_server_error | Failed asserting that 500 is less than 500.
+FAIL kout_token_on_a_landing_page_payment_URL_must_not_cause_a_server_error | Failed asserting that 500 is less than 500.
+FAIL ts_held_by_a_paid_but_late_mobile_checkout_must_not_be_spendable_twice | Failed asserting that -100 is equal to 0 or is greater than 0.
+FAIL :__A18_opening_an_admin_product_URL_by_hand_must_not_be_a_server_error | Failed asserting that 500 is less than 500.

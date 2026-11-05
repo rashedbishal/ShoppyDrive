@@ -1,0 +1,28 @@
+/.env                              403 text/plain 10
+/.git/config                       403 text/plain 10
+/.git/HEAD                         403 text/plain 10
+/composer.json                     404 text/html; charset=UTF-8 73069
+/composer.lock                     404 text/html; charset=UTF-8 73069
+/package.json                      404 text/html; charset=UTF-8 73068
+/routes.json                       404 text/html; charset=UTF-8 73067
+/phpinfo.php                       403 text/plain 10
+/info.php                          404 text/html; charset=UTF-8 25
+/telescope                         404 text/html; charset=UTF-8 73065
+/horizon                           404 text/html; charset=UTF-8 73063
+/pulse                             404 text/html; charset=UTF-8 73061
+/log-viewer                        404 text/html; charset=UTF-8 73066
+/_debugbar                         404 text/html; charset=UTF-8 73065
+/_ignition/health-check            404 text/html; charset=UTF-8 73079
+/_boost/browser-logs               404 text/html; charset=UTF-8 73076
+/_inertia/devtools/entries         404 text/html; charset=UTF-8 73083
+/storage/                          403 text/html 144
+/storage/logs/laravel.log          403 text/html 144
+/backup.sql                        403 text/plain 10
+/db.sql                            403 text/plain 10
+/database.sql                      403 text/plain 10
+/build/manifest.json               200 application/json 653360
+/vendor/                           403 text/html 144
+/artisan                           404 text/html; charset=UTF-8 73063
+/robots.txt                        200 text/plain 24
+/sitemap.xml                       404 text/html; charset=UTF-8 73067
+/up                                200 text/html; charset=utf-8 1833

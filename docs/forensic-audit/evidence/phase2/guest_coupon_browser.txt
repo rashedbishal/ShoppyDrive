@@ -1,0 +1,9 @@
+cartStore                    2
+cart inputs                  ["Search products, brands, categories…","Enter code","your@email.com"]
+cart page summary            ["Free delivery on orders over ৳999","TOTAL","৳1,000.00","৳1,000.00","Review your totals before checkout.","Subtotal","৳1,000.00","Discount","-৳100.00","Estimated Total"]
+path                         "/checkout"
+checkout summary             ["SHIPPING ADDRESS Address Line 1 *","Subtotal ৳1,000.00","Discount −৳100.00","Shipping Enter address","Total ৳900.00"]
+fields                       ["search","name","email","phone","address_line1","city","postal_code","_r_h_","email"]
+state opts                   [0,null]
+
+Error: TypeError: Cannot read properties of undefined (reading 'click')
