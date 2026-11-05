@@ -6,6 +6,7 @@ use App\Models\HomepageSetting;
 use App\Models\IncompleteOrder;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\actingAs;
@@ -55,7 +56,7 @@ test('an admin can delete all incomplete orders at once', function () {
 
 test('an admin can convert an incomplete order into a real cash-on-delivery order', function () {
     actingAs($this->admin, 'admin');
-    $product = Product::factory()->create(['price' => 450]);
+    $product = Product::factory()->create(['price' => 450, 'stock_quantity' => 10]);
 
     $incomplete = IncompleteOrder::factory()->create([
         'name' => 'Abandoned Customer',
@@ -94,8 +95,62 @@ test('an admin can convert an incomplete order into a real cash-on-delivery orde
     expect($order->items()->count())->toBe(1);
     expect($order->items()->first()->quantity)->toBe(2);
 
+    // BIZ-004: this is the one order-creation path that used to never call
+    // InventoryService at all — stock must actually be taken here, the same
+    // as every other order-creation path.
+    expect($product->refresh()->stock_quantity)->toBe(8);
+
     // Converting removes the incomplete-order row — it's a real order now.
     expect(IncompleteOrder::find($incomplete->id))->toBeNull();
+});
+
+test('BIZ-004: converting an order for more than the available stock is refused, not silently created', function () {
+    actingAs($this->admin, 'admin');
+    $product = Product::factory()->create(['price' => 450, 'stock_quantity' => 1]);
+    $incomplete = IncompleteOrder::factory()->create();
+
+    $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
+        ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 2],
+    ]))->assertSessionHasErrors('items');
+
+    expect(Order::query()->count())->toBe(0);
+    expect($product->refresh()->stock_quantity)->toBe(1);
+    // A failed conversion must not consume the incomplete order either — the
+    // admin can still retry it once stock is corrected.
+    expect(IncompleteOrder::find($incomplete->id))->not->toBeNull();
+});
+
+test('BIZ-004: cancelling an order converted from an incomplete order restores exactly the stock it actually took', function () {
+    actingAs($this->admin, 'admin');
+    $product = Product::factory()->create(['price' => 450, 'stock_quantity' => 10]);
+    $incomplete = IncompleteOrder::factory()->create();
+
+    $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
+        ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 2],
+    ]));
+
+    expect($product->refresh()->stock_quantity)->toBe(8);
+
+    $order = Order::query()->firstOrFail();
+    $this->patch(route('admin.orders.cancel', $order));
+
+    // Before this fix, cancellation restored stock that conversion never
+    // actually took, inflating it past the pre-conversion count.
+    expect($product->refresh()->stock_quantity)->toBe(10);
+});
+
+test('BIZ-004: a variant that belongs to a different product is rejected', function () {
+    actingAs($this->admin, 'admin');
+    $product = Product::factory()->create(['price' => 450, 'stock_quantity' => 10]);
+    $otherProduct = Product::factory()->create(['price' => 300]);
+    $foreignVariant = ProductVariant::factory()->create(['product_id' => $otherProduct->id, 'stock_quantity' => 10]);
+    $incomplete = IncompleteOrder::factory()->create();
+
+    $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
+        ['product_id' => $product->id, 'variant_id' => $foreignVariant->id, 'quantity' => 1],
+    ]))->assertSessionHasErrors('items.0.variant_id');
+
+    expect(Order::query()->count())->toBe(0);
 });
 
 /**
@@ -117,7 +172,7 @@ function convertIncompleteOrderPayload(IncompleteOrder $incomplete, array $items
 
 test('converting an order for an eligible free-delivery product charges no shipping', function () {
     actingAs($this->admin, 'admin');
-    $product = Product::factory()->create(['price' => 450, 'free_delivery' => true, 'free_delivery_min_qty' => null]);
+    $product = Product::factory()->create(['price' => 450, 'free_delivery' => true, 'free_delivery_min_qty' => null, 'stock_quantity' => 10]);
     $incomplete = IncompleteOrder::factory()->create();
 
     $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
@@ -129,7 +184,7 @@ test('converting an order for an eligible free-delivery product charges no shipp
 
 test('converting an order below the free-delivery minimum quantity still charges standard shipping', function () {
     actingAs($this->admin, 'admin');
-    $product = Product::factory()->create(['price' => 450, 'free_delivery' => true, 'free_delivery_min_qty' => 3]);
+    $product = Product::factory()->create(['price' => 450, 'free_delivery' => true, 'free_delivery_min_qty' => 3, 'stock_quantity' => 10]);
     $incomplete = IncompleteOrder::factory()->create();
 
     $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
@@ -141,7 +196,7 @@ test('converting an order below the free-delivery minimum quantity still charges
 
 test('converting an order at the free-delivery minimum quantity charges no shipping', function () {
     actingAs($this->admin, 'admin');
-    $product = Product::factory()->create(['price' => 450, 'free_delivery' => true, 'free_delivery_min_qty' => 3]);
+    $product = Product::factory()->create(['price' => 450, 'free_delivery' => true, 'free_delivery_min_qty' => 3, 'stock_quantity' => 10]);
     $incomplete = IncompleteOrder::factory()->create();
 
     $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
@@ -153,8 +208,8 @@ test('converting an order at the free-delivery minimum quantity charges no shipp
 
 test('converting a mixed cart with one non-free-delivery item still charges standard shipping', function () {
     actingAs($this->admin, 'admin');
-    $freeProduct = Product::factory()->create(['price' => 450, 'free_delivery' => true, 'free_delivery_min_qty' => null]);
-    $paidProduct = Product::factory()->create(['price' => 200, 'free_delivery' => false]);
+    $freeProduct = Product::factory()->create(['price' => 450, 'free_delivery' => true, 'free_delivery_min_qty' => null, 'stock_quantity' => 10]);
+    $paidProduct = Product::factory()->create(['price' => 200, 'free_delivery' => false, 'stock_quantity' => 10]);
     $incomplete = IncompleteOrder::factory()->create();
 
     $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
@@ -174,7 +229,7 @@ test('a product that would have qualified as part of a bundle is not treated as 
     // charge standard shipping here even if it would have been part of a
     // free-delivery bundle at normal checkout — bundle eligibility cannot
     // leak through a flow that never carries bundle data.
-    $product = Product::factory()->create(['price' => 450, 'free_delivery' => false]);
+    $product = Product::factory()->create(['price' => 450, 'free_delivery' => false, 'stock_quantity' => 10]);
     $incomplete = IncompleteOrder::factory()->create();
 
     $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [
@@ -187,7 +242,7 @@ test('a product that would have qualified as part of a bundle is not treated as 
 test('converting an order above the sitewide free-delivery threshold charges no shipping regardless of product rules', function () {
     actingAs($this->admin, 'admin');
     HomepageSetting::updateOrCreate(['section_key' => 'announcement_bar'], ['section_name' => 'Bar', 'metadata' => ['free_delivery_amount' => 1000]]);
-    $product = Product::factory()->create(['price' => 1200, 'free_delivery' => false]);
+    $product = Product::factory()->create(['price' => 1200, 'free_delivery' => false, 'stock_quantity' => 10]);
     $incomplete = IncompleteOrder::factory()->create();
 
     $this->post(route('admin.orders.incomplete.placeOrder', $incomplete), convertIncompleteOrderPayload($incomplete, [

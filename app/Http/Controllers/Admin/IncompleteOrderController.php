@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\PaymentMethod;
+use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ConvertIncompleteOrderRequest;
 use App\Models\IncompleteOrder;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\InventoryService;
 use App\Services\ManualOrderPricing;
 use App\Support\OrderNumberGenerator;
 use Illuminate\Http\JsonResponse;
@@ -120,7 +122,7 @@ class IncompleteOrderController extends Controller
         return response()->json($products);
     }
 
-    public function placeOrder(ConvertIncompleteOrderRequest $request, IncompleteOrder $incompleteOrder, ManualOrderPricing $pricing): RedirectResponse
+    public function placeOrder(ConvertIncompleteOrderRequest $request, IncompleteOrder $incompleteOrder, ManualOrderPricing $pricing, InventoryService $inventory): RedirectResponse
     {
         $shippingAddress = [
             'name' => $request->name,
@@ -169,35 +171,49 @@ class IncompleteOrderController extends Controller
         $shippingCost = $pricing->shippingCost($shippingAddress, $resolvedItems, $subtotal);
         $total = max(0, $subtotal + $shippingCost);
 
-        $order = DB::transaction(function () use ($shippingAddress, $resolvedItems, $subtotal, $shippingCost, $total, $incompleteOrder): Order {
-            $order = Order::create([
-                'order_number' => OrderNumberGenerator::generate(),
-                'user_id' => $incompleteOrder->user_id,
-                'status' => 'pending',
-                'payment_status' => 'unpaid',
-                'payment_method' => PaymentMethod::COD->value,
-                'subtotal' => $subtotal,
-                'shipping_cost' => $shippingCost,
-                'discount' => 0,
-                'tax' => 0,
-                'total' => $total,
-                'shipping_address' => $shippingAddress,
-                'billing_address' => $shippingAddress,
-            ]);
+        try {
+            $order = DB::transaction(function () use ($shippingAddress, $resolvedItems, $subtotal, $shippingCost, $total, $incompleteOrder, $inventory): Order {
+                $order = Order::create([
+                    'order_number' => OrderNumberGenerator::generate(),
+                    'user_id' => $incompleteOrder->user_id,
+                    'status' => 'pending',
+                    'payment_status' => 'unpaid',
+                    'payment_method' => PaymentMethod::COD->value,
+                    'subtotal' => $subtotal,
+                    'shipping_cost' => $shippingCost,
+                    'discount' => 0,
+                    'tax' => 0,
+                    'total' => $total,
+                    'shipping_address' => $shippingAddress,
+                    'billing_address' => $shippingAddress,
+                ]);
 
-            $order->statusHistories()->create([
-                'status' => 'pending',
-                'notes' => 'Order placed manually by an admin from an incomplete order.',
-            ]);
+                $order->statusHistories()->create([
+                    'status' => 'pending',
+                    'notes' => 'Order placed manually by an admin from an incomplete order.',
+                ]);
 
-            foreach ($resolvedItems as $item) {
-                $order->items()->create(collect($item)->except(['free_delivery', 'free_delivery_min_qty'])->all());
-            }
+                foreach ($resolvedItems as $item) {
+                    // BIZ-004: this was the one order-creation path that never
+                    // called InventoryService at all — stock was never actually
+                    // taken, yet cancelling the resulting order still restocked
+                    // it via Order::booted(), inflating stock that was never
+                    // decremented in the first place.
+                    $flashSaleItemId = $inventory->decrementForOrderItem($order, $item['product_id'], $item['variant_id'], $item['quantity'], $item['price']);
 
-            $incompleteOrder->delete();
+                    $order->items()->create([
+                        ...collect($item)->except(['free_delivery', 'free_delivery_min_qty'])->all(),
+                        'flash_sale_item_id' => $flashSaleItemId,
+                    ]);
+                }
 
-            return $order;
-        });
+                $incompleteOrder->delete();
+
+                return $order;
+            });
+        } catch (InsufficientStockException $e) {
+            return back()->withErrors(['items' => $e->getMessage()])->with('error', $e->getMessage())->withInput();
+        }
 
         return redirect()->route('admin.orders.show', $order)
             ->with('success', "Order {$order->order_number} created from the incomplete order.");
