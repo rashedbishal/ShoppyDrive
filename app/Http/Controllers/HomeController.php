@@ -66,8 +66,8 @@ class HomeController extends Controller
             ->published()
             ->featured()
             ->with($productEagerLoads)
-            ->withCount(['reviews as reviews_count'])
-            ->withAvg('reviews as average_rating', 'rating')
+            ->withCount(['reviews as reviews_count' => static fn ($q) => $q->where('is_approved', true)])
+            ->withAvg(['reviews as average_rating' => static fn ($q) => $q->where('is_approved', true)], 'rating')
             ->limit(8)
             ->get();
 
@@ -79,8 +79,8 @@ class HomeController extends Controller
                 ->published()
                 ->whereIn('id', $newArrivalIds)
                 ->with($productEagerLoads)
-                ->withCount(['reviews as reviews_count'])
-                ->withAvg('reviews as average_rating', 'rating')
+                ->withCount(['reviews as reviews_count' => static fn ($q) => $q->where('is_approved', true)])
+                ->withAvg(['reviews as average_rating' => static fn ($q) => $q->where('is_approved', true)], 'rating')
                 ->get()
                 ->sortBy(fn (Product $product) => array_search($product->id, $newArrivalIds))
                 ->values();
@@ -96,8 +96,8 @@ class HomeController extends Controller
                 ->published()
                 ->whereIn('id', $bestSellerIds)
                 ->with($productEagerLoads)
-                ->withCount(['reviews as reviews_count'])
-                ->withAvg('reviews as average_rating', 'rating')
+                ->withCount(['reviews as reviews_count' => static fn ($q) => $q->where('is_approved', true)])
+                ->withAvg(['reviews as average_rating' => static fn ($q) => $q->where('is_approved', true)], 'rating')
                 ->get()
                 ->sortBy(fn (Product $product) => array_search($product->id, $bestSellerIds))
                 ->values();
