@@ -219,7 +219,8 @@ test('ordinary refund of an order never confirmed lost still restores stock as b
     $remaining = app(RefundCalculator::class)->toTaka((int) app(RefundCalculator::class)->remainingPaisa($order->refresh()));
 
     actingAs(createMotherAdmin(), 'admin')
-        ->patch(route('admin.orders.markRefunded', $order), ['refund_amount' => $remaining, 'refund_method' => 'bKash'])
+        // BIZ-012: delivered goods restock only when confirmed returned.
+        ->patch(route('admin.orders.markRefunded', $order), ['refund_amount' => $remaining, 'refund_method' => 'bKash', 'goods_returned' => true])
         ->assertSessionHas('success');
 
     expect(OrderRefund::where('order_id', $order->id)->exists())->toBeTrue();

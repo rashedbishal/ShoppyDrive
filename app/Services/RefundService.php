@@ -97,11 +97,18 @@ class RefundService
      *
      * @throws CouldNotRecordRefundException
      */
-    public function recordOrderRefund(Admin $admin, Order $order, float|int|string $amount, string $method): OrderRefund
+    /**
+     * BIZ-012: a shipped or delivered order's goods are out of the shop's
+     * hands, so they are restocked only when the admin confirms
+     * $goodsReturned. Otherwise restock_skipped_at is set, which makes the
+     * REFUNDED status change skip InventoryService::restoreForOrder().
+     * Orders that never shipped restock as before, whatever $goodsReturned is.
+     */
+    public function recordOrderRefund(Admin $admin, Order $order, float|int|string $amount, string $method, bool $goodsReturned = false): OrderRefund
     {
         $amountPaisa = RefundCalculator::toPaisa($amount);
 
-        return DB::transaction(function () use ($admin, $order, $amountPaisa, $method): OrderRefund {
+        return DB::transaction(function () use ($admin, $order, $amountPaisa, $method, $goodsReturned): OrderRefund {
             $locked = Order::whereKey($order->id)->lockForUpdate()->first();
 
             if ($locked === null || $locked->status === OrderStatus::REFUNDED) {
@@ -129,8 +136,18 @@ class RefundService
                 throw new CouldNotRecordRefundException('The refund amount must be exactly the remaining refundable amount, ৳'.number_format(RefundCalculator::toTaka($remaining), 2).'. Reload the page and try again.');
             }
 
+            $goodsWereOut = in_array($locked->status, [OrderStatus::SHIPPED, OrderStatus::DELIVERED], true);
+            $skipRestock = $goodsWereOut && ! $goodsReturned;
+            $stockNote = $goodsWereOut
+                ? ($skipRestock ? ' Stock not restored: goods not confirmed returned.' : ' Goods confirmed returned; stock restored.')
+                : '';
+
+            if ($skipRestock) {
+                $locked->forceFill(['restock_skipped_at' => now()])->saveQuietly();
+            }
+
             return $this->record($admin, $locked, $amountPaisa, $method, OrderRefund::SOURCE_ORDER, null, true,
-                "Marked as refunded by {$admin->name} (was: {$locked->status->value}): ৳".number_format(RefundCalculator::toTaka($amountPaisa), 2)." via {$method}.");
+                "Marked as refunded by {$admin->name} (was: {$locked->status->value}): ৳".number_format(RefundCalculator::toTaka($amountPaisa), 2)." via {$method}.".$stockNote);
         }, 3);
     }
 

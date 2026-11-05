@@ -734,7 +734,9 @@ test('restocking via a return approval leaves a later whole-order refund from do
     // The remaining 1 unit (never returned) is still restocked by the
     // existing whole-order refund path; the already-returned 2 must not
     // be restocked a second time.
-    $this->actingAs($admin, 'admin')->patch(route('admin.orders.markRefunded', $order->id), ['refund_amount' => 500, 'refund_method' => 'bKash'])->assertSessionDoesntHaveErrors();
+    // BIZ-012: a delivered order restocks on refund only when the admin
+    // confirms the goods came back.
+    $this->actingAs($admin, 'admin')->patch(route('admin.orders.markRefunded', $order->id), ['refund_amount' => 500, 'refund_method' => 'bKash', 'goods_returned' => true])->assertSessionDoesntHaveErrors();
 
     expect($product->refresh()->stock_quantity)->toBe(13); // +1 only, not +3
     expect($item->refresh()->restocked_quantity)->toBe(3);

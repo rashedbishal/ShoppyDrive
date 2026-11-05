@@ -199,7 +199,9 @@ class InventoryService
             // the goods are gone, not returned, so restocking them would be
             // wrong. Null for every ordinary order; this changes nothing
             // about normal cancellation/refund restocking.
-            if ($locked === null || $locked->stock_restored_at !== null || $locked->lost_confirmed_at !== null) {
+            // BIZ-012: restock_skipped_at likewise means a whole shipped/delivered
+            // order was refunded without the admin confirming the goods came back.
+            if ($locked === null || $locked->stock_restored_at !== null || $locked->lost_confirmed_at !== null || $locked->restock_skipped_at !== null) {
                 return;
             }
 

@@ -172,6 +172,11 @@ export default function OrderShow({
     });
 
     const [refundProcessing, setRefundProcessing] = useState(false);
+    // BIZ-012: a shipped/delivered order's goods are out of our hands, so
+    // they are restocked on refund only when the admin confirms they came back.
+    const goodsAreOut =
+        order.status === 'shipped' || order.status === 'delivered';
+    const [goodsReturned, setGoodsReturned] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [deleteProcessing, setDeleteProcessing] = useState(false);
     const [blockingIp, setBlockingIp] = useState(false);
@@ -276,7 +281,11 @@ export default function OrderShow({
         setRefundProcessing(true);
         router.patch(
             route('admin.orders.markRefunded', order.id),
-            { refund_amount: refundSummary.remaining, refund_method: method },
+            {
+                refund_amount: refundSummary.remaining,
+                refund_method: method,
+                goods_returned: goodsAreOut && goodsReturned,
+            },
             {
                 onFinish: () => setRefundProcessing(false),
             },
@@ -670,6 +679,28 @@ export default function OrderShow({
                                 {order.payment_status === 'paid' &&
                                     order.status !== 'refunded' && (
                                         <>
+                                            {goodsAreOut && (
+                                                <label className="flex items-start gap-2 text-xs text-slate-600">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="mt-0.5"
+                                                        checked={goodsReturned}
+                                                        onChange={(e) =>
+                                                            setGoodsReturned(
+                                                                e.target
+                                                                    .checked,
+                                                            )
+                                                        }
+                                                    />
+                                                    <span>
+                                                        The goods have come back
+                                                        to us. Put them back in
+                                                        stock. (Leave unticked
+                                                        if the customer kept
+                                                        them or they were lost.)
+                                                    </span>
+                                                </label>
+                                            )}
                                             <Button
                                                 variant="outline"
                                                 className="w-full border-slate-300 text-slate-700 hover:bg-slate-50"

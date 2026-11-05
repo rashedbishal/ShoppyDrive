@@ -109,6 +109,7 @@ class Order extends Model
             'points_refunded_at' => 'datetime',
             'stock_restored_at' => 'datetime',
             'lost_confirmed_at' => 'datetime',
+            'restock_skipped_at' => 'datetime',
             'coupon_released_at' => 'datetime',
             'referral_reward_granted_at' => 'datetime',
             'loyalty_points_granted_at' => 'datetime',

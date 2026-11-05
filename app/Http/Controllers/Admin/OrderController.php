@@ -352,10 +352,12 @@ class OrderController extends Controller
         $validated = $request->validate([
             'refund_amount' => ['required', 'numeric', 'gt:0'],
             'refund_method' => ['required', 'string', 'max:100'],
+            // BIZ-012: only consulted for shipped/delivered orders.
+            'goods_returned' => ['sometimes', 'boolean'],
         ]);
 
         try {
-            $refunds->recordOrderRefund(Auth::guard('admin')->user(), $order, $validated['refund_amount'], $validated['refund_method']);
+            $refunds->recordOrderRefund(Auth::guard('admin')->user(), $order, $validated['refund_amount'], $validated['refund_method'], $request->boolean('goods_returned'));
         } catch (CouldNotRecordRefundException $e) {
             return back()->with('error', $e->getMessage());
         }
