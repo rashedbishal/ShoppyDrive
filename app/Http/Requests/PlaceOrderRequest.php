@@ -29,6 +29,9 @@ class PlaceOrderRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => [$guestCheckoutRelaxed ? 'nullable' : 'required', 'email', 'max:255'],
             'phone' => ['required', 'string', 'regex:/^01[3-9][0-9]{8}$/'],
+            // BIZ-011: honeypot. Hidden from real customers, so anything in
+            // it means a bot filled every field.
+            'sd_confirm_ref' => ['prohibited'],
             'address_id' => $isGuest ? ['prohibited'] : ['nullable', 'integer'],
             'address_line1' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:255'],
             'address_line2' => ['nullable', 'string', 'max:255'],
@@ -80,6 +83,7 @@ class PlaceOrderRequest extends FormRequest
     {
         return [
             'phone.regex' => 'Enter a valid 11-digit Bangladeshi phone number (e.g. 01712345678).',
+            'sd_confirm_ref.prohibited' => 'We could not place this order. Please refresh the page and try again.',
         ];
     }
 }

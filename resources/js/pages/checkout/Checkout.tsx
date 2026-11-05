@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
+import HoneypotField from '@/components/honeypot-field';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -438,6 +439,8 @@ export default function Checkout({
         // index()), submitted back unchanged across retries of this same
         // render so the server can dedupe a double-click/resubmit.
         order_token: orderToken,
+        // BIZ-011: honeypot, always empty for real customers.
+        sd_confirm_ref: '',
     });
 
     const isDhaka = form.data.state === 'Dhaka';
@@ -889,6 +892,10 @@ export default function Checkout({
                 onSubmit={handleSubmit}
                 className="pb-24 lg:pb-0"
             >
+                <HoneypotField
+                    value={form.data.sd_confirm_ref}
+                    onChange={(value) => form.setData('sd_confirm_ref', value)}
+                />
                 <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
                     {/* ── LEFT: Info + Address + Payment ─────────────────── */}
                     <div className="space-y-4 lg:col-span-7">

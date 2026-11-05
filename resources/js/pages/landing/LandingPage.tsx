@@ -13,6 +13,7 @@ import {
     Truck,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import HoneypotField from '@/components/honeypot-field';
 import SocialChatWidget from '@/components/layout/SocialChatWidget';
 import { Select } from '@/components/ui/select';
 import type { SharedPageProps } from '@/types';
@@ -349,6 +350,8 @@ function OrderForm({
         payment_method: 'cod' as 'cod' | 'mobile_banking',
         provider: '' as '' | 'bkash' | 'nagad',
         order_token: orderToken,
+        // BIZ-011: honeypot, always empty for real customers.
+        sd_confirm_ref: '',
     });
 
     const updateState = (v: string) => {
@@ -395,6 +398,10 @@ function OrderForm({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3">
+                <HoneypotField
+                    value={data.sd_confirm_ref}
+                    onChange={(value) => setData('sd_confirm_ref', value)}
+                />
                 {/* Quantity */}
                 <div className="flex items-center gap-3">
                     <span className="w-16 text-sm font-medium text-slate-700">

@@ -16,6 +16,7 @@ use App\Models\PendingCheckout;
 use App\Models\ReceivedSms;
 use App\Models\Setting;
 use App\Services\InventoryService;
+use App\Services\PendingCodLimit;
 use App\Services\ShippingCostCalculator;
 use App\Support\CartManager;
 use App\Support\OrderNumberGenerator;
@@ -37,6 +38,7 @@ class LandingPageController extends Controller
         private readonly InventoryService $inventory,
         private readonly CartManager $cartManager,
         private readonly ShippingCostCalculator $shippingCalculator,
+        private readonly PendingCodLimit $pendingCodLimit,
     ) {}
 
     public function show(string $slug): Response|RedirectResponse
@@ -129,8 +131,11 @@ class LandingPageController extends Controller
             // Missing/malformed must fail validation here, never silently
             // skip the idempotency check below (CART-01).
             'order_token' => ['required', 'uuid'],
+            // BIZ-011: honeypot, see PlaceOrderRequest.
+            'sd_confirm_ref' => ['prohibited'],
         ], [
             'phone.regex' => 'Enter a valid 11-digit Bangladeshi phone number (e.g. 01712345678).',
+            'sd_confirm_ref.prohibited' => 'We could not place this order. Please refresh the page and try again.',
         ]);
 
         $orderToken = $request->string('order_token')->toString();
@@ -252,6 +257,9 @@ class LandingPageController extends Controller
 
             try {
                 $order = DB::transaction(function () use ($page, $shippingAddress, $itemData, $subtotal, $shippingCost, $total, $guestToken, $orderNumber) {
+                    // BIZ-011: before any stock is taken.
+                    $this->pendingCodLimit->assertWithinLimit($shippingAddress['phone'], [$itemData['product_id'] => (int) $itemData['quantity']]);
+
                     $order = Order::create([
                         'order_number' => $orderNumber,
                         'user_id' => auth()->id(),

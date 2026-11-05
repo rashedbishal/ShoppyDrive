@@ -22,6 +22,7 @@ use App\Models\User;
 use App\Services\CouponService;
 use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
+use App\Services\PendingCodLimit;
 use App\Services\ReferralService;
 use App\Services\ShippingCostCalculator;
 use App\Support\CartManager;
@@ -55,6 +56,7 @@ class CheckoutController extends Controller
         private readonly InventoryService $inventory,
         private readonly CouponService $coupons,
         private readonly ShippingCostCalculator $shippingCalculator,
+        private readonly PendingCodLimit $pendingCodLimit,
     ) {}
 
     public function index(Request $request): Response|RedirectResponse
@@ -323,6 +325,12 @@ class CheckoutController extends Controller
                     // LoyaltyPointsService::availablePoints().
                     $lockedUser = auth()->check() ? $this->referrals->lockUser(auth()->id()) : null;
                     $this->cartManager->lockForCheckout($cart);
+
+                    // BIZ-011: before any stock is taken.
+                    $this->pendingCodLimit->assertWithinLimit(
+                        $shippingAddress['phone'],
+                        $cart->items->groupBy('product_id')->map(fn ($lines) => (int) $lines->sum('quantity'))->all(),
+                    );
 
                     $this->maybeAutoSaveAddress($request, $shippingAddress);
 
