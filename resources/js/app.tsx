@@ -214,6 +214,21 @@ async function syncAuthenticatedCart(merge: boolean): Promise<void> {
     }
 }
 
+/**
+ * Saves the guest's wishlist so AppLayout merges it into the account once
+ * the logged-in page renders.
+ */
+function snapshotGuestWishlistForMerge(): void {
+    const guestIds = useWishlistStore.getState().productIds;
+
+    if (guestIds.length > 0) {
+        localStorage.setItem(
+            'shoppydrive.wishlist.pending_merge',
+            JSON.stringify(guestIds),
+        );
+    }
+}
+
 function applyLogin(
     userId: number,
     cart: Cart | null,
@@ -245,7 +260,21 @@ if (typeof window !== 'undefined') {
     if (storedLastUser !== null && initialUserId === null) {
         applyLogout();
     } else if (initialUserId !== null) {
-        applyLogin(initialUserId, initialCart, false);
+        // FE-008: Google/Facebook login returns as a full page load, not an
+        // Inertia visit, so the navigate handler's guest-to-login merge below
+        // never ran and the guest's cart and wishlist were overwritten.
+        // No account active in this browser before this load (logout clears
+        // LAST_USER_KEY together with the cart) means whatever is in the
+        // local cart and wishlist belongs to a guest who just logged in.
+        // A logged-in reload keeps LAST_USER_KEY, so it never merges, which
+        // matters because the server merge adds quantities together.
+        const guestJustLoggedIn = storedLastUser === null;
+
+        if (guestJustLoggedIn) {
+            snapshotGuestWishlistForMerge();
+        }
+
+        applyLogin(initialUserId, initialCart, guestJustLoggedIn);
     }
 }
 
@@ -298,14 +327,7 @@ router.on('navigate', (event) => {
     } else if (currentUserId !== null && currentUserId !== prevAuthUserId) {
         // If transitioning from guest → logged-in, snapshot local wishlist for merge
         if (prevAuthUserId === null) {
-            const guestIds = useWishlistStore.getState().productIds;
-
-            if (guestIds.length > 0) {
-                localStorage.setItem(
-                    'shoppydrive.wishlist.pending_merge',
-                    JSON.stringify(guestIds),
-                );
-            }
+            snapshotGuestWishlistForMerge();
         }
 
         applyLogin(currentUserId, currentCart, prevAuthUserId === null);
