@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -13,17 +14,20 @@ use Inertia\Response;
 
 class SmsForwarderSettingsController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         // Read directly from .env so the value is always current,
         // regardless of whether the config cache is stale.
         $token = $this->readEnvValue('SMS_FORWARDER_TOKEN');
         $maskedToken = $this->maskToken($token);
+        $canReveal = $request->user('admin')?->canAccess('sms_forwarder', 'update') ?? false;
 
-        return Inertia::render('admin/settings/sms-forwarder', [
-            'maskedToken' => $maskedToken,
-            'fullToken' => $token,
-        ]);
+        $props = ['maskedToken' => $maskedToken];
+        if ($canReveal) {
+            $props['fullToken'] = $token;
+        }
+
+        return Inertia::render('admin/settings/sms-forwarder', $props);
     }
 
     public function regenerate(): RedirectResponse

@@ -234,3 +234,30 @@ test('security settings view is gated by the permission system but update always
     $this->put(route('admin.settings.security.update'), $payload)
         ->assertSessionHas('error');
 });
+
+// ── SEC-007: view-only SMS forwarder admins must not receive the full token ──
+
+test('a view-only sms forwarder admin does not receive the full token', function () {
+    config(['services.sms_forwarder.token' => 'canary-forwarder-token']);
+    $admin = Admin::create([
+        'name' => 'Staff', 'email' => 'sms-viewer@example.com', 'password' => bcrypt('password'),
+        'permissions' => ['sms_forwarder' => ['view']],
+    ]);
+    actingAs($admin, 'admin');
+
+    $response = $this->get(route('admin.settings.sms-forwarder.index'))->assertOk();
+
+    expect(array_key_exists('fullToken', $response->viewData('page')['props']))->toBeFalse();
+});
+
+test('an admin with sms forwarder update permission does receive the full token', function () {
+    $admin = Admin::create([
+        'name' => 'Staff', 'email' => 'sms-editor@example.com', 'password' => bcrypt('password'),
+        'permissions' => ['sms_forwarder' => ['view', 'update']],
+    ]);
+    actingAs($admin, 'admin');
+
+    $response = $this->get(route('admin.settings.sms-forwarder.index'))->assertOk();
+
+    expect(array_key_exists('fullToken', $response->viewData('page')['props']))->toBeTrue();
+});

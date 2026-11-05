@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type Props = {
     maskedToken: string;
-    fullToken: string;
+    fullToken: string | null;
 };
 
 export default function SmsForwarderSettings({
@@ -129,46 +129,64 @@ export default function SmsForwarderSettings({
                                 <input
                                     readOnly
                                     className={inputClass}
-                                    value={showToken ? fullToken : maskedToken}
+                                    value={
+                                        showToken && fullToken
+                                            ? fullToken
+                                            : maskedToken
+                                    }
                                 />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setShowToken((v) => !v)}
-                                    className="shrink-0"
-                                >
-                                    {showToken ? 'Hide' : 'Show Full Token'}
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => copyToClipboard(fullToken)}
-                                    className="shrink-0"
-                                >
-                                    Copy
-                                </Button>
+                                {fullToken && (
+                                    <>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                setShowToken((v) => !v)
+                                            }
+                                            className="shrink-0"
+                                        >
+                                            {showToken
+                                                ? 'Hide'
+                                                : 'Show Full Token'}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                copyToClipboard(fullToken)
+                                            }
+                                            className="shrink-0"
+                                        >
+                                            Copy
+                                        </Button>
+                                    </>
+                                )}
                             </div>
                             <p className="text-xs text-slate-400">
-                                Only the last 8 characters are shown for
-                                security.
+                                {fullToken
+                                    ? 'Only the last 8 characters are shown for security.'
+                                    : 'You have view-only access. Ask the owner for update access to reveal or regenerate this token.'}
                             </p>
                         </div>
 
-                        <div className="border-t border-slate-100 pt-2">
-                            <Button
-                                type="button"
-                                onClick={handleRegenerate}
-                                className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                            >
-                                Regenerate Token
-                            </Button>
-                            <p className="mt-2 text-xs text-slate-400">
-                                Regenerating will invalidate the old token. You
-                                must update your Android app immediately.
-                            </p>
-                        </div>
+                        {fullToken && (
+                            <div className="border-t border-slate-100 pt-2">
+                                <Button
+                                    type="button"
+                                    onClick={handleRegenerate}
+                                    className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                >
+                                    Regenerate Token
+                                </Button>
+                                <p className="mt-2 text-xs text-slate-400">
+                                    Regenerating will invalidate the old
+                                    token. You must update your Android app
+                                    immediately.
+                                </p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
