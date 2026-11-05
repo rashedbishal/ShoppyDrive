@@ -33,7 +33,7 @@ import { getCouponEligibleSubtotal, toCouponPreviewItems } from '@/lib/coupon';
 import { getXsrfToken } from '@/lib/csrf';
 import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
-import type { Address, CartItem, SharedPageProps } from '@/types';
+import type { Address, CartItem, Coupon, SharedPageProps } from '@/types';
 
 // `crypto.randomUUID()` only exists in secure contexts (HTTPS, or HTTP on
 // localhost) - browsing the dev server over a LAN IP doesn't qualify, so this
@@ -97,7 +97,6 @@ const Section = ({
 interface OrderSummaryProps {
     items: CartItem[];
     subtotal: number;
-    discount: number;
     couponDiscount: number;
     appliedCouponCode: string | null;
     pointsDiscount: number;
@@ -113,7 +112,6 @@ interface OrderSummaryProps {
 const OrderSummary = React.memo(function OrderSummary({
     items,
     subtotal,
-    discount,
     couponDiscount,
     appliedCouponCode,
     pointsDiscount,
@@ -190,16 +188,6 @@ const OrderSummary = React.memo(function OrderSummary({
                             {formatCurrency(subtotal)}
                         </span>
                     </div>
-                    {discount > 0 && (
-                        <div className="flex justify-between text-sm">
-                            <span className="text-[var(--color-text-secondary)]">
-                                Discount
-                            </span>
-                            <span className="font-semibold text-[var(--color-success)]">
-                                −{formatCurrency(discount)}
-                            </span>
-                        </div>
-                    )}
                     {couponDiscount > 0 && appliedCouponCode && (
                         <div className="flex justify-between text-sm">
                             <span className="flex items-center gap-1 text-[var(--color-text-secondary)]">
@@ -351,7 +339,11 @@ export default function Checkout({
     pointsRedeemMaxPercent = 100,
 }: CheckoutProps): React.JSX.Element {
     const { auth, flash, settings } = usePage<SharedPageProps>().props;
-    const { items: cartItems, getDiscount } = useCartStore();
+    const {
+        items: cartItems,
+        coupon: storeCoupon,
+        applyCoupon: applyStoreCoupon,
+    } = useCartStore();
 
     // Reaching this page at all as a guest already means "Allow Guest
     // Checkout" is on (the server redirects to login otherwise) — email
@@ -445,7 +437,6 @@ export default function Checkout({
     // always matches what's actually listed above, instead of just the cart
     // store's own subtotal, which wouldn't include a merged Buy Now item.
     const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
-    const discount = buyNowItem ? 0 : getDiscount();
 
     // ── Shipping cost calculation ─────────────────────────────────────────────
     function calcShipping(district: string, city: string): number | null {
@@ -571,13 +562,27 @@ export default function Checkout({
 
     // ── Coupon state ──────────────────────────────────────────────────────────
     const [couponInput, setCouponInput] = useState('');
-    const [appliedCoupon, setAppliedCoupon] = useState<{
-        id: number;
-        code: string;
-        type: string;
-        value: number;
-        eligible_keys?: string[] | null;
-    } | null>(null);
+    // BIZ-003: a coupon applied on the Cart page lives in the cart store, not
+    // here — seeded once on mount (not buyNowItem, which never inherits a
+    // cart-level coupon, same as before this fix) so what's displayed here
+    // is what actually gets submitted below, instead of a second,
+    // disconnected "applied on this page only" state that silently dropped
+    // whatever the Cart page had already applied.
+    const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(() =>
+        buyNowItem ? null : storeCoupon,
+    );
+
+    // Keeps the cart store in sync so navigating back to /cart (or a later
+    // visit to checkout) reflects whatever was just applied/removed here.
+    // Buy Now stays isolated, same as the seed above.
+    const applyCoupon = (coupon: Coupon | null) => {
+        setAppliedCoupon(coupon);
+
+        if (!buyNowItem) {
+            applyStoreCoupon(coupon);
+        }
+    };
+
     const [couponError, setCouponError] = useState('');
     const [applyingCoupon, setApplyingCoupon] = useState(false);
 
@@ -610,7 +615,7 @@ export default function Checkout({
             const data = await res.json();
 
             if (res.ok) {
-                setAppliedCoupon(data.coupon);
+                applyCoupon(data.coupon);
                 setCouponInput('');
                 // Only one discount mechanism applies per order — a coupon
                 // always wins over a points redemption.
@@ -643,7 +648,7 @@ export default function Checkout({
         setUsePoints(checked);
 
         if (checked) {
-            setAppliedCoupon(null);
+            applyCoupon(null);
             setCouponError('');
             setPointsToUse(maxRedeemablePoints);
         }
@@ -671,6 +676,16 @@ export default function Checkout({
                     product_id: item.product.id,
                     variant_id: item.variant?.id ?? null,
                     quantity: item.quantity,
+                    // BIZ-002: without these, the server's sync step always
+                    // strips the bundle grouping this line was in, so
+                    // BundleService re-detects "a price changed" on every
+                    // attempt and the order can never actually be placed.
+                    bundle_id: item.bundle_id ?? null,
+                    bundle_unit_quantity: item.bundle_unit_quantity ?? null,
+                    // BIZ-001: what this page is actually showing for the
+                    // line, so the server can refuse instead of silently
+                    // charging a price that changed after this page loaded.
+                    price: item.price,
                 })),
             },
             {
@@ -724,7 +739,6 @@ export default function Checkout({
     const total = Math.max(
         0,
         subtotal -
-            discount -
             couponDiscount -
             pointsDiscount -
             referralDiscount +
@@ -1199,7 +1213,7 @@ export default function Checkout({
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            setAppliedCoupon(null);
+                                            applyCoupon(null);
                                             setCouponError('');
                                         }}
                                         className="text-green-500 transition-colors hover:text-red-500"
@@ -1465,7 +1479,6 @@ export default function Checkout({
                     <OrderSummary
                         items={items}
                         subtotal={subtotal}
-                        discount={discount}
                         couponDiscount={couponDiscount}
                         appliedCouponCode={appliedCoupon?.code ?? null}
                         pointsDiscount={pointsDiscount}

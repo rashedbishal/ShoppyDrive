@@ -286,6 +286,15 @@ class LandingPageController extends Controller
         }
 
         // Mobile banking
+        // BIZ-006: nothing else here ever checked stock before this point —
+        // decrementForOrderItem() only runs once the customer has already
+        // paid and submitted their TrxID (below, in submitPayment()).
+        try {
+            $this->inventory->assertAvailable($itemData['product_id'], $itemData['variant_id'], $itemData['quantity'], (float) $itemData['price']);
+        } catch (InsufficientStockException $e) {
+            return back()->withErrors(['quantity' => $e->getMessage()])->withInput();
+        }
+
         $guestToken = Str::random(40);
         $orderNumber = OrderNumberGenerator::generate();
         $pendingToken = (string) Str::uuid();

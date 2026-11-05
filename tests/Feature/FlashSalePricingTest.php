@@ -114,22 +114,52 @@ test('checkout charges the flash-sale price and persists it on the order item', 
     expect($order->items->first()->flash_sale_item_id)->toBe($flashItem->id);
 });
 
-test('a client-submitted price field is ignored — the server always charges its own resolved price', function () {
+test('a submitted price that disagrees with the resolved price is refused, not silently corrected', function () {
+    // BIZ-001: previously PlaceOrderRequest didn't validate items.*.price at
+    // all, so a mismatched value here was simply dropped and the order was
+    // created anyway (still correctly charged — CartManager::resolvePrice()
+    // decides the charge, never the client). Now a mismatch is refused
+    // outright before anything is written, which is what actually catches
+    // the real bug: a legitimate price change between page load and submit
+    // looks identical to this to the server, and must not silently charge
+    // the customer something other than what the page showed them.
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 200, 'stock_quantity' => 10]);
 
     Cart::query()->where('user_id', $user->id)->delete();
 
     $payload = checkoutPayload($product, 1);
-    // Try to smuggle a client price into the item payload — not a field
-    // PlaceOrderRequest validates, so it must be silently dropped, not
-    // honored.
     $payload['items'][0]['price'] = 1;
 
+    $this->actingAs($user)->post(route('checkout.store'), $payload)->assertSessionHas('error');
+
+    expect(Order::query()->count())->toBe(0);
+});
+
+test('a price that goes stale between page load and submit is refused, and the charge is never the client-submitted one', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 200, 'stock_quantity' => 10]);
+
+    Cart::query()->where('user_id', $user->id)->delete();
+
+    // The checkout page loaded while the price was 200 (what gets
+    // submitted below), but it was changed to 150 before the customer
+    // clicked submit.
+    $product->update(['price' => 150]);
+
+    $payload = checkoutPayload($product, 1);
+    $payload['items'][0]['price'] = 200;
+
+    $this->actingAs($user)->post(route('checkout.store'), $payload)->assertSessionHas('error');
+    expect(Order::query()->count())->toBe(0);
+
+    // Retrying with the now-current price succeeds, charged at the real
+    // resolved price — never at whatever the client happens to submit.
+    $payload['items'][0]['price'] = 150;
     $this->actingAs($user)->post(route('checkout.store'), $payload)->assertRedirect();
 
     $order = Order::query()->firstOrFail();
-    expect((float) $order->items->first()->price)->toBe(200.0);
+    expect((float) $order->items->first()->price)->toBe(150.0);
 });
 
 test('a cart price that goes stale between add-to-cart and checkout is corrected, not silently charged', function () {

@@ -495,6 +495,44 @@ class CartManager
         return $changed;
     }
 
+    /**
+     * BIZ-001: `replaceItems()` (called by `syncUserCart()`/`syncSessionCart()`
+     * at the start of checkout submission, before this) always overwrites
+     * every item's stored price to the current one — so by the time
+     * `revalidatePrices()` runs afterward, it's comparing the current price
+     * against itself and can never detect a change. This must run first,
+     * against what the checkout page actually displayed, to catch a price
+     * that changed (admin edit, flash sale starting/ending/selling out)
+     * between page load and submission. Only items that include a `price`
+     * are checked — every other order-creation path never submits one, so
+     * this is a no-op for them; nothing here ever uses the submitted price
+     * to decide what's charged, only whether to refuse before anything is
+     * written.
+     *
+     * @param  array<int, array{product_id:int, variant_id?:int|null, bundle_id?:int|null, price?:float|int|string|null}>  $items
+     */
+    public function submittedPricesStale(array $items): bool
+    {
+        foreach ($items as $item) {
+            if (! isset($item['price'])) {
+                continue;
+            }
+
+            $current = round($this->resolvePrice(
+                (int) $item['product_id'],
+                isset($item['variant_id']) ? (int) $item['variant_id'] : null,
+                isset($item['bundle_id']) ? (int) $item['bundle_id'] : null,
+            ), 2);
+
+            // Same integer-poisha comparison convention as revalidatePrices().
+            if ((int) round((float) $item['price'] * 100) !== (int) round($current * 100)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function itemKey(int $productId, ?int $variantId, ?int $bundleId = null): string
     {
         $key = $variantId !== null ? "variant:{$variantId}" : "product:{$productId}";

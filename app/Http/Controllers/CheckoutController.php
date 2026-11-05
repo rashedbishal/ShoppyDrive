@@ -147,6 +147,15 @@ class CheckoutController extends Controller
 
     public function store(PlaceOrderRequest $request): RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
+        // BIZ-001: must run before syncUserCart()/syncSessionCart() below —
+        // both call replaceItems(), which overwrites every item's price to
+        // the current one, so a later revalidatePrices() call would just be
+        // comparing the current price against itself. This compares against
+        // what the checkout page actually showed the customer instead.
+        if ($request->filled('items') && $this->cartManager->submittedPricesStale($request->validated('items'))) {
+            return back()->with('error', 'Some prices in your cart have changed. Please review your updated cart and try again.');
+        }
+
         // The checkout page always submits its full, already-merged items
         // list (cart items plus a "Buy Now" item, if any — see
         // Checkout.tsx) — so syncing the cart to exactly that list and then
@@ -407,6 +416,11 @@ class CheckoutController extends Controller
             }, 3);
         } catch (CartChangedException $e) {
             return back()->with('error', $e->getMessage());
+        } catch (InsufficientStockException $e) {
+            return back()
+                ->withErrors(['items' => $e->getMessage()])
+                ->with('error', $e->getMessage())
+                ->withInput();
         }
 
         Cache::put($resultKey, ['type' => 'mobile_banking', 'pending_token' => $token], now()->addHours(self::ORDER_TOKEN_RESULT_TTL_HOURS));
@@ -469,6 +483,13 @@ class CheckoutController extends Controller
         int $pointsRedeemed,
         float $pointsDiscountAmount,
     ): string {
+        // BIZ-006: nothing else here ever checked stock before this point —
+        // decrementForOrderItem() only runs once the customer has already
+        // paid and submitted their TrxID (MobilePaymentController::submit()).
+        foreach ($cart->items as $item) {
+            $this->inventory->assertAvailable($item->product_id, $item->variant_id, $item->quantity, $item->price);
+        }
+
         $appliedCoupon = $couponId !== null ? Coupon::find($couponId) : null;
 
         $itemsSnapshot = $cart->items->map(function ($item) use ($appliedCoupon) {

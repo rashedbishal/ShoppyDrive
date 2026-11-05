@@ -472,3 +472,40 @@ test('the landing-page guest checkout cannot reuse a transaction id already cons
     expect(Order::query()->where('payment_status', 'paid')->count())->toBe(1);
     expect($sms->refresh()->matched_order_id)->not->toBeNull();
 });
+
+test('BIZ-006: mobile banking refuses to stage payment instructions for an out-of-stock item', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 100, 'stock_quantity' => 0]);
+
+    Cart::query()->where('user_id', $user->id)->delete();
+
+    $this->actingAs($user)->post(route('checkout.store'), [
+        'name' => 'Mobile Test', 'email' => $user->email, 'phone' => '01700000000',
+        'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
+        'payment_method' => 'mobile_banking',
+        'order_token' => (string) Str::uuid(),
+        'items' => [
+            ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
+        ],
+    ])->assertSessionHasErrors('items');
+
+    expect(PendingCheckout::query()->where('user_id', $user->id)->count())->toBe(0);
+});
+
+test('BIZ-006: a landing page refuses to stage payment instructions for an out-of-stock item', function () {
+    $product = Product::factory()->create([
+        'price' => 100, 'stock_quantity' => 0, 'is_active' => true, 'published_at' => now()->subDay(), 'free_delivery' => true,
+    ]);
+    $page = LandingPage::create([
+        'title' => 'LP Test', 'slug' => 'lp-test-'.Str::random(8), 'product_id' => $product->id, 'is_active' => true, 'sections' => [],
+    ]);
+
+    $this->post(route('lp.order', $page->slug), [
+        'name' => 'Guest Buyer', 'phone' => '01700000000',
+        'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka',
+        'quantity' => 1, 'payment_method' => 'mobile_banking', 'provider' => 'bkash',
+        'order_token' => (string) Str::uuid(),
+    ])->assertSessionHasErrors('quantity');
+
+    expect(PendingCheckout::query()->where('landing_page_id', $page->id)->count())->toBe(0);
+});

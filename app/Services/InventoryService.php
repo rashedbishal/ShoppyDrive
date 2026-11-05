@@ -111,6 +111,64 @@ class InventoryService
     }
 
     /**
+     * BIZ-006: a read-only, unlocked point-in-time check, for the one place
+     * that currently has no stock check at all — staging mobile-banking/
+     * landing-page payment instructions, before any Order exists and before
+     * the customer has paid. This is never the final word: it can't be,
+     * since there's no order-creation transaction yet to lock within, so
+     * stock can still run out between this check and actual payment —
+     * decrementForOrderItem() remains the one authoritative, locked
+     * enforcement at real order-creation time. This only closes the common,
+     * avoidable gap: showing payment instructions for something that's
+     * already visibly out of stock right now. Mirrors
+     * decrementForOrderItem()'s checks (keep both in sync if either
+     * changes) without taking a lock or writing anything.
+     *
+     * @throws InsufficientStockException
+     */
+    public function assertAvailable(int $productId, ?int $variantId, int $quantity, float $unitPrice): void
+    {
+        if ($variantId !== null) {
+            $variant = ProductVariant::find($variantId);
+
+            if ($variant !== null && (int) $variant->product_id !== $productId) {
+                throw InsufficientStockException::forMismatchedVariant();
+            }
+
+            if ($variant === null || $variant->stock_quantity < $quantity) {
+                throw InsufficientStockException::forProduct(
+                    $variant?->product?->name ?? 'this item',
+                    $variant?->stock_quantity ?? 0,
+                );
+            }
+        } else {
+            $product = Product::find($productId);
+
+            if ($product === null) {
+                throw InsufficientStockException::forProduct('this item', 0);
+            }
+
+            if ($product->variants()->exists()) {
+                throw InsufficientStockException::forProduct($product->name, 0);
+            }
+
+            if ($product->stock_quantity < $quantity) {
+                throw InsufficientStockException::forProduct($product->name, $product->stock_quantity);
+            }
+        }
+
+        $flashItem = FlashSaleItem::findActiveFor($productId, $variantId);
+
+        if ($flashItem !== null
+            && abs((float) $flashItem->sale_price - $unitPrice) <= 0.01
+            && $flashItem->stock_limit !== null
+            && $flashItem->sold_count + $quantity > $flashItem->stock_limit
+        ) {
+            throw InsufficientStockException::forFlashSaleLimit($flashItem->product?->name ?? 'this item');
+        }
+    }
+
+    /**
      * Restores stock (and any flash-sale sold_count) for every item on a
      * cancelled/refunded order. Idempotent and concurrency-safe — callers
      * (the Order status-change model event) run outside any transaction of

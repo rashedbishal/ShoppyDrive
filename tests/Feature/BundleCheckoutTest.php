@@ -62,6 +62,36 @@ test('a COD checkout with a complete bundle charges exactly the bundle price and
     expect($b->refresh()->stock_quantity)->toBe(9);
 });
 
+test('a bundle checkout succeeds when the submitted price matches the prorated bundle price', function () {
+    // BIZ-001 and BIZ-002 fixed independent bugs in the same Checkout.tsx
+    // payload — this is the combination the real page now actually sends:
+    // bundle_id/bundle_unit_quantity (BIZ-002) and a per-line price
+    // (BIZ-001) together. The submitted price must match the prorated
+    // bundle price CartManager::resolvePrice() computes for a bundled
+    // line, not the product's plain price, or this would be refused as
+    // stale even though nothing actually changed.
+    $user = User::factory()->create();
+    $a = Product::factory()->create(['price' => 150, 'stock_quantity' => 10]);
+    $b = Product::factory()->create(['price' => 50, 'stock_quantity' => 10]);
+
+    $bundle = ProductBundle::factory()->create([
+        'discount_type' => BundleDiscountType::FixedPrice,
+        'bundle_price' => 120,
+    ]);
+    ProductBundleItem::factory()->create(['product_bundle_id' => $bundle->id, 'product_id' => $a->id, 'quantity' => 1]);
+    ProductBundleItem::factory()->create(['product_bundle_id' => $bundle->id, 'product_id' => $b->id, 'quantity' => 1]);
+
+    Cart::query()->where('user_id', $user->id)->delete();
+
+    $this->actingAs($user)->post(route('checkout.store'), bundleCheckoutPayload($bundle, [
+        ['product_id' => $a->id, 'variant_id' => null, 'quantity' => 1, 'bundle_unit_quantity' => 1, 'price' => 90],
+        ['product_id' => $b->id, 'variant_id' => null, 'quantity' => 1, 'bundle_unit_quantity' => 1, 'price' => 30],
+    ]))->assertRedirect();
+
+    $order = Order::query()->firstOrFail();
+    expect((float) $order->subtotal)->toBe(120.0);
+});
+
 test('buying two units of the same bundle scales quantities and the charged total together', function () {
     $user = User::factory()->create();
     $a = Product::factory()->create(['price' => 150, 'stock_quantity' => 10]);

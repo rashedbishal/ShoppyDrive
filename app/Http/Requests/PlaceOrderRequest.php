@@ -58,6 +58,11 @@ class PlaceOrderRequest extends FormRequest
             'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
             'items.*.bundle_id' => ['nullable', 'integer', 'exists:product_bundles,id'],
             'items.*.bundle_unit_quantity' => ['nullable', 'integer', 'min:1'],
+            // BIZ-001: what the checkout page displayed for this line, used
+            // only by CartManager::submittedPricesStale() to decide whether
+            // to refuse before anything is charged — never to decide the
+            // actual charge, which always comes from CartManager::resolvePrice().
+            'items.*.price' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 
