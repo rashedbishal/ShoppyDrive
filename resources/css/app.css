@@ -1178,3 +1178,22 @@ body:has(.admin-shell) :is(p.text-red-500, p.text-red-600, [role='alert']) {
         animation: none;
     }
 }
+
+/*
+ * Every type="search" input in this app (SearchBar, BrandListing, blog
+ * Index, ErrorPage) already renders its own clear (X) button, so Chrome/
+ * Edge/Safari's native search-cancel icon just duplicates it once text is
+ * typed — two X's side by side. Hidden globally rather than per-component
+ * since every one of them has the same custom button.
+ */
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+input[type='search']::-ms-clear {
+    display: none;
+    width: 0;
+    height: 0;
+}
