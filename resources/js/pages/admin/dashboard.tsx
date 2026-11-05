@@ -37,6 +37,8 @@ type Stats = {
     low_stock_count: number;
     pending_reviews: number;
     failed_jobs: number | null;
+    queue_last_drained_seconds_ago: number | null;
+    queue_oldest_job_seconds: number | null;
     today_visitors: number;
     yesterday_visitors: number;
 };
@@ -398,6 +400,25 @@ export default function Dashboard({
     const ordersChange = diff(stats.today_orders, stats.yesterday_orders);
     const visitorsChange = diff(stats.today_visitors, stats.yesterday_visitors);
 
+    // OPS-002: a stalled cron (so app:drain-queue never runs) creates no
+    // failed_jobs rows, so that alert alone wouldn't show it — 10 minutes
+    // is generous slack over the every-minute schedule.
+    const QUEUE_STALL_THRESHOLD_SECONDS = 600;
+    const canSeeQueueHealth = stats.failed_jobs !== null;
+    const queueStalled =
+        canSeeQueueHealth &&
+        ((stats.queue_last_drained_seconds_ago ?? Infinity) >
+            QUEUE_STALL_THRESHOLD_SECONDS ||
+            (stats.queue_oldest_job_seconds ?? 0) >
+                QUEUE_STALL_THRESHOLD_SECONDS);
+    const formatAgo = (seconds: number): string => {
+        const minutes = Math.round(seconds / 60);
+
+        return minutes < 60
+            ? `${minutes} minute${minutes === 1 ? '' : 's'}`
+            : `${Math.round(minutes / 60)} hour${Math.round(minutes / 60) === 1 ? '' : 's'}`;
+    };
+
     const quickActions = [
         {
             label: 'Add Product',
@@ -461,6 +482,26 @@ export default function Dashboard({
                         })}
                     </p>
                 </div>
+
+                {/* OPS-002: a stalled cron creates no failed_jobs rows, so nothing else here would catch it. */}
+                {queueStalled && (
+                    <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">
+                        <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                        <p className="text-sm font-medium">
+                            Background jobs may be stalled — the queue drain
+                            last ran{' '}
+                            {stats.queue_last_drained_seconds_ago === null
+                                ? 'never (since this page last checked)'
+                                : `${formatAgo(stats.queue_last_drained_seconds_ago)} ago`}
+                            {stats.queue_oldest_job_seconds !== null &&
+                                stats.queue_oldest_job_seconds >
+                                    QUEUE_STALL_THRESHOLD_SECONDS &&
+                                `, and the oldest pending job has been waiting ${formatAgo(stats.queue_oldest_job_seconds)}`}
+                            . Order and courier update emails may not be
+                            sending. Check the cron/scheduler on the server.
+                        </p>
+                    </div>
+                )}
 
                 {/* ── Alert bar (only shown if there's something to act on) ── */}
                 {(stats.pending_orders > 0 ||

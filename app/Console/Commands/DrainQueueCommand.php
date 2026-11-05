@@ -10,6 +10,7 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Queue\DatabaseQueue;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
@@ -48,8 +49,20 @@ class DrainQueueCommand extends Command
 
     private const QUEUE = 'default';
 
+    /**
+     * OPS-002: the one place this command is known to have actually run —
+     * read by DashboardController to warn an admin when cron itself has
+     * stopped firing (a stalled queue otherwise creates no failed rows, so
+     * nothing else would show it). Written first, before any check or
+     * early return, so it reflects "the scheduler fired" rather than
+     * "there happened to be a job."
+     */
+    public const LAST_RUN_CACHE_KEY = 'ops:queue_last_drained_at';
+
     public function handle(): int
     {
+        Cache::forever(self::LAST_RUN_CACHE_KEY, now());
+
         /** @var DatabaseQueue $queue */
         $queue = Queue::connection(self::CONNECTION);
         $startedAt = now();
@@ -127,6 +140,32 @@ class DrainQueueCommand extends Command
      * recently reserved jobs and jobs on any other queue are excluded, so
      * none of them keeps the loop running.
      */
+    /**
+     * OPS-002: age in seconds of the oldest job still sitting on the
+     * `default` database queue (including reserved-too-long ones, the
+     * same condition eligibleJobCount() counts), or null when it's empty.
+     * Read by DashboardController to warn an admin that jobs are piling up
+     * even if the drain command itself is still running fine.
+     */
+    public static function oldestPendingJobAgeSeconds(): ?int
+    {
+        /** @var DatabaseQueue $queue */
+        $queue = Queue::connection(self::CONNECTION);
+        $config = config('queue.connections.'.self::CONNECTION);
+        $now = now();
+        $reservationExpiredBefore = $now->copy()->subSeconds($config['retry_after'] ?? 60)->getTimestamp();
+
+        $oldestCreatedAt = $queue->getDatabase()
+            ->table($config['table'])
+            ->where('queue', self::QUEUE)
+            ->where(fn (Builder $query) => $query
+                ->where(fn (Builder $query) => $query->whereNull('reserved_at')->where('available_at', '<=', $now->getTimestamp()))
+                ->orWhere('reserved_at', '<=', $reservationExpiredBefore))
+            ->min('created_at');
+
+        return $oldestCreatedAt === null ? null : $now->getTimestamp() - (int) $oldestCreatedAt;
+    }
+
     private function eligibleJobCount(DatabaseQueue $queue): int
     {
         $config = config('queue.connections.'.self::CONNECTION);

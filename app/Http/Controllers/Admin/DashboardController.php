@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Console\Commands\DrainQueueCommand;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -114,6 +116,14 @@ class DashboardController extends Controller
                 // Null hides the alert from admins who can't open the page.
                 'failed_jobs' => Auth::guard('admin')->user()->canAccess('failed_jobs')
                     ? DB::connection(config('queue.failed.database'))->table(config('queue.failed.table'))->count()
+                    : null,
+                // OPS-002: a stalled cron (so the queue never drains) creates
+                // no failed_jobs rows at all — nothing above would show it.
+                'queue_last_drained_seconds_ago' => Auth::guard('admin')->user()->canAccess('failed_jobs')
+                    ? Cache::get(DrainQueueCommand::LAST_RUN_CACHE_KEY)?->diffInSeconds(now())
+                    : null,
+                'queue_oldest_job_seconds' => Auth::guard('admin')->user()->canAccess('failed_jobs')
+                    ? DrainQueueCommand::oldestPendingJobAgeSeconds()
                     : null,
                 'today_visitors' => $todayVisitors,
                 'yesterday_visitors' => $yesterdayVisitors,

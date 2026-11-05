@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Console\Commands\DrainQueueCommand;
 use App\Mail\LowStockAlertMail;
 use App\Mail\WelcomeMail;
 use App\Models\User;
 use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -40,6 +42,30 @@ function fakeWorkerProcessesRunInProcess(?Closure $afterEachRun = null): void
         return Process::result();
     });
 }
+
+// ── OPS-002: a stalled cron creates no failed_jobs rows, so a heartbeat is the only way to see it ──
+
+it('records a heartbeat every time it runs, even when there is nothing to drain', function () {
+    config(['queue.default' => 'database']);
+    Process::fake();
+
+    expect(Cache::get(DrainQueueCommand::LAST_RUN_CACHE_KEY))->toBeNull();
+
+    $this->artisan('app:drain-queue')->assertSuccessful();
+
+    expect(Cache::get(DrainQueueCommand::LAST_RUN_CACHE_KEY))->not->toBeNull();
+});
+
+it('reports the oldest pending job\'s age, or null when the default queue is empty', function () {
+    config(['queue.default' => 'database']);
+
+    expect(DrainQueueCommand::oldestPendingJobAgeSeconds())->toBeNull();
+
+    queueWelcomeMailFor('oldest@example.com');
+    DB::table('jobs')->update(['created_at' => now()->subMinutes(20)->getTimestamp()]);
+
+    expect(DrainQueueCommand::oldestPendingJobAgeSeconds())->toBeGreaterThanOrEqual(20 * 60);
+});
 
 it('processes every available default-queue job in one run, one worker process per job', function () {
     config(['queue.default' => 'database']);

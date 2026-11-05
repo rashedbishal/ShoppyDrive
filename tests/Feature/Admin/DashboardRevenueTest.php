@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Console\Commands\DrainQueueCommand;
 use App\Models\Order;
 use App\Models\OrderRefund;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -132,4 +134,15 @@ test('BE-009: an order placed in the Dhaka early morning still counts as today, 
             ->where('stats.yesterday_orders', 0));
 
     Carbon::setTestNow();
+});
+
+test('OPS-002: the dashboard reports when the queue was last drained and the oldest pending job\'s age', function () {
+    actingAs($this->admin, 'admin');
+
+    Cache::forever(DrainQueueCommand::LAST_RUN_CACHE_KEY, now()->subMinutes(3));
+
+    $this->get(route('admin.dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('stats.queue_last_drained_seconds_ago', fn ($seconds) => $seconds >= 180)
+            ->where('stats.queue_oldest_job_seconds', null));
 });
