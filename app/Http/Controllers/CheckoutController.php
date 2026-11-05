@@ -66,7 +66,9 @@ class CheckoutController extends Controller
         // empty cart and no "Buy Now" item would otherwise render a blank
         // checkout page. Buy Now itself never touches the cart (see
         // resolveBuyNowItem()), so this can't false-positive on that flow.
-        if (empty($cart['items']) && $buyNowItem === null) {
+        // A guest's cart lives only in their browser, so the server can't
+        // tell it's empty: Checkout.tsx makes the same check for guests.
+        if (auth()->check() && empty($cart['items']) && $buyNowItem === null) {
             return redirect()->route('home');
         }
 

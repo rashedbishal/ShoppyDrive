@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\Cart;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\User;
 
 test('visiting checkout with an empty cart and no buy-now item redirects to home', function () {
@@ -13,6 +14,12 @@ test('visiting checkout with an empty cart and no buy-now item redirects to home
     $this->actingAs($user)
         ->get(route('checkout.index'))
         ->assertRedirect(route('home'));
+});
+
+test('a guest reaches checkout with no server cart, since their cart is in the browser', function () {
+    Setting::updateOrCreate(['key' => 'guest_checkout_enabled'], ['value' => true, 'group' => 'general']);
+
+    $this->get(route('checkout.index'))->assertOk();
 });
 
 test('visiting checkout with items in the cart is allowed', function () {

@@ -396,6 +396,16 @@ export default function Checkout({
         });
     }, [buyNowItem, cartItems]);
 
+    // The server can't see a guest's cart, so an empty one is caught here. Only
+    // on arrival: the cart also empties when an order is placed, and that visit
+    // must carry on to the confirmation page.
+    useEffect(() => {
+        if (items.length === 0) {
+            router.visit(route('home'), { replace: true });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const defaultAddress = savedAddresses.find((a) => a.is_default) ?? null;
     const hasDefault = defaultAddress !== null;
     const hasAddresses = savedAddresses.length > 0;
