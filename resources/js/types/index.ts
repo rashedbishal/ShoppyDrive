@@ -87,6 +87,9 @@ export interface AppSettings {
     contact_email: string;
     contact_phone?: string | null;
     contact_address?: string | null;
+    legal_business_name?: string | null;
+    trade_licence_number?: string | null;
+    support_hours?: string;
     social_links: {
         facebook?: string;
         instagram?: string;

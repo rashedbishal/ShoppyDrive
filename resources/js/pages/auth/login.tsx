@@ -15,12 +15,26 @@ import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
 import type { SharedPageProps } from '@/types';
 
-const features = [
-    { icon: ShoppingBag, text: '1,000+ premium products' },
-    { icon: Truck, text: 'Free delivery over ৳999' },
-    { icon: Zap, text: 'Lightning fast checkout' },
-    { icon: Star, text: 'Verified buyer reviews' },
-];
+/**
+ * BIZ-032: the delivery line reads the real Admin free-delivery threshold
+ * instead of a hard-coded amount.
+ */
+function featuresFor(settings: SharedPageProps['settings']) {
+    const threshold = Number(settings.free_delivery_threshold ?? 0);
+
+    return [
+        { icon: ShoppingBag, text: '1,000+ premium products' },
+        {
+            icon: Truck,
+            text:
+                threshold > 0
+                    ? `Free delivery over ${settings.currency_symbol}${Math.round(threshold).toLocaleString('en-US')}`
+                    : 'Delivery to all 64 districts',
+        },
+        { icon: Zap, text: 'Lightning fast checkout' },
+        { icon: Star, text: 'Verified buyer reviews' },
+    ];
+}
 
 export default function Login(): React.JSX.Element {
     const { settings } = usePage<SharedPageProps>().props;
@@ -95,7 +109,7 @@ export default function Login(): React.JSX.Element {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                        {features.map(({ icon: Icon, text }) => (
+                        {featuresFor(settings).map(({ icon: Icon, text }) => (
                             <div
                                 key={text}
                                 className="flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-4 py-3"

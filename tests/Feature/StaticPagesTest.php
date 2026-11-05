@@ -18,7 +18,7 @@ it('renders the privacy policy page with Google and Facebook sign-in disclosures
             ->where('page.is_published', true)
         )
         ->assertSee('Signing In With Google or Facebook', false)
-        ->assertSee('Data Deletion', false);
+        ->assertSee('Deleting Your Account', false);
 });
 
 it('renders the terms of service page', function (): void {

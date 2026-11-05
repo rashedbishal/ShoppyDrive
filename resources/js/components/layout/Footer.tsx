@@ -23,11 +23,43 @@ import type { SharedPageProps } from '@/types';
 
 type NewsletterFormData = { email: string };
 
-const trustBadges = [
-    { icon: Truck, label: 'Free Delivery', sub: 'Orders over ৳999' },
-    { icon: Shield, label: 'Secure Payment', sub: 'SSL Encrypted' },
-    { icon: Star, label: 'Verified Products', sub: 'Quality Assured' },
-    { icon: Zap, label: 'Fast Support', sub: '24/7 Live Chat' },
+/**
+ * BIZ-032: the delivery and support badges come from the real settings
+ * (Admin free-delivery threshold and Contact Page support hours) instead of
+ * hard-coded claims that could contradict them.
+ */
+function trustBadgesFor(settings: SharedPageProps['settings']) {
+    const threshold = Number(settings.free_delivery_threshold ?? 0);
+
+    return [
+        threshold > 0
+            ? {
+                  icon: Truck,
+                  label: 'Free Delivery',
+                  sub: `Orders over ${settings.currency_symbol}${Math.round(threshold).toLocaleString('en-US')}`,
+              }
+            : {
+                  icon: Truck,
+                  label: 'Nationwide Delivery',
+                  sub: 'All 64 districts',
+              },
+        { icon: Shield, label: 'Secure Payment', sub: 'SSL Encrypted' },
+        { icon: Star, label: 'Verified Products', sub: 'Quality Assured' },
+        {
+            icon: Zap,
+            label: 'Customer Support',
+            sub: settings.support_hours ?? 'Every day, 9 AM–9 PM',
+        },
+    ];
+}
+
+const policyLinks = [
+    { label: 'Privacy Policy', href: '/privacy-policy' },
+    { label: 'Terms of Service', href: '/terms' },
+    { label: 'Return Policy', href: '/return-policy' },
+    { label: 'Refund Policy', href: '/refund-policy' },
+    { label: 'Shipping Policy', href: '/shipping-policy' },
+    { label: 'FAQ', href: '/faq' },
 ];
 
 export default function Footer(): React.JSX.Element {
@@ -77,24 +109,26 @@ export default function Footer(): React.JSX.Element {
             <div className="border-b border-[var(--color-border)] bg-[var(--color-surface-alt)]">
                 <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                        {trustBadges.map(({ icon: Icon, label, sub }) => (
-                            <div
-                                key={label}
-                                className="flex items-center gap-3"
-                            >
-                                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-light)]">
-                                    <Icon className="size-5 text-[var(--color-primary)]" />
+                        {trustBadgesFor(settings).map(
+                            ({ icon: Icon, label, sub }) => (
+                                <div
+                                    key={label}
+                                    className="flex items-center gap-3"
+                                >
+                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-primary-light)]">
+                                        <Icon className="size-5 text-[var(--color-primary)]" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
+                                            {label}
+                                        </p>
+                                        <p className="truncate text-xs text-[var(--color-text-muted)]">
+                                            {sub}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="min-w-0">
-                                    <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
-                                        {label}
-                                    </p>
-                                    <p className="truncate text-xs text-[var(--color-text-muted)]">
-                                        {sub}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
+                            ),
+                        )}
                     </div>
                 </div>
             </div>
@@ -151,7 +185,10 @@ export default function Footer(): React.JSX.Element {
                             ) : null}
                             <div className="flex items-start gap-2.5 text-[var(--color-text-secondary)]">
                                 <MapPin className="mt-0.5 size-4 shrink-0" />
-                                <span>Dhaka, Bangladesh</span>
+                                <span>
+                                    {settings.contact_address ||
+                                        'Dhaka, Bangladesh'}
+                                </span>
                             </div>
                         </div>
 
@@ -264,14 +301,16 @@ export default function Footer(): React.JSX.Element {
                                 We Accept
                             </p>
                             <div className="flex flex-wrap gap-2">
-                                {['Cash on Delivery'].map((method) => (
-                                    <span
-                                        key={method}
-                                        className="inline-flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-text-secondary)]"
-                                    >
-                                        {method}
-                                    </span>
-                                ))}
+                                {['Cash on Delivery', 'bKash', 'Nagad'].map(
+                                    (method) => (
+                                        <span
+                                            key={method}
+                                            className="inline-flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-text-secondary)]"
+                                        >
+                                            {method}
+                                        </span>
+                                    ),
+                                )}
                             </div>
                         </div>
                     </div>
@@ -279,32 +318,41 @@ export default function Footer(): React.JSX.Element {
 
                 {/* Bottom bar */}
                 <div className="mt-12 flex flex-col gap-4 border-t border-[var(--color-border)] pt-6 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm text-[var(--color-text-muted)]">
-                        &copy; {new Date().getFullYear()}{' '}
-                        <span className="text-[var(--color-text-secondary)]">
-                            {settings.site_name}
-                        </span>
-                        . All rights reserved.
-                    </p>
-                    <div className="flex flex-wrap gap-5 text-sm text-[var(--color-text-muted)]">
-                        <Link
-                            href="/privacy-policy"
-                            className="transition hover:text-[var(--color-primary)]"
-                        >
-                            Privacy Policy
-                        </Link>
-                        <Link
-                            href="/terms"
-                            className="transition hover:text-[var(--color-primary)]"
-                        >
-                            Terms of Service
-                        </Link>
-                        <Link
-                            href="/faq"
-                            className="transition hover:text-[var(--color-primary)]"
-                        >
-                            FAQ
-                        </Link>
+                    <div className="space-y-1">
+                        <p className="text-sm text-[var(--color-text-muted)]">
+                            &copy; {new Date().getFullYear()}{' '}
+                            <span className="text-[var(--color-text-secondary)]">
+                                {settings.site_name}
+                            </span>
+                            . All rights reserved.
+                        </p>
+                        {/* BIZ-034: who the seller is, from Admin › Contact Page. */}
+                        {settings.legal_business_name ||
+                        settings.trade_licence_number ? (
+                            <p className="text-xs text-[var(--color-text-muted)]">
+                                {settings.legal_business_name
+                                    ? `Sold by ${settings.legal_business_name}`
+                                    : null}
+                                {settings.legal_business_name &&
+                                settings.trade_licence_number
+                                    ? ' · '
+                                    : null}
+                                {settings.trade_licence_number
+                                    ? `Trade Licence No. ${settings.trade_licence_number}`
+                                    : null}
+                            </p>
+                        ) : null}
+                    </div>
+                    <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--color-text-muted)]">
+                        {policyLinks.map(({ label, href }) => (
+                            <Link
+                                key={href}
+                                href={href}
+                                className="transition hover:text-[var(--color-primary)]"
+                            >
+                                {label}
+                            </Link>
+                        ))}
                     </div>
                 </div>
             </div>

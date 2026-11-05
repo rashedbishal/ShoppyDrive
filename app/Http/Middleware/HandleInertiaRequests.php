@@ -204,6 +204,10 @@ class HandleInertiaRequests extends Middleware
             'contact_email' => $db->get('contact_email', 'support@shoppydrive.com'),
             'contact_phone' => $db->get('contact_phone', '+880 1XXX XXXXXX'),
             'contact_address' => $db->get('contact_address'),
+            // BIZ-034: seller identity, shown in the footer when set.
+            'legal_business_name' => $db->get('legal_business_name'),
+            'trade_licence_number' => $db->get('trade_licence_number'),
+            'support_hours' => $db->get('contact_page_support_hours') ?: 'Every day, 9 AM–9 PM',
             'social_links' => [
                 'facebook' => $socialLinks['facebook'] ?? null,
                 'instagram' => $socialLinks['instagram'] ?? null,

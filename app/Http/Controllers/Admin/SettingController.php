@@ -48,6 +48,8 @@ class SettingController extends Controller
             'contact_page_hero_eyebrow', 'contact_page_hero_title', 'contact_page_hero_title_highlight',
             'contact_page_hero_description', 'contact_page_support_hours',
             'contact_phone', 'contact_email', 'contact_address',
+            // BIZ-034: seller identity shown in the storefront footer.
+            'legal_business_name', 'trade_licence_number',
         ],
         'referral_program' => [
             'referral_enabled', 'referral_discount_type', 'referral_discount_value',
@@ -132,6 +134,8 @@ class SettingController extends Controller
             'contact_email' => ['nullable', 'email', 'max:255'],
             'contact_phone' => ['nullable', 'string', 'max:50'],
             'contact_address' => ['nullable', 'string', 'max:500'],
+            'legal_business_name' => ['nullable', 'string', 'max:255'],
+            'trade_licence_number' => ['nullable', 'string', 'max:100'],
             'currency_symbol' => ['nullable', 'string', 'max:10'],
             'guest_checkout_enabled' => ['nullable', 'boolean'],
             'logo' => $request->hasFile('logo') ? ['image', 'max:2048'] : ['nullable'],
@@ -236,6 +240,7 @@ class SettingController extends Controller
 
         $fields = [
             'site_name', 'contact_email', 'contact_phone', 'contact_address', 'currency_symbol',
+            'legal_business_name', 'trade_licence_number',
             'social_links', 'google_analytics_id', 'meta_pixel_id',
             'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number',
             'google_client_id', 'google_client_secret', 'google_redirect_uri',
@@ -345,7 +350,7 @@ class SettingController extends Controller
     {
         return match (true) {
             in_array($key, ['site_name', 'logo', 'currency_symbol', 'guest_checkout_enabled']) => 'general',
-            in_array($key, ['contact_email', 'contact_phone', 'contact_address']) => 'contact',
+            in_array($key, ['contact_email', 'contact_phone', 'contact_address', 'legal_business_name', 'trade_licence_number']) => 'contact',
             in_array($key, ['social_links']) => 'social',
             in_array($key, ['whatsapp_number', 'messenger_link']) => 'chat_widgets',
             in_array($key, ['bkash_number', 'nagad_number']) => 'payments',

@@ -52,7 +52,8 @@ final class LayoutCache
      */
     private const PUBLIC_SETTING_KEYS = [
         'site_name', 'logo', 'currency_symbol', 'contact_email', 'contact_phone',
-        'contact_address', 'social_links', 'google_analytics_id', 'meta_pixel_id',
+        'contact_address', 'legal_business_name', 'trade_licence_number', 'contact_page_support_hours',
+        'social_links', 'google_analytics_id', 'meta_pixel_id',
         'whatsapp_number', 'messenger_link', 'referral_enabled',
         'referral_discount_type', 'referral_discount_value',
         'shipping_rate_inside_dhaka', 'shipping_rate_outside_dhaka',

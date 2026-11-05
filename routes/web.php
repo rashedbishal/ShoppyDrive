@@ -43,6 +43,15 @@ Route::get('/faq', function () {
     return inertia('static/FAQ', ['page' => $page]);
 })->name('faq');
 
+// BIZ-034: return, refund and shipping policies.
+foreach (['return-policy', 'refund-policy', 'shipping-policy'] as $policySlug) {
+    Route::get('/'.$policySlug, function () use ($policySlug) {
+        $page = Page::where('slug', $policySlug)->where('is_published', true)->firstOrFail();
+
+        return inertia('static/Page', ['page' => $page]);
+    })->name($policySlug);
+}
+
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/{blog:slug}', [BlogController::class, 'show'])->name('blog.show');
 

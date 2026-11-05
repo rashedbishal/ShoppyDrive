@@ -22,7 +22,7 @@ class ReturnRequestController extends Controller
      * (see catalog/ProductDetail.tsx's "Return Policy" copy). Centralized
      * here so the enforced window can never drift from what's advertised.
      */
-    private const ELIGIBILITY_WINDOW_DAYS = 7;
+    public const ELIGIBILITY_WINDOW_DAYS = 7;
 
     public function store(Request $request, Order $order): RedirectResponse
     {

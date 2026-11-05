@@ -19,6 +19,8 @@ type Props = {
         contact_phone?: string | null;
         contact_email?: string | null;
         contact_address?: string | null;
+        legal_business_name?: string | null;
+        trade_licence_number?: string | null;
     };
 };
 
@@ -34,10 +36,12 @@ export default function ContactPageConfig({ settings }: Props) {
             settings.contact_page_hero_description ??
             'Have a question, complaint, or just want to say hello? Our team is ready to assist you.',
         contact_page_support_hours:
-            settings.contact_page_support_hours ?? 'Sat–Thu, 9am–9pm BST',
+            settings.contact_page_support_hours ?? 'Every day, 9 AM–9 PM',
         contact_phone: settings.contact_phone ?? '',
         contact_email: settings.contact_email ?? '',
         contact_address: settings.contact_address ?? '',
+        legal_business_name: settings.legal_business_name ?? '',
+        trade_licence_number: settings.trade_licence_number ?? '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -166,9 +170,10 @@ export default function ContactPageConfig({ settings }: Props) {
                     </CardHeader>
                     <CardContent className="space-y-4 pt-4">
                         <p className="text-xs text-slate-400">
-                            Phone, email, and address are shared with the site
-                            footer and SEO tags — editing them here updates
-                            everywhere.
+                            Phone, email, address, support hours and the seller
+                            details below are shown in the site footer (phone,
+                            email and address also in SEO tags) — editing them
+                            here updates everywhere.
                         </p>
                         <div className="grid gap-4 sm:grid-cols-2">
                             <SettingsField label="Phone">
@@ -217,7 +222,36 @@ export default function ContactPageConfig({ settings }: Props) {
                                             e.target.value,
                                         )
                                     }
-                                    placeholder="Sat–Thu, 9am–9pm BST"
+                                    placeholder="Every day, 9 AM–9 PM"
+                                />
+                            </SettingsField>
+                        </div>
+                        {/* BIZ-034: seller identity, shown in the storefront footer. */}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <SettingsField label="Legal Business Name">
+                                <input
+                                    className={settingsInputClass}
+                                    value={data.legal_business_name}
+                                    onChange={(e) =>
+                                        setData(
+                                            'legal_business_name',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="e.g. Shoppy Drive Enterprise"
+                                />
+                            </SettingsField>
+                            <SettingsField label="Trade Licence Number">
+                                <input
+                                    className={settingsInputClass}
+                                    value={data.trade_licence_number}
+                                    onChange={(e) =>
+                                        setData(
+                                            'trade_licence_number',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="e.g. TRAD/DNCC/012345/2025"
                                 />
                             </SettingsField>
                         </div>

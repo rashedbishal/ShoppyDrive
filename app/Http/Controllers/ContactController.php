@@ -30,7 +30,7 @@ class ContactController extends Controller
                 'phone' => $settings['contact_phone'] ?? '+880 1700-000000',
                 'email' => $settings['contact_email'] ?? 'support@shoppydrive.com',
                 'address' => $settings['contact_address'] ?? 'Dhaka, Bangladesh',
-                'support_hours' => $settings['contact_page_support_hours'] ?? 'Sat–Thu, 9am–9pm BST',
+                'support_hours' => $settings['contact_page_support_hours'] ?? 'Every day, 9 AM–9 PM',
                 'social_links' => $settings['social_links'] ?? [
                     'facebook' => 'https://facebook.com/shoppydrive',
                     'instagram' => 'https://instagram.com/shoppydrive',
