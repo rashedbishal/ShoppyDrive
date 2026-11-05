@@ -9,9 +9,10 @@ use Illuminate\Support\Str;
 
 /*
  * FSA-05: inactive, draft (no published_at) and future-scheduled products
- * must be invisible to the storefront and impossible to buy. Checkout drops
- * a hidden line the same way it already drops a deleted product (see
- * CartStaleProductTest), so a stale client cart can't strand the customer.
+ * must be invisible to the storefront and impossible to buy. Checkout
+ * blocks the whole order and reports it as a cart issue the same way it
+ * already does for a deleted product (see CartStaleProductTest) — never
+ * silently drops the line and places the order with what's left.
  */
 
 dataset('hidden product states', [
@@ -84,31 +85,32 @@ test('add to cart rejects a hidden product', function (array $state) {
 test('authenticated checkout of a hidden product creates no order', function (array $state) {
     $product = visibilityProduct($state);
 
-    $this->actingAs(User::factory()->create())
+    $response = $this->actingAs(User::factory()->create())
         ->post(route('checkout.store'), visibilityCheckoutPayload([
             ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
-        ]))
-        ->assertStatus(422);
+        ]));
 
+    $response->assertRedirect();
+    expect($response->getSession()->get('cartIssues'))->not->toBeEmpty();
     expect(Order::count())->toBe(0)
         ->and($product->fresh()->stock_quantity)->toBe(10);
 })->with('hidden product states');
 
-test('guest checkout charges only the visible items and never sells the hidden one', function (array $state) {
+test('guest checkout of a cart mixing a visible and a hidden item is blocked entirely, never charges just the visible one', function (array $state) {
     Setting::updateOrCreate(['key' => 'guest_checkout_enabled'], ['value' => true, 'group' => 'general']);
     $visible = visibilityProduct();
     $hidden = visibilityProduct($state);
 
-    $this->post(route('checkout.store'), visibilityCheckoutPayload([
+    $response = $this->post(route('checkout.store'), visibilityCheckoutPayload([
         ['product_id' => $visible->id, 'variant_id' => null, 'quantity' => 1],
         ['product_id' => $hidden->id, 'variant_id' => null, 'quantity' => 1],
-    ]))->assertSessionHasNoErrors();
+    ]));
 
-    $order = Order::with('items')->sole();
-
-    expect($order->items->pluck('product_id')->all())->toBe([$visible->id])
-        ->and($order->subtotal)->toBe(400.0)
-        ->and($hidden->fresh()->stock_quantity)->toBe(10);
+    $response->assertRedirect();
+    expect($response->getSession()->get('cartIssues'))->not->toBeEmpty();
+    expect(Order::count())->toBe(0)
+        ->and($hidden->fresh()->stock_quantity)->toBe(10)
+        ->and($visible->fresh()->stock_quantity)->toBe(10);
 })->with('hidden product states');
 
 test('a cart row for a product hidden after it was added cannot be checked out', function () {
@@ -119,8 +121,10 @@ test('a cart row for a product hidden after it was added cannot be checked out',
 
     $product->update(['is_active' => false]);
 
-    $this->actingAs($user)->post(route('checkout.store'), visibilityCheckoutPayload(null))->assertStatus(422);
+    $response = $this->actingAs($user)->post(route('checkout.store'), visibilityCheckoutPayload(null));
 
+    $response->assertRedirect();
+    expect($response->getSession()->get('cartIssues'))->not->toBeEmpty();
     expect(Order::count())->toBe(0)
         ->and($product->fresh()->stock_quantity)->toBe(10);
 });

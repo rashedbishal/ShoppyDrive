@@ -53,7 +53,13 @@ class PlaceOrderRequest extends FormRequest
             // page flow).
             'order_token' => ['required', 'uuid'],
             'items' => ['nullable', 'array'],
-            'items.*.product_id' => ['required_with:items', 'integer', 'exists:products,id'],
+            // Existence (and visibility — deactivated, or hidden via its
+            // brand/category/sub-category) is deliberately NOT checked
+            // here with exists:products,id: a deleted/unavailable product
+            // must become one of CheckoutController::collectCartIssues()'s
+            // named, customer-facing errors, not an opaque validation
+            // failure the frontend has no specific key to watch for.
+            'items.*.product_id' => ['required_with:items', 'integer'],
             'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id', new VariantBelongsToProduct],
             // BIZ-011: no upper bound let a huge quantity (e.g. 3000000000)
             // reach the DB layer, which 500s on MariaDB's INT overflow

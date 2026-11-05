@@ -14,6 +14,7 @@ import {
     X,
     CreditCard,
     LogIn,
+    TriangleAlert,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
@@ -21,6 +22,14 @@ import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
@@ -586,6 +595,17 @@ export default function Checkout({
     const [couponError, setCouponError] = useState('');
     const [applyingCoupon, setApplyingCoupon] = useState(false);
 
+    // A deleted/unavailable product or an out-of-stock quantity blocks the
+    // whole order (CheckoutController::collectCartIssues()) — shown as a
+    // blocking modal, not just the plain error banner, since the customer
+    // has to actually go fix their cart before trying again. A failed
+    // submission's back() redirect is a full Inertia page visit, so this
+    // component remounts and the initializer below re-evaluates fresh —
+    // no effect needed to react to a later flash change.
+    const [cartIssuesOpen, setCartIssuesOpen] = useState(
+        Boolean(flash?.cartIssues?.length),
+    );
+
     const handleApplyCoupon = async () => {
         const code = couponInput.trim().toUpperCase();
 
@@ -775,6 +795,40 @@ export default function Checkout({
     return (
         <CheckoutLayout>
             <Head title="Checkout" />
+
+            <Dialog open={cartIssuesOpen} onOpenChange={setCartIssuesOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <TriangleAlert className="size-5 text-red-500" />
+                            Your cart needs attention
+                        </DialogTitle>
+                        <DialogDescription>
+                            This order can't be placed yet — please fix the
+                            following before trying again:
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ul className="list-disc space-y-1.5 pl-5 text-sm text-[var(--color-text-secondary)]">
+                        {(flash?.cartIssues ?? []).map((issue, index) => (
+                            <li key={index}>{issue}</li>
+                        ))}
+                    </ul>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setCartIssuesOpen(false)}
+                        >
+                            Stay here
+                        </Button>
+                        <Button type="button" asChild>
+                            <Link href={route('cart.index')}>
+                                Go to my cart
+                            </Link>
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <div className="mb-6 flex items-center justify-between">
                 <Link

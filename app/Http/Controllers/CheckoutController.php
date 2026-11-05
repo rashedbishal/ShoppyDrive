@@ -147,12 +147,30 @@ class CheckoutController extends Controller
 
     public function store(PlaceOrderRequest $request): RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
+        $items = $request->filled('items') ? $request->validated('items') : null;
+
+        if ($items !== null) {
+            // A hard-deleted product's id has nothing left to resolve a
+            // price/stock/visibility against. Reported as a cart issue
+            // and refused outright — not synced at all — rather than
+            // silently writing the surviving items only: syncUserCart()
+            // replaces the *entire* cart with whatever's passed, so
+            // syncing a partial list here would wipe out every other
+            // line still in the customer's real, stored cart too.
+            $existingProductIds = Product::query()->whereIn('id', collect($items)->pluck('product_id'))->pluck('id')->all();
+            $missingCount = collect($items)->pluck('product_id')->reject(fn ($id) => in_array($id, $existingProductIds, true))->count();
+
+            if ($missingCount > 0) {
+                return $this->blockedByCartIssues(array_fill(0, $missingCount, 'An item in your cart is no longer available. Please remove it from your cart to continue.'));
+            }
+        }
+
         // BIZ-001: must run before syncUserCart()/syncSessionCart() below —
         // both call replaceItems(), which overwrites every item's price to
         // the current one, so a later revalidatePrices() call would just be
         // comparing the current price against itself. This compares against
         // what the checkout page actually showed the customer instead.
-        if ($request->filled('items') && $this->cartManager->submittedPricesStale($request->validated('items'))) {
+        if ($items !== null && $this->cartManager->submittedPricesStale($items)) {
             return back()->with('error', 'Some prices in your cart have changed. Please review your updated cart and try again.');
         }
 
@@ -163,11 +181,11 @@ class CheckoutController extends Controller
         // Buy Now merged with an existing cart identically, with no special
         // casing needed here. Viewing the checkout page never reaches this
         // method, so an abandoned Buy Now still never touches the cart.
-        if ($request->filled('items')) {
+        if ($items !== null) {
             if ($request->user() !== null) {
-                $this->cartManager->syncUserCart($request->user(), $request->validated('items'));
+                $this->cartManager->syncUserCart($request->user(), $items);
             } else {
-                $this->cartManager->syncSessionCart($request->session()->getId(), $request->validated('items'));
+                $this->cartManager->syncSessionCart($request->session()->getId(), $items);
             }
         }
 
@@ -178,14 +196,23 @@ class CheckoutController extends Controller
         $cart = $this->cartManager->withoutDuplicateRows($cart);
 
         // Eager-load products so free_delivery checks don't N+1; category/
-        // subCategory/brand too, since validItems() below now calls
-        // isPubliclyVisible(), which reads all three per item.
-        $cart->load('items.product.category', 'items.product.subCategory', 'items.product.brand');
+        // subCategory/brand too, since collectCartIssues()/validItems()
+        // below call isPubliclyVisible(), which reads all three per item.
+        $cart->load('items.product.category', 'items.product.subCategory', 'items.product.brand', 'items.variant');
 
-        // Drops items whose product was deleted/deactivated since being
-        // added to the cart — every downstream read of `$cart->items`
-        // (shipping calc, order-item creation) assumes `item->product`
-        // exists, so this has to happen before any of that runs.
+        // A deleted/deactivated product or an out-of-stock quantity must
+        // block the whole checkout, not silently drop that line and place
+        // the order with whatever's left — the customer has to go fix
+        // their cart themselves. Checked against the full, un-filtered
+        // item list, before validItems() would otherwise drop anything.
+        $cartIssues = $this->collectCartIssues($cart);
+
+        if ($cartIssues !== []) {
+            return $this->blockedByCartIssues($cartIssues);
+        }
+
+        // Defense in depth only at this point — every item already passed
+        // the check above, so this should never actually drop anything.
         $cart->setRelation('items', $this->cartManager->validItems($cart));
 
         abort_if($cart->items->isEmpty(), 422, 'Your cart is empty.');
@@ -612,6 +639,52 @@ class CheckoutController extends Controller
         }
 
         return $coupon->appliesToProduct($item->product, $item->variant_id);
+    }
+
+    /**
+     * Every reason this cart can't check out as submitted: a line whose
+     * product was deleted/deactivated (directly, or via its brand/
+     * category/sub-category — see Product::isPubliclyVisible()), or
+     * doesn't have enough stock for the requested quantity. Collected
+     * against every item (not just the first problem found) so the
+     * customer sees the whole picture in one pass, not one error per
+     * resubmission.
+     *
+     * @return list<string>
+     */
+    private function collectCartIssues(Cart $cart): array
+    {
+        $issues = [];
+
+        foreach ($cart->items as $item) {
+            if ($item->product === null || ! $item->product->isPubliclyVisible()) {
+                $issues[] = ($item->product?->name ?? 'An item in your cart').' is no longer available. Please remove it from your cart to continue.';
+
+                continue;
+            }
+
+            try {
+                $this->inventory->assertAvailable($item->product_id, $item->variant_id, $item->quantity, (float) $item->price);
+            } catch (InsufficientStockException $e) {
+                $issues[] = $e->getMessage();
+            }
+        }
+
+        return $issues;
+    }
+
+    /**
+     * @param  list<string>  $issues
+     */
+    private function blockedByCartIssues(array $issues): RedirectResponse
+    {
+        return back()
+            ->with('cartIssues', $issues)
+            ->with('error', 'Some items in your cart need attention before you can place this order.')
+            // withErrors(['items' => ...]) kept alongside the new
+            // cartIssues flash for every existing caller/test that reads
+            // the plain `items` field error this already used to set.
+            ->withErrors(['items' => implode(' ', $issues)]);
     }
 
     private function resolveShippingAddress(PlaceOrderRequest $request): array

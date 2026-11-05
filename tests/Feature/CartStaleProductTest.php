@@ -40,7 +40,14 @@ test('shared cart prop drops a stale item instead of crashing every page', funct
     );
 });
 
-test('placing a cod order with a stale cart item succeeds using only the live item', function () {
+/*
+ * A mixed cart (one live item, one stale) must block checkout entirely
+ * with a clear reason, not silently place the order using only the live
+ * item — the customer has to go fix their cart themselves (owner decision,
+ * 2026-11-05: "block entirely until cart is fixed", see
+ * CheckoutController::collectCartIssues()).
+ */
+test('placing a cod order with a stale cart item is refused, not silently placed with only the live item', function () {
     $user = User::factory()->create();
     [, $live] = cartWithLiveAndStaleItems($user);
 
@@ -56,15 +63,13 @@ test('placing a cod order with a stale cart item succeeds using only the live it
         'order_token' => (string) Str::uuid(),
     ]);
 
-    $order = Order::query()->firstOrFail();
-    $response->assertRedirect(route('order.confirmation', $order->order_number, false));
-
-    expect($order->items)->toHaveCount(1);
-    expect($order->items->first()->product_id)->toBe($live->id);
-    expect((float) $order->subtotal)->toBe((float) $live->price);
+    $response->assertRedirect();
+    expect($response->getSession()->get('cartIssues'))->not->toBeEmpty();
+    expect(Order::query()->count())->toBe(0);
+    expect($live->refresh())->not->toBeNull(); // nothing was ordered or touched
 });
 
-test('placing an order with only a stale cart item is rejected as an empty cart', function () {
+test('placing an order with only a stale cart item is refused the same way', function () {
     $user = User::factory()->create();
     $stale = Product::factory()->create(['is_active' => true, 'published_at' => now()->subDay()]);
 
@@ -72,7 +77,7 @@ test('placing an order with only a stale cart item is rejected as an empty cart'
     $cart->items()->create(['product_id' => $stale->id, 'variant_id' => null, 'quantity' => 1, 'price' => $stale->price]);
     $stale->delete();
 
-    actingAs($user)->post(route('checkout.store'), [
+    $response = actingAs($user)->post(route('checkout.store'), [
         'name' => 'Checkout User',
         'email' => $user->email,
         'phone' => '01700000000',
@@ -82,5 +87,52 @@ test('placing an order with only a stale cart item is rejected as an empty cart'
         'save_address' => false,
         'payment_method' => 'cod',
         'order_token' => (string) Str::uuid(),
-    ])->assertStatus(422);
+    ]);
+
+    $response->assertRedirect();
+    expect($response->getSession()->get('cartIssues'))->not->toBeEmpty();
+    expect(Order::query()->count())->toBe(0);
+});
+
+/*
+ * The exact tester report: a product already added to the cart gets
+ * hard-deleted by an admin, and the browser's stale Checkout.tsx state
+ * still submits an explicit `items` array naming it (not the legacy,
+ * items-omitted path the tests above cover) — this must be refused with a
+ * clear reason too, not a 404/validation failure the frontend can't show.
+ */
+test('submitting an explicit items array naming a since-hard-deleted product is refused with a clear reason, not a silent failure', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['is_active' => true, 'published_at' => now()->subDay(), 'price' => 200]);
+    $productId = $product->id;
+    $product->forceDelete();
+
+    $response = actingAs($user)->post(route('checkout.store'), [
+        'name' => 'Checkout User', 'email' => $user->email, 'phone' => '01700000000',
+        'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
+        'payment_method' => 'cod', 'order_token' => (string) Str::uuid(),
+        'items' => [['product_id' => $productId, 'variant_id' => null, 'quantity' => 1, 'price' => 200]],
+    ]);
+
+    $response->assertRedirect();
+    expect($response->getSession()->get('cartIssues'))->not->toBeEmpty();
+    expect(Order::query()->count())->toBe(0);
+});
+
+test('an in-stock-when-added product that sold out by checkout is refused, not silently placed at a reduced quantity', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['is_active' => true, 'published_at' => now()->subDay(), 'price' => 150, 'stock_quantity' => 1]);
+
+    $response = actingAs($user)->post(route('checkout.store'), [
+        'name' => 'Checkout User', 'email' => $user->email, 'phone' => '01700000000',
+        'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
+        'payment_method' => 'cod', 'order_token' => (string) Str::uuid(),
+        'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 5, 'price' => 150]],
+    ]);
+
+    $response->assertRedirect();
+    $issues = $response->getSession()->get('cartIssues');
+    expect($issues)->not->toBeEmpty();
+    expect($issues[0])->toContain('1 unit(s)');
+    expect(Order::query()->count())->toBe(0);
 });

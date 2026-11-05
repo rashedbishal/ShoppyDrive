@@ -697,6 +697,8 @@ export interface SharedPageProps {
         info?: string | null;
         warning?: string | null;
         toast?: FlashToast | null;
+        /** Checkout-specific: a deleted/unavailable product or an out-of-stock quantity blocked the order. See CheckoutController::collectCartIssues(). */
+        cartIssues?: string[] | null;
     };
     sidebarOpen: boolean;
     locale: string;

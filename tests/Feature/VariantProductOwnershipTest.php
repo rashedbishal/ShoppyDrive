@@ -138,8 +138,10 @@ test('a mismatched cart row stored before the fix is never checked out', functio
     $payload = variantOwnershipCheckoutPayload([]);
     unset($payload['items']);
 
-    $this->actingAs($user)->post(route('checkout.store'), $payload)->assertStatus(422);
+    $response = $this->actingAs($user)->post(route('checkout.store'), $payload);
 
+    $response->assertRedirect();
+    expect($response->getSession()->get('cartIssues'))->not->toBeEmpty();
     expect(Order::count())->toBe(0)
         ->and($variant->fresh()->stock_quantity)->toBe(5);
 });
