@@ -24,6 +24,26 @@ test('connections page is displayed with linked providers', function () {
         );
 });
 
+test('SEC-004: OAuth tokens never reach the browser, including via the shared auth.user prop', function () {
+    $user = User::factory()->create();
+    SocialAccount::create([
+        'user_id' => $user->id,
+        'provider' => 'google',
+        'provider_id' => 'google-123',
+        'token' => 'canary-access-token',
+        'refresh_token' => 'canary-refresh-token',
+    ]);
+
+    // This page's own `connections` prop already mapped to a safe shape —
+    // the real risk was `auth.user`, shared on every page, which reads the
+    // same User instance this page lazy-loads socialAccounts onto.
+    $response = $this->actingAs($user)->get(route('connections.edit'));
+
+    $response->assertOk();
+    expect(json_encode($response->viewData('page')['props']))->not->toContain('canary-access-token')
+        ->and(json_encode($response->viewData('page')['props']))->not->toContain('canary-refresh-token');
+});
+
 test('a social-only user can set a password for the first time', function () {
     $user = User::factory()->withoutPassword()->create();
 
