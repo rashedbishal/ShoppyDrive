@@ -16,6 +16,7 @@ import {
 } from '@/components/shared/OrderStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Pagination } from '@/components/ui/pagination';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Order, PaginatedData, SharedPageProps } from '@/types';
 
@@ -285,10 +286,19 @@ export default function Orders({
                     )}
                 </div>
 
-                {/* Pagination (Simplified) */}
+                {/* FE-001: older orders were unreachable past page 1. */}
                 {orders.last_page > 1 && (
                     <div className="mt-12 flex justify-center">
-                        {/* Standard Pagination Component would go here */}
+                        <Pagination
+                            data={orders}
+                            onPageChange={(page) =>
+                                router.get(
+                                    route('account.orders'),
+                                    { search: filters.search, page },
+                                    { preserveState: true },
+                                )
+                            }
+                        />
                     </div>
                 )}
             </div>
