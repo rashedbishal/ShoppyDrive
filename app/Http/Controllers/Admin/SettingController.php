@@ -60,6 +60,22 @@ class SettingController extends Controller
         ],
     ];
 
+    /**
+     * SEC-002: the fields admin/settings/edit.tsx (the general page) itself
+     * reads — none of this is secret, but every settings page sending
+     * `Setting::all()` meant an admin granted only one page (e.g.
+     * about_page) received every courier/OAuth secret in the same
+     * response, regardless of the permission check above. Each page
+     * method below now passes its own list to settingsProp() instead.
+     *
+     * @var list<string>
+     */
+    private const GENERAL_FIELDS = [
+        'site_name', 'logo', 'currency_symbol', 'guest_checkout_enabled',
+        'google_analytics_id', 'meta_pixel_id',
+        'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number', 'social_links',
+    ];
+
     public function __construct(
         private readonly PathaoCourierService $pathao,
         private readonly SteadfastCourierService $steadfast,
@@ -68,42 +84,42 @@ class SettingController extends Controller
     public function edit(): Response
     {
         return Inertia::render('admin/settings/edit', [
-            'settings' => $this->settingsProp(),
+            'settings' => $this->settingsProp(self::GENERAL_FIELDS),
         ]);
     }
 
     public function socialConfig(): Response
     {
         return Inertia::render('admin/settings/social', [
-            'settings' => $this->settingsProp(),
+            'settings' => $this->settingsProp(self::FIELD_GROUPS['social_config']),
         ]);
     }
 
     public function courierConfig(): Response
     {
         return Inertia::render('admin/settings/courier', [
-            'settings' => $this->settingsProp(),
+            'settings' => $this->settingsProp(self::FIELD_GROUPS['courier_config']),
         ]);
     }
 
     public function aboutPageConfig(): Response
     {
         return Inertia::render('admin/settings/about-page', [
-            'settings' => $this->settingsProp(),
+            'settings' => $this->settingsProp(self::FIELD_GROUPS['about_page']),
         ]);
     }
 
     public function contactPageConfig(): Response
     {
         return Inertia::render('admin/settings/contact-page', [
-            'settings' => $this->settingsProp(),
+            'settings' => $this->settingsProp(self::FIELD_GROUPS['contact_page']),
         ]);
     }
 
     public function referralConfig(): Response
     {
         return Inertia::render('admin/settings/referral', [
-            'settings' => $this->settingsProp(),
+            'settings' => $this->settingsProp(self::FIELD_GROUPS['referral_program']),
         ]);
     }
 
@@ -316,9 +332,13 @@ class SettingController extends Controller
     }
 
     /** @return Collection<string, mixed> */
-    private function settingsProp(): Collection
+    /**
+     * @param  list<string>  $keys  only these are sent to the browser — see
+     *                              the SEC-002 note on GENERAL_FIELDS above.
+     */
+    private function settingsProp(array $keys): Collection
     {
-        return Setting::all()->keyBy('key')->map(fn ($s) => $s->value);
+        return Setting::whereIn('key', $keys)->get()->keyBy('key')->map(fn ($s) => $s->value);
     }
 
     private function getGroup(string $key): string

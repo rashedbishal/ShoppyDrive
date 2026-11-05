@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\Admin;
 use App\Models\BlockedIp;
 use App\Models\Category;
+use App\Models\Setting;
 use App\Support\AdminSections;
 use App\Support\SecurityRateLimits;
 
@@ -191,6 +192,30 @@ test('granting the settings section allows the general field group', function ()
 
     $this->put(route('admin.settings.update'), ['site_name' => 'New Name'])
         ->assertSessionDoesntHaveErrors();
+});
+
+test('SEC-002: an admin granted only about_page never receives courier or OAuth secrets in the page props', function () {
+    Setting::updateOrCreate(['key' => 'pathao_client_secret'], ['value' => 'super-secret-pathao', 'group' => 'courier']);
+    Setting::updateOrCreate(['key' => 'steadfast_webhook_secret'], ['value' => 'super-secret-steadfast', 'group' => 'courier']);
+    Setting::updateOrCreate(['key' => 'google_client_secret'], ['value' => 'super-secret-google', 'group' => 'social_login']);
+    Setting::updateOrCreate(['key' => 'about_hero_title'], ['value' => 'About Us', 'group' => 'about_page']);
+
+    $admin = Admin::create([
+        'name' => 'Staff', 'email' => 'about-only@example.com', 'password' => bcrypt('password'),
+        'permissions' => ['about_page' => ['view', 'update']],
+    ]);
+    actingAs($admin, 'admin');
+
+    $response = $this->get(route('admin.settings.about-page'));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->where('settings.about_hero_title', 'About Us')
+        ->missing('settings.pathao_client_secret')
+        ->missing('settings.steadfast_webhook_secret')
+        ->missing('settings.google_client_secret')
+        ->etc()
+    );
 });
 
 // ── Security stays mother-only to edit no matter what ────────────────────────
