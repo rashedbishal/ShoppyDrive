@@ -44,9 +44,12 @@ test('a COD checkout with a complete bundle charges exactly the bundle price and
 
     Cart::query()->where('user_id', $user->id)->delete();
 
+    // REL-001: price included on every line, matching what Checkout.tsx
+    // actually sends — 90/30 are this bundle's prorated per-unit prices
+    // (asserted below), not the products' plain prices.
     $this->actingAs($user)->post(route('checkout.store'), bundleCheckoutPayload($bundle, [
-        ['product_id' => $a->id, 'variant_id' => null, 'quantity' => 1, 'bundle_unit_quantity' => 1],
-        ['product_id' => $b->id, 'variant_id' => null, 'quantity' => 1, 'bundle_unit_quantity' => 1],
+        ['product_id' => $a->id, 'variant_id' => null, 'quantity' => 1, 'bundle_unit_quantity' => 1, 'price' => 90],
+        ['product_id' => $b->id, 'variant_id' => null, 'quantity' => 1, 'bundle_unit_quantity' => 1, 'price' => 30],
     ]))->assertRedirect();
 
     $order = Order::query()->firstOrFail();
@@ -106,9 +109,12 @@ test('buying two units of the same bundle scales quantities and the charged tota
 
     Cart::query()->where('user_id', $user->id)->delete();
 
+    // REL-001: price included on every line, matching what Checkout.tsx
+    // actually sends — the per-unit price stays 90/30 regardless of
+    // quantity (price is per unit; quantity multiplies it).
     $this->actingAs($user)->post(route('checkout.store'), bundleCheckoutPayload($bundle, [
-        ['product_id' => $a->id, 'variant_id' => null, 'quantity' => 2, 'bundle_unit_quantity' => 1],
-        ['product_id' => $b->id, 'variant_id' => null, 'quantity' => 2, 'bundle_unit_quantity' => 1],
+        ['product_id' => $a->id, 'variant_id' => null, 'quantity' => 2, 'bundle_unit_quantity' => 1, 'price' => 90],
+        ['product_id' => $b->id, 'variant_id' => null, 'quantity' => 2, 'bundle_unit_quantity' => 1, 'price' => 30],
     ]))->assertRedirect();
 
     $order = Order::query()->firstOrFail();
@@ -153,8 +159,15 @@ test('removing a bundle component before checkout breaks the group and charges n
     $first->assertSessionHas('error');
     expect(Order::query()->count())->toBe(0);
 
-    // Retrying now succeeds at the corrected (normal, non-bundle) price.
-    $this->actingAs($user)->post(route('checkout.store'), $basePayload)->assertRedirect();
+    // REL-001: Checkout.tsx always resubmits with an explicit items array
+    // (never omits it to fall back on the server-side cart) — this is the
+    // corrected (normal, non-bundle) price/grouping the page would have
+    // re-read after the bounce above.
+    $this->actingAs($user)->post(route('checkout.store'), $basePayload + [
+        'items' => [
+            ['product_id' => $a->id, 'variant_id' => null, 'quantity' => 1, 'bundle_id' => null, 'bundle_unit_quantity' => null, 'price' => 150],
+        ],
+    ])->assertRedirect();
 
     $order = Order::query()->firstOrFail();
     expect((float) $order->subtotal)->toBe(150.0);

@@ -16,6 +16,15 @@ use App\Models\User;
 use App\Support\CartManager;
 use Illuminate\Support\Str;
 
+/**
+ * REL-001: Checkout.tsx always sends bundle_id, bundle_unit_quantity and
+ * price on every item (see Checkout.tsx's submit handler) — price
+ * defaults here to CartManager::resolvePrice(), the same source of truth
+ * the server itself uses, so a normal (non-stale) submission matches what
+ * the real checkout page would actually show and send. A test that wants
+ * to simulate a stale/mismatched submission overrides items[0]['price']
+ * afterward, same as before.
+ */
 function checkoutPayload(Product $product, int $quantity, array $overrides = []): array
 {
     return array_merge([
@@ -29,7 +38,14 @@ function checkoutPayload(Product $product, int $quantity, array $overrides = [])
         'payment_method' => 'cod',
         'order_token' => (string) Str::uuid(),
         'items' => [
-            ['product_id' => $product->id, 'variant_id' => null, 'quantity' => $quantity],
+            [
+                'product_id' => $product->id,
+                'variant_id' => null,
+                'quantity' => $quantity,
+                'bundle_id' => null,
+                'bundle_unit_quantity' => null,
+                'price' => app(CartManager::class)->resolvePrice($product->id, null),
+            ],
         ],
     ], $overrides);
 }

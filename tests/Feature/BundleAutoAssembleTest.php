@@ -173,7 +173,17 @@ test('checking out with plain items that newly satisfy a bundle bounces back for
     $first->assertSessionHas('error');
     expect(Order::query()->count())->toBe(0);
 
-    $this->actingAs($user)->post(route('checkout.store'), $basePayload)->assertRedirect();
+    // REL-001: Checkout.tsx always resubmits with an explicit items array
+    // (never omits it to fall back on the server-side cart) — bundle_id,
+    // bundle_unit_quantity and the corrected prorated price (90/30, as the
+    // bounce above would have shown) all included, as it would be after
+    // the page re-read its state.
+    $this->actingAs($user)->post(route('checkout.store'), $basePayload + [
+        'items' => [
+            ['product_id' => $a->id, 'variant_id' => null, 'quantity' => 1, 'bundle_id' => $bundle->id, 'bundle_unit_quantity' => 1, 'price' => 90],
+            ['product_id' => $b->id, 'variant_id' => null, 'quantity' => 1, 'bundle_id' => $bundle->id, 'bundle_unit_quantity' => 1, 'price' => 30],
+        ],
+    ])->assertRedirect();
 
     $order = Order::query()->firstOrFail();
     expect((float) $order->subtotal)->toBe(120.0);
