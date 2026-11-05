@@ -46,7 +46,13 @@ class CreateMotherAdminCommand extends Command
         $password = $this->option('password') ?? password(
             label: 'Admin password',
             required: true,
-            hint: 'Minimum 8 characters.',
+            // SEC-010: matches Password::default() below, which in
+            // production is 12+ characters, mixed case, letters, numbers,
+            // symbols, and not found in a known breach — the same policy
+            // customers get (AppServiceProvider::configureDefaults()).
+            hint: app()->isProduction()
+                ? 'Minimum 12 characters, with uppercase, lowercase, numbers and symbols.'
+                : 'Minimum 8 characters.',
         );
 
         $validator = Validator::make(
@@ -54,7 +60,7 @@ class CreateMotherAdminCommand extends Command
             [
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'email', 'max:255', 'unique:admins,email,'.($existing?->id ?? 'NULL')],
-                'password' => ['required', Password::min(8)],
+                'password' => ['required', Password::default()],
             ],
         );
 

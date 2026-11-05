@@ -131,13 +131,20 @@ class AppServiceProvider extends ServiceProvider
     {
         // Deliberately hardcoded, not read from Admin > Security: this
         // guards the very page those settings are changed from. The second
-        // limit caps one network trying many different admin emails.
+        // limit caps one network trying many different admin emails. The
+        // third (SEC-010) caps one admin account across *every* IP — the
+        // first two limits alone leave one account's password open to a
+        // slow attack spread thinly across many different source IPs,
+        // each individually staying under both the per-IP and
+        // per-email+IP limits.
         RateLimiter::for('admin-login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower((string) $request->input('email'))).'|'.$request->ip();
+            $email = Str::transliterate(Str::lower((string) $request->input('email')));
+            $throttleKey = $email.'|'.$request->ip();
 
             return [
                 Limit::perMinute(5)->by($throttleKey),
                 Limit::perMinute(20)->by('ip:'.$request->ip()),
+                Limit::perMinutes(5, 10)->by('email:'.$email),
             ];
         });
 

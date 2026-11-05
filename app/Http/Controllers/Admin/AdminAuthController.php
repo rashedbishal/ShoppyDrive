@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -30,6 +31,15 @@ class AdminAuthController extends Controller
         ]);
 
         if (! Auth::guard('admin')->attempt($credentials, $request->boolean('remember'))) {
+            // SEC-010: failed admin logins previously left no trace at
+            // all — never the password, and only after the attempt is
+            // already known to have failed (nothing here could leak a
+            // credential that would otherwise have worked).
+            Log::warning('[Admin Auth] Failed login attempt', [
+                'email' => $credentials['email'],
+                'ip' => $request->ip(),
+            ]);
+
             return back()->withErrors(['email' => 'Invalid admin credentials.'])->onlyInput('email');
         }
 
