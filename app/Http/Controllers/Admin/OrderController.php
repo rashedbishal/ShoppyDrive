@@ -510,8 +510,16 @@ class OrderController extends Controller
                 return self::SHIPPED_CANCEL_MESSAGE;
             }
 
+            // A mother admin's confirmed-lost-parcel finding (FSA-11's
+            // approved lost-parcel policy, confirmLostParcel()) is itself
+            // the authorized closure for an order a courier consignment
+            // will never deliver — it must still be cancellable despite
+            // the consignment ID below, and confirmLostParcel() already
+            // requires existing courier evidence/verification first.
             if ($lockedOrder->pathao_consignment_id !== null || $lockedOrder->steadfast_consignment_id !== null) {
-                return self::COURIER_CANCEL_MESSAGE;
+                if ($lockedOrder->lost_confirmed_at === null) {
+                    return self::COURIER_CANCEL_MESSAGE;
+                }
             }
 
             // FSA-06: a paid order must go through "Mark as Refunded"
