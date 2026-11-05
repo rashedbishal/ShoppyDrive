@@ -160,10 +160,16 @@ class CheckoutController extends Controller
             // syncing a partial list here would wipe out every other
             // line still in the customer's real, stored cart too.
             $existingProductIds = Product::query()->whereIn('id', collect($items)->pluck('product_id'))->pluck('id')->all();
-            $missingCount = collect($items)->pluck('product_id')->reject(fn ($id) => in_array($id, $existingProductIds, true))->count();
+            $missingIds = collect($items)->pluck('product_id')->reject(fn ($id) => in_array($id, $existingProductIds, true))->values();
 
-            if ($missingCount > 0) {
-                return $this->blockedByCartIssues(array_fill(0, $missingCount, 'An item in your cart is no longer available. Please remove it from your cart to continue.'));
+            if ($missingIds->isNotEmpty()) {
+                // BE-002: a soft-deleted product keeps its name, so say which
+                // item to remove; only a fully erased one stays generic.
+                $deletedNames = Product::withTrashed()->whereIn('id', $missingIds)->pluck('name', 'id');
+
+                return $this->blockedByCartIssues($missingIds
+                    ->map(fn ($id) => self::unavailableItemMessage($deletedNames[$id] ?? null))
+                    ->all());
             }
         }
 
@@ -666,7 +672,8 @@ class CheckoutController extends Controller
 
         foreach ($cart->items as $item) {
             if ($item->product === null || ! $item->product->isPubliclyVisible()) {
-                $issues[] = ($item->product?->name ?? 'An item in your cart').' is no longer available. Please remove it from your cart to continue.';
+                // BE-002: `product` is null for a soft-deleted product, whose name is still on file.
+                $issues[] = self::unavailableItemMessage($item->product?->name ?? $item->product()->withTrashed()->value('name'));
 
                 continue;
             }
@@ -679,6 +686,11 @@ class CheckoutController extends Controller
         }
 
         return $issues;
+    }
+
+    private static function unavailableItemMessage(?string $productName): string
+    {
+        return ($productName ?? 'An item in your cart').' is no longer available. Please remove it from your cart to continue.';
     }
 
     /**
