@@ -429,12 +429,13 @@ it('rejects a duplicate mark-refunded that was blocked behind the first one unde
  * is genuinely blocked in LOCK WAIT on that same row — so the contender's
  * locked re-read is guaranteed to observe cancellation's committed state,
  * never a stale pre-commit one. That is a real, verified ordering guarantee
- * (not an assumption), so under the approved rule "a cancelled order cannot
- * be refunded", the contending refund is guaranteed to be rejected by
- * `RefundService::assertRefundable()`, and cancellation is guaranteed to
- * win. The exactly-once redeemed-points-reversal invariant this test exists
- * to prove still holds — it's just reached via cancel()'s own reversal
- * instead of a (no longer possible) successful refund.
+ * (not an assumption). This fixture is unpaid, so under that guarantee the
+ * contending refund is rejected by `RefundService::assertRefundable()` on
+ * the "nothing was collected" branch (BIZ-005: a cancelled *and paid* order
+ * is refundable, but this one never was paid), and cancellation is
+ * guaranteed to win. The exactly-once redeemed-points-reversal invariant
+ * this test exists to prove still holds — it's just reached via cancel()'s
+ * own reversal instead of a (not applicable here) successful refund.
  */
 it('rejects a mark-refunded that was blocked behind a committed cancellation under real MySQL locking', function () {
     if (($conns = loyaltyRaceConnections()) === null) {
@@ -442,11 +443,13 @@ it('rejects a mark-refunded that was blocked behind a committed cancellation und
     }
 
     // FSA-06: an unpaid fixture so cancel() actually succeeds here (a paid
-    // order would now be refused outright, never reaching the lock
-    // contention this test exists to prove) — the refund contender's
-    // hardcoded 940 amount doesn't matter either way, since
-    // RefundService::assertRefundable() rejects an already-cancelled order
-    // before it ever checks payment_status (see the docblock below).
+    // order would now be refused outright by the admin cancel action
+    // itself, never reaching the lock contention this test exists to
+    // prove). The refund contender's hardcoded 940 amount doesn't matter
+    // either way, since this fixture is unpaid: BIZ-005 made a cancelled
+    // *and paid* order refundable, but this one was never paid, so
+    // RefundService::assertRefundable() still rejects it (see the docblock
+    // above).
     [$user, $order, $admin] = createRedeemedPointsRaceOrder(['payment_status' => 'unpaid', 'payment_method' => 'cod']);
 
     $result = raceAdminActions($conns[0], $order, $admin, fn () => controllerUnderRace()->cancel(Request::create('/', 'PATCH'), $order), 'refund');

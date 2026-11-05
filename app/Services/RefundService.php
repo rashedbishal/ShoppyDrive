@@ -139,7 +139,12 @@ class RefundService
      */
     private function assertRefundable(Order $order): void
     {
-        if ($order->status === OrderStatus::CANCELLED) {
+        // BIZ-005: a cancelled order can still be paid — the customer
+        // cancel route and CourierOrderStatusMapper's return/cancel report
+        // both cancel without checking payment_status, since forcing a
+        // paid order to stay open just to keep this refundable would be
+        // worse. Only block the combination with nothing to give back.
+        if ($order->status === OrderStatus::CANCELLED && $order->payment_status !== PaymentStatus::PAID) {
             throw new CouldNotRecordRefundException('A cancelled order cannot be refunded.');
         }
 

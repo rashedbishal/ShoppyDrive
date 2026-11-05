@@ -134,10 +134,12 @@ test('an admin can still cancel a pending or processing order, reversing everyth
 
 /*
  * FSA-06: a paid order (e.g. mobile banking, created paid at checkout) must
- * not be admin-cancelled directly — RefundService::assertRefundable()
- * refuses to refund an already-cancelled order, which would leave the money
- * stuck with no ledger path forward. "Mark as Refunded" is the only way to
- * close a paid order.
+ * not be admin-cancelled directly — "Mark as Refunded" is the action that
+ * actually closes a paid order out with a refund ledger entry, so this
+ * admin action requires it instead of a plain cancel. (BIZ-005:
+ * RefundService::assertRefundable() itself does allow refunding a
+ * cancelled order that's still paid — this test is about this one admin
+ * action's own guard, not that service-level rule.)
  */
 test('a processing paid order cannot be cancelled, and nothing is reversed', function (OrderStatus $status) {
     $order = fsa11Order(['status' => $status, 'payment_status' => PaymentStatus::PAID, 'pathao_consignment_id' => null]);

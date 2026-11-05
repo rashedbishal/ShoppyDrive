@@ -465,10 +465,14 @@ class OrderController extends Controller
 
     /**
      * FSA-06: a paid order (e.g. mobile banking, created paid at checkout)
-     * must not be cancelled directly — that leaves it stuck forever, since
-     * RefundService::assertRefundable() refuses to refund a cancelled order.
-     * Use "Mark as Refunded" instead, which records the refund ledger entry
-     * and closes the order through the already-hardened refund path.
+     * must not be cancelled directly here — "Mark as Refunded" is the
+     * action that actually gives the money back, so admin-initiated
+     * closure of a paid order goes through it instead of a plain cancel.
+     * (BIZ-005: other paths — the customer self-cancel route, and the
+     * courier's own return/cancel report — still cancel a paid order
+     * without going through this check; RefundService::assertRefundable()
+     * accepts a cancelled order for refund as long as it's still paid, so
+     * those don't get stuck the way this admin action would.)
      */
     public const PAID_CANCEL_MESSAGE = 'This order has been paid for, so it can\'t be cancelled directly. Use "Mark as Refunded" instead to record the refund and close the order.';
 

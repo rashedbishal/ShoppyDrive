@@ -205,6 +205,28 @@ test('payment becomes REFUNDED only when everything collected was refunded, and 
         ->and($order->statusHistories()->where('status', 'refunded')->exists())->toBeTrue();
 });
 
+// ── BIZ-005: a cancelled order can still be refunded if it was paid ────────
+
+test('a cancelled order that was paid can still be refunded', function () {
+    $order = refundOrder(['status' => OrderStatus::CANCELLED]);
+    courierVerifiedForRefund($order);
+
+    actingAs(createAdmin(), 'admin')->patch(route('admin.orders.markRefunded', $order), wholeOrderRefundPayload($order))->assertSessionHas('success');
+
+    expect($order->refresh()->status)->toBe(OrderStatus::REFUNDED)
+        ->and(OrderRefund::sole()->resulting_order_status)->toBe('refunded');
+});
+
+test('a cancelled order that was never paid still cannot be refunded', function () {
+    $order = refundOrder(['status' => OrderStatus::CANCELLED, 'payment_status' => PaymentStatus::UNPAID]);
+    courierVerifiedForRefund($order);
+
+    actingAs(createAdmin(), 'admin')->patch(route('admin.orders.markRefunded', $order), ['refund_amount' => 1000, 'refund_method' => 'bKash'])->assertSessionHas('error');
+
+    expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED)
+        ->and(OrderRefund::count())->toBe(0);
+});
+
 test('a full return through the admin route writes the order status history and the ledger row', function () {
     $admin = createAdmin();
     $order = refundOrder(['shipping_cost' => 60]);
