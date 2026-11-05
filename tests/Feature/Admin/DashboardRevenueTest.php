@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -90,4 +91,23 @@ test('order count stats are unaffected and still count every order', function ()
 
     $this->get(route('admin.dashboard'))
         ->assertInertia(fn (Assert $page) => $page->where('stats.today_orders', 2));
+});
+
+test('BE-009: an order placed in the Dhaka early morning still counts as today, not the UTC day it falls in', function () {
+    // 2026-11-05 04:00 UTC = 2026-11-05 10:00 Asia/Dhaka: unambiguously "today" in Dhaka.
+    Carbon::setTestNow('2026-11-05 04:00:00');
+    actingAs($this->admin, 'admin');
+
+    // 2026-11-04 21:30 UTC = 2026-11-05 03:30 Asia/Dhaka: Dhaka's early morning
+    // "today", but the UTC calendar day before — the bug this guards against.
+    dashboardOrder(['total' => 560, 'payment_status' => 'paid', 'status' => 'processing', 'created_at' => '2026-11-04 21:30:00']);
+
+    $this->get(route('admin.dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('stats.today_revenue', 560)
+            ->where('stats.today_orders', 1)
+            ->where('stats.yesterday_revenue', 0)
+            ->where('stats.yesterday_orders', 0));
+
+    Carbon::setTestNow();
 });

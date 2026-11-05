@@ -59,7 +59,7 @@ class TrackDailyVisit
 
     private function track(Request $request): void
     {
-        $today = now()->toDateString();
+        $today = now('Asia/Dhaka')->toDateString();
 
         // `firstOrCreate(['date' => $today])` compares the raw string against
         // the stored value, which SQLite's DATE type affinity doesn't always

@@ -265,7 +265,7 @@
                         </tr>
                         <tr class="detail-row">
                             <td class="dl">Date Issued</td>
-                            <td class="dv">{{ $order->created_at->format('d M Y') }}</td>
+                            <td class="dv">{{ $order->created_at->copy()->timezone('Asia/Dhaka')->format('d M Y') }}</td>
                         </tr>
                         <tr class="detail-row">
                             <td class="dl">Payment Method</td>

@@ -23,14 +23,17 @@ class DashboardController extends Controller
 {
     public function __invoke(): Response
     {
-        $today = Carbon::today();
-        $yesterday = Carbon::yesterday();
+        // BE-09: "today" means the Dhaka calendar day, not the UTC one the
+        // server clock runs on — a 3am Dhaka order is still "today" here,
+        // matching the invoice date and the TrackDailyVisit day boundary.
+        $dhakaToday = Carbon::now('Asia/Dhaka')->startOfDay();
+        $dhakaYesterday = $dhakaToday->copy()->subDay();
         $weekAgo = Carbon::now()->subDays(7);
 
-        $todayRevenue = $this->collectedRevenueQuery()->whereDate('created_at', $today)->sum('total');
-        $yesterdayRevenue = $this->collectedRevenueQuery()->whereDate('created_at', $yesterday)->sum('total');
-        $todayOrders = Order::whereDate('created_at', $today)->count();
-        $yesterdayOrders = Order::whereDate('created_at', $yesterday)->count();
+        $todayRevenue = $this->collectedRevenueQuery()->whereBetween('created_at', $this->utcDayRange($dhakaToday))->sum('total');
+        $yesterdayRevenue = $this->collectedRevenueQuery()->whereBetween('created_at', $this->utcDayRange($dhakaYesterday))->sum('total');
+        $todayOrders = Order::whereBetween('created_at', $this->utcDayRange($dhakaToday))->count();
+        $yesterdayOrders = Order::whereBetween('created_at', $this->utcDayRange($dhakaYesterday))->count();
         $totalCustomers = User::count();
         $newCustomersThisWeek = User::where('created_at', '>=', $weekAgo)->count();
         $pendingOrders = Order::where('status', 'pending')->count();
@@ -38,39 +41,36 @@ class DashboardController extends Controller
         $totalProducts = Product::where('is_active', true)->count();
         $lowStockCount = Product::where('is_active', true)->lowStock()->count();
         $pendingReviews = Review::where('is_approved', false)->count();
-        $todayVisitors = (int) DailyVisit::whereDate('date', $today)->value('visitor_count');
-        $yesterdayVisitors = (int) DailyVisit::whereDate('date', $yesterday)->value('visitor_count');
+        $todayVisitors = (int) DailyVisit::where('date', $dhakaToday->toDateString())->value('visitor_count');
+        $yesterdayVisitors = (int) DailyVisit::where('date', $dhakaYesterday->toDateString())->value('visitor_count');
 
-        $revenueChart = $this->collectedRevenueQuery()->select(
-            DB::raw('DATE(created_at) as date'),
-            DB::raw('COALESCE(SUM(total), 0) as revenue'),
-            DB::raw('COUNT(*) as orders')
-        )
-            ->where('created_at', '>=', Carbon::now()->subDays(6)->startOfDay())
-            ->groupBy(DB::raw('DATE(created_at)'))
-            ->orderBy('date')
-            ->get()
-            ->keyBy('date');
+        // Grouped in PHP (not DB::raw('DATE(created_at)')) so the grouping
+        // key is the Dhaka calendar day, not whatever day the DB engine
+        // thinks the stored UTC timestamp falls on.
+        $revenueRows = $this->collectedRevenueQuery()
+            ->where('created_at', '>=', $dhakaToday->copy()->subDays(6)->utc())
+            ->get(['created_at', 'total']);
+        $revenueByDate = $revenueRows->groupBy(fn (Order $order) => $order->created_at->copy()->timezone('Asia/Dhaka')->toDateString());
 
-        $chartData = collect(range(6, 0))->map(function (int $daysAgo) use ($revenueChart): array {
-            $date = Carbon::today()->subDays($daysAgo);
+        $chartData = collect(range(6, 0))->map(function (int $daysAgo) use ($dhakaToday, $revenueByDate): array {
+            $date = $dhakaToday->copy()->subDays($daysAgo);
             $key = $date->toDateString();
-            $row = $revenueChart->get($key);
+            $rows = $revenueByDate->get($key);
 
             return [
                 'date' => $key,
                 'label' => $date->format('D'),
-                'revenue' => $row ? (float) $row->revenue : 0,
-                'orders' => $row ? (int) $row->orders : 0,
+                'revenue' => $rows ? (float) $rows->sum('total') : 0,
+                'orders' => $rows ? $rows->count() : 0,
             ];
         })->values();
 
-        $visitChart = DailyVisit::where('date', '>=', Carbon::now()->subDays(6)->startOfDay())
+        $visitChart = DailyVisit::where('date', '>=', $dhakaToday->copy()->subDays(6)->toDateString())
             ->get()
             ->keyBy(fn (DailyVisit $visit) => $visit->date->toDateString());
 
-        $visitorChartData = collect(range(6, 0))->map(function (int $daysAgo) use ($visitChart): array {
-            $date = Carbon::today()->subDays($daysAgo);
+        $visitorChartData = collect(range(6, 0))->map(function (int $daysAgo) use ($dhakaToday, $visitChart): array {
+            $date = $dhakaToday->copy()->subDays($daysAgo);
             $key = $date->toDateString();
             $row = $visitChart->get($key);
 
@@ -130,5 +130,13 @@ class DashboardController extends Controller
     {
         return Order::where('payment_status', PaymentStatus::PAID)
             ->where('status', '!=', OrderStatus::CANCELLED);
+    }
+
+    /**
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function utcDayRange(Carbon $dhakaMidnight): array
+    {
+        return [$dhakaMidnight->copy()->utc(), $dhakaMidnight->copy()->addDay()->utc()->subSecond()];
     }
 }
