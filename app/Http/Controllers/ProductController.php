@@ -6,6 +6,8 @@ namespace App\Http\Controllers;
 
 use App\Models\FlashSaleItem;
 use App\Models\Product;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -130,6 +132,35 @@ class ProductController extends Controller
                 ]);
             })
             ->values();
+
+        // FE-006: SSR isn't built by deploy (shared host can't run the SSR
+        // daemon), so Inertia's own <Head> only takes effect after the
+        // client hydrates — curl, Facebook's scraper and search crawlers
+        // see none of it. Shared directly into the Blade root view so the
+        // first, unhydrated response already carries real tags.
+        $imagePath = $product->primaryImagePath();
+        $imageUrl = $imagePath ? (Str::startsWith($imagePath, ['http://', 'https://']) ? $imagePath : url($imagePath)) : null;
+        $description = $product->meta_description ?: $product->short_description;
+
+        View::share('seo', [
+            'title' => $product->meta_title ?: $product->name,
+            'description' => $description,
+            'canonical' => route('product.show', $product->slug),
+            'image' => $imageUrl,
+            'jsonLd' => [
+                '@context' => 'https://schema.org',
+                '@type' => 'Product',
+                'name' => $product->name,
+                'description' => $description,
+                'image' => $imageUrl ? [$imageUrl] : [],
+                'offers' => [
+                    '@type' => 'Offer',
+                    'priceCurrency' => 'BDT',
+                    'price' => (string) $product->price,
+                    'availability' => $product->stock_quantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                ],
+            ],
+        ]);
 
         return Inertia::render('catalog/ProductDetail', [
             'product' => array_merge($product->toArray(), [
