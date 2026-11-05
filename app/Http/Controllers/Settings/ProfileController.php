@@ -33,7 +33,19 @@ class ProfileController extends Controller
         $request->user()->fill($request->validated());
 
         if ($request->user()->isDirty('email')) {
+            // SEC-003: a code already sent to the old address must not stay
+            // valid for the new one — EmailVerificationCodeController only
+            // ever checks the code against the user row, with nothing
+            // tying it to which address it was actually sent to. Without
+            // this, entering that stale code here would mark the new
+            // (unproven) address verified, and a later "Continue with
+            // Google" for that address's real owner would land them in
+            // this account instead, where the attacker still holds the
+            // password.
             $request->user()->email_verified_at = null;
+            $request->user()->email_verification_code = null;
+            $request->user()->email_verification_code_expires_at = null;
+            $request->user()->email_verification_code_sent_at = null;
         }
 
         $request->user()->save();
