@@ -12,6 +12,11 @@ import {
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useDebounce } from '@/lib/hooks/useDebounce';
+import {
+    SEARCH_TERM_MAX_LENGTH,
+    isSearchableTerm,
+    normalizeSearchTerm,
+} from '@/lib/search-term';
 import { formatCurrency } from '@/lib/utils';
 
 interface SuggestionProduct {
@@ -92,6 +97,8 @@ export function SearchBar({
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const debouncedQuery = useDebounce(query, 280);
+    // Lowercased and tidied, so an extra space or a change of case isn't a new request.
+    const suggestionQuery = normalizeSearchTerm(debouncedQuery).toLowerCase();
 
     const hasResults =
         products.length > 0 ||
@@ -99,7 +106,9 @@ export function SearchBar({
         categories.length > 0 ||
         subcategories.length > 0;
     const showPanel =
-        isFocused && (query.trim().length >= 2 || query.trim().length === 0);
+        isFocused &&
+        (query.trim().length === 0 ||
+            isSearchableTerm(normalizeSearchTerm(query)));
 
     // Build flat navigable list for keyboard nav
     const flatItems: FlatItem[] = [
@@ -116,7 +125,7 @@ export function SearchBar({
 
     // Fetch suggestions
     useEffect(() => {
-        if (debouncedQuery.trim().length < 2) {
+        if (!isSearchableTerm(suggestionQuery)) {
             // eslint-disable-next-line react-hooks/set-state-in-effect -- clears results at once when the query is emptied; fetched results are set asynchronously
             setProducts([]);
             setBrands([]);
@@ -128,7 +137,9 @@ export function SearchBar({
         }
 
         setIsLoading(true);
-        fetch(`/api/search/suggestions?q=${encodeURIComponent(debouncedQuery)}`)
+        fetch(
+            `/api/search/suggestions?q=${encodeURIComponent(suggestionQuery)}`,
+        )
             .then((r) =>
                 r.ok
                     ? r.json()
@@ -152,7 +163,7 @@ export function SearchBar({
                 setSubcategories([]);
             })
             .finally(() => setIsLoading(false));
-    }, [debouncedQuery]);
+    }, [suggestionQuery]);
 
     // Close on outside click
     useEffect(() => {
@@ -171,13 +182,15 @@ export function SearchBar({
 
     const navigateToQuery = useCallback(
         (q: string) => {
-            if (!q.trim()) {
+            const term = normalizeSearchTerm(q);
+
+            if (!term) {
                 return;
             }
 
             setIsFocused(false);
             onSearch?.();
-            router.get(route('search'), { q: q.trim() });
+            router.get(route('search'), { q: term });
         },
         [onSearch],
     );
@@ -188,7 +201,7 @@ export function SearchBar({
             onSearch?.();
 
             if (item.kind === 'seeAll') {
-                router.get(route('search'), { q: query.trim() });
+                router.get(route('search'), { q: normalizeSearchTerm(query) });
             } else if (item.kind === 'product') {
                 router.get(route('product.show', item.slug));
             } else if (item.kind === 'brand') {
@@ -259,6 +272,7 @@ export function SearchBar({
                     value={query}
                     autoFocus={autoFocus}
                     autoComplete="off"
+                    maxLength={SEARCH_TERM_MAX_LENGTH}
                     onChange={(e) => {
                         setQuery(e.target.value);
                         setActiveIndex(-1);

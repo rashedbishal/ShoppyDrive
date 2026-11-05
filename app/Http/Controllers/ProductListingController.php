@@ -11,6 +11,7 @@ use App\Models\Review;
 use App\Models\SubCategory;
 use App\Support\CatalogFilterCache;
 use App\Support\ProductSearchQuery;
+use App\Support\SearchTerm;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -70,8 +71,10 @@ class ProductListingController extends Controller
             }
         }
 
-        $search = trim((string) $request->string('q'));
-        if ($search !== '') {
+        $search = SearchTerm::normalize($request->input('q'));
+        if ($search !== '' && ! SearchTerm::isSearchable($search)) {
+            $query->whereRaw('1 = 0');
+        } elseif ($search !== '') {
             $query->where(static fn ($productQuery) => ProductSearchQuery::apply($productQuery, $search));
         }
 

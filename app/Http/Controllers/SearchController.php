@@ -11,6 +11,7 @@ use App\Models\Review;
 use App\Models\SubCategory;
 use App\Support\ProductSearchQuery;
 use App\Support\SearchSuggestionCache;
+use App\Support\SearchTerm;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,7 +21,7 @@ class SearchController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = trim((string) $request->string('q'));
+        $query = SearchTerm::normalize($request->input('q'));
         $sort = $request->string('sort', 'relevance')->toString();
         $categorySlug = $request->string('category')->toString() ?: null;
         $view = $request->string('view', 'grid')->toString();
@@ -43,7 +44,8 @@ class SearchController extends Controller
             ->with(['images', 'brand', 'category', 'variants'])
             ->withCount(['reviews as reviews_count' => fn ($q) => $q->where('is_approved', true)])
             ->withAvg(['reviews as average_rating' => fn ($q) => $q->where('is_approved', true)], 'rating')
-            ->when($query !== '', fn ($q) => $q->where(fn ($sub) => ProductSearchQuery::apply($sub, $query)
+            ->when($query !== '' && ! SearchTerm::isSearchable($query), fn ($q) => $q->whereRaw('1 = 0'))
+            ->when(SearchTerm::isSearchable($query), fn ($q) => $q->where(fn ($sub) => ProductSearchQuery::apply($sub, $query)
                 ->orWhereHas('brand', fn ($b) => $b->where('name', 'like', "%{$query}%"))
                 ->orWhereHas('category', fn ($c) => $c->where('name', 'like', "%{$query}%"))
                 ->orWhereHas('subCategory', fn ($s) => $s->where('name', 'like', "%{$query}%"))
@@ -111,11 +113,11 @@ class SearchController extends Controller
 
     public function suggestions(Request $request): JsonResponse
     {
-        $query = trim((string) $request->string('q'));
+        $query = SearchTerm::normalize($request->input('q'));
 
         $empty = ['products' => [], 'brands' => [], 'categories' => [], 'subcategories' => []];
 
-        if (strlen($query) < 2) {
+        if (! SearchTerm::isSearchable($query)) {
             return response()->json($empty);
         }
 

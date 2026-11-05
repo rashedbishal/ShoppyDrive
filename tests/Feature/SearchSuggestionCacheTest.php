@@ -72,22 +72,29 @@ test('a repeated search is answered from the cache with an identical response', 
     expect(suggestionQueriesDuring(fn () => expect(suggest('shirt')->json())->toBe($first)))->toBe(0);
 });
 
-test('the cache key is the exact text, so different spacing is looked up separately', function () {
+test('different spacing and case share one cache entry', function () {
     searchableProduct(['name' => 'Red Shirt']);
-    suggest('red shirt');
+    $first = suggest('red shirt')->json();
 
-    expect(suggestionQueriesDuring(fn () => suggest('red  shirt')))->toBeGreaterThan(0);
+    foreach (['red  shirt', '  red shirt  ', 'RED Shirt'] as $variant) {
+        expect(suggestionQueriesDuring(fn () => expect(suggest($variant)->json())->toBe($first)))->toBe(0);
+    }
 });
 
-test('searches that match nothing, and very long searches, are never stored', function () {
+test('searches that match nothing are never stored', function () {
     searchableProduct(['name' => 'Cotton Shirt']);
 
     suggest('zzzqqq');
     expect(suggestionQueriesDuring(fn () => suggest('zzzqqq')))->toBeGreaterThan(0);
+});
 
-    $long = str_repeat('shirt ', 15);
+test('a very long search is cut to the limit, so repeats come from the cache', function () {
+    $long = str_repeat('cotton shirt ', 7);
+    searchableProduct(['name' => trim($long)]);
+
     suggest($long);
-    expect(suggestionQueriesDuring(fn () => suggest($long)))->toBeGreaterThan(0);
+
+    expect(suggestionQueriesDuring(fn () => suggest($long)))->toBe(0);
 });
 
 test('cached suggestions expire after a few minutes, so a scheduled product appears on time', function () {

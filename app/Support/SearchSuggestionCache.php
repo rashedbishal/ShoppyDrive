@@ -45,7 +45,7 @@ final class SearchSuggestionCache
             return json_decode(json_encode($build(), JSON_THROW_ON_ERROR), true, flags: JSON_THROW_ON_ERROR);
         }
 
-        $key = 'search_suggestions.'.self::version().'.'.sha1($query);
+        $key = 'search_suggestions.'.self::version().'.'.sha1(mb_strtolower($query));
         $cached = Cache::get($key);
 
         if (is_array($cached)) {
