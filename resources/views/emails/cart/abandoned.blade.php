@@ -22,4 +22,8 @@
     </table>
 
     <a href="{{ route('checkout.index') }}" class="btn">Complete your order</a>
+
+    <p style="font-size: 12px; color: #888; margin-top: 24px;">
+        <a href="{{ $unsubscribeUrl }}">Unsubscribe</a> from cart reminder emails.
+    </p>
 @endsection

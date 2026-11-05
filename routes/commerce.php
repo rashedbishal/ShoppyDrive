@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AbandonedCartUnsubscribeController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\IncompleteOrderController;
@@ -15,6 +16,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
+
+// OPS-006: unsubscribe link in AbandonedCartReminderMail — signed, so no
+// login is required and the link can't be guessed or reused for another
+// customer's account.
+Route::get('/cart/reminders/unsubscribe/{user}', AbandonedCartUnsubscribeController::class)
+    ->middleware('signed')
+    ->name('cart.reminders.unsubscribe');
 
 // Checkout and payment: a guest is let through only when "Allow Guest
 // Checkout" is enabled in Admin > Settings (see EnsureCheckoutAccess); a

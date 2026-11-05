@@ -41,6 +41,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'phone',
         'avatar',
         'referred_by_id',
+        'abandoned_cart_reminders_enabled',
     ];
 
     // FSA-17: both columns hold Laravel-encrypted ciphertext written by
@@ -73,6 +74,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'role' => UserRole::class,
             'login_streak_date' => 'date',
             'anonymized_at' => 'datetime',
+            'abandoned_cart_reminders_enabled' => 'boolean',
         ];
     }
 

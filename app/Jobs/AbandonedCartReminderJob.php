@@ -60,6 +60,24 @@ class AbandonedCartReminderJob implements ShouldQueue
                 return null;
             }
 
+            // OPS-006: User::anonymize() deliberately leaves the email
+            // column untouched (so refund/audit history stays legible),
+            // so this account still looks mailable without this check — a
+            // customer who deleted their account must not still be mailed.
+            if ($incompleteOrder->user->anonymized_at !== null) {
+                $incompleteOrder->update(['reminder_sent_at' => now()]);
+
+                return null;
+            }
+
+            // OPS-006: opt-out, checked here (not in the command's query)
+            // since it's a per-row claim decision like the others below.
+            if (! $incompleteOrder->user->abandoned_cart_reminders_enabled) {
+                $incompleteOrder->update(['reminder_sent_at' => now()]);
+
+                return null;
+            }
+
             // Defense in depth: the order-creation paths that clean up a
             // matching IncompleteOrder row (by phone or user_id) might
             // have missed this one for some other reason — e.g. a third

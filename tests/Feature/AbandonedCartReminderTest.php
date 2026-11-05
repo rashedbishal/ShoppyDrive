@@ -209,6 +209,77 @@ test('the one-hour age threshold is governed by created_at, not updated_at', fun
     expect($incompleteOrder->refresh()->reminder_sent_at)->not->toBeNull();
 });
 
+// ── OPS-006: no cap, no opt-out, and anonymized accounts still got mailed ──
+
+test('a checkout attempt older than the 72-hour ceiling is never reminded, even after a long cron outage', function () {
+    $user = User::factory()->create();
+    $tooOld = IncompleteOrder::factory()->create(['user_id' => $user->id, 'created_at' => now()->subHours(73)]);
+    $stillEligible = IncompleteOrder::factory()->create(['user_id' => $user->id, 'created_at' => now()->subHours(71)]);
+
+    $this->artisan('cart:remind-abandoned')->assertExitCode(0);
+
+    expect($tooOld->refresh()->reminder_sent_at)->toBeNull();
+    expect($stillEligible->refresh()->reminder_sent_at)->not->toBeNull();
+});
+
+test('a customer who anonymized/deleted their account is never mailed', function () {
+    Mail::fake();
+    $user = User::factory()->create(['email' => 'deleted@example.com']);
+    $user->anonymize();
+    $incompleteOrder = IncompleteOrder::factory()->create(['user_id' => $user->id]);
+
+    AbandonedCartReminderJob::dispatchSync($incompleteOrder->id);
+
+    Mail::assertNothingQueued();
+    // Claimed so it's never re-evaluated every hour forever.
+    expect($incompleteOrder->refresh()->reminder_sent_at)->not->toBeNull();
+});
+
+test('a customer who opted out of cart reminders is never mailed', function () {
+    Mail::fake();
+    $user = User::factory()->create(['abandoned_cart_reminders_enabled' => false]);
+    $incompleteOrder = IncompleteOrder::factory()->create(['user_id' => $user->id]);
+
+    AbandonedCartReminderJob::dispatchSync($incompleteOrder->id);
+
+    Mail::assertNothingQueued();
+    expect($incompleteOrder->refresh()->reminder_sent_at)->not->toBeNull();
+});
+
+test('the email contains a signed unsubscribe link that turns reminders off for that customer only', function () {
+    $user = User::factory()->create(['email' => 'unsub@example.com']);
+    $otherUser = User::factory()->create();
+    $incompleteOrder = IncompleteOrder::factory()->create(['user_id' => $user->id]);
+
+    $mail = new AbandonedCartReminderMail($incompleteOrder);
+    $rendered = $mail->render();
+
+    expect($rendered)->toContain('Unsubscribe');
+
+    $url = (new AbandonedCartReminderMail($incompleteOrder))->content()->with['unsubscribeUrl'];
+    $this->get($url)->assertRedirect(route('home'));
+
+    expect($user->refresh()->abandoned_cart_reminders_enabled)->toBeFalse();
+    expect($otherUser->refresh()->abandoned_cart_reminders_enabled)->toBeTrue();
+});
+
+test('an unsubscribe link cannot be tampered with to affect a different customer', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $incompleteOrder = IncompleteOrder::factory()->create(['user_id' => $user->id]);
+
+    $url = (new AbandonedCartReminderMail($incompleteOrder))->content()->with['unsubscribeUrl'];
+    // Swap only the route's {user} path segment, not any digit anywhere in
+    // the URL (the signature hash could coincidentally contain the same
+    // digits as the id, corrupting an unrelated part of the URL instead).
+    $tampered = preg_replace('#/unsubscribe/\d+#', '/unsubscribe/'.$otherUser->id, $url, 1);
+
+    $this->get($tampered)->assertForbidden();
+
+    expect($user->refresh()->abandoned_cart_reminders_enabled)->toBeTrue();
+    expect($otherUser->refresh()->abandoned_cart_reminders_enabled)->toBeTrue();
+});
+
 test('editing an already-reminded cart does not trigger a second reminder (unchanged policy)', function () {
     $user = User::factory()->create();
     $incompleteOrder = IncompleteOrder::factory()->create([

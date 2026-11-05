@@ -11,6 +11,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\URL;
 
 class AbandonedCartReminderMail extends Mailable implements ShouldQueue
 {
@@ -27,6 +28,12 @@ class AbandonedCartReminderMail extends Mailable implements ShouldQueue
 
     public function content(): Content
     {
-        return new Content(view: 'emails.cart.abandoned');
+        // OPS-006: signed, not a plain preference route, so the link in
+        // this specific email works for the customer who received it
+        // without needing to log in, and can't be reused to unsubscribe
+        // anyone else.
+        return new Content(view: 'emails.cart.abandoned', with: [
+            'unsubscribeUrl' => URL::signedRoute('cart.reminders.unsubscribe', ['user' => $this->incompleteOrder->user_id]),
+        ]);
     }
 }
