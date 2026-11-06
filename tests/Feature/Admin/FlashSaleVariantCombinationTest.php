@@ -88,9 +88,9 @@ test('the same product/variant combination cannot be added twice in one submissi
 });
 
 test('the same product can have both a whole-product item and a specific-variant item in one submission', function () {
-    $product = Product::factory()->create(['stock_quantity' => 999]);
-    $variant = ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 5]);
-    ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 5]);
+    $product = Product::factory()->create(['price' => 100000, 'stock_quantity' => 999]);
+    $variant = ProductVariant::factory()->create(['price' => 100000, 'product_id' => $product->id, 'stock_quantity' => 5]);
+    ProductVariant::factory()->create(['price' => 100000, 'product_id' => $product->id, 'stock_quantity' => 5]);
 
     actingAs($this->admin, 'admin');
 
@@ -108,9 +108,9 @@ test('the same product can have both a whole-product item and a specific-variant
 });
 
 test('store persists variant_id, and update can change it', function () {
-    $product = Product::factory()->create();
-    $variant = ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 10]);
-    $otherVariant = ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 10]);
+    $product = Product::factory()->create(['price' => 100000]);
+    $variant = ProductVariant::factory()->create(['price' => 100000, 'product_id' => $product->id, 'stock_quantity' => 10]);
+    $otherVariant = ProductVariant::factory()->create(['price' => 100000, 'product_id' => $product->id, 'stock_quantity' => 10]);
 
     actingAs($this->admin, 'admin');
 

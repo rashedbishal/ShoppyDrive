@@ -30,7 +30,7 @@ class FlashSaleRequest extends FormRequest
             // which already prefers an exact variant match over a
             // product-wide one at pricing/stock-enforcement time).
             'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
-            'items.*.sale_price' => ['required', 'numeric', 'min:0'],
+            'items.*.sale_price' => ['required', 'numeric', 'gt:0'],
         ];
     }
 
@@ -99,6 +99,20 @@ class FlashSaleRequest extends FormRequest
                     $validator->errors()->add(
                         "items.{$index}.variant_id",
                         'This variant does not belong to the selected product.',
+                    );
+
+                    continue;
+                }
+
+                // BIZ-020: a whole-product sale also covers its cheapest variant.
+                $regularPrice = $variantId !== null
+                    ? (float) $product->variants->firstWhere('id', $variantId)->price
+                    : (float) $product->variants->pluck('price')->push($product->price)->filter()->min();
+
+                if ((float) $item['sale_price'] >= $regularPrice) {
+                    $validator->errors()->add(
+                        "items.{$index}.sale_price",
+                        'The sale price must be below the regular price of ৳'.number_format($regularPrice, 2).'.',
                     );
                 }
             }

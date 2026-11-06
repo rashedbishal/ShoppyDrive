@@ -34,11 +34,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class CheckoutController extends Controller
 {
+    private const string FREE_ORDER_MESSAGE = 'This order total is ৳0, so there is nothing to pay by bKash or Nagad. Please choose Cash on Delivery.';
+
     /** BIZ-024: the phone a referral discount was refused for in this session. */
     private const REFERRAL_REFUSED_SESSION_KEY = 'checkout.referral_refused_phone';
 
@@ -88,7 +91,8 @@ class CheckoutController extends Controller
         }
 
         $user = $request->user();
-        $subtotal = (float) ($cart['subtotal'] ?? 0);
+        // BIZ-018: Buy Now is part of what this order will pay for.
+        $subtotal = (float) ($cart['subtotal'] ?? 0) + (float) ($buyNowItem['subtotal'] ?? 0);
 
         return Inertia::render('checkout/Checkout', [
             'cart' => $cart,
@@ -508,12 +512,23 @@ class CheckoutController extends Controller
                     $this->resolveFinalDiscount($request, $subtotal, $couponId, $couponCode, $couponDiscount, $lockedUser);
                 $total = max(0, $subtotal - $discount + $shippingCost);
 
+                // BIZ-020: nothing to send means no SMS could ever confirm it,
+                // so the order would wait forever.
+                if ($total <= 0) {
+                    throw ValidationException::withMessages(['payment_method' => self::FREE_ORDER_MESSAGE]);
+                }
+
                 return $this->initiateMobileBanking(
                     $request, $cart, $shippingAddress, $subtotal, $shippingCost,
                     $finalCouponId, $finalCouponCode, $discount, $total,
                     $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount,
                 );
             }, 3);
+        } catch (ValidationException) {
+            return back()
+                ->withErrors(['payment_method' => self::FREE_ORDER_MESSAGE])
+                ->with('error', self::FREE_ORDER_MESSAGE)
+                ->withInput();
         } catch (CartChangedException $e) {
             return back()->with('error', $e->getMessage());
         } catch (InsufficientStockException $e) {

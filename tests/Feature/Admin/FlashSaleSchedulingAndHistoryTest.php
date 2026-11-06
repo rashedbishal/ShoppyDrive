@@ -18,7 +18,7 @@ use function Pest\Laravel\put;
 
 beforeEach(function () {
     actingAs(createAdmin(), 'admin');
-    $this->product = Product::factory()->create(['stock_quantity' => 50]);
+    $this->product = Product::factory()->create(['price' => 100000, 'stock_quantity' => 50]);
 });
 
 /**
@@ -105,9 +105,9 @@ test('editing a sale keeps sold counts and row identity, and applies the new pri
 });
 
 test('editing a sale adds new rows, removes dropped ones and tells variants apart', function () {
-    $variant = ProductVariant::factory()->create(['product_id' => $this->product->id]);
-    $dropped = Product::factory()->create();
-    $added = Product::factory()->create();
+    $variant = ProductVariant::factory()->create(['price' => 100000, 'product_id' => $this->product->id]);
+    $dropped = Product::factory()->create(['price' => 100000]);
+    $added = Product::factory()->create(['price' => 100000]);
     $sale = FlashSale::factory()->create();
     $whole = $sale->items()->create(['product_id' => $this->product->id, 'sale_price' => 900, 'sold_count' => 4]);
     $specific = $sale->items()->create(['product_id' => $this->product->id, 'variant_id' => $variant->id, 'sale_price' => 800, 'sold_count' => 6]);

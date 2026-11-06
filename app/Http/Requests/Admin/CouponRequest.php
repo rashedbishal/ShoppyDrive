@@ -26,7 +26,7 @@ class CouponRequest extends FormRequest
             'code' => ['required', 'string', 'max:50', 'unique:coupons,code,'.($couponId ?? 'NULL').',id'],
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'in:percent,fixed'],
-            'value' => ['required', 'numeric', 'min:0'],
+            'value' => ['required', 'numeric', 'gt:0', Rule::when($this->input('type') === 'percent', ['max:100'])],
             'min_order_amount' => ['nullable', 'numeric', 'min:0'],
             'max_uses' => ['nullable', 'integer', 'min:1'],
             'per_user_limit' => ['nullable', 'integer', 'min:1'],
