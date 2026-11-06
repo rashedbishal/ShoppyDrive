@@ -46,8 +46,8 @@ it('schedules the queue drainer every minute as the last task, with a short over
 it('leaves the existing scheduled tasks and their lock durations unchanged', function () {
     $events = scheduledEvents();
 
-    // 6 + DB-002's 4 nightly retention tasks (see PruneOldDataTest).
-    expect($events)->toHaveCount(10);
+    // 6 + DB-002's 4 nightly retention tasks + OPS-001's sitemap rebuild.
+    expect($events)->toHaveCount(11);
     expect(array_slice($events, 0, 5))->toBe([
         ['command' => 'pathao:sync-statuses', 'expression' => '*/15 * * * *', 'withoutOverlapping' => true, 'expiresAt' => 1440, 'releaseOnTerminationSignals' => false, 'timezone' => 'UTC'],
         ['command' => 'rewards:grant-due', 'expression' => '0 1 * * *', 'withoutOverlapping' => true, 'expiresAt' => 1440, 'releaseOnTerminationSignals' => false, 'timezone' => 'Asia/Dhaka'],

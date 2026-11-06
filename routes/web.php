@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\GenerateSitemapCommand;
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\ClientErrorController;
@@ -45,6 +46,13 @@ Route::get('/faq', function () {
 
     return inertia('static/FAQ', ['page' => $page]);
 })->name('faq');
+
+// OPS-001: rebuilt nightly by sitemap:generate; see GenerateSitemapCommand::path().
+Route::get('/sitemap.xml', function () {
+    abort_unless(is_file(GenerateSitemapCommand::path()), 404);
+
+    return response()->file(GenerateSitemapCommand::path(), ['Content-Type' => 'application/xml']);
+})->name('sitemap');
 
 // BIZ-034: return, refund and shipping policies.
 foreach (['return-policy', 'refund-policy', 'shipping-policy'] as $policySlug) {

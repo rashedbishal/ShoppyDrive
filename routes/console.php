@@ -44,6 +44,9 @@ Schedule::command('queue:prune-failed --hours=720')->dailyAt('03:40')->timezone(
 Schedule::command('queue:prune-batches --hours=720 --unfinished=720 --cancelled=720')->dailyAt('03:45')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
 Schedule::command('activitylog:clean --force')->dailyAt('03:50')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
 
+// OPS-001: keeps /sitemap.xml current for search engines.
+Schedule::command('sitemap:generate')->dailyAt('04:00')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
+
 // Hostinger shared hosting can't keep a worker process alive, and its
 // disabled pcntl_signal() crashes `queue:work`'s daemon mode, so the
 // every-minute cron that drives this scheduler drains the database queue

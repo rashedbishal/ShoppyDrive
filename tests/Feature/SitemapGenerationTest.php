@@ -2,17 +2,21 @@
 
 declare(strict_types=1);
 
+use App\Console\Commands\GenerateSitemapCommand;
+use App\Models\Blog;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Page;
 use App\Models\Product;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 afterEach(function () {
-    // GenerateSitemapCommand writes a real file to public_path(); never
-    // leave it behind in the working tree after a test run.
-    @unlink(public_path('sitemap.xml'));
+    // GenerateSitemapCommand writes a real file; never leave it behind
+    // after a test run.
+    @unlink(GenerateSitemapCommand::path());
 });
 
 /** @return array<int, string> every <loc> value, namespace-agnostic. */
@@ -20,9 +24,9 @@ function sitemapLocs(): array
 {
     test()->artisan('sitemap:generate')->assertSuccessful();
 
-    expect(file_exists(public_path('sitemap.xml')))->toBeTrue();
+    expect(file_exists(GenerateSitemapCommand::path()))->toBeTrue();
 
-    $xml = new SimpleXMLElement((string) file_get_contents(public_path('sitemap.xml')));
+    $xml = new SimpleXMLElement((string) file_get_contents(GenerateSitemapCommand::path()));
 
     expect($xml->getName())->toBe('urlset');
 
@@ -38,7 +42,7 @@ test('the sitemap is well-formed XML with a urlset root', function () {
 test('the homepage entry carries the priority and change frequency the command sets', function () {
     $this->artisan('sitemap:generate')->assertSuccessful();
 
-    $xml = new SimpleXMLElement((string) file_get_contents(public_path('sitemap.xml')));
+    $xml = new SimpleXMLElement((string) file_get_contents(GenerateSitemapCommand::path()));
 
     $priorities = $xml->xpath('//*[local-name()="priority"]');
     $changeFrequencies = $xml->xpath('//*[local-name()="changefreq"]');
@@ -91,6 +95,49 @@ test('a published page is included and an unpublished one is excluded', function
 
     $locs = sitemapLocs();
 
-    expect($locs)->toContain(url('/about-us'));
+    // Only the legal pages have top-level routes; /about-us would be a 404.
+    expect($locs)->toContain(url('/page/about-us'));
     expect(implode(' ', $locs))->not->toContain('/draft-page');
+});
+
+test('active brands, published blogs and the main listing pages are included, hidden ones are not', function () {
+    Brand::factory()->create(['slug' => 'live-brand', 'is_active' => true]);
+    Brand::factory()->create(['slug' => 'hidden-brand', 'is_active' => false]);
+    Blog::factory()->create(['slug' => 'live-post', 'is_published' => true, 'published_at' => now()->subDay()]);
+    Blog::factory()->create(['slug' => 'draft-post', 'is_published' => false]);
+
+    $locs = sitemapLocs();
+
+    expect($locs)->toContain(url('/brand/live-brand'))
+        ->toContain(url('/blog/live-post'))
+        ->toContain(url('/products'))
+        ->toContain(url('/about'))
+        ->toContain(url('/contact'));
+    expect(implode(' ', $locs))->not->toContain('hidden-brand')->not->toContain('draft-post');
+});
+
+test('every legal page in the sitemap uses its real top-level URL', function () {
+    $locs = sitemapLocs();
+
+    expect($locs)->toContain(url('/terms'))->toContain(url('/return-policy'))->not->toContain(url('/page/terms'));
+});
+
+test('/sitemap.xml serves the generated file as XML, and is 404 until it exists', function () {
+    @unlink(GenerateSitemapCommand::path());
+    $this->get('/sitemap.xml')->assertNotFound();
+
+    $this->artisan('sitemap:generate')->assertSuccessful();
+
+    $response = $this->get('/sitemap.xml')->assertOk();
+    expect($response->headers->get('Content-Type'))->toContain('application/xml')
+        ->and($response->baseResponse->getFile()->getContent())->toContain('<urlset');
+});
+
+test('the sitemap is rebuilt nightly and robots.txt points to it', function () {
+    expect(collect(app(Schedule::class)->events())->pluck('command')->implode(' '))->toContain('sitemap:generate')
+        ->and(file_get_contents(public_path('robots.txt')))->toContain('Sitemap: https://shoppydrive.com/sitemap.xml');
+});
+
+test('the generated file stays out of public/, where deploys would delete it', function () {
+    expect(GenerateSitemapCommand::path())->toStartWith(storage_path('app/private'));
 });
