@@ -112,6 +112,8 @@ class SocialAuthController extends Controller
                 // any way back in.
                 if (! $user->hasVerifiedEmail()) {
                     $user = $this->claimUnverifiedAccount($user);
+                    // BIZ-024: the claim proves the email (idempotent).
+                    $this->loyalty->grantRegistrationBonus($user);
                 }
             } else {
                 $user = User::create([
@@ -125,7 +127,11 @@ class SocialAuthController extends Controller
                     'referred_by_id' => $this->referrals->resolveReferrerId(session('pending_referral_code')),
                 ]);
 
-                $this->loyalty->grantRegistrationBonus($user);
+                // BIZ-024: only a provider-verified email earns the sign-up
+                // bonus now; others get it when they verify by code.
+                if ($user->hasVerifiedEmail()) {
+                    $this->loyalty->grantRegistrationBonus($user);
+                }
             }
 
             $user->socialAccounts()->create([

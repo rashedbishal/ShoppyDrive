@@ -5,7 +5,6 @@ namespace App\Actions\Fortify;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
-use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Validator as ValidatorInstance;
@@ -17,7 +16,6 @@ class CreateNewUser implements CreatesNewUsers
 
     public function __construct(
         private readonly ReferralService $referrals,
-        private readonly LoyaltyPointsService $loyalty,
     ) {}
 
     /**
@@ -48,7 +46,9 @@ class CreateNewUser implements CreatesNewUsers
             'referred_by_id' => $referredById,
         ]);
 
-        $this->loyalty->grantRegistrationBonus($user);
+        // BIZ-024: the sign-up bonus is granted once the email is verified
+        // (EmailVerificationCodeController), not here, so throwaway sign-ups
+        // that never verify get no points.
 
         return $user;
     }

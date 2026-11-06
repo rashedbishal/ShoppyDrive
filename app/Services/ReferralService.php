@@ -87,13 +87,40 @@ class ReferralService
      * Whether this user still qualifies for the one-time referred-customer
      * discount on their next order.
      */
-    public function isEligibleForDiscount(?User $user): bool
+    public function isEligibleForDiscount(?User $user, ?string $phone = null): bool
     {
         if ($user === null || ! $this->isEnabled()) {
             return false;
         }
 
-        return $user->referred_by_id !== null && $user->referral_discount_used_order_id === null;
+        return $user->referred_by_id !== null
+            && $user->referral_discount_used_order_id === null
+            && ! $this->referralDiscountUsedByPhone($phone, $user->id);
+    }
+
+    /**
+     * BIZ-024: the one-time referred-customer discount was tied only to the
+     * account, so the same person could claim it again with each new email.
+     * By owner decision it is refused once another account already has a
+     * referral discount on record for an order with this phone (lenient:
+     * an earlier ordinary order with the phone doesn't count). A cancelled
+     * or refunded order gives its discount back (handleOrderCancelledOrRefunded()
+     * clears referral_discount_used_order_id), so it no longer counts.
+     */
+    public function referralDiscountUsedByPhone(?string $phone, int $excludeUserId): bool
+    {
+        if ($phone === null || $phone === '') {
+            return false;
+        }
+
+        return Order::withTrashed()
+            ->where('used_referral_discount', true)
+            ->where('shipping_address->phone', $phone)
+            ->whereIn('id', User::withTrashed()
+                ->whereNotNull('referral_discount_used_order_id')
+                ->whereKeyNot($excludeUserId)
+                ->select('referral_discount_used_order_id'))
+            ->exists();
     }
 
     public function minOrderAmountForDiscount(): float

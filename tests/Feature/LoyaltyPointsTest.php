@@ -15,6 +15,8 @@ use App\Models\Review;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\LoyaltyPointsService;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 use function Pest\Laravel\artisan;
 
@@ -71,8 +73,10 @@ test('a new customer is credited the registration bonus once', function () {
         ->count())->toBe(1);
 });
 
-test('registering through the normal signup form grants the registration bonus', function () {
+test('the registration bonus is granted when the new account verifies its email, not before', function () {
+    // BIZ-024: throwaway sign-ups that never verify must not earn points.
     setLoyaltySettings();
+    Mail::fake();
 
     $this->post(route('register'), [
         'name' => 'New Customer',
@@ -82,7 +86,16 @@ test('registering through the normal signup form grants the registration bonus',
     ]);
 
     $user = User::where('email', 'bonus-signup@example.com')->firstOrFail();
-    expect($user->points_balance)->toBe(20);
+    expect($user->points_balance)->toBe(0);
+
+    $user->forceFill([
+        'email_verification_code' => Hash::make('123456'),
+        'email_verification_code_expires_at' => now()->addMinutes(10),
+    ])->save();
+    $this->actingAs($user)->post(route('verification.verify-code'), ['code' => '123456']);
+
+    expect($user->refresh()->points_balance)->toBe(20)
+        ->and($user->hasVerifiedEmail())->toBeTrue();
 });
 
 // ── Review bonus ─────────────────────────────────────────────────────────────

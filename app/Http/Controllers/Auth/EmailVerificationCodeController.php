@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Mail\WelcomeMail;
+use App\Services\LoyaltyPointsService;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -43,6 +44,9 @@ class EmailVerificationCodeController extends Controller
         ])->save();
 
         event(new Verified($user));
+
+        // BIZ-024: the sign-up bonus waits for a proven email (idempotent).
+        app(LoyaltyPointsService::class)->grantRegistrationBonus($user);
 
         // Only ever reached once per account — hasVerifiedEmail() above
         // returns early on any subsequent visit to this page.

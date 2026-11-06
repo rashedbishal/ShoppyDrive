@@ -39,6 +39,9 @@ use Inertia\Response;
 
 class CheckoutController extends Controller
 {
+    /** BIZ-024: the phone a referral discount was refused for in this session. */
+    private const REFERRAL_REFUSED_SESSION_KEY = 'checkout.referral_refused_phone';
+
     // CHECKOUT-COD-002: same idempotency-cache window as
     // LandingPageController's ORDER_TOKEN_RESULT_TTL_HOURS — matches
     // PendingCheckout's own existing 2-hour expiry convention.
@@ -96,8 +99,10 @@ class CheckoutController extends Controller
             'orderToken' => (string) Str::uuid(),
             'savedAddresses' => $savedAddresses,
             'buyNowItem' => $buyNowItem,
-            'referralDiscountEligible' => $this->referrals->isEligibleForDiscount($user),
-            'referralDiscountPreview' => $user ? $this->referrals->calculateReferralDiscount($user, $subtotal) : 0.0,
+            // BIZ-024: hidden once a submit was refused because the phone had
+            // already received a referral discount (see store()).
+            'referralDiscountEligible' => $this->referrals->isEligibleForDiscount($user) && ! $request->session()->has(self::REFERRAL_REFUSED_SESSION_KEY),
+            'referralDiscountPreview' => $user && ! $request->session()->has(self::REFERRAL_REFUSED_SESSION_KEY) ? $this->referrals->calculateReferralDiscount($user, $subtotal) : 0.0,
             // Spendable points, not the raw balance: anything held by an
             // unpaid pending checkout can't be redeemed here.
             'pointsBalance' => $user ? $this->loyalty->availablePoints($user) : 0,
@@ -258,6 +263,14 @@ class CheckoutController extends Controller
             return back()->withErrors(['coupon_code' => $e->getMessage()])->with('error', $e->getMessage())->withInput();
         }
 
+        // BIZ-024: the page showed this account's referral discount, but the
+        // phone already received one on another account. Never charge more
+        // than the page showed: refuse once with an explanation, and let the
+        // re-rendered page (now without the discount) be submitted again.
+        if ($refusal = $this->refuseReferralAlreadyUsedByPhone($request, $subtotal, $couponDiscount)) {
+            return $refusal;
+        }
+
         // CHECKOUT-COD-002: same order_token/Cache::lock() idempotency
         // pattern as LandingPageController::placeOrder() — a repeated
         // submission (double-click, network retry, back-button resubmit)
@@ -300,6 +313,29 @@ class CheckoutController extends Controller
                 ->with('error', $message)
                 ->withInput();
         }
+    }
+
+    private function refuseReferralAlreadyUsedByPhone(PlaceOrderRequest $request, float $subtotal, float $couponDiscount): ?RedirectResponse
+    {
+        $user = $request->user();
+        $phone = (string) $request->phone;
+
+        $pageShowedReferralDiscount = $user !== null
+            && $couponDiscount <= 0
+            && ! $request->boolean('redeem_points')
+            && $this->referrals->isEligibleForDiscount($user)
+            && $this->referrals->calculateReferralDiscount($user, $subtotal) > 0;
+
+        if (! $pageShowedReferralDiscount
+            || ! $this->referrals->referralDiscountUsedByPhone($phone, $user->id)
+            || $request->session()->get(self::REFERRAL_REFUSED_SESSION_KEY) === $phone) {
+            return null;
+        }
+
+        $request->session()->put(self::REFERRAL_REFUSED_SESSION_KEY, $phone);
+        $message = 'The referral welcome discount was already used with this phone number, so it can\'t be applied again. Please review your total and place the order again.';
+
+        return back()->with('error', $message)->withErrors(['referral' => $message])->withInput();
     }
 
     private static function orderResultKey(string $orderToken): string
@@ -522,7 +558,8 @@ class CheckoutController extends Controller
             }
         }
 
-        if ($user && $this->referrals->isEligibleForDiscount($user)) {
+        // BIZ-024: the authoritative check includes the checkout phone.
+        if ($user && $this->referrals->isEligibleForDiscount($user, $request->phone)) {
             $referralDiscount = $this->referrals->calculateReferralDiscount($user, $subtotal);
 
             if ($referralDiscount > 0) {
