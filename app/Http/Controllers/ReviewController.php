@@ -8,9 +8,11 @@ use App\Enums\OrderStatus;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Review;
+use App\Models\User;
 use App\Services\LoyaltyPointsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReviewController extends Controller
 {
@@ -26,28 +28,38 @@ class ReviewController extends Controller
             'body' => ['required', 'string', 'min:10', 'max:2000'],
         ]);
 
-        $alreadyReviewed = Review::where('product_id', $product->id)
-            ->where('user_id', $request->user()->id)
-            ->exists();
+        // BIZ-036: the user-row lock makes two quick submits take turns, so the
+        // second one sees the first one's review.
+        $review = DB::transaction(function () use ($request, $product, $validated): ?Review {
+            User::whereKey($request->user()->id)->lockForUpdate()->first();
 
-        if ($alreadyReviewed) {
+            $alreadyReviewed = Review::where('product_id', $product->id)
+                ->where('user_id', $request->user()->id)
+                ->exists();
+
+            if ($alreadyReviewed) {
+                return null;
+            }
+
+            return Review::create([
+                'product_id' => $product->id,
+                'user_id' => $request->user()->id,
+                'order_id' => $this->resolveVerifiedPurchaseOrderId($request->user()->id, $product->id),
+                'rating' => $validated['rating'],
+                'title' => $validated['title'] ?? null,
+                'body' => $validated['body'],
+                // FSA-10: every new review starts pending admin moderation
+                // (Admin\ReviewController::approve()/reject()) instead of
+                // publishing instantly. grantReviewBonus() already no-ops on a
+                // non-approved review, so the bonus is granted only once an
+                // admin approves it, not here.
+                'is_approved' => false,
+            ]);
+        });
+
+        if ($review === null) {
             return back()->withErrors(['review' => 'You have already reviewed this product.']);
         }
-
-        $review = Review::create([
-            'product_id' => $product->id,
-            'user_id' => $request->user()->id,
-            'order_id' => $this->resolveVerifiedPurchaseOrderId($request->user()->id, $product->id),
-            'rating' => $validated['rating'],
-            'title' => $validated['title'] ?? null,
-            'body' => $validated['body'],
-            // FSA-10: every new review starts pending admin moderation
-            // (Admin\ReviewController::approve()/reject()) instead of
-            // publishing instantly. grantReviewBonus() already no-ops on a
-            // non-approved review, so the bonus is granted only once an
-            // admin approves it, not here.
-            'is_approved' => false,
-        ]);
 
         $this->loyalty->grantReviewBonus($review);
 

@@ -515,6 +515,19 @@ class LoyaltyPointsService
                 return;
             }
 
+            // BIZ-036: a customer may rewrite a review an admin deleted, but
+            // the bonus is once per customer per product.
+            $alreadyRewarded = Review::withTrashed()
+                ->where('user_id', $lockedReview->user_id)
+                ->where('product_id', $lockedReview->product_id)
+                ->whereKeyNot($lockedReview->id)
+                ->whereNotNull('points_awarded_at')
+                ->exists();
+
+            if ($alreadyRewarded) {
+                return;
+            }
+
             $user->increment('points_balance', $points);
 
             ReferralPointTransaction::create([
