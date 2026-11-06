@@ -149,6 +149,15 @@ class CheckoutController extends Controller
 
     public function store(PlaceOrderRequest $request): RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
+        // BIZ-014: a retry of a submission that already placed its order
+        // (network retry, double-click) must go straight to that order,
+        // before anything below re-syncs the submitted items back into the
+        // just-emptied cart. Same order as LandingPageController::placeOrder().
+        // The check inside the lock further down stays for concurrent duplicates.
+        if (($cached = Cache::get(self::orderResultKey($request->string('order_token')->toString()))) !== null) {
+            return $this->redirectForCachedCheckoutOrder($cached);
+        }
+
         $items = $request->filled('items') ? $request->validated('items') : null;
 
         if ($items !== null) {
@@ -258,7 +267,7 @@ class CheckoutController extends Controller
         // outcome is cached (see completeCheckout()), so a failed attempt
         // never poisons the token and a genuine retry still works.
         $orderToken = $request->string('order_token')->toString();
-        $resultKey = "checkout-order-result:{$orderToken}";
+        $resultKey = self::orderResultKey($orderToken);
 
         if (($cached = Cache::get($resultKey)) !== null) {
             return $this->redirectForCachedCheckoutOrder($cached);
@@ -291,6 +300,11 @@ class CheckoutController extends Controller
                 ->with('error', $message)
                 ->withInput();
         }
+    }
+
+    private static function orderResultKey(string $orderToken): string
+    {
+        return "checkout-order-result:{$orderToken}";
     }
 
     private function redirectForCachedCheckoutOrder(array $cached): RedirectResponse
