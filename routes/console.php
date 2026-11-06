@@ -34,6 +34,16 @@ Schedule::command('pending-checkouts:prune')->dailyAt('02:00')->timezone('Asia/D
 // callback; this clears finished, never-queued and abandoned leftovers.
 Schedule::command('newsletter:prune-attachments')->dailyAt('03:00')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
 
+// DB-002: owner-approved retention (orders, payments, refunds and accounts are
+// never touched). 720 hours = 30 days. activitylog:clean needs --force, or it
+// stops at a confirmation prompt in production and silently does nothing; its
+// 365 days come from config/activitylog.php. Unfinished batches need their own
+// option, or queue:prune-batches keeps them forever.
+Schedule::command('data:prune')->dailyAt('03:30')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
+Schedule::command('queue:prune-failed --hours=720')->dailyAt('03:40')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
+Schedule::command('queue:prune-batches --hours=720 --unfinished=720 --cancelled=720')->dailyAt('03:45')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
+Schedule::command('activitylog:clean --force')->dailyAt('03:50')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
+
 // Hostinger shared hosting can't keep a worker process alive, and its
 // disabled pcntl_signal() crashes `queue:work`'s daemon mode, so the
 // every-minute cron that drives this scheduler drains the database queue
