@@ -1,4 +1,4 @@
-import { CheckCircle2, Star, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { CheckCircle2, Star } from 'lucide-react';
 import React from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,13 +7,9 @@ import type { Review } from '@/types';
 
 interface ReviewCardProps {
     review: Review;
-    onVote?: (reviewId: number, type: 'helpful' | 'unhelpful') => void;
 }
 
-export function ReviewCard({
-    review,
-    onVote,
-}: ReviewCardProps): React.JSX.Element {
+export function ReviewCard({ review }: ReviewCardProps): React.JSX.Element {
     return (
         <div className="border-b border-[var(--color-border)] py-8 last:border-0">
             <div className="mb-4 flex items-start gap-4">
@@ -85,48 +81,6 @@ export function ReviewCard({
                     ))}
                 </div>
             )}
-
-            <div className="flex items-center gap-6">
-                <span className="text-xs font-medium text-[var(--color-text-muted)]">
-                    Was this review helpful?
-                </span>
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => onVote?.(review.id, 'helpful')}
-                        className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${
-                            review.user_voted === true
-                                ? 'text-[var(--color-primary)]'
-                                : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
-                        }`}
-                    >
-                        <ThumbsUp
-                            size={14}
-                            className={
-                                review.user_voted === true ? 'fill-current' : ''
-                            }
-                        />
-                        Helpful ({review.helpful_count})
-                    </button>
-                    <button
-                        onClick={() => onVote?.(review.id, 'unhelpful')}
-                        className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${
-                            review.user_voted === false
-                                ? 'text-[var(--color-error)]'
-                                : 'text-[var(--color-text-muted)] hover:text-[var(--color-error)]'
-                        }`}
-                    >
-                        <ThumbsDown
-                            size={14}
-                            className={
-                                review.user_voted === false
-                                    ? 'fill-current'
-                                    : ''
-                            }
-                        />
-                        Not Helpful ({review.not_helpful_count})
-                    </button>
-                </div>
-            </div>
         </div>
     );
 }
