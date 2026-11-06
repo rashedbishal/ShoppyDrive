@@ -155,7 +155,7 @@ class AppServiceProvider extends ServiceProvider
         // each individually staying under both the per-IP and
         // per-email+IP limits.
         RateLimiter::for('admin-login', function (Request $request) {
-            $email = Str::transliterate(Str::lower((string) $request->input('email')));
+            $email = Str::transliterate(Str::lower(SecurityRateLimits::textInput($request, 'email')));
             $throttleKey = $email.'|'.$request->ip();
 
             return [
@@ -255,7 +255,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('password-reset', function (Request $request) {
             $limits = SecurityRateLimits::all();
             $response = SecurityRateLimits::tooManyAttempts('Too many password reset requests. Please wait a while and try again.');
-            $email = Str::lower(trim((string) $request->input('email')));
+            $email = Str::lower(trim(SecurityRateLimits::textInput($request, 'email')));
 
             return [
                 Limit::perMinutes($limits['password_reset_per_network_minutes'], $limits['password_reset_per_network_times'])
@@ -279,7 +279,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('newsletter-manage', function (Request $request) {
             $limits = SecurityRateLimits::all();
             $response = SecurityRateLimits::tooManyAttempts('Too many requests. Please wait a while and try again.');
-            $email = Str::lower(trim((string) $request->input('email')));
+            $email = Str::lower(trim(SecurityRateLimits::textInput($request, 'email')));
 
             return [
                 Limit::perMinutes($limits['newsletter_manage_per_network_minutes'], $limits['newsletter_manage_per_network_times'])

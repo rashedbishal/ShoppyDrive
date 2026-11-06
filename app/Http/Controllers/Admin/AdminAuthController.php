@@ -59,6 +59,12 @@ class AdminAuthController extends Controller
     {
         $admin = Auth::guard('admin')->user();
 
+        // BE-001: an already-signed-out admin (an old tab, a bot) has nothing
+        // to log out of; it used to crash reading the missing admin's name.
+        if ($admin === null) {
+            return redirect()->route('admin.login');
+        }
+
         activity('admin')
             ->causedBy($admin)
             ->event('logout')

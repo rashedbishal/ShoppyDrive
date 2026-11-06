@@ -169,6 +169,24 @@ class LandingPageController extends Controller
         }
     }
 
+    /**
+     * BE-001: a main-checkout payment token opened under a landing-page URL
+     * has none of the landing-page fields these actions read and used to
+     * crash. A token must belong to the landing page in the URL; an
+     * unknown token still falls through to the existing "expired" redirect.
+     */
+    private function abortUnlessStagedByLandingPage(?PendingCheckout $pending, string $slug): void
+    {
+        if ($pending === null) {
+            return;
+        }
+
+        $belongsHere = $pending->landing_page_id !== null
+            && LandingPage::whereKey($pending->landing_page_id)->where('slug', $slug)->exists();
+
+        abort_unless($belongsHere, 404);
+    }
+
     private function redirectForCachedLandingOrder(array $cached, string $slug): RedirectResponse
     {
         if ($cached['type'] === 'cod') {
@@ -332,6 +350,7 @@ class LandingPageController extends Controller
     public function payment(string $slug, string $token): Response|RedirectResponse
     {
         $pending = PendingCheckout::where('token', $token)->first();
+        $this->abortUnlessStagedByLandingPage($pending, $slug);
 
         if (! $pending || $pending->isExpired()) {
             return redirect()->route('lp.show', $slug)->with('error', 'Payment session expired. Please try again.');
@@ -364,6 +383,7 @@ class LandingPageController extends Controller
         ]);
 
         $pending = PendingCheckout::where('token', $token)->first();
+        $this->abortUnlessStagedByLandingPage($pending, $slug);
 
         if (! $pending || $pending->isExpired()) {
             return redirect()->route('lp.show', $slug)->with('error', 'Payment session expired.');

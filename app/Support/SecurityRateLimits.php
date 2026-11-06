@@ -22,6 +22,18 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class SecurityRateLimits
 {
+    /**
+     * BE-001: a request field as text (rate-limit keys, lookups). A bot
+     * sending `email[]=x` used to crash every limiter that lower-cased the
+     * raw input, before validation could refuse it; non-text is now "".
+     */
+    public static function textInput(Request $request, string $key): string
+    {
+        $value = $request->input($key);
+
+        return is_string($value) ? $value : '';
+    }
+
     public const SETTING_KEY = 'security_rate_limits';
 
     private const CACHE_KEY = 'settings.security_rate_limits';

@@ -152,7 +152,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $throttleKey = Str::transliterate(Str::lower(SecurityRateLimits::textInput($request, Fortify::username())).'|'.$request->ip());
 
             $limits = SecurityRateLimits::all();
 

@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Support\BangladeshiPhone;
+use App\Support\SecurityRateLimits;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -26,9 +27,11 @@ class OrderTrackingController extends Controller
         $order = null;
         $error = null;
 
-        $orderNumber = $request->get('order_number');
-        $email = $request->get('email');
-        $phone = $request->get('phone');
+        // BE-001: a list (e.g. `phone[]=x`) instead of text used to crash the
+        // match below; anything that isn't text is treated as not given.
+        $orderNumber = SecurityRateLimits::textInput($request, 'order_number') ?: null;
+        $email = SecurityRateLimits::textInput($request, 'email') ?: null;
+        $phone = SecurityRateLimits::textInput($request, 'phone') ?: null;
 
         if ($orderNumber && ($email || $phone)) {
             $found = Order::where('order_number', $orderNumber)
@@ -98,7 +101,7 @@ class OrderTrackingController extends Controller
      */
     public function checkRequirements(Request $request): JsonResponse
     {
-        $orderNumber = (string) $request->get('order_number', '');
+        $orderNumber = SecurityRateLimits::textInput($request, 'order_number'); // BE-001
 
         if ($orderNumber === '') {
             return response()->json(['found' => false]);

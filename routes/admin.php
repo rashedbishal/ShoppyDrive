@@ -91,7 +91,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::patch('products/cry-baby', [ProductController::class, 'updateCryBabyForAll'])->name('products.cry-baby.update-all')->middleware(AdminSections::middleware('products', 'update'));
-    $guardResource(Route::resource('products', ProductController::class), 'products');
+    $guardResource(Route::resource('products', ProductController::class)->except(['show']), 'products');
 
     Route::get('attributes', [AttributeController::class, 'index'])->name('attributes.index')->middleware(AdminSections::middleware('attributes', 'view'));
     Route::post('attribute-values/reorder', [AttributeValueController::class, 'reorder'])->name('attribute-values.reorder')->middleware(AdminSections::middleware('attributes', 'update'));
@@ -100,30 +100,30 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::post('categories/reorder', [CategoryController::class, 'reorder'])->name('categories.reorder')->middleware(AdminSections::middleware('categories', 'update'));
     Route::patch('categories/bulk-status', [CategoryController::class, 'updateStatusMany'])->name('categories.updateStatusMany')->middleware(AdminSections::middleware('categories', 'update'));
     Route::delete('categories/bulk-delete', [CategoryController::class, 'destroyMany'])->name('categories.destroyMany')->middleware(AdminSections::middleware('categories', 'delete'));
-    $guardResource(Route::resource('categories', CategoryController::class), 'categories');
+    $guardResource(Route::resource('categories', CategoryController::class)->except(['show']), 'categories');
 
     Route::patch('sub-categories/bulk-status', [SubCategoryController::class, 'updateStatusMany'])->name('sub-categories.updateStatusMany')->middleware(AdminSections::middleware('sub_categories', 'update'));
     Route::delete('sub-categories/bulk-delete', [SubCategoryController::class, 'destroyMany'])->name('sub-categories.destroyMany')->middleware(AdminSections::middleware('sub_categories', 'delete'));
-    $guardResource(Route::resource('sub-categories', SubCategoryController::class), 'sub_categories');
+    $guardResource(Route::resource('sub-categories', SubCategoryController::class)->except(['show']), 'sub_categories');
 
     Route::patch('brands/bulk-status', [BrandController::class, 'updateStatusMany'])->name('brands.updateStatusMany')->middleware(AdminSections::middleware('brands', 'update'));
     Route::delete('brands/bulk-delete', [BrandController::class, 'destroyMany'])->name('brands.destroyMany')->middleware(AdminSections::middleware('brands', 'delete'));
-    $guardResource(Route::resource('brands', BrandController::class), 'brands');
+    $guardResource(Route::resource('brands', BrandController::class)->except(['show']), 'brands');
 
     Route::get('coupons/products/search', [CouponController::class, 'searchProducts'])->name('coupons.products.search')->middleware(AdminSections::middleware('coupons', 'view'));
     Route::patch('coupons/bulk-status', [CouponController::class, 'updateStatusMany'])->name('coupons.updateStatusMany')->middleware(AdminSections::middleware('coupons', 'update'));
     Route::delete('coupons/bulk-delete', [CouponController::class, 'destroyMany'])->name('coupons.destroyMany')->middleware(AdminSections::middleware('coupons', 'delete'));
-    $guardResource(Route::resource('coupons', CouponController::class), 'coupons');
+    $guardResource(Route::resource('coupons', CouponController::class)->except(['show']), 'coupons');
 
     Route::get('flash-sales/products/search', [FlashSaleController::class, 'searchProducts'])->name('flash-sales.products.search')->middleware(AdminSections::middleware('flash_sales', 'view'));
     Route::patch('flash-sales/bulk-status', [FlashSaleController::class, 'updateStatusMany'])->name('flash-sales.updateStatusMany')->middleware(AdminSections::middleware('flash_sales', 'update'));
     Route::delete('flash-sales/bulk-delete', [FlashSaleController::class, 'destroyMany'])->name('flash-sales.destroyMany')->middleware(AdminSections::middleware('flash_sales', 'delete'));
-    $guardResource(Route::resource('flash-sales', FlashSaleController::class)->parameters(['flash-sales' => 'flashSale']), 'flash_sales');
+    $guardResource(Route::resource('flash-sales', FlashSaleController::class)->except(['show'])->parameters(['flash-sales' => 'flashSale']), 'flash_sales');
 
     Route::get('product-bundles/products/search', [ProductBundleController::class, 'searchProducts'])->name('product-bundles.products.search')->middleware(AdminSections::middleware('bundles', 'view'));
     Route::patch('product-bundles/bulk-status', [ProductBundleController::class, 'updateStatusMany'])->name('product-bundles.updateStatusMany')->middleware(AdminSections::middleware('bundles', 'update'));
     Route::delete('product-bundles/bulk-delete', [ProductBundleController::class, 'destroyMany'])->name('product-bundles.destroyMany')->middleware(AdminSections::middleware('bundles', 'delete'));
-    $guardResource(Route::resource('product-bundles', ProductBundleController::class)->parameters(['product-bundles' => 'productBundle']), 'bundles');
+    $guardResource(Route::resource('product-bundles', ProductBundleController::class)->except(['show'])->parameters(['product-bundles' => 'productBundle']), 'bundles');
 
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index')->middleware(AdminSections::middleware('orders', 'view'));
     Route::get('orders/pricing-preview', [OrderController::class, 'pricingPreview'])->name('orders.pricingPreview')->middleware(AdminSections::middleware('orders', 'create'));
