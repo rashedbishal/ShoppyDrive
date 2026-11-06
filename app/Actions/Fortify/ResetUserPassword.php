@@ -4,6 +4,7 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
@@ -29,9 +30,23 @@ class ResetUserPassword implements ResetsUserPasswords
             'password' => $this->passwordRules(),
         ])->validate();
 
-        $user->forceFill([
-            'password' => $input['password'],
-            'has_password' => true,
-        ])->save();
+        // SEC-008: whoever completes a reset has just proven they own the
+        // inbox. On an account whose email was never verified, any Google or
+        // Facebook link was attached by someone who never proved anything
+        // (possibly not this owner), and social logins skip the email code
+        // (FSA-09 policy), so such a link would keep logging in. Remove them;
+        // the owner can reconnect in Settings › Connections once verified.
+        $removeUnprovenLinks = ! $user->hasVerifiedEmail();
+
+        DB::transaction(function () use ($user, $input, $removeUnprovenLinks): void {
+            $user->forceFill([
+                'password' => $input['password'],
+                'has_password' => true,
+            ])->save();
+
+            if ($removeUnprovenLinks) {
+                $user->socialAccounts()->delete();
+            }
+        });
     }
 }
