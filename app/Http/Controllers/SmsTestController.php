@@ -109,7 +109,6 @@ class SmsTestController extends Controller
 
         Log::info('SMS received', [
             'id' => $sms->id,
-            'from' => $sms->sender,
             'transaction_id' => $sms->parsed_transaction_id,
             'amount' => $sms->parsed_amount,
         ]);

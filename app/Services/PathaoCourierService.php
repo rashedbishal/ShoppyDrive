@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Exceptions\CourierSubmissionException;
 use App\Models\Order;
 use App\Models\Setting;
+use App\Support\SafeLogContext;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -80,10 +81,7 @@ class PathaoCourierService
         }
 
         if ($response->failed()) {
-            Log::error('[Pathao] Create order failed', [
-                'http_status' => $response->status(),
-                'body' => $response->body(),
-            ]);
+            Log::error('[Pathao] Create order failed', SafeLogContext::courierResponse($response->json(), $response->status()));
 
             $message = $response->json('message');
 
@@ -93,7 +91,7 @@ class PathaoCourierService
         $json = $response->json() ?? [];
 
         if (($json['type'] ?? 'success') !== 'success') {
-            Log::error('[Pathao] Create order returned an error payload', ['response' => $json]);
+            Log::error('[Pathao] Create order returned an error payload', SafeLogContext::courierResponse($json, $response->status()));
 
             throw CourierSubmissionException::unknown('error_payload', $json['message'] ?? 'Pathao Create order failed.', $response->status());
         }
@@ -347,10 +345,7 @@ class PathaoCourierService
     private function handleResponse(Response $response, string $action): array
     {
         if ($response->failed()) {
-            Log::error("[Pathao] {$action} failed", [
-                'http_status' => $response->status(),
-                'body' => $response->body(),
-            ]);
+            Log::error("[Pathao] {$action} failed", SafeLogContext::courierResponse($response->json(), $response->status()));
 
             $message = $response->json('message') ?? "Pathao {$action} failed with HTTP {$response->status()}.";
 
@@ -360,7 +355,7 @@ class PathaoCourierService
         $json = $response->json();
 
         if (($json['type'] ?? 'success') !== 'success') {
-            Log::error("[Pathao] {$action} returned an error payload", ['response' => $json]);
+            Log::error("[Pathao] {$action} returned an error payload", SafeLogContext::courierResponse($json, $response->status()));
 
             throw new RuntimeException($json['message'] ?? "Pathao {$action} failed.");
         }

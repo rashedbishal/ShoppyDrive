@@ -21,6 +21,7 @@ use App\Services\ShippingCostCalculator;
 use App\Support\BangladeshiPhone;
 use App\Support\CartManager;
 use App\Support\OrderNumberGenerator;
+use App\Support\SafeLogContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
@@ -536,7 +537,11 @@ class LandingPageController extends Controller
                     ->withErrors(['transaction_id' => "We couldn't automatically verify the amount for this transaction. Please contact support with your Transaction ID so we can confirm it manually."]),
                 str_starts_with($msg, 'amount_mismatch:') => redirect()->route('lp.show', $slug)
                     ->withErrors(['transaction_id' => 'The amount of this payment does not match your order total of ৳'.$expectedAmount.'. Please check the Transaction ID or contact support.']),
-                default => redirect()->route('lp.show', $slug)->with('error', 'Something went wrong. Please contact support.'),
+                default => (function () use ($e, $slug) {
+                    Log::error('[LandingPage] Unexpected payment error', SafeLogContext::exception($e));
+
+                    return redirect()->route('lp.show', $slug)->with('error', 'Something went wrong. Please contact support.');
+                })(),
             };
         }
 

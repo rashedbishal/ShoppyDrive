@@ -8,6 +8,7 @@ use App\Enums\CourierEvidenceSource;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Services\CourierOrderStatusMapper;
+use App\Support\SafeLogContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -29,7 +30,7 @@ class SteadfastWebhookController extends Controller
         $payload = $request->all();
         $event = $payload['notification_type'] ?? null;
 
-        Log::info('[Steadfast] Webhook received', ['event' => $event, 'payload' => $payload]);
+        Log::info('[Steadfast] Webhook received', SafeLogContext::steadfastWebhook($payload));
 
         if ($event !== 'delivery_status') {
             // Other event types (tracking_update, consignment_update, return_*,
@@ -41,7 +42,7 @@ class SteadfastWebhookController extends Controller
         $order = $this->findOrder($payload);
 
         if (! $order) {
-            Log::info('[Steadfast] Webhook: no matching order', ['payload' => $payload]);
+            Log::info('[Steadfast] Webhook: no matching order', SafeLogContext::steadfastWebhook($payload));
 
             return response()->json(['status' => 'success']);
         }

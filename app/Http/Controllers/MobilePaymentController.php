@@ -20,6 +20,7 @@ use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
 use App\Support\OrderConfirmationAccess;
+use App\Support\SafeLogContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -89,7 +90,7 @@ class MobilePaymentController extends Controller
         $pending = PendingCheckout::where('token', $token)->first();
 
         if ($pending && auth()->id() === $pending->user_id) {
-            Log::info('[MobilePayment] Pending checkout cancelled by customer', ['token' => $token]);
+            Log::info('[MobilePayment] Pending checkout cancelled by customer', ['pending_checkout_id' => $pending->id]);
             $pending->delete();
         }
 
@@ -353,8 +354,10 @@ class MobilePaymentController extends Controller
                     'transaction_id' => 'The amount of this payment does not match your order total of ৳'.$expectedAmount.'. Please check the Transaction ID or contact support.',
                 ]),
 
-                default => (function () use ($msg) {
-                    Log::error('[MobilePayment] Unexpected error', ['error' => $msg]);
+                // SEC-023: this catch also receives database errors, whose
+                // message carries SQL values such as the delivery address.
+                default => (function () use ($e) {
+                    Log::error('[MobilePayment] Unexpected error', SafeLogContext::exception($e));
 
                     return back()->with('error', 'Something went wrong. Please contact support.');
                 })(),

@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Exceptions\CourierSubmissionException;
 use App\Models\Order;
 use App\Models\Setting;
+use App\Support\SafeLogContext;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -65,10 +66,7 @@ class SteadfastCourierService
         $json = $response->json() ?? [];
 
         if ($response->failed()) {
-            Log::error('[Steadfast] Create order failed', [
-                'http_status' => $response->status(),
-                'body' => $response->body(),
-            ]);
+            Log::error('[Steadfast] Create order failed', SafeLogContext::courierResponse($json, $response->status()));
 
             throw CourierSubmissionException::fromHttpError($response, $this->firstErrorMessage($json) ?? "Steadfast Create order failed with HTTP {$response->status()}.");
         }
@@ -76,7 +74,7 @@ class SteadfastCourierService
         $status = $json['status'] ?? null;
 
         if ($status !== null && ! in_array((int) $status, [200, 201], true)) {
-            Log::error('[Steadfast] Create order returned an error payload', ['response' => $json]);
+            Log::error('[Steadfast] Create order returned an error payload', SafeLogContext::courierResponse($json, $response->status()));
 
             throw CourierSubmissionException::unknown('error_payload', $this->firstErrorMessage($json) ?? 'Steadfast Create order failed.', $response->status());
         }
@@ -167,10 +165,7 @@ class SteadfastCourierService
         $json = $response->json() ?? [];
 
         if ($response->failed()) {
-            Log::error("[Steadfast] {$action} failed", [
-                'http_status' => $response->status(),
-                'body' => $response->body(),
-            ]);
+            Log::error("[Steadfast] {$action} failed", SafeLogContext::courierResponse($json, $response->status()));
 
             $message = $this->firstErrorMessage($json) ?? "Steadfast {$action} failed with HTTP {$response->status()}.";
 
@@ -182,7 +177,7 @@ class SteadfastCourierService
         $status = $json['status'] ?? null;
 
         if ($status !== null && ! in_array((int) $status, [200, 201], true)) {
-            Log::error("[Steadfast] {$action} returned an error payload", ['response' => $json]);
+            Log::error("[Steadfast] {$action} returned an error payload", SafeLogContext::courierResponse($json, $response->status()));
 
             throw new RuntimeException($this->firstErrorMessage($json) ?? "Steadfast {$action} failed.");
         }
