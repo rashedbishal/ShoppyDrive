@@ -75,8 +75,9 @@ class ReceivedSmsController extends Controller
         $sms = ReceivedSms::with('matchedOrder:id,order_number')
             ->when($request->matched === 'yes', fn ($q) => $q->where('is_matched', true))
             ->when($request->matched === 'no', fn ($q) => $q->where('is_matched', false))
-            ->when($request->search, fn ($q) => $q->where('parsed_transaction_id', 'like', "%{$request->search}%")
-                ->orWhere('sender', 'like', "%{$request->search}%"))
+            ->when($request->search, fn ($q) => $q->where(fn ($match) => $match
+                ->where('parsed_transaction_id', 'like', "%{$request->search}%")
+                ->orWhere('sender', 'like', "%{$request->search}%")))
             ->latest()
             ->paginate(20)
             ->withQueryString();

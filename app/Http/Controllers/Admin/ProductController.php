@@ -43,8 +43,9 @@ class ProductController extends Controller
             'brand:id,name',
             'images' => fn ($q) => $q->select(['id', 'product_id', 'path', 'is_primary', 'sort_order'])->orderBy('sort_order'),
         ])
-            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%")
-                ->orWhere('sku', 'like', "%{$request->search}%"))
+            ->when($request->search, fn ($q) => $q->where(fn ($match) => $match
+                ->where('name', 'like', "%{$request->search}%")
+                ->orWhere('sku', 'like', "%{$request->search}%")))
             ->when($request->status === 'active', fn ($q) => $q->where('is_active', true))
             ->when($request->status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->when($request->category_id, fn ($q) => $q->where('category_id', $request->category_id))

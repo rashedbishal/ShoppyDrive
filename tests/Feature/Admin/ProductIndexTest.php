@@ -40,3 +40,18 @@ test('a product with no media gets a null primary image instead of erroring', fu
         ->assertInertia(fn (Assert $page) => $page
             ->where('products.data.0.primary_image_url', null));
 });
+
+test('a search stays inside the chosen status filter, whether it matches by name or sku', function (array $match) {
+    Product::factory()->create([...$match, 'is_active' => true]);
+    $inactive = Product::factory()->create([...$match, 'is_active' => false, 'sku' => ($match['sku'] ?? 'x').'-2']);
+
+    actingAs($this->admin, 'admin');
+
+    $this->get(route('admin.products.index', ['search' => 'Findme', 'status' => 'inactive']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('products.data', 1)
+            ->where('products.data.0.id', $inactive->id));
+})->with([
+    'by name' => [['name' => 'Findme Kettle']],
+    'by sku' => [['sku' => 'Findme-1']],
+]);
