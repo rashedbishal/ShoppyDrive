@@ -180,6 +180,17 @@ class MobilePaymentController extends Controller
                     throw new \RuntimeException($existsOtherProvider ? 'wrong_provider' : 'not_found');
                 }
 
+                // BIZ-025: the payment must have reached us after this checkout
+                // started (owner: strict). A known but unused TrxID from an
+                // earlier payment (e.g. seen in a shared screenshot) can no
+                // longer pay for someone else's same-amount order. Compares our
+                // own server's receive time (created_at), not the forwarder
+                // phone's clock (received_at), so a slow phone clock can't
+                // refuse a genuine payment.
+                if ($sms->created_at->lt($freshPending->created_at)) {
+                    throw new \RuntimeException('before_checkout');
+                }
+
                 // A matching transaction ID alone is not proof of payment for
                 // the right amount — if the SMS text didn't parse to a usable
                 // amount (provider template drift, a forwarder reformatting
@@ -327,8 +338,10 @@ class MobilePaymentController extends Controller
                     'transaction_id' => 'This Transaction ID belongs to a different payment provider. Please select the correct one.',
                 ]),
 
-                $msg === 'already_used' => back()->withErrors([
-                    'transaction_id' => 'This Transaction ID has already been used to pay for another order.',
+                // BIZ-025: one generic answer for "used" and "too old", so the
+                // page can't be used to learn whether an ID exists or was used.
+                $msg === 'already_used', $msg === 'before_checkout' => back()->withErrors([
+                    'transaction_id' => "This Transaction ID can't be used for this order. If you paid for this order, please contact support with your Transaction ID.",
                 ]),
 
                 $msg === 'amount_unavailable' => back()->withErrors([
@@ -336,7 +349,8 @@ class MobilePaymentController extends Controller
                 ]),
 
                 str_starts_with($msg, 'amount_mismatch:') => back()->withErrors([
-                    'transaction_id' => 'Amount mismatch. Expected ৳'.$expectedAmount.' but the SMS shows ৳'.substr($msg, 16).'.',
+                    // BIZ-025: never reveal the other payment's amount.
+                    'transaction_id' => 'The amount of this payment does not match your order total of ৳'.$expectedAmount.'. Please check the Transaction ID or contact support.',
                 ]),
 
                 default => (function () use ($msg) {

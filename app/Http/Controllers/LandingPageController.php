@@ -432,6 +432,17 @@ class LandingPageController extends Controller
                     throw new \RuntimeException($existsOtherProvider ? 'wrong_provider' : 'not_found');
                 }
 
+                // BIZ-025: the payment must have reached us after this checkout
+                // started (owner: strict). A known but unused TrxID from an
+                // earlier payment (e.g. seen in a shared screenshot) can no
+                // longer pay for someone else's same-amount order. Compares our
+                // own server's receive time (created_at), not the forwarder
+                // phone's clock (received_at), so a slow phone clock can't
+                // refuse a genuine payment.
+                if ($sms->created_at->lt($freshPending->created_at)) {
+                    throw new \RuntimeException('before_checkout');
+                }
+
                 // See MobilePaymentController::submit() — a matching
                 // transaction ID alone is not proof of payment for the
                 // right amount; an unparseable SMS amount must fail
@@ -518,12 +529,13 @@ class LandingPageController extends Controller
                     ->withErrors(['transaction_id' => "Transaction ID not found in our {$providerLabel} records. Please double-check the ID from your SMS."]),
                 $msg === 'wrong_provider' => redirect()->route('lp.show', $slug)
                     ->withErrors(['transaction_id' => 'This Transaction ID belongs to a different payment provider.']),
-                $msg === 'already_used' => redirect()->route('lp.show', $slug)
-                    ->withErrors(['transaction_id' => 'This Transaction ID has already been used to pay for another order.']),
+                // BIZ-025: same generic answer for "used" and "too old".
+                $msg === 'already_used', $msg === 'before_checkout' => redirect()->route('lp.show', $slug)
+                    ->withErrors(['transaction_id' => "This Transaction ID can't be used for this order. If you paid for this order, please contact support with your Transaction ID."]),
                 $msg === 'amount_unavailable' => redirect()->route('lp.show', $slug)
                     ->withErrors(['transaction_id' => "We couldn't automatically verify the amount for this transaction. Please contact support with your Transaction ID so we can confirm it manually."]),
                 str_starts_with($msg, 'amount_mismatch:') => redirect()->route('lp.show', $slug)
-                    ->withErrors(['transaction_id' => 'Amount mismatch. Expected ৳'.$expectedAmount.' but SMS shows ৳'.substr($msg, 16).'.']),
+                    ->withErrors(['transaction_id' => 'The amount of this payment does not match your order total of ৳'.$expectedAmount.'. Please check the Transaction ID or contact support.']),
                 default => redirect()->route('lp.show', $slug)->with('error', 'Something went wrong. Please contact support.'),
             };
         }
