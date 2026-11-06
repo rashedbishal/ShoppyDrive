@@ -264,8 +264,7 @@ export default function Dashboard({
                             </h3>
                             <p className="max-w-md text-sm text-blue-100">
                                 Keep your account safe by updating your password
-                                regularly and enabling two-factor
-                                authentication.
+                                regularly.
                             </p>
                         </div>
                     </div>

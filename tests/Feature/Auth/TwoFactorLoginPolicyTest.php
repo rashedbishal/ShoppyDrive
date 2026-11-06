@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Models\User;
-use Laravel\Fortify\Features;
 
 /*
  * Explicit product decision: 2FA verification is never required to log in,
@@ -33,8 +32,6 @@ test('a customer without 2FA can log in normally', function (): void {
 });
 
 test('a customer with an existing 2FA secret logs in with password alone, no challenge', function (): void {
-    $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
-
     $user = User::factory()->create([
         'two_factor_secret' => encrypt('test-secret'),
         'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
@@ -60,13 +57,10 @@ test('an admin can log in normally, with no 2FA involved', function (): void {
     expect(auth('admin')->check())->toBeTrue();
 });
 
-test('2FA setup/management routes remain registered and reachable, unaffected by the login-pipeline change', function (): void {
-    $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
+test('no two-factor route exists, for customers or admins (SEC-014)', function (): void {
+    $routes = collect(Route::getRoutes())->map(fn ($route) => $route->uri())->filter(fn (string $uri) => str_contains($uri, 'two-factor'));
 
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route('two-factor.qr-code'))
-        ->assertOk();
+    expect($routes)->toBeEmpty();
+    $this->get('/two-factor-challenge')->assertNotFound();
+    $this->actingAs(User::factory()->create())->post('/user/two-factor-authentication')->assertNotFound();
 });

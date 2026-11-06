@@ -61,7 +61,6 @@ export interface User extends Timestamped {
     avatar?: string | null;
     role: UserRole;
     email_verified_at: string | null;
-    two_factor_enabled?: boolean;
     referral_code?: string;
     points_balance?: number;
 }
@@ -69,15 +68,6 @@ export interface User extends Timestamped {
 export interface Auth {
     user: User | null;
     admin: User | null;
-}
-
-export interface TwoFactorSetupData {
-    svg: string;
-    url: string;
-}
-
-export interface TwoFactorSecretKey {
-    secretKey: string;
 }
 
 export interface AppSettings {

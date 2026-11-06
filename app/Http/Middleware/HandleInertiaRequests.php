@@ -43,7 +43,6 @@ class HandleInertiaRequests extends Middleware
         'email/verify',
         'email/verify/*',
         'user/confirm-password',
-        'two-factor-challenge',
 
         'account',
         'account/*',

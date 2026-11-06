@@ -137,8 +137,6 @@ class FortifyServiceProvider extends ServiceProvider
             ]);
         });
 
-        Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
-
         Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
     }
 
@@ -147,10 +145,6 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureRateLimiting(): void
     {
-        RateLimiter::for('two-factor', function (Request $request) {
-            return Limit::perMinute(5)->by($request->session()->get('login.id'));
-        });
-
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower(SecurityRateLimits::textInput($request, Fortify::username())).'|'.$request->ip());
 
@@ -199,19 +193,12 @@ class FortifyServiceProvider extends ServiceProvider
     }
 
     /**
-     * Product decision: password credentials alone are always sufficient to
-     * log in, even for an account with 2FA already configured — no
-     * mandatory 2FA challenge or redirect after successful password
-     * authentication. This is the standard Fortify login pipeline
-     * (config/fortify.php's default, see AuthenticatedSessionController::
-     * loginPipeline()) with only `RedirectsIfTwoFactorAuthenticatable`
-     * removed; every other step (login throttling, username
-     * canonicalization, the credential check, session preparation) is
-     * unchanged. `Features::twoFactorAuthentication()` stays enabled so the
-     * Settings > Security management page, QR code, and recovery-code
-     * routes keep working for any customer who still wants to view/manage
-     * their 2FA — nothing in this app enforces it at login, or anywhere
-     * else, any more.
+     * Product decision (SEC-014): two-factor authentication doesn't exist in
+     * this app, for customers or admins. Password credentials alone log in;
+     * only email verification by OTP applies, to manual registration. This
+     * is the standard Fortify login pipeline without
+     * `RedirectsIfTwoFactorAuthenticatable`, so an account with an old 2FA
+     * secret on it is never challenged.
      */
     private function configureAuthenticationPipeline(): void
     {

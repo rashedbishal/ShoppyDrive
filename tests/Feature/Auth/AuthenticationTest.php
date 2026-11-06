@@ -3,7 +3,6 @@
 use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
-use Laravel\Fortify\Features;
 
 test('login screen can be rendered', function () {
     $response = $this->get(route('login'));
@@ -30,13 +29,6 @@ test('users can authenticate using the login screen', function () {
  * the stock Fortify-scaffolded test of the opposite behavior.
  */
 test('users with two factor enabled can still log in using only their password, with no challenge', function () {
-    $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
-
-    Features::twoFactorAuthentication([
-        'confirm' => true,
-        'confirmPassword' => true,
-    ]);
-
     $user = User::factory()->create();
 
     $user->forceFill([
