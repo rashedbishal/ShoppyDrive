@@ -5,6 +5,11 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
 
+// OPS-007: production's .env may still hold the framework defaults (one
+// never-rotated file at debug level) and .env isn't deployed, so production's
+// logging is set here: one file per day, 30 days kept, info and above.
+$isProduction = env('APP_ENV') === 'production';
+
 return [
 
     /*
@@ -18,7 +23,7 @@ return [
     |
     */
 
-    'default' => env('LOG_CHANNEL', 'stack'),
+    'default' => $isProduction ? 'daily' : env('LOG_CHANNEL', 'stack'),
 
     /*
     |--------------------------------------------------------------------------
@@ -68,8 +73,8 @@ return [
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
-            'level' => env('LOG_LEVEL', 'debug'),
-            'days' => env('LOG_DAILY_DAYS', 14),
+            'level' => $isProduction ? 'info' : env('LOG_LEVEL', 'debug'),
+            'days' => $isProduction ? 30 : env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
         ],
 

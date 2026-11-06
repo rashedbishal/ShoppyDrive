@@ -10,7 +10,7 @@ use Throwable;
 
 /**
  * SEC-023: the only fields written to the log from courier traffic and
- * unexpected payment errors. laravel.log has no retention limit, so raw
+ * unexpected payment errors. Log files are readable text kept for weeks, so raw
  * webhook payloads, courier response bodies and SQL error text (whose
  * bindings include addresses) must never reach it. The order number or
  * consignment ID leads to the details in Admin.
