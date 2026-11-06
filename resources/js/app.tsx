@@ -1,6 +1,7 @@
 import { createInertiaApp, router } from '@inertiajs/react';
 import React from 'react';
 import { route as ziggyRoute } from 'ziggy-js';
+import ErrorBoundary from '@/components/error-boundary';
 import PageLoadingOverlay from '@/components/shared/PageLoadingOverlay';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -364,7 +365,8 @@ createInertiaApp({
     withApp(app) {
         return (
             <TooltipProvider delayDuration={0}>
-                {app}
+                {/* FE-010: a crashing page shows a message, not a white screen. */}
+                <ErrorBoundary>{app}</ErrorBoundary>
                 <Toaster />
                 <PageLoadingOverlay />
             </TooltipProvider>

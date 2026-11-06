@@ -197,6 +197,10 @@ class AppServiceProvider extends ServiceProvider
         // too strict a value here would drop real payment confirmations.
         RateLimiter::for('webhook', fn (Request $request) => Limit::perMinute(60)->by('ip:'.$request->ip()));
 
+        // FE-010: browser crash reports. Hardcoded like 'webhook': one page
+        // crash sends one report, so this only stops a script filling the log.
+        RateLimiter::for('client-errors', fn (Request $request) => Limit::perMinute(10)->by('ip:'.$request->ip()));
+
         // The bKash/Nagad SMS-forwarder phone: only requests with a wrong
         // token count, so the real phone is never blocked however many SMS
         // it forwards at once (e.g. a backlog after being offline) — a

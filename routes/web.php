@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\ClientErrorController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LandingPageController;
@@ -18,6 +19,8 @@ Route::get('/.well-known/appspecific/com.chrome.devtools.json', fn () => respons
 Route::get('/about', [AboutController::class, 'show'])->name('about');
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:contact-message')->name('contact.store');
+// FE-010: crash reports from the browser's error boundary.
+Route::post('/client-errors', ClientErrorController::class)->middleware('throttle:client-errors')->name('client-errors.store');
 
 Route::get('/page/{page:slug}', function (Page $page) {
     abort_unless($page->is_published, 404);
