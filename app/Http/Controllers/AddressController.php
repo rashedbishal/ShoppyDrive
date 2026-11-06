@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Address;
+use App\Support\BangladeshDistricts;
 use App\Support\BangladeshiPhone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -95,7 +97,7 @@ class AddressController extends Controller
             'address_line1' => ['required', 'string', 'max:255'],
             'address_line2' => ['nullable', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:255'],
-            'state' => ['required', 'string', 'max:255'],
+            'state' => ['required', 'string', 'max:255', Rule::in(BangladeshDistricts::ALL)],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['required', 'string', 'max:100'],
             'is_default' => ['boolean'],

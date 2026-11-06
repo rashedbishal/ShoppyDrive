@@ -7,7 +7,9 @@ namespace App\Http\Requests;
 use App\Concerns\NormalizesBangladeshiPhone;
 use App\Http\Middleware\EnsureCheckoutAccess;
 use App\Rules\VariantBelongsToProduct;
+use App\Support\BangladeshDistricts;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class PlaceOrderRequest extends FormRequest
 {
@@ -39,7 +41,7 @@ class PlaceOrderRequest extends FormRequest
             'address_line1' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:255'],
             'address_line2' => ['nullable', 'string', 'max:255'],
             'city' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:255'],
-            'state' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:255'],
+            'state' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:255', Rule::in(BangladeshDistricts::ALL)],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:100'],
             'save_address' => ['boolean'],

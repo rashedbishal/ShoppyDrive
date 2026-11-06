@@ -18,6 +18,7 @@ use App\Models\Setting;
 use App\Services\InventoryService;
 use App\Services\PendingCodLimit;
 use App\Services\ShippingCostCalculator;
+use App\Support\BangladeshDistricts;
 use App\Support\BangladeshiPhone;
 use App\Support\CartManager;
 use App\Support\OrderNumberGenerator;
@@ -31,6 +32,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -125,7 +127,7 @@ class LandingPageController extends Controller
             'address_line1' => ['required', 'string', 'max:255'],
             'address_line2' => ['nullable', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:255'],
-            'state' => ['required', 'string', 'max:255'],
+            'state' => ['required', 'string', 'max:255', Rule::in(BangladeshDistricts::ALL)],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'quantity' => ['required', 'integer', 'min:1', 'max:100'],
             'payment_method' => ['required', 'in:cod,mobile_banking'],
