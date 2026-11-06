@@ -102,13 +102,13 @@ test('a sideways phone photo is stored upright', function () {
         ->and($bottom['blue'])->toBeGreaterThan($bottom['red']);
 });
 
-test('a palette png keeps its transparency', function () {
-    $image = imagecreate(2000, 1000);
+test('a palette png keeps its transparency', function (int $width, int $expectedWidth) {
+    $image = imagecreate($width, 1000);
     imagecolortransparent($image, imagecolorallocate($image, 255, 255, 255));
     $palette = array_map(fn (int $shade): int => imagecolorallocate($image, 200, $shade, $shade), range(0, 200));
 
     for ($y = 0; $y < 1000; $y++) {
-        for ($x = 1000; $x < 2000; $x++) {
+        for ($x = 1000; $x < $width; $x++) {
             imagesetpixel($image, $x, $y, $palette[array_rand($palette)]);
         }
     }
@@ -120,10 +120,13 @@ test('a palette png keeps its transparency', function () {
     $stored = storedImage($path);
 
     expect($path)->toEndWith('.webp')
-        ->and(imagesx($stored))->toBe(ImageOptimizer::MAX_SIDE)
+        ->and(imagesx($stored))->toBe($expectedWidth)
         ->and(imagecolorsforindex($stored, imagecolorat($stored, 100, 100))['alpha'])->toBe(127)
-        ->and(imagecolorsforindex($stored, imagecolorat($stored, 1500, 100))['alpha'])->toBe(0);
-});
+        ->and(imagecolorsforindex($stored, imagecolorat($stored, $expectedWidth - 100, 100))['alpha'])->toBe(0);
+})->with([
+    'resized' => [2000, ImageOptimizer::MAX_SIDE],
+    'already small enough' => [1500, 1500],
+]);
 
 test('files it cannot improve are stored exactly as uploaded', function (UploadedFile $file, string $extension) {
     $originalBytes = (string) file_get_contents($file->getRealPath());
