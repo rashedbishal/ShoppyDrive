@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\FlashSaleItem;
 use App\Models\Product;
+use App\Support\PageSeo;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -33,6 +34,8 @@ class BrandController extends Controller
         // regardless of status — an inactive brand's URL must 404, not
         // just be hidden from the /brands index.
         abort_unless($brand->is_active, 404);
+
+        PageSeo::share($brand->name, $brand->description, $brand->logo);
 
         $products = Product::query()
             ->visible()

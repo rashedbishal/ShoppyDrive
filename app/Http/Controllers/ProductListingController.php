@@ -11,6 +11,7 @@ use App\Models\PromotionalBanner;
 use App\Models\Review;
 use App\Models\SubCategory;
 use App\Support\CatalogFilterCache;
+use App\Support\PageSeo;
 use App\Support\ProductSearchQuery;
 use App\Support\SearchTerm;
 use Illuminate\Http\Request;
@@ -39,6 +40,9 @@ class ProductListingController extends Controller
                 ->whereHas('category', fn ($q) => $q->where('is_active', true))
                 ->firstOrFail();
         }
+
+        $listing = $category ?? $subCategory;
+        PageSeo::share($listing->meta_title ?: $listing->name, $listing->meta_description ?: $listing->description, $listing->image);
 
         return $this->catalogResponse($request, $category, $subCategory, route('category.show', $slug));
     }

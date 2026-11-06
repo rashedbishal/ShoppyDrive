@@ -114,7 +114,7 @@ function ContactContent({ content }: Props): React.JSX.Element {
 
     return (
         <>
-            <Head title="Contact Us | ShoppyDrive" />
+            <Head title="Contact Us" />
 
             {/* Hero */}
             <div className="pt-6 lg:pt-8">

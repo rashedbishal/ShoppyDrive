@@ -53,32 +53,24 @@
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         <x-inertia::head>
-            <title>{{ $seo['title'] ?? config('app.name', 'Laravel') }}</title>
+            <title>{{ $seo['title'] ?? config('app.name') }}</title>
         </x-inertia::head>
 
         {{-- FE-006: rendered here (not only via Inertia's client-side <Head>) so the first response — what curl, Facebook's scraper and search crawlers see — already carries real tags, independent of SSR. --}}
-        @isset($seo)
-            @if(! empty($seo['description']))
-                <meta name="description" content="{{ $seo['description'] }}">
-            @endif
-            @if(! empty($seo['canonical']))
-                <link rel="canonical" href="{{ $seo['canonical'] }}">
-            @endif
-            <meta property="og:type" content="product">
-            <meta property="og:title" content="{{ $seo['title'] }}">
-            @if(! empty($seo['description']))
-                <meta property="og:description" content="{{ $seo['description'] }}">
-            @endif
-            @if(! empty($seo['canonical']))
-                <meta property="og:url" content="{{ $seo['canonical'] }}">
-            @endif
-            @if(! empty($seo['image']))
-                <meta property="og:image" content="{{ $seo['image'] }}">
-            @endif
-            @if(! empty($seo['jsonLd']))
-                <script type="application/ld+json">{!! json_encode($seo['jsonLd'], JSON_UNESCAPED_SLASHES) !!}</script>
-            @endif
-        @endisset
+        @php($seoTags = \App\Support\PageSeo::tags($seo ?? []))
+        <meta name="description" content="{{ $seoTags['description'] }}">
+        @if($seoTags['canonical'])
+            <link rel="canonical" href="{{ $seoTags['canonical'] }}">
+            <meta property="og:url" content="{{ $seoTags['canonical'] }}">
+        @endif
+        <meta property="og:site_name" content="{{ config('app.name') }}">
+        <meta property="og:type" content="{{ $seoTags['type'] }}">
+        <meta property="og:title" content="{{ $seoTags['title'] }}">
+        <meta property="og:description" content="{{ $seoTags['description'] }}">
+        <meta property="og:image" content="{{ $seoTags['image'] }}">
+        @if($seoTags['jsonLd'])
+            <script type="application/ld+json">{!! json_encode($seoTags['jsonLd'], JSON_UNESCAPED_SLASHES) !!}</script>
+        @endif
     </head>
     <body class="antialiased">
         <x-inertia::app />

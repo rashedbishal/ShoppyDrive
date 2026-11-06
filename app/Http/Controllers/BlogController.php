@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Blog;
+use App\Support\PageSeo;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,6 +20,8 @@ class BlogController extends Controller
             ->orderByDesc('published_at')
             ->paginate(9)
             ->withQueryString();
+
+        PageSeo::share('Blog', 'Shopping guides, product tips and the latest news from ShoppyDrive.');
 
         return Inertia::render('blog/Index', [
             'blogs' => $blogs,
@@ -36,6 +39,8 @@ class BlogController extends Controller
             ->orderByDesc('published_at')
             ->limit(3)
             ->get();
+
+        PageSeo::share($blog->meta_title ?: $blog->title, $blog->meta_description ?: $blog->excerpt, $blog->featured_image, 'article');
 
         return Inertia::render('blog/Show', [
             'blog' => $blog,

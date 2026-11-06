@@ -94,7 +94,7 @@ function FlashSalesContent({
 }: FlashSalesPageProps): React.JSX.Element {
     return (
         <>
-            <Head title="Flash Sale | ShoppyDrive" />
+            <Head title="Flash Sale" />
 
             <div className="space-y-10 py-6 lg:py-8">
                 {activeSale ? (

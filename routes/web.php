@@ -9,6 +9,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\NewsletterController;
 use App\Models\Page;
+use App\Support\PageSeo;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -26,11 +27,15 @@ Route::post('/client-errors', ClientErrorController::class)->middleware('throttl
 Route::get('/page/{page:slug}', function (Page $page) {
     abort_unless($page->is_published, 404);
 
+    PageSeo::shareForPage($page);
+
     return inertia('static/Page', ['page' => $page]);
 })->name('page.show');
 
 Route::get('/privacy-policy', function () {
     $page = Page::where('slug', 'privacy-policy')->where('is_published', true)->firstOrFail();
+
+    PageSeo::shareForPage($page);
 
     return inertia('static/Page', ['page' => $page]);
 })->name('privacy-policy');
@@ -38,11 +43,15 @@ Route::get('/privacy-policy', function () {
 Route::get('/terms', function () {
     $page = Page::where('slug', 'terms')->where('is_published', true)->firstOrFail();
 
+    PageSeo::shareForPage($page);
+
     return inertia('static/Page', ['page' => $page]);
 })->name('terms');
 
 Route::get('/faq', function () {
     $page = Page::where('slug', 'faq')->where('is_published', true)->firstOrFail();
+
+    PageSeo::shareForPage($page);
 
     return inertia('static/FAQ', ['page' => $page]);
 })->name('faq');
@@ -58,6 +67,8 @@ Route::get('/sitemap.xml', function () {
 foreach (['return-policy', 'refund-policy', 'shipping-policy'] as $policySlug) {
     Route::get('/'.$policySlug, function () use ($policySlug) {
         $page = Page::where('slug', $policySlug)->where('is_published', true)->firstOrFail();
+
+        PageSeo::shareForPage($page);
 
         return inertia('static/Page', ['page' => $page]);
     })->name($policySlug);

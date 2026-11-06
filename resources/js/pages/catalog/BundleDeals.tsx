@@ -12,7 +12,7 @@ type Props = {
 export default function BundleDeals({ bundles }: Props): React.JSX.Element {
     return (
         <>
-            <Head title="Bundle Deals | ShoppyDrive" />
+            <Head title="Bundle Deals" />
 
             <div className="space-y-10 py-6 lg:py-8">
                 <PageHero

@@ -34,7 +34,7 @@ function BrandListingContent({
 
     return (
         <>
-            <Head title="All Brands | ShoppyDrive" />
+            <Head title="All Brands" />
 
             <div className="space-y-6 py-6 lg:py-8">
                 <PageHero

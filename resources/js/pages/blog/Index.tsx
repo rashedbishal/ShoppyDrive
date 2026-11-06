@@ -1,7 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { Newspaper, Search, X } from 'lucide-react';
 import { useState } from 'react';
-import { PageMeta } from '@/components/seo/PageMeta';
 import { BlogCard } from '@/components/shared/BlogCard';
 import { PageHero } from '@/components/shared/PageHero';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -36,10 +35,6 @@ export default function BlogIndex({
 
     return (
         <>
-            <PageMeta
-                title="Blog"
-                description="Shopping guides, product tips and the latest news from ShoppyDrive."
-            />
             <Head title="Blog" />
 
             <div className="space-y-6 py-6 lg:py-8">

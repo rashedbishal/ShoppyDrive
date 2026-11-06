@@ -1,9 +1,8 @@
-import { Link } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, HelpCircle, MessageCircle, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { PageMeta } from '@/components/seo/PageMeta';
 import { PageHero } from '@/components/shared/PageHero';
 
 interface FaqItem {
@@ -155,10 +154,7 @@ export default function FAQ({ page }: PageProps): React.JSX.Element {
 
     return (
         <div className="min-h-screen bg-[var(--color-surface)]">
-            <PageMeta
-                title={page.meta_title || page.title}
-                description={page.meta_description}
-            />
+            <Head title={page.meta_title || page.title} />
 
             {/* Hero */}
             <div className="pt-6 lg:pt-8">

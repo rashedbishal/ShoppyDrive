@@ -42,7 +42,7 @@ function BrandDetailContent({
 
     return (
         <>
-            <Head title={`${brand.name} | ShoppyDrive`} />
+            <Head title={brand.name} />
 
             <div className="space-y-6 py-6 lg:py-8">
                 <PageHero

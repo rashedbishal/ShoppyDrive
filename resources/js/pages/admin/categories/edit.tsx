@@ -13,6 +13,8 @@ type Category = {
     name: string;
     slug: string;
     description: string | null;
+    meta_title: string | null;
+    meta_description: string | null;
     image: string | null;
     icon: string | null;
     color: string | null;
@@ -53,6 +55,8 @@ export default function CategoryEdit({ category }: Props) {
             name: category.name,
             slug: category.slug,
             description: category.description ?? '',
+            meta_title: category.meta_title ?? '',
+            meta_description: category.meta_description ?? '',
             image: category.image as File | string | null,
             icon: category.icon ?? 'shopping-bag',
             color: category.color ?? '',
@@ -163,6 +167,38 @@ export default function CategoryEdit({ category }: Props) {
                                     value={data.description}
                                     onChange={(e) =>
                                         setData('description', e.target.value)
+                                    }
+                                />
+                            </Field>
+
+                            <Field
+                                label="Meta Title"
+                                hint="Shown in Google. Leave blank to use the name."
+                                error={errors.meta_title}
+                            >
+                                <input
+                                    className={inputClass(errors.meta_title)}
+                                    value={data.meta_title}
+                                    onChange={(e) =>
+                                        setData('meta_title', e.target.value)
+                                    }
+                                />
+                            </Field>
+
+                            <Field
+                                label="Meta Description"
+                                hint="Shown in Google. Leave blank to use the description."
+                                error={errors.meta_description}
+                            >
+                                <textarea
+                                    rows={2}
+                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                    value={data.meta_description}
+                                    onChange={(e) =>
+                                        setData(
+                                            'meta_description',
+                                            e.target.value,
+                                        )
                                     }
                                 />
                             </Field>

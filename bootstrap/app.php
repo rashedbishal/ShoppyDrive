@@ -11,6 +11,7 @@ use App\Http\Middleware\EnsureCheckoutAccess;
 use App\Http\Middleware\EnsureMotherAdmin;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\HidePrivatePagesFromSearchEngines;
 use App\Http\Middleware\RedirectAdminToDashboard;
 use App\Http\Middleware\RedirectCustomerFromAdmin;
 use App\Http\Middleware\RedirectToCanonicalDomain;
@@ -90,6 +91,7 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
             TrackDailyVisit::class,
             CaptureTrafficSource::class,
+            HidePrivatePagesFromSearchEngines::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

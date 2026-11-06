@@ -1,8 +1,7 @@
-import { Link } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { Calendar, FileText, MessageCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { PageMeta } from '@/components/seo/PageMeta';
 import { PageHero } from '@/components/shared/PageHero';
 
 interface Section {
@@ -138,10 +137,7 @@ export default function Page({ page }: PageProps): React.JSX.Element {
 
     return (
         <div className="min-h-screen bg-[var(--color-surface)]">
-            <PageMeta
-                title={page.meta_title || page.title}
-                description={page.meta_description}
-            />
+            <Head title={page.meta_title || page.title} />
 
             {/* Hero */}
             <div className="pt-6 lg:pt-8">

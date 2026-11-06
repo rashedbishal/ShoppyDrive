@@ -31,7 +31,7 @@ type Props = {
 function AboutPage({ content }: Props): React.JSX.Element {
     return (
         <>
-            <Head title="About Us | ShoppyDrive" />
+            <Head title="About Us" />
 
             {/* Hero */}
             <div className="py-6 lg:py-8">

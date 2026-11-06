@@ -36,6 +36,8 @@ export default function CategoryCreate() {
             name: '',
             slug: '',
             description: '',
+            meta_title: '',
+            meta_description: '',
             image: null as File | string | null,
             icon: 'shopping-bag',
             color: '',
@@ -127,6 +129,38 @@ export default function CategoryCreate() {
                                     placeholder="Short description shown in the storefront"
                                     onChange={(e) =>
                                         setData('description', e.target.value)
+                                    }
+                                />
+                            </Field>
+
+                            <Field
+                                label="Meta Title"
+                                hint="Shown in Google. Leave blank to use the name."
+                                error={errors.meta_title}
+                            >
+                                <input
+                                    className={inputClass(errors.meta_title)}
+                                    value={data.meta_title}
+                                    onChange={(e) =>
+                                        setData('meta_title', e.target.value)
+                                    }
+                                />
+                            </Field>
+
+                            <Field
+                                label="Meta Description"
+                                hint="Shown in Google. Leave blank to use the description."
+                                error={errors.meta_description}
+                            >
+                                <textarea
+                                    rows={2}
+                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                    value={data.meta_description}
+                                    onChange={(e) =>
+                                        setData(
+                                            'meta_description',
+                                            e.target.value,
+                                        )
                                     }
                                 />
                             </Field>

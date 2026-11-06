@@ -18,10 +18,12 @@ type Props = {
 
 function Field({
     label,
+    hint,
     error,
     children,
 }: {
     label: string;
+    hint?: string;
     error?: string;
     children: React.ReactNode;
 }) {
@@ -30,6 +32,7 @@ function Field({
             <label className="mb-1 block text-sm font-medium text-slate-700">
                 {label}
             </label>
+            {hint && <p className="mb-1.5 text-xs text-slate-400">{hint}</p>}
             {children}
             {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
@@ -43,6 +46,8 @@ export default function SubCategoryCreate({ categories }: Props) {
             slug: '',
             category_id: '',
             description: '',
+            meta_title: '',
+            meta_description: '',
             image: null as File | string | null,
             is_active: true,
             sort_order: '0',
@@ -146,6 +151,38 @@ export default function SubCategoryCreate({ categories }: Props) {
                                     value={data.description}
                                     onChange={(e) =>
                                         setData('description', e.target.value)
+                                    }
+                                />
+                            </Field>
+
+                            <Field
+                                label="Meta Title"
+                                hint="Shown in Google. Leave blank to use the name."
+                                error={errors.meta_title}
+                            >
+                                <input
+                                    className={inputClass(errors.meta_title)}
+                                    value={data.meta_title}
+                                    onChange={(e) =>
+                                        setData('meta_title', e.target.value)
+                                    }
+                                />
+                            </Field>
+
+                            <Field
+                                label="Meta Description"
+                                hint="Shown in Google. Leave blank to use the description."
+                                error={errors.meta_description}
+                            >
+                                <textarea
+                                    rows={2}
+                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                    value={data.meta_description}
+                                    onChange={(e) =>
+                                        setData(
+                                            'meta_description',
+                                            e.target.value,
+                                        )
                                     }
                                 />
                             </Field>

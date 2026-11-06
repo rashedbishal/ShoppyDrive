@@ -41,6 +41,8 @@ class SubCategoryRequest extends FormRequest
                     ->when($subCategory?->category_id, fn ($query, $currentId) => $query->orWhere('id', $currentId))),
             ],
             'description' => ['nullable', 'string'],
+            'meta_title' => ['nullable', 'string', 'max:255'],
+            'meta_description' => ['nullable', 'string', 'max:255'],
             'image' => ['nullable', new RasterImageOrUrl],
             'is_active' => ['boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],

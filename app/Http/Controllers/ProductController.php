@@ -149,6 +149,7 @@ class ProductController extends Controller
             'description' => $description,
             'canonical' => route('product.show', $product->slug),
             'image' => $imageUrl,
+            'type' => 'product',
             'jsonLd' => [
                 '@context' => 'https://schema.org',
                 '@type' => 'Product',

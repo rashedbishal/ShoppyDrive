@@ -1,6 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Calendar, Newspaper, User } from 'lucide-react';
-import { PageMeta } from '@/components/seo/PageMeta';
 import { BlogCard } from '@/components/shared/BlogCard';
 import type { Blog } from '@/types';
 
@@ -27,13 +26,7 @@ export default function BlogShow({
 }: BlogShowProps): React.JSX.Element {
     return (
         <>
-            <PageMeta
-                title={blog.meta_title ?? blog.title}
-                description={blog.meta_description ?? blog.excerpt ?? undefined}
-                image={blog.featured_image ?? undefined}
-                type="article"
-            />
-            <Head title={blog.title} />
+            <Head title={blog.meta_title ?? blog.title} />
 
             <article className="py-6 lg:py-10">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
