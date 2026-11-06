@@ -39,6 +39,10 @@ type Stats = {
     failed_jobs: number | null;
     queue_last_drained_seconds_ago: number | null;
     queue_oldest_job_seconds: number | null;
+    pathao_sync_problem: {
+        failing_for_seconds: number;
+        last_error: string;
+    } | null;
     today_visitors: number;
     yesterday_visitors: number;
 };
@@ -482,6 +486,23 @@ export default function Dashboard({
                         })}
                     </p>
                 </div>
+
+                {/* BE-011: every Pathao status check is failing, so courier statuses stopped updating. */}
+                {stats.pathao_sync_problem && (
+                    <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">
+                        <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                        <p className="text-sm font-medium">
+                            Pathao status updates are failing (for{' '}
+                            {formatAgo(
+                                stats.pathao_sync_problem.failing_for_seconds,
+                            )}
+                            ). Order statuses for Pathao parcels are not
+                            updating. Check the Pathao settings in Admin ›
+                            Courier, or whether Pathao is down. Last error:{' '}
+                            {stats.pathao_sync_problem.last_error || 'unknown'}
+                        </p>
+                    </div>
+                )}
 
                 {/* OPS-002: a stalled cron creates no failed_jobs rows, so nothing else here would catch it. */}
                 {queueStalled && (

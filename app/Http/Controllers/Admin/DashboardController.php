@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Console\Commands\DrainQueueCommand;
+use App\Console\Commands\SyncPathaoOrderStatuses;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
@@ -124,6 +125,11 @@ class DashboardController extends Controller
                 'queue_oldest_job_seconds' => Auth::guard('admin')->user()->canAccess('failed_jobs')
                     ? DrainQueueCommand::oldestPendingJobAgeSeconds()
                     : null,
+                // BE-011: every Pathao status check is failing (outage or bad
+                // credentials), so courier statuses have stopped updating.
+                'pathao_sync_problem' => Auth::guard('admin')->user()->canAccess('orders')
+                    ? self::pathaoSyncProblem()
+                    : null,
                 'today_visitors' => $todayVisitors,
                 'yesterday_visitors' => $yesterdayVisitors,
             ],
@@ -176,5 +182,18 @@ class DashboardController extends Controller
     private function utcDayRange(Carbon $dhakaMidnight): array
     {
         return [$dhakaMidnight->copy()->utc(), $dhakaMidnight->copy()->addDay()->utc()->subSecond()];
+    }
+
+    /**
+     * @return array{failing_for_seconds: int, last_error: string}|null
+     */
+    private static function pathaoSyncProblem(): ?array
+    {
+        $problem = SyncPathaoOrderStatuses::currentProblem();
+
+        return $problem === null ? null : [
+            'failing_for_seconds' => max(0, now()->getTimestamp() - $problem['since']),
+            'last_error' => (string) ($problem['last_error'] ?? ''),
+        ];
     }
 }

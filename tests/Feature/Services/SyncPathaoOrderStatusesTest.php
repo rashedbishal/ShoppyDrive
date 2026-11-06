@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Console\Commands\SyncPathaoOrderStatuses;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Services\CourierVerificationReadinessService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 uses(RefreshDatabase::class);
@@ -96,4 +99,71 @@ it('a connection failure on one order does not abort syncing the rest of the bat
 
     expect($unreachable->refresh()->status->value)->toBe('processing');
     expect($reachable->refresh()->status->value)->toBe('shipped');
+});
+
+/*
+ * BE-011: a run where every Pathao check failed used to report success,
+ * hammer Pathao once per order, and record a healthy scheduler marker.
+ */
+function pathaoInfoFailsForEveryOrder(): void
+{
+    Http::fake(['*/aladdin/api/v1/orders/*/info' => Http::response(['message' => 'Unauthenticated.'], 401)]);
+}
+
+it('fails the run, flags the problem and records no scheduler marker when every check fails', function () {
+    makeCommandTestOrder('ORD-FAIL-1', 'processing', 'CONSIGN-FAIL-1');
+    makeCommandTestOrder('ORD-FAIL-2', 'processing', 'CONSIGN-FAIL-2');
+    pathaoInfoFailsForEveryOrder();
+
+    $this->artisan('pathao:sync-statuses')->assertFailed();
+
+    expect(SyncPathaoOrderStatuses::currentProblem())
+        ->toMatchArray(['last_error' => 'Unauthenticated.'])
+        ->and(Cache::get(CourierVerificationReadinessService::SCHEDULER_MARKER_KEY))->toBeNull();
+});
+
+it('stops after three failures in a row instead of asking Pathao about every order', function () {
+    foreach (range(1, 6) as $n) {
+        makeCommandTestOrder("ORD-STOP-{$n}", 'processing', "CONSIGN-STOP-{$n}");
+    }
+    pathaoInfoFailsForEveryOrder();
+
+    $this->artisan('pathao:sync-statuses')->assertFailed();
+
+    Http::assertSentCount(3);
+});
+
+it('keeps the first failure time across failing runs and clears the problem once a check succeeds', function () {
+    makeCommandTestOrder('ORD-RECOVER', 'processing', 'CONSIGN-RECOVER');
+    // Http::fake() adds to earlier fakes rather than replacing them, so one
+    // fake switched by this flag stands in for Pathao going down and back up.
+    $pathaoUp = false;
+    Http::fake(['*/aladdin/api/v1/orders/*/info' => function () use (&$pathaoUp) {
+        return $pathaoUp
+            ? Http::response(['type' => 'success', 'data' => ['order_status_slug' => 'in_transit']])
+            : Http::response(['message' => 'Unauthenticated.'], 401);
+    }]);
+
+    $this->travelTo(now()->subHour());
+    $this->artisan('pathao:sync-statuses')->assertFailed();
+    $since = SyncPathaoOrderStatuses::currentProblem()['since'];
+    $this->travelBack();
+    $this->artisan('pathao:sync-statuses')->assertFailed();
+
+    expect(SyncPathaoOrderStatuses::currentProblem()['since'])->toBe($since);
+
+    $pathaoUp = true;
+    $this->artisan('pathao:sync-statuses')->assertSuccessful();
+
+    expect(SyncPathaoOrderStatuses::currentProblem())->toBeNull()
+        ->and(Cache::get(CourierVerificationReadinessService::SCHEDULER_MARKER_KEY))->not->toBeNull();
+});
+
+it('a run with nothing to check is still a healthy run', function () {
+    Http::fake();
+
+    $this->artisan('pathao:sync-statuses')->assertSuccessful();
+
+    expect(Cache::get(CourierVerificationReadinessService::SCHEDULER_MARKER_KEY))->not->toBeNull();
+    Http::assertNothingSent();
 });
