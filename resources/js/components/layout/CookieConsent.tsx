@@ -1,79 +1,41 @@
 import { Link } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BarChart3, Megaphone, ShieldCheck, Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { STORAGE_KEYS } from '@/lib/constants';
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
-import { cn } from '@/lib/utils';
 
-type CookieConsentState = {
+type CookieNoticeState = {
     necessary: true;
-    analytics: boolean;
-    marketing: boolean;
+    analytics: false;
+    marketing: false;
     timestamp: string;
 };
 
+/**
+ * FE-013: a notice, not a choice. The site loads no analytics or advertising
+ * scripts, so there's nothing to opt in or out of. Real controls belong here
+ * when tracking is added. A visitor who answered the old banner isn't asked
+ * again, and the stored shape stays what `lib/analytics.ts` reads.
+ */
 export default function CookieConsent(): React.JSX.Element {
-    const [consent, setConsent] = useLocalStorage<CookieConsentState | null>(
+    const [notice, setNotice] = useLocalStorage<CookieNoticeState | null>(
         STORAGE_KEYS.cookieConsent,
         null,
     );
-    const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
-    const [marketingEnabled, setMarketingEnabled] = useState(false);
 
-    useEffect(() => {
-        if (consent === null) {
-            return;
-        }
-
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
-        setAnalyticsEnabled(consent.analytics);
-        setMarketingEnabled(consent.marketing);
-    }, [consent]);
-
-    const persistConsent = (
-        nextAnalytics: boolean,
-        nextMarketing: boolean,
-    ): void => {
-        setConsent({
+    const dismiss = (): void => {
+        setNotice({
             necessary: true,
-            analytics: nextAnalytics,
-            marketing: nextMarketing,
+            analytics: false,
+            marketing: false,
             timestamp: new Date().toISOString(),
         });
     };
 
-    const categories = [
-        {
-            key: 'necessary',
-            label: 'Necessary',
-            icon: ShieldCheck,
-            checked: true,
-            disabled: true,
-            onToggle: undefined,
-        },
-        {
-            key: 'analytics',
-            label: 'Analytics',
-            icon: BarChart3,
-            checked: analyticsEnabled,
-            disabled: false,
-            onToggle: () => setAnalyticsEnabled((v) => !v),
-        },
-        {
-            key: 'marketing',
-            label: 'Marketing',
-            icon: Megaphone,
-            checked: marketingEnabled,
-            disabled: false,
-            onToggle: () => setMarketingEnabled((v) => !v),
-        },
-    ] as const;
-
     return (
         <AnimatePresence>
-            {consent === null && (
+            {notice === null && (
                 <motion.div
                     key="cookie-consent"
                     className="fixed bottom-4 left-4 z-[65] w-[320px] max-w-[calc(100vw-2rem)]"
@@ -83,85 +45,30 @@ export default function CookieConsent(): React.JSX.Element {
                     transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                 >
                     <div className="rounded-2xl border border-[var(--color-border)] bg-surface/95 p-4 shadow-[var(--shadow-modal)] backdrop-blur-xl">
-                        <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-primary-light)] px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.18em] text-[var(--color-primary)] uppercase">
-                            <ShieldCheck className="size-3" />
+                        <div className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-primary)]">
+                            <ShieldCheck className="size-3.5" />
                             Cookies
                         </div>
                         <p className="mb-3 text-xs leading-5 text-[var(--color-text-secondary)]">
-                            We use cookies to improve shopping and personalize
-                            offers.
+                            We use cookies to keep your cart and login working,
+                            count visits, and note how you found us. We don't
+                            use advertising trackers.
                         </p>
-
-                        <div className="mb-3 flex flex-wrap gap-1.5">
-                            {categories.map(
-                                ({
-                                    key,
-                                    label,
-                                    icon: Icon,
-                                    checked,
-                                    disabled,
-                                    onToggle,
-                                }) => (
-                                    <button
-                                        key={key}
-                                        type="button"
-                                        disabled={disabled}
-                                        onClick={onToggle}
-                                        aria-pressed={checked}
-                                        className={cn(
-                                            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition',
-                                            checked && !disabled
-                                                ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
-                                                : 'border-[var(--color-border)] text-[var(--color-text-secondary)]',
-                                            !disabled &&
-                                                !checked &&
-                                                'hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]',
-                                            disabled && 'cursor-default',
-                                        )}
-                                    >
-                                        <Icon className="size-3.5" />
-                                        {label}
-                                    </button>
-                                ),
-                            )}
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-3">
                             <Button
                                 size="sm"
-                                onClick={() => persistConsent(true, true)}
+                                onClick={dismiss}
                                 className="shadow-sm"
                             >
-                                Accept all
+                                Got it
                             </Button>
-                            <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() =>
-                                    persistConsent(
-                                        analyticsEnabled,
-                                        marketingEnabled,
-                                    )
-                                }
+                            <Link
+                                href="/privacy-policy"
+                                className="text-[11px] font-semibold text-[var(--color-text-secondary)] underline"
                             >
-                                Save
-                            </Button>
-                            <button
-                                type="button"
-                                onClick={() => persistConsent(false, false)}
-                                className="text-xs font-semibold text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]"
-                            >
-                                Reject all
-                            </button>
+                                Privacy policy
+                            </Link>
                         </div>
-
-                        <Link
-                            href="/privacy-policy"
-                            className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]"
-                        >
-                            <Sparkles className="size-3" />
-                            Privacy policy
-                        </Link>
                     </div>
                 </motion.div>
             )}
