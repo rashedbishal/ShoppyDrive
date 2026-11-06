@@ -15,7 +15,9 @@ test('profile page is displayed', function () {
 });
 
 test('profile information can be updated', function () {
-    $user = User::factory()->create();
+    // SEC-009: an unverified address (e.g. a registration typo) can still be
+    // changed directly; a verified one needs a code (EmailChangeConfirmationTest).
+    $user = User::factory()->unverified()->create();
 
     $response = $this
         ->actingAs($user)

@@ -10,6 +10,9 @@ Route::middleware(['auth', 'auth.session', 'account.active'])->group(function ()
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->middleware('throttle:account-action')->name('profile.update');
+    // SEC-009: confirm (or cancel) an email change with the code sent to the current address.
+    Route::post('settings/profile/email/confirm', [ProfileController::class, 'confirmEmailChange'])->middleware('throttle:verification-code')->name('profile.email.confirm');
+    Route::delete('settings/profile/email/pending', [ProfileController::class, 'cancelEmailChange'])->middleware('throttle:account-action')->name('profile.email.cancel');
 
     Route::get('settings/connections', [ConnectionsController::class, 'edit'])->name('connections.edit');
     Route::put('settings/connections/password', [ConnectionsController::class, 'setPassword'])->middleware('throttle:password-check')->name('connections.password.update');

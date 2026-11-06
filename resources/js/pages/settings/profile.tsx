@@ -12,9 +12,11 @@ import { send } from '@/routes/verification';
 export default function Profile({
     mustVerifyEmail,
     status,
+    pendingEmailChange,
 }: {
     mustVerifyEmail: boolean;
     status?: string;
+    pendingEmailChange?: { new_email: string; sent_to: string } | null;
 }) {
     const { auth } = usePage().props;
 
@@ -115,6 +117,60 @@ export default function Profile({
                         </>
                     )}
                 </Form>
+
+                {/* SEC-009: an email change waits for the code sent to the current address. */}
+                {pendingEmailChange && (
+                    <div className="space-y-4 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+                        <p className="text-sm text-foreground">
+                            To change your email to{' '}
+                            <strong>{pendingEmailChange.new_email}</strong>,
+                            enter the 6-digit code we sent to{' '}
+                            <strong>{pendingEmailChange.sent_to}</strong>. Your
+                            email stays the same until you confirm.
+                        </p>
+
+                        <Form
+                            {...ProfileController.confirmEmailChange.form()}
+                            options={{ preserveScroll: true }}
+                            resetOnError
+                            className="space-y-3"
+                        >
+                            {({ processing, errors }) => (
+                                <>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="email-change-code">
+                                            Confirmation code
+                                        </Label>
+                                        <Input
+                                            id="email-change-code"
+                                            name="code"
+                                            inputMode="numeric"
+                                            autoComplete="one-time-code"
+                                            maxLength={6}
+                                            required
+                                            className="max-w-40 tracking-widest"
+                                            placeholder="123456"
+                                        />
+                                        <InputError message={errors.code} />
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Button disabled={processing}>
+                                            Confirm new email
+                                        </Button>
+                                        <Link
+                                            href={ProfileController.cancelEmailChange()}
+                                            as="button"
+                                            preserveScroll
+                                            className="text-sm text-muted-foreground underline underline-offset-4"
+                                        >
+                                            Cancel
+                                        </Link>
+                                    </div>
+                                </>
+                            )}
+                        </Form>
+                    </div>
+                )}
             </div>
 
             <DeleteUser />
