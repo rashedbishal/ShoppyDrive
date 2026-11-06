@@ -8,6 +8,7 @@ use App\Models\Brand;
 use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Support\PageSeo;
+use App\Support\ProductCardData;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -73,7 +74,7 @@ class BrandController extends Controller
 
         return Inertia::render('catalog/BrandDetail', [
             'brand' => $brandWithCount,
-            'products' => $products,
+            'products' => $products->through(ProductCardData::make(...)),
         ]);
     }
 }

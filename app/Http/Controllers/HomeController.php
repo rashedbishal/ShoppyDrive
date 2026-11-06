@@ -12,6 +12,7 @@ use App\Models\HomepageSetting;
 use App\Models\Product;
 use App\Models\ProductBundle;
 use App\Support\LayoutCache;
+use App\Support\ProductCardData;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -162,11 +163,7 @@ class HomeController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'slug', 'description', 'image', 'icon', 'color', 'sort_order']);
 
-        $currencySymbol = config('app.currency_symbol', '৳');
-
-        $mapProduct = function (Product $product) use ($currencySymbol, $flashPricesForSections): array {
-            $primaryImage = $product->images->firstWhere('is_primary', true) ?? $product->images->first();
-            $primaryImageUrl = $primaryImage?->path;
+        $mapProduct = function (Product $product) use ($flashPricesForSections): array {
             // Falls back to the dynamic property for a product this
             // closure is called on that wasn't part of the lookup built
             // above (the flash-sale carousel's own products, via
@@ -174,24 +171,7 @@ class HomeController extends Controller
             // on this exact instance).
             $flash = $flashPricesForSections[$product->id] ?? null;
 
-            $discountPercentage = null;
-            if ($product->compare_price && $product->compare_price > $product->price) {
-                $discountPercentage = (int) round((($product->compare_price - $product->price) / $product->compare_price) * 100);
-            }
-
-            return array_merge($product->toArray(), [
-                'primary_image_url' => $primaryImageUrl,
-                'discount_percentage' => $discountPercentage,
-                'formatted_price' => $currencySymbol.number_format($product->price, 2),
-                'formatted_compare_price' => $product->compare_price
-                    ? $currencySymbol.number_format($product->compare_price, 2)
-                    : null,
-                'is_wishlisted' => false,
-                'images' => ($product->images ?? collect())->toArray(),
-                'media' => $product->images->toArray(),
-                'videos' => [],
-                'attributes' => [],
-                'tags' => [],
+            return array_merge(ProductCardData::make($product), [
                 'in_flash_sale' => $flash !== null || ($product->in_flash_sale ?? false),
                 'flash_sale_price' => $flash['price'] ?? $product->flash_sale_price ?? null,
             ]);

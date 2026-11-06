@@ -12,6 +12,7 @@ use App\Models\Review;
 use App\Models\SubCategory;
 use App\Support\CatalogFilterCache;
 use App\Support\PageSeo;
+use App\Support\ProductCardData;
 use App\Support\ProductSearchQuery;
 use App\Support\SearchTerm;
 use Illuminate\Http\Request;
@@ -193,7 +194,7 @@ class ProductListingController extends Controller
             'categories' => fn () => CatalogFilterCache::categories(),
             'brands' => fn () => CatalogFilterCache::brands(),
             'attributes' => fn () => CatalogFilterCache::attributes(),
-            'products' => $products,
+            'products' => $products->through(ProductCardData::make(...)),
             'listingUrl' => $listingUrl,
             'maxPrice' => fn () => CatalogFilterCache::maxPrice(),
             'filters' => [

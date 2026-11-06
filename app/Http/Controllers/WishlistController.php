@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\Wishlist;
 use App\Support\CartManager;
+use App\Support\ProductCardData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -43,8 +44,6 @@ class WishlistController extends Controller
             ->with(['product' => fn ($q) => $q->with(['images', 'brand', 'category', 'subCategory', 'variants.media'])])
             ->get();
 
-        $currencySymbol = config('app.currency_symbol', '৳');
-
         // Same gap as every other storefront listing surface: this was
         // hardcoded to false/null unconditionally, so a wishlisted product
         // on an active flash sale always showed its regular price here.
@@ -54,30 +53,11 @@ class WishlistController extends Controller
 
         $products = $items
             ->filter(fn ($item) => $item->product !== null && $item->product->isPubliclyVisible())
-            ->map(function ($item) use ($currencySymbol, $flashPrices) {
+            ->map(function ($item) use ($flashPrices) {
                 $product = $item->product;
-                $primaryImage = $product->images->firstWhere('is_primary', true) ?? $product->images->first();
-
-                $discountPercentage = null;
-                if ($product->compare_price && $product->compare_price > $product->price) {
-                    $discountPercentage = (int) round((($product->compare_price - $product->price) / $product->compare_price) * 100);
-                }
-
                 $flash = $flashPrices[$product->id] ?? null;
 
-                return array_merge($product->toArray(), [
-                    'primary_image_url' => $primaryImage?->path,
-                    'discount_percentage' => $discountPercentage,
-                    'formatted_price' => $currencySymbol.number_format($product->price, 2),
-                    'formatted_compare_price' => $product->compare_price
-                        ? $currencySymbol.number_format($product->compare_price, 2)
-                        : null,
-                    'is_wishlisted' => true,
-                    'images' => $product->images->toArray(),
-                    'media' => $product->images->toArray(),
-                    'videos' => [],
-                    'attributes' => [],
-                    'tags' => [],
+                return array_merge(ProductCardData::make($product), [
                     'in_flash_sale' => $flash !== null,
                     'flash_sale_price' => $flash['price'] ?? null,
                     'flash_sale_ends_at' => $flash['ends_at'] ?? null,

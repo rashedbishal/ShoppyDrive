@@ -276,7 +276,7 @@ class CartManager
             'items' => $items->map(fn (CartItem $item): array => [
                 'id' => $item->id,
                 'item_key' => $this->itemKey($item->product_id, $item->variant_id, $item->bundle_id),
-                'product' => $item->product->toArray(),
+                'product' => ProductCardData::make($item->product),
                 'variant' => $item->variant?->toArray(),
                 'bundle_id' => $item->bundle_id,
                 'bundle' => $item->bundle === null ? null : [

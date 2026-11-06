@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FlashSaleItem;
 use App\Models\Product;
+use App\Support\ProductCardData;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -174,7 +175,7 @@ class ProductController extends Controller
                 'flash_sale_price' => $flashSaleItem?->sale_price,
                 'flash_sale_ends_at' => $flashSaleItem?->flashSale?->ends_at,
             ]),
-            'relatedProducts' => $relatedProducts,
+            'relatedProducts' => $relatedProducts->map(ProductCardData::make(...))->values(),
             'reviews' => $product->reviews,
             'ratingBreakdown' => $ratingBreakdown,
             'shippingMethods' => [],

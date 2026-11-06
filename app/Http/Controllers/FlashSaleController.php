@@ -7,6 +7,8 @@ namespace App\Http\Controllers;
 use App\Models\FlashSale;
 use App\Models\FlashSaleItem;
 use App\Models\Product;
+use App\Support\ProductCardData;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -75,9 +77,15 @@ class FlashSaleController extends Controller
         }
 
         return Inertia::render('catalog/FlashSales', [
-            'activeSale' => $activeSale,
+            'activeSale' => $activeSale === null ? null : [
+                ...Arr::except($activeSale->toArray(), 'items'),
+                'items' => $activeSale->items->map(fn (FlashSaleItem $item): array => [
+                    ...Arr::except($item->toArray(), 'product'),
+                    'product' => ProductCardData::make($item->product),
+                ])->values(),
+            ],
             'upcomingSales' => $upcomingSales,
-            'featuredProducts' => $featuredProducts,
+            'featuredProducts' => $featuredProducts->map(ProductCardData::make(...))->values(),
         ]);
     }
 }

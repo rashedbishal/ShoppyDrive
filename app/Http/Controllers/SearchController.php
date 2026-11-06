@@ -10,6 +10,7 @@ use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\SubCategory;
+use App\Support\ProductCardData;
 use App\Support\ProductSearchQuery;
 use App\Support\SearchSuggestionCache;
 use App\Support\SearchTerm;
@@ -108,7 +109,7 @@ class SearchController extends Controller
 
         return Inertia::render('search/SearchResults', [
             'query' => $query,
-            'products' => $products,
+            'products' => $products->through(ProductCardData::make(...)),
             'categories' => $categories,
             'brands' => $brands,
             'maxPrice' => $catalogMaxPrice,
