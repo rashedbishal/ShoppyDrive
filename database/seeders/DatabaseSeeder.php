@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class DatabaseSeeder extends Seeder
 {
@@ -20,6 +21,14 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        // BE-003: this demo seeder empties the catalogue (foreign keys off),
+        // overwrites settings and creates test@example.com with a known
+        // password. It must never run on the live site. PageSeeder, which
+        // the legal-pages migrations use, is a separate class and unaffected.
+        if (app()->environment('production')) {
+            throw new RuntimeException('Refusing to seed demo data in production: it would wipe the product catalogue, overwrite settings and create a test login.');
+        }
+
         // Truncate all content tables (preserves users, settings, orders)
         Schema::disableForeignKeyConstraints();
         foreach (['flash_sale_items', 'flash_sales', 'product_media', 'products', 'sub_categories', 'categories', 'brands', 'hero_slides', 'promotional_banners'] as $table) {

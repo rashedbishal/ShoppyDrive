@@ -52,6 +52,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(SecurityHeaders::class);
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        // SEC-011: only APP_URL's host (and its subdomains, so www still
+        // reaches RedirectToCanonicalDomain) may be used. Every absolute
+        // link the app builds from the request, including password-reset
+        // emails, can then never point at a host an attacker supplied.
+        // Laravel skips this in local and testing environments. The live
+        // APP_URL host was confirmed as shoppydrive.com from the app's own
+        // http→https 308 redirect target (RedirectToHttps reads APP_URL).
+        $middleware->trustHosts();
+
         // INFRA-001: deploys put the site in maintenance mode while files sync
         // and migrations run. These server-to-server endpoints stay open so a
         // courier update or bKash/Nagad SMS sent during
