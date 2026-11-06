@@ -19,6 +19,7 @@ enum CourierEvidenceSource: string
     case PATHAO_ADMIN_REFRESH = 'pathao_admin_refresh';
     case STEADFAST_WEBHOOK = 'steadfast_webhook';
     case STEADFAST_ADMIN_REFRESH = 'steadfast_admin_refresh';
+    case STEADFAST_POLL = 'steadfast_poll';
     case LEGACY_BACKFILL = 'legacy_backfill';
     case UNSPECIFIED = 'unspecified';
 }

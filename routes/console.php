@@ -47,6 +47,10 @@ Schedule::command('activitylog:clean --force')->dailyAt('03:50')->timezone('Asia
 // OPS-001: keeps /sitemap.xml current for search engines.
 Schedule::command('sitemap:generate')->dailyAt('04:00')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
 
+// BIZ-027: fallback for the Steadfast webhook, so a missed or rejected message
+// can't leave a parcel's order stuck.
+Schedule::command('steadfast:sync-statuses')->everyThirtyMinutes()->withoutOverlapping(1440, false);
+
 // Hostinger shared hosting can't keep a worker process alive, and its
 // disabled pcntl_signal() crashes `queue:work`'s daemon mode, so the
 // every-minute cron that drives this scheduler drains the database queue

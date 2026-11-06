@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Console\Commands\DrainQueueCommand;
 use App\Console\Commands\SyncPathaoOrderStatuses;
+use App\Console\Commands\SyncSteadfastOrderStatuses;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
@@ -128,7 +129,10 @@ class DashboardController extends Controller
                 // BE-011: every Pathao status check is failing (outage or bad
                 // credentials), so courier statuses have stopped updating.
                 'pathao_sync_problem' => Auth::guard('admin')->user()->canAccess('orders')
-                    ? self::pathaoSyncProblem()
+                    ? self::courierSyncProblem(SyncPathaoOrderStatuses::currentProblem())
+                    : null,
+                'steadfast_sync_problem' => Auth::guard('admin')->user()->canAccess('orders')
+                    ? self::courierSyncProblem(SyncSteadfastOrderStatuses::currentProblem())
                     : null,
                 'today_visitors' => $todayVisitors,
                 'yesterday_visitors' => $yesterdayVisitors,
@@ -185,12 +189,11 @@ class DashboardController extends Controller
     }
 
     /**
+     * @param  array{since: int, last_failed_at: int, last_error: string}|null  $problem
      * @return array{failing_for_seconds: int, last_error: string}|null
      */
-    private static function pathaoSyncProblem(): ?array
+    private static function courierSyncProblem(?array $problem): ?array
     {
-        $problem = SyncPathaoOrderStatuses::currentProblem();
-
         return $problem === null ? null : [
             'failing_for_seconds' => max(0, now()->getTimestamp() - $problem['since']),
             'last_error' => (string) ($problem['last_error'] ?? ''),

@@ -43,6 +43,10 @@ type Stats = {
         failing_for_seconds: number;
         last_error: string;
     } | null;
+    steadfast_sync_problem: {
+        failing_for_seconds: number;
+        last_error: string;
+    } | null;
     today_visitors: number;
     yesterday_visitors: number;
 };
@@ -500,6 +504,25 @@ export default function Dashboard({
                             updating. Check the Pathao settings in Admin ›
                             Courier, or whether Pathao is down. Last error:{' '}
                             {stats.pathao_sync_problem.last_error || 'unknown'}
+                        </p>
+                    </div>
+                )}
+
+                {/* BIZ-027: the same for Steadfast's fallback check. */}
+                {stats.steadfast_sync_problem && (
+                    <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">
+                        <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                        <p className="text-sm font-medium">
+                            Steadfast status updates are failing (for{' '}
+                            {formatAgo(
+                                stats.steadfast_sync_problem
+                                    .failing_for_seconds,
+                            )}
+                            ). Order statuses for Steadfast parcels may not be
+                            updating. Check the Steadfast settings in Admin ›
+                            Courier, or whether Steadfast is down. Last error:{' '}
+                            {stats.steadfast_sync_problem.last_error ||
+                                'unknown'}
                         </p>
                     </div>
                 )}
