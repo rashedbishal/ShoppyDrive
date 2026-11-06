@@ -6,7 +6,6 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\IncompleteOrderController;
 use App\Http\Controllers\MobilePaymentController;
 use App\Http\Controllers\OrderTrackingController;
-use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Coupon;
 use App\Models\Order;
@@ -45,9 +44,10 @@ Route::middleware(['checkout.access', 'auth.session', 'account.active'])->group(
 Route::middleware(['auth', 'auth.session', 'account.active'])->group(function () {
     Route::post('/cart/sync', [CartController::class, 'sync'])->name('cart.sync');
 
-    // ZiniPay payment return routes (kept for historical pending checkouts)
-    Route::get('/payment/callback/{token}', [PaymentController::class, 'callback'])->name('payment.callback');
-    Route::get('/payment/cancel/{token}', [PaymentController::class, 'cancel'])->name('payment.cancel');
+    // The bKash/Nagad payment page's "Cancel payment" link. BIZ-026: moved
+    // here when the retired ZiniPay gateway's routes were removed; same URL,
+    // name and behaviour.
+    Route::get('/payment/cancel/{token}', [MobilePaymentController::class, 'cancel'])->name('payment.cancel');
 });
 Route::get('/order/track', [OrderTrackingController::class, 'show'])->middleware('throttle:order-tracking')->name('order.track');
 Route::get('/order/track/check', [OrderTrackingController::class, 'checkRequirements'])->middleware('throttle:order-tracking')->name('order.track.check');

@@ -46,9 +46,9 @@ class PlaceOrderRequest extends FormRequest
             'coupon_code' => ['nullable', 'string', 'max:50'],
             'redeem_points' => ['nullable', 'boolean'],
             'points_to_redeem' => ['nullable', 'integer', 'min:1', 'required_if:redeem_points,true'],
-            // FSA-23: 'zinipay' deliberately removed — ZiniPayService has
-            // no initiation path anywhere (only verifyPayment(), called
-            // from the historical-only callback/webhook), so a new
+            // FSA-23: 'zinipay' deliberately removed. The ZiniPay gateway
+            // was retired entirely (BIZ-026: callback/webhook routes and
+            // ZiniPayService deleted), so a new
             // checkout submitting it must fail validation here instead of
             // silently falling through CheckoutController::completeCheckout()'s
             // COD/else branching into the unrelated mobile-banking flow.

@@ -16,10 +16,11 @@ use Illuminate\Support\Facades\Log;
  * created already exists independently.
  *
  * Tier 2 — expired rows with order_number still NULL — is deliberately left
- * entirely alone. A ZiniPay payment that succeeded but failed to create an
- * order (PaymentController::callback()'s InsufficientStockException/
- * CouponUnavailableException handling) leaves exactly this shape on purpose,
- * so an admin can resolve it manually; nothing on the row itself tells a
+ * entirely alone. A payment that succeeded but failed to create an order
+ * (e.g. the retired ZiniPay callback's InsufficientStockException/
+ * CouponUnavailableException handling, whose old rows may still exist)
+ * leaves exactly this shape on purpose, so an admin can resolve it
+ * manually; nothing on the row itself tells a
  * truly-abandoned checkout apart from one that collected real money. See
  * the remediation tracker (MED-20) for why Tier 2 is deferred, not fixed.
  */

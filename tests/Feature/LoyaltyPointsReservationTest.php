@@ -13,7 +13,6 @@ use App\Models\ReferralPointTransaction;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\LoyaltyPointsService;
-use App\Services\OrderService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia;
@@ -272,34 +271,6 @@ test('resubmitting the same checkout token does not reserve the points again', f
 
     expect(PendingCheckout::query()->where('user_id', $user->id)->count())->toBe(1);
     expect((int) PendingCheckout::query()->where('user_id', $user->id)->sum('points_reserved'))->toBe(100);
-});
-
-test('a ZiniPay confirmation debits the reservation once across callback and webhook', function () {
-    $user = User::factory()->create(['points_balance' => 100]);
-    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
-
-    $pending = startPointsCheckout($user, $product);
-    $orders = app(OrderService::class);
-
-    $orders->createFromPending($pending, ['transaction_id' => 'ZINI001']);
-    $orders->createFromPending($pending, ['transaction_id' => 'ZINI001']);
-
-    expect(Order::query()->where('user_id', $user->id)->count())->toBe(1);
-    expect($user->refresh()->points_balance)->toBe(0);
-    expect(app(LoyaltyPointsService::class)->availablePoints($user))->toBe(0);
-});
-
-test('an expired ZiniPay pending checkout is refused without debiting points', function () {
-    $user = User::factory()->create(['points_balance' => 100]);
-    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
-
-    $pending = startPointsCheckout($user, $product);
-    $this->travelTo($pending->expires_at->copy()->addSecond());
-
-    expect(fn () => app(OrderService::class)->createFromPending($pending, ['transaction_id' => 'ZINI002']))
-        ->toThrow(RuntimeException::class);
-
-    expect($user->refresh()->points_balance)->toBe(100);
 });
 
 test('refunding a reserved order restores the debited points exactly once', function () {

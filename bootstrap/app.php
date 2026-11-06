@@ -54,11 +54,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // INFRA-001: deploys put the site in maintenance mode while files sync
         // and migrations run. These server-to-server endpoints stay open so a
-        // payment confirmation, courier update or bKash/Nagad SMS sent during
+        // courier update or bKash/Nagad SMS sent during
         // that minute isn't turned away. `artisan down` records this list in
         // the maintenance file, so it is read by the code being replaced.
         $middleware->preventRequestsDuringMaintenance(except: [
-            'api/zinipay/webhook',
             'api/steadfast/webhook',
             'api/sms/receive',
         ]);

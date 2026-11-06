@@ -19,7 +19,7 @@ class IncompleteOrderController extends Controller
      * visit) so repeated edits within the same visit don't pile up rows —
      * the matching row is deleted once a real order is placed with the same
      * phone number (see CheckoutController::store and
-     * OrderService::createFromPending).
+     * MobilePaymentController::submit).
      */
     public function store(TrackIncompleteOrderRequest $request): JsonResponse
     {

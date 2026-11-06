@@ -11,7 +11,8 @@ declare(strict_types=1);
 use Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance;
 use Symfony\Component\Yaml\Yaml;
 
-const MAINTENANCE_OPEN_ENDPOINTS = ['api/zinipay/webhook', 'api/steadfast/webhook', 'api/sms/receive'];
+// BIZ-026: the ZiniPay webhook was retired, so it is no longer on this list.
+const MAINTENANCE_OPEN_ENDPOINTS = ['api/steadfast/webhook', 'api/sms/receive'];
 
 function deploySteps(): array
 {
@@ -55,7 +56,6 @@ test('during maintenance customers get 503 but webhooks and the SMS forwarder st
 
     $this->postJson('/api/sms/receive', [])->assertStatus(401);
     $this->postJson('/api/steadfast/webhook', [])->assertStatus(401);
-    expect($this->postJson('/api/zinipay/webhook', [])->status())->not->toBe(503);
 });
 
 test('maintenance starts after the pre-deploy check and before files sync, with a pre-rendered page', function () {

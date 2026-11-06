@@ -7,7 +7,6 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Support\SecurityRateLimits;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Log;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -351,7 +350,6 @@ test('account actions and webhooks have their limiters attached', function (stri
     ['profile.update', 'throttle:account-action'],
     ['profile.destroy', 'throttle:account-action'],
     ['connections.destroy', 'throttle:account-action'],
-    ['zinipay.webhook', 'throttle:webhook'],
     ['steadfast.webhook', 'throttle:webhook'],
 ]);
 
@@ -407,14 +405,3 @@ test('the unused v1 API routes are gone', function (string $method, string $uri)
     ['POST', '/api/v1/auth/login'],
     ['POST', '/api/v1/auth/register'],
 ]);
-
-test('the ZiniPay webhook logs only the identifiers, not the whole request', function () {
-    Log::spy();
-
-    $this->getJson('/api/zinipay/webhook?val_id=tok123&invoice_id=inv456&junk='.str_repeat('x', 5000));
-
-    Log::shouldHaveReceived('info')
-        ->withArgs(fn (string $message, array $context = []) => $message === '[ZiniPay] Webhook received'
-            && $context === ['val_id' => 'tok123', 'invoice_id' => 'inv456'])
-        ->once();
-});

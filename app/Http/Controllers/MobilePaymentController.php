@@ -78,6 +78,25 @@ class MobilePaymentController extends Controller
      * Customer submits provider + transaction ID.
      * Route: POST /payment/mobile/{token}
      */
+    /**
+     * The payment page's "Cancel payment" link: discards the pending
+     * checkout (releasing any reserved points) and returns to checkout with
+     * the cart intact. Only the customer who staged it can cancel it.
+     * BIZ-026: moved here unchanged from the retired ZiniPay PaymentController.
+     */
+    public function cancel(string $token): RedirectResponse
+    {
+        $pending = PendingCheckout::where('token', $token)->first();
+
+        if ($pending && auth()->id() === $pending->user_id) {
+            Log::info('[MobilePayment] Pending checkout cancelled by customer', ['token' => $token]);
+            $pending->delete();
+        }
+
+        return redirect()->route('checkout.index')
+            ->with('info', 'Payment cancelled. Your cart is intact — you can try again anytime.');
+    }
+
     public function submit(Request $request, string $token): RedirectResponse
     {
         $request->validate([
