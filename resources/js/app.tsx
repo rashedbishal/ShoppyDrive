@@ -1,5 +1,6 @@
 import { createInertiaApp, router } from '@inertiajs/react';
 import React from 'react';
+import { toast } from 'sonner';
 import { route as ziggyRoute } from 'ziggy-js';
 import ErrorBoundary from '@/components/error-boundary';
 import PageLoadingOverlay from '@/components/shared/PageLoadingOverlay';
@@ -120,6 +121,58 @@ let cartSyncInFlight = false;
 let pendingSync: boolean | null = null;
 let lastSyncedSignature = '';
 
+/**
+ * FE-011: a failed cart save used to be silent, and the signature was
+ * already marked as synced, so the next page's server cart quietly dropped
+ * the item. `cartSyncDirty` means local changes the server hasn't
+ * confirmed yet. While it is set, a page visit re-sends the cart instead of
+ * overwriting it. Only full-cart replace syncs are retried: they are
+ * idempotent, whereas the one-time login merge adds quantities, so
+ * replaying it after a lost response could double them.
+ */
+let cartSyncDirty = false;
+let cartSyncRetryAttempt = 0;
+let cartSyncRetryTimer: ReturnType<typeof setTimeout> | null = null;
+let cartSyncFailureShown = false;
+const CART_SYNC_RETRY_DELAYS_MS = [2000, 5000, 10000];
+const CART_SYNC_FAILED_MESSAGE =
+    "We couldn't save your cart. Check your internet connection; we'll keep trying.";
+
+class RetryableCartSyncError extends Error {}
+
+function cartSyncFailed(merge: boolean, retryable: boolean): void {
+    if (cartSyncRetryTimer !== null) {
+        clearTimeout(cartSyncRetryTimer);
+        cartSyncRetryTimer = null;
+    }
+
+    if (
+        retryable &&
+        !merge &&
+        cartSyncRetryAttempt < CART_SYNC_RETRY_DELAYS_MS.length
+    ) {
+        const delay = CART_SYNC_RETRY_DELAYS_MS[cartSyncRetryAttempt];
+        cartSyncRetryAttempt += 1;
+        cartSyncRetryTimer = setTimeout(() => {
+            cartSyncRetryTimer = null;
+            void syncAuthenticatedCart(false);
+        }, delay);
+
+        return;
+    }
+
+    if (!retryable) {
+        // A permanent refusal (e.g. the session ended): the server's cart
+        // is the truth, as before.
+        cartSyncDirty = false;
+    }
+
+    if (!cartSyncFailureShown) {
+        cartSyncFailureShown = true;
+        toast.error(CART_SYNC_FAILED_MESSAGE);
+    }
+}
+
 function applyLogout(): void {
     localStorage.removeItem(LAST_USER_KEY);
     localStorage.removeItem(STORAGE_KEYS.cart);
@@ -128,6 +181,16 @@ function applyLogout(): void {
     prevAuthUserId = null;
     activeAuthUserId = null;
     lastSyncedSignature = '';
+
+    // FE-011: nothing left to save for a logged-out user.
+    cartSyncDirty = false;
+    cartSyncRetryAttempt = 0;
+    cartSyncFailureShown = false;
+
+    if (cartSyncRetryTimer !== null) {
+        clearTimeout(cartSyncRetryTimer);
+        cartSyncRetryTimer = null;
+    }
 }
 
 function cartSignature(cart: Cart | null): string {
@@ -198,12 +261,34 @@ async function syncAuthenticatedCart(merge: boolean): Promise<void> {
         });
 
         if (!response.ok) {
-            throw new Error(`Cart sync failed with status ${response.status}`);
+            const temporary =
+                response.status >= 500 ||
+                response.status === 408 ||
+                response.status === 429;
+
+            throw temporary
+                ? new RetryableCartSyncError(String(response.status))
+                : new Error(`Cart sync failed with status ${response.status}`);
         }
 
         const payload = (await response.json()) as { cart: Cart | null };
+        cartSyncDirty = false;
+        cartSyncRetryAttempt = 0;
+
+        if (cartSyncFailureShown) {
+            cartSyncFailureShown = false;
+            toast.success('Your cart is saved.');
+        }
+
         hydrateCart(payload.cart);
         localStorage.setItem(LAST_USER_KEY, String(activeAuthUserId));
+    } catch (error) {
+        // fetch() rejects with a TypeError when the network is unreachable.
+        cartSyncFailed(
+            merge,
+            error instanceof RetryableCartSyncError ||
+                error instanceof TypeError,
+        );
     } finally {
         cartSyncInFlight = false;
 
@@ -294,6 +379,8 @@ useCartStore.subscribe((state) => {
     }
 
     lastSyncedSignature = signature;
+    cartSyncDirty = true;
+    cartSyncRetryAttempt = 0;
     void syncAuthenticatedCart(false);
 });
 
@@ -334,7 +421,15 @@ router.on('navigate', (event) => {
         applyLogin(currentUserId, currentCart, prevAuthUserId === null);
     } else if (currentUserId !== null) {
         activeAuthUserId = currentUserId;
-        hydrateCart(currentCart);
+
+        if (cartSyncDirty) {
+            // FE-011: keep the unsaved items and try again now.
+            cartSyncRetryAttempt = 0;
+            void syncAuthenticatedCart(false);
+        } else {
+            hydrateCart(currentCart);
+        }
+
         prevAuthUserId = currentUserId;
     } else {
         prevAuthUserId = null;
