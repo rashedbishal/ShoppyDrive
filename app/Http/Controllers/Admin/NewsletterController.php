@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Concerns\RecordsAdminActions;
+use App\Console\Commands\DrainQueueCommand;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendNewsletterChunk;
 use App\Models\NewsletterSubscriber;
@@ -28,6 +29,9 @@ class NewsletterController extends Controller
      * SMTP per-message recipient caps (typically 100).
      */
     public const RECIPIENTS_PER_MESSAGE = 50;
+
+    /** OPS-004: 50 recipients every 5 minutes is 600 emails an hour. */
+    private const MINUTES_BETWEEN_CHUNKS = 5;
 
     /**
      * Each send's uploads live in their own `{ATTACHMENT_ROOT}/{sendId}`
@@ -135,8 +139,11 @@ class NewsletterController extends Controller
 
         $jobs = $activeEmails
             ->chunk(self::RECIPIENTS_PER_MESSAGE)
-            ->map(fn ($chunk): SendNewsletterChunk => new SendNewsletterChunk($chunk->values()->all(), $newsletter))
             ->values()
+            // OPS-004: a pause between chunks, so one big send can't use up
+            // the mail account's limit, on a queue that order mail goes ahead of.
+            ->map(fn ($chunk, int $index): SendNewsletterChunk => (new SendNewsletterChunk($chunk->values()->all(), $newsletter))
+                ->delay(now()->addMinutes($index * self::MINUTES_BETWEEN_CHUNKS)))
             ->all();
 
         // `then` runs only once every chunk has succeeded — including a
@@ -144,12 +151,20 @@ class NewsletterController extends Controller
         // removed while any chunk may still need them. allowFailures() keeps
         // one bad chunk from cancelling the others.
         Bus::batch($jobs)
+            ->onQueue(DrainQueueCommand::NEWSLETTER_QUEUE)
             ->name(self::BATCH_NAME_PREFIX.$sendId)
             ->allowFailures()
             ->then(static fn () => Storage::disk('local')->deleteDirectory($attachmentDirectory))
             ->dispatch();
 
         return redirect()->route('admin.newsletter.index')
-            ->with('success', 'Newsletter queued for '.$activeEmails->count().' subscribers in '.count($jobs).' message(s). It will go out in the background over the next few minutes.');
+            ->with('success', 'Newsletter queued for '.$activeEmails->count().' subscribers in '.count($jobs).' message(s). One goes out every '.self::MINUTES_BETWEEN_CHUNKS.' minutes, so this send takes about '.$this->sendDuration(count($jobs)).'.');
+    }
+
+    private function sendDuration(int $chunks): string
+    {
+        $minutes = max(0, $chunks - 1) * self::MINUTES_BETWEEN_CHUNKS;
+
+        return $minutes < 60 ? "{$minutes} minutes" : round($minutes / 60, 1).' hours';
     }
 }

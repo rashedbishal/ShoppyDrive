@@ -81,7 +81,7 @@ it('processes every available default-queue job in one run, one worker process p
     $this->assertDatabaseCount('failed_jobs', 0);
     Event::assertDispatchedTimes(MessageSent::class, 3);
     Process::assertRanTimes(fn (PendingProcess $process): bool => $process->command === [
-        php_binary(), base_path('artisan'), 'queue:work', 'database', '--queue=default', '--once', '--sleep=0', '--tries=3', '--backoff=300',
+        php_binary(), base_path('artisan'), 'queue:work', 'database', '--queue=default,newsletter', '--once', '--sleep=0', '--tries=3', '--backoff=300',
     ] && $process->timeout === 45, 3);
 });
 

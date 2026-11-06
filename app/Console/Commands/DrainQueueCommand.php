@@ -50,6 +50,14 @@ class DrainQueueCommand extends Command
     private const QUEUE = 'default';
 
     /**
+     * OPS-004: paced newsletter chunks. The worker reads it after QUEUE, so
+     * order mail always goes first. Deliberately not part of
+     * oldestPendingJobAgeSeconds(): a chunk delayed for hours comes due with
+     * an old created_at and would look like a stalled queue.
+     */
+    public const NEWSLETTER_QUEUE = 'newsletter';
+
+    /**
      * OPS-002: the one place this command is known to have actually run —
      * read by DashboardController to warn an admin when cron itself has
      * stopped firing (a stalled queue otherwise creates no failed rows, so
@@ -193,7 +201,7 @@ class DrainQueueCommand extends Command
 
         return $queue->getDatabase()
             ->table($config['table'])
-            ->where('queue', self::QUEUE)
+            ->whereIn('queue', [self::QUEUE, self::NEWSLETTER_QUEUE])
             ->where(fn (Builder $query) => $query
                 ->where(fn (Builder $query) => $query->whereNull('reserved_at')->where('available_at', '<=', $now->getTimestamp()))
                 ->orWhere('reserved_at', '<=', $reservationExpiredBefore))
@@ -223,7 +231,7 @@ class DrainQueueCommand extends Command
             base_path('artisan'),
             'queue:work',
             self::CONNECTION,
-            '--queue='.self::QUEUE,
+            '--queue='.self::QUEUE.','.self::NEWSLETTER_QUEUE,
             '--once',
             '--sleep=0',
             '--tries=3',

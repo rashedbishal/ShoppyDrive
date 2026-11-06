@@ -9,6 +9,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Queue\SerializesModels;
 
 class NewsletterCustomMail extends Mailable
@@ -24,6 +25,15 @@ class NewsletterCustomMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(subject: $this->emailSubject);
+    }
+
+    /**
+     * OPS-004: lets mail apps offer "unsubscribe". One shared BCC message
+     * can't carry a per-person link, so this is the generic manage page.
+     */
+    public function headers(): Headers
+    {
+        return new Headers(text: ['List-Unsubscribe' => '<'.route('newsletter.manage').'>']);
     }
 
     public function content(): Content

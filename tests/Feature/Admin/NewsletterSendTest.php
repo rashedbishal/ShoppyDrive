@@ -110,7 +110,7 @@ function deliveredNewsletterBccs(): array
  */
 function drainNewsletterQueue(): void
 {
-    Artisan::call('queue:work', ['connection' => 'database', '--stop-when-empty' => true, '--sleep' => 0, '--memory' => 4096]);
+    Artisan::call('queue:work', ['connection' => 'database', '--queue' => 'default,newsletter', '--stop-when-empty' => true, '--sleep' => 0, '--memory' => 4096]);
 }
 
 test('sending queues one batch of chunked jobs instead of mailing synchronously', function () {
@@ -198,6 +198,9 @@ test('a failed chunk keeps the attachments until its retry succeeds, without re-
         'attachments' => [UploadedFile::fake()->create('flyer.pdf', 10, 'application/pdf')],
     ]);
     [$directory] = Storage::disk('local')->directories(NewsletterController::ATTACHMENT_ROOT);
+
+    // OPS-004: the second chunk is paced 5 minutes after the first.
+    $this->travel(6)->minutes();
 
     // The job's own $tries (3, as app:drain-queue) and 60s backoff apply:
     // the bad chunk is released and retried twice before it really fails.
