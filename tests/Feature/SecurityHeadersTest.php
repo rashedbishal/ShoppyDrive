@@ -119,9 +119,12 @@ test('the app embeds nothing that a frame policy would break', function () {
     expect($sources)->toBeEmpty();
 });
 
-test('no HSTS or content security policy is sent', function () {
+test('outside production no HSTS or report-only policy is sent, and no enforcing policy ever is', function () {
+    // SEC-013: production adds HSTS and a report-only CSP; see
+    // ProductionTransportSecurityTest.
     $response = get(route('home'));
 
     expect($response->headers->has('Strict-Transport-Security'))->toBeFalse();
+    expect($response->headers->has('Content-Security-Policy-Report-Only'))->toBeFalse();
     expect($response->headers->has('Content-Security-Policy'))->toBeFalse();
 });

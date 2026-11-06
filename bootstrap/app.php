@@ -15,6 +15,7 @@ use App\Http\Middleware\RedirectAdminToDashboard;
 use App\Http\Middleware\RedirectCustomerFromAdmin;
 use App\Http\Middleware\RedirectToCanonicalDomain;
 use App\Http\Middleware\RedirectToHttps;
+use App\Http\Middleware\RefuseInsecureApi;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\ThrottleFortifyActions;
 use App\Http\Middleware\TrackDailyVisit;
@@ -50,6 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'account.active' => EnsureAccountNotAnonymized::class,
         ]);
         $middleware->prepend(SecurityHeaders::class);
+        $middleware->api(prepend: [RefuseInsecureApi::class]);
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         // SEC-011: only APP_URL's host (and its subdomains, so www still

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CspReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SmsTestController;
 use App\Http\Controllers\SteadfastWebhookController;
@@ -9,6 +10,9 @@ Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->mid
 
 // Steadfast courier webhook — delivery status and other parcel/account events
 Route::post('/steadfast/webhook', [SteadfastWebhookController::class, 'handle'])->middleware('throttle:webhook')->name('steadfast.webhook');
+
+// SEC-013: reports from the report-only Content Security Policy.
+Route::post('/csp-report', CspReportController::class)->middleware('throttle:client-errors');
 
 // SMS forwarder phone — authenticated by its bearer token (see SmsTestController)
 Route::post('/sms/receive', [SmsTestController::class, 'receive'])->middleware('throttle:sms-forwarder');
