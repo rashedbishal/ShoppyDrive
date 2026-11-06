@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Responses\GenericPasswordResetLinkResponse;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Notification;
@@ -88,4 +89,28 @@ test('password cannot be reset with invalid token', function () {
     ]);
 
     $response->assertSessionHasErrors('email');
+});
+
+test('forgot password gives the same answer whether or not the email has an account (SEC-015)', function () {
+    Notification::fake();
+    $user = User::factory()->create();
+
+    $known = $this->from(route('password.request'))->post(route('password.email'), ['email' => $user->email]);
+    $unknown = $this->from(route('password.request'))->post(route('password.email'), ['email' => 'nobody@example.com']);
+    // Inside the broker's 60-second throttle, which only a real account can hit.
+    $repeat = $this->from(route('password.request'))->post(route('password.email'), ['email' => $user->email]);
+
+    foreach ([$known, $unknown, $repeat] as $response) {
+        $response->assertRedirect(route('password.request'))
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', GenericPasswordResetLinkResponse::MESSAGE);
+    }
+
+    Notification::assertSentToTimes($user, ResetPassword::class, 1);
+});
+
+test('forgot password answers fetch callers the same way (SEC-015)', function () {
+    $this->postJson(route('password.email'), ['email' => 'nobody@example.com'])
+        ->assertOk()
+        ->assertJson(['message' => GenericPasswordResetLinkResponse::MESSAGE]);
 });
