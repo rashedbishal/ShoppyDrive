@@ -16,6 +16,7 @@ use App\Models\Product;
 use App\Models\ProductMedia;
 use App\Models\ProductVariant;
 use App\Models\SubCategory;
+use App\Services\ImageOptimizer;
 use App\Support\CatalogFilterCache;
 use App\Support\ProductStockToken;
 use App\Support\SearchSuggestionCache;
@@ -30,7 +31,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use RuntimeException;
 use Throwable;
 
 class ProductController extends Controller
@@ -311,12 +311,7 @@ class ProductController extends Controller
             }
 
             $type = str_starts_with((string) $fileOrUrl->getMimeType(), 'video/') ? 'video' : 'image';
-            $storedPath = $fileOrUrl->store('products', 'public');
-
-            if ($storedPath === false) {
-                throw new RuntimeException('A product file could not be stored.');
-            }
-
+            $storedPath = app(ImageOptimizer::class)->store($fileOrUrl, 'products');
             $storedFiles[] = $storedPath;
 
             return ['path' => '/storage/'.$storedPath, 'type' => $type];

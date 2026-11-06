@@ -11,6 +11,7 @@ use App\Http\Requests\Admin\CategoryRequest;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\SubCategory;
+use App\Services\ImageOptimizer;
 use App\Support\CatalogFilterCache;
 use App\Support\LayoutCache;
 use Illuminate\Http\RedirectResponse;
@@ -59,7 +60,7 @@ class CategoryController extends Controller
     {
         $data = $request->validated();
         if ($request->hasFile('image')) {
-            $data['image'] = '/storage/'.$request->file('image')->store('categories', 'public');
+            $data['image'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('image'), 'categories');
         } else {
             $data['image'] = '/placeholder.svg';
         }
@@ -82,7 +83,7 @@ class CategoryController extends Controller
     {
         $data = $request->validated();
         if ($request->hasFile('image')) {
-            $data['image'] = '/storage/'.$request->file('image')->store('categories', 'public');
+            $data['image'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('image'), 'categories');
         } else {
             unset($data['image']);
         }

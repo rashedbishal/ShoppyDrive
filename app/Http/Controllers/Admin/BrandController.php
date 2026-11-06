@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\BrandRequest;
 use App\Models\Brand;
 use App\Models\HomepageSetting;
 use App\Models\Product;
+use App\Services\ImageOptimizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -43,7 +44,7 @@ class BrandController extends Controller
     {
         $data = $request->validated();
         if ($request->hasFile('logo')) {
-            $data['logo'] = '/storage/'.$request->file('logo')->store('brands', 'public');
+            $data['logo'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('logo'), 'brands');
         }
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
         $data['is_active'] = $data['is_active'] ?? true;
@@ -65,7 +66,7 @@ class BrandController extends Controller
     {
         $data = $request->validated();
         if ($request->hasFile('logo')) {
-            $data['logo'] = '/storage/'.$request->file('logo')->store('brands', 'public');
+            $data['logo'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('logo'), 'brands');
         }
         $data['is_active'] = $data['is_active'] ?? false;
         $brand->update($data);

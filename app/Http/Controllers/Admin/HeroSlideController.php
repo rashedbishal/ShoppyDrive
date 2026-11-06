@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\HeroSlide;
+use App\Services\ImageOptimizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -46,7 +47,7 @@ class HeroSlideController extends Controller
             'stats.*.value' => ['required', 'string', 'max:30'],
         ]);
 
-        $validated['image'] = '/storage/'.$request->file('image')->store('hero-slides', 'public');
+        $validated['image'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('image'), 'hero-slides');
 
         HeroSlide::create($validated);
 
@@ -79,7 +80,7 @@ class HeroSlideController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $validated['image'] = '/storage/'.$request->file('image')->store('hero-slides', 'public');
+            $validated['image'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('image'), 'hero-slides');
         } else {
             unset($validated['image']);
         }

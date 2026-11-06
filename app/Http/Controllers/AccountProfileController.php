@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\ImageOptimizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -31,7 +32,7 @@ class AccountProfileController extends Controller
 
         if ($request->hasFile('avatar')) {
             $this->deleteStoredAvatar($user->avatar);
-            $data['avatar'] = '/storage/'.$request->file('avatar')->store('avatars', 'public');
+            $data['avatar'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('avatar'), 'avatars');
         } elseif ($request->boolean('remove_avatar')) {
             $this->deleteStoredAvatar($user->avatar);
             $data['avatar'] = null;

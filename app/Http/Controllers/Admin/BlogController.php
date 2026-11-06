@@ -8,6 +8,7 @@ use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BlogRequest;
 use App\Models\Blog;
+use App\Services\ImageOptimizer;
 use App\Support\AdminDateTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,7 +45,7 @@ class BlogController extends Controller
         $data['slug'] = Str::slug($data['slug']);
 
         if ($request->hasFile('featured_image')) {
-            $data['featured_image'] = '/storage/'.$request->file('featured_image')->store('blogs', 'public');
+            $data['featured_image'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('featured_image'), 'blogs');
         }
 
         $data = AdminDateTime::fieldsFromInput($data, ['published_at']);
@@ -74,7 +75,7 @@ class BlogController extends Controller
         $data['slug'] = Str::slug($data['slug']);
 
         if ($request->hasFile('featured_image')) {
-            $data['featured_image'] = '/storage/'.$request->file('featured_image')->store('blogs', 'public');
+            $data['featured_image'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('featured_image'), 'blogs');
         } else {
             unset($data['featured_image']);
         }

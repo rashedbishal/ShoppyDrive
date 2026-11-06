@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\ProductBundleRequest;
 use App\Models\Product;
 use App\Models\ProductBundle;
 use App\Models\ProductBundleItem;
+use App\Services\ImageOptimizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -52,7 +53,7 @@ class ProductBundleController extends Controller
         $data['sort_order'] = (ProductBundle::max('sort_order') ?? -1) + 1;
 
         if (request()->hasFile('image')) {
-            $data['image'] = '/storage/'.$request->file('image')->store('product-bundles', 'public');
+            $data['image'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('image'), 'product-bundles');
         } else {
             $data['image'] = '/placeholder.svg';
         }
@@ -88,7 +89,7 @@ class ProductBundleController extends Controller
         $data['is_active'] = $data['is_active'] ?? false;
 
         if ($request->hasFile('image')) {
-            $data['image'] = '/storage/'.$request->file('image')->store('product-bundles', 'public');
+            $data['image'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('image'), 'product-bundles');
         } else {
             unset($data['image']);
         }

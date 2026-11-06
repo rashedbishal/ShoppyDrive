@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\ImageOptimizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,7 +20,7 @@ class ContentImageController extends Controller
             'image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
         ]);
 
-        $path = $request->file('image')->store('content-images', 'public');
+        $path = app(ImageOptimizer::class)->store($request->file('image'), 'content-images');
 
         return response()->json(['url' => '/storage/'.$path]);
     }

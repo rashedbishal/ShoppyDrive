@@ -223,6 +223,8 @@ class SettingController extends Controller
                 Storage::disk('public')->delete(substr((string) $existing->value, strlen('/storage/')));
             }
 
+            // Deliberately not through ImageOptimizer: this logo heads every
+            // email, and Outlook on desktop can't show WebP.
             $path = $request->file('logo')->store('logos', 'public');
             Setting::updateOrCreate(['key' => 'logo'], ['value' => '/storage/'.$path, 'group' => 'general']);
         }

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\PromotionalBanner;
 use App\Rules\RasterImageOrUrl;
+use App\Services\ImageOptimizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,7 +52,7 @@ class PromotionalBannerController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $validated['image'] = '/storage/'.$request->file('image')->store('promotional-banners', 'public');
+            $validated['image'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('image'), 'promotional-banners');
         } else {
             $validated['image'] = '/placeholder.svg';
         }
@@ -95,7 +96,7 @@ class PromotionalBannerController extends Controller
         }
 
         if ($request->hasFile('image')) {
-            $validated['image'] = '/storage/'.$request->file('image')->store('promotional-banners', 'public');
+            $validated['image'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('image'), 'promotional-banners');
         } elseif (blank($validated['image'] ?? null)) {
             // The admin cleared the image without picking a replacement — RasterImageOrUrl
             // accepts a blank value as "keep as-is", so an empty string here means the

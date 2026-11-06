@@ -11,6 +11,7 @@ use App\Http\Requests\Admin\SubCategoryRequest;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\SubCategory;
+use App\Services\ImageOptimizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -51,7 +52,7 @@ class SubCategoryController extends Controller
     {
         $data = $request->validated();
         if ($request->hasFile('image')) {
-            $data['image'] = '/storage/'.$request->file('image')->store('sub-categories', 'public');
+            $data['image'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('image'), 'sub-categories');
         } else {
             $data['image'] = '/placeholder.svg';
         }
@@ -82,7 +83,7 @@ class SubCategoryController extends Controller
     {
         $data = $request->validated();
         if ($request->hasFile('image')) {
-            $data['image'] = '/storage/'.$request->file('image')->store('sub-categories', 'public');
+            $data['image'] = '/storage/'.app(ImageOptimizer::class)->store($request->file('image'), 'sub-categories');
         } else {
             unset($data['image']);
         }
