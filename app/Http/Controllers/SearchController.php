@@ -98,6 +98,7 @@ class SearchController extends Controller
             ->get(['id', 'name', 'slug']);
 
         $brands = Brand::query()
+            ->select(['id', 'name', 'slug'])
             ->active()
             ->withCount([
                 'products as products_count' => static fn ($q) => $q->visible(),

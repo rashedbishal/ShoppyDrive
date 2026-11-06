@@ -28,6 +28,9 @@ final class LayoutCache
 {
     public const SETTINGS = 'settings';
 
+    /** PERF-002: every page carries this; the menus show under 90 characters of it. */
+    private const NAV_DESCRIPTION_LENGTH = 160;
+
     public const NAV_CATEGORIES = 'nav_categories';
 
     public const HOMEPAGE_SETTINGS = 'homepage_settings';
@@ -89,11 +92,15 @@ final class LayoutCache
     public static function navCategories(): array
     {
         return Cache::rememberForever(self::PREFIX.self::NAV_CATEGORIES, fn (): array => Category::active()
-            ->with(['subCategories' => fn ($q) => $q->active()->orderBy('sort_order')->orderBy('name')->select(['id', 'name', 'slug', 'category_id', 'description'])])
+            ->with(['subCategories' => fn ($q) => $q->active()->orderBy('sort_order')->orderBy('name')->select(['id', 'name', 'slug', 'category_id'])])
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get(['id', 'name', 'slug', 'description', 'icon', 'color', 'image'])
-            ->toArray());
+            ->map(fn (Category $category): array => [
+                ...$category->toArray(),
+                'description' => $category->description === null ? null : mb_substr($category->description, 0, self::NAV_DESCRIPTION_LENGTH),
+            ])
+            ->all());
     }
 
     /**

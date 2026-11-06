@@ -39,6 +39,7 @@ final class CatalogFilterCache
     public static function categories(): array
     {
         return self::remember('categories', fn () => Category::query()
+            ->select(['id', 'name', 'slug', 'image'])
             ->active()
             ->withCount([
                 'products as products_count' => static fn ($productQuery) => $productQuery->visible(),
@@ -46,6 +47,7 @@ final class CatalogFilterCache
             ->with([
                 'subCategories' => static function ($childQuery): void {
                     $childQuery
+                        ->select(['id', 'category_id', 'name', 'slug', 'image'])
                         ->active()
                         ->orderBy('sort_order')
                         ->withCount([
@@ -63,6 +65,7 @@ final class CatalogFilterCache
     public static function brands(): array
     {
         return self::remember('brands', fn () => Brand::query()
+            ->select(['id', 'name', 'slug'])
             ->active()
             ->withCount([
                 'products as products_count' => static fn ($productQuery) => $productQuery->visible(),

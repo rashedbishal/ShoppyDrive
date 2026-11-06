@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductMedia;
 use App\Models\ProductVariant;
+use App\Models\SubCategory;
 use App\Models\User;
 use App\Models\Wishlist;
 use App\Support\ProductCardData;
@@ -134,4 +135,31 @@ test('an open storefront tab moves into admin with a full page load', function (
         ->assertHeader('X-Inertia-Location', route('admin.dashboard'));
 
     $this->get(route('home'))->assertRedirect(route('admin.dashboard'));
+});
+
+test('the menu carries a short description and no sub-category text, and the file cache can hold it', function () {
+    $category = Category::factory()->create(['description' => str_repeat('long text ', 50), 'is_active' => true]);
+    SubCategory::factory()->create(['category_id' => $category->id, 'description' => 'Unused text', 'is_active' => true]);
+
+    $this->get(route('home'))->assertInertia(fn (Assert $page) => $page
+        ->where('navCategories.0.description', fn (string $description): bool => mb_strlen($description) === 160)
+        ->has('navCategories.0.sub_categories.0.slug')
+        ->missing('navCategories.0.sub_categories.0.description'));
+});
+
+test('the shop filter carries names and counts, not whole records', function () {
+    $category = Category::factory()->create(['meta_title' => 'Search title', 'is_active' => true]);
+    SubCategory::factory()->create(['category_id' => $category->id, 'meta_title' => 'Search title', 'image' => '/storage/tile.webp', 'is_active' => true]);
+    Brand::factory()->create(['description' => 'Brand story', 'is_active' => true]);
+
+    $this->get(route('products.index'))->assertInertia(fn (Assert $page) => $page
+        ->has('categories.0.products_count')
+        ->has('categories.0.sub_categories.0.products_count')
+        // The category page's sub-category tiles show this picture.
+        ->has('categories.0.sub_categories.0.image')
+        ->has('brands.0.products_count')
+        ->missing('categories.0.meta_title')
+        ->missing('categories.0.created_at')
+        ->missing('categories.0.sub_categories.0.meta_title')
+        ->missing('brands.0.description'));
 });
