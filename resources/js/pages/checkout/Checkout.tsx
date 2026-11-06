@@ -39,7 +39,8 @@ import {
     DISTRICT_OPTIONS,
 } from '@/lib/bangladesh-geography';
 import { groupCartItems } from '@/lib/cart-bundles';
-import { getCouponEligibleSubtotal, toCouponPreviewItems } from '@/lib/coupon';
+import { getCouponDiscount, toCouponPreviewItems } from '@/lib/coupon';
+import { isDeliveryFree } from '@/lib/delivery';
 import { getXsrfToken } from '@/lib/csrf';
 import { normalizeBdPhoneInput } from '@/lib/phone';
 import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
@@ -349,7 +350,8 @@ export default function Checkout({
     pointsValue = 0,
     pointsRedeemMaxPercent = 100,
 }: CheckoutProps): React.JSX.Element {
-    const { auth, flash, settings } = usePage<SharedPageProps>().props;
+    const { auth, flash, settings, active_bundle_recipes } =
+        usePage<SharedPageProps>().props;
     const {
         items: cartItems,
         coupon: storeCoupon,
@@ -457,32 +459,14 @@ export default function Checkout({
             return null;
         } // address incomplete
 
-        // Free delivery threshold
-        const threshold = settings.free_delivery_threshold ?? 0;
-
-        if (threshold > 0 && subtotal >= threshold) {
+        if (
+            isDeliveryFree(items, {
+                subtotal,
+                threshold: settings.free_delivery_threshold ?? 0,
+                bundleRecipes: active_bundle_recipes,
+            })
+        ) {
             return 0;
-        }
-
-        // Per-product free delivery: if ALL items qualify → free
-        if (items.length > 0) {
-            const allFree = items.every((item) => {
-                const p = item.product;
-
-                if (!p.free_delivery) {
-                    return false;
-                }
-
-                if (p.free_delivery_min_qty != null) {
-                    return item.quantity >= p.free_delivery_min_qty;
-                }
-
-                return true;
-            });
-
-            if (allFree) {
-                return 0;
-            }
         }
 
         return district === 'Dhaka' && city === 'Inside Dhaka City Corporation'
@@ -739,25 +723,9 @@ export default function Checkout({
         );
     };
 
-    const couponDiscount = (() => {
-        if (!appliedCoupon) {
-            return 0;
-        }
-
-        const eligibleSubtotal = getCouponEligibleSubtotal(
-            appliedCoupon,
-            items,
-        );
-
-        if (appliedCoupon.type === 'percent') {
-            return Math.min(
-                (eligibleSubtotal * appliedCoupon.value) / 100,
-                eligibleSubtotal,
-            );
-        }
-
-        return Math.min(appliedCoupon.value, eligibleSubtotal);
-    })();
+    const couponDiscount = appliedCoupon
+        ? getCouponDiscount(appliedCoupon, items)
+        : 0;
 
     // Discount priority mirrors the backend exactly: coupon > points > the
     // auto-applied referral discount. Only one ever contributes.

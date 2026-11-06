@@ -705,7 +705,6 @@ export interface SharedPageProps {
     /** Home-only now — absent on every other page (see HomeController). */
     promotional_banners?: PromotionalBanner[];
     wishlist_ids: number[];
-    cart_shipping_cost: number | null;
     cart_base_shipping_rate: number | null;
     account_stats: {
         orders_count: number;

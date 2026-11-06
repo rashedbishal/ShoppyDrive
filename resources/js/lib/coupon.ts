@@ -19,6 +19,23 @@ export function getCouponEligibleSubtotal(
     return covered.reduce((total, item) => total + item.subtotal, 0);
 }
 
+/** The discount a coupon gives on these lines. */
+export function getCouponDiscount(
+    coupon: Pick<Coupon, 'eligible_keys' | 'type' | 'value'>,
+    items: CartItem[],
+): number {
+    const eligibleSubtotal = getCouponEligibleSubtotal(coupon, items);
+
+    if (coupon.type === 'percent') {
+        return Math.min(
+            (eligibleSubtotal * coupon.value) / 100,
+            eligibleSubtotal,
+        );
+    }
+
+    return Math.min(coupon.value, eligibleSubtotal);
+}
+
 /** The lines the coupon preview needs in order to judge a selected-items coupon. */
 export function toCouponPreviewItems(items: CartItem[]): {
     product_id: CartItem['product']['id'];

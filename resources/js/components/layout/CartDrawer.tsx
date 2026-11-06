@@ -7,27 +7,13 @@ import { Drawer } from '@/components/ui/drawer';
 import { EmptyState } from '@/components/ui/empty-state';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { groupCartItems } from '@/lib/cart-bundles';
+import { getCouponDiscount } from '@/lib/coupon';
+import { isDeliveryFree } from '@/lib/delivery';
 import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
 import cartRoutes from '@/routes/cart';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
 import type { CartItem, SharedPageProps } from '@/types';
-
-function calculateCouponDiscount(
-    subtotal: number,
-    couponType: 'percent' | 'fixed' | null,
-    couponValue: number,
-): number {
-    if (couponType === null) {
-        return 0;
-    }
-
-    if (couponType === 'percent') {
-        return Math.min(subtotal, (subtotal * couponValue) / 100);
-    }
-
-    return Math.min(subtotal, couponValue);
-}
 
 export default function CartDrawer(): React.JSX.Element {
     const isOpen = useUiStore((state) => state.cartOpen);
@@ -42,71 +28,50 @@ export default function CartDrawer(): React.JSX.Element {
     );
     const removeBundle = useCartStore((state) => state.removeBundle);
 
-    // Shared props: shipping cost (applies free-delivery rules) and the raw
-    // location-based rate (ignores free-delivery rules, used as instant fallback).
+    // The location rate for a saved default address. Without one, the charge
+    // isn't known yet, so the wider rate is shown as an estimate.
     const {
-        cart_shipping_cost: cartShippingCost,
         cart_base_shipping_rate: cartBaseRate,
+        settings,
+        active_bundle_recipes: bundleRecipes,
     } = usePage<SharedPageProps>().props;
     const isEmpty = items.length === 0;
-
-    // Client-side free-delivery check.
-    // hydrateCart populates fresh product data on page load, so free_delivery_min_qty
-    // is always a number or null (never undefined) by the time the user interacts.
-    const allItemsFreeDelivery = useMemo(() => {
-        if (isEmpty) {
-            return false;
-        }
-
-        return items.every((item) => {
-            const p = item.product;
-
-            if (!p.free_delivery) {
-                return false;
-            }
-
-            const minQty = p.free_delivery_min_qty ?? null;
-
-            if (minQty !== null) {
-                return item.quantity >= minQty;
-            }
-
-            return true;
-        });
-    }, [items, isEmpty]);
-
-    // Fully client-side — no router call needed, no drawer close.
-    // allItemsFreeDelivery handles the "charge → free" direction instantly.
-    // cartBaseRate (location rate, ignores free-delivery) handles "free → charge" instantly.
-    const effectiveShipping = isEmpty
-        ? 0
-        : allItemsFreeDelivery
-          ? 0
-          : (cartBaseRate ?? cartShippingCost ?? 0);
+    const isEstimate = cartBaseRate === null || cartBaseRate === undefined;
 
     const summary = useMemo(() => {
         const subtotal = items.reduce(
             (total, item) => total + item.subtotal,
             0,
         );
-        const discount = calculateCouponDiscount(
+        const discount = coupon ? getCouponDiscount(coupon, items) : 0;
+        const deliveryFree = isDeliveryFree(items, {
             subtotal,
-            coupon?.type ?? null,
-            coupon?.discount_amount ?? coupon?.value ?? 0,
-        );
-        const total = Math.max(
-            0,
-            subtotal - discount + effectiveShipping + tax,
-        );
+            threshold: settings.free_delivery_threshold ?? 0,
+            bundleRecipes,
+        });
+        const shipping =
+            isEmpty || deliveryFree
+                ? 0
+                : (cartBaseRate ?? settings.shipping_rate_outside_dhaka ?? 120);
 
         return {
             subtotal,
             discount,
-            shipping: effectiveShipping,
-            total,
+            shipping,
+            deliveryFree,
+            total: Math.max(0, subtotal - discount + shipping + tax),
             itemCount: items.reduce((count, item) => count + item.quantity, 0),
         };
-    }, [coupon, items, effectiveShipping, tax]);
+    }, [
+        bundleRecipes,
+        cartBaseRate,
+        coupon,
+        isEmpty,
+        items,
+        settings.free_delivery_threshold,
+        settings.shipping_rate_outside_dhaka,
+        tax,
+    ]);
 
     return (
         <Drawer
@@ -141,29 +106,25 @@ export default function CartDrawer(): React.JSX.Element {
                                     <span className="text-[var(--color-text-secondary)]">
                                         Shipping
                                     </span>
-                                    {effectiveShipping === 0 ? (
+                                    {summary.deliveryFree ? (
                                         <p className="mt-0.5 text-[11px] text-[var(--color-success)]">
-                                            All items qualify for free delivery
+                                            This order gets free delivery
                                         </p>
-                                    ) : effectiveShipping > 0 ? (
+                                    ) : isEstimate ? (
                                         <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
-                                            1+ item requires delivery charge
+                                            Estimate. Set by your address at
+                                            checkout
                                         </p>
                                     ) : null}
                                 </div>
                                 <span className="shrink-0 font-semibold">
-                                    {cartShippingCost === null &&
-                                    !allItemsFreeDelivery ? (
-                                        <span className="text-xs font-normal text-[var(--color-text-muted)]">
-                                            At checkout
-                                        </span>
-                                    ) : effectiveShipping === 0 ? (
+                                    {summary.deliveryFree ? (
                                         <span className="text-[var(--color-success)]">
                                             Free
                                         </span>
                                     ) : (
                                         <span className="text-[var(--color-text-primary)]">
-                                            {formatCurrency(effectiveShipping)}
+                                            {formatCurrency(summary.shipping)}
                                         </span>
                                     )}
                                 </span>

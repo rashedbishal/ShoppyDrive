@@ -162,7 +162,6 @@ class HandleInertiaRequests extends Middleware
                 'wishlist_count' => Wishlist::where('user_id', $request->user()->id)->count(),
                 'addresses_count' => Address::where('user_id', $request->user()->id)->count(),
             ] : null,
-            'cart_shipping_cost' => fn () => $this->resolveCartShippingCost($request),
             'cart_base_shipping_rate' => fn () => $this->resolveBaseShippingRate($request),
             'unseen_orders_count' => fn () => $request->user('admin')
                 ? Order::where('is_seen', false)->count()
@@ -270,65 +269,6 @@ class HandleInertiaRequests extends Middleware
 
         if (! $default) {
             return null;
-        }
-
-        return (int) Setting::shippingRateFor($default->state, $default->city);
-    }
-
-    private function resolveCartShippingCost(Request $request): ?int
-    {
-        $user = $request->user();
-        if (! $user) {
-            return null;
-        }
-
-        $default = Address::where('user_id', $user->id)
-            ->where('is_default', true)
-            ->first(['state', 'city']);
-
-        if (! $default) {
-            return null;
-        }
-
-        $threshold = (float) (LayoutCache::homepageSettings()['announcement_bar']['metadata']['free_delivery_amount'] ?? 0);
-
-        $cart = $this->cartManager->getCurrentCart($request);
-
-        if ($cart) {
-            $cart->load('items.product', 'items.bundle');
-            $this->bundles->reconcile($cart);
-            $this->bundles->autoAssemble($cart);
-
-            // Free delivery threshold: entire cart qualifies if subtotal meets the bar
-            if ($threshold > 0) {
-                $subtotal = $cart->items->sum(fn ($item) => (float) $item->price * $item->quantity);
-                if ($subtotal >= $threshold) {
-                    return 0;
-                }
-            }
-
-            // Per-product free delivery (or an intact free-delivery bundle): all items must individually qualify
-            if ($cart->items->isNotEmpty()) {
-                $allFree = $cart->items->every(function ($item) {
-                    if ($this->bundles->itemQualifiesForFreeDelivery($item)) {
-                        return true;
-                    }
-
-                    $product = $item->product;
-                    if (! $product->free_delivery) {
-                        return false;
-                    }
-                    if ($product->free_delivery_min_qty !== null) {
-                        return $item->quantity >= $product->free_delivery_min_qty;
-                    }
-
-                    return true;
-                });
-
-                if ($allFree) {
-                    return 0;
-                }
-            }
         }
 
         return (int) Setting::shippingRateFor($default->state, $default->city);
