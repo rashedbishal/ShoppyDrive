@@ -27,3 +27,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# SEC-020: local agent permissions can capture secrets from commands.
+/.claude/settings.local.json
