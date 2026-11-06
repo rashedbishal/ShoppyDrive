@@ -103,6 +103,14 @@ function PathaoCourierCard({ settings }: Props) {
                         send Cash-on-Delivery orders to Pathao for pickup and
                         delivery from the order detail page.
                     </p>
+                    {/* BIZ-028: sandbox bookings look sent but are never collected. */}
+                    {data.pathao_environment !== 'production' && (
+                        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+                            Pathao is in Sandbox (test) mode. Orders sent to
+                            Pathao now are NOT collected by a rider. Choose
+                            Production (live) and save to send real parcels.
+                        </p>
+                    )}
                     <SettingsField label="Environment">
                         <Select
                             selectClassName={settingsInputClass}

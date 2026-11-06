@@ -100,7 +100,9 @@ function courierRaceDatabase(): ?string
     Setting::query()->delete();
     foreach ([
         'steadfast_api_key' => 'api-key', 'steadfast_secret_key' => 'secret-key',
-        'pathao_environment' => 'sandbox', 'pathao_client_id' => 'client-id', 'pathao_client_secret' => 'client-secret',
+        // BIZ-028: production, so a successful send reports "sent for pickup"
+        // (sandbox now warns instead); both URLs point at the local fake.
+        'pathao_environment' => 'production', 'pathao_client_id' => 'client-id', 'pathao_client_secret' => 'client-secret',
         'pathao_username' => 'merchant@example.com', 'pathao_password' => 'secret', 'pathao_store_id' => '555',
         'pathao_token' => ['access_token' => 'tok', 'refresh_token' => 'ref', 'expires_at' => now()->addHours(2)->toIso8601String()],
     ] as $key => $value) {
@@ -166,6 +168,7 @@ final class FakeCourier
             'SESSION_DRIVER' => 'array',
             'STEADFAST_BASE_URL' => $this->url,
             'PATHAO_SANDBOX_BASE_URL' => $this->url,
+            'PATHAO_PRODUCTION_BASE_URL' => $this->url,
             ...$env,
         ])->timeout(90)->start(['php', '-r', COURIER_RACE_SENDER_SCRIPT, (string) $order->id, $courier, (string) $startAt, ...$extraArgs]);
     }

@@ -121,6 +121,12 @@ class OrderCourierController extends Controller
 
         CourierOrderStatusMapper::sync($order, $courier, $courier === 'pathao' ? $result['order_status'] : $result['status'], source: CourierEvidenceSource::COURIER_SEND);
 
+        // BIZ-028: owner chose warn-only. A sandbox booking looks sent but no
+        // rider is dispatched, so say so loudly instead of "sent for pickup".
+        if ($courier === 'pathao' && PathaoCourierService::isSandbox()) {
+            return back()->with('error', 'Sent to Pathao SANDBOX (test mode). This parcel will NOT be collected. Switch Pathao to Production in Admin › Courier to send real parcels.');
+        }
+
         return back()->with('success', "Order sent to {$label} for pickup.");
     }
 

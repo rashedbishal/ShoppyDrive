@@ -308,14 +308,22 @@ class PathaoCourierService
             ]);
     }
 
+    /**
+     * BIZ-028: Pathao's test system unless the setting is exactly
+     * 'production' (an empty/unset setting also means sandbox). Parcels
+     * booked in sandbox look sent but are never collected, so callers warn.
+     */
+    public static function isSandbox(): bool
+    {
+        return Setting::where('key', 'pathao_environment')->first()?->value !== 'production';
+    }
+
     private function baseUrl(): string
     {
-        $environment = Setting::where('key', 'pathao_environment')->first()?->value ?? 'sandbox';
-
         return rtrim(
-            $environment === 'production'
-                ? config('pathao.production_base_url')
-                : config('pathao.sandbox_base_url'),
+            self::isSandbox()
+                ? config('pathao.sandbox_base_url')
+                : config('pathao.production_base_url'),
             '/',
         );
     }
