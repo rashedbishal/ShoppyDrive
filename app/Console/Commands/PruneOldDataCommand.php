@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Models\Cart;
 use App\Models\IncompleteOrder;
 use App\Models\ReceivedSms;
@@ -14,6 +15,7 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * DB-002: retention periods (owner-approved) for tables that otherwise grow
@@ -50,10 +52,28 @@ class PruneOldDataCommand extends Command
             'matched_sms' => $this->deleteInBatches(ReceivedSms::query()->where('is_matched', true)->where('created_at', '<', $this->daysAgo(self::MATCHED_SMS_DAYS))),
         ];
 
+        $deleted['abandoned_restore_uploads'] = $this->deleteAbandonedRestoreUploads();
+
         Log::info('[Retention] Old data pruned', $deleted);
         $this->info('Pruned: '.json_encode($deleted));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * OPS-008: an upload nobody confirmed is a full copy of the shop's data.
+     */
+    private function deleteAbandonedRestoreUploads(): int
+    {
+        $disk = Storage::disk('local');
+        $abandoned = array_filter(
+            $disk->files(DatabaseBackupController::UPLOAD_DIRECTORY),
+            fn (string $path): bool => $disk->lastModified($path) < now()->subDay()->timestamp,
+        );
+
+        $disk->delete($abandoned);
+
+        return count($abandoned);
     }
 
     private function daysAgo(int $days): CarbonInterface

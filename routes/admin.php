@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CourierVerificationReadinessController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\FailedJobController;
 use App\Http\Controllers\Admin\FlashSaleController;
 use App\Http\Controllers\Admin\HeroSlideController;
@@ -219,6 +220,15 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::delete('failed-jobs/{uuid}', [FailedJobController::class, 'destroy'])->whereUuid('uuid')->name('failed-jobs.destroy')->middleware(AdminSections::middleware('failed_jobs', 'delete'));
     Route::get('audit-trail', [AuditTrailController::class, 'index'])->name('audit-trail.index')->middleware(AdminSections::middleware('audit_trail', 'view'));
     Route::delete('audit-trail', [AuditTrailController::class, 'destroy'])->name('audit-trail.destroy')->middleware(['admin.mother', 'throttle:mother-actions']);
+
+    // OPS-008: mother admin only, so deliberately not in AdminSections.
+    Route::middleware('admin.mother')->prefix('database-backup')->name('database-backup.')->group(function () {
+        Route::get('/', [DatabaseBackupController::class, 'index'])->name('index');
+        Route::post('download', [DatabaseBackupController::class, 'download'])->name('download')->middleware('throttle:mother-actions');
+        Route::post('inspect', [DatabaseBackupController::class, 'inspect'])->name('inspect')->middleware('throttle:mother-actions');
+        Route::post('apply', [DatabaseBackupController::class, 'apply'])->name('apply')->middleware('throttle:mother-actions');
+        Route::delete('pending', [DatabaseBackupController::class, 'discard'])->name('discard');
+    });
 
     Route::patch('popular-keywords/bulk-status', [PopularKeywordController::class, 'updateStatusMany'])->name('popular-keywords.updateStatusMany')->middleware(AdminSections::middleware('search_keywords', 'update'));
     Route::delete('popular-keywords/bulk-delete', [PopularKeywordController::class, 'destroyMany'])->name('popular-keywords.destroyMany')->middleware(AdminSections::middleware('search_keywords', 'delete'));

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
     Award,
     Ban,
+    DatabaseBackup,
     Folder,
     FolderTree,
     Gift,
@@ -54,6 +55,7 @@ type NavItem = {
     extraMatches: string[];
     /** Omitted for items every admin can always see (Dashboard, Admins). */
     section?: string;
+    motherOnly?: boolean;
 };
 
 type NavSection = {
@@ -294,6 +296,14 @@ const navSections: NavSection[] = [
                 section: 'audit_trail',
             },
             {
+                label: 'Database Backup',
+                href: '/admin/database-backup',
+                icon: DatabaseBackup,
+                exact: false,
+                extraMatches: [] as string[],
+                motherOnly: true,
+            },
+            {
                 label: 'Failed Jobs',
                 href: '/admin/failed-jobs',
                 icon: TriangleAlert,
@@ -420,7 +430,9 @@ function SidebarContent({
         .map((section) => ({
             ...section,
             items: section.items.filter((item) =>
-                canViewSection(admin, item.section),
+                item.motherOnly
+                    ? Boolean(admin?.is_mother)
+                    : canViewSection(admin, item.section),
             ),
         }))
         .filter((section) => section.items.length > 0);

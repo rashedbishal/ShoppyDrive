@@ -83,6 +83,16 @@ const LOW05_EXEMPT_ADMIN_ROUTES = [
     // admin.can:audit_trail,view and is deliberately NOT in this list.
     'admin.audit-trail.destroy',
 
+    // OPS-008: database backup and restore are mother-admin only for every
+    // admin, enforced by `admin.mother` on the route group. A backup holds all
+    // customer data and courier keys, so it's deliberately not a grantable
+    // AdminSections entry.
+    'admin.database-backup.index',
+    'admin.database-backup.download',
+    'admin.database-backup.inspect',
+    'admin.database-backup.apply',
+    'admin.database-backup.discard',
+
     // DB-001: permanent order deletion is mother-admin only, confirmed
     // gated only by ['admin.mother', 'throttle:mother-actions'].
     'admin.orders.permanentDelete.confirm',
