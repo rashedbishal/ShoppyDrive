@@ -297,8 +297,7 @@ class MobilePaymentController extends Controller
                 if ($freshPending->cart_id) {
                     $cart = Cart::find($freshPending->cart_id);
                     if ($cart) {
-                        $cart->items()->delete();
-                        $cart->delete();
+                        $this->removePaidLines($cart, $data['items']);
                     }
                 }
 
@@ -383,5 +382,36 @@ class MobilePaymentController extends Controller
             ->where('parsed_transaction_id', $transactionId)
             ->whereBetween('received_at', [$pending->created_at, $pending->expires_at])
             ->exists();
+    }
+
+    /**
+     * BIZ-019: the customer may have kept shopping while the payment was
+     * pending, so only what this order paid for leaves the cart.
+     *
+     * @param  list<array{product_id: int, variant_id: int|null, bundle_id?: int|null, quantity: int}>  $paidItems
+     */
+    private function removePaidLines(Cart $cart, array $paidItems): void
+    {
+        foreach ($paidItems as $paidItem) {
+            $line = $cart->items()
+                ->where('product_id', $paidItem['product_id'])
+                ->where('variant_id', $paidItem['variant_id'])
+                ->where('bundle_id', $paidItem['bundle_id'] ?? null)
+                ->first();
+
+            if ($line === null) {
+                continue;
+            }
+
+            if ($line->quantity > $paidItem['quantity']) {
+                $line->decrement('quantity', $paidItem['quantity']);
+            } else {
+                $line->delete();
+            }
+        }
+
+        if ($cart->items()->doesntExist()) {
+            $cart->delete();
+        }
     }
 }
