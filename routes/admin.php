@@ -137,6 +137,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::get('orders/incomplete', [IncompleteOrderController::class, 'index'])->name('orders.incomplete.index')->middleware(AdminSections::middleware('incomplete_orders', 'view'));
     Route::delete('orders/incomplete/all', [IncompleteOrderController::class, 'destroyAll'])->name('orders.incomplete.destroyAll')->middleware(AdminSections::middleware('incomplete_orders', 'delete'));
     Route::get('orders/incomplete/products/search', [IncompleteOrderController::class, 'searchProducts'])->name('orders.incomplete.products.search')->middleware(AdminSections::middleware('incomplete_orders', 'view'));
+    // BIZ-017: the conversion screen's live price, delivery charge and total.
+    Route::get('orders/incomplete/pricing-preview', [IncompleteOrderController::class, 'pricingPreview'])->name('orders.incomplete.pricingPreview')->middleware(AdminSections::middleware('incomplete_orders', 'create'));
     Route::get('orders/incomplete/{incompleteOrder}/convert', [IncompleteOrderController::class, 'convert'])->name('orders.incomplete.convert')->middleware(AdminSections::middleware('incomplete_orders', 'create'));
     Route::post('orders/incomplete/{incompleteOrder}/convert', [IncompleteOrderController::class, 'placeOrder'])->name('orders.incomplete.placeOrder')->middleware(AdminSections::middleware('incomplete_orders', 'create'));
     Route::delete('orders/incomplete/{incompleteOrder}', [IncompleteOrderController::class, 'destroy'])->name('orders.incomplete.destroy')->middleware(AdminSections::middleware('incomplete_orders', 'delete'));

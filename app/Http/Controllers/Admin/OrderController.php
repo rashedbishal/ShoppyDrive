@@ -12,6 +12,7 @@ use App\Exceptions\InsufficientStockException;
 use App\Exceptions\PermanentDeletionRefusedException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CreateOrderRequest;
+use App\Http\Requests\Admin\OrderPricingPreviewRequest;
 use App\Http\Requests\Admin\UpdateOrderShippingAddressRequest;
 use App\Models\Address;
 use App\Models\Order;
@@ -114,16 +115,9 @@ class OrderController extends Controller
      * browser never recomputes prices or shipping itself. Purely advisory:
      * CreateOrderRequest recalculates everything on submit.
      */
-    public function pricingPreview(Request $request): JsonResponse
+    public function pricingPreview(OrderPricingPreviewRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'state' => ['nullable', 'string', 'max:255'],
-            'city' => ['nullable', 'string', 'max:255'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
-            'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
-        ]);
+        $data = $request->validated();
 
         return response()->json($this->manualPricing->calculate($data['items'], $data['state'] ?? null, $data['city'] ?? null));
     }

@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\PaymentMethod;
 use App\Exceptions\InsufficientStockException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\OrderPricingPreviewRequest;
 use App\Http\Requests\ConvertIncompleteOrderRequest;
 use App\Models\IncompleteOrder;
 use App\Models\Order;
@@ -14,6 +15,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Services\InventoryService;
 use App\Services\ManualOrderPricing;
+use App\Support\CartManager;
 use App\Support\OrderNumberGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +26,10 @@ use Inertia\Response;
 
 class IncompleteOrderController extends Controller
 {
+    public function __construct(
+        private readonly CartManager $cartManager,
+    ) {}
+
     public function index(Request $request): Response
     {
         $incompleteOrders = IncompleteOrder::query()
@@ -79,7 +85,8 @@ class IncompleteOrderController extends Controller
                 'available' => $available,
                 'product_name' => $product?->name ?? $item['product_name'],
                 'sku' => $variant?->sku ?? $product?->sku ?? $item['sku'],
-                'price' => $available ? (float) ($variant?->price ?? $product->price) : $item['price'],
+                // BIZ-017: the live price checkout would charge (flash sales included).
+                'price' => $available ? $this->cartManager->resolvePrice((int) $product->id, $variant?->id) : $item['price'],
                 'image' => $variant?->image ?? $product?->primaryImagePath() ?? $item['image'] ?? null,
                 'variant_attributes' => $variant?->attributes ?? $item['variant_attributes'] ?? null,
             ];
@@ -93,6 +100,18 @@ class IncompleteOrderController extends Controller
             ],
             'items' => $items->values(),
         ]);
+    }
+
+    /**
+     * BIZ-017: what the conversion will charge (live line prices, delivery
+     * charge for the entered address), so the screen shows it before the
+     * order is created. Same calculation as the manual-order preview.
+     */
+    public function pricingPreview(OrderPricingPreviewRequest $request, ManualOrderPricing $pricing): JsonResponse
+    {
+        $data = $request->validated();
+
+        return response()->json($pricing->calculate($data['items'], $data['state'] ?? null, $data['city'] ?? null));
     }
 
     public function searchProducts(Request $request): JsonResponse
@@ -143,7 +162,10 @@ class IncompleteOrderController extends Controller
                     ? ProductVariant::findOrFail($item['variant_id'])
                     : null;
 
-                $price = (float) ($variant?->price ?? $product->price);
+                // BIZ-017: same live price as checkout and manual orders
+                // (flash sales included), so InventoryService also counts
+                // the unit against the flash-sale stock limit.
+                $price = $this->cartManager->resolvePrice((int) $product->id, $variant?->id);
                 $quantity = (int) $item['quantity'];
 
                 return [

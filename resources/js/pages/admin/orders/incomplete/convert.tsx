@@ -239,6 +239,74 @@ export default function ConvertIncompleteOrder({
         0,
     );
 
+    // BIZ-017: line prices (flash sales included) and the delivery charge
+    // come from the same server calculation the order will use, so staff
+    // see exactly what will be charged before creating it.
+    const [shippingCost, setShippingCost] = useState<number | null>(null);
+    const shownShippingCost = lines.length === 0 ? null : shippingCost;
+    const pricedLines = JSON.stringify(
+        lines.map((line) => [line.product_id, line.variant_id, line.quantity]),
+    );
+
+    useEffect(() => {
+        if (lines.length === 0) {
+            return;
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(async () => {
+            try {
+                const res = await fetch(
+                    route('admin.orders.incomplete.pricingPreview', {
+                        state: form.data.state,
+                        city: form.data.city,
+                        items: lines.map((line) => ({
+                            product_id: line.product_id,
+                            variant_id: line.variant_id,
+                            quantity: line.quantity,
+                        })),
+                    }),
+                    {
+                        signal: controller.signal,
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    },
+                );
+
+                if (!res.ok) {
+                    return;
+                }
+
+                const pricing = (await res.json()) as {
+                    prices: number[];
+                    shipping_cost: number;
+                };
+
+                setLines((prev) =>
+                    prev.map((line, index) => ({
+                        ...line,
+                        price: pricing.prices[index] ?? line.price,
+                    })),
+                );
+                setShippingCost(
+                    form.data.state && form.data.city
+                        ? pricing.shipping_cost
+                        : null,
+                );
+            } catch {
+                // Aborted or offline: the server recalculates on submit anyway.
+            }
+        }, 300);
+
+        return () => {
+            clearTimeout(timeoutId);
+            controller.abort();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pricedLines, form.data.state, form.data.city]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -712,13 +780,32 @@ export default function ConvertIncompleteOrder({
                                     )}
                                 </div>
 
-                                <div className="flex items-center justify-between border-t border-slate-100 pt-4">
-                                    <span className="text-sm font-semibold text-slate-600">
-                                        Subtotal
-                                    </span>
-                                    <span className="text-lg font-bold text-slate-900">
-                                        {formatCurrency(subtotal)}
-                                    </span>
+                                <div className="space-y-2 border-t border-slate-100 pt-4">
+                                    <div className="flex items-center justify-between text-sm text-slate-600">
+                                        <span>Subtotal</span>
+                                        <span>{formatCurrency(subtotal)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm text-slate-600">
+                                        <span>Delivery</span>
+                                        <span>
+                                            {shownShippingCost === null
+                                                ? 'Enter district and city'
+                                                : formatCurrency(
+                                                      shownShippingCost,
+                                                  )}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-semibold text-slate-600">
+                                            Total (cash on delivery)
+                                        </span>
+                                        <span className="text-lg font-bold text-slate-900">
+                                            {formatCurrency(
+                                                subtotal +
+                                                    (shownShippingCost ?? 0),
+                                            )}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <Button
