@@ -20,6 +20,8 @@ class Coupon extends Model
 
     public const NOT_APPLICABLE_MESSAGE = "This coupon doesn't apply to the items in your cart.";
 
+    public const UNAVAILABLE_MESSAGE = "This coupon isn't available.";
+
     protected $fillable = [
         'code',
         'name',
@@ -160,22 +162,35 @@ class Coupon extends Model
      * at the moment of actual order creation, mirroring how flash-sale
      * stock caps are only authoritatively enforced at commit time.
      */
+    /**
+     * SEC-012: the only coupon fields the public preview returns; the cart
+     * and checkout pages need nothing else. The whole record would reveal
+     * usage counts, limits and dates to anyone holding a code.
+     *
+     * @param  list<string>|null  $eligibleKeys  the lines a selected-items coupon covers
+     * @return array{id: int, code: string, type: mixed, value: mixed, eligible_keys?: list<string>}
+     */
+    public function publicPreview(?array $eligibleKeys = null): array
+    {
+        $preview = [
+            'id' => $this->id,
+            'code' => $this->code,
+            'type' => $this->type,
+            'value' => $this->value,
+        ];
+
+        return $eligibleKeys === null ? $preview : [...$preview, 'eligible_keys' => $eligibleKeys];
+    }
+
     public function eligibilityError(float $subtotal, ?int $userId, ?string $guestPhone = null): ?string
     {
-        if (! $this->is_active) {
-            return 'This coupon is not active.';
-        }
-
-        if ($this->starts_at && $this->starts_at->isFuture()) {
-            return 'This coupon is not yet active.';
-        }
-
-        if ($this->expires_at && $this->expires_at->isPast()) {
-            return 'This coupon has expired.';
-        }
-
-        if ($this->max_uses !== null && $this->used_count >= $this->max_uses) {
-            return 'This coupon has reached its usage limit.';
+        // SEC-012: one answer for all four, so an anonymous check can't learn
+        // about an unannounced sale or how far a campaign has run.
+        if (! $this->is_active
+            || ($this->starts_at && $this->starts_at->isFuture())
+            || ($this->expires_at && $this->expires_at->isPast())
+            || ($this->max_uses !== null && $this->used_count >= $this->max_uses)) {
+            return self::UNAVAILABLE_MESSAGE;
         }
 
         if ($this->min_order_amount !== null && $subtotal < $this->min_order_amount) {

@@ -60,10 +60,10 @@ test('a coupon runs between the Bangladesh times the admin typed', function () {
         return $coupon->eligibilityError(1000, null);
     };
 
-    expect($errorAt('2027-01-09 23:59:00 Asia/Dhaka'))->toBe('This coupon is not yet active.')
+    expect($errorAt('2027-01-09 23:59:00 Asia/Dhaka'))->toBe(Coupon::UNAVAILABLE_MESSAGE)
         ->and($errorAt('2027-01-10 00:01:00 Asia/Dhaka'))->toBeNull()
         ->and($errorAt('2027-01-10 23:58:00 Asia/Dhaka'))->toBeNull()
-        ->and($errorAt('2027-01-11 00:01:00 Asia/Dhaka'))->toBe('This coupon has expired.');
+        ->and($errorAt('2027-01-11 00:01:00 Asia/Dhaka'))->toBe(Coupon::UNAVAILABLE_MESSAGE);
 });
 
 test('a coupon edit shows the times as typed, and resaving does not move them', function () {

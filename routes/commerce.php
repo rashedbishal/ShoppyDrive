@@ -116,7 +116,7 @@ Route::post('/coupon/validate', function (Request $request) {
 
         return $error !== null
             ? response()->json(['error' => $error], 422)
-            : response()->json(['coupon' => $coupon]);
+            : response()->json(['coupon' => $coupon->publicPreview()]);
     }
 
     // A selected-items coupon is measured against what it covers. This is
@@ -137,10 +137,9 @@ Route::post('/coupon/validate', function (Request $request) {
         return response()->json(['error' => $error], 422);
     }
 
-    return response()->json(['coupon' => [
-        ...$coupon->withoutRelations()->toArray(),
-        'eligible_keys' => array_map(fn (array $line): string => $line['product_id'].':'.($line['variant_id'] ?? ''), $eligibleLines),
-    ]]);
+    return response()->json(['coupon' => $coupon->publicPreview(
+        array_map(fn (array $line): string => $line['product_id'].':'.($line['variant_id'] ?? ''), $eligibleLines),
+    )]);
 })->middleware('throttle:coupon-check')->name('coupon.validate');
 
 Route::get('/wishlist', [WishlistController::class, 'entry'])->name('wishlist.index');
