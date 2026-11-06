@@ -42,7 +42,7 @@ class ReceivedSmsController extends Controller
      * Returns SMS records with id > after, capped at 10, plus a running
      * count of stale unmatched SMS (FSA-07) and how long it's been since
      * any SMS arrived at all (OPS-005) for the sidebar badge — both
-     * piggyback on the same 5-second poll already running; no new route,
+     * piggyback on the same poll already running; no new route,
      * table, or dashboard.
      * Route: GET /admin/sms/poll
      */

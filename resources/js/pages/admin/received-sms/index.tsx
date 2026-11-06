@@ -155,7 +155,7 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [deletingItem, setDeletingItem] = useState<ReceivedSms | null>(null);
 
-    usePoll(5000, { only: ['sms'], preserveScroll: true } as Parameters<
+    usePoll(15000, { only: ['sms'], preserveScroll: true } as Parameters<
         typeof usePoll
     >[1]);
 
@@ -219,7 +219,7 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
                             </span>
                         </div>
                         <p className="text-sm text-slate-500">
-                            {sms.total} total · updates every 5 seconds
+                            {sms.total} total · updates every 15 seconds
                         </p>
                     </div>
                 </div>

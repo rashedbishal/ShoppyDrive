@@ -10,7 +10,8 @@ export type SmsToast = {
 };
 
 const STORAGE_KEY = 'admin_sms_last_id';
-const POLL_INTERVAL = 5000;
+// PERF-006: on shared hosting each check takes a PHP worker from shoppers.
+const POLL_INTERVAL = 15000;
 
 export function useSmsPolling() {
     const [toasts, setToasts] = useState<SmsToast[]>([]);
@@ -109,12 +110,22 @@ export function useSmsPolling() {
             ]);
         };
 
-        poll();
-        const id = setInterval(poll, POLL_INTERVAL);
+        // PERF-006: a hidden tab doesn't check. Nothing is lost: the cursor in
+        // localStorage means the first check on return collects what arrived.
+        const pollIfVisible = () => {
+            if (!document.hidden) {
+                poll();
+            }
+        };
+
+        pollIfVisible();
+        const id = setInterval(pollIfVisible, POLL_INTERVAL);
+        document.addEventListener('visibilitychange', pollIfVisible);
 
         return () => {
             mounted = false;
             clearInterval(id);
+            document.removeEventListener('visibilitychange', pollIfVisible);
         };
     }, []);
 

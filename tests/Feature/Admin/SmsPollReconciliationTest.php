@@ -12,7 +12,7 @@ use function Pest\Laravel\actingAs;
 uses(RefreshDatabase::class);
 
 /*
- * FSA-07: the admin sidebar badge reuses the existing 5-second poll
+ * FSA-07: the admin sidebar badge reuses the existing poll
  * (useSmsPolling) instead of a new endpoint/table — this exercises the
  * unmatched_count field it now returns alongside the existing toast list.
  */
