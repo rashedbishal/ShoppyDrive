@@ -182,14 +182,10 @@ class Coupon extends Model
             return 'Minimum order amount of ৳'.number_format($this->min_order_amount, 0).' required.';
         }
 
-        if ($this->per_user_limit !== null && $userId !== null && $this->uses()->where('user_id', $userId)->count() >= $this->per_user_limit) {
-            return 'You have already used this coupon the maximum number of times.';
-        }
-
-        // PROMO-001: guests have no account to key per_user_limit against,
-        // so per_user_limit was previously unenforceable for them at all —
-        // see guestRedemptionCount()'s docblock for how this is derived.
-        if ($this->per_user_limit !== null && $userId === null && $guestPhone !== null && self::guestRedemptionCount($this->id, $guestPhone) >= $this->per_user_limit) {
+        // BIZ-015: one count for the account and the phone together, so
+        // switching between account and guest (or between accounts) with
+        // the same phone no longer resets the limit. See redemptionCount().
+        if ($this->per_user_limit !== null && self::redemptionCount($this->id, $userId, $guestPhone) >= $this->per_user_limit) {
             return 'You have already used this coupon the maximum number of times.';
         }
 
@@ -197,27 +193,42 @@ class Coupon extends Model
     }
 
     /**
-     * Guest checkouts never create a CouponUse row (its user_id column is
-     * NOT NULL — there's no account to attach it to), so a guest's prior
-     * redemptions of this coupon are derived from completed Order rows
-     * instead: same coupon_id, no user_id, and the same phone number
-     * already stored on Order.shipping_address at checkout. An order
-     * whose coupon was released (cancellation/refund — Order's own
-     * coupon_released_at, set by CouponService::release()) is excluded,
-     * mirroring how a logged-in customer's CouponUse row is deleted on
-     * the same event — both paths agree on what still counts as "used."
+     * BIZ-015: how many times this customer has used the coupon, counting
+     * each un-released order once if EITHER it is one of the account's
+     * own redemptions (a CouponUse row) OR its delivery phone is this
+     * phone, whether it was placed as a guest or from any account. Before,
+     * account uses and guest-by-phone uses were counted separately, so a
+     * limit-1 coupon could be used once logged in and again as a guest (or
+     * from a second account) with the same phone. A different phone still
+     * can't be tied to the same person without verifying it.
+     * Cancellation/refund releases the coupon on the order
+     * (coupon_released_at) and deletes its CouponUse, so it stops counting.
+     * Guest checkouts create no CouponUse (user_id is NOT NULL), which is
+     * why phone matching reads the order's shipping_address.
      *
-     * $excludeOrderId exists because every consume() call site creates
-     * the Order row (with coupon_id already set) *before* calling
-     * consume() — without excluding it, the order being created would
-     * count itself and reject the very first legitimate use.
+     * $excludeOrderId: every consume() call site creates the Order (with
+     * coupon_id set) before calling consume(), so without it the order
+     * being created would count itself and reject the first legitimate use.
      */
-    public static function guestRedemptionCount(int $couponId, string $guestPhone, ?int $excludeOrderId = null, bool $lockForUpdate = false): int
+    public static function redemptionCount(int $couponId, ?int $userId, ?string $phone, ?int $excludeOrderId = null, bool $lockForUpdate = false): int
     {
+        $phone = $phone !== null && $phone !== '' ? $phone : null;
+
+        if ($userId === null && $phone === null) {
+            return 0;
+        }
+
         return Order::where('coupon_id', $couponId)
-            ->whereNull('user_id')
             ->whereNull('coupon_released_at')
-            ->where('shipping_address->phone', $guestPhone)
+            ->where(function ($query) use ($couponId, $userId, $phone): void {
+                if ($userId !== null) {
+                    $query->whereIn('id', CouponUse::select('order_id')->where('coupon_id', $couponId)->where('user_id', $userId));
+                }
+
+                if ($phone !== null) {
+                    $query->orWhere('shipping_address->phone', $phone);
+                }
+            })
             ->when($excludeOrderId !== null, fn ($q) => $q->where('id', '!=', $excludeOrderId))
             ->when($lockForUpdate, fn ($q) => $q->lockForUpdate())
             ->count();

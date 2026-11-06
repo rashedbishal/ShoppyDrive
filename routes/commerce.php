@@ -100,7 +100,7 @@ Route::post('/coupon/validate', function (Request $request) {
     // CouponService::consume() has the final say regardless of what this
     // preview says), it just never confirms *why*. Logged-in users are
     // unaffected: $guestPhone is only ever non-null for a guest request.
-    if ($coupon->per_user_limit !== null && $guestPhone !== null && Coupon::guestRedemptionCount($coupon->id, $guestPhone) >= $coupon->per_user_limit) {
+    if ($coupon->per_user_limit !== null && $guestPhone !== null && Coupon::redemptionCount($coupon->id, null, $guestPhone) >= $coupon->per_user_limit) {
         return response()->json(['error' => "This coupon isn't available for this order."], 422);
     }
 

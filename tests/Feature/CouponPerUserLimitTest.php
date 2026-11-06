@@ -109,7 +109,8 @@ test('a limit of two allows exactly two uses per customer', function () {
 
     expect(Order::where('user_id', $user->id)->count())->toBe(2);
 
-    orderWithLimitCoupon(User::factory()->create())->assertSessionHasNoErrors();
+    // BIZ-015: another customer, with their own phone.
+    orderWithLimitCoupon(User::factory()->create(), '01800000000')->assertSessionHasNoErrors();
 });
 
 test('max uses still caps a coupon with no per-customer limit', function () {

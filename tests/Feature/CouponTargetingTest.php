@@ -74,7 +74,9 @@ function checkoutWithCoupon(User $user, array $lines, string $code = 'TARGET20',
     Cart::query()->where('user_id', $user->id)->delete();
 
     return test()->actingAs($user)->post(route('checkout.store'), [
-        'name' => 'Buyer', 'email' => $user->email, 'phone' => '01700000000',
+        // BIZ-015: each test customer has their own phone; the same phone
+        // would count as the same person for per-customer coupon limits.
+        'name' => 'Buyer', 'email' => $user->email, 'phone' => sprintf('017%08d', $user->id),
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
         'payment_method' => $method,
         'order_token' => (string) Str::uuid(),

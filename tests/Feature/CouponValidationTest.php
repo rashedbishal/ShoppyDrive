@@ -156,10 +156,11 @@ test('the per-user usage limit is enforced independently of the global limit', f
     $response->assertSessionHasErrors('coupon_code');
     expect($coupon->refresh()->used_count)->toBe(1);
 
-    // A different user can still use it.
+    // A different user can still use it. (BIZ-015: a different customer
+    // means a different phone too; the same phone counts as the same person.)
     $otherUser = User::factory()->create();
     Cart::query()->where('user_id', $otherUser->id)->delete();
-    $this->actingAs($otherUser)->post(route('checkout.store'), couponCheckoutPayload($product, 1, $coupon->code))
+    $this->actingAs($otherUser)->post(route('checkout.store'), couponCheckoutPayload($product, 1, $coupon->code, ['phone' => '01800000000']))
         ->assertRedirect();
 
     expect($coupon->refresh()->used_count)->toBe(2);
