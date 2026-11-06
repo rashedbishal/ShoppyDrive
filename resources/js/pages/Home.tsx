@@ -22,6 +22,7 @@ import {
     useSyncExternalStore,
 } from 'react';
 import type { FormEvent } from 'react';
+import { LazyCategoryIcon } from '@/components/shared/LazyCategoryIcon';
 import { BrandCard } from '@/components/shared/BrandCard';
 import type { BrandCardData } from '@/components/shared/BrandCard';
 import { BundleCard } from '@/components/shared/BundleCard';
@@ -36,7 +37,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { resolveCategoryColor } from '@/lib/category-colors';
-import { CategoryIcon } from '@/lib/category-icons';
 import {
     MOTION,
     PRODUCT_GRID_CLASS,
@@ -497,7 +497,7 @@ function CategoryCard({ category }: CategoryCardProps): React.JSX.Element {
                     'group-hover:bg-[var(--category-color)] group-hover:text-white group-hover:ring-[var(--category-color)]',
                 )}
             >
-                <CategoryIcon
+                <LazyCategoryIcon
                     icon={category.icon}
                     className="size-6 transition-transform duration-300 ease-out group-hover:scale-110 sm:size-7"
                 />

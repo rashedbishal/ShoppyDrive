@@ -1,7 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowRight, Star } from 'lucide-react';
+import { LazyCategoryIcon } from '@/components/shared/LazyCategoryIcon';
 import { PageHero } from '@/components/shared/PageHero';
-import { CategoryIcon } from '@/lib/category-icons';
 
 type AboutStat = { value: string; label: string };
 type AboutFeature = { icon: string; label: string };
@@ -117,7 +117,7 @@ function AboutPage({ content }: Props): React.JSX.Element {
                                             className="flex flex-col items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-6 text-center"
                                         >
                                             <div className="flex size-12 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
-                                                <CategoryIcon
+                                                <LazyCategoryIcon
                                                     icon={icon}
                                                     className="size-6 text-[var(--color-primary)]"
                                                 />
@@ -154,7 +154,7 @@ function AboutPage({ content }: Props): React.JSX.Element {
                                         className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6"
                                     >
                                         <div className="flex size-11 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
-                                            <CategoryIcon
+                                            <LazyCategoryIcon
                                                 icon={icon}
                                                 className="size-5 text-[var(--color-primary)]"
                                             />
