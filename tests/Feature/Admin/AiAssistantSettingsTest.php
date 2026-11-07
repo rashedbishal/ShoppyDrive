@@ -25,9 +25,11 @@ test('leaving the key field blank keeps the existing key', function () {
     actingAs(createMotherAdmin(), 'admin');
     Setting::updateOrCreate(['key' => 'ai_assistant_api_key'], ['value' => 'original-key', 'group' => 'ai_assistant']);
 
-    $this->post(route('admin.settings.ai-assistant.update'), ['api_key' => 'original-key', 'enabled' => false]);
+    $this->post(route('admin.settings.ai-assistant.update'), ['api_key' => '', 'enabled' => false])
+        ->assertRedirect();
 
-    expect(Setting::where('key', 'ai_assistant_api_key')->first()?->value)->toBe('original-key');
+    expect(Setting::where('key', 'ai_assistant_api_key')->first()?->value)->toBe('original-key')
+        ->and((bool) Setting::where('key', 'ai_assistant_enabled')->first()?->value)->toBeFalse();
 });
 
 test('a view-only admin does not receive the full key', function () {

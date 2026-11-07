@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Setting;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 function enableAiAssistant(string $apiKey = 'test-gemini-key'): void
@@ -105,6 +106,20 @@ test('a wrong Gemini call never leaks an order the caller has not proven ownersh
 
     expect($sentFunctionResults[0]['found'])->toBeFalse()
         ->and($sentFunctionResults[0])->not->toHaveKey('total');
+});
+
+test('a network failure reaching Gemini gets a graceful reply, not a 500', function () {
+    enableAiAssistant();
+
+    Http::fake(function () {
+        throw new ConnectionException('Could not resolve host');
+    });
+
+    $this->postJson(route('assistant.chat'), ['message' => 'hello'])
+        ->assertOk()
+        ->assertJson([
+            'reply' => "Sorry, I'm having trouble right now — please try again in a moment.",
+        ]);
 });
 
 test('requests are throttled per visitor', function () {

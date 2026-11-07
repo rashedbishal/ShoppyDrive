@@ -42,10 +42,16 @@ class AiAssistantSettingsController extends Controller
             'enabled' => ['required', 'boolean'],
         ]);
 
-        Setting::updateOrCreate(
-            ['key' => self::KEY_SETTING],
-            ['value' => trim((string) ($validated['api_key'] ?? '')), 'group' => 'ai_assistant'],
-        );
+        $apiKey = trim((string) ($validated['api_key'] ?? ''));
+
+        // Blank means "leave it as is" (the form's own placeholder says so)
+        // — without this check, saving the switch alone wiped the key.
+        if ($apiKey !== '') {
+            Setting::updateOrCreate(
+                ['key' => self::KEY_SETTING],
+                ['value' => $apiKey, 'group' => 'ai_assistant'],
+            );
+        }
 
         Setting::updateOrCreate(
             ['key' => self::ENABLED_SETTING],

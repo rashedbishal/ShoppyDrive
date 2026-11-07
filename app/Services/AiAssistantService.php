@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Support\AiAssistantConfig;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -124,10 +125,18 @@ class AiAssistantService
             $payload['previous_interaction_id'] = $previousInteractionId;
         }
 
-        $response = Http::withHeaders([
-            'x-goog-api-key' => $apiKey,
-            'Content-Type' => 'application/json',
-        ])->timeout(20)->post(self::ENDPOINT, $payload);
+        try {
+            $response = Http::withHeaders([
+                'x-goog-api-key' => $apiKey,
+                'Content-Type' => 'application/json',
+            ])->timeout(20)->post(self::ENDPOINT, $payload);
+        } catch (ConnectionException $e) {
+            Log::warning('[AI assistant] Could not reach Gemini', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
 
         if ($response->failed()) {
             Log::warning('[AI assistant] Gemini request failed', [
