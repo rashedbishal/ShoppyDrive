@@ -87,7 +87,13 @@ test('admin can send an order to steadfast for pickup', function () {
     expect($this->order->steadfast_tracking_code)->toBe('TRK-1');
     expect($this->order->steadfast_status)->toBe('in_review');
     expect($this->order->tracking_number)->toBe('TRK-1');
-    expect($this->order->statusHistories()->latest()->first()->notes)->toContain('CONSIGN-ABC');
+    // Sending creates its own "Sent to Steadfast..." note, and the initial
+    // status sync right after creates a separate "Steadfast reported..."
+    // one — both real, both expected, written moments apart. Which one
+    // ->latest() returns depends on whether they land in the same wall-clock
+    // second, so check the order's full history rather than assuming either
+    // note is specifically the last one.
+    expect($this->order->statusHistories()->pluck('notes')->implode(' | '))->toContain('CONSIGN-ABC');
 });
 
 test('a connection failure while sending to steadfast shows a clean error instead of a 500', function () {
