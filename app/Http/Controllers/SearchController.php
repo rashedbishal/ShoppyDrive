@@ -49,9 +49,11 @@ class SearchController extends Controller
             ->withAvg(['reviews as average_rating' => fn ($q) => $q->where('is_approved', true)], 'rating')
             ->when($query !== '' && ! SearchTerm::isSearchable($query), fn ($q) => $q->whereRaw('1 = 0'))
             ->when(SearchTerm::isSearchable($query), fn ($q) => $q->where(fn ($sub) => ProductSearchQuery::apply($sub, $query)
-                ->orWhereHas('brand', fn ($b) => $b->where('name', 'like', "%{$query}%"))
-                ->orWhereHas('category', fn ($c) => $c->where('name', 'like', "%{$query}%"))
-                ->orWhereHas('subCategory', fn ($s) => $s->where('name', 'like', "%{$query}%"))
+                // PERF-007: looked up first, because an OR across whereHas
+                // subqueries makes MySQL read every product.
+                ->orWhereIn('brand_id', Brand::where('name', 'like', "%{$query}%")->pluck('id'))
+                ->orWhereIn('category_id', Category::where('name', 'like', "%{$query}%")->pluck('id'))
+                ->orWhereIn('sub_category_id', SubCategory::where('name', 'like', "%{$query}%")->pluck('id'))
             ))
             ->when($categorySlug, fn ($q) => $q->whereHas('category', fn ($c) => $c->where('slug', $categorySlug)))
             ->when($brandSlugs !== [], fn ($q) => $q->whereHas('brand', fn ($b) => $b->whereIn('slug', $brandSlugs)))
