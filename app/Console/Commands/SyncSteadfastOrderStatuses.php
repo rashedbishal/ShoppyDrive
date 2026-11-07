@@ -34,6 +34,12 @@ class SyncSteadfastOrderStatuses extends Command
     /** Stop a run after this many failures in a row with no success yet. */
     public const MAX_CONSECUTIVE_FAILURES = 3;
 
+    /**
+     * BE-004: keeps a run well inside its 30-minute overlap lock. Orders are
+     * shuffled, so what one run skips isn't always the same.
+     */
+    public const MAX_RUN_SECONDS = 600;
+
     /** A parcel the courier never closes shouldn't be polled forever. */
     public const MAX_ORDER_AGE_DAYS = 60;
 
@@ -63,7 +69,15 @@ class SyncSteadfastOrderStatuses extends Command
         $consecutiveFailures = 0;
         $lastError = null;
 
-        foreach ($orders as $order) {
+        $stopAt = now()->addSeconds(self::MAX_RUN_SECONDS);
+
+        foreach ($orders->shuffle() as $order) {
+            if (now()->greaterThanOrEqualTo($stopAt)) {
+                $this->warn('Stopping: reached the time limit for one run.');
+
+                break;
+            }
+
             try {
                 $info = $steadfast->getOrderInfo($order->steadfast_consignment_id);
                 $succeeded++;

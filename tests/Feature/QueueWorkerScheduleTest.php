@@ -49,7 +49,7 @@ it('leaves the existing scheduled tasks and their lock durations unchanged', fun
     // 6 + DB-002's 4 nightly retention tasks + OPS-001's sitemap rebuild + BIZ-027's Steadfast check.
     expect($events)->toHaveCount(12);
     expect(array_slice($events, 0, 5))->toBe([
-        ['command' => 'pathao:sync-statuses', 'expression' => '*/15 * * * *', 'withoutOverlapping' => true, 'expiresAt' => 1440, 'releaseOnTerminationSignals' => false, 'timezone' => 'UTC'],
+        ['command' => 'pathao:sync-statuses', 'expression' => '*/15 * * * *', 'withoutOverlapping' => true, 'expiresAt' => 30, 'releaseOnTerminationSignals' => false, 'timezone' => 'UTC'],
         ['command' => 'rewards:grant-due', 'expression' => '0 1 * * *', 'withoutOverlapping' => true, 'expiresAt' => 1440, 'releaseOnTerminationSignals' => false, 'timezone' => 'Asia/Dhaka'],
         ['command' => 'cart:remind-abandoned', 'expression' => '0 * * * *', 'withoutOverlapping' => true, 'expiresAt' => 1440, 'releaseOnTerminationSignals' => false, 'timezone' => 'UTC'],
         ['command' => 'pending-checkouts:prune', 'expression' => '0 2 * * *', 'withoutOverlapping' => true, 'expiresAt' => 1440, 'releaseOnTerminationSignals' => false, 'timezone' => 'Asia/Dhaka'],

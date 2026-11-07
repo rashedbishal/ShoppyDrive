@@ -16,7 +16,9 @@ Artisan::command('inspire', function () {
 // every scheduled event threw "Call to undefined function pcntl_signal()"
 // before it started. A lock left behind by a killed run still expires after
 // the first argument's number of minutes.
-Schedule::command('pathao:sync-statuses')->everyFifteenMinutes()->withoutOverlapping(1440, false);
+// BE-004: these courier runs stop themselves within 10 minutes, so a lock left
+// by a run the host killed costs at most one or two missed checks, not a day.
+Schedule::command('pathao:sync-statuses')->everyFifteenMinutes()->withoutOverlapping(30, false);
 
 // Delay-gated referral/order points — day-granularity, so once a day is
 // plenty, but it runs in Asia/Dhaka so "once a day" lines up with the same
@@ -49,7 +51,7 @@ Schedule::command('sitemap:generate')->dailyAt('04:00')->timezone('Asia/Dhaka')-
 
 // BIZ-027: fallback for the Steadfast webhook, so a missed or rejected message
 // can't leave a parcel's order stuck.
-Schedule::command('steadfast:sync-statuses')->everyThirtyMinutes()->withoutOverlapping(1440, false);
+Schedule::command('steadfast:sync-statuses')->everyThirtyMinutes()->withoutOverlapping(30, false);
 
 // Hostinger shared hosting can't keep a worker process alive, and its
 // disabled pcntl_signal() crashes `queue:work`'s daemon mode, so the

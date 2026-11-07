@@ -36,6 +36,12 @@ class SyncPathaoOrderStatuses extends Command
     public const MAX_CONSECUTIVE_FAILURES = 3;
 
     /**
+     * BE-004: keeps a run well inside its 30-minute overlap lock. Orders are
+     * shuffled, so what one run skips isn't always the same.
+     */
+    public const MAX_RUN_SECONDS = 600;
+
+    /**
      * @return array{since: int, last_failed_at: int, last_error: string}|null
      */
     public static function currentProblem(): ?array
@@ -68,7 +74,15 @@ class SyncPathaoOrderStatuses extends Command
         $consecutiveFailures = 0;
         $lastError = null;
 
-        foreach ($orders as $order) {
+        $stopAt = now()->addSeconds(self::MAX_RUN_SECONDS);
+
+        foreach ($orders->shuffle() as $order) {
+            if (now()->greaterThanOrEqualTo($stopAt)) {
+                $this->warn('Stopping: reached the time limit for one run.');
+
+                break;
+            }
+
             try {
                 $info = $pathao->getOrderInfo($order->pathao_consignment_id);
                 $succeeded++;
