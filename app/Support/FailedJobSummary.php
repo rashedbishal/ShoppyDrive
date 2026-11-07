@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Jobs\AbandonedCartReminderJob;
+use App\Jobs\SendNewsletterChunk;
+use App\Mail\ContactFormMail;
 use App\Mail\LowStockAlertMail;
 use App\Mail\NewOrderAlertMail;
 use App\Mail\OrderCancelledMail;
@@ -50,7 +52,12 @@ final class FailedJobSummary
         WelcomeMail::class,
         LowStockAlertMail::class,
         AbandonedCartReminderJob::class,
+        ContactFormMail::class,
+        SendNewsletterChunk::class,
     ];
+
+    /** BE-012: one failed group's mail may have partly gone out. */
+    private const NEWSLETTER_RETRY_WARNING = 'This group of up to 50 subscribers will be sent again. Some of them may already have it and will get it twice. Anyone who has unsubscribed is skipped.';
 
     private const MAX_ERROR_LENGTH = 240;
 
@@ -73,6 +80,7 @@ final class FailedJobSummary
             'error_type' => $errorType,
             'error' => $error,
             'can_retry' => self::canRetry($failedJob),
+            'retry_warning' => $jobClass === SendNewsletterChunk::class ? self::NEWSLETTER_RETRY_WARNING : null,
         ];
     }
 

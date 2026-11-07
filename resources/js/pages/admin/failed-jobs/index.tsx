@@ -18,6 +18,7 @@ type FailedJob = {
     error_type: string;
     error: string;
     can_retry: boolean;
+    retry_warning: string | null;
 };
 
 type Props = {
@@ -95,7 +96,8 @@ export default function FailedJobsIndex({
                 }
                 description={
                     pending?.type === 'retry'
-                        ? `${pending.job.job} will run again. If the email reached the mail server before failing, the customer may receive it twice.`
+                        ? (pending.job.retry_warning ??
+                          `${pending.job.job} will run again. If the email reached the mail server before failing, the customer may receive it twice.`)
                         : pending?.type === 'retry-all'
                           ? 'Every currently retryable failed job will run again. If any of their emails reached the mail server before failing, those customers may receive it twice.'
                           : 'The record is removed from this list. The job will not run again.'
