@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Requests\Admin\CouponRequest;
+use App\Http\Requests\Admin\ProductBundleRequest;
+use App\Http\Requests\Admin\ProductRequest;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Coupon;
@@ -276,4 +278,20 @@ test('a customer can rewrite a deleted review, but a live one blocks a second (B
 
     actingAs($user)->post(route('product.reviews.store', $product), $payload)->assertSessionHasNoErrors();
     expect(Review::count())->toBe(1)->and(Review::withTrashed()->count())->toBe(2);
+});
+
+test('a zero price is refused only where the price is really used (BIZ-020)', function () {
+    $bundleRules = fn (string $type): array => (new ProductBundleRequest)->merge(['discount_type' => $type])->rules()['bundle_price'];
+    $passes = fn (array $rules, array $data = ['bundle_price' => 0]): bool => Validator::make($data, ['bundle_price' => $rules])->passes();
+
+    expect($passes($bundleRules('fixed_price')))->toBeFalse()
+        ->and($passes($bundleRules('free_delivery')))->toBeTrue();
+});
+
+test('saving a product with variants ignores its hidden main price, but a plain product needs one (BIZ-020)', function () {
+    $productRules = fn (array $input): array => (new ProductRequest)->merge($input)->rules()['price'];
+    $passes = fn (array $rules): bool => Validator::make(['price' => 0], ['price' => $rules])->passes();
+
+    expect($passes($productRules(['has_color_variant' => true, 'variants' => [['price' => 500]]])))->toBeTrue()
+        ->and($passes($productRules([])))->toBeFalse();
 });

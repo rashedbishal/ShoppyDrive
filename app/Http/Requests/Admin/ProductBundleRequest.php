@@ -23,7 +23,7 @@ class ProductBundleRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'image' => ['nullable', new RasterImageOrUrl],
             'discount_type' => ['required', 'string', 'in:fixed_price,free_delivery'],
-            'bundle_price' => ['required_if:discount_type,fixed_price', 'nullable', 'numeric', 'gt:0'],
+            'bundle_price' => ['required_if:discount_type,fixed_price', 'nullable', 'numeric', $this->input('discount_type') === 'fixed_price' ? 'gt:0' : 'min:0'],
             'is_active' => ['boolean'],
             'items' => [
                 'required',

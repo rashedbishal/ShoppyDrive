@@ -55,7 +55,8 @@ class ProductRequest extends FormRequest
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'sub_category_id' => ['required', 'integer', 'exists:sub_categories,id'],
             'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
-            'price' => [Rule::requiredIf(! $hasVariants), 'nullable', 'numeric', 'gt:0'],
+            // BIZ-020: with variants this field is hidden and derived from them.
+            'price' => [Rule::requiredIf(! $hasVariants), 'nullable', 'numeric', $hasVariants ? 'min:0' : 'gt:0'],
             'compare_price' => ['nullable', 'numeric', 'min:0'],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
             'stock_quantity' => [Rule::requiredIf(! $hasVariants), 'nullable', 'integer', 'min:0'],
