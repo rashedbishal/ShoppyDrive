@@ -245,6 +245,8 @@ class MobilePaymentController extends Controller
                     'notes' => "Payment confirmed via {$providerLabel}. TrxID: {$transactionId}",
                 ]);
 
+                $this->inventory->lockStockInOrder($data['items']);
+
                 foreach ($data['items'] as $item) {
                     $flashSaleItemId = $this->inventory->decrementForOrderItem($order, $item['product_id'], $item['variant_id'], $item['quantity'], (float) $item['price']);
                     $order->items()->create([
@@ -308,7 +310,7 @@ class MobilePaymentController extends Controller
                 ]);
 
                 return $order;
-            });
+            }, 3);
         } catch (\RuntimeException $e) {
             $msg = $e->getMessage();
             $providerLabel = $provider === 'bkash' ? 'Bkash' : 'Nagad';

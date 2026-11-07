@@ -179,6 +179,8 @@ class OrderController extends Controller
                     'notes' => 'Order placed manually by '.(auth('admin')->user()?->name ?? 'an admin').' on behalf of the customer.',
                 ]);
 
+                $this->inventory->lockStockInOrder($items);
+
                 foreach ($items as $item) {
                     $product = Product::with('images')->findOrFail($item['product_id']);
                     $variant = $item['variant_id'] ?? null

@@ -16,9 +16,11 @@ use App\Models\ReceivedSms;
 use App\Models\Review;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
 use App\Support\BangladeshDistricts;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -294,4 +296,43 @@ test('saving a product with variants ignores its hidden main price, but a plain 
 
     expect($passes($productRules(['has_color_variant' => true, 'variants' => [['price' => 500]]])))->toBeTrue()
         ->and($passes($productRules([])))->toBeFalse();
+});
+
+test('stock locks are taken in id order, whatever order the lines are in (BIZ-022)', function () {
+    $first = moneyProduct();
+    $second = moneyProduct();
+    $variantOwner = moneyProduct();
+    $firstVariant = ProductVariant::factory()->create(['product_id' => $variantOwner->id]);
+    $secondVariant = ProductVariant::factory()->create(['product_id' => $variantOwner->id]);
+
+    DB::enableQueryLog();
+    app(InventoryService::class)->lockStockInOrder([
+        ['product_id' => $second->id, 'variant_id' => null],
+        ['product_id' => $variantOwner->id, 'variant_id' => $secondVariant->id],
+        ['product_id' => $first->id, 'variant_id' => null],
+        ['product_id' => $variantOwner->id, 'variant_id' => $firstVariant->id],
+    ]);
+    $queries = collect(DB::getQueryLog())->pluck('query');
+
+    expect($queries)->toHaveCount(2)
+        ->and($queries[0])->toContain('"products"')->toContain('order by "id" asc')
+        ->and($queries[1])->toContain('"product_variants"')->toContain('order by "id" asc');
+});
+
+test('a two-line order keeps its line order and takes the right stock (BIZ-022)', function () {
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    $first = moneyProduct(['stock_quantity' => 10]);
+    $second = moneyProduct(['stock_quantity' => 10]);
+
+    actingAs($user)->post(route('checkout.store'), moneyCheckoutPayload([
+        'email' => $user->email, 'payment_method' => 'cod',
+        'items' => [
+            ['product_id' => $second->id, 'variant_id' => null, 'quantity' => 2, 'price' => 500],
+            ['product_id' => $first->id, 'variant_id' => null, 'quantity' => 1, 'price' => 500],
+        ],
+    ]))->assertSessionHasNoErrors();
+
+    expect(Order::sole()->items()->orderBy('id')->pluck('product_id')->all())->toBe([$second->id, $first->id])
+        ->and($first->fresh()->stock_quantity)->toBe(9)
+        ->and($second->fresh()->stock_quantity)->toBe(8);
 });

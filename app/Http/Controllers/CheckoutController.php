@@ -422,6 +422,8 @@ class CheckoutController extends Controller
 
                     $appliedCoupon = $finalCouponId !== null ? Coupon::find($finalCouponId) : null;
 
+                    $this->inventory->lockStockInOrder($cart->items);
+
                     foreach ($cart->items as $item) {
                         $product = $item->product;
                         $flashSaleItemId = $this->inventory->decrementForOrderItem($order, $item->product_id, $item->variant_id, $item->quantity, (float) $item->price);
@@ -470,7 +472,7 @@ class CheckoutController extends Controller
                     IncompleteOrder::deleteCompletedFor($shippingAddress['phone'], $order->user_id);
 
                     return $order;
-                });
+                }, 3);
             } catch (InsufficientStockException $e) {
                 // `withErrors(['items' => ...])` alone is invisible to the
                 // customer: Checkout.tsx only renders field-level errors for

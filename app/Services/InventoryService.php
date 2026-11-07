@@ -30,6 +30,29 @@ use Illuminate\Support\Facades\Mail;
 class InventoryService
 {
     /**
+     * BIZ-022: takes every stock lock an order will need, in id order, before
+     * its lines are decremented. Two orders sharing products in opposite order
+     * then queue instead of deadlocking, and the lines keep their own order
+     * on the invoice.
+     *
+     * @param  iterable<array<string, mixed>|object>  $lines  Each with product_id and variant_id.
+     */
+    public function lockStockInOrder(iterable $lines): void
+    {
+        $lines = collect($lines);
+        $variantIds = $lines->map(fn ($line) => data_get($line, 'variant_id'))->filter()->unique()->values();
+        $productIds = $lines->filter(fn ($line): bool => data_get($line, 'variant_id') === null)
+            ->map(fn ($line) => data_get($line, 'product_id'))->unique()->values();
+
+        if ($lines->count() < 2) {
+            return;
+        }
+
+        Product::query()->whereIn('id', $productIds)->orderBy('id')->lockForUpdate()->pluck('id');
+        ProductVariant::query()->whereIn('id', $variantIds)->orderBy('id')->lockForUpdate()->pluck('id');
+    }
+
+    /**
      * Locks and decrements stock for one order line (ordinary stock, plus
      * any currently active flash-sale cap for the same product/variant).
      * Returns the matched FlashSaleItem id, if any, so the caller can

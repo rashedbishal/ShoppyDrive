@@ -215,6 +215,8 @@ class IncompleteOrderController extends Controller
                     'notes' => 'Order placed manually by an admin from an incomplete order.',
                 ]);
 
+                $inventory->lockStockInOrder($resolvedItems);
+
                 foreach ($resolvedItems as $item) {
                     // BIZ-004: this was the one order-creation path that never
                     // called InventoryService at all — stock was never actually
