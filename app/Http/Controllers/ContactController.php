@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Mail\ContactFormMail;
+use App\Models\Admin;
 use App\Models\ContactMessage;
 use App\Models\Setting;
+use App\Support\LayoutCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class ContactController extends Controller
 {
@@ -49,9 +54,29 @@ class ContactController extends Controller
             'message' => ['required', 'string', 'max:5000'],
         ]);
 
-        ContactMessage::create($data);
+        $this->notifyShop(ContactMessage::create($data));
 
         return back()->with('success', 'Message sent.');
+    }
+
+    /**
+     * The message is already saved, so a mail problem must not make the
+     * customer think it failed.
+     */
+    private function notifyShop(ContactMessage $contactMessage): void
+    {
+        $recipient = LayoutCache::settings()['contact_email'] ?? null;
+        $recipient = filled($recipient) ? $recipient : Admin::where('is_mother', true)->value('email');
+
+        if (blank($recipient)) {
+            return;
+        }
+
+        try {
+            Mail::to($recipient)->queue(new ContactFormMail($contactMessage));
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     /** @return array<int, string> */
