@@ -89,6 +89,21 @@ function returnRaceConnections(): ?array
         return null;
     }
 
+    // REL-002: this file's "a plain read stays on its stale snapshot"
+    // assertions only hold under REPEATABLE READ. MySQL defaults to that,
+    // but production runs MariaDB under READ-COMMITTED (confirmed by
+    // read-only production check), where every plain read sees the latest
+    // committed row regardless of when the transaction started — so this
+    // test previously passed or failed depending on which server it ran
+    // against, not on whether the actual locking-read fix (the thing being
+    // tested) was present. Setting the isolation level explicitly makes
+    // the test deterministic on either server, rather than assuming a
+    // default. The locking-read assertions (the actual safety property)
+    // were never affected either way — FOR UPDATE always sees committed
+    // data under both isolation levels.
+    $connA->exec('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    $connB->exec('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+
     return [$connA, $connB];
 }
 
