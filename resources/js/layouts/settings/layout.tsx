@@ -3,7 +3,6 @@ import { Link2, Palette, Shield, User } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
-import AppLayout from '@/pages/layouts/AppLayout';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit as editConnections } from '@/routes/connections';
 import { edit } from '@/routes/profile';
@@ -16,7 +15,7 @@ const navItems = [
     { title: 'Appearance', href: editAppearance(), icon: Palette },
 ];
 
-function SettingsContent({ children }: PropsWithChildren) {
+export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
 
     return (
@@ -60,13 +59,5 @@ function SettingsContent({ children }: PropsWithChildren) {
                 </div>
             </div>
         </div>
-    );
-}
-
-export default function SettingsLayout({ children }: PropsWithChildren) {
-    return (
-        <AppLayout>
-            <SettingsContent>{children}</SettingsContent>
-        </AppLayout>
     );
 }
