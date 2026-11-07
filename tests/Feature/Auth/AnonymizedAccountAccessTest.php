@@ -3,7 +3,7 @@
 use App\Actions\Fortify\ResetUserPassword;
 use App\Models\SocialAccount;
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
+use App\Notifications\QueuedResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -58,7 +58,7 @@ test('completing a real password-reset HTTP request for an anonymized customer i
 
     $rotatedPasswordHash = null;
 
-    Notification::assertSentTo($customer, ResetPassword::class, function ($notification) use ($customer, &$rotatedPasswordHash) {
+    Notification::assertSentTo($customer, QueuedResetPassword::class, function ($notification) use ($customer, &$rotatedPasswordHash) {
         // Anonymize *after* the reset link is requested but *before* it's
         // used -- the realistic order of events (link already in the
         // customer's inbox when an admin later anonymizes the account).
