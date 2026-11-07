@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\Setting;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 
 function enableAiAssistant(string $apiKey = 'test-gemini-key'): void
 {
@@ -120,6 +121,53 @@ test('a network failure reaching Gemini gets a graceful reply, not a 500', funct
         ->assertJson([
             'reply' => "Sorry, I'm having trouble right now — please try again in a moment.",
         ]);
+});
+
+test('a transient 503 from Gemini is retried once and can still succeed', function () {
+    enableAiAssistant();
+    Sleep::fake();
+
+    Http::fake([
+        'generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push(['error' => ['message' => 'high demand', 'code' => 'service_unavailable']], 503)
+            ->push(['id' => 'int-1', 'output_text' => 'ok', 'outputs' => [['type' => 'text', 'text' => 'ok']]]),
+    ]);
+
+    $this->postJson(route('assistant.chat'), ['message' => 'hello'])
+        ->assertOk()
+        ->assertJson(['reply' => 'ok']);
+
+    Http::assertSentCount(2);
+});
+
+test('a 503 that persists after the retry still gets a graceful reply, not a crash', function () {
+    enableAiAssistant();
+    Sleep::fake();
+
+    Http::fake([
+        'generativelanguage.googleapis.com/*' => Http::response(['error' => ['message' => 'high demand']], 503),
+    ]);
+
+    $this->postJson(route('assistant.chat'), ['message' => 'hello'])
+        ->assertOk()
+        ->assertJson([
+            'reply' => "Sorry, I'm having trouble right now — please try again in a moment.",
+        ]);
+
+    Http::assertSentCount(2);
+});
+
+test('a non-retryable Gemini failure (e.g. bad key) is not retried', function () {
+    enableAiAssistant();
+    Sleep::fake();
+
+    Http::fake([
+        'generativelanguage.googleapis.com/*' => Http::response(['error' => ['message' => 'invalid API key']], 401),
+    ]);
+
+    $this->postJson(route('assistant.chat'), ['message' => 'hello'])->assertOk();
+
+    Http::assertSentCount(1);
 });
 
 test('requests are throttled per visitor', function () {

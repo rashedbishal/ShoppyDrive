@@ -9,6 +9,7 @@ use App\Support\AiAssistantConfig;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Sleep;
 
 /**
  * Talks to Google's Gemini API on the customer's behalf. The model is
@@ -35,6 +36,10 @@ class AiAssistantService
     private const MODEL = 'gemini-3.8-flash';
 
     private const MAX_TOOL_ROUNDTRIPS = 4;
+
+    private const RETRYABLE_STATUS = 503;
+
+    private const RETRY_DELAY_SECONDS = 1;
 
     public function __construct(private readonly AiAssistantTools $tools) {}
 
@@ -125,29 +130,46 @@ class AiAssistantService
             $payload['previous_interaction_id'] = $previousInteractionId;
         }
 
-        try {
-            $response = Http::withHeaders([
-                'x-goog-api-key' => $apiKey,
-                'Content-Type' => 'application/json',
-            ])->timeout(20)->post(self::ENDPOINT, $payload);
-        } catch (ConnectionException $e) {
-            Log::warning('[AI assistant] Could not reach Gemini', [
-                'message' => $e->getMessage(),
-            ]);
+        for ($attempt = 1; $attempt <= 2; $attempt++) {
+            try {
+                $response = Http::withHeaders([
+                    'x-goog-api-key' => $apiKey,
+                    'Content-Type' => 'application/json',
+                ])->timeout(20)->post(self::ENDPOINT, $payload);
+            } catch (ConnectionException $e) {
+                // Already spent the full timeout budget getting here —
+                // retrying a hung connection risks the web server's own
+                // execution time limit, so this one isn't retried.
+                Log::warning('[AI assistant] Could not reach Gemini', [
+                    'message' => $e->getMessage(),
+                ]);
 
-            return null;
-        }
+                return null;
+            }
 
-        if ($response->failed()) {
+            if ($response->successful()) {
+                return $response->json();
+            }
+
             Log::warning('[AI assistant] Gemini request failed', [
                 'status' => $response->status(),
                 'body' => $response->body(),
+                'attempt' => $attempt,
             ]);
 
-            return null;
+            // A 503 is Gemini's own "usually temporary, try again" signal
+            // (confirmed in production: "gemini-3.8-flash is currently
+            // experiencing high demand"). Every other failure — a bad key,
+            // a malformed request, an exhausted quota — won't succeed on a
+            // second try, so only this one is worth retrying, once.
+            if ($response->status() !== self::RETRYABLE_STATUS || $attempt === 2) {
+                return null;
+            }
+
+            Sleep::for(self::RETRY_DELAY_SECONDS)->seconds();
         }
 
-        return $response->json();
+        return null;
     }
 
     /**
