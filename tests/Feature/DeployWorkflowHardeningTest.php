@@ -38,12 +38,12 @@ test('every workflow has read-only repository access', function () {
  * INFRA-005: these checks must warn. They run after the files are synced, so
  * a hard stop would leave a deploy half finished.
  */
-test('the deploy warns about missing mail and sms settings without stopping', function () {
+test('the deploy warns about missing mail settings without stopping', function () {
     $workflow = workflowFiles()['deploy.yml'];
     $check = str($workflow)->after('for key in MAIL_MAILER')->before('# SEC-022: remove internal files')->toString();
 
     expect($check)->toContain('::warning::')->not->toContain('exit 1')
-        ->and($workflow)->toContain('for key in MAIL_MAILER MAIL_HOST MAIL_USERNAME MAIL_PASSWORD SMS_FORWARDER_TOKEN;');
+        ->and($workflow)->toContain('for key in MAIL_MAILER MAIL_HOST MAIL_USERNAME MAIL_PASSWORD;');
 });
 
 test('the env template names the settings a rebuilt server needs', function (string $key) {

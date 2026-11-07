@@ -276,7 +276,9 @@ jobs:
             # (a missing mailer drops verification codes into a log). This
             # step runs after files are synced, so it warns instead of
             # stopping a deploy halfway. Values are never printed.
-            for key in MAIL_MAILER MAIL_HOST MAIL_USERNAME MAIL_PASSWORD SMS_FORWARDER_TOKEN; do
+            # SEC-020: SMS_FORWARDER_TOKEN removed from this list — it moved
+            # to the Setting table and nothing reads it from .env anymore.
+            for key in MAIL_MAILER MAIL_HOST MAIL_USERNAME MAIL_PASSWORD; do
               if ! grep -Eq \"^\$key=.+\" .env; then
                 echo \"::warning::\$key is missing or empty in .env.\"
               fi
