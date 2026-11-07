@@ -41,11 +41,16 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
     // Mirrors AdminController's own rule: only the mother admin can grant
     // permissions, and never the mother's own (she always has full access).
     const canManagePermissions = currentAdmin.is_mother && !adminUser.is_mother;
+    // SEC-010: changing your own password requires re-entering it, same as
+    // the customer-facing settings page. Resetting a *different* admin's
+    // password (the mother's privileged action) doesn't need it.
+    const isSelfEdit = currentAdmin.id === adminUser.id;
 
     const { data, setData, put, processing, errors, setError, clearErrors } =
         useForm({
             name: adminUser.name,
             email: adminUser.email,
+            current_password: '',
             password: '',
             password_confirmation: '',
             permissions:
@@ -67,6 +72,11 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
 
         if (data.password && data.password !== data.password_confirmation) {
             clientErrors.password_confirmation = 'The passwords do not match.';
+        }
+
+        if (isSelfEdit && data.password && !data.current_password) {
+            clientErrors.current_password =
+                'Enter your current password to set a new one.';
         }
 
         if (Object.keys(clientErrors).length > 0) {
@@ -142,6 +152,32 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
                                     )}
                                 </div>
                             </div>
+
+                            {isSelfEdit && (
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                        Current Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        className={inputClass}
+                                        value={data.current_password}
+                                        autoComplete="current-password"
+                                        onChange={(e) =>
+                                            setData(
+                                                'current_password',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="Required to set a new password"
+                                    />
+                                    {errors.current_password && (
+                                        <p className="mt-1 text-xs text-red-600">
+                                            {errors.current_password}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
