@@ -19,6 +19,8 @@ use App\Models\ReceivedSms;
 use App\Models\User;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 
@@ -135,4 +137,41 @@ test('every clean-up is scheduled, with the options that make it actually run', 
         ->toContain('queue:prune-batches --hours=720 --unfinished=720 --cancelled=720')
         ->toContain('activitylog:clean --force');
     expect(config('activitylog.delete_records_older_than_days'))->toBe(365);
+});
+
+test('expired cache rows are removed and live ones stay (DB-004)', function () {
+    DB::table('cache')->insert([
+        ['key' => 'expired-limit', 'value' => 'x', 'expiration' => now()->subMinute()->timestamp],
+        ['key' => 'live-limit', 'value' => 'x', 'expiration' => now()->addHour()->timestamp],
+    ]);
+
+    $this->artisan('data:prune')->assertSuccessful();
+
+    expect(DB::table('cache')->pluck('key')->all())->toBe(['live-limit']);
+});
+
+test('expired cache files are removed, and live, forever and foreign files stay (PERF-008)', function () {
+    $directory = storage_path('framework/testing/cache-'.Str::random(8));
+    File::ensureDirectoryExists($directory.'/ab/cd');
+    config(['cache.stores.file.path' => $directory]);
+
+    $files = [
+        'expired' => [$directory.'/ab/cd/expired', now()->subMinute()->timestamp.'data'],
+        'live' => [$directory.'/ab/cd/live', now()->addHour()->timestamp.'data'],
+        'forever' => [$directory.'/ab/cd/forever', '9999999999data'],
+        'foreign' => [$directory.'/ab/.gitignore', "*\n!.gitignore\n"],
+    ];
+
+    foreach ($files as [$path, $contents]) {
+        file_put_contents($path, $contents);
+    }
+
+    $this->artisan('data:prune')->assertSuccessful();
+
+    expect(file_exists($files['expired'][0]))->toBeFalse()
+        ->and(file_exists($files['live'][0]))->toBeTrue()
+        ->and(file_exists($files['forever'][0]))->toBeTrue()
+        ->and(file_exists($files['foreign'][0]))->toBeTrue();
+
+    File::deleteDirectory($directory);
 });
