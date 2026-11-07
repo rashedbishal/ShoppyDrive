@@ -41,6 +41,11 @@ class TrackDailyVisit
             return false;
         }
 
+        // BE-008: Inertia loading a page ahead of a hover isn't a visit to it.
+        if ($request->header('Purpose') === 'prefetch') {
+            return false;
+        }
+
         foreach (self::EXCLUDED_PATH_PREFIXES as $prefix) {
             if ($request->is($prefix) || $request->is("{$prefix}/*")) {
                 return false;
