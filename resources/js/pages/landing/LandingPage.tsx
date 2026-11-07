@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import HoneypotField from '@/components/honeypot-field';
 import SocialChatWidget from '@/components/layout/SocialChatWidget';
 import { Select } from '@/components/ui/select';
+import { formatCurrency } from '@/lib/utils';
 import type { SharedPageProps } from '@/types';
 
 type ProductMedia = {
@@ -220,7 +221,7 @@ function InlinePayment({
             >
                 <p className="text-xs text-slate-500">Send exactly</p>
                 <p className="text-3xl font-extrabold text-slate-900">
-                    ৳{pending.amount.toLocaleString()}
+                    {formatCurrency(pending.amount)}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
                     to this {providerLabel} number
@@ -254,7 +255,7 @@ function InlinePayment({
                         3.
                     </span>{' '}
                     Send exactly{' '}
-                    <strong>৳{pending.amount.toLocaleString()}</strong>
+                    <strong>{formatCurrency(pending.amount)}</strong>
                 </li>
                 <li className="flex gap-2">
                     <span className="w-4 shrink-0 font-bold text-slate-800">
@@ -279,6 +280,7 @@ function InlinePayment({
                 )}
                 <div>
                     <input
+                        aria-label="Transaction ID from SMS"
                         className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 font-mono text-sm tracking-wider uppercase focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/30 focus:outline-none"
                         value={data.transaction_id}
                         onChange={(e) =>
@@ -381,19 +383,19 @@ function OrderForm({
             <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-bold text-slate-900">
-                        ৳{product.price.toLocaleString()}
+                        {formatCurrency(product.price)}
                     </span>
                     {product.compare_price &&
                         product.compare_price > product.price && (
                             <span className="text-sm text-slate-400 line-through">
-                                ৳{product.compare_price.toLocaleString()}
+                                {formatCurrency(product.compare_price)}
                             </span>
                         )}
                 </div>
                 <p className="text-xs text-slate-500">
                     {product.free_delivery
                         ? '🚚 Free delivery'
-                        : `Delivery: ৳60 (Dhaka) / ৳120 (Outside)`}
+                        : `Delivery: ${formatCurrency(insideDhakaRate)} (Dhaka) / ${formatCurrency(outsideDhakaRate)} (Outside)`}
                 </p>
             </div>
 
@@ -431,6 +433,7 @@ function OrderForm({
                 {/* Personal info */}
                 <div>
                     <input
+                        aria-label="Full Name"
                         className={inputClass}
                         placeholder="Full Name *"
                         value={data.name}
@@ -444,6 +447,7 @@ function OrderForm({
                 </div>
                 <div>
                     <input
+                        aria-label="Phone Number"
                         type="tel"
                         inputMode="tel"
                         maxLength={20}
@@ -463,6 +467,7 @@ function OrderForm({
                     )}
                 </div>
                 <input
+                    aria-label="Email (optional)"
                     className={inputClass}
                     placeholder="Email (optional)"
                     value={data.email}
@@ -471,6 +476,7 @@ function OrderForm({
 
                 {/* Address */}
                 <input
+                    aria-label="Address"
                     className={inputClass}
                     placeholder="Address *"
                     value={data.address_line1}
@@ -482,6 +488,7 @@ function OrderForm({
                     </p>
                 )}
                 <input
+                    aria-label="Area / Landmark (optional)"
                     className={inputClass}
                     placeholder="Area / Landmark (optional)"
                     value={data.address_line2}
@@ -525,6 +532,7 @@ function OrderForm({
                             </Select>
                         ) : (
                             <input
+                                aria-label="City / Upazila"
                                 className={inputClass}
                                 placeholder="City / Upazila *"
                                 value={data.city}
@@ -624,17 +632,19 @@ function OrderForm({
                     <div className="space-y-1 rounded-xl bg-slate-50 p-3 text-sm">
                         <div className="flex justify-between text-slate-600">
                             <span>Subtotal ({qty}×)</span>
-                            <span>৳{subtotal.toLocaleString()}</span>
+                            <span>{formatCurrency(subtotal)}</span>
                         </div>
                         <div className="flex justify-between text-slate-600">
                             <span>Delivery</span>
                             <span>
-                                {shipping === 0 ? 'Free' : `৳${shipping}`}
+                                {shipping === 0
+                                    ? 'Free'
+                                    : formatCurrency(shipping)}
                             </span>
                         </div>
                         <div className="flex justify-between border-t border-slate-200 pt-1 font-bold text-slate-900">
                             <span>Total</span>
-                            <span>৳{total.toLocaleString()}</span>
+                            <span>{formatCurrency(total)}</span>
                         </div>
                     </div>
                 )}
@@ -765,14 +775,15 @@ export default function LandingPageShow({
                                 )}
                                 <div className="flex items-center gap-3 pt-2">
                                     <span className="text-3xl font-bold">
-                                        ৳{product.price.toLocaleString()}
+                                        {formatCurrency(product.price)}
                                     </span>
                                     {product.compare_price &&
                                         product.compare_price >
                                             product.price && (
                                             <span className="text-lg text-white/50 line-through">
-                                                ৳
-                                                {product.compare_price.toLocaleString()}
+                                                {formatCurrency(
+                                                    product.compare_price,
+                                                )}
                                             </span>
                                         )}
                                     {product.compare_price &&
@@ -963,11 +974,19 @@ export default function LandingPageShow({
                                     <div className="space-y-1 text-sm text-slate-600">
                                         <p>
                                             Inside Dhaka City Corporation:{' '}
-                                            <strong>৳{insideDhakaRate}</strong>
+                                            <strong>
+                                                {formatCurrency(
+                                                    insideDhakaRate,
+                                                )}
+                                            </strong>
                                         </p>
                                         <p>
                                             Outside Dhaka / Rest of Bangladesh:{' '}
-                                            <strong>৳{outsideDhakaRate}</strong>
+                                            <strong>
+                                                {formatCurrency(
+                                                    outsideDhakaRate,
+                                                )}
+                                            </strong>
                                         </p>
                                     </div>
                                 )}

@@ -9,9 +9,9 @@ export default function CheckoutLayout({
 }: CheckoutLayoutProps): React.JSX.Element {
     return (
         <div className="flex min-h-screen flex-col bg-[var(--color-surface-alt)]">
-            <main className="flex-1 py-8 md:py-12">
+            <div className="flex-1 py-8 md:py-12">
                 <div className="mx-auto max-w-6xl px-4">{children}</div>
-            </main>
+            </div>
 
             {/* Simple Footer */}
             <footer className="mt-auto border-t border-[var(--color-border)] bg-white py-8">
