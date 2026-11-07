@@ -91,6 +91,7 @@ export interface AppSettings {
     meta_pixel_id?: string | null;
     whatsapp_number?: string | null;
     messenger_link?: string | null;
+    ai_assistant_enabled?: boolean;
     free_delivery_threshold?: number | null;
     shipping_rate_inside_dhaka?: number;
     shipping_rate_outside_dhaka?: number;

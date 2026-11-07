@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AbandonedCartUnsubscribeController;
+use App\Http\Controllers\AiAssistantController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\IncompleteOrderController;
@@ -143,3 +144,9 @@ Route::post('/coupon/validate', function (Request $request) {
 })->middleware('throttle:coupon-check')->name('coupon.validate');
 
 Route::get('/wishlist', [WishlistController::class, 'entry'])->name('wishlist.index');
+
+// AI assistant widget: open to guests (limited — see AiAssistantTools::lookupOrder())
+// and logged-in customers alike. auth.session is deliberately not required.
+Route::post('/assistant/chat', [AiAssistantController::class, 'chat'])
+    ->middleware('throttle:ai-assistant')
+    ->name('assistant.chat');

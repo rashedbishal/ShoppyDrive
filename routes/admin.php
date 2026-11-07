@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\AiAssistantSettingsController;
 use App\Http\Controllers\Admin\AttributeController;
 use App\Http\Controllers\Admin\AttributeValueController;
 use App\Http\Controllers\Admin\AuditTrailController;
@@ -206,6 +207,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::put('settings/security', [SecuritySettingsController::class, 'update'])->name('settings.security.update');
     Route::get('settings/sms-forwarder', [SmsForwarderSettingsController::class, 'index'])->name('settings.sms-forwarder.index')->middleware(AdminSections::middleware('sms_forwarder', 'view'));
     Route::post('settings/sms-forwarder/regenerate', [SmsForwarderSettingsController::class, 'regenerate'])->name('settings.sms-forwarder.regenerate')->middleware(AdminSections::middleware('sms_forwarder', 'update'));
+    Route::get('settings/ai-assistant', [AiAssistantSettingsController::class, 'index'])->name('settings.ai-assistant.index')->middleware(AdminSections::middleware('ai_assistant', 'view'));
+    Route::post('settings/ai-assistant', [AiAssistantSettingsController::class, 'update'])->name('settings.ai-assistant.update')->middleware(AdminSections::middleware('ai_assistant', 'update'));
 
     // Admins management is deliberately NOT part of the permission matrix —
     // see AdminSections's docblock. AdminController enforces its own

@@ -66,6 +66,7 @@ final class AdminSections
         'social_config' => ['label' => 'Social Config', 'group' => 'System', 'abilities' => ['update']],
         'courier_config' => ['label' => 'Courier Config', 'group' => 'System', 'abilities' => ['update']],
         'sms_forwarder' => ['label' => 'SMS Forwarder', 'group' => 'System', 'abilities' => ['update']],
+        'ai_assistant' => ['label' => 'AI Assistant', 'group' => 'System', 'abilities' => ['update']],
         'referral_program' => ['label' => 'Referral Program', 'group' => 'System', 'abilities' => ['update']],
         // Security's own update stays mother-only regardless of this matrix
         // (SecuritySettingsController) — it only lists `view` here.

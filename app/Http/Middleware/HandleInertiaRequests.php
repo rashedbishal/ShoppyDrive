@@ -217,6 +217,7 @@ class HandleInertiaRequests extends Middleware
             'meta_pixel_id' => $db->get('meta_pixel_id'),
             'whatsapp_number' => $db->get('whatsapp_number'),
             'messenger_link' => $db->get('messenger_link'),
+            'ai_assistant_enabled' => (bool) $db->get('ai_assistant_enabled', false),
             'google_login_enabled' => filled(config('services.google.client_id')),
             'facebook_login_enabled' => filled(config('services.facebook.client_id')),
             'referral_enabled' => (bool) $db->get('referral_enabled', false),

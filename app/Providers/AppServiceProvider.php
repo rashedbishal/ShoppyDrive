@@ -202,6 +202,12 @@ class AppServiceProvider extends ServiceProvider
         // crash sends one report, so this only stops a script filling the log.
         RateLimiter::for('client-errors', fn (Request $request) => Limit::perMinute(10)->by('ip:'.$request->ip()));
 
+        // AI assistant widget: Gemini's free tier has a daily cap shared by
+        // the whole site, so this protects that quota from one visitor (or
+        // a script) rather than any per-customer business rule — hardcoded
+        // like 'client-errors', not in Admin > Security.
+        RateLimiter::for('ai-assistant', fn (Request $request) => Limit::perHour(20)->by($request->user()?->id ?? 'ip:'.$request->ip()));
+
         // The bKash/Nagad SMS-forwarder phone: only requests with a wrong
         // token count, so the real phone is never blocked however many SMS
         // it forwards at once (e.g. a backlog after being offline) — a

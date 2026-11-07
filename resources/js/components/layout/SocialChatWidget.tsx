@@ -1,10 +1,11 @@
 import { usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { MessageCircle, X } from 'lucide-react';
+import { Bot, MessageCircle, X } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
 import type { SharedPageProps } from '@/types';
+import AiAssistantPanel from './AiAssistantPanel';
 
 function WhatsAppIcon({ className }: { className?: string }) {
     return (
@@ -66,7 +67,8 @@ function toXY(angle: number, dist: number) {
 type ChatItem = {
     key: string;
     label: string;
-    href: string;
+    href?: string;
+    onClick?: () => void;
     bg: string;
     glow: string;
     shadow: string;
@@ -77,12 +79,28 @@ export default function SocialChatWidget(): React.JSX.Element | null {
     const { settings } = usePage<SharedPageProps>().props;
     const [open, setOpen] = useState(false);
     const [burstKey, setBurstKey] = useState(0);
+    const [aiPanelOpen, setAiPanelOpen] = useState(false);
     // Step aside while the mobile menu or cart panel is open — it would sit on top of them.
     const isPanelOpen = useUiStore(
         (state) => state.cartOpen || state.mobileMenuOpen,
     );
 
     const items: ChatItem[] = [];
+
+    if (settings.ai_assistant_enabled) {
+        items.push({
+            key: 'ai-assistant',
+            label: 'Ask us anything',
+            onClick: () => {
+                setOpen(false);
+                setAiPanelOpen(true);
+            },
+            bg: 'bg-[var(--color-primary)]',
+            glow: 'rgba(200,16,46,0.55)',
+            shadow: '0 0 28px 6px rgba(200,16,46,0.45)',
+            icon: <Bot className="size-6 text-white" />,
+        });
+    }
 
     if (settings.whatsapp_number) {
         items.push({
@@ -223,28 +241,52 @@ export default function SocialChatWidget(): React.JSX.Element | null {
                                     }}
                                 />
 
-                                <motion.a
-                                    href={item.href}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    aria-label={`Chat on ${item.label}`}
-                                    whileHover={{
-                                        scale: 1.18,
-                                        boxShadow: item.shadow,
-                                        transition: {
-                                            type: 'spring',
-                                            stiffness: 500,
-                                            damping: 18,
-                                        },
-                                    }}
-                                    whileTap={{ scale: 0.88 }}
-                                    className={cn(
-                                        'relative flex size-12 items-center justify-center rounded-full shadow-xl',
-                                        item.bg,
-                                    )}
-                                >
-                                    {item.icon}
-                                </motion.a>
+                                {item.onClick ? (
+                                    <motion.button
+                                        type="button"
+                                        onClick={item.onClick}
+                                        aria-label={item.label}
+                                        whileHover={{
+                                            scale: 1.18,
+                                            boxShadow: item.shadow,
+                                            transition: {
+                                                type: 'spring',
+                                                stiffness: 500,
+                                                damping: 18,
+                                            },
+                                        }}
+                                        whileTap={{ scale: 0.88 }}
+                                        className={cn(
+                                            'relative flex size-12 items-center justify-center rounded-full shadow-xl',
+                                            item.bg,
+                                        )}
+                                    >
+                                        {item.icon}
+                                    </motion.button>
+                                ) : (
+                                    <motion.a
+                                        href={item.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label={`Chat on ${item.label}`}
+                                        whileHover={{
+                                            scale: 1.18,
+                                            boxShadow: item.shadow,
+                                            transition: {
+                                                type: 'spring',
+                                                stiffness: 500,
+                                                damping: 18,
+                                            },
+                                        }}
+                                        whileTap={{ scale: 0.88 }}
+                                        className={cn(
+                                            'relative flex size-12 items-center justify-center rounded-full shadow-xl',
+                                            item.bg,
+                                        )}
+                                    >
+                                        {item.icon}
+                                    </motion.a>
+                                )}
                             </div>
                         </motion.div>
                     ))}
@@ -387,6 +429,11 @@ export default function SocialChatWidget(): React.JSX.Element | null {
                     </AnimatePresence>
                 </motion.button>
             </div>
+
+            <AiAssistantPanel
+                open={aiPanelOpen}
+                onClose={() => setAiPanelOpen(false)}
+            />
         </div>
     );
 }

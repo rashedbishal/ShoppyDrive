@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
     Award,
     Ban,
+    Bot,
     DatabaseBackup,
     Folder,
     FolderTree,
@@ -349,6 +350,14 @@ const navSections: NavSection[] = [
                 exact: false,
                 extraMatches: [] as string[],
                 section: 'sms_forwarder',
+            },
+            {
+                label: 'AI Assistant',
+                href: '/admin/settings/ai-assistant',
+                icon: Bot,
+                exact: false,
+                extraMatches: [] as string[],
+                section: 'ai_assistant',
             },
             {
                 label: 'Referral Program',
