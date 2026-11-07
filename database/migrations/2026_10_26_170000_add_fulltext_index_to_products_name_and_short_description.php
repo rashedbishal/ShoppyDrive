@@ -24,10 +24,10 @@ return new class extends Migration
     {
         // FULLTEXT isn't portable — SQLite (this app's test connection, per
         // phpunit.xml) throws rather than ignoring an unsupported index type.
-        // Production always runs MySQL (config/database.php default), which
-        // is the only place this index — or App\Support\ProductSearchQuery's
-        // use of it — actually takes effect.
-        if (Schema::getConnection()->getDriverName() !== 'mysql') {
+        // Production runs MariaDB, whose PDO driver name still reports
+        // 'mysql' (confirmed against production phpMyAdmin, DB-005), but
+        // 'mariadb' is accepted too in case that ever changes.
+        if (! in_array(Schema::getConnection()->getDriverName(), ['mysql', 'mariadb'], true)) {
             return;
         }
 
@@ -38,7 +38,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (Schema::getConnection()->getDriverName() !== 'mysql') {
+        if (! in_array(Schema::getConnection()->getDriverName(), ['mysql', 'mariadb'], true)) {
             return;
         }
 

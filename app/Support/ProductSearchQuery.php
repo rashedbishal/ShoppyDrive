@@ -116,7 +116,7 @@ class ProductSearchQuery
      */
     private static function buildBooleanQuery(string $term): ?string
     {
-        if (DB::connection()->getDriverName() !== 'mysql') {
+        if (! in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
             return null;
         }
 

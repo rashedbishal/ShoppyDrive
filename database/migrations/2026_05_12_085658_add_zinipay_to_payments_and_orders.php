@@ -9,8 +9,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Expand the orders.payment_method enum to include 'zinipay' (MySQL only)
-        if (DB::connection()->getDriverName() === 'mysql') {
+        // Expand the orders.payment_method enum to include 'zinipay' (MySQL/MariaDB only)
+        if (in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
             DB::statement("ALTER TABLE orders MODIFY payment_method ENUM('cod','zinipay') NOT NULL DEFAULT 'cod'");
         }
 
@@ -26,7 +26,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (DB::connection()->getDriverName() === 'mysql') {
+        if (in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
             DB::statement("ALTER TABLE orders MODIFY payment_method ENUM('cod') NOT NULL DEFAULT 'cod'");
         }
 
