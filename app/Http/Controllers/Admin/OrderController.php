@@ -282,6 +282,7 @@ class OrderController extends Controller
             'refundSummary' => $refunds->summary($order),
             'courierEvidence' => $courierEvidence->displaySummary($order),
             'canVerifyDelivery' => (bool) Auth::guard('admin')->user()?->is_mother,
+            'canConfirmLostParcel' => (bool) Auth::guard('admin')->user()?->is_mother && $order->lost_confirmed_at === null,
         ]);
     }
 

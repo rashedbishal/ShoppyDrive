@@ -19,6 +19,7 @@ import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import CourierSubmissionPanel from '@/components/admin/CourierSubmissionPanel';
 import type { CourierSubmission } from '@/components/admin/CourierSubmissionPanel';
 import DeliveryVerificationDialog from '@/components/admin/DeliveryVerificationDialog';
+import LostParcelDialog from '@/components/admin/LostParcelDialog';
 import type { CourierEvidence } from '@/components/admin/DeliveryVerificationDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -108,6 +109,7 @@ type Props = {
     refundSummary: RefundSummary;
     courierEvidence: CourierEvidence;
     canVerifyDelivery: boolean;
+    canConfirmLostParcel: boolean;
 };
 
 const taka = (value: number | null) =>
@@ -152,6 +154,7 @@ export default function OrderShow({
     refundSummary,
     courierEvidence,
     canVerifyDelivery,
+    canConfirmLostParcel,
 }: Props) {
     const [isVerifyOpen, setIsVerifyOpen] = useState(false);
     // COURIER-SEND-RACE-002 (L2/L3): mirrors the server-side guards, which
@@ -309,6 +312,7 @@ export default function OrderShow({
     const [courierProvider, setCourierProvider] = useState<
         'pathao' | 'steadfast'
     >('pathao');
+    const [isLostOpen, setIsLostOpen] = useState(false);
     const [courierSending, setCourierSending] = useState(false);
     const [pathaoRefreshing, setPathaoRefreshing] = useState(false);
     const [steadfastRefreshing, setSteadfastRefreshing] = useState(false);
@@ -414,6 +418,17 @@ export default function OrderShow({
                                 manually through refund or return as
                                 appropriate.
                             </p>
+                            {canConfirmLostParcel && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-2"
+                                    onClick={() => setIsLostOpen(true)}
+                                >
+                                    Confirm parcel lost
+                                </Button>
+                            )}
                         </div>
                     </div>
                 )}
@@ -667,6 +682,14 @@ export default function OrderShow({
                                                 </Button>
                                             )}
                                     </div>
+                                )}
+                                {canConfirmLostParcel && (
+                                    <LostParcelDialog
+                                        open={isLostOpen}
+                                        onClose={() => setIsLostOpen(false)}
+                                        orderId={order.id}
+                                        orderNumber={order.order_number}
+                                    />
                                 )}
                                 {canVerifyDelivery && (
                                     <DeliveryVerificationDialog
