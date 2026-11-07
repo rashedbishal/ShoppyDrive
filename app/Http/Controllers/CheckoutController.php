@@ -29,6 +29,7 @@ use App\Support\CartManager;
 use App\Support\OrderConfirmationAccess;
 use App\Support\OrderNumberGenerator;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -165,6 +166,11 @@ class CheckoutController extends Controller
         // The check inside the lock further down stays for concurrent duplicates.
         if (($cached = Cache::get(self::orderResultKey($request->string('order_token')->toString()))) !== null) {
             return $this->redirectForCachedCheckoutOrder($cached);
+        }
+
+        // BIZ-023: the cache forgets on deploy; the order itself doesn't.
+        if (($placed = $this->redirectForPlacedOrder($request->string('order_token')->toString())) !== null) {
+            return $placed;
         }
 
         $items = $request->filled('items') ? $request->validated('items') : null;
@@ -347,6 +353,15 @@ class CheckoutController extends Controller
         return "checkout-order-result:{$orderToken}";
     }
 
+    private function redirectForPlacedOrder(string $orderToken): ?RedirectResponse
+    {
+        $orderNumber = Order::withTrashed()->where('order_token', $orderToken)->value('order_number');
+
+        return $orderNumber === null
+            ? null
+            : $this->redirectForCachedCheckoutOrder(['type' => 'cod', 'order_number' => $orderNumber]);
+    }
+
     private function redirectForCachedCheckoutOrder(array $cached): RedirectResponse
     {
         if ($cached['type'] === 'cod') {
@@ -401,6 +416,7 @@ class CheckoutController extends Controller
 
                     $order = Order::create([
                         'order_number' => OrderNumberGenerator::generate(),
+                        'order_token' => $request->string('order_token')->toString(),
                         'user_id' => auth()->id(),
                         'status' => 'pending',
                         'payment_status' => 'unpaid',
@@ -473,6 +489,9 @@ class CheckoutController extends Controller
 
                     return $order;
                 }, 3);
+            } catch (UniqueConstraintViolationException $e) {
+                // BIZ-023: another request placed this exact submission first.
+                return $this->redirectForPlacedOrder($request->string('order_token')->toString()) ?? throw $e;
             } catch (InsufficientStockException $e) {
                 // `withErrors(['items' => ...])` alone is invisible to the
                 // customer: Checkout.tsx only renders field-level errors for

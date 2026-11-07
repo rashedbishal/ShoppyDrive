@@ -192,3 +192,19 @@ test('SEC-006: the landing-page confirmation page never sends the IP, user agent
         ->missing('order.status_histories')
         ->etc());
 });
+
+test('a landing page retry after a deploy cleared the cache reaches the first order (BIZ-023)', function () {
+    Mail::fake();
+    $token = (string) Str::uuid();
+
+    post(route('lp.order', $this->page->slug), codOrderPayload($token))->assertRedirect();
+    $order = Order::sole();
+    $stockAfterFirstOrder = $this->product->fresh()->stock_quantity;
+    Cache::flush();
+
+    post(route('lp.order', $this->page->slug), codOrderPayload($token))
+        ->assertRedirect(route('lp.confirmation', $order->guest_token));
+
+    expect(Order::count())->toBe(1)
+        ->and($this->product->fresh()->stock_quantity)->toBe($stockAfterFirstOrder);
+});

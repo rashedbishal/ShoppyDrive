@@ -49,13 +49,14 @@ class Order extends Model
      *
      * @var list<string>
      */
-    protected $hidden = ['guest_token'];
+    protected $hidden = ['guest_token', 'order_token'];
 
     protected $fillable = [
         'order_number',
         'user_id',
         'landing_page_id',
         'guest_token',
+        'order_token',
         'status',
         'is_seen',
         'seen_at',

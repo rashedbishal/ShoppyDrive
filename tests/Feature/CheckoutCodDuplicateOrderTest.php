@@ -9,9 +9,11 @@ use App\Models\Order;
 use App\Models\PendingCheckout;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
@@ -171,4 +173,58 @@ test('mobile banking duplicate submission with the same checkout token does not 
     expect(PendingCheckout::count())->toBe(1);
     expect(PendingCheckout::firstOrFail()->token)->toBe($originalToken);
     $second->assertRedirect(route('payment.mobile.show', $originalToken));
+});
+
+test('a retry after a deploy cleared the cache reaches the first order, not an empty cart (BIZ-023)', function () {
+    Mail::fake();
+    $token = (string) Str::uuid();
+    $payload = checkoutCodPayload($this->user, $this->product, $token);
+
+    actingAs($this->user)->post(route('checkout.store'), $payload)->assertRedirect();
+    $order = Order::sole();
+    Cache::flush();
+
+    actingAs($this->user)->post(route('checkout.store'), $payload)
+        ->assertRedirect(route('order.confirmation', $order->order_number));
+
+    expect(Order::count())->toBe(1)
+        ->and($this->product->fresh()->stock_quantity)->toBe(49)
+        ->and(Cart::where('user_id', $this->user->id)->exists())->toBeFalse();
+});
+
+test('the database itself refuses a second order with the same token (BIZ-023)', function () {
+    Mail::fake();
+    $token = (string) Str::uuid();
+    actingAs($this->user)->post(route('checkout.store'), checkoutCodPayload($this->user, $this->product, $token));
+    $order = Order::sole();
+
+    expect(fn () => Order::create([...$order->only(['status', 'payment_status', 'payment_method', 'subtotal', 'shipping_cost', 'discount', 'tax', 'total', 'shipping_address', 'billing_address']), 'order_number' => 'ORD-COPY', 'order_token' => $token]))
+        ->toThrow(UniqueConstraintViolationException::class);
+});
+
+test('a trashed order still blocks its own token from placing a new one (BIZ-023)', function () {
+    Mail::fake();
+    $token = (string) Str::uuid();
+    $payload = checkoutCodPayload($this->user, $this->product, $token);
+    actingAs($this->user)->post(route('checkout.store'), $payload);
+    $order = Order::sole();
+    Cache::flush();
+    $order->delete();
+
+    actingAs($this->user)->post(route('checkout.store'), $payload)->assertRedirect();
+
+    expect(Order::withTrashed()->count())->toBe(1);
+});
+
+test('the order token never reaches a page (BIZ-023)', function () {
+    Mail::fake();
+    actingAs($this->user)->post(route('checkout.store'), checkoutCodPayload($this->user, $this->product, (string) Str::uuid()));
+
+    expect(Order::sole()->toArray())->not->toHaveKey('order_token');
+});
+
+test('the sidebar count of unseen orders uses the is_seen index (PERF-005)', function () {
+    $indexes = collect(Schema::getIndexes('orders'))->pluck('columns')->all();
+
+    expect($indexes)->toContain(['is_seen']);
 });

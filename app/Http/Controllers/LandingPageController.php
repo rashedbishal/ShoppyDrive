@@ -25,6 +25,7 @@ use App\Support\OrderNumberGenerator;
 use App\Support\SafeLogContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -149,6 +150,11 @@ class LandingPageController extends Controller
             return $this->redirectForCachedLandingOrder($cached, $slug);
         }
 
+        // BIZ-023: the cache forgets on deploy; the order itself doesn't.
+        if (($placed = $this->redirectForPlacedOrder($orderToken)) !== null) {
+            return $placed;
+        }
+
         $lock = Cache::lock("lp-order-lock:{$orderToken}", self::ORDER_TOKEN_LOCK_WAIT_SECONDS * 3);
 
         try {
@@ -188,6 +194,13 @@ class LandingPageController extends Controller
             && LandingPage::whereKey($pending->landing_page_id)->where('slug', $slug)->exists();
 
         abort_unless($belongsHere, 404);
+    }
+
+    private function redirectForPlacedOrder(string $orderToken): ?RedirectResponse
+    {
+        $guestToken = Order::withTrashed()->where('order_token', $orderToken)->value('guest_token');
+
+        return $guestToken === null ? null : redirect()->route('lp.confirmation', $guestToken);
     }
 
     private function redirectForCachedLandingOrder(array $cached, string $slug): RedirectResponse
@@ -253,7 +266,7 @@ class LandingPageController extends Controller
             $orderNumber = OrderNumberGenerator::generate();
 
             try {
-                $order = DB::transaction(function () use ($page, $shippingAddress, $itemData, $subtotal, $shippingCost, $total, $guestToken, $orderNumber) {
+                $order = DB::transaction(function () use ($request, $page, $shippingAddress, $itemData, $subtotal, $shippingCost, $total, $guestToken, $orderNumber) {
                     // BIZ-011: before any stock is taken.
                     $this->pendingCodLimit->assertWithinLimit($shippingAddress['phone'], [$itemData['product_id'] => (int) $itemData['quantity']]);
 
@@ -262,6 +275,7 @@ class LandingPageController extends Controller
                         'user_id' => auth()->id(),
                         'landing_page_id' => $page->id,
                         'guest_token' => $guestToken,
+                        'order_token' => $request->string('order_token')->toString(),
                         'status' => 'pending',
                         'payment_status' => 'unpaid',
                         'payment_method' => PaymentMethod::COD->value,
@@ -281,6 +295,9 @@ class LandingPageController extends Controller
 
                     return $order;
                 });
+            } catch (UniqueConstraintViolationException $e) {
+                // BIZ-023: another request placed this exact submission first.
+                return $this->redirectForPlacedOrder($request->string('order_token')->toString()) ?? throw $e;
             } catch (InsufficientStockException $e) {
                 // Not cached as a result — a failed attempt must not poison
                 // this token; the customer (or a genuine retry of it) can
