@@ -24,6 +24,9 @@ class RasterImageOrUrl implements ValidationRule
     /** @var list<string> */
     private const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
+    /** SEC-018: the same 5 MB limit as blog and product images. */
+    private const MAX_KILOBYTES = 5120;
+
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if ($value === null || $value === '' || is_string($value)) {
@@ -38,6 +41,12 @@ class RasterImageOrUrl implements ValidationRule
 
         if (! in_array($value->getMimeType(), self::ALLOWED_MIMES, true)) {
             $fail('The '.$attribute.' must be a JPEG, PNG, WebP, or GIF image.');
+
+            return;
+        }
+
+        if ($value->getSize() > self::MAX_KILOBYTES * 1024) {
+            $fail('The '.$attribute.' must be 5MB or smaller.');
         }
     }
 }
