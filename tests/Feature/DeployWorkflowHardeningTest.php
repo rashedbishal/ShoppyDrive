@@ -48,4 +48,4 @@ test('the deploy warns about missing mail and sms settings without stopping', fu
 
 test('the env template names the settings a rebuilt server needs', function (string $key) {
     expect((string) file_get_contents(base_path('.env.example')))->toMatch("/^{$key}=/m");
-})->with(['SMS_FORWARDER_TOKEN', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI', 'FACEBOOK_CLIENT_ID', 'FACEBOOK_CLIENT_SECRET', 'FACEBOOK_REDIRECT_URI']);
+})->with(['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI', 'FACEBOOK_CLIENT_ID', 'FACEBOOK_CLIENT_SECRET', 'FACEBOOK_REDIRECT_URI']);

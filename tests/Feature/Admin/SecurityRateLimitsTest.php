@@ -370,7 +370,7 @@ test('account actions are limited per customer', function () {
 });
 
 test('wrong-token requests to the SMS forwarder endpoint are capped', function () {
-    config(['services.sms_forwarder.token' => 'real-phone-token']);
+    setSmsForwarderToken('real-phone-token');
 
     foreach (range(1, 60) as $ignored) {
         $this->withToken('guess')->postJson('/api/sms/receive')->assertUnauthorized();
@@ -380,7 +380,7 @@ test('wrong-token requests to the SMS forwarder endpoint are capped', function (
 });
 
 test('the real SMS forwarder phone is never limited, even in a large burst', function () {
-    config(['services.sms_forwarder.token' => 'real-phone-token']);
+    setSmsForwarderToken('real-phone-token');
 
     foreach (range(1, 100) as $ignored) {
         expect($this->withToken('real-phone-token')->postJson('/api/sms/receive')->status())->not->toBe(429);
@@ -388,7 +388,7 @@ test('the real SMS forwarder phone is never limited, even in a large burst', fun
 });
 
 test('a missing token on both sides never counts as the real phone', function () {
-    config(['services.sms_forwarder.token' => '']);
+    setSmsForwarderToken('');
 
     foreach (range(1, 60) as $ignored) {
         $this->postJson('/api/sms/receive');

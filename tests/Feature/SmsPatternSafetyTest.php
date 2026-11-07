@@ -24,7 +24,7 @@ const BKASH_SMS = 'You have received Tk 100.00 from 01867603414. Fee Tk 0.00. Ba
 const NAGAD_SMS = "Money Received.\nAmount: Tk 100.00\nSender: 01867603414\nTxnID: 75AIB4WJ\nBalance: Tk 900.00";
 
 beforeEach(function () {
-    config(['services.sms_forwarder.token' => 'phone-token']);
+    setSmsForwarderToken('phone-token');
     $this->seed(SmsPatternSeeder::class);
     Cache::forget('sms_patterns_active');
 });

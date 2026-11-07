@@ -35,10 +35,6 @@ return [
         ],
     ],
 
-    'sms_forwarder' => [
-        'token' => env('SMS_FORWARDER_TOKEN', ''),
-    ],
-
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

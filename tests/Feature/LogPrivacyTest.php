@@ -104,7 +104,7 @@ test('a database error logs its type and code, never the SQL values', function (
 
 test('an SMS log line has no sender', function () {
     $logs = capturedLogs();
-    config(['services.sms_forwarder.token' => 'token-123']);
+    setSmsForwarderToken('token-123');
 
     $this->postJson('/api/sms/receive', ['from' => '01712345678', 'message' => 'Hello'], ['Authorization' => 'Bearer token-123']);
 

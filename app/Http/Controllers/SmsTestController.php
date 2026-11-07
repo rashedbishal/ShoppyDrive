@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ReceivedSms;
 use App\Services\SmsParserService;
+use App\Support\SmsForwarderToken;
 use App\Support\SmsRegex;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
@@ -45,14 +46,12 @@ class SmsTestController extends Controller
     {
         $token = $request->bearerToken();
 
-        // FSA-19: config('services.sms_forwarder.token') can be null (e.g. a
-        // stale config:cache predating this key), and hash_equals() throws
-        // a TypeError under strict_types for a null argument instead of
-        // just failing the comparison — a missing/empty server token must
-        // fail closed into the same 401 as a wrong token, never a 500.
-        // Same cast-and-guard shape as the sms-forwarder rate limiter below
-        // (AppServiceProvider::configureRateLimiting()).
-        $expectedToken = (string) config('services.sms_forwarder.token');
+        // FSA-19: a missing/empty server token (no Setting row configured
+        // yet) must fail closed into the same 401 as a wrong token, never a
+        // 500. SmsForwarderToken::current() always returns a string, so
+        // hash_equals() never sees null. Same source as the sms-forwarder
+        // rate limiter below (AppServiceProvider::configureRateLimiting()).
+        $expectedToken = SmsForwarderToken::current();
 
         if ($expectedToken === '' || ! $token || ! hash_equals($expectedToken, $token)) {
             return response()->json(['error' => 'Unauthorized'], 401);

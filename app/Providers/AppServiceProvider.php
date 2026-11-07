@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Setting;
 use App\Services\OrderPermanentDeletionService;
 use App\Support\SecurityRateLimits;
+use App\Support\SmsForwarderToken;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
@@ -206,7 +207,7 @@ class AppServiceProvider extends ServiceProvider
         // it forwards at once (e.g. a backlog after being offline) — a
         // dropped payment SMS would stop that order verifying automatically.
         RateLimiter::for('sms-forwarder', function (Request $request) {
-            $expected = (string) config('services.sms_forwarder.token');
+            $expected = SmsForwarderToken::current();
             $given = (string) $request->bearerToken();
 
             if ($expected !== '' && $given !== '' && hash_equals($expected, $given)) {

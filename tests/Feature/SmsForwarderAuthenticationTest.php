@@ -6,17 +6,16 @@ use App\Models\ReceivedSms;
 use App\Models\SmsPattern;
 
 /*
- * FSA-19: config('services.sms_forwarder.token') can resolve to null (a
- * stale config:cache predating this key, or the key missing entirely) —
- * hash_equals() throws a TypeError for a null argument under
- * declare(strict_types=1), which previously surfaced as an uncaught 500
- * instead of the endpoint's own uniform 401. A missing/empty server token
- * must now fail closed into that same 401, never a 500, and never create a
- * ReceivedSms row.
+ * FSA-19: no Setting row configured for the forwarder token at all (a
+ * fresh install, or one never set up) previously risked hash_equals()
+ * throwing a TypeError for a null argument under declare(strict_types=1),
+ * surfacing as an uncaught 500 instead of the endpoint's own uniform 401.
+ * A missing/empty server token must fail closed into that same 401, never
+ * a 500, and never create a ReceivedSms row.
  */
 
 test('a missing server token configuration with a caller token present returns 401, never 500', function (): void {
-    config(['services.sms_forwarder.token' => null]);
+    setSmsForwarderToken(null);
 
     $this->withToken('anything')->postJson('/api/sms/receive', ['from' => '01700000000', 'content' => 'test'])
         ->assertUnauthorized()
@@ -26,7 +25,7 @@ test('a missing server token configuration with a caller token present returns 4
 });
 
 test('a missing server token configuration with no caller token returns 401, never 500', function (): void {
-    config(['services.sms_forwarder.token' => null]);
+    setSmsForwarderToken(null);
 
     $this->postJson('/api/sms/receive', ['from' => '01700000000', 'content' => 'test'])
         ->assertUnauthorized()
@@ -36,7 +35,7 @@ test('a missing server token configuration with no caller token returns 401, nev
 });
 
 test('an empty server token configuration with a caller token present returns 401', function (): void {
-    config(['services.sms_forwarder.token' => '']);
+    setSmsForwarderToken('');
 
     $this->withToken('anything')->postJson('/api/sms/receive', ['from' => '01700000000', 'content' => 'test'])
         ->assertUnauthorized()
@@ -51,7 +50,7 @@ test('the correct server token and the correct caller token still succeeds exact
         'txn_id_regex' => 'TrxID\s+([A-Z0-9]+)', 'amount_regex' => 'received Tk\s+([\d,]+(?:\.\d+)?)',
         'is_active' => true, 'sort_order' => 1,
     ]);
-    config(['services.sms_forwarder.token' => 'real-forwarder-token']);
+    setSmsForwarderToken('real-forwarder-token');
 
     $content = 'You have received Tk 100.00 from 01867603414. Ref. Payment. TrxID FSA19OK1 at 01/01/2026 10:00';
 
@@ -64,7 +63,7 @@ test('the correct server token and the correct caller token still succeeds exact
 });
 
 test('the correct server token with a wrong caller token still returns 401', function (): void {
-    config(['services.sms_forwarder.token' => 'real-forwarder-token']);
+    setSmsForwarderToken('real-forwarder-token');
 
     $this->withToken('wrong-guess')
         ->postJson('/api/sms/receive', ['from' => '01700000000', 'content' => 'test'])

@@ -300,7 +300,7 @@ test('the SMS ingestion endpoint ignores a retried delivery of the same transact
         'is_active' => true, 'sort_order' => 1,
     ]);
 
-    config(['services.sms_forwarder.token' => 'test-forwarder-token']);
+    setSmsForwarderToken('test-forwarder-token');
     $content = 'You have received Tk 100.00 from 01867603414. Ref. Payment. TrxID RETRY99 at 01/01/2026 10:00';
 
     $headers = ['Authorization' => 'Bearer test-forwarder-token'];

@@ -238,7 +238,7 @@ test('security settings view is gated by the permission system but update always
 // ── SEC-007: view-only SMS forwarder admins must not receive the full token ──
 
 test('a view-only sms forwarder admin does not receive the full token', function () {
-    config(['services.sms_forwarder.token' => 'canary-forwarder-token']);
+    setSmsForwarderToken('canary-forwarder-token');
     $admin = Admin::create([
         'name' => 'Staff', 'email' => 'sms-viewer@example.com', 'password' => bcrypt('password'),
         'permissions' => ['sms_forwarder' => ['view']],

@@ -6,10 +6,12 @@ use App\Models\CourierSubmission;
 use App\Models\CourierVerificationReadiness;
 use App\Models\Order;
 use App\Models\OrderDeliveryVerification;
+use App\Models\Setting;
 use App\Services\CourierEvidenceChain;
 use App\Services\CourierVerificationReadinessService;
 use App\Services\RefundCalculator;
 use App\Support\AdminSections;
+use App\Support\SmsForwarderToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -218,4 +220,20 @@ function wholeOrderRefundPayload(Order $order): array
     $remaining = app(RefundCalculator::class)->remainingPaisa($order->refresh());
 
     return ['refund_amount' => RefundCalculator::toTaka((int) $remaining), 'refund_method' => 'bKash'];
+}
+
+/**
+ * The SMS-forwarder token lives in Setting, not config — this sets or
+ * clears it the same way Admin > SMS Forwarder's regenerate action does.
+ * Pass null (or omit) to simulate no token configured at all.
+ */
+function setSmsForwarderToken(?string $token = null): void
+{
+    if ($token === null) {
+        Setting::where('key', SmsForwarderToken::KEY)->delete();
+
+        return;
+    }
+
+    Setting::updateOrCreate(['key' => SmsForwarderToken::KEY], ['value' => $token, 'group' => 'sms_forwarder']);
 }
