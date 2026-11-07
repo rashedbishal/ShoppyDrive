@@ -22,11 +22,11 @@ import {
     useSyncExternalStore,
 } from 'react';
 import type { FormEvent } from 'react';
-import { LazyCategoryIcon } from '@/components/shared/LazyCategoryIcon';
 import { BrandCard } from '@/components/shared/BrandCard';
 import type { BrandCardData } from '@/components/shared/BrandCard';
 import { BundleCard } from '@/components/shared/BundleCard';
 import type { ProductBundle } from '@/components/shared/BundleCard';
+import { LazyCategoryIcon } from '@/components/shared/LazyCategoryIcon';
 import {
     ProductCard,
     ProductCardSkeleton,

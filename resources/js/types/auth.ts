@@ -1,4 +1,1 @@
-export type {
-    Auth,
-    User,
-} from './index';
+export type { Auth, User } from './index';
