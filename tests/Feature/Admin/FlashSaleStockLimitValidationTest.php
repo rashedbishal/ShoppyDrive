@@ -34,7 +34,7 @@ function flashSalePayload(array $items): array
 }
 
 test('a flash sale has no quantity of its own, even if one is submitted', function () {
-    $product = Product::factory()->create(['stock_quantity' => 4]);
+    $product = Product::factory()->create(['price' => 100000, 'stock_quantity' => 4]);
 
     actingAs($this->admin, 'admin');
 
@@ -46,9 +46,9 @@ test('a flash sale has no quantity of its own, even if one is submitted', functi
 });
 
 test('a sold out product can stay in a flash sale so the sale can still be saved', function () {
-    $product = Product::factory()->create(['stock_quantity' => 0]);
-    $variantProduct = Product::factory()->create(['stock_quantity' => 0]);
-    $variant = ProductVariant::factory()->create(['product_id' => $variantProduct->id, 'stock_quantity' => 0]);
+    $product = Product::factory()->create(['price' => 100000, 'stock_quantity' => 0]);
+    $variantProduct = Product::factory()->create(['price' => 100000, 'stock_quantity' => 0]);
+    $variant = ProductVariant::factory()->create(['price' => 100000, 'product_id' => $variantProduct->id, 'stock_quantity' => 0]);
     $flashSale = FlashSale::factory()->create();
     $flashSale->items()->create(['product_id' => $product->id, 'sale_price' => 500]);
 
@@ -63,7 +63,7 @@ test('a sold out product can stay in a flash sale so the sale can still be saved
 });
 
 test('flash sale pricing runs until main stock runs out, and never past it', function () {
-    $product = Product::factory()->create(['stock_quantity' => 3]);
+    $product = Product::factory()->create(['price' => 100000, 'stock_quantity' => 3]);
     $flashSale = FlashSale::factory()->create([
         'is_active' => true,
         'starts_at' => now()->subHour(),
@@ -83,8 +83,8 @@ test('flash sale pricing runs until main stock runs out, and never past it', fun
 });
 
 test('the edit form shows the live stock of a variant product', function () {
-    $product = Product::factory()->create(['stock_quantity' => 100]);
-    ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 3]);
+    $product = Product::factory()->create(['price' => 100000, 'stock_quantity' => 100]);
+    ProductVariant::factory()->create(['price' => 100000, 'product_id' => $product->id, 'stock_quantity' => 3]);
     $flashSale = FlashSale::factory()->create();
     $flashSale->items()->create(['product_id' => $product->id, 'sale_price' => 500]);
 

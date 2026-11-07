@@ -29,8 +29,8 @@ function flashSaleVariantPayload(array $items): array
 }
 
 test('the flash sale product search endpoint returns each product\'s variants with their own stock', function () {
-    $product = Product::factory()->create(['name' => 'Classic Tee', 'stock_quantity' => 50, 'is_active' => true]);
-    $variant = ProductVariant::factory()->create([
+    $product = Product::factory()->create(['price' => 100000, 'name' => 'Classic Tee', 'stock_quantity' => 50, 'is_active' => true]);
+    $variant = ProductVariant::factory()->create(['price' => 100000,
         'product_id' => $product->id,
         'sku' => 'TEE-RED-M',
         'stock_quantity' => 12,
@@ -58,9 +58,9 @@ test('the flash sale product search endpoint requires admin authentication', fun
 });
 
 test('a variant_id that does not belong to the item\'s product_id is rejected', function () {
-    $product = Product::factory()->create();
-    $otherProduct = Product::factory()->create();
-    $foreignVariant = ProductVariant::factory()->create(['product_id' => $otherProduct->id, 'stock_quantity' => 10]);
+    $product = Product::factory()->create(['price' => 100000]);
+    $otherProduct = Product::factory()->create(['price' => 100000]);
+    $foreignVariant = ProductVariant::factory()->create(['price' => 100000, 'product_id' => $otherProduct->id, 'stock_quantity' => 10]);
 
     actingAs($this->admin, 'admin');
 
@@ -73,8 +73,8 @@ test('a variant_id that does not belong to the item\'s product_id is rejected', 
 });
 
 test('the same product/variant combination cannot be added twice in one submission', function () {
-    $product = Product::factory()->create();
-    $variant = ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 10]);
+    $product = Product::factory()->create(['price' => 100000]);
+    $variant = ProductVariant::factory()->create(['price' => 100000, 'product_id' => $product->id, 'stock_quantity' => 10]);
 
     actingAs($this->admin, 'admin');
 
