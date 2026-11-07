@@ -135,7 +135,16 @@ class AiAssistantService
                 $response = Http::withHeaders([
                     'x-goog-api-key' => $apiKey,
                     'Content-Type' => 'application/json',
-                ])->timeout(20)->post(self::ENDPOINT, $payload);
+                ])
+                    // Production logs showed a full-timeout, zero-bytes
+                    // cURL error 28 — a hung connection, not a slow one.
+                    // That's the classic symptom of a dual-stack host whose
+                    // IPv6 route to Google is silently dropped: curl tries
+                    // AAAA first and never falls back in time. Forcing IPv4
+                    // is the standard fix and is harmless if IPv6 was never
+                    // the problem.
+                    ->withOptions(['curl' => [CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4]])
+                    ->timeout(20)->post(self::ENDPOINT, $payload);
             } catch (ConnectionException $e) {
                 // Already spent the full timeout budget getting here —
                 // retrying a hung connection risks the web server's own
