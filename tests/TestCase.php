@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Fortify\Features;
 
 abstract class TestCase extends BaseTestCase
@@ -23,6 +24,16 @@ abstract class TestCase extends BaseTestCase
         }
 
         return parent::setUpTraits();
+    }
+
+    /**
+     * REL-004: no test writes to the real public disk.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake('public');
     }
 
     protected function skipUnlessFortifyHas(string $feature, ?string $message = null): void

@@ -69,7 +69,8 @@ function returnRaceConnections(): ?array
     // *name*; without this, a future remote DB_HOST in .env would be
     // trusted silently.
     $allowedHosts = ['127.0.0.1', 'localhost'];
-    $allowedPort = '3306';
+    // REL-003: another local port, such as a MariaDB copy of production, has to be named.
+    $allowedPort = (string) (env('RACE_TEST_PORT') ?: '3306');
 
     if (! in_array($params['host'], $allowedHosts, true) || (string) $params['port'] !== $allowedPort) {
         test()->markTestSkipped("Resolved MySQL host/port ({$params['host']}:{$params['port']}) is not in the explicit local-testing allowlist (host: 127.0.0.1 or localhost, port: {$allowedPort}) — refusing to connect.");

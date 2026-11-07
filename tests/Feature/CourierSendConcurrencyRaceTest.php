@@ -91,7 +91,7 @@ function courierRaceDatabase(): ?string
 
     $params = config('database.connections.mysql');
 
-    if (! in_array($params['host'], ['127.0.0.1', 'localhost'], true) || (string) $params['port'] !== '3306') {
+    if (! in_array($params['host'], ['127.0.0.1', 'localhost'], true) || (string) $params['port'] !== (string) (env('RACE_TEST_PORT') ?: '3306')) {
         test()->markTestSkipped("MySQL host/port {$params['host']}:{$params['port']} is not local — refusing to connect.");
 
         return null;
