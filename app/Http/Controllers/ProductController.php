@@ -29,7 +29,6 @@ class ProductController extends Controller
             // `image` accessor on ProductVariant lazy-loads its own media
             // relation during serialization otherwise.
             'variants.media',
-            'tags',
             // Capped at the 50 most recent for display only — the
             // aggregates below are computed independently of this limit.
             'reviews' => fn ($q) => $q->where('is_approved', true)->with('user:id,name,avatar')->latest()->limit(50),

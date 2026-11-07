@@ -504,16 +504,6 @@ export interface ReviewVote extends Timestamped {
     is_helpful: boolean;
 }
 
-export interface ProductQuestion extends Timestamped {
-    id: Id;
-    product_id: Id;
-    user_id: Id;
-    question: string;
-    answer?: string | null;
-    answered_by?: Id | null;
-    is_published: boolean;
-}
-
 export interface ShippingRate extends Timestamped {
     id: Id;
     method_id: Id;

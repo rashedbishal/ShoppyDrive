@@ -155,11 +155,6 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class);
     }
 
-    public function tags(): BelongsToMany
-    {
-        return $this->belongsToMany(Tag::class, 'product_tags');
-    }
-
     public function attributeValues(): BelongsToMany
     {
         return $this->belongsToMany(AttributeValue::class, 'product_attribute_values');

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "68e202ea8bab5828dc1fc71f297b5cc5",
+    "content-hash": "174a16629cfac4174a87eb21d25d2df0",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -5302,57 +5302,6 @@
                 }
             ],
             "time": "2026-09-28T07:16:50+00:00"
-        },
-        {
-            "name": "spatie/laravel-responsecache",
-            "version": "0.0.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/spatie/laravel-responsecache.git",
-                "reference": "12595ce63bfa42ede4d07fa05703c33553fac7e5"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-responsecache/zipball/12595ce63bfa42ede4d07fa05703c33553fac7e5",
-                "reference": "12595ce63bfa42ede4d07fa05703c33553fac7e5",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.5.0"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "4.*",
-                "scrutinizer/ocular": "~1.1"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Spatie\\Skeleton\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Freek Van der Herten",
-                    "email": "freek@spatie.be",
-                    "homepage": "https://spatie.be",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Greatly speed up a Laravel application by caching the entire response",
-            "homepage": "https://github.com/spatie/laravel-responsecache",
-            "keywords": [
-                "laravel-responsecache",
-                "spatie"
-            ],
-            "support": {
-                "issues": "https://github.com/spatie/laravel-responsecache/issues",
-                "source": "https://github.com/spatie/laravel-responsecache/tree/master"
-            },
-            "time": "2015-07-16T13:43:06+00:00"
         },
         {
             "name": "spatie/laravel-sitemap",
