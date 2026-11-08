@@ -67,8 +67,8 @@ export default function AiAssistantSettings({
                         </p>
                         <p className="mt-1 text-xs text-amber-700">
                             Groq's account no longer reports access to "
-                            {selectedModelLabel}" — the assistant will
-                            fail on every message until
+                            {selectedModelLabel}" — the assistant will fail on
+                            every message until
                             {canReveal
                                 ? ' you switch to one of the models below and save.'
                                 : ' someone with update access switches the model.'}

@@ -27,7 +27,9 @@ type ChatMessage = {
 function isPipeTableRow(line: string): boolean {
     const trimmed = line.trim();
 
-    return trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 1;
+    return (
+        trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 1
+    );
 }
 
 function parsePipeTableRow(line: string): string[] {
