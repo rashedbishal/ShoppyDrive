@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
  * verification pick a named limiter (config/fortify.php `limiters`). This
  * runs on every Fortify route via `fortify.middleware` and applies the
  * Admin > Security limiter to the bot targets that have none: sign-up,
- * password-reset emails, confirming your password, and profile updates.
+ * password-reset emails, and confirming your password.
  * Every other Fortify route passes straight through. Keyed on route
  * names, so it survives route:cache.
  */
@@ -23,7 +23,6 @@ class ThrottleFortifyActions
         'register.store' => 'register',
         'password.email' => 'password-reset',
         'password.confirm.store' => 'password-check',
-        'user-profile-information.update' => 'account-action',
     ];
 
     public function __construct(private readonly ThrottleRequests $throttle) {}

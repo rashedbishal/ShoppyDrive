@@ -18,7 +18,6 @@ use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -186,7 +185,7 @@ test('verifying an email address sends WelcomeMail exactly once', function () {
     Mail::fake();
     $user = User::factory()->unverified()->create([
         'email' => 'newcustomer@example.com',
-        'email_verification_code' => Hash::make('123456'),
+        'email_verification_code' => User::hashEmailVerificationCode('123456', 'newcustomer@example.com'),
         'email_verification_code_expires_at' => now()->addMinutes(15),
     ]);
 

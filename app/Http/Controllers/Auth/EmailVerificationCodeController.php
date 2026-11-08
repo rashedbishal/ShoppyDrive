@@ -10,7 +10,6 @@ use App\Services\LoyaltyPointsService;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 
 class EmailVerificationCodeController extends Controller
@@ -27,21 +26,16 @@ class EmailVerificationCodeController extends Controller
             'code' => ['required', 'string'],
         ]);
 
-        $expired = ! $user->email_verification_code_expires_at
-            || $user->email_verification_code_expires_at->isPast();
+        if (! $user->consumeEmailVerificationCode($request->string('code')->toString())) {
+            // A duplicate submit lost the race to the one that verified.
+            if ($user->hasVerifiedEmail()) {
+                return redirect()->intended(config('fortify.home'));
+            }
 
-        if ($expired || ! $user->email_verification_code || ! Hash::check($request->string('code'), $user->email_verification_code)) {
             return redirect()->route('verification.notice')->withErrors([
                 'code' => 'That code is incorrect or has expired. Please request a new one.',
             ]);
         }
-
-        $user->markEmailAsVerified();
-        $user->forceFill([
-            'email_verification_code' => null,
-            'email_verification_code_expires_at' => null,
-            'email_verification_code_sent_at' => null,
-        ])->save();
 
         event(new Verified($user));
 

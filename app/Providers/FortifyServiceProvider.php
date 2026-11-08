@@ -4,7 +4,6 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
-use App\Actions\Fortify\UpdateUserProfileInformation;
 use App\Http\Responses\GenericPasswordResetLinkResponse;
 use App\Http\Responses\LoginResponse;
 use App\Http\Responses\LogoutResponse;
@@ -69,7 +68,6 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
-        Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
 
         Fortify::authenticateUsing(function (Request $request) {
             $user = User::where('email', $request->email)->first();

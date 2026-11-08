@@ -104,7 +104,7 @@ class User extends Authenticatable implements MustVerifyEmail
         $code = (string) random_int(100000, 999999);
 
         $this->forceFill([
-            'email_verification_code' => Hash::make($code),
+            'email_verification_code' => self::hashEmailVerificationCode($code, $this->email),
             'email_verification_code_expires_at' => now()->addMinutes(15),
             'email_verification_code_sent_at' => now(),
         ])->save();
@@ -116,6 +116,87 @@ class User extends Authenticatable implements MustVerifyEmail
         } catch (\Throwable $e) {
             report($e);
         }
+    }
+
+    /**
+     * SEC-003: hashes a code together with the address it is mailed to, so
+     * it can only ever prove that address. Every way an email can change
+     * is covered without each one having to remember to clear the code.
+     */
+    public static function hashEmailVerificationCode(string $code, string $email): string
+    {
+        return Hash::make(self::emailVerificationCodeSecret($code, $email));
+    }
+
+    /**
+     * Verifies this account's current address if the code matches. The row
+     * is re-read under a lock so a concurrent email change can't slip
+     * between the check and the write. Returns true only when this call
+     * did the verifying.
+     */
+    public function consumeEmailVerificationCode(string $code): bool
+    {
+        $consumed = DB::transaction(function () use ($code): bool {
+            $locked = static::whereKey($this->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->hasVerifiedEmail() || ! $locked->hasValidEmailVerificationCode($code)) {
+                return false;
+            }
+
+            $locked->forceFill([
+                'email_verified_at' => now(),
+                'email_verification_code' => null,
+                'email_verification_code_expires_at' => null,
+                'email_verification_code_sent_at' => null,
+            ])->save();
+
+            return true;
+        });
+
+        $this->refresh();
+
+        return $consumed;
+    }
+
+    /**
+     * The only way a customer's email changes. The new address is unproven,
+     * so verification and any outstanding code are cleared. Locks the row
+     * so a verification landing mid-change can't carry over to the new
+     * address, which an in-memory "already null" value would miss.
+     */
+    public function changeEmailTo(string $newEmail): void
+    {
+        DB::transaction(function () use ($newEmail): void {
+            static::whereKey($this->id)->lockForUpdate()->firstOrFail()->forceFill([
+                'email' => $newEmail,
+                'email_verified_at' => null,
+                'email_verification_code' => null,
+                'email_verification_code_expires_at' => null,
+                'email_verification_code_sent_at' => null,
+            ])->save();
+        });
+
+        $this->refresh();
+    }
+
+    private function hasValidEmailVerificationCode(string $code): bool
+    {
+        if (! $this->email_verification_code
+            || ! $this->email_verification_code_expires_at
+            || $this->email_verification_code_expires_at->isPast()) {
+            return false;
+        }
+
+        return Hash::check(self::emailVerificationCodeSecret($code, $this->email), $this->email_verification_code);
+    }
+
+    /**
+     * Digested first because bcrypt ignores everything past 72 bytes, which
+     * would otherwise drop the end of a long address.
+     */
+    private static function emailVerificationCodeSecret(string $code, string $email): string
+    {
+        return hash('sha256', $email.'|'.$code);
     }
 
     /**

@@ -15,7 +15,6 @@ use App\Models\Review;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\LoyaltyPointsService;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 
 use function Pest\Laravel\artisan;
@@ -89,7 +88,7 @@ test('the registration bonus is granted when the new account verifies its email,
     expect($user->points_balance)->toBe(0);
 
     $user->forceFill([
-        'email_verification_code' => Hash::make('123456'),
+        'email_verification_code' => User::hashEmailVerificationCode('123456', $user->email),
         'email_verification_code_expires_at' => now()->addMinutes(10),
     ])->save();
     $this->actingAs($user)->post(route('verification.verify-code'), ['code' => '123456']);

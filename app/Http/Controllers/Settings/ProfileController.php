@@ -44,13 +44,14 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $validated = $request->validated();
+        $newEmail = $validated['email'];
+        unset($validated['email']);
+
+        $request->user()->fill($validated)->save();
 
         // SEC-009: a verified account's email changes only after the code
         // sent to the current address is entered (confirmEmailChange()).
-        if ($this->emailChange->requiresCode($request->user(), $validated['email'])) {
-            $newEmail = $validated['email'];
-            unset($validated['email']);
-            $request->user()->fill($validated)->save();
+        if ($this->emailChange->requiresCode($request->user(), $newEmail)) {
             $this->emailChange->start($request, $request->user(), $newEmail);
 
             Inertia::flash('toast', ['type' => 'success', 'message' => __('We sent a 6-digit code to :email. Enter it below to confirm your new email.', ['email' => $request->user()->email])]);
@@ -58,25 +59,9 @@ class ProfileController extends Controller
             return to_route('profile.edit');
         }
 
-        $request->user()->fill($validated);
-
-        if ($request->user()->isDirty('email')) {
-            // SEC-003: a code already sent to the old address must not stay
-            // valid for the new one — EmailVerificationCodeController only
-            // ever checks the code against the user row, with nothing
-            // tying it to which address it was actually sent to. Without
-            // this, entering that stale code here would mark the new
-            // (unproven) address verified, and a later "Continue with
-            // Google" for that address's real owner would land them in
-            // this account instead, where the attacker still holds the
-            // password.
-            $request->user()->email_verified_at = null;
-            $request->user()->email_verification_code = null;
-            $request->user()->email_verification_code_expires_at = null;
-            $request->user()->email_verification_code_sent_at = null;
+        if ($newEmail !== $request->user()->email) {
+            $request->user()->changeEmailTo($newEmail);
         }
-
-        $request->user()->save();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
 
@@ -86,7 +71,7 @@ class ProfileController extends Controller
     /**
      * SEC-009: applies a pending email change once the code sent to the
      * current address is entered. The new address must then be verified,
-     * exactly as after any email change (SEC-003 reset below).
+     * exactly as after any email change (User::changeEmailTo()).
      */
     public function confirmEmailChange(Request $request): RedirectResponse
     {
@@ -105,13 +90,7 @@ class ProfileController extends Controller
             return back()->withErrors(['code' => __('That email address is already used by another account.')]);
         }
 
-        $user->forceFill([
-            'email' => $result['email'],
-            'email_verified_at' => null,
-            'email_verification_code' => null,
-            'email_verification_code_expires_at' => null,
-            'email_verification_code_sent_at' => null,
-        ])->save();
+        $user->changeEmailTo($result['email']);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Your email was changed. Please verify the new address.')]);
 

@@ -3,7 +3,6 @@
 use App\Mail\VerifyEmailCodeMail;
 use App\Models\Product;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 
 test('registration succeeds even if the verification email fails to send', function () {
@@ -49,7 +48,7 @@ test('registering sends a 6-digit verification code instead of a link', function
 test('the correct code verifies the user', function () {
     $user = User::factory()->unverified()->create();
     $user->forceFill([
-        'email_verification_code' => Hash::make('123456'),
+        'email_verification_code' => User::hashEmailVerificationCode('123456', $user->email),
         'email_verification_code_expires_at' => now()->addMinutes(15),
     ])->save();
 
@@ -65,7 +64,7 @@ test('the correct code verifies the user', function () {
 test('an incorrect code is rejected and leaves the user unverified', function () {
     $user = User::factory()->unverified()->create();
     $user->forceFill([
-        'email_verification_code' => Hash::make('123456'),
+        'email_verification_code' => User::hashEmailVerificationCode('123456', $user->email),
         'email_verification_code_expires_at' => now()->addMinutes(15),
     ])->save();
 
@@ -80,7 +79,7 @@ test('an incorrect code is rejected and leaves the user unverified', function ()
 test('an expired code is rejected', function () {
     $user = User::factory()->unverified()->create();
     $user->forceFill([
-        'email_verification_code' => Hash::make('123456'),
+        'email_verification_code' => User::hashEmailVerificationCode('123456', $user->email),
         'email_verification_code_expires_at' => now()->subMinute(),
     ])->save();
 
@@ -118,7 +117,7 @@ test('a verified customer can reach checkout and account pages', function () {
 test('verifying the code is rate limited after too many attempts in a minute', function () {
     $user = User::factory()->unverified()->create();
     $user->forceFill([
-        'email_verification_code' => Hash::make('123456'),
+        'email_verification_code' => User::hashEmailVerificationCode('123456', $user->email),
         'email_verification_code_expires_at' => now()->addMinutes(15),
     ])->save();
 
