@@ -1,4 +1,5 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Lock } from 'lucide-react';
 import {
     SettingsField,
     settingsInputClass,
@@ -15,6 +16,10 @@ type Props = {
 
 export default function SettingsEdit({ settings }: Props) {
     const socialLinks = (settings.social_links ?? {}) as Record<string, string>;
+    // Not in the shared `Auth.admin` type (it's typed for the customer
+    // User shape) — same cast admins/index.tsx already uses to read this.
+    const { props: pageProps } = usePage<any>();
+    const isMotherAdmin = Boolean(pageProps.auth?.admin?.is_mother);
 
     const { data, setData, post, processing } = useForm({
         _method: 'PUT',
@@ -31,7 +36,6 @@ export default function SettingsEdit({ settings }: Props) {
             tiktok: socialLinks.tiktok ?? '',
         },
         google_analytics_id: (settings.google_analytics_id as string) ?? '',
-        meta_pixel_code: (settings.meta_pixel_code as string) ?? '',
         whatsapp_number: (settings.whatsapp_number as string) ?? '',
         messenger_link: (settings.messenger_link as string) ?? '',
         bkash_number: (settings.bkash_number as string) ?? '',
@@ -41,6 +45,20 @@ export default function SettingsEdit({ settings }: Props) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         post(route('admin.settings.update'), { forceFormData: true });
+    };
+
+    // Separate form, separate mother-only endpoint: the pasted code runs in
+    // every visitor's browser, a bigger capability than anything else on
+    // this page, so it can't be bundled into the save above (see
+    // SettingController::updateMetaPixel()).
+    const metaPixelForm = useForm({
+        _method: 'PUT',
+        meta_pixel_code: (settings.meta_pixel_code as string) ?? '',
+    });
+
+    const handleMetaPixelSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        metaPixelForm.post(route('admin.settings.meta-pixel.update'));
     };
 
     return (
@@ -226,23 +244,50 @@ export default function SettingsEdit({ settings }: Props) {
                                     />
                                 </SettingsField>
                             </div>
-                            <SettingsField
-                                label="Meta Pixel Code"
-                                hint="Paste the whole base code Facebook gives you (Events Manager → Settings → Set up manually), including the <script> and <noscript> tags. It's rendered on every storefront page exactly as pasted, so re-paste it here whenever Meta changes it."
+                            <form
+                                onSubmit={handleMetaPixelSubmit}
+                                className="space-y-3"
                             >
-                                <Textarea
-                                    textareaClassName={`${settingsInputClass} font-mono text-xs`}
-                                    rows={8}
-                                    value={data.meta_pixel_code}
-                                    onChange={(e) =>
-                                        setData(
-                                            'meta_pixel_code',
-                                            e.target.value,
-                                        )
-                                    }
-                                    placeholder="<!-- Meta Pixel Code -->&#10;<script>...</script>&#10;<noscript>...</noscript>&#10;<!-- End Meta Pixel Code -->"
-                                />
-                            </SettingsField>
+                                <SettingsField
+                                    label="Meta Pixel Code"
+                                    hint="Paste the whole base code Facebook gives you (Events Manager → Settings → Set up manually), including the <script> and <noscript> tags. It's rendered on every storefront page exactly as pasted, so re-paste it here whenever Meta changes it."
+                                >
+                                    <Textarea
+                                        textareaClassName={`${settingsInputClass} font-mono text-xs`}
+                                        rows={8}
+                                        disabled={!isMotherAdmin}
+                                        value={
+                                            metaPixelForm.data.meta_pixel_code
+                                        }
+                                        onChange={(e) =>
+                                            metaPixelForm.setData(
+                                                'meta_pixel_code',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="<!-- Meta Pixel Code -->&#10;<script>...</script>&#10;<noscript>...</noscript>&#10;<!-- End Meta Pixel Code -->"
+                                    />
+                                </SettingsField>
+
+                                {!isMotherAdmin && (
+                                    <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                        <Lock className="mt-0.5 size-4 shrink-0" />
+                                        Only the main (mother) admin can change
+                                        the Meta Pixel code. You can view it
+                                        here.
+                                    </div>
+                                )}
+
+                                {isMotherAdmin && (
+                                    <Button
+                                        type="submit"
+                                        size="sm"
+                                        disabled={metaPixelForm.processing}
+                                    >
+                                        Save Meta Pixel Code
+                                    </Button>
+                                )}
+                            </form>
                         </CardContent>
                     </Card>
 

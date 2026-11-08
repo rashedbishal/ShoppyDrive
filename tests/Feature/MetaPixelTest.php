@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
+use function Pest\Laravel\actingAs;
+
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
@@ -51,4 +53,34 @@ test('the Meta Pixel never renders in the admin back office', function () {
     $html = $this->get(route('admin.login'))->assertOk()->getContent();
 
     expect($html)->not->toContain('connect.facebook.net');
+});
+
+test('an ordinary admin, even with full settings permission, cannot change the Meta Pixel code', function () {
+    actingAs(createAdmin(), 'admin');
+
+    $this->put(route('admin.settings.meta-pixel.update'), ['meta_pixel_code' => META_PIXEL_SNIPPET])
+        ->assertSessionHas('error');
+
+    expect(Setting::where('key', 'meta_pixel_code')->first())->toBeNull();
+});
+
+test('the mother admin can change the Meta Pixel code', function () {
+    $mother = createAdmin();
+    $mother->forceFill(['is_mother' => true])->save();
+    actingAs($mother, 'admin');
+
+    $this->put(route('admin.settings.meta-pixel.update'), ['meta_pixel_code' => META_PIXEL_SNIPPET])
+        ->assertSessionHas('success');
+
+    expect(Setting::where('key', 'meta_pixel_code')->first()->value)->toBe(META_PIXEL_SNIPPET);
+});
+
+test('an ordinary admin with settings access can still save the rest of General Settings', function () {
+    actingAs(createAdmin(), 'admin');
+
+    $this->put(route('admin.settings.update'), ['site_name' => 'New Name'])
+        ->assertSessionHasNoErrors();
+
+    expect(Setting::where('key', 'site_name')->first()->value)->toBe('New Name');
+    expect(Setting::where('key', 'meta_pixel_code')->first())->toBeNull();
 });

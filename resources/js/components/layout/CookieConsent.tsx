@@ -51,10 +51,9 @@ export default function CookieConsent(): React.JSX.Element {
                             Cookies
                         </div>
                         <p className="mb-3 text-xs leading-5 text-[var(--color-text-secondary)]">
-                            We use cookies to keep your cart and login
-                            working, count visits, and note how you found us.
-                            We also use the Meta Pixel to measure and improve
-                            our ads.
+                            We use cookies to keep your cart and login working,
+                            count visits, and note how you found us. We also use
+                            the Meta Pixel to measure and improve our ads.
                         </p>
                         <div className="flex items-center gap-3">
                             <Button

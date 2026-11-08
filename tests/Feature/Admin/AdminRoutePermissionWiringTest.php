@@ -53,6 +53,14 @@ const LOW05_EXEMPT_ADMIN_ROUTES = [
     // gates this one; the controller itself checks is_mother.
     'admin.settings.security.update',
 
+    // Hardcoded mother-only *inside* SettingController::updateMetaPixel()
+    // — same pattern as settings.security.update above; confirmed no route
+    // middleware of any kind gates this one. The pasted code runs in every
+    // visitor's browser, a bigger capability than anything else
+    // settings:update grants, so it's deliberately not delegable via the
+    // Permissions matrix at all.
+    'admin.settings.meta-pixel.update',
+
     // Shared rich-text-editor image upload helper used by several sections
     // (Blog, About Page, Contact Page, Landing Pages, ...) — not worth
     // gating to any single one of them. Confirmed no middleware call.
