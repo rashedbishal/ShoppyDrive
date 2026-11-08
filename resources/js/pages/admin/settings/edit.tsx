@@ -244,53 +244,6 @@ export default function SettingsEdit({ settings }: Props) {
                                     />
                                 </SettingsField>
                             </div>
-                            <form
-                                onSubmit={handleMetaPixelSubmit}
-                                className="space-y-3"
-                            >
-                                <SettingsField
-                                    label="Meta Pixel Code"
-                                    hint="Paste the whole base code Facebook gives you (Events Manager → Settings → Set up manually), including the <script> and <noscript> tags. It's rendered on every storefront page exactly as pasted, so re-paste it here whenever Meta changes it."
-                                >
-                                    <Textarea
-                                        textareaClassName={`${settingsInputClass} font-mono text-xs`}
-                                        rows={8}
-                                        disabled={!isMotherAdmin}
-                                        error={
-                                            metaPixelForm.errors.meta_pixel_code
-                                        }
-                                        value={
-                                            metaPixelForm.data.meta_pixel_code
-                                        }
-                                        onChange={(e) =>
-                                            metaPixelForm.setData(
-                                                'meta_pixel_code',
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="<!-- Meta Pixel Code -->&#10;<script>...</script>&#10;<noscript>...</noscript>&#10;<!-- End Meta Pixel Code -->"
-                                    />
-                                </SettingsField>
-
-                                {!isMotherAdmin && (
-                                    <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                                        <Lock className="mt-0.5 size-4 shrink-0" />
-                                        Only the main (mother) admin can change
-                                        the Meta Pixel code. You can view it
-                                        here.
-                                    </div>
-                                )}
-
-                                {isMotherAdmin && (
-                                    <Button
-                                        type="submit"
-                                        size="sm"
-                                        disabled={metaPixelForm.processing}
-                                    >
-                                        Save Meta Pixel Code
-                                    </Button>
-                                )}
-                            </form>
                         </CardContent>
                     </Card>
 
@@ -392,6 +345,59 @@ export default function SettingsEdit({ settings }: Props) {
                     >
                         {processing ? 'Saving…' : 'Save Settings'}
                     </Button>
+                </form>
+
+                {/* Its own <form>, deliberately not nested inside the one
+                    above — browsers don't support nested forms, which is
+                    why this used to silently submit the General Settings
+                    form instead of saving the pixel code at all. */}
+                <form onSubmit={handleMetaPixelSubmit} className="space-y-3">
+                    <Card className="shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
+                                Meta Pixel
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3 pt-4">
+                            <SettingsField
+                                label="Meta Pixel Code"
+                                hint="Paste the whole base code Facebook gives you (Events Manager → Settings → Set up manually), including the <script> and <noscript> tags. It's rendered on every storefront page exactly as pasted, so re-paste it here whenever Meta changes it."
+                            >
+                                <Textarea
+                                    textareaClassName={`${settingsInputClass} font-mono text-xs`}
+                                    rows={8}
+                                    disabled={!isMotherAdmin}
+                                    error={metaPixelForm.errors.meta_pixel_code}
+                                    value={metaPixelForm.data.meta_pixel_code}
+                                    onChange={(e) =>
+                                        metaPixelForm.setData(
+                                            'meta_pixel_code',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="<!-- Meta Pixel Code -->&#10;<script>...</script>&#10;<noscript>...</noscript>&#10;<!-- End Meta Pixel Code -->"
+                                />
+                            </SettingsField>
+
+                            {!isMotherAdmin && (
+                                <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                    <Lock className="mt-0.5 size-4 shrink-0" />
+                                    Only the main (mother) admin can change the
+                                    Meta Pixel code. You can view it here.
+                                </div>
+                            )}
+
+                            {isMotherAdmin && (
+                                <Button
+                                    type="submit"
+                                    size="sm"
+                                    disabled={metaPixelForm.processing}
+                                >
+                                    Save Meta Pixel Code
+                                </Button>
+                            )}
+                        </CardContent>
+                    </Card>
                 </form>
             </div>
         </>
