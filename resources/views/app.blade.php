@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
-        <script>
+        <script nonce="{{ Vite::cspNonce() }}">
             (function() {
                 const appearance = '{{ $appearance ?? "system" }}';
 
@@ -20,7 +20,7 @@
         </script>
 
         {{-- Inline script to apply the visitor's saved storefront theme before paint, so there's no flash of the default theme. Purely client-side — no backend involved. --}}
-        <script>
+        <script nonce="{{ Vite::cspNonce() }}">
             (function() {
                 try {
                     var theme = localStorage.getItem('site_theme');
@@ -49,7 +49,7 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
 
-        @routes(request()->is('admin', 'admin/*') || auth('admin')->check() ? 'admin' : null)
+        @routes(request()->is('admin', 'admin/*') || auth('admin')->check() ? 'admin' : null, Vite::cspNonce())
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         <x-inertia::head>
@@ -78,7 +78,7 @@
         exactly as given. Storefront only — not the admin back office. --}}
         @php($customHeaderCode = \App\Support\LayoutCache::settings()['custom_header_code'] ?? null)
         @if($customHeaderCode && !request()->is('admin', 'admin/*'))
-            {!! $customHeaderCode !!}
+            {!! \App\Support\CspNonce::addToScripts($customHeaderCode) !!}
         @endif
     </head>
     <body class="antialiased">
@@ -88,7 +88,7 @@
         </body> — the standard "footer scripts" placement. --}}
         @php($customFooterCode = \App\Support\LayoutCache::settings()['custom_footer_code'] ?? null)
         @if($customFooterCode && !request()->is('admin', 'admin/*'))
-            {!! $customFooterCode !!}
+            {!! \App\Support\CspNonce::addToScripts($customFooterCode) !!}
         @endif
     </body>
 </html>

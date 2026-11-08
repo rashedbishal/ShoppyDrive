@@ -11,9 +11,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
- * SEC-013: receives browser reports for the report-only Content Security
- * Policy, so a real policy can later be written from what the site actually
- * loads. Each distinct violation is logged once a day, so one noisy page
+ * SEC-013: receives browser reports of what the Content Security Policy
+ * blocked, so a legitimate script it stops can be noticed. Each distinct violation is logged once a day, so one noisy page
  * can't fill the log. Query strings are dropped: they can carry tokens.
  */
 class CspReportController extends Controller
@@ -29,7 +28,7 @@ class CspReportController extends Controller
             $blocked = Str::limit((string) strtok((string) ($report['blocked-uri'] ?? ''), '?#'), 200);
 
             if (Cache::add('csp-report:'.sha1($directive.'|'.$blocked), 1, now()->addHours(self::DEDUPE_HOURS))) {
-                Log::warning('CSP violation (report-only)', [
+                Log::warning('CSP violation', [
                     'directive' => $directive,
                     'blocked' => $blocked,
                     'page' => Str::limit((string) strtok((string) ($report['document-uri'] ?? ''), '?#'), 200),

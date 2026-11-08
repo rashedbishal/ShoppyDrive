@@ -35,7 +35,8 @@ test('custom header and footer code render on the storefront, never on admin', f
     Setting::create(['key' => 'custom_footer_code', 'value' => GTM_FOOTER_SNIPPET, 'group' => 'marketing']);
 
     $html = $this->get(route('home'))->assertOk()->getContent();
-    expect($html)->toContain(GTM_HEADER_SNIPPET)->toContain(GTM_FOOTER_SNIPPET);
+    $htmlWithoutNonces = preg_replace('/ nonce="[^"]+"/', '', $html);
+    expect($htmlWithoutNonces)->toContain(GTM_HEADER_SNIPPET)->toContain(GTM_FOOTER_SNIPPET);
 
     $adminHtml = $this->get(route('admin.login'))->assertOk()->getContent();
     expect($adminHtml)->not->toContain('googletagmanager.com');
