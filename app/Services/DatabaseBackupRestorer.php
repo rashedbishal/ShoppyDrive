@@ -190,6 +190,8 @@ class DatabaseBackupRestorer
 
             $rowsRead++;
 
+            $row = DatabaseBackupFormat::withoutRetiredColumns($row);
+
             if (! $this->acceptsColumns($row, $lineNumber)) {
                 continue;
             }

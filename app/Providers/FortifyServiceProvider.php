@@ -197,12 +197,8 @@ class FortifyServiceProvider extends ServiceProvider
     }
 
     /**
-     * Product decision (SEC-014): two-factor authentication doesn't exist in
-     * this app, for customers or admins. Password credentials alone log in;
-     * only email verification by OTP applies, to manual registration. This
-     * is the standard Fortify login pipeline without
-     * `RedirectsIfTwoFactorAuthenticatable`, so an account with an old 2FA
-     * secret on it is never challenged.
+     * Password credentials alone log in, for customers and admins. The only
+     * email code is the OTP for manual registration.
      */
     private function configureAuthenticationPipeline(): void
     {

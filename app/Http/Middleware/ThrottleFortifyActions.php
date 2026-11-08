@@ -8,7 +8,7 @@ use Illuminate\Routing\Middleware\ThrottleRequests;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Fortify registers its own routes, and only lets login/two-factor/
+ * Fortify registers its own routes, and only lets login and
  * verification pick a named limiter (config/fortify.php `limiters`). This
  * runs on every Fortify route via `fortify.middleware` and applies the
  * Admin > Security limiter to the bot targets that have none: sign-up,

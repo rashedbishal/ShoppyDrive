@@ -3,6 +3,18 @@
 use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
+use Inertia\Testing\AssertableInertia as Assert;
+
+test('the signed-in user shared with every page keeps expected fields and hides secrets', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->get(route('home'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('auth.user.id', $user->id)
+            ->where('auth.user.email', $user->email)
+            ->missing('auth.user.password')
+            ->missing('auth.user.remember_token'));
+});
 
 test('login screen can be rendered', function () {
     $response = $this->get(route('login'));
@@ -20,31 +32,6 @@ test('users can authenticate using the login screen', function () {
 
     $this->assertAuthenticated();
     $response->assertRedirect(config('fortify.home'));
-});
-
-/*
- * Product decision: password credentials alone are always sufficient to log
- * in, even for an account with 2FA already configured — see
- * FortifyServiceProvider::configureAuthenticationPipeline(). This replaces
- * the stock Fortify-scaffolded test of the opposite behavior.
- */
-test('users with two factor enabled can still log in using only their password, with no challenge', function () {
-    $user = User::factory()->create();
-
-    $user->forceFill([
-        'two_factor_secret' => encrypt('test-secret'),
-        'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
-        'two_factor_confirmed_at' => now(),
-    ])->save();
-
-    $response = $this->post(route('login'), [
-        'email' => $user->email,
-        'password' => 'password',
-    ]);
-
-    $this->assertAuthenticated();
-    $response->assertRedirect(config('fortify.home'));
-    $response->assertSessionMissing('login.id');
 });
 
 test('users can not authenticate with invalid password', function () {

@@ -276,6 +276,24 @@ test('a file with any problem is refused whole', function (Closure $makeContents
     'wrong format version' => [fn () => str_replace(DatabaseBackupFormat::VERSION_PREFIX.DatabaseBackupFormat::VERSION, DatabaseBackupFormat::VERSION_PREFIX.'99', backupWith([])), 'cannot read'],
 ]);
 
+test('a backup made while the users table still had its retired columns restores without them', function () {
+    $user = User::factory()->create();
+    $row = (array) DB::table('users')->where('id', $user->id)->first();
+    DB::table('users')->where('id', $user->id)->delete();
+
+    foreach (DatabaseBackupFormat::RETIRED_COLUMNS['users'] as $retiredColumn) {
+        $row[$retiredColumn] = 'old value';
+    }
+
+    inspectBackup(backupWith([DatabaseBackupFormat::encodeRow('users', array_keys($row), array_values($row))]));
+
+    expect(pendingReport()['errors'] ?? [])->toBeEmpty();
+
+    $this->post(route('admin.database-backup.apply'), ['password' => 'password']);
+
+    expect(User::whereKey($user->id)->exists())->toBeTrue();
+});
+
 test('a row pointing at a record that does not exist is refused', function () {
     $user = User::factory()->create();
     $line = DatabaseBackupFormat::encodeRow('orders', ['id', 'user_id'], [1, 999999]);

@@ -48,6 +48,17 @@ class DatabaseBackupFormat
      *
      * @var list<string>
      */
+    /**
+     * Columns the app no longer has but older backups still contain. They
+     * are dropped on restore so those backups stay usable. Any other unknown
+     * column still rejects the file.
+     *
+     * @var array<string, list<string>>
+     */
+    public const array RETIRED_COLUMNS = [
+        'users' => ['two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at'],
+    ];
+
     public const array APPEND_ONLY_TABLES = ['courier_delivery_evidence', 'order_deletion_audits'];
 
     /**
@@ -73,6 +84,24 @@ class DatabaseBackupFormat
         $columns = array_filter(Schema::getColumns($table), fn (array $column): bool => empty($column['generation']));
 
         return array_values(array_column($columns, 'name'));
+    }
+
+    /**
+     * @param  array{table: string, columns: list<string>, values: list<string|null>}  $row
+     * @return array{table: string, columns: list<string>, values: list<string|null>}
+     */
+    public static function withoutRetiredColumns(array $row): array
+    {
+        $retired = self::RETIRED_COLUMNS[$row['table']] ?? [];
+
+        foreach (array_keys(array_intersect($row['columns'], $retired)) as $position) {
+            unset($row['columns'][$position], $row['values'][$position]);
+        }
+
+        $row['columns'] = array_values($row['columns']);
+        $row['values'] = array_values($row['values']);
+
+        return $row;
     }
 
     public static function latestMigration(): ?string

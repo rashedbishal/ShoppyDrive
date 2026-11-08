@@ -22,7 +22,7 @@ class RegisterResponse implements RegisterResponseContract
 
         if ($user instanceof MustVerifyEmail && ! $user->hasVerifiedEmail()) {
             return $request->wantsJson()
-                ? new JsonResponse(['two_factor' => false, 'email_verified' => false], 201)
+                ? new JsonResponse(['email_verified' => false], 201)
                 : redirect()->route('verification.notice');
         }
 

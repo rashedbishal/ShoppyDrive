@@ -20,12 +20,12 @@ class LoginResponse implements LoginResponseContract
 
         if ($user instanceof MustVerifyEmail && ! $user->hasVerifiedEmail()) {
             return $request->wantsJson()
-                ? response()->json(['two_factor' => false, 'email_verified' => false])
+                ? response()->json(['email_verified' => false])
                 : redirect()->route('verification.notice');
         }
 
         return $request->wantsJson()
-            ? response()->json(['two_factor' => false])
+            ? response()->json(['email_verified' => true])
             : redirect()->intended(Fortify::redirects('login'));
     }
 }

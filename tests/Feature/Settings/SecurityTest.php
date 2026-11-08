@@ -4,17 +4,14 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
 
-test('security page is displayed with no two-factor options', function () {
-    // SEC-014: two-factor authentication doesn't exist in this app.
+test('security page is displayed', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('security.edit'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/security')
-            ->missing('canManageTwoFactor')
-            ->missing('twoFactorEnabled'),
+            ->component('settings/security'),
         );
 });
 

@@ -20,12 +20,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     // role is deliberately excluded — no legitimate runtime path needs to
     // mass-assign it (new users get the column's own 'customer' default; see
@@ -45,17 +44,10 @@ class User extends Authenticatable implements MustVerifyEmail
         'abandoned_cart_reminders_enabled',
     ];
 
-    // FSA-17: both columns hold Laravel-encrypted ciphertext written by
-    // Laravel\Fortify\TwoFactorAuthenticatable (the trait itself never adds
-    // them to $hidden — that's the consuming app's responsibility). $hidden
-    // only affects toArray()/toJson() serialization, never direct property
-    // access, so this doesn't touch anything Fortify's own trait methods do.
     protected $hidden = [
         'password',
         'remember_token',
         'email_verification_code',
-        'two_factor_secret',
-        'two_factor_recovery_codes',
     ];
 
     /**
