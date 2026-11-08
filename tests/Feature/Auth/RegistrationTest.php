@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Fortify\CreateNewUser;
 use App\Models\SocialAccount;
 use App\Models\User;
 use Laravel\Fortify\Features;
@@ -28,7 +29,7 @@ test('new users can register', function () {
     expect(User::where('email', 'test@example.com')->first()->has_password)->toBeTrue();
 });
 
-test('registering with an email already used by a social-only account shows a provider-specific message', function () {
+test('SEC-015: registering with an email used by a social-only account does not name its provider', function () {
     $existing = User::factory()->withoutPassword()->create(['email' => 'social@example.com']);
     SocialAccount::create([
         'user_id' => $existing->id,
@@ -44,12 +45,12 @@ test('registering with an email already used by a social-only account shows a pr
     ]);
 
     $response->assertSessionHasErrors('email');
-    expect(session('errors')->first('email'))->toContain('Google');
+    expect(session('errors')->first('email'))->toBe(CreateNewUser::EMAIL_UNAVAILABLE_MESSAGE);
     $this->assertGuest();
     expect(User::count())->toBe(1);
 });
 
-test('registering with an email already used by a regular account shows the generic message', function () {
+test('SEC-015: registering with an email used by a regular account shows the same message', function () {
     User::factory()->create(['email' => 'taken@example.com']);
 
     $response = $this->post(route('register.store'), [
@@ -60,5 +61,5 @@ test('registering with an email already used by a regular account shows the gene
     ]);
 
     $response->assertSessionHasErrors('email');
-    expect(session('errors')->first('email'))->toBe('The email has already been taken.');
+    expect(session('errors')->first('email'))->toBe(CreateNewUser::EMAIL_UNAVAILABLE_MESSAGE);
 });

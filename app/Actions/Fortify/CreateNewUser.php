@@ -14,6 +14,8 @@ class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules, ProfileValidationRules;
 
+    public const string EMAIL_UNAVAILABLE_MESSAGE = "We couldn't create an account with this email. Try signing in or resetting your password.";
+
     public function __construct(
         private readonly ReferralService $referrals,
     ) {}
@@ -54,34 +56,13 @@ class CreateNewUser implements CreatesNewUsers
     }
 
     /**
-     * Report a message tailored to how the colliding email was registered,
-     * instead of a generic "already taken" error, so customers who signed
-     * up via Google/Facebook know how to proceed.
+     * SEC-015: one message however the existing account was created, so
+     * sign-up never reveals which sign-in method an email uses.
      */
     private function guardAgainstDuplicateEmail(ValidatorInstance $validator, ?string $email): void
     {
-        if (! $email) {
-            return;
+        if ($email && User::where('email', $email)->exists()) {
+            $validator->errors()->add('email', self::EMAIL_UNAVAILABLE_MESSAGE);
         }
-
-        $existing = User::where('email', $email)->first();
-
-        if (! $existing) {
-            return;
-        }
-
-        if ($existing->has_password) {
-            $validator->errors()->add('email', 'The email has already been taken.');
-
-            return;
-        }
-
-        $providers = $existing->socialAccounts->pluck('provider')
-            ->map(fn (string $provider): string => ucfirst($provider))
-            ->implode(' or ');
-
-        $validator->errors()->add('email', $providers !== ''
-            ? "This email is already registered via {$providers}. Please sign in with {$providers}, or use \"Forgot password\" on the login page to set a password for email sign-in."
-            : 'The email has already been taken.');
     }
 }

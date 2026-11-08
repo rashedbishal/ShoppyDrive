@@ -20,7 +20,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Actions\AttemptToAuthenticate;
 use Laravel\Fortify\Actions\CanonicalizeUsername;
@@ -72,27 +71,15 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::authenticateUsing(function (Request $request) {
             $user = User::where('email', $request->email)->first();
 
+            // SEC-015: every failed login looks the same. An unknown email
+            // still does a password hash so response time can't reveal it.
             if (! $user || $user->anonymized_at !== null) {
+                Hash::make((string) $request->password);
+
                 return null;
             }
 
-            if (Hash::check($request->password, $user->password)) {
-                return $user;
-            }
-
-            if (! $user->has_password) {
-                $providers = $user->socialAccounts->pluck('provider')
-                    ->map(fn (string $provider): string => ucfirst($provider))
-                    ->implode(' or ');
-
-                if ($providers !== '') {
-                    throw ValidationException::withMessages([
-                        Fortify::username() => ["This account uses {$providers} sign-in. Please continue with {$providers}, or use \"Forgot password\" to set a password for email sign-in."],
-                    ]);
-                }
-            }
-
-            return null;
+            return Hash::check($request->password, $user->password) ? $user : null;
         });
     }
 

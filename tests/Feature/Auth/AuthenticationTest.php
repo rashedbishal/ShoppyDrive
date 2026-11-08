@@ -2,6 +2,7 @@
 
 use App\Models\SocialAccount;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -45,7 +46,7 @@ test('users can not authenticate with invalid password', function () {
     $this->assertGuest();
 });
 
-test('a social-only account trying to log in with a password is told to use its provider', function () {
+test('SEC-015: a social-only account gets the same login error as an unknown email', function () {
     $user = User::factory()->withoutPassword()->create();
     SocialAccount::create([
         'user_id' => $user->id,
@@ -59,8 +60,26 @@ test('a social-only account trying to log in with a password is told to use its 
     ]);
 
     $response->assertSessionHasErrors('email');
-    expect(session('errors')->first('email'))->toContain('Google');
+    $socialOnlyError = session('errors')->first('email');
+    expect($socialOnlyError)->not->toContain('Google');
+
+    $this->post(route('login.store'), [
+        'email' => 'nobody@example.com',
+        'password' => 'whatever-they-guess',
+    ])->assertSessionHasErrors(['email' => $socialOnlyError]);
+
     $this->assertGuest();
+});
+
+test('SEC-015: an unknown email still does the password work, so response time cannot reveal it', function () {
+    Hash::spy();
+
+    $this->post(route('login.store'), [
+        'email' => 'nobody@example.com',
+        'password' => 'whatever-they-guess',
+    ]);
+
+    Hash::shouldHaveReceived('make')->once()->with('whatever-they-guess');
 });
 
 test('logging in while unverified redirects to the verification code screen', function () {
