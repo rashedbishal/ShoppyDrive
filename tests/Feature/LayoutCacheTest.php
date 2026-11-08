@@ -243,7 +243,7 @@ test('all 16 approved public setting keys remain available when configured', fun
         'contact_address' => 'Dhaka, Bangladesh',
         'social_links' => ['facebook' => 'https://facebook.com/shoppydrive'],
         'google_analytics_id' => 'G-TEST123',
-        'meta_pixel_id' => 'PIXEL123',
+        'meta_pixel_code' => '<!-- Meta Pixel Code --><script>fbq(\'init\', \'PIXEL123\');</script>',
         'whatsapp_number' => '01700000000',
         'messenger_link' => 'https://m.me/shoppydrive',
         'referral_enabled' => true,

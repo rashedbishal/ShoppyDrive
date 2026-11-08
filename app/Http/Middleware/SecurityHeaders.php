@@ -37,12 +37,14 @@ class SecurityHeaders
     private const HSTS = 'max-age=86400';
 
     private const CSP_REPORT_ONLY = "default-src 'self'; "
-        ."script-src 'self' 'unsafe-inline'; "
+        // Meta Pixel's base code (app.blade.php) loads fbevents.js from here.
+        ."script-src 'self' 'unsafe-inline' https://connect.facebook.net; "
         ."style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         ."font-src 'self' https://fonts.gstatic.com; "
         ."img-src 'self' data: https:; "
         ."media-src 'self' https:; "
-        ."connect-src 'self'; "
+        // Meta Pixel's tracked events are sent to facebook.com/tr.
+        ."connect-src 'self' https://www.facebook.com; "
         ."frame-ancestors 'self'; "
         ."base-uri 'self'; "
         ."form-action 'self'; "

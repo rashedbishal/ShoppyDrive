@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 
 type Props = {
     settings: Record<string, string | Record<string, string> | null>;
@@ -30,7 +31,7 @@ export default function SettingsEdit({ settings }: Props) {
             tiktok: socialLinks.tiktok ?? '',
         },
         google_analytics_id: (settings.google_analytics_id as string) ?? '',
-        meta_pixel_id: (settings.meta_pixel_id as string) ?? '',
+        meta_pixel_code: (settings.meta_pixel_code as string) ?? '',
         whatsapp_number: (settings.whatsapp_number as string) ?? '',
         messenger_link: (settings.messenger_link as string) ?? '',
         bkash_number: (settings.bkash_number as string) ?? '',
@@ -224,23 +225,24 @@ export default function SettingsEdit({ settings }: Props) {
                                         placeholder="G-XXXXXXXXXX"
                                     />
                                 </SettingsField>
-                                <SettingsField
-                                    label="Meta Pixel ID"
-                                    hint="Facebook Pixel tracking ID"
-                                >
-                                    <input
-                                        className={settingsInputClass}
-                                        value={data.meta_pixel_id}
-                                        onChange={(e) =>
-                                            setData(
-                                                'meta_pixel_id',
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="123456789"
-                                    />
-                                </SettingsField>
                             </div>
+                            <SettingsField
+                                label="Meta Pixel Code"
+                                hint="Paste the whole base code Facebook gives you (Events Manager → Settings → Set up manually), including the <script> and <noscript> tags. It's rendered on every storefront page exactly as pasted, so re-paste it here whenever Meta changes it."
+                            >
+                                <Textarea
+                                    textareaClassName={`${settingsInputClass} font-mono text-xs`}
+                                    rows={8}
+                                    value={data.meta_pixel_code}
+                                    onChange={(e) =>
+                                        setData(
+                                            'meta_pixel_code',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="<!-- Meta Pixel Code -->&#10;<script>...</script>&#10;<noscript>...</noscript>&#10;<!-- End Meta Pixel Code -->"
+                                />
+                            </SettingsField>
                         </CardContent>
                     </Card>
 

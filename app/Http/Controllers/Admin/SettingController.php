@@ -74,7 +74,7 @@ class SettingController extends Controller
      */
     private const GENERAL_FIELDS = [
         'site_name', 'logo', 'currency_symbol', 'guest_checkout_enabled',
-        'google_analytics_id', 'meta_pixel_id',
+        'google_analytics_id', 'meta_pixel_code',
         'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number', 'social_links',
     ];
 
@@ -146,7 +146,12 @@ class SettingController extends Controller
             'social_links.youtube' => ['nullable', 'string', 'max:500'],
             'social_links.tiktok' => ['nullable', 'string', 'max:500'],
             'google_analytics_id' => ['nullable', 'string', 'max:100'],
-            'meta_pixel_id' => ['nullable', 'string', 'max:100'],
+            // The whole snippet Meta's Events Manager gives the admin to
+            // paste — not just the pixel id — so a future change to Meta's
+            // own code doesn't need a code change here. Rendered verbatim,
+            // unescaped, into app.blade.php's <head>; only an admin already
+            // granted the `settings` section can set it.
+            'meta_pixel_code' => ['nullable', 'string', 'max:5000'],
             'whatsapp_number' => ['nullable', 'string', 'max:20'],
             'messenger_link' => ['nullable', 'string', 'max:500'],
             'bkash_number' => ['nullable', 'string', 'max:20'],
@@ -243,7 +248,7 @@ class SettingController extends Controller
         $fields = [
             'site_name', 'contact_email', 'contact_phone', 'contact_address', 'currency_symbol',
             'legal_business_name', 'trade_licence_number',
-            'social_links', 'google_analytics_id', 'meta_pixel_id',
+            'social_links', 'google_analytics_id', 'meta_pixel_code',
             'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number',
             'google_client_id', 'google_client_secret', 'google_redirect_uri',
             'facebook_client_id', 'facebook_client_secret', 'facebook_redirect_uri',

@@ -71,6 +71,15 @@
         @if($seoTags['jsonLd'])
             <script type="application/ld+json">{!! json_encode($seoTags['jsonLd'], JSON_UNESCAPED_SLASHES) !!}</script>
         @endif
+
+        {{-- Meta Pixel: the admin pastes Meta's own base code verbatim (Admin
+        › Settings › Meta Pixel Code) rather than just an id, so a future
+        change to that code needs no deploy. Rendered unescaped, exactly as
+        given. Storefront only — not the admin back office. --}}
+        @php($metaPixelCode = \App\Support\LayoutCache::settings()['meta_pixel_code'] ?? null)
+        @if($metaPixelCode && !request()->is('admin', 'admin/*'))
+            {!! $metaPixelCode !!}
+        @endif
     </head>
     <body class="antialiased">
         <x-inertia::app />
