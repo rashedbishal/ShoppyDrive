@@ -12,80 +12,138 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Sleep;
 
 /**
- * Talks to Google's Gemini API on the customer's behalf. The model is
- * never given database access — it can only ask for one of the three
- * tools below, each of which goes through AiAssistantTools and the exact
- * same visibility/ownership rules the rest of the storefront already
- * enforces. A reply the model tries to make about anything outside this
- * store is refused by the system instruction, not by code — if that ever
- * proves unreliable in practice, tighten the instruction rather than
- * trying to out-guess it here.
+ * Talks to Groq's OpenAI-compatible chat-completions API on the customer's
+ * behalf, running whichever model Admin has chosen (AiAssistantConfig::model(),
+ * one of CANDIDATE_MODELS, default Llama 3.1 8B Instant). The model is never
+ * given database access — it can only ask for one of the three tools below,
+ * each of which goes through AiAssistantTools and the exact same
+ * visibility/ownership rules the rest of the storefront already enforces. A
+ * reply the model tries to make about anything outside this store is
+ * refused by the system instruction, not by code — if that ever proves
+ * unreliable in practice, tighten the instruction rather than trying to
+ * out-guess it here.
  *
- * Built against Google's "Interactions" API (v1beta), which replaced the
- * older generateContent endpoint — see AiAssistantConfig for where the
- * API key lives. The exact response field names below (`outputs` vs
- * `steps`, etc.) were pieced together from Google's docs rather than a
- * live test call; parseOutputs() checks a couple of plausible shapes for
- * exactly that reason. If a real conversation ever logs an "unexpected
- * Gemini response shape" warning, that's the place to adjust.
+ * Unlike Gemini's old stateful "Interactions" API (one `previous_interaction_id`,
+ * conversation held server-side by Google), Groq's chat-completions endpoint
+ * is stateless: the *entire* prior conversation has to be resent on every
+ * turn, and AiAssistantController/AiAssistantPanel.tsx hold that history
+ * client-side instead of an opaque id. MAX_HISTORY_MESSAGES bounds it here
+ * too, defensively, since every message in it is billed as input tokens
+ * again on every single turn regardless of what the client sends.
  */
 class AiAssistantService
 {
-    private const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/interactions';
+    private const ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
-    private const MODEL = 'gemini-3.8-flash';
+    private const MODELS_ENDPOINT = 'https://api.groq.com/openai/v1/models';
 
     private const MAX_TOOL_ROUNDTRIPS = 4;
 
-    private const RETRYABLE_STATUS = 503;
+    /** @var list<int> Worth one retry: a rate limit or a transient overload, not a bad request or bad key. */
+    private const RETRYABLE_STATUSES = [429, 503];
 
     private const RETRY_DELAY_SECONDS = 1;
+
+    /** Prior turns kept when building the request — oldest trimmed first. */
+    private const MAX_HISTORY_MESSAGES = 20;
 
     public function __construct(private readonly AiAssistantTools $tools) {}
 
     /**
-     * @return array{reply: string, interaction_id: ?string}
+     * @param  list<array{role: string, content: string}>  $history  Prior user/assistant turns, oldest first.
+     * @return array{reply: string}
      */
-    public function respond(string $message, ?string $previousInteractionId, ?User $authUser): array
+    public function respond(string $message, array $history, ?User $authUser): array
     {
         $apiKey = AiAssistantConfig::apiKey();
 
         if ($apiKey === '') {
-            return ['reply' => "Sorry, the assistant isn't set up yet.", 'interaction_id' => null];
+            return ['reply' => "Sorry, the assistant isn't set up yet."];
         }
 
-        $input = $message;
-        $interactionId = $previousInteractionId;
+        $messages = [
+            ['role' => 'system', 'content' => $this->systemInstruction()],
+            ...array_slice($history, -self::MAX_HISTORY_MESSAGES),
+            ['role' => 'user', 'content' => $message],
+        ];
 
         for ($round = 0; $round < self::MAX_TOOL_ROUNDTRIPS; $round++) {
-            $response = $this->call($apiKey, $input, $interactionId);
+            $response = $this->call($apiKey, $messages);
 
             if ($response === null) {
-                return ['reply' => "Sorry, I'm having trouble right now — please try again in a moment.", 'interaction_id' => $previousInteractionId];
+                return ['reply' => "Sorry, I'm having trouble right now — please try again in a moment."];
             }
 
-            $interactionId = $response['id'] ?? $interactionId;
-            $outputs = $this->parseOutputs($response);
+            $choice = $response['choices'][0]['message'] ?? null;
 
-            $functionCall = collect($outputs)->first(fn ($o) => ($o['type'] ?? null) === 'function_call');
+            if (! is_array($choice)) {
+                Log::warning('[AI assistant] Unexpected Groq response shape', ['response' => $response]);
 
-            if ($functionCall === null) {
-                $text = $this->extractText($response, $outputs);
-
-                return ['reply' => $text !== '' ? $text : "Sorry, I didn't catch that — could you rephrase?", 'interaction_id' => $interactionId];
+                return ['reply' => "Sorry, I didn't catch that — could you rephrase?"];
             }
 
-            $result = $this->runTool($functionCall['name'] ?? '', $functionCall['arguments'] ?? [], $authUser);
+            $toolCalls = $choice['tool_calls'] ?? null;
 
-            $input = [[
-                'type' => 'function_result',
-                'name' => $functionCall['name'] ?? '',
-                'call_id' => $functionCall['id'] ?? ($functionCall['call_id'] ?? ''),
-                'result' => [['type' => 'text', 'text' => json_encode($result)]],
-            ]];
+            if (! is_array($toolCalls) || $toolCalls === []) {
+                $text = is_string($choice['content'] ?? null) ? trim($choice['content']) : '';
+
+                return ['reply' => $text !== '' ? $text : "Sorry, I didn't catch that — could you rephrase?"];
+            }
+
+            $messages[] = ['role' => 'assistant', 'content' => $choice['content'] ?? null, 'tool_calls' => $toolCalls];
+
+            foreach ($toolCalls as $toolCall) {
+                $name = (string) ($toolCall['function']['name'] ?? '');
+                $arguments = json_decode((string) ($toolCall['function']['arguments'] ?? '{}'), true);
+                $result = $this->runTool($name, is_array($arguments) ? $arguments : [], $authUser);
+
+                $messages[] = [
+                    'role' => 'tool',
+                    'tool_call_id' => (string) ($toolCall['id'] ?? ''),
+                    'content' => json_encode($result),
+                ];
+            }
         }
 
-        return ['reply' => "Sorry, that's taking longer than expected — please try asking in a simpler way.", 'interaction_id' => $interactionId];
+        return ['reply' => "Sorry, that's taking longer than expected — please try asking in a simpler way."];
+    }
+
+    /**
+     * For Admin's model dropdown: CANDIDATE_MODELS narrowed to whatever
+     * Groq's account-level catalog (`/v1/models`) actually reports as
+     * available right now, so a retired or renamed model id can't linger
+     * as a choice — the exact failure mode a hardcoded model name hit
+     * twice already. Falls back to the full CANDIDATE_MODELS list (never
+     * an empty one) when there's no key yet or the lookup fails for any
+     * reason, same fail-safe spirit as the rest of this class.
+     *
+     * @return array<string, string> model id => display label
+     */
+    public function availableModels(): array
+    {
+        $apiKey = AiAssistantConfig::apiKey();
+
+        if ($apiKey === '') {
+            return AiAssistantConfig::CANDIDATE_MODELS;
+        }
+
+        try {
+            $response = Http::withToken($apiKey)
+                ->withOptions(['curl' => [CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4]])
+                ->timeout(5)->get(self::MODELS_ENDPOINT);
+        } catch (ConnectionException) {
+            return AiAssistantConfig::CANDIDATE_MODELS;
+        }
+
+        if (! $response->successful()) {
+            return AiAssistantConfig::CANDIDATE_MODELS;
+        }
+
+        $availableIds = collect($response->json('data', []))->pluck('id')->all();
+
+        $filtered = array_intersect_key(AiAssistantConfig::CANDIDATE_MODELS, array_flip($availableIds));
+
+        return $filtered !== [] ? $filtered : AiAssistantConfig::CANDIDATE_MODELS;
     }
 
     /**
@@ -114,42 +172,32 @@ class AiAssistantService
     }
 
     /**
-     * @param  string|array<int, array<string, mixed>>  $input
+     * @param  list<array<string, mixed>>  $messages
      * @return array<string, mixed>|null
      */
-    private function call(string $apiKey, string|array $input, ?string $previousInteractionId): ?array
+    private function call(string $apiKey, array $messages): ?array
     {
         $payload = [
-            'model' => self::MODEL,
-            'system_instruction' => $this->systemInstruction(),
+            'model' => AiAssistantConfig::model(),
+            'messages' => $messages,
             'tools' => $this->toolDeclarations(),
-            'input' => $input,
+            'tool_choice' => 'auto',
         ];
-
-        if ($previousInteractionId !== null) {
-            $payload['previous_interaction_id'] = $previousInteractionId;
-        }
 
         for ($attempt = 1; $attempt <= 2; $attempt++) {
             try {
-                $response = Http::withHeaders([
-                    'x-goog-api-key' => $apiKey,
-                    'Content-Type' => 'application/json',
-                ])
-                    // Production logs showed a full-timeout, zero-bytes
-                    // cURL error 28 — a hung connection, not a slow one.
-                    // That's the classic symptom of a dual-stack host whose
-                    // IPv6 route to Google is silently dropped: curl tries
-                    // AAAA first and never falls back in time. Forcing IPv4
-                    // is the standard fix and is harmless if IPv6 was never
-                    // the problem.
+                $response = Http::withToken($apiKey)
+                    // Groq's API is single-stack as far as we've seen, but this
+                    // is a cheap, harmless defensive default against the same
+                    // dual-stack-host-hangs-on-a-dead-IPv6-route failure mode
+                    // that previously hit the old Gemini integration.
                     ->withOptions(['curl' => [CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4]])
                     ->timeout(20)->post(self::ENDPOINT, $payload);
             } catch (ConnectionException $e) {
                 // Already spent the full timeout budget getting here —
                 // retrying a hung connection risks the web server's own
                 // execution time limit, so this one isn't retried.
-                Log::warning('[AI assistant] Could not reach Gemini', [
+                Log::warning('[AI assistant] Could not reach Groq', [
                     'message' => $e->getMessage(),
                 ]);
 
@@ -160,18 +208,17 @@ class AiAssistantService
                 return $response->json();
             }
 
-            Log::warning('[AI assistant] Gemini request failed', [
+            Log::warning('[AI assistant] Groq request failed', [
                 'status' => $response->status(),
                 'body' => $response->body(),
                 'attempt' => $attempt,
             ]);
 
-            // A 503 is Gemini's own "usually temporary, try again" signal
-            // (confirmed in production: "gemini-3.8-flash is currently
-            // experiencing high demand"). Every other failure — a bad key,
-            // a malformed request, an exhausted quota — won't succeed on a
-            // second try, so only this one is worth retrying, once.
-            if ($response->status() !== self::RETRYABLE_STATUS || $attempt === 2) {
+            // A 429 (rate limit) or 503 (overload) can clear on its own; a
+            // bad key, a malformed request, or an exhausted quota won't
+            // succeed on a second try, so only these are worth retrying,
+            // once.
+            if (! in_array($response->status(), self::RETRYABLE_STATUSES, true) || $attempt === 2) {
                 return null;
             }
 
@@ -179,38 +226,6 @@ class AiAssistantService
         }
 
         return null;
-    }
-
-    /**
-     * @param  array<string, mixed>  $response
-     * @return list<array<string, mixed>>
-     */
-    private function parseOutputs(array $response): array
-    {
-        $outputs = $response['outputs'] ?? $response['steps'] ?? null;
-
-        if (! is_array($outputs)) {
-            Log::warning('[AI assistant] Unexpected Gemini response shape', ['response' => $response]);
-
-            return [];
-        }
-
-        return $outputs;
-    }
-
-    /**
-     * @param  array<string, mixed>  $response
-     * @param  list<array<string, mixed>>  $outputs
-     */
-    private function extractText(array $response, array $outputs): string
-    {
-        if (is_string($response['output_text'] ?? null)) {
-            return $response['output_text'];
-        }
-
-        $textOutput = collect($outputs)->first(fn ($o) => ($o['type'] ?? null) === 'text' || ($o['type'] ?? null) === 'message');
-
-        return (string) ($textOutput['text'] ?? $textOutput['content'] ?? '');
     }
 
     private function systemInstruction(): string
@@ -245,40 +260,46 @@ class AiAssistantService
         return [
             [
                 'type' => 'function',
-                'name' => 'search_products',
-                'description' => 'Search the store\'s products by name or description keywords.',
-                'parameters' => [
-                    'type' => 'object',
-                    'properties' => [
-                        'query' => ['type' => 'string', 'description' => 'Search keywords, e.g. "red shoes"'],
+                'function' => [
+                    'name' => 'search_products',
+                    'description' => 'Search the store\'s products by name or description keywords.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'query' => ['type' => 'string', 'description' => 'Search keywords, e.g. "red shoes"'],
+                        ],
+                        'required' => ['query'],
                     ],
-                    'required' => ['query'],
                 ],
             ],
             [
                 'type' => 'function',
-                'name' => 'check_product_availability',
-                'description' => 'Check the current price and stock for one specific product by name.',
-                'parameters' => [
-                    'type' => 'object',
-                    'properties' => [
-                        'product_name' => ['type' => 'string', 'description' => 'The exact or near-exact product name'],
+                'function' => [
+                    'name' => 'check_product_availability',
+                    'description' => 'Check the current price and stock for one specific product by name.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'product_name' => ['type' => 'string', 'description' => 'The exact or near-exact product name'],
+                        ],
+                        'required' => ['product_name'],
                     ],
-                    'required' => ['product_name'],
                 ],
             ],
             [
                 'type' => 'function',
-                'name' => 'lookup_order',
-                'description' => 'Look up the status of a customer order. For a guest, order_number plus email or phone are all required before calling this.',
-                'parameters' => [
-                    'type' => 'object',
-                    'properties' => [
-                        'order_number' => ['type' => 'string', 'description' => 'e.g. ORD-20261107-AB12CD'],
-                        'email' => ['type' => 'string', 'description' => 'Email used at checkout, if the customer gave one instead of a phone'],
-                        'phone' => ['type' => 'string', 'description' => 'Phone used at checkout, if the customer gave one instead of an email'],
+                'function' => [
+                    'name' => 'lookup_order',
+                    'description' => 'Look up the status of a customer order. For a guest, order_number plus email or phone are all required before calling this.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'order_number' => ['type' => 'string', 'description' => 'e.g. ORD-20261107-AB12CD'],
+                            'email' => ['type' => 'string', 'description' => 'Email used at checkout, if the customer gave one instead of a phone'],
+                            'phone' => ['type' => 'string', 'description' => 'Phone used at checkout, if the customer gave one instead of an email'],
+                        ],
+                        'required' => [],
                     ],
-                    'required' => [],
                 ],
             ],
         ];

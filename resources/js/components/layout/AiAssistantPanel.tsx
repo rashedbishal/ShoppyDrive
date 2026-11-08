@@ -9,20 +9,24 @@ type ChatMessage = {
     text: string;
 };
 
-const STORAGE_KEY = 'shoppydrive-ai-assistant-v1';
+const STORAGE_KEY = 'shoppydrive-ai-assistant-v2';
+
+// Sent with every request so the (stateless) model has prior context —
+// trimmed to the most recent turns so the payload doesn't grow without
+// bound over a long conversation.
+const MAX_HISTORY_MESSAGES = 20;
 
 type StoredState = {
     messages: ChatMessage[];
-    interactionId: string | null;
 };
 
 function loadStoredState(): StoredState {
     try {
         const raw = sessionStorage.getItem(STORAGE_KEY);
 
-        return raw ? JSON.parse(raw) : { messages: [], interactionId: null };
+        return raw ? JSON.parse(raw) : { messages: [] };
     } catch {
-        return { messages: [], interactionId: null };
+        return { messages: [] };
     }
 }
 
@@ -51,9 +55,6 @@ export default function AiAssistantPanel({
 
         return stored.messages.length > 0 ? stored.messages : [WELCOME];
     });
-    const [interactionId, setInteractionId] = useState<string | null>(
-        () => loadStoredState().interactionId,
-    );
     const [input, setInput] = useState('');
     const [sending, setSending] = useState(false);
     const listRef = useRef<HTMLDivElement>(null);
@@ -68,6 +69,13 @@ export default function AiAssistantPanel({
         if (text === '' || sending) {
             return;
         }
+
+        // Only real prior turns — not the local-only welcome message, which
+        // the model was never a party to.
+        const priorHistory = messages
+            .filter((m) => m !== WELCOME)
+            .slice(-MAX_HISTORY_MESSAGES)
+            .map((m) => ({ role: m.role, content: m.text }));
 
         const nextMessages: ChatMessage[] = [
             ...messages,
@@ -89,7 +97,7 @@ export default function AiAssistantPanel({
                 },
                 body: JSON.stringify({
                     message: text,
-                    previous_interaction_id: interactionId,
+                    history: priorHistory,
                 }),
             });
 
@@ -97,21 +105,14 @@ export default function AiAssistantPanel({
                 throw new Error('Request failed');
             }
 
-            const data = (await response.json()) as {
-                reply: string;
-                interaction_id: string | null;
-            };
+            const data = (await response.json()) as { reply: string };
 
             const withReply: ChatMessage[] = [
                 ...nextMessages,
                 { role: 'assistant', text: data.reply },
             ];
             setMessages(withReply);
-            setInteractionId(data.interaction_id);
-            saveStoredState({
-                messages: withReply,
-                interactionId: data.interaction_id,
-            });
+            saveStoredState({ messages: withReply });
         } catch {
             setMessages([
                 ...nextMessages,

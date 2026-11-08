@@ -21,18 +21,17 @@ class AiAssistantController extends Controller
 
         $validated = $request->validate([
             'message' => ['required', 'string', 'max:1000'],
-            'previous_interaction_id' => ['nullable', 'string', 'max:255'],
+            'history' => ['nullable', 'array', 'max:40'],
+            'history.*.role' => ['required_with:history', 'string', 'in:user,assistant'],
+            'history.*.content' => ['required_with:history', 'string', 'max:4000'],
         ]);
 
         $result = $this->assistant->respond(
             $validated['message'],
-            $validated['previous_interaction_id'] ?? null,
+            $validated['history'] ?? [],
             $request->user(),
         );
 
-        return response()->json([
-            'reply' => $result['reply'],
-            'interaction_id' => $result['interaction_id'],
-        ]);
+        return response()->json(['reply' => $result['reply']]);
     }
 }

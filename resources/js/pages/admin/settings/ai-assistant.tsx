@@ -2,6 +2,7 @@ import { Head, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
 type Props = {
@@ -9,6 +10,10 @@ type Props = {
     fullKey?: string;
     enabled: boolean;
     hasKey: boolean;
+    selectedModel: string;
+    selectedModelLabel: string;
+    selectedModelUnavailable: boolean;
+    availableModels: Record<string, string>;
 };
 
 export default function AiAssistantSettings({
@@ -16,6 +21,10 @@ export default function AiAssistantSettings({
     fullKey,
     enabled,
     hasKey,
+    selectedModel,
+    selectedModelLabel,
+    selectedModelUnavailable,
+    availableModels,
 }: Props) {
     const { props } = usePage<any>();
     const flash = props.flash as { success?: string } | undefined;
@@ -26,6 +35,7 @@ export default function AiAssistantSettings({
     const { data, setData, post, processing } = useForm({
         api_key: '',
         enabled,
+        model: selectedModel,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -50,18 +60,34 @@ export default function AiAssistantSettings({
                     </div>
                 )}
 
+                {selectedModelUnavailable && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                        <p className="font-medium">
+                            The selected model isn't available right now
+                        </p>
+                        <p className="mt-1 text-xs text-amber-700">
+                            Groq's account no longer reports access to "
+                            {selectedModelLabel}" — the assistant will
+                            fail on every message until
+                            {canReveal
+                                ? ' you switch to one of the models below and save.'
+                                : ' someone with update access switches the model.'}
+                        </p>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit}>
                     <Card className="shadow-sm">
                         <CardHeader className="border-b border-slate-100 pb-4">
                             <CardTitle className="text-sm font-semibold text-slate-700">
-                                Gemini API Key
+                                Groq API Key
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-5 pt-4">
                             <p className="text-xs text-slate-500">
-                                The free API key from Google AI Studio. Shoppers
+                                The API key from console.groq.com. Shoppers
                                 never see this — it's only used by the server
-                                when talking to Google on their behalf.
+                                when talking to Groq on their behalf.
                             </p>
 
                             {canReveal && hasKey && (
@@ -110,7 +136,7 @@ export default function AiAssistantSettings({
                                         placeholder={
                                             hasKey
                                                 ? 'Leave blank to keep the current key'
-                                                : 'Paste the key from Google AI Studio'
+                                                : 'Paste the key from console.groq.com'
                                         }
                                         value={data.api_key}
                                         onChange={(e) =>
@@ -124,6 +150,31 @@ export default function AiAssistantSettings({
                                     You have view-only access. Ask the owner for
                                     update access to change this.
                                 </p>
+                            )}
+
+                            {canReveal && (
+                                <div className="space-y-2 border-t border-slate-100 pt-4">
+                                    <label className="text-sm font-medium text-slate-700">
+                                        Model
+                                    </label>
+                                    <Select
+                                        value={data.model}
+                                        onValueChange={(value) =>
+                                            setData('model', value)
+                                        }
+                                        options={Object.entries(
+                                            availableModels,
+                                        ).map(([value, label]) => ({
+                                            value,
+                                            label,
+                                        }))}
+                                    />
+                                    <p className="text-xs text-slate-400">
+                                        Only models that support tool calling
+                                        (needed for product search and order
+                                        lookup) are offered here.
+                                    </p>
+                                </div>
                             )}
 
                             <div className="flex items-center justify-between border-t border-slate-100 pt-4">
