@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\PathaoCourierService;
 use App\Services\SteadfastCourierService;
+use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -106,7 +107,23 @@ class SettingController extends Controller
         }
 
         $validated = $request->validate([
-            'meta_pixel_code' => ['nullable', 'string', 'max:5000'],
+            'meta_pixel_code' => [
+                'nullable', 'string', 'max:5000',
+                // Not a strict format match — Meta's own code is free to
+                // change shape, which is the whole reason this is a
+                // paste-the-snippet field rather than a template. Only
+                // catches an obviously wrong paste (blank, truncated, or
+                // unrelated text), not every possible mistake.
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (trim((string) $value) === '') {
+                        return;
+                    }
+
+                    if (! str_contains($value, 'fbq(') || ! preg_match('/facebook\.(com|net)/i', $value)) {
+                        $fail("That doesn't look like Meta Pixel code — it should contain an fbq(...) call and reference facebook.com or facebook.net.");
+                    }
+                },
+            ],
         ]);
 
         Setting::updateOrCreate(

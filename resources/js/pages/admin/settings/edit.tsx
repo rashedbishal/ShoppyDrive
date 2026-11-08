@@ -256,6 +256,9 @@ export default function SettingsEdit({ settings }: Props) {
                                         textareaClassName={`${settingsInputClass} font-mono text-xs`}
                                         rows={8}
                                         disabled={!isMotherAdmin}
+                                        error={
+                                            metaPixelForm.errors.meta_pixel_code
+                                        }
                                         value={
                                             metaPixelForm.data.meta_pixel_code
                                         }

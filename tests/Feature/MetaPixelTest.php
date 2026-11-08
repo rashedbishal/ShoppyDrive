@@ -84,3 +84,36 @@ test('an ordinary admin with settings access can still save the rest of General 
     expect(Setting::where('key', 'site_name')->first()->value)->toBe('New Name');
     expect(Setting::where('key', 'meta_pixel_code')->first())->toBeNull();
 });
+
+test('the mother admin cannot save obviously-wrong text as the Meta Pixel code', function (string $bogus) {
+    $mother = createAdmin();
+    $mother->forceFill(['is_mother' => true])->save();
+    actingAs($mother, 'admin');
+
+    $this->put(route('admin.settings.meta-pixel.update'), ['meta_pixel_code' => $bogus])
+        ->assertSessionHasErrors('meta_pixel_code');
+
+    expect(Setting::where('key', 'meta_pixel_code')->first())->toBeNull();
+})->with([
+    'plain text' => ['just some random text, not a pixel at all'],
+    'fbq call but no facebook domain' => ["fbq('init', '123456789012345');"],
+    'facebook domain but no fbq call' => ['<img src="https://www.facebook.com/tr?id=123">'],
+]);
+
+test('the mother admin can clear the Meta Pixel code', function () {
+    Setting::create(['key' => 'meta_pixel_code', 'value' => META_PIXEL_SNIPPET, 'group' => 'general']);
+    $mother = createAdmin();
+    $mother->forceFill(['is_mother' => true])->save();
+    actingAs($mother, 'admin');
+
+    $this->put(route('admin.settings.meta-pixel.update'), ['meta_pixel_code' => ''])
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('success');
+
+    // RedirectAdminToDashboard would otherwise bounce a logged-in admin
+    // straight off the storefront home page.
+    $this->app['auth']->forgetGuards();
+
+    $html = $this->get(route('home'))->assertOk()->getContent();
+    expect($html)->not->toContain('connect.facebook.net');
+});
