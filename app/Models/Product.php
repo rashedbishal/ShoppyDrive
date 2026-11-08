@@ -82,6 +82,17 @@ class Product extends Model
             'compare_price' => 'float',
             'cost_price' => 'float',
             'weight' => 'float',
+            // withAvg()/loadAvg()'s 'reviews as average_rating' alias (used
+            // across ProductController, HomeController, ProductListingController,
+            // SearchController, BrandController, FlashSaleController) isn't a
+            // real column, but casts apply to it the same way: on MySQL,
+            // AVG() is a DECIMAL and PDO returns those as strings, not
+            // floats, so `product.average_rating.toFixed(1)` crashed the
+            // product page (and every ProductCard, via star-rating.tsx's
+            // own `rating.toFixed(1)`) the moment any product had a real,
+            // non-null average — invisible locally since SQLite's AVG()
+            // returns an actual float.
+            'average_rating' => 'float',
             'published_at' => 'datetime',
         ];
     }
