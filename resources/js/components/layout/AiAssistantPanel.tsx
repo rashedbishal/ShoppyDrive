@@ -81,9 +81,21 @@ function convertMarkdownTablesToLists(text: string): string {
     return output.join('\n');
 }
 
+// Trailing punctuation a sentence would naturally end a URL with ("...page.",
+// "(see url)") — stripped from the link itself so only the real URL is
+// clickable, with the punctuation still shown right after it as plain text.
+const URL_TRAILING_PUNCTUATION = /[.,!?;:)]+$/;
+
 function renderMessageContent(rawText: string): React.ReactNode {
     const text = convertMarkdownTablesToLists(rawText);
-    const pattern = /\[([^\]]+)]\((https?:\/\/[^\s)]+)\)|\*\*([^*]+)\*\*/g;
+    // Three alternatives, tried in this order at each position: a markdown
+    // link, bold text, or — since the model doesn't always wrap a URL in
+    // markdown link syntax — a bare "https://..." written directly in the
+    // reply. The bare-URL branch only ever matches where the first one
+    // didn't, so a markdown link's own URL inside the parens is never
+    // double-matched.
+    const pattern =
+        /\[([^\]]+)]\((https?:\/\/[^\s)]+)\)|\*\*([^*]+)\*\*|(https?:\/\/[^\s<>"')\]]+)/g;
     const nodes: React.ReactNode[] = [];
     let lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -98,19 +110,40 @@ function renderMessageContent(rawText: string): React.ReactNode {
             );
         }
 
-        nodes.push(
-            match[1] !== undefined ? (
+        if (match[1] !== undefined) {
+            nodes.push(
                 <Link
                     key={key++}
                     href={match[2]}
                     className="underline underline-offset-2"
                 >
                     {match[1]}
-                </Link>
-            ) : (
-                <strong key={key++}>{match[3]}</strong>
-            ),
-        );
+                </Link>,
+            );
+        } else if (match[3] !== undefined) {
+            nodes.push(<strong key={key++}>{match[3]}</strong>);
+        } else {
+            let url = match[4];
+            const trailing = url.match(URL_TRAILING_PUNCTUATION)?.[0] ?? '';
+
+            if (trailing !== '') {
+                url = url.slice(0, -trailing.length);
+            }
+
+            nodes.push(
+                <Link
+                    key={key++}
+                    href={url}
+                    className="underline underline-offset-2"
+                >
+                    {url}
+                </Link>,
+            );
+
+            if (trailing !== '') {
+                nodes.push(<Fragment key={key++}>{trailing}</Fragment>);
+            }
+        }
 
         lastIndex = pattern.lastIndex;
     }
@@ -295,7 +328,7 @@ export default function AiAssistantPanel({
                             >
                                 <p
                                     className={cn(
-                                        'max-w-[85%] rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap',
+                                        'max-w-[85%] rounded-2xl px-3.5 py-2 text-sm break-words whitespace-pre-wrap',
                                         message.role === 'user'
                                             ? 'rounded-br-sm bg-[var(--color-primary)] text-white'
                                             : 'rounded-bl-sm bg-white text-slate-700 shadow-sm ring-1 ring-slate-200',
