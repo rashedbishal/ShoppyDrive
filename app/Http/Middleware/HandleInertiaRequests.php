@@ -214,13 +214,14 @@ class HandleInertiaRequests extends Middleware
                 'tiktok' => $socialLinks['tiktok'] ?? null,
             ],
             'google_analytics_id' => $db->get('google_analytics_id'),
-            // Deliberately not shared here: the whole pasted snippet can run
-            // to thousands of characters, and nothing client-side reads it —
-            // app.blade.php reads it server-side via LayoutCache directly,
-            // and the settings-edit page gets its own copy from
-            // SettingController::settingsProp(). Sharing it to every page's
-            // Inertia payload (including /admin, which never renders the
-            // pixel) would be pure bloat for no consumer.
+            // custom_header_code/custom_footer_code are deliberately not
+            // shared here: each can run to thousands of characters, and
+            // nothing client-side reads them — app.blade.php reads them
+            // server-side via LayoutCache directly, and the Marketing &
+            // Tracking settings page gets its own copy from
+            // MarketingSettingsController. Sharing them to every page's
+            // Inertia payload (including /admin, which never renders them)
+            // would be pure bloat for no consumer.
             'whatsapp_number' => $db->get('whatsapp_number'),
             'messenger_link' => $db->get('messenger_link'),
             'ai_assistant_enabled' => (bool) $db->get('ai_assistant_enabled', false),

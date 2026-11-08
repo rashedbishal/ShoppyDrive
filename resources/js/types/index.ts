@@ -88,7 +88,6 @@ export interface AppSettings {
         tiktok?: string;
     };
     google_analytics_id?: string | null;
-    meta_pixel_code?: string | null;
     whatsapp_number?: string | null;
     messenger_link?: string | null;
     ai_assistant_enabled?: boolean;

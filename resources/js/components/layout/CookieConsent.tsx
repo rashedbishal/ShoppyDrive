@@ -13,11 +13,11 @@ type CookieNoticeState = {
 };
 
 /**
- * FE-013: a notice, not a choice — the owner opted to fire the Meta Pixel
- * (app.blade.php) for every visitor rather than gate it behind a consent
- * toggle, so there's nothing to opt in or out of here. A visitor who
- * answered the old banner isn't asked again, and the stored shape stays
- * what `lib/analytics.ts` reads.
+ * FE-013: a notice, not a choice — the owner opted to fire tracking/ad
+ * scripts (Custom Header/Footer, app.blade.php) for every visitor rather
+ * than gate them behind a consent toggle, so there's nothing to opt in or
+ * out of here. A visitor who answered the old banner isn't asked again, and
+ * the stored shape stays what `lib/analytics.ts` reads.
  */
 export default function CookieConsent(): React.JSX.Element {
     const [notice, setNotice] = useLocalStorage<CookieNoticeState | null>(
@@ -53,7 +53,7 @@ export default function CookieConsent(): React.JSX.Element {
                         <p className="mb-3 text-xs leading-5 text-[var(--color-text-secondary)]">
                             We use cookies to keep your cart and login working,
                             count visits, and note how you found us. We also use
-                            the Meta Pixel to measure and improve our ads.
+                            tracking tools to measure and improve our ads.
                         </p>
                         <div className="flex items-center gap-3">
                             <Button

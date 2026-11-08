@@ -15,6 +15,7 @@ import {
     LayoutTemplate,
     LogOut,
     Mail,
+    Megaphone,
     Menu,
     MessageSquare,
     MonitorPlay,
@@ -366,6 +367,14 @@ const navSections: NavSection[] = [
                 exact: false,
                 extraMatches: [] as string[],
                 section: 'referral_program',
+            },
+            {
+                label: 'Marketing & Tracking',
+                href: '/admin/settings/marketing',
+                icon: Megaphone,
+                exact: false,
+                extraMatches: [] as string[],
+                section: 'marketing_tracking',
             },
             {
                 label: 'Security',

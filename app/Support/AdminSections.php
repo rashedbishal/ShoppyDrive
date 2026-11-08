@@ -59,6 +59,13 @@ final class AdminSections
 
         // Marketing
         'newsletter' => ['label' => 'Newsletter', 'group' => 'Marketing', 'abilities' => ['create', 'delete']],
+        // Custom Header/Footer code's own update stays mother-only regardless
+        // of this matrix (MarketingSettingsController::updateCustomCode()) —
+        // it runs in every visitor's browser, a bigger capability than the
+        // Facebook Conversions API fields this section also gates. Both
+        // halves share one `view`/`update` grant here; the harder gate is
+        // enforced only on the custom-code save itself.
+        'marketing_tracking' => ['label' => 'Marketing & Tracking', 'group' => 'Marketing', 'abilities' => ['update']],
 
         // System
         'blocked_ips' => ['label' => 'Blocked IPs', 'group' => 'System', 'abilities' => ['create', 'delete']],

@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Jobs\SendFacebookPurchaseEventJob;
 use App\Mail\NewOrderAlertMail;
 use App\Mail\OrderCancelledMail;
 use App\Mail\OrderDeliveredMail;
@@ -16,6 +17,7 @@ use App\Mail\ShippedWithTrackingMail;
 use App\Services\CouponService;
 use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
+use App\Support\FacebookConversionsApiConfig;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -237,6 +239,12 @@ class Order extends Model
         static::created(function (self $order): void {
             static::dispatchMail(OrderPlacedMail::class, $order);
             static::dispatchAdminMail(NewOrderAlertMail::class, $order);
+
+            // Guarded here (not just inside the job) so a misconfigured or
+            // disabled integration never even queues a pointless job.
+            if (FacebookConversionsApiConfig::isAvailable()) {
+                SendFacebookPurchaseEventJob::dispatch($order->id)->afterCommit();
+            }
         });
 
         // DB-001: every trash / restore / permanent delete is in the audit

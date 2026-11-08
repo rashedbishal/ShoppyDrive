@@ -62,6 +62,31 @@ export default function OrderConfirmation({
         clearCart();
     }, []);
 
+    // Pushes to GTM's own expected dataLayer shape, so a Facebook Pixel tag
+    // configured in Tag Manager can read `fb_event_id` to deduplicate
+    // against the server-side Conversions API Purchase event
+    // (FacebookConversionsApiService sends the same "order-{order_number}"
+    // id). No line items here — OrderConfirmationAccess::payload() (FSA-03)
+    // deliberately never sends items/totals-breakdown to this public page,
+    // and that allow-list isn't being widened just for this.
+    useEffect(() => {
+        try {
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({
+                event: 'purchase',
+                ecommerce: {
+                    transaction_id: order.order_number,
+                    value: order.total,
+                    currency: 'BDT',
+                },
+                fb_event_id: `order-${order.order_number}`,
+            });
+        } catch {
+            // window.dataLayer is a plain array; nothing here should ever
+            // throw, but a tracking push must never break this page if it does.
+        }
+    }, []);
+
     return (
         <CheckoutLayout>
             <Head title="Order Confirmed" />

@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\HeroSlideController;
 use App\Http\Controllers\Admin\HomepageController;
 use App\Http\Controllers\Admin\IncompleteOrderController;
 use App\Http\Controllers\Admin\LandingPageController as AdminLandingPageController;
+use App\Http\Controllers\Admin\MarketingSettingsController;
 use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\OrderCourierController;
@@ -78,8 +79,8 @@ $guardResource = function (PendingResourceRegistration $resource, string $sectio
  * AdminSections's docblock for why it isn't delegable),
  * `settings.update` (one endpoint shared by six sidebar items — gated by
  * field group inside SettingController itself), `settings.security.update`
- * and `settings.meta-pixel.update` (each hardcoded mother-only inside its
- * own controller method), and `content-images.store` (a shared
+ * and `settings.marketing.custom-code.update` (each hardcoded mother-only
+ * inside its own controller method), and `content-images.store` (a shared
  * rich-text-editor upload helper used across several sections, not worth
  * gating on its own).
  */
@@ -191,15 +192,21 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     // settings.update is one endpoint shared by six sidebar items (Settings,
     // Social Config, Courier Config, About Page, Contact Page, Referral
     // Program) — SettingController::update() checks permission per field
-    // group itself instead of a single route-level gate. meta-pixel.update
-    // is deliberately separate from it (see below), not one of the six.
+    // group itself instead of a single route-level gate.
     Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit')->middleware(AdminSections::middleware('settings', 'view'));
     Route::put('settings', [SettingController::class, 'update'])->name('settings.update');
-    // Hardcoded mother-only inside SettingController::updateMetaPixel() — the
-    // pasted code runs in every visitor's browser, a bigger capability than
-    // anything else `settings:update` grants, so it's not delegable via the
-    // Permissions matrix at all (same pattern as settings.security.update).
-    Route::put('settings/meta-pixel', [SettingController::class, 'updateMetaPixel'])->name('settings.meta-pixel.update');
+
+    // Marketing & Tracking: custom-code.update is hardcoded mother-only
+    // inside MarketingSettingsController (pasted code runs in every
+    // visitor's browser — a bigger capability than anything else this
+    // section grants, same pattern as settings.security.update), so it
+    // carries no admin.can middleware at all. facebook-conversions-api.update
+    // is a plain config save (Pixel ID, access token, test event code),
+    // gated normally like every other delegable settings page.
+    Route::get('settings/marketing', [MarketingSettingsController::class, 'edit'])->name('settings.marketing.edit')->middleware(AdminSections::middleware('marketing_tracking', 'view'));
+    Route::put('settings/marketing/custom-code', [MarketingSettingsController::class, 'updateCustomCode'])->name('settings.marketing.custom-code.update');
+    Route::put('settings/marketing/facebook-conversions-api', [MarketingSettingsController::class, 'updateFacebookConversionsApi'])->name('settings.marketing.facebook-conversions-api.update')->middleware(AdminSections::middleware('marketing_tracking', 'update'));
+
     Route::get('settings/social', [SettingController::class, 'socialConfig'])->name('settings.social')->middleware(AdminSections::middleware('social_config', 'view'));
     Route::get('settings/courier', [SettingController::class, 'courierConfig'])->name('settings.courier')->middleware(AdminSections::middleware('courier_config', 'view'));
     Route::get('settings/about-page', [SettingController::class, 'aboutPageConfig'])->name('settings.about-page')->middleware(AdminSections::middleware('about_page', 'view'));

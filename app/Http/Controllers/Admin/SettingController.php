@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\PathaoCourierService;
 use App\Services\SteadfastCourierService;
-use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -75,7 +74,6 @@ class SettingController extends Controller
      */
     private const GENERAL_FIELDS = [
         'site_name', 'logo', 'currency_symbol', 'guest_checkout_enabled',
-        'google_analytics_id', 'meta_pixel_code',
         'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number', 'social_links',
     ];
 
@@ -89,49 +87,6 @@ class SettingController extends Controller
         return Inertia::render('admin/settings/edit', [
             'settings' => $this->settingsProp(self::GENERAL_FIELDS),
         ]);
-    }
-
-    /**
-     * Separate from update() and its field-group permission check on
-     * purpose: the code pasted here runs, verbatim and unescaped, in every
-     * storefront visitor's browser (see app.blade.php), which is a
-     * materially larger capability than any other field `settings:update`
-     * grants. Hardcoded mother-only, the same pattern as
-     * SecuritySettingsController::update() — not delegable via the
-     * Permissions matrix at all.
-     */
-    public function updateMetaPixel(Request $request): RedirectResponse
-    {
-        if (! Auth::guard('admin')->user()?->is_mother) {
-            return back()->with('error', 'Only the mother admin can change the Meta Pixel code.');
-        }
-
-        $validated = $request->validate([
-            'meta_pixel_code' => [
-                'nullable', 'string', 'max:5000',
-                // Not a strict format match — Meta's own code is free to
-                // change shape, which is the whole reason this is a
-                // paste-the-snippet field rather than a template. Only
-                // catches an obviously wrong paste (blank, truncated, or
-                // unrelated text), not every possible mistake.
-                function (string $attribute, mixed $value, Closure $fail): void {
-                    if (trim((string) $value) === '') {
-                        return;
-                    }
-
-                    if (! str_contains($value, 'fbq(') || ! preg_match('/facebook\.(com|net)/i', $value)) {
-                        $fail("That doesn't look like Meta Pixel code — it should contain an fbq(...) call and reference facebook.com or facebook.net.");
-                    }
-                },
-            ],
-        ]);
-
-        Setting::updateOrCreate(
-            ['key' => 'meta_pixel_code'],
-            ['value' => $validated['meta_pixel_code'] ?? null, 'group' => 'general'],
-        );
-
-        return back()->with('success', 'Meta Pixel code saved.');
     }
 
     public function socialConfig(): Response
@@ -189,7 +144,6 @@ class SettingController extends Controller
             'social_links.twitter' => ['nullable', 'string', 'max:500'],
             'social_links.youtube' => ['nullable', 'string', 'max:500'],
             'social_links.tiktok' => ['nullable', 'string', 'max:500'],
-            'google_analytics_id' => ['nullable', 'string', 'max:100'],
             'whatsapp_number' => ['nullable', 'string', 'max:20'],
             'messenger_link' => ['nullable', 'string', 'max:500'],
             'bkash_number' => ['nullable', 'string', 'max:20'],
@@ -286,7 +240,7 @@ class SettingController extends Controller
         $fields = [
             'site_name', 'contact_email', 'contact_phone', 'contact_address', 'currency_symbol',
             'legal_business_name', 'trade_licence_number',
-            'social_links', 'google_analytics_id',
+            'social_links',
             'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number',
             'google_client_id', 'google_client_secret', 'google_redirect_uri',
             'facebook_client_id', 'facebook_client_secret', 'facebook_redirect_uri',

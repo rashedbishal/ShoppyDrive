@@ -72,16 +72,23 @@
             <script type="application/ld+json">{!! json_encode($seoTags['jsonLd'], JSON_UNESCAPED_SLASHES) !!}</script>
         @endif
 
-        {{-- Meta Pixel: the admin pastes Meta's own base code verbatim (Admin
-        › Settings › Meta Pixel Code) rather than just an id, so a future
-        change to that code needs no deploy. Rendered unescaped, exactly as
-        given. Storefront only — not the admin back office. --}}
-        @php($metaPixelCode = \App\Support\LayoutCache::settings()['meta_pixel_code'] ?? null)
-        @if($metaPixelCode && !request()->is('admin', 'admin/*'))
-            {!! $metaPixelCode !!}
+        {{-- Custom Header: the admin pastes any vendor's code verbatim (Admin
+        › Marketing & Tracking), not just Facebook's, so a future vendor or a
+        change to an existing one's code needs no deploy. Rendered unescaped,
+        exactly as given. Storefront only — not the admin back office. --}}
+        @php($customHeaderCode = \App\Support\LayoutCache::settings()['custom_header_code'] ?? null)
+        @if($customHeaderCode && !request()->is('admin', 'admin/*'))
+            {!! $customHeaderCode !!}
         @endif
     </head>
     <body class="antialiased">
         <x-inertia::app />
+
+        {{-- Custom Footer: same as Custom Header above, rendered just before
+        </body> — the standard "footer scripts" placement. --}}
+        @php($customFooterCode = \App\Support\LayoutCache::settings()['custom_footer_code'] ?? null)
+        @if($customFooterCode && !request()->is('admin', 'admin/*'))
+            {!! $customFooterCode !!}
+        @endif
     </body>
 </html>

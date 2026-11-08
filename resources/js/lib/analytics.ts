@@ -130,5 +130,6 @@ declare global {
     interface Window {
         gtag: (...args: any[]) => void;
         GA_ID: string;
+        dataLayer: Record<string, unknown>[];
     }
 }
