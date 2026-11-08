@@ -62,6 +62,7 @@ class AiAssistantTools
         private readonly CartManager $cartManager,
         private readonly OrderCancellationService $cancellation,
         private readonly ReturnRequestService $returns,
+        private readonly LoyaltyPointsService $loyalty,
     ) {}
 
     /**
@@ -508,6 +509,37 @@ class AiAssistantTools
     }
 
     /**
+     * Same category match ProductController's own "You might also like"
+     * section uses (same category_id, excludes itself) — handy for
+     * suggesting an alternative when the named product is out of stock or
+     * just to answer "what else is like this?".
+     *
+     * @return array<string, mixed>
+     */
+    public function getRelatedProducts(string $productName): array
+    {
+        $product = $this->resolveProductByName($productName, ['id', 'name', 'category_id']);
+
+        if ($product === null) {
+            return ['found' => false, 'message' => 'No product found with that name.'];
+        }
+
+        $related = Product::query()
+            ->visible()
+            ->where('category_id', $product->category_id)
+            ->where('id', '!=', $product->id)
+            ->with(self::SEARCH_WITH)
+            ->limit(5)
+            ->get(self::SEARCH_COLUMNS);
+
+        if ($related->isEmpty()) {
+            return ['found' => false, 'message' => "Nothing else similar to {$product->name} right now."];
+        }
+
+        return ['found' => true, 'product' => $product->name, 'related_products' => $this->mapProductsForDisplay($related)];
+    }
+
+    /**
      * Only ever approved reviews — the same `is_approved` flag every other
      * reviews_count/average_rating computation in this app (HomeController,
      * WishlistController) already filters on.
@@ -612,6 +644,58 @@ class AiAssistantTools
             'found' => true,
             'points_balance' => (int) $user->points_balance,
             'referral_code' => $user->referral_code,
+        ];
+    }
+
+    /**
+     * lookup_order only ever reaches one order (by number, or the single
+     * latest) — this is the "show me my recent orders" case the account
+     * page's own order history already covers.
+     *
+     * @return array<string, mixed>
+     */
+    public function listMyOrders(User $user): array
+    {
+        $orders = Order::where('user_id', $user->id)->latest()->limit(10)->get(['order_number', 'status', 'total', 'created_at']);
+
+        if ($orders->isEmpty()) {
+            return ['found' => false, 'message' => 'No orders found on this account yet.'];
+        }
+
+        return [
+            'found' => true,
+            'orders' => $orders->map(fn (Order $o) => [
+                'order_number' => $o->order_number,
+                'status' => $o->status->value,
+                'total' => (float) $o->total,
+                'placed_at' => $o->created_at?->toDateString(),
+            ])->values()->all(),
+        ];
+    }
+
+    /**
+     * Wraps LoyaltyPointsService::claimDailyLogin() exactly — already
+     * idempotent per calendar day (Asia/Dhaka) and already computes the
+     * streak-day point value, so there's nothing left for this to decide.
+     *
+     * @return array<string, mixed>
+     */
+    public function claimDailyLoginBonus(User $user): array
+    {
+        $result = $this->loyalty->claimDailyLogin($user);
+
+        if (! $result['awarded']) {
+            return [
+                'success' => false,
+                'message' => $result['claimedToday']
+                    ? "Already claimed today — day {$result['streakDay']} of the streak."
+                    : "Couldn't claim the daily login bonus right now.",
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => "Claimed {$result['points']} points for day {$result['streakDay']} of the login streak.",
         ];
     }
 

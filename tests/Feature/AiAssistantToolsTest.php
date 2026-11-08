@@ -831,3 +831,67 @@ test('a return request for a specific product only returns that product\'s remai
     expect($returnRequest->items)->toHaveCount(1)
         ->and($returnRequest->items[0]['product_id'])->toBe($productA->id);
 });
+
+test('related products only come from the same category and never include the product itself', function () {
+    $category = Category::factory()->create();
+    $otherCategory = Category::factory()->create();
+    $product = Product::factory()->create(['name' => 'Main Product', 'category_id' => $category->id]);
+    $sameCategory = Product::factory()->create(['name' => 'Same Category Item', 'category_id' => $category->id]);
+    $hiddenSameCategory = Product::factory()->create(['name' => 'Hidden Sibling', 'category_id' => $category->id, 'is_active' => false]);
+    Product::factory()->create(['name' => 'Different Category Item', 'category_id' => $otherCategory->id]);
+
+    $result = app(AiAssistantTools::class)->getRelatedProducts('Main Product');
+
+    $names = collect($result['related_products'])->pluck('name')->all();
+    expect($names)->toBe(['Same Category Item'])
+        ->and($names)->not->toContain('Main Product', 'Hidden Sibling', 'Different Category Item');
+});
+
+test('a product with nothing else in its category reports none found', function () {
+    $category = Category::factory()->create();
+    Product::factory()->create(['name' => 'Lonely Product', 'category_id' => $category->id]);
+
+    $result = app(AiAssistantTools::class)->getRelatedProducts('Lonely Product');
+
+    expect($result['found'])->toBeFalse();
+});
+
+test('listing my orders returns recent orders across statuses, newest first', function () {
+    $user = User::factory()->create();
+    $older = aiAssistantTestOrder(['user_id' => $user->id, 'status' => 'delivered']);
+    $older->forceFill(['created_at' => now()->subDay()])->saveQuietly();
+    $newer = aiAssistantTestOrder(['user_id' => $user->id, 'status' => 'pending']);
+
+    $result = app(AiAssistantTools::class)->listMyOrders($user);
+
+    expect($result['found'])->toBeTrue();
+    $numbers = collect($result['orders'])->pluck('order_number')->all();
+    expect($numbers[0])->toBe($newer->order_number)
+        ->and($numbers)->toContain($older->order_number);
+});
+
+test('a brand new account with no orders is reported rather than an empty success', function () {
+    $user = User::factory()->create();
+
+    $result = app(AiAssistantTools::class)->listMyOrders($user);
+
+    expect($result['found'])->toBeFalse();
+});
+
+test('claiming the daily login bonus for the first time today awards points', function () {
+    $user = User::factory()->create(['login_streak_count' => 0, 'login_streak_date' => null]);
+
+    $result = app(AiAssistantTools::class)->claimDailyLoginBonus($user);
+
+    expect($result['success'])->toBeTrue();
+});
+
+test('claiming the daily login bonus twice in the same day only awards it once', function () {
+    $user = User::factory()->create();
+
+    app(AiAssistantTools::class)->claimDailyLoginBonus($user);
+    $second = app(AiAssistantTools::class)->claimDailyLoginBonus($user);
+
+    expect($second['success'])->toBeFalse()
+        ->and($second['message'])->toContain('Already claimed today');
+});

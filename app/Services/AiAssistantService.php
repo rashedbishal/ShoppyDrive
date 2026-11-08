@@ -187,6 +187,7 @@ class AiAssistantService
                 'list_brands' => $this->tools->listBrands(),
                 'list_products_by_brand' => $this->tools->listProductsByBrand((string) ($arguments['brand_name'] ?? '')),
                 'get_product_reviews' => $this->tools->getProductReviews((string) ($arguments['product_name'] ?? '')),
+                'get_related_products' => $this->tools->getRelatedProducts((string) ($arguments['product_name'] ?? '')),
                 'get_featured_products' => $this->tools->getFeaturedProducts((string) ($arguments['section'] ?? '')),
                 'estimate_shipping_cost' => $this->tools->estimateShippingCost(
                     (string) ($arguments['district'] ?? ''),
@@ -195,7 +196,7 @@ class AiAssistantService
                 'search_blog_posts' => $this->tools->searchBlogPosts((string) ($arguments['query'] ?? '')),
                 'add_to_cart', 'update_cart_item', 'view_cart', 'apply_coupon', 'remove_coupon', 'cancel_order',
                 'get_account_info', 'list_saved_addresses', 'add_to_wishlist', 'remove_from_wishlist', 'view_wishlist',
-                'submit_return_request' => $authUser === null
+                'submit_return_request', 'list_my_orders', 'claim_daily_login_bonus' => $authUser === null
                     ? ['success' => false, 'message' => 'The customer needs to be logged in for this — ask them to log in first.']
                     : $this->runAccountTool($name, $arguments, $authUser),
                 default => ['found' => false, 'message' => 'Unknown tool.'],
@@ -240,6 +241,8 @@ class AiAssistantService
                 (string) ($arguments['reason'] ?? ''),
                 isset($arguments['product_name']) ? (string) $arguments['product_name'] : null,
             ),
+            'list_my_orders' => $this->tools->listMyOrders($authUser),
+            'claim_daily_login_bonus' => $this->tools->claimDailyLoginBonus($authUser),
             default => ['success' => false, 'message' => 'Unknown tool.'],
         };
     }
@@ -339,7 +342,9 @@ class AiAssistantService
             don't suggest it might exist anyway.
 
             Use get_product_reviews for what customers say about a product
-            and its rating, get_featured_products for "what's new" or "what's
+            and its rating, get_related_products to suggest an alternative
+            (e.g. when something is out of stock) or answer "what else is
+            like this?", get_featured_products for "what's new" or "what's
             popular", search_blog_posts for anything matching a blog article,
             and estimate_shipping_cost for a delivery-cost question — all
             rather than guessing. estimate_shipping_cost only ever states the
@@ -353,7 +358,9 @@ class AiAssistantService
             row); it doesn't fit and shows as broken text. When listing
             several products, variants, or prices, use short bullet lines
             instead, one per line (e.g. "- Red, Size L — ৳1,000 (flash
-            sale)").
+            sale)"). Reply in whatever language or script the customer
+            writes in — English, Bengali, or Banglish — rather than always
+            answering in English.
             PROMPT;
 
         if (! $isLoggedIn) {
@@ -394,9 +401,11 @@ class AiAssistantService
 
             Use get_account_info for their loyalty points balance or
             referral code, list_saved_addresses for their saved delivery
-            addresses, and add_to_wishlist/remove_from_wishlist/view_wishlist
-            for the wishlist — always with the matching tool, never by
-            assuming or inventing a number.
+            addresses, add_to_wishlist/remove_from_wishlist/view_wishlist
+            for the wishlist, list_my_orders for "what have I ordered
+            recently" (lookup_order only ever reaches one order at a time),
+            and claim_daily_login_bonus if they ask to claim it — always
+            with the matching tool, never by assuming or inventing a number.
             PROMPT;
     }
 
@@ -539,6 +548,20 @@ class AiAssistantService
                 'function' => [
                     'name' => 'get_product_reviews',
                     'description' => 'Get a product\'s approved customer reviews and average rating.',
+                    'parameters' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'product_name' => ['type' => 'string', 'description' => 'The product name'],
+                        ],
+                        'required' => ['product_name'],
+                    ],
+                ],
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'get_related_products',
+                    'description' => 'Get products similar to one (same category) — useful to suggest an alternative when the named product is out of stock, or when the customer asks what else is like it.',
                     'parameters' => [
                         'type' => 'object',
                         'properties' => [
@@ -740,6 +763,22 @@ class AiAssistantService
                         ],
                         'required' => ['order_number', 'reason'],
                     ],
+                ],
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'list_my_orders',
+                    'description' => "List the logged-in customer's recent orders (order number, status, total, date). Takes no arguments.",
+                    'parameters' => ['type' => 'object', 'properties' => (object) []],
+                ],
+            ],
+            [
+                'type' => 'function',
+                'function' => [
+                    'name' => 'claim_daily_login_bonus',
+                    'description' => "Claim the logged-in customer's daily login point bonus, if not already claimed today. Takes no arguments.",
+                    'parameters' => ['type' => 'object', 'properties' => (object) []],
                 ],
             ],
         ];
