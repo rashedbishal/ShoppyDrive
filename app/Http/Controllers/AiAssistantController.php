@@ -32,6 +32,6 @@ class AiAssistantController extends Controller
             $request->user(),
         );
 
-        return response()->json(['reply' => $result['reply']]);
+        return response()->json(['reply' => $result['reply'], 'cart' => $result['cart']]);
     }
 }

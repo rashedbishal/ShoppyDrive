@@ -1,13 +1,122 @@
+import { Link } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, Send, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { getXsrfToken } from '@/lib/csrf';
 import { cn } from '@/lib/utils';
+import { useCartStore } from '@/stores/cartStore';
+import type { Cart } from '@/types';
 
 type ChatMessage = {
     role: 'user' | 'assistant';
     text: string;
 };
+
+/**
+ * The system prompt tells the model not to reply with a markdown table in
+ * this narrow chat bubble, but a smaller model doesn't follow that
+ * perfectly every time (the same way it occasionally mishandles a tool
+ * argument) — so this is a safety net, not the primary fix: any pipe table
+ * that slips through is rewritten here as one bullet line per row (e.g.
+ * "- Size: L, Color: Red, Price: ৳1,000") before display, which wraps
+ * naturally at any width instead of overflowing as unbroken piped text.
+ * Only reformats *display* — the raw text sent back as conversation
+ * history on the next turn is untouched, so the model still sees its own
+ * actual prior reply.
+ */
+function isPipeTableRow(line: string): boolean {
+    const trimmed = line.trim();
+
+    return trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.length > 1;
+}
+
+function parsePipeTableRow(line: string): string[] {
+    return line
+        .trim()
+        .slice(1, -1)
+        .split('|')
+        .map((cell) => cell.trim());
+}
+
+function isPipeTableSeparatorRow(cells: string[]): boolean {
+    return cells.length > 0 && cells.every((cell) => /^:?-+:?$/.test(cell));
+}
+
+function convertMarkdownTablesToLists(text: string): string {
+    const lines = text.split('\n');
+    const output: string[] = [];
+    let i = 0;
+
+    while (i < lines.length) {
+        const isHeaderStart =
+            isPipeTableRow(lines[i]) &&
+            i + 1 < lines.length &&
+            isPipeTableRow(lines[i + 1]) &&
+            isPipeTableSeparatorRow(parsePipeTableRow(lines[i + 1]));
+
+        if (!isHeaderStart) {
+            output.push(lines[i]);
+            i += 1;
+            continue;
+        }
+
+        const headers = parsePipeTableRow(lines[i]);
+        i += 2;
+
+        while (i < lines.length && isPipeTableRow(lines[i])) {
+            const cells = parsePipeTableRow(lines[i]);
+            const parts = headers
+                .map((header, index) =>
+                    cells[index] ? `${header}: ${cells[index]}` : null,
+                )
+                .filter((part): part is string => part !== null);
+
+            output.push(`- ${parts.join(', ')}`);
+            i += 1;
+        }
+    }
+
+    return output.join('\n');
+}
+
+function renderMessageContent(rawText: string): React.ReactNode {
+    const text = convertMarkdownTablesToLists(rawText);
+    const pattern = /\[([^\]]+)]\((https?:\/\/[^\s)]+)\)|\*\*([^*]+)\*\*/g;
+    const nodes: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    let key = 0;
+
+    while ((match = pattern.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+            nodes.push(
+                <Fragment key={key++}>
+                    {text.slice(lastIndex, match.index)}
+                </Fragment>,
+            );
+        }
+
+        nodes.push(
+            match[1] !== undefined ? (
+                <Link
+                    key={key++}
+                    href={match[2]}
+                    className="underline underline-offset-2"
+                >
+                    {match[1]}
+                </Link>
+            ) : (
+                <strong key={key++}>{match[3]}</strong>
+            ),
+        );
+
+        lastIndex = pattern.lastIndex;
+    }
+
+    nodes.push(<Fragment key={key++}>{text.slice(lastIndex)}</Fragment>);
+
+    return nodes;
+}
 
 const STORAGE_KEY = 'shoppydrive-ai-assistant-v2';
 
@@ -105,7 +214,10 @@ export default function AiAssistantPanel({
                 throw new Error('Request failed');
             }
 
-            const data = (await response.json()) as { reply: string };
+            const data = (await response.json()) as {
+                reply: string;
+                cart: Cart | null;
+            };
 
             const withReply: ChatMessage[] = [
                 ...nextMessages,
@@ -113,6 +225,14 @@ export default function AiAssistantPanel({
             ];
             setMessages(withReply);
             saveStoredState({ messages: withReply });
+
+            // The assistant modifies the customer's real, server-side cart
+            // directly (add/update/coupon tools) — this is what brings that
+            // change into the same browser's live cart state, the same way
+            // a normal page load's cart prop would.
+            if (data.cart) {
+                useCartStore.getState().hydrateCart(data.cart);
+            }
         } catch {
             setMessages([
                 ...nextMessages,
@@ -179,7 +299,7 @@ export default function AiAssistantPanel({
                                             : 'rounded-bl-sm bg-white text-slate-700 shadow-sm ring-1 ring-slate-200',
                                     )}
                                 >
-                                    {message.text}
+                                    {renderMessageContent(message.text)}
                                 </p>
                             </div>
                         ))}

@@ -8,11 +8,11 @@ declare(strict_types=1);
  * identity must be editable in Admin and shown on the storefront.
  */
 
-use App\Http\Controllers\ReturnRequestController;
 use App\Models\Admin;
 use App\Models\Page;
 use App\Models\Setting;
 use App\Services\PendingCodLimit;
+use App\Services\ReturnRequestService;
 use Database\Seeders\PageSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -69,7 +69,7 @@ test('the pages state the rules the shop actually applies', function () {
 
 test('a policy rule changed in code would contradict the pages, so the tested numbers match it', function () {
     expect(PendingCodLimit::MAX_UNITS_PER_PRODUCT)->toBe(10)
-        ->and(ReturnRequestController::ELIGIBILITY_WINDOW_DAYS)->toBe(7);
+        ->and(ReturnRequestService::ELIGIBILITY_WINDOW_DAYS)->toBe(7);
 });
 
 test('the migration rewrites stale live pages without touching their creation date', function () {

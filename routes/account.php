@@ -8,12 +8,10 @@ use App\Http\Controllers\ReturnRequestController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Address;
 use App\Models\Order;
-use App\Models\OrderStatusHistory;
 use App\Models\Wishlist;
-use App\Services\CourierSubmissionService;
+use App\Services\OrderCancellationService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 // SEC-021: encrypts this history state in the browser, so a shared PC's
@@ -124,34 +122,12 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active', 'histor
     // CourierSubmissionService), since that's the only thing serializing
     // this against claim()/markSent()/markFailed()/markUnknown(), all of
     // which lock the same Order row before touching it.
-    Route::patch('/orders/{order:order_number}/cancel', function (Order $order, CourierSubmissionService $courierSubmissions) {
+    Route::patch('/orders/{order:order_number}/cancel', function (Order $order, OrderCancellationService $cancellation) {
         if ($order->user_id !== auth()->id()) {
             abort(403);
         }
 
-        $error = DB::transaction(function () use ($order, $courierSubmissions): ?string {
-            $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->first();
-
-            if ($lockedOrder === null || $lockedOrder->status !== OrderStatus::PENDING) {
-                return 'Only pending orders can be cancelled.';
-            }
-
-            if ($lockedOrder->pathao_consignment_id !== null
-                || $lockedOrder->steadfast_consignment_id !== null
-                || $courierSubmissions->hasUnresolvedSubmission($lockedOrder->id)) {
-                return 'This order is already being processed by our courier and can no longer be cancelled here. Please contact our support team for assistance.';
-            }
-
-            $lockedOrder->update(['status' => OrderStatus::CANCELLED]);
-
-            OrderStatusHistory::create([
-                'order_id' => $lockedOrder->id,
-                'status' => OrderStatus::CANCELLED->value,
-                'notes' => 'Cancelled by customer.',
-            ]);
-
-            return null;
-        }, 3);
+        $error = $cancellation->cancelAsCustomer($order);
 
         if ($error !== null) {
             return back()->with('error', $error);
