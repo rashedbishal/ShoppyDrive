@@ -49,18 +49,20 @@ test('a guest with no previous redemption gets a successful preview', function (
     expect($response->json('coupon.id'))->toBe($coupon->id);
 });
 
-test('a guest whose phone already redeemed the coupon gets a generic rejection, not the per-user-limit message', function () {
+test('a guest whose phone already redeemed the coupon gets the same specific reason a logged-in customer would', function () {
+    // BIZ-015 (owner decision, 2026-11-09): previously a guest got a
+    // deliberately vague rejection here to avoid letting a coupon code
+    // holder probe arbitrary phone numbers and learn which ones had used
+    // it (an enumeration risk). The owner chose clearer guest messaging
+    // over closing that risk, so a guest now sees the exact same reason
+    // eligibilityError() already gave logged-in customers.
     $coupon = Coupon::factory()->create(['per_user_limit' => 1, 'type' => 'fixed', 'value' => 10]);
     guestOrderWithCoupon($coupon, '01711111111');
 
     $response = validateCoupon($coupon->code, 100, '01711111111');
 
     $response->assertStatus(422);
-    expect($response->json('error'))->toBe("This coupon isn't available for this order.");
-    // The exact string eligibilityError() uses for a logged-in customer's
-    // own per-user-limit rejection must never appear in a guest response
-    // — that would be the enumeration leak this test guards against.
-    expect($response->json('error'))->not->toContain('maximum number of times');
+    expect($response->json('error'))->toBe('You have already used this coupon the maximum number of times.');
 });
 
 test('invalid phone formats are treated as if no phone were submitted, not rejected', function () {

@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 6 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
+**Done: 8 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 6 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -38,9 +38,9 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [x] BIZ-033 — Home page ratings count unmoderated reviews — tester first failed it (product page broke after approving a review), couldn't reproduce directly, owner confirmed fixed on retest 2026-11-09 (likely transient, no code change found/needed)
 - [x] BIZ-034 — No return, refund or shipping policy pages; seller identity missing — tester confirmed pages return 200, flagged legal content still needs owner/lawyer review (already the recorded disclaimer); legal_business_name/trade_licence_number confirmed still empty, owner's to fill in
 - [x] BIZ-012 — A whole-order refund restocks delivered goods automatically — tester skipped it (hard to set up manually); reproduced directly via real route, already deployed and working correctly, no code change needed
-- [ ] BIZ-014 — A retried checkout puts purchased items back in the cart
-- [ ] BIZ-015 — Per-customer coupon limits do not hold across guest and account
-- [ ] BIZ-017 — Incomplete-order conversion ignores flash price and variant ownership
+- [x] BIZ-014 — A retried checkout puts purchased items back in the cart — tester skipped it (couldn't manually resubmit); re-confirmed via test 2026-11-09, no code change needed
+- [~] BIZ-015 — Per-customer coupon limits do not hold across guest and account — enforcement worked, tester flagged a vague guest error message; owner chose clarity over the SEC-012 anti-enumeration tradeoff, fix committed locally 2026-11-09, not yet pushed/deployed
+- [x] BIZ-017 — Incomplete-order conversion ignores flash price and variant ownership — tester's two new complaints (no delivery charge, no add-product option) could not be reproduced, both already implemented and tested; no code change needed
 - [ ] BIZ-024 — Referral discount can be farmed with new emails
 - [ ] BIZ-025 — Transaction IDs are not tied to the checkout time or payer
 - [ ] BIZ-026 — Legacy ZiniPay path is still reachable and has no amount check

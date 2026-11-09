@@ -92,28 +92,18 @@ Route::post('/coupon/validate', function (Request $request) {
         ? (string) $request->phone
         : null;
 
-    // Guests are never told specifically that *this* phone number has
-    // already redeemed the coupon — anyone who knows a coupon code could
-    // otherwise probe arbitrary phone numbers against this endpoint and
-    // learn which ones have used it. This generic rejection still
-    // correctly says no (it doesn't weaken enforcement — the
-    // authoritative check in CheckoutController::resolveCoupon() /
-    // CouponService::consume() has the final say regardless of what this
-    // preview says), it just never confirms *why*. Logged-in users are
-    // unaffected: $guestPhone is only ever non-null for a guest request.
-    if ($coupon->per_user_limit !== null && $guestPhone !== null && Coupon::redemptionCount($coupon->id, null, $guestPhone) >= $coupon->per_user_limit) {
-        return response()->json(['error' => "This coupon isn't available for this order."], 422);
-    }
-
-    // Same check CheckoutController::resolveCoupon() uses at actual
-    // checkout time, so this preview can never promise a discount the
-    // real submission would then reject. Guest phone is deliberately not
-    // passed here — the dedicated, non-revealing check above already
-    // covers it; eligibilityError()'s own per-user message is reserved
-    // for the logged-in branch, which doesn't carry the same enumeration
-    // risk since a request can only ever check its own account's status.
+    // BIZ-015 (owner decision, 2026-11-09): a guest now sees the same
+    // specific per-user-limit reason a logged-in customer does ("already
+    // used the maximum number of times"), traded against the
+    // enumeration risk that specificity carries — someone who knows a
+    // coupon code could probe arbitrary phone numbers against this
+    // endpoint and learn which ones have used it. Owner chose clearer
+    // guest messaging over closing that risk. Same check
+    // CheckoutController::resolveCoupon() uses at actual checkout time,
+    // so this preview can never promise a discount the real submission
+    // would then reject.
     if ($coupon->appliesToEverything()) {
-        $error = $coupon->eligibilityError((float) $request->subtotal, $userId);
+        $error = $coupon->eligibilityError((float) $request->subtotal, $userId, $guestPhone);
 
         return $error !== null
             ? response()->json(['error' => $error], 422)
@@ -132,7 +122,7 @@ Route::post('/coupon/validate', function (Request $request) {
         return response()->json(['error' => Coupon::NOT_APPLICABLE_MESSAGE], 422);
     }
 
-    $error = $coupon->eligibilityError((float) array_sum(array_column($eligibleLines, 'subtotal')), $userId);
+    $error = $coupon->eligibilityError((float) array_sum(array_column($eligibleLines, 'subtotal')), $userId, $guestPhone);
 
     if ($error !== null) {
         return response()->json(['error' => $error], 422);

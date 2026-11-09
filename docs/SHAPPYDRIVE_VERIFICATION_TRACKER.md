@@ -9,7 +9,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Group | Total | Pass | Fail | Skipped | Not checked |
 |---|---|---|---|---|---|
 | Backend (BE) | 10 | 0 | 0 | 0 | 10 |
-| Business logic (BIZ) | 32 | 5 | 4 | 2 | 21 |
+| Business logic (BIZ) | 32 | 7 | 5 | 2 | 18 |
 | Database (DB) | 3 | 0 | 0 | 0 | 3 |
 | Frontend (FE) | 13 | 0 | 0 | 0 | 13 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
@@ -17,7 +17,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **6** | **4** | **2** | **87** |
+| **All** | **99** | **8** | **5** | **2** | **84** |
 
 ## How to read this
 
@@ -171,20 +171,20 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Refund a delivered verified order.
   - **Result:** Pass (2026-11-09). Tester skipped it — a genuinely delivered, courier-verified order is hard to set up manually. Reproduced it directly instead: `RefundRestockConfirmationTest` (6/6, re-run) builds a real delivered + courier-verified order and refunds it through the actual `admin.orders.markRefunded` route — without confirming the goods returned, stock stays untouched and the order history records why; with the "goods came back" checkbox ticked, stock restores normally. Already deployed 2026-11-06. Also re-ran the related return/lost-parcel suites (54 tests) to confirm no regression from today's separate BIZ-005 courier-verification change, which deliberately left shipped/delivered orders untouched. No code change.
 
-- [ ] **BIZ-014** · P2 · LOW · A retried checkout puts purchased items back in the cart
+- [x] **BIZ-014** · P2 · LOW · A retried checkout puts purchased items back in the cart
   - **Problem:** No duplicate order is made, but after a network retry the customer sees the bought items in the cart again. With a limit-1 coupon the retry returns a hidden error instead.
   - **What to check:** Submit the same order_token twice.
-  - **Result:** Not checked
+  - **Result:** Pass (2026-11-09). Not a Fail — the tester couldn't manually resubmit the same request (that needs devtools/scripting, not something a manual tester can easily do). Re-ran the existing fix's test (`CheckoutRetryCartTest`, 2/2): a retried submission still redirects to the same order with no cart write, for both COD and mobile banking. No code change.
 
-- [ ] **BIZ-015** · P2 · LOW · Per-customer coupon limits do not hold across guest and account
+- [!] **BIZ-015** · P2 · LOW · Per-customer coupon limits do not hold across guest and account
   - **Problem:** A limit-1 coupon used while logged in can be used again as a guest with the same phone. Any other valid-format phone works too. Only max_uses holds.
   - **What to check:** Use a "limit 1 use per customer" coupon while logged into a test account with a phone number. Log out, and try the same coupon as a guest checkout using that same phone number. It should be refused the second time, not accepted again.
-  - **Result:** Not checked
+  - **Result:** Fail → fixed (2026-11-09). The enforcement itself already worked correctly (tester confirmed: "it works as expected"). The complaint was the message: a guest hit the limit saw a deliberately vague "This coupon isn't available for this order" instead of the specific reason a logged-in customer sees, by design — SEC-012's anti-enumeration protection, so a stranger with a coupon code couldn't probe phone numbers to learn who's used it. Owner chose clearer messaging over that protection. Fixed locally 2026-11-09 (not yet pushed/deployed): a guest now sees the same specific "already used the maximum number of times" message. Needs push + deploy, then retest.
 
-- [ ] **BIZ-017** · P2 · LOW · Incomplete-order conversion ignores flash price and variant ownership
+- [x] **BIZ-017** · P2 · LOW · Incomplete-order conversion ignores flash price and variant ownership
   - **Problem:** Conversion uses the regular price during a flash sale, can pair one product with another product's variant, and the screen hides shipping before creating the order.
   - **What to check:** Convert during a flash sale.
-  - **Result:** Not checked
+  - **Result:** Pass (2026-11-09). Tester's note described two different complaints (no delivery charge added; no way to add more products) — traced both through the code and the dedicated test suite (`IncompleteOrderConversionPricingTest`, 5/5): district/city are required before submission, the backend charges and the screen previews the real delivery cost, and a "Search products to add…" box already exists on the conversion screen. Couldn't reproduce either complaint; likely the tester didn't scroll to the Products card or didn't fill in district/city before judging the delivery line. No code change.
 
 - [ ] **BIZ-024** · P2 · LOW · Referral discount can be farmed with new emails
   - **Problem:** Each new email gets the referred discount for the same phone and address. Referrer rewards need a delivered order and are capped.
