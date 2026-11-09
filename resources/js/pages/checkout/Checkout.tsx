@@ -469,10 +469,12 @@ export default function Checkout({
 
     // ── Shipping cost calculation ─────────────────────────────────────────────
     function calcShipping(district: string, city: string): number | null {
-        if (!district || !city) {
-            return null;
-        } // address incomplete
-
+        // FE-002 retest: free delivery depends only on the cart (threshold,
+        // bundles), never on the address, so it must be checked before the
+        // "address incomplete" bail-out below — otherwise a cart already
+        // past the threshold showed "Enter address" instead of "Free" for
+        // as long as the district/city fields were still blank, same as
+        // CartDrawer.tsx already gets right.
         if (
             isDeliveryFree(items, {
                 subtotal,
@@ -482,6 +484,10 @@ export default function Checkout({
         ) {
             return 0;
         }
+
+        if (!district || !city) {
+            return null;
+        } // address incomplete — needed only to pick the paid rate below
 
         return district === 'Dhaka' && city === 'Inside Dhaka City Corporation'
             ? (settings.shipping_rate_inside_dhaka ?? 60)

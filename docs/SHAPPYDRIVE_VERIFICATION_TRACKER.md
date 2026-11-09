@@ -11,13 +11,13 @@ Claude marks an item here once its result is known. This file records live-site 
 | Backend (BE) | 10 | 0 | 0 | 0 | 10 |
 | Business logic (BIZ) | 32 | 7 | 5 | 2 | 18 |
 | Database (DB) | 3 | 0 | 0 | 0 | 3 |
-| Frontend (FE) | 13 | 0 | 0 | 0 | 13 |
+| Frontend (FE) | 13 | 0 | 1 | 0 | 12 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
 | Operations (OPS) | 6 | 0 | 0 | 0 | 6 |
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **8** | **5** | **2** | **84** |
+| **All** | **99** | **8** | **6** | **2** | **83** |
 
 ## How to read this
 
@@ -280,10 +280,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Account with 11 orders.
   - **Result:** Not checked
 
-- [ ] **FE-002** · P2 · LOW · Cart drawer and checkout estimates disagree with the server
+- [!] **FE-002** · P2 · LOW · Cart drawer and checkout estimates disagree with the server
   - **Problem:** The drawer ignores the free-delivery threshold, bundles and selected-item coupons. Checkout preview has no bundle free-delivery branch. HandleInertiaRequests holds another copy of the shipping rule. Final charges are correct.
   - **What to check:** Cart above the threshold.
-  - **Result:** Not checked
+  - **Result:** Fail (tester, 2026-11-08) — checkout's shipping line showed "Enter address" instead of "Free" for a cart already past the free-delivery threshold, as long as district/city hadn't been picked yet. `Checkout.tsx` checked for a missing address before checking free delivery, even though free delivery never depends on the address; `CartDrawer.tsx` already had the order right. Fixed locally 2026-11-09 (not yet pushed/deployed): free delivery is now checked first. No frontend test runner in this project and no browser tool available in this session to verify live — checked by `tsc`/ESLint/Prettier and code reasoning only, matching the original fix's own unresolved "not exercised in the browser" gap. Needs push + deploy, then a live retest.
 
 - [ ] **FE-007** · P2 · MEDIUM · Session timeout on landing-page checkout loses the form and may 405
   - **Problem:** After 2 hours the 419 page replaces the form, and its Refresh reloads a POST-only URL. Main checkout also loses the address.

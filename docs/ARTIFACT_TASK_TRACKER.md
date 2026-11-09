@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 8 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 0 · Failed: 0 · Skipped: 1
+**Done: 8 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 1 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -65,7 +65,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [ ] FE-005 — A server error empties a logged-in customer's cart
 - [ ] FE-006 — Product pages have no search or share tags in the HTML
 - [ ] FE-001 — Customers cannot page through order history
-- [ ] FE-002 — Cart drawer and checkout estimates disagree with the server
+- [~] FE-002 — Cart drawer and checkout estimates disagree with the server — tester failed it (checkout showed "Enter address" instead of "Free" above the threshold when no address picked yet); fix committed locally 2026-11-09, not yet pushed/deployed
 - [ ] FE-007 — Session timeout on landing-page checkout loses the form and may 405
 - [ ] FE-009 — No noindex or canonical; meta helper defects
 - [ ] FE-010 — No React error boundary
