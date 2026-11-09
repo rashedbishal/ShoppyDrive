@@ -1,7 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { DeleteCustomerDialog } from '@/components/admin/delete-customer-dialog';
+import { RestoreCustomerDialog } from '@/components/admin/restore-customer-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -29,6 +30,7 @@ type Customer = {
     orders_count: number;
     social_accounts: SocialAccount[];
     anonymized_at: string | null;
+    can_restore: boolean;
 };
 
 type Props = {
@@ -50,6 +52,7 @@ const statusVariant: Record<
 
 export default function CustomerShow({ customer, orders }: Props) {
     const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
+    const [restoreTarget, setRestoreTarget] = useState<Customer | null>(null);
 
     return (
         <>
@@ -104,6 +107,16 @@ export default function CustomerShow({ customer, orders }: Props) {
                         >
                             <Trash2 className="size-3.5" />
                             Anonymize Customer
+                        </button>
+                    )}
+                    {customer.anonymized_at && customer.can_restore && (
+                        <button
+                            type="button"
+                            onClick={() => setRestoreTarget(customer)}
+                            className="flex items-center gap-1.5 rounded-lg border border-[#c8102e]/20 px-3 py-1.5 text-xs font-semibold text-[#c8102e] hover:bg-[#c8102e]/5"
+                        >
+                            <RotateCcw className="size-3.5" />
+                            Restore Customer
                         </button>
                     )}
                 </div>
@@ -238,6 +251,10 @@ export default function CustomerShow({ customer, orders }: Props) {
             <DeleteCustomerDialog
                 customer={deleteTarget}
                 onOpenChange={(open) => !open && setDeleteTarget(null)}
+            />
+            <RestoreCustomerDialog
+                customer={restoreTarget}
+                onOpenChange={(open) => !open && setRestoreTarget(null)}
             />
         </>
     );

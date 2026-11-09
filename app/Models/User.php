@@ -48,6 +48,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'remember_token',
         'email_verification_code',
+        // Holds a raw password hash plus redacted PII, kept indefinitely
+        // for restoreFromAnonymization() — never meant to reach a response.
+        'anonymization_snapshot',
     ];
 
     /**
@@ -67,6 +70,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'role' => UserRole::class,
             'login_streak_date' => 'date',
             'anonymized_at' => 'datetime',
+            'anonymization_snapshot' => 'array',
             'abandoned_cart_reminders_enabled' => 'boolean',
         ];
     }
@@ -283,6 +287,31 @@ class User extends Authenticatable implements MustVerifyEmail
                 return false;
             }
 
+            // Captured before anything below overwrites or deletes it, so
+            // restoreFromAnonymization() can put it all back later — an
+            // admin anonymizing the wrong customer by mistake otherwise has
+            // no way back in (DB-001 keeps the email live but randomizes
+            // the password to something nobody knows). Owner decision: kept
+            // indefinitely, not purged after a retention window.
+            $snapshot = [
+                'name' => $locked->name,
+                'phone' => $locked->phone,
+                'avatar' => $locked->avatar,
+                'password' => $locked->password,
+                'remember_token' => $locked->remember_token,
+                'addresses' => $locked->addresses()->get([
+                    'id', 'name', 'phone', 'address_line1', 'address_line2', 'city', 'state', 'postal_code',
+                ])->map(fn (Address $address): array => $address->only([
+                    'id', 'name', 'phone', 'address_line1', 'address_line2', 'city', 'state', 'postal_code',
+                ]))->all(),
+                'social_accounts' => $locked->socialAccounts()->get([
+                    'provider', 'provider_id', 'token', 'refresh_token', 'token_expires_at',
+                ])->map(fn (SocialAccount $account): array => [
+                    ...$account->only(['provider', 'provider_id', 'token', 'refresh_token']),
+                    'token_expires_at' => $account->token_expires_at?->toIso8601String(),
+                ])->all(),
+            ];
+
             $locked->socialAccounts()->delete();
 
             $locked->addresses()->update([
@@ -302,6 +331,7 @@ class User extends Authenticatable implements MustVerifyEmail
                 'password' => Hash::make(Str::password(24)),
                 'remember_token' => Str::random(60),
                 'anonymized_at' => now(),
+                'anonymization_snapshot' => $snapshot,
             ])->save();
 
             DB::table('sessions')->where('user_id', $locked->id)->delete();
@@ -319,6 +349,71 @@ class User extends Authenticatable implements MustVerifyEmail
                     ->event('customer.self_anonymized')
                     ->log("Customer #{$locked->id} deleted their account; it was anonymized because it has order or financial history.");
             }
+
+            return true;
+        });
+    }
+
+    /**
+     * Reverses anonymize(): restores name/phone/avatar/password/
+     * remember_token, redacted address fields and deleted social-account
+     * rows from the snapshot it captured. An admin undoing a mistaken
+     * anonymization, not a self-service action — $causer is always the
+     * admin who did it. Returns false (no-op) if this account was never
+     * anonymized, or has no snapshot (anonymized before this existed).
+     */
+    public function restoreFromAnonymization(Admin $causer): bool
+    {
+        return DB::transaction(function () use ($causer): bool {
+            $locked = self::whereKey($this->id)->lockForUpdate()->first();
+
+            if ($locked->anonymized_at === null || $locked->anonymization_snapshot === null) {
+                return false;
+            }
+
+            $snapshot = $locked->anonymization_snapshot;
+
+            foreach ($snapshot['addresses'] ?? [] as $address) {
+                Address::where('id', $address['id'])->where('user_id', $locked->id)->update(
+                    collect($address)->except('id')->all(),
+                );
+            }
+
+            foreach ($snapshot['social_accounts'] ?? [] as $account) {
+                // The customer may have already manually reconnected this
+                // provider since being anonymized — never overwrite a live
+                // connection with a stale restored one.
+                $exists = SocialAccount::where('provider', $account['provider'])
+                    ->where('provider_id', $account['provider_id'])
+                    ->exists();
+
+                if (! $exists) {
+                    SocialAccount::create([
+                        'user_id' => $locked->id,
+                        'provider' => $account['provider'],
+                        'provider_id' => $account['provider_id'],
+                        'token' => $account['token'],
+                        'refresh_token' => $account['refresh_token'],
+                        'token_expires_at' => $account['token_expires_at'],
+                    ]);
+                }
+            }
+
+            $locked->forceFill([
+                'name' => $snapshot['name'],
+                'phone' => $snapshot['phone'],
+                'avatar' => $snapshot['avatar'],
+                'password' => $snapshot['password'],
+                'remember_token' => $snapshot['remember_token'],
+                'anonymized_at' => null,
+                'anonymization_snapshot' => null,
+            ])->save();
+
+            activity('admin')
+                ->causedBy($causer)
+                ->performedOn($locked)
+                ->event('customer.restored')
+                ->log("Admin {$causer->name} ({$causer->email}) restored anonymized customer #{$locked->id}.");
 
             return true;
         });

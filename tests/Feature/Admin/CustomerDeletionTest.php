@@ -282,6 +282,175 @@ test('anonymizing skips an avatar path outside the avatars directory or containi
     expect($customer->fresh()->anonymized_at)->not->toBeNull();
 });
 
+// ── Restore: undoing a mistaken anonymization ──
+
+test('a mother admin can restore an anonymized customer, putting back their original name, phone, email and login', function () {
+    actingAs($this->admin, 'admin');
+
+    $customer = User::factory()->create(['name' => 'Real Name', 'phone' => '01700000000', 'email' => 'real@example.com']);
+    $originalPassword = $customer->password;
+
+    $this->delete(route('admin.customers.destroy', $customer), ['mother_password' => 'mother-secret']);
+    expect($customer->fresh()->name)->toBe("Deleted Customer #{$customer->id}");
+
+    $response = $this->post(route('admin.customers.restore', $customer), ['mother_password' => 'mother-secret']);
+    $response->assertRedirect(route('admin.customers.show', $customer));
+
+    $restored = $customer->fresh();
+    expect($restored->name)->toBe('Real Name');
+    expect($restored->phone)->toBe('01700000000');
+    expect($restored->email)->toBe('real@example.com');
+    expect($restored->password)->toBe($originalPassword);
+    expect($restored->anonymized_at)->toBeNull();
+});
+
+test('restoring puts back the exact redacted address fields, leaving label/country/is_default untouched', function () {
+    actingAs($this->admin, 'admin');
+
+    $customer = User::factory()->create();
+    $address = Address::create([
+        'user_id' => $customer->id,
+        'label' => 'Home',
+        'name' => 'Real Name',
+        'phone' => '01700000000',
+        'address_line1' => '123 Real Street',
+        'address_line2' => 'Apt 4',
+        'city' => 'Dhaka',
+        'state' => 'Dhaka',
+        'postal_code' => '1207',
+        'country' => 'Bangladesh',
+        'is_default' => true,
+    ]);
+
+    $this->delete(route('admin.customers.destroy', $customer), ['mother_password' => 'mother-secret']);
+    expect($address->fresh()->name)->toBe('[redacted]');
+
+    $this->post(route('admin.customers.restore', $customer), ['mother_password' => 'mother-secret']);
+
+    $restored = $address->fresh();
+    expect($restored->name)->toBe('Real Name');
+    expect($restored->phone)->toBe('01700000000');
+    expect($restored->address_line1)->toBe('123 Real Street');
+    expect($restored->address_line2)->toBe('Apt 4');
+    expect($restored->city)->toBe('Dhaka');
+    expect($restored->state)->toBe('Dhaka');
+    expect($restored->postal_code)->toBe('1207');
+    expect($restored->label)->toBe('Home');
+    expect($restored->country)->toBe('Bangladesh');
+    expect($restored->is_default)->toBeTrue();
+});
+
+test('restoring recreates a social account deleted by anonymization', function () {
+    actingAs($this->admin, 'admin');
+
+    $customer = User::factory()->create();
+    SocialAccount::create([
+        'user_id' => $customer->id,
+        'provider' => 'google',
+        'provider_id' => 'google-123',
+        'token' => 'tok',
+        'refresh_token' => 'ref',
+    ]);
+
+    $this->delete(route('admin.customers.destroy', $customer), ['mother_password' => 'mother-secret']);
+    expect(SocialAccount::where('user_id', $customer->id)->exists())->toBeFalse();
+
+    $this->post(route('admin.customers.restore', $customer), ['mother_password' => 'mother-secret']);
+
+    $restored = SocialAccount::where('user_id', $customer->id)->first();
+    expect($restored)->not->toBeNull();
+    expect($restored->provider)->toBe('google');
+    expect($restored->provider_id)->toBe('google-123');
+});
+
+test('restoring never overwrites a social account the customer already reconnected themselves', function () {
+    actingAs($this->admin, 'admin');
+
+    $customer = User::factory()->create();
+    SocialAccount::create([
+        'user_id' => $customer->id,
+        'provider' => 'google',
+        'provider_id' => 'google-123',
+        'token' => 'old-token',
+    ]);
+
+    $this->delete(route('admin.customers.destroy', $customer), ['mother_password' => 'mother-secret']);
+
+    // Customer reconnects on their own before the admin gets to restoring.
+    SocialAccount::create([
+        'user_id' => $customer->id,
+        'provider' => 'google',
+        'provider_id' => 'google-123',
+        'token' => 'new-token',
+    ]);
+
+    $this->post(route('admin.customers.restore', $customer), ['mother_password' => 'mother-secret']);
+
+    expect(SocialAccount::where('provider', 'google')->where('provider_id', 'google-123')->count())->toBe(1);
+    expect(SocialAccount::where('provider', 'google')->where('provider_id', 'google-123')->first()->token)->toBe('new-token');
+});
+
+test('restore is rejected with an incorrect mother admin password, and nothing changes', function () {
+    actingAs($this->admin, 'admin');
+
+    $customer = User::factory()->create(['name' => 'Real Name']);
+    $this->delete(route('admin.customers.destroy', $customer), ['mother_password' => 'mother-secret']);
+
+    $response = $this->post(route('admin.customers.restore', $customer), ['mother_password' => 'wrong-password']);
+
+    $response->assertSessionHasErrors('mother_password');
+    expect($customer->fresh()->name)->toBe("Deleted Customer #{$customer->id}");
+});
+
+test('restoring a customer who was never anonymized is refused', function () {
+    actingAs($this->admin, 'admin');
+
+    $customer = User::factory()->create(['name' => 'Real Name']);
+
+    $response = $this->post(route('admin.customers.restore', $customer), ['mother_password' => 'mother-secret']);
+
+    $response->assertSessionHas('error');
+    expect($customer->fresh()->name)->toBe('Real Name');
+});
+
+test('restoring a customer with no snapshot (anonymized before this feature existed) is refused, not crashed', function () {
+    actingAs($this->admin, 'admin');
+
+    $customer = User::factory()->create();
+    $customer->forceFill(['anonymized_at' => now(), 'anonymization_snapshot' => null])->save();
+
+    $response = $this->post(route('admin.customers.restore', $customer), ['mother_password' => 'mother-secret']);
+
+    $response->assertSessionHas('error');
+    expect($customer->fresh()->anonymized_at)->not->toBeNull();
+});
+
+test('restoring logs an activity entry distinct from anonymizing', function () {
+    actingAs($this->admin, 'admin');
+
+    $customer = User::factory()->create();
+    $this->delete(route('admin.customers.destroy', $customer), ['mother_password' => 'mother-secret']);
+    $this->post(route('admin.customers.restore', $customer), ['mother_password' => 'mother-secret']);
+
+    expect(Activity::where('event', 'customer.restored')->count())->toBe(1);
+});
+
+test('the anonymization snapshot is cleared once restored, and is never exposed to the frontend', function () {
+    actingAs($this->admin, 'admin');
+
+    $customer = User::factory()->create();
+    $this->delete(route('admin.customers.destroy', $customer), ['mother_password' => 'mother-secret']);
+
+    $showResponse = $this->get(route('admin.customers.show', $customer));
+    $showResponse->assertInertia(fn ($page) => $page
+        ->where('customer.can_restore', true)
+        ->missing('customer.anonymization_snapshot'));
+
+    $this->post(route('admin.customers.restore', $customer), ['mother_password' => 'mother-secret']);
+
+    expect($customer->fresh()->anonymization_snapshot)->toBeNull();
+});
+
 test('avatar delete() returning false produces a visible warning without undoing anonymization', function () {
     actingAs($this->admin, 'admin');
 

@@ -179,6 +179,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::get('customers', [CustomerController::class, 'index'])->name('customers.index')->middleware(AdminSections::middleware('customers', 'view'));
     Route::get('customers/{user}', [CustomerController::class, 'show'])->name('customers.show')->middleware(AdminSections::middleware('customers', 'view'));
     Route::delete('customers/{user}', [CustomerController::class, 'destroy'])->name('customers.destroy')->middleware(AdminSections::middleware('customers', 'delete'));
+    Route::post('customers/{user}/restore', [CustomerController::class, 'restore'])->name('customers.restore')->middleware(AdminSections::middleware('customers', 'delete'));
 
     Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index')->middleware(AdminSections::middleware('reviews', 'view'));
     Route::patch('reviews/{review}/approve', [ReviewController::class, 'approve'])->name('reviews.approve')->middleware(AdminSections::middleware('reviews', 'update'));

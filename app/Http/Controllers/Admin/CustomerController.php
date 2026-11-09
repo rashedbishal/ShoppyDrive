@@ -34,7 +34,13 @@ class CustomerController extends Controller
     public function show(User $user): Response
     {
         return Inertia::render('admin/customers/show', [
-            'customer' => $user->loadCount('orders')->load('socialAccounts'),
+            'customer' => [
+                ...$user->loadCount('orders')->load('socialAccounts')->toArray(),
+                // anonymization_snapshot itself is $hidden (a raw password
+                // hash plus redacted PII) — only whether one exists at all
+                // reaches the frontend, to decide if Restore can be offered.
+                'can_restore' => $user->anonymized_at !== null && $user->anonymization_snapshot !== null,
+            ],
             'orders' => Order::where('user_id', $user->id)->latest()->limit(10)->get(['id', 'order_number', 'status', 'total', 'created_at']),
         ]);
     }
@@ -66,6 +72,30 @@ class CustomerController extends Controller
         }
 
         return redirect()->route('admin.customers.index')->with('success', 'Customer anonymized successfully. Their order and payment history has been preserved.');
+    }
+
+    /**
+     * Undo a mistaken anonymize() — restores everything it captured before
+     * overwriting/deleting it. Same mother-password gate as destroy(),
+     * since this reactivates the customer's full PII and login ability.
+     */
+    public function restore(Request $request, User $user): RedirectResponse
+    {
+        $request->validate([
+            'mother_password' => ['required', 'string'],
+        ]);
+
+        $mother = Admin::where('is_mother', true)->first();
+
+        if (! $mother || ! Hash::check($request->string('mother_password'), $mother->password)) {
+            return back()->withErrors(['mother_password' => 'Incorrect mother admin password.']);
+        }
+
+        if (! $user->restoreFromAnonymization(Auth::guard('admin')->user())) {
+            return back()->with('error', 'This customer cannot be restored (not anonymized, or anonymized before this feature existed).');
+        }
+
+        return redirect()->route('admin.customers.show', $user)->with('success', 'Customer restored successfully.');
     }
 
     /**
