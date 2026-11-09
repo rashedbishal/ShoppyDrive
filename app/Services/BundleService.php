@@ -178,6 +178,30 @@ class BundleService
     }
 
     /**
+     * How many complete sets of this bundle current stock can fill, which is
+     * what the storefront needs to mark it out of stock and cap the sets a
+     * customer can pick. Mirrors InventoryService::assertAvailable(): a chosen
+     * variant counts its own stock, and no variant chosen on a product that
+     * has variants counts as none. Expects `items.variant` and `items.product`
+     * loaded, the latter with `withExists('variants')`.
+     */
+    public function availableSets(ProductBundle $bundle): int
+    {
+        return (int) $bundle->items
+            ->map(fn (ProductBundleItem $item): int => intdiv($this->componentStock($item), max($item->quantity, 1)))
+            ->min();
+    }
+
+    private function componentStock(ProductBundleItem $item): int
+    {
+        if ($item->variant_id !== null) {
+            return (int) ($item->variant?->stock_quantity ?? 0);
+        }
+
+        return $item->product->variants_exists ? 0 : (int) $item->product->stock_quantity;
+    }
+
+    /**
      * Lightweight recipe data for every active, multi-item bundle — shared
      * globally with the client so it can recognize the same "these plain
      * cart items happen to add up to a bundle" situation instantly, without

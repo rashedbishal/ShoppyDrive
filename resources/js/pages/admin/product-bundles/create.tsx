@@ -83,6 +83,34 @@ function stockFor(item: SelectedItem): number {
     return item.product.variants.length > 0 ? 0 : item.product.stock_quantity;
 }
 
+/**
+ * Stops a typed quantity at this row's stock. An out-of-stock row stays at 1
+ * and Save refuses it. A recipe already above stock when the edit page loads
+ * is left alone until the admin changes that row.
+ */
+function cappedQuantity(item: SelectedItem): string {
+    const ceiling = Math.max(stockFor(item), 1);
+
+    return Number(item.quantity) > ceiling ? String(ceiling) : item.quantity;
+}
+
+function stockNote(item: SelectedItem): string {
+    if (item.product.variants.length > 0 && !item.variant_id) {
+        return 'Pick a variant';
+    }
+
+    const stock = stockFor(item);
+
+    if (stock === 0) {
+        return 'Out of stock';
+    }
+
+    const quantity = Math.max(Number(item.quantity) || 1, 1);
+    const sets = Math.floor(stock / quantity);
+
+    return `${quantity >= stock ? 'Only ' : ''}${stock} in stock · enough for ${sets} bundle${sets === 1 ? '' : 's'}`;
+}
+
 export default function ProductBundleCreate() {
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
@@ -202,9 +230,15 @@ export default function ProductBundleCreate() {
         key: 'variant_id' | 'quantity',
         value: string,
     ) => {
-        const next = selectedItems.map((item) =>
-            item.uid === uid ? { ...item, [key]: value } : item,
-        );
+        const next = selectedItems.map((item) => {
+            if (item.uid !== uid) {
+                return item;
+            }
+
+            const updated = { ...item, [key]: value };
+
+            return { ...updated, quantity: cappedQuantity(updated) };
+        });
         setSelectedItems(next);
         syncItems(next);
     };
@@ -615,7 +649,7 @@ export default function ProductBundleCreate() {
                                                                         </AdminFade>
                                                                     )}
                                                                 </AnimatePresence>
-                                                                <div className="w-24">
+                                                                <div className="w-32">
                                                                     <label className="mb-1 block text-xs font-medium text-slate-600">
                                                                         Qty *
                                                                     </label>
@@ -664,10 +698,9 @@ export default function ProductBundleCreate() {
                                                                                 : 'text-slate-400',
                                                                         )}
                                                                     >
-                                                                        {stockFor(
+                                                                        {stockNote(
                                                                             item,
-                                                                        )}{' '}
-                                                                        in stock
+                                                                        )}
                                                                     </p>
                                                                 </div>
                                                                 <button

@@ -11,6 +11,7 @@ use App\Models\FlashSaleItem;
 use App\Models\HomepageSetting;
 use App\Models\Product;
 use App\Models\ProductBundle;
+use App\Services\BundleService;
 use App\Support\LayoutCache;
 use App\Support\ProductCardData;
 use Inertia\Inertia;
@@ -130,13 +131,17 @@ class HomeController extends Controller
                 // since being added.
                 'items' => static function ($query): void {
                     $query->whereHas('product', static fn ($productQuery) => $productQuery->visible())
-                        ->with(['product.images', 'variant']);
+                        ->with([
+                            'product' => static fn ($productQuery) => $productQuery->with('images')->withExists('variants'),
+                            'variant',
+                        ]);
                 },
             ])
             ->orderBy('sort_order')
             ->get()
             ->filter(fn (ProductBundle $bundle): bool => $bundle->items->count() >= 2)
             ->take(3)
+            ->each(fn (ProductBundle $bundle) => $bundle->setAttribute('available_sets', app(BundleService::class)->availableSets($bundle)))
             ->values();
 
         // BIZ (flash-sale price consistency): $itemsByProduct's mutation

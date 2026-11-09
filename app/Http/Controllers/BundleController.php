@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\ProductBundle;
+use App\Services\BundleService;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,7 +23,7 @@ class BundleController extends Controller
                     $query->whereHas('product', static fn ($productQuery) => $productQuery->visible())
                         ->with([
                             'product' => static function ($productQuery): void {
-                                $productQuery->with(['brand', 'images']);
+                                $productQuery->with(['brand', 'images'])->withExists('variants');
                             },
                             'variant',
                         ]);
@@ -31,6 +32,7 @@ class BundleController extends Controller
             ->orderBy('sort_order')
             ->get()
             ->filter(fn (ProductBundle $bundle): bool => $bundle->items->count() >= 2)
+            ->each(fn (ProductBundle $bundle) => $bundle->setAttribute('available_sets', app(BundleService::class)->availableSets($bundle)))
             ->values();
 
         return Inertia::render('catalog/BundleDeals', [

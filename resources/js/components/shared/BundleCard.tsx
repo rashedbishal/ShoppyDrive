@@ -23,6 +23,8 @@ export type ProductBundle = {
     image: string | null;
     discount_type: 'fixed_price' | 'free_delivery';
     bundle_price: number | null;
+    /** Complete sets current stock can fill, from `BundleService::availableSets()`. */
+    available_sets: number;
     items: BundleItem[];
 };
 
@@ -89,6 +91,7 @@ export function BundleCard({
     const openCart = useUiStore((state) => state.openCart);
     const addToast = useUiStore((state) => state.addToast);
 
+    const isOutOfStock = bundle.available_sets < 1;
     const isFixedPrice = bundle.discount_type === 'fixed_price';
     const originalTotal = bundle.items.reduce(
         (sum, item) => sum + basePrice(item) * item.quantity,
@@ -216,14 +219,19 @@ export function BundleCard({
                         <button
                             type="button"
                             onClick={() => setMultiplier((m) => m + 1)}
-                            className="flex size-6 items-center justify-center rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]"
+                            disabled={multiplier >= bundle.available_sets}
+                            className="flex size-6 items-center justify-center rounded text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)] disabled:cursor-not-allowed disabled:opacity-40"
                         >
                             <Plus className="size-3.5" />
                         </button>
                     </div>
-                    <Button onClick={handleAdd} className="h-10 flex-1">
+                    <Button
+                        onClick={handleAdd}
+                        disabled={isOutOfStock}
+                        className="h-10 flex-1"
+                    >
                         <ShoppingBag className="mr-2 size-4" />
-                        Add Bundle
+                        {isOutOfStock ? 'Out of Stock' : 'Add Bundle'}
                     </Button>
                 </div>
             </CardContent>
