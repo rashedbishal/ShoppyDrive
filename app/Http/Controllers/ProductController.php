@@ -179,6 +179,7 @@ class ProductController extends Controller
             'reviews' => $product->reviews,
             'ratingBreakdown' => $ratingBreakdown,
             'canReview' => Auth::guard('web')->user()?->hasOrderedProduct($product->id) ?? false,
+            'hasReviewed' => Auth::guard('web')->user()?->hasReviewedProduct($product->id) ?? false,
             'shippingMethods' => [],
         ]);
     }

@@ -44,6 +44,7 @@ interface ProductDetailProps {
     reviews: Review[];
     ratingBreakdown: Record<number, number>;
     canReview: boolean;
+    hasReviewed: boolean;
     shippingMethods: any[];
 }
 
@@ -53,6 +54,7 @@ export default function ProductDetail({
     reviews = [],
     ratingBreakdown,
     canReview = false,
+    hasReviewed = false,
     shippingMethods = [],
 }: ProductDetailProps): React.JSX.Element {
     const { auth, settings } = usePage<SharedPageProps>().props;
@@ -66,7 +68,6 @@ export default function ProductDetail({
     >;
     const [reviewRating, setReviewRating] = useState(0);
     const [reviewSubmitting, setReviewSubmitting] = useState(false);
-    const hasReviewed = reviews.some((r) => r.user?.id === auth.user?.id);
 
     const submitReview = (e: React.FormEvent) => {
         e.preventDefault();

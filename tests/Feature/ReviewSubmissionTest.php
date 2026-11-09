@@ -294,3 +294,81 @@ test('the product page tells the form who may review', function () {
     actingAs($buyer)->get(route('product.show', $product->slug))
         ->assertInertia(fn (Assert $page) => $page->where('canReview', true));
 });
+
+// ── BIZ-036: one review per customer per product, permanently ───────────
+
+function existingReview(User $user, Product $product, bool $isApproved = false): Review
+{
+    return Review::create([
+        'product_id' => $product->id,
+        'user_id' => $user->id,
+        'rating' => 4,
+        'body' => 'An earlier review of this product.',
+        'is_approved' => $isApproved,
+    ]);
+}
+
+test('a customer cannot write a second review while the first is waiting, rejected or approved', function (bool $isApproved) {
+    $user = User::factory()->create();
+    $product = Product::factory()->create();
+    deliveredOrderWithProduct($user, $product);
+    existingReview($user, $product, $isApproved);
+
+    actingAs($user)->post(route('product.reviews.store', $product->slug), reviewPayload())
+        ->assertSessionHasErrors(['review' => 'You have already reviewed this product.']);
+
+    expect(Review::count())->toBe(1);
+})->with(['pending or rejected' => [false], 'approved' => [true]]);
+
+test('a customer whose review was deleted cannot write another', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create();
+    deliveredOrderWithProduct($user, $product);
+    existingReview($user, $product)->delete();
+
+    actingAs($user)->post(route('product.reviews.store', $product->slug), reviewPayload())
+        ->assertSessionHasErrors('review');
+
+    expect(Review::withTrashed()->count())->toBe(1);
+});
+
+test('one review does not block a different product or a different customer', function () {
+    $user = User::factory()->create();
+    $otherCustomer = User::factory()->create();
+    $reviewed = Product::factory()->create();
+    $notReviewed = Product::factory()->create();
+    deliveredOrderWithProduct($user, $notReviewed);
+    deliveredOrderWithProduct($otherCustomer, $reviewed);
+    existingReview($user, $reviewed);
+
+    actingAs($user)->post(route('product.reviews.store', $notReviewed->slug), reviewPayload())
+        ->assertSessionHasNoErrors();
+    auth('web')->logout();
+    actingAs($otherCustomer)->post(route('product.reviews.store', $reviewed->slug), reviewPayload())
+        ->assertSessionHasNoErrors();
+
+    expect(Review::count())->toBe(3);
+});
+
+test('the product page knows about a review the public list does not show', function (bool $deleted) {
+    $product = Product::factory()->create(['is_active' => true, 'published_at' => now()->subDay()]);
+    $user = User::factory()->create();
+    $pendingReview = existingReview($user, $product);
+
+    if ($deleted) {
+        $pendingReview->delete();
+    }
+
+    actingAs($user)->get(route('product.show', $product->slug))
+        ->assertInertia(fn (Assert $page) => $page->where('hasReviewed', true)->where('reviews', []));
+})->with(['waiting for approval' => [false], 'deleted' => [true]]);
+
+test('the product page says not reviewed for guests and customers who have not', function () {
+    $product = Product::factory()->create(['is_active' => true, 'published_at' => now()->subDay()]);
+
+    $this->get(route('product.show', $product->slug))
+        ->assertInertia(fn (Assert $page) => $page->where('hasReviewed', false));
+
+    actingAs(User::factory()->create())->get(route('product.show', $product->slug))
+        ->assertInertia(fn (Assert $page) => $page->where('hasReviewed', false));
+});

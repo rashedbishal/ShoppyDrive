@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 12 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 4 · Failed: 0 · Skipped: 1
+**Done: 12 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -52,7 +52,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [ ] BIZ-021 — District and city are free text and set the delivery fee
 - [ ] BIZ-022 — Opposite-order stock locks use a single COD attempt
 - [ ] BIZ-023 — Duplicate-order protection has no database backstop
-- [ ] BIZ-036 — Duplicate reviews and repeat review bonus
+- [~] BIZ-036 — Duplicate reviews and repeat review bonus — tester failed it ("a user can give at most one review on a product"); now one review per customer per product, permanently, even after an admin deletes it, and the form no longer reappears while a review waits for approval
 
 ## Database
 

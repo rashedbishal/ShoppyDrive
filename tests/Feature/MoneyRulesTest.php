@@ -267,7 +267,7 @@ test('a review of a different product still earns its bonus (BIZ-036)', function
     expect($user->fresh()->points_balance)->toBe(40);
 });
 
-test('a customer can rewrite a deleted review, but a live one blocks a second (BIZ-036)', function () {
+test('neither a live nor a deleted review can be followed by a second (BIZ-036)', function () {
     $user = User::factory()->create(['email_verified_at' => now()]);
     [$product, $order] = moneyReviewedProduct($user);
     $order->items()->create([
@@ -282,8 +282,8 @@ test('a customer can rewrite a deleted review, but a live one blocks a second (B
 
     Review::first()->delete();
 
-    actingAs($user)->post(route('product.reviews.store', $product), $payload)->assertSessionHasNoErrors();
-    expect(Review::count())->toBe(1)->and(Review::withTrashed()->count())->toBe(2);
+    actingAs($user)->post(route('product.reviews.store', $product), $payload)->assertSessionHasErrors('review');
+    expect(Review::count())->toBe(0)->and(Review::withTrashed()->count())->toBe(1);
 });
 
 test('a zero price is refused only where the price is really used (BIZ-020)', function () {

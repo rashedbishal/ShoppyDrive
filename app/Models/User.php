@@ -240,6 +240,18 @@ class User extends Authenticatable implements MustVerifyEmail
             ->exists();
     }
 
+    /**
+     * BIZ-036: a customer gets one review per product, permanently, so a
+     * review an admin deleted still counts.
+     */
+    public function hasReviewedProduct(int $productId): bool
+    {
+        return Review::withTrashed()
+            ->where('user_id', $this->id)
+            ->where('product_id', $productId)
+            ->exists();
+    }
+
     public function addresses(): HasMany
     {
         return $this->hasMany(Address::class);

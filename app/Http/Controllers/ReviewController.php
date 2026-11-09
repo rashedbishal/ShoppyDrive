@@ -37,11 +37,7 @@ class ReviewController extends Controller
         $review = DB::transaction(function () use ($request, $product, $validated): ?Review {
             User::whereKey($request->user()->id)->lockForUpdate()->first();
 
-            $alreadyReviewed = Review::where('product_id', $product->id)
-                ->where('user_id', $request->user()->id)
-                ->exists();
-
-            if ($alreadyReviewed) {
+            if ($request->user()->hasReviewedProduct($product->id)) {
                 return null;
             }
 
