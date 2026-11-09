@@ -166,7 +166,7 @@ class CartManager
     private function mergeDuplicateRows(Cart $cart): void
     {
         $groups = $cart->items()->orderBy('id')->get()
-            ->groupBy(fn (CartItem $item): string => $this->itemKey($item->product_id, $item->variant_id, $item->bundle_id))
+            ->groupBy(fn (CartItem $item): string => $this->itemKey($item->product_id, $item->variant_id, $item->bundle_id, $item->id))
             ->filter(fn (Collection $rows): bool => $rows->count() > 1);
 
         foreach ($groups as $rows) {
@@ -187,7 +187,7 @@ class CartManager
     public function withoutDuplicateRows(Cart $cart): Cart
     {
         $hasDuplicates = $cart->items
-            ->map(fn (CartItem $item): string => $this->itemKey($item->product_id, $item->variant_id, $item->bundle_id))
+            ->map(fn (CartItem $item): string => $this->itemKey($item->product_id, $item->variant_id, $item->bundle_id, $item->id))
             ->duplicates()
             ->isNotEmpty();
 
@@ -315,9 +315,14 @@ class CartManager
     private function replaceItems(Cart $cart, array $items): void
     {
         $normalized = $this->normalizePayloads($items);
-        $existingKeys = $cart->items()
-            ->get(['id', 'product_id', 'variant_id', 'bundle_id'])
-            ->mapWithKeys(fn (CartItem $item): array => [$this->itemKey($item->product_id, $item->variant_id, $item->bundle_id) => $item])
+        // BE-002: `product` loaded so the deletion step below can tell an
+        // existing row the customer actually removed (omitted here because
+        // the client knew about it and dropped it) apart from one that was
+        // already unavailable and so never showed up in what the client
+        // could possibly resubmit in the first place.
+        $existingKeys = $cart->items()->with('product')
+            ->get()
+            ->mapWithKeys(fn (CartItem $item): array => [$this->itemKey($item->product_id, $item->variant_id, $item->bundle_id, $item->id) => $item])
             ->all();
 
         foreach ($normalized as $payload) {
@@ -335,6 +340,10 @@ class CartManager
                     'quantity' => $payload['quantity'],
                     'price' => $price,
                     'bundle_unit_quantity' => $payload['bundle_unit_quantity'] ?? null,
+                    // BE-002: kept fresh on every write so the name shown if
+                    // this product is later deleted reflects what it was
+                    // actually called, not whatever it was first added as.
+                    'product_name' => $this->productName($payload['product_id']),
                 ],
             );
 
@@ -342,7 +351,20 @@ class CartManager
         }
 
         if ($existingKeys !== []) {
-            $cart->items()->whereKey(array_map(fn (CartItem $item): int => $item->id, $existingKeys))->delete();
+            // BE-002: a row whose product is already gone or hidden was
+            // never visible to the client to begin with, so its absence
+            // from this resubmission isn't the customer choosing to drop
+            // it — leave it alone so collectCartIssues() can still catch
+            // and name it right after this sync runs, instead of this
+            // cleanup silently erasing the only evidence something was
+            // wrong before that check ever gets to see it.
+            $toDelete = collect($existingKeys)->filter(
+                fn (CartItem $item): bool => $item->product !== null && $item->product->isPubliclyVisible()
+            );
+
+            if ($toDelete->isNotEmpty()) {
+                $cart->items()->whereKey($toDelete->map(fn (CartItem $item): int => $item->id)->all())->delete();
+            }
         }
     }
 
@@ -389,9 +411,20 @@ class CartManager
                     'quantity' => $quantity,
                     'price' => $price,
                     'bundle_unit_quantity' => $payload['bundle_unit_quantity'] ?? null,
+                    'product_name' => $this->productName($payload['product_id']),
                 ],
             );
         }
+    }
+
+    /**
+     * BE-002: a display-only snapshot — never read back for price, stock
+     * or identity decisions, only to name a cart_item whose product has
+     * since been permanently deleted (product_id is nullOnDelete).
+     */
+    private function productName(int $productId): ?string
+    {
+        return Product::query()->whereKey($productId)->value('name');
     }
 
     /**
@@ -534,9 +567,22 @@ class CartManager
         return false;
     }
 
-    private function itemKey(int $productId, ?int $variantId, ?int $bundleId = null): string
+    /**
+     * BE-002: `$productId` (and now `$variantId`) can be null for an
+     * existing row whose product (or just its variant) was permanently
+     * deleted — both are nullOnDelete, not cascaded away. `$rowId` (the
+     * cart_item's own id) disambiguates that case so one orphaned row is
+     * never grouped or deduped with another by this key alone; it's
+     * never set when building a key from a fresh submitted payload,
+     * which always carries a real product_id.
+     */
+    private function itemKey(?int $productId, ?int $variantId, ?int $bundleId = null, ?int $rowId = null): string
     {
-        $key = $variantId !== null ? "variant:{$variantId}" : "product:{$productId}";
+        $key = match (true) {
+            $variantId !== null => "variant:{$variantId}",
+            $productId !== null => "product:{$productId}",
+            default => "orphaned-row:{$rowId}",
+        };
 
         return $bundleId !== null ? "bundle:{$bundleId}:{$key}" : $key;
     }

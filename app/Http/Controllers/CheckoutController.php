@@ -188,11 +188,18 @@ class CheckoutController extends Controller
 
             if ($missingIds->isNotEmpty()) {
                 // BE-002: a soft-deleted product keeps its name, so say which
-                // item to remove; only a fully erased one stays generic.
+                // item to remove. A permanently (force-)deleted one has
+                // nothing left in the database at all — the real path an
+                // admin actually uses (Admin\ProductController::destroy()
+                // always force-deletes) — so fall back to whatever name the
+                // page itself was showing for that line; only a product
+                // that never existed at all (and so was never displayed)
+                // stays generic.
                 $deletedNames = Product::withTrashed()->whereIn('id', $missingIds)->pluck('name', 'id');
+                $submittedNames = collect($items)->pluck('product_name', 'product_id');
 
                 return $this->blockedByCartIssues($missingIds
-                    ->map(fn ($id) => self::unavailableItemMessage($deletedNames[$id] ?? null))
+                    ->map(fn ($id) => self::unavailableItemMessage($deletedNames[$id] ?? $submittedNames[$id] ?? null))
                     ->all());
             }
         }
@@ -779,8 +786,16 @@ class CheckoutController extends Controller
 
         foreach ($cart->items as $item) {
             if ($item->product === null || ! $item->product->isPubliclyVisible()) {
-                // BE-002: `product` is null for a soft-deleted product, whose name is still on file.
-                $issues[] = self::unavailableItemMessage($item->product?->name ?? $item->product()->withTrashed()->value('name'));
+                // BE-002: `product` is null for a soft-deleted product (name
+                // still on file via withTrashed()) or a permanently deleted
+                // one — product_id is nullOnDelete, so this row survives
+                // with its own product_name snapshot instead of nothing at
+                // all to name it with.
+                $issues[] = self::unavailableItemMessage(
+                    $item->product?->name
+                    ?? ($item->product_id !== null ? $item->product()->withTrashed()->value('name') : null)
+                    ?? $item->product_name
+                );
 
                 continue;
             }

@@ -724,6 +724,11 @@ export default function Checkout({
                     product_id: item.product.id,
                     variant_id: item.variant?.id ?? null,
                     quantity: item.quantity,
+                    // BE-002: a guest cart has no server-side row at all, so
+                    // if this product gets deleted before the order lands,
+                    // the server has nothing else to name it with — display
+                    // only, never trusted for price/identity/stock.
+                    product_name: item.product.name,
                     // BIZ-002: without these, the server's sync step always
                     // strips the bundle grouping this line was in, so
                     // BundleService re-detects "a price changed" on every

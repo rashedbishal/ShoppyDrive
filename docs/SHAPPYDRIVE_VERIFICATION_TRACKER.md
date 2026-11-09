@@ -8,7 +8,7 @@ Claude marks an item here once its result is known. This file records live-site 
 
 | Group | Total | Pass | Fail | Skipped | Not checked |
 |---|---|---|---|---|---|
-| Backend (BE) | 10 | 1 | 0 | 0 | 9 |
+| Backend (BE) | 10 | 1 | 1 | 0 | 8 |
 | Business logic (BIZ) | 32 | 7 | 5 | 2 | 18 |
 | Database (DB) | 3 | 0 | 1 | 0 | 2 |
 | Frontend (FE) | 13 | 0 | 1 | 0 | 12 |
@@ -17,7 +17,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Performance (PERF) | 7 | 3 | 0 | 0 | 4 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **12** | **8** | **2** | **77** |
+| **All** | **99** | **12** | **9** | **2** | **76** |
 
 ## How to read this
 
@@ -44,10 +44,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Try these five things and confirm each shows a normal "something went wrong" page, not a blank crash screen: (1) a tracking link with phone[]=x in the URL, (2) a landing-page payment link with a plain made-up token instead of the real one, (3) visiting the admin logout link while logged out, (4) submitting login with email[]=x in the form, (5) visiting /admin/products/999999 (an id that doesn't exist).
   - **Result:** Not checked
 
-- [ ] **BE-002** · P2 · LOW · A deleted product in a guest cart gives a bare 404 at checkout
+- [!] **BE-002** · P2 · LOW · A deleted product in a guest cart gives a bare 404 at checkout
   - **Problem:** The customer sees a 404 with no explanation until they remove the item by hand.
   - **What to check:** As a guest, add a product to your cart. Have an admin delete that exact product. Go to checkout and submit your order. You should see a clear message naming the unavailable item, not a bare "404 Not Found" page.
-  - **Result:** Not checked
+  - **Result:** Fixed locally, not deployed (2026-11-09). Tester's note ("need clear message") was literally right: the real admin delete (`Admin\ProductController::destroy()`) always *force*-deletes, never soft-deletes, so `withTrashed()` found nothing and the message fell back to the unnamed generic one. Fixed for guests: Checkout.tsx now also submits `product_name` alongside each item (display only), used as a last-resort fallback when the database has nothing left to name it with. While fixing this, found and fixed a worse related bug for logged-in customers: `cart_items.product_id`/`variant_id` were `cascadeOnDelete`, so a force-deleted product silently destroyed the cart_item row itself — the item just vanished with zero message at all. Migration changes both FKs to `nullOnDelete` and adds a `product_name` snapshot column (same convention as `order_items`), populated by `CartManager` on every write. Also found and fixed a deeper pre-existing bug this surfaced: `CartManager::replaceItems()`'s cleanup step used to delete *any* existing row not in a resubmitted items list — but a deleted/hidden item was never visible to the client to begin with, so its absence from a *realistic* resubmission (Checkout.tsx always sends items) isn't the customer choosing to drop it; that cleanup was silently erasing the item before `collectCartIssues()` ever got a chance to flag it, for both soft- and force-deleted products, even before today. Fixed by excluding currently-unavailable rows from that cleanup. Verified the migration directly against real MySQL (disposable `shoppydrive_test_be002`, dropped after). New/updated tests in `UnavailableCartItemMessageTest` (7 tests, including a realistic non-empty-resubmission case that would have caught the deeper bug). Full suite 2665: 2590 passed, 3 failed (pre-existing, unrelated), 72 skipped. Pint/tsc/ESLint/Prettier clean. Not deployed.
 
 - [ ] **BE-003** · P2 · LOW · DatabaseSeeder wipes the catalog and has no production guard
   - **Problem:** php artisan db:seed --force in production would truncate products and categories with foreign keys off, overwrite settings, and add test@example.com with a known password. Deploy and composer do not run it.

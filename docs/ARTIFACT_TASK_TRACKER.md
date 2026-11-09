@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 12 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 3 · Failed: 0 · Skipped: 1
+**Done: 12 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 4 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -10,7 +10,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
 - [ ] BE-009 — "Today" figures and invoices use UTC, not Dhaka time
 - [ ] BE-001 — Malformed input causes server errors
-- [ ] BE-002 — A deleted product in a guest cart gives a bare 404 at checkout
+- [~] BE-002 — A deleted product in a guest cart gives a bare 404 at checkout — tester's "need clear message" was right (real deletes are force-deletes, not soft); fixed for guests and, more severely, for logged-in customers whose item was silently cascade-deleted from their cart; fixed locally 2026-11-09, not pushed/deployed
 - [ ] BE-003 — DatabaseSeeder wipes the catalog and has no production guard
 - [ ] BE-007 — Search overrides other filters on admin lists
 - [ ] BE-011 — Pathao sync reports success when every poll failed

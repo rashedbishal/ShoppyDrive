@@ -83,6 +83,11 @@ class PlaceOrderRequest extends FormRequest
             // to refuse before anything is charged — never to decide the
             // actual charge, which always comes from CartManager::resolvePrice().
             'items.*.price' => ['nullable', 'numeric', 'min:0'],
+            // BE-002: a guest cart has no server-side row, so if this
+            // product is deleted before the order lands, the server has
+            // nothing else to name it with in the cart-issue message —
+            // display text only, never read for price/identity/stock.
+            'items.*.product_name' => ['nullable', 'string', 'max:255'],
         ];
     }
 

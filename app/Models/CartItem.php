@@ -15,6 +15,11 @@ class CartItem extends Model
     protected $fillable = [
         'cart_id',
         'product_id',
+        // BE-002: a display-only snapshot of the product's name at the time
+        // this row was last written — product_id is nullOnDelete, so a
+        // permanently deleted product still leaves this row nameable
+        // instead of just vanishing or showing a blank message.
+        'product_name',
         'variant_id',
         'bundle_id',
         'bundle_unit_quantity',
