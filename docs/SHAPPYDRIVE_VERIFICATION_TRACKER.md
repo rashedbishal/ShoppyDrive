@@ -9,7 +9,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Group | Total | Pass | Fail | Skipped | Not checked |
 |---|---|---|---|---|---|
 | Backend (BE) | 10 | 0 | 0 | 0 | 10 |
-| Business logic (BIZ) | 32 | 2 | 4 | 2 | 24 |
+| Business logic (BIZ) | 32 | 3 | 4 | 2 | 23 |
 | Database (DB) | 3 | 0 | 0 | 0 | 3 |
 | Frontend (FE) | 13 | 0 | 0 | 0 | 13 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
@@ -17,7 +17,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **3** | **4** | **2** | **90** |
+| **All** | **99** | **4** | **4** | **2** | **89** |
 
 ## How to read this
 
@@ -156,10 +156,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Open checkout.
   - **Result:** Not checked
 
-- [ ] **BIZ-033** · P1 · MEDIUM · Home page ratings count unmoderated reviews
+- [x] **BIZ-033** · P1 · MEDIUM · Home page ratings count unmoderated reviews
   - **Problem:** One unapproved 1-star review changes the rating on the home page immediately. Rejected reviews keep counting too. Other pages filter correctly, so the same product can show two ratings.
   - **What to check:** Submit a product review as a customer. In Admin, leave it pending (don't approve or reject it yet). Check the home page's rating for that product — it should NOT include your pending review. Then reject the review in Admin and check again — a rejected review also should not count.
-  - **Result:** Not checked
+  - **Result:** Pass (2026-11-09). First reported Fail (2026-11-08): approving a review broke that product's detail page ("something went wrong") every time. Investigated directly — two realistic reproductions via the real routes (a plain review, and a verified-purchase review that also exercises the review-bonus-points path), both with full exception visibility enabled, found no crash in either case; checked the dev server's browser-console log for the relevant window too, no matching error. Owner/tester confirmed on retest the product page now loads fine after approval — looks like it was transient (stale dev build/HMR state), not a code defect. No code change made, since nothing reproducible was found to fix.
 
 - [ ] **BIZ-034** · P1 · MEDIUM · No return, refund or shipping policy pages; seller identity missing
   - **Problem:** Live /return-policy, /refund-policy and /shipping-policy return 404. Only privacy, terms and FAQ exist. No legal entity, trade licence or full address in code. No policy acknowledgement at checkout. Privacy text omits stored IP, browser and saved abandoned-checkout phone numbers. Owner or lawyer to compare with the Digital Commerce Operation Guidelines 2021. This is not legal advice.

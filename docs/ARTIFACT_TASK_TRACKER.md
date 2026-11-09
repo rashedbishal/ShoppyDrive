@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 3 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
+**Done: 4 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -35,7 +35,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [x] BIZ-029 — Cancelling the Reject prompt still rejects the return and emails the customer — tester skipped it (no delivered order to test with); re-confirmed in code 2026-11-09, fix unchanged since deploy, no code change needed
 - [ ] BIZ-030 — COD confirmation says "Total Paid"
 - [ ] BIZ-031 — Checkout shows payment logos the shop does not accept
-- [ ] BIZ-033 — Home page ratings count unmoderated reviews
+- [x] BIZ-033 — Home page ratings count unmoderated reviews — tester first failed it (product page broke after approving a review), couldn't reproduce directly, owner confirmed fixed on retest 2026-11-09 (likely transient, no code change found/needed)
 - [ ] BIZ-034 — No return, refund or shipping policy pages; seller identity missing
 - [ ] BIZ-012 — A whole-order refund restocks delivered goods automatically
 - [ ] BIZ-014 — A retried checkout puts purchased items back in the cart
