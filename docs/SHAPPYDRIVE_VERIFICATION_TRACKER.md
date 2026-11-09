@@ -9,7 +9,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Group | Total | Pass | Fail | Skipped | Not checked |
 |---|---|---|---|---|---|
 | Backend (BE) | 10 | 0 | 0 | 0 | 10 |
-| Business logic (BIZ) | 32 | 0 | 0 | 0 | 32 |
+| Business logic (BIZ) | 32 | 0 | 1 | 0 | 31 |
 | Database (DB) | 3 | 0 | 0 | 0 | 3 |
 | Frontend (FE) | 13 | 0 | 0 | 0 | 13 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
@@ -17,7 +17,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **1** | **0** | **0** | **98** |
+| **All** | **99** | **1** | **1** | **0** | **97** |
 
 ## How to read this
 
@@ -86,10 +86,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
 
 ## Business logic (BIZ)
 
-- [ ] **BIZ-001** · P0 · HIGH · COD can charge more than the price the customer saw
+- [!] **BIZ-001** · P0 · HIGH · COD can charge more than the price the customer saw
   - **Problem:** Example: a product is ৳100 in the cart, the admin changes it to ৳150, and the page still shows ৳100. The customer places a COD order and is charged ৳150 with no warning.
   - **What to check:** Add to cart at 100, raise the price to 150, submit the UI payload.
-  - **Result:** Not checked
+  - **Result:** Fail (tester, 2026-11-08). The overcharge itself didn't happen — the price stayed at ৳100 on screen, and clicking Confirm correctly refused with "Some prices in your cart have changed. Please review your updated cart and try again." instead of charging ৳150. But retrying never worked: the price never updated and the same refusal repeated every time, with no way to actually place the order. Fixed locally 2026-11-09 (not yet pushed/deployed) — the refusal now also corrects the cart and updates what's shown on screen, so a second attempt succeeds at the real price. Needs push + deploy, then retest.
 
 - [ ] **BIZ-002** · P0 · HIGH · A cart containing a complete bundle can never be checked out from the website
   - **Problem:** Every Place Order click shows "Some prices have changed" and no order is made. This affects COD and mobile banking, guests and members.

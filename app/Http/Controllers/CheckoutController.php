@@ -197,14 +197,12 @@ class CheckoutController extends Controller
             }
         }
 
-        // BIZ-001: must run before syncUserCart()/syncSessionCart() below —
+        // BIZ-001: captured before syncUserCart()/syncSessionCart() below —
         // both call replaceItems(), which overwrites every item's price to
-        // the current one, so a later revalidatePrices() call would just be
-        // comparing the current price against itself. This compares against
-        // what the checkout page actually showed the customer instead.
-        if ($items !== null && $this->cartManager->submittedPricesStale($items)) {
-            return back()->with('error', 'Some prices in your cart have changed. Please review your updated cart and try again.');
-        }
+        // the current one, so comparing after that sync would just compare
+        // the current price against itself. This compares against what the
+        // checkout page actually showed the customer instead.
+        $priceWasStale = $items !== null && $this->cartManager->submittedPricesStale($items);
 
         // The checkout page always submits its full, already-merged items
         // list (cart items plus a "Buy Now" item, if any — see
@@ -213,12 +211,29 @@ class CheckoutController extends Controller
         // Buy Now merged with an existing cart identically, with no special
         // casing needed here. Viewing the checkout page never reaches this
         // method, so an abandoned Buy Now still never touches the cart.
+        // Always sync, even when the price was stale: replaceItems() always
+        // writes the current resolved price, never the client's submitted
+        // one, so this corrects the stored cart instead of leaving it frozen
+        // at the old price — which is what let a customer get stuck
+        // refusing the same stale price forever, unable to ever check out
+        // (BIZ-001 retest, 2026-11-09).
         if ($items !== null) {
             if ($request->user() !== null) {
                 $this->cartManager->syncUserCart($request->user(), $items);
             } else {
                 $this->cartManager->syncSessionCart($request->session()->getId(), $items);
             }
+        }
+
+        if ($priceWasStale) {
+            // Checkout.tsx's displayed/submitted prices come from its own
+            // client-side cart store, not the server's `cart` prop — so
+            // without handing the corrected prices back directly, the
+            // customer would see the exact same stale price again and hit
+            // this same refusal every time they retried.
+            return back()
+                ->with('error', 'Some prices in your cart have changed. Please review your updated cart and try again.')
+                ->with('priceUpdates', $this->cartManager->serializeForRequest($request));
         }
 
         $cart = $this->cartManager->getCurrentCart($request);
@@ -253,10 +268,15 @@ class CheckoutController extends Controller
         // — it can go stale (a flash sale started, ended, or sold out)
         // between then and now. Re-resolve against current state and
         // refuse to silently charge a different amount than the
-        // checkout page just showed; the redirect back re-renders the
-        // cart with the corrected prices for the customer to confirm.
+        // checkout page just showed. This already persists the corrected
+        // price into the cart row; `priceUpdates` hands it to the client
+        // too, since Checkout.tsx's own cart store — not the server's
+        // `cart` prop — decides what's shown and resubmitted next
+        // (BIZ-001 retest, 2026-11-09).
         if ($this->cartManager->revalidatePrices($cart)) {
-            return back()->with('error', 'Some prices in your cart have changed. Please review your updated cart and try again.');
+            return back()
+                ->with('error', 'Some prices in your cart have changed. Please review your updated cart and try again.')
+                ->with('priceUpdates', $this->cartManager->serialize($cart));
         }
 
         $shippingAddress = $this->resolveShippingAddress($request);

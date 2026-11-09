@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 1 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 0 · Failed: 0 · Skipped: 0
+**Done: 1 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 1 · Failed: 0 · Skipped: 0
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -21,7 +21,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
 ## Business logic
 
-- [ ] BIZ-001 — COD can charge more than the price the customer saw
+- [~] BIZ-001 — COD can charge more than the price the customer saw — tester failed it (retry never worked, not an overcharge); fix committed locally 2026-11-09, not yet pushed/deployed
 - [ ] BIZ-002 — A cart containing a complete bundle can never be checked out from the website
 - [ ] BIZ-003 — Guests see a coupon discount at checkout but are charged full price
 - [ ] BIZ-004 — Converting an incomplete order ignores stock, and cancelling it creates stock

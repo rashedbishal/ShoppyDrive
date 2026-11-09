@@ -682,6 +682,8 @@ export interface SharedPageProps {
         toast?: FlashToast | null;
         /** Checkout-specific: a deleted/unavailable product or an out-of-stock quantity blocked the order. See CheckoutController::collectCartIssues(). */
         cartIssues?: string[] | null;
+        /** Checkout-specific: the cart's server-corrected prices after a stale-price refusal (BIZ-001) — Checkout.tsx re-hydrates its own cart store with this so a retry submits the real price instead of repeating the same refusal forever. See CheckoutController::store(). */
+        priceUpdates?: Cart | null;
     };
     sidebarOpen: boolean;
     locale: string;

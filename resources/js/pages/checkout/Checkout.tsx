@@ -356,6 +356,7 @@ export default function Checkout({
         items: cartItems,
         coupon: storeCoupon,
         applyCoupon: applyStoreCoupon,
+        hydrateCart,
     } = useCartStore();
 
     // Reaching this page at all as a guest already means "Allow Guest
@@ -407,6 +408,19 @@ export default function Checkout({
     useEffect(() => {
         if (items.length === 0) {
             router.visit(route('home'), { replace: true });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // BIZ-001: this page's own cart store, not the server's `cart` prop,
+    // decides what's shown and resubmitted — so a stale-price refusal
+    // (flash.error) must re-hydrate the store with the corrected prices the
+    // server just resolved, or every retry would resubmit the exact same
+    // stale price and refuse again forever. Runs once per page visit, same
+    // as the cartIssues dialog above: flash only changes on a fresh visit.
+    useEffect(() => {
+        if (flash?.priceUpdates) {
+            hydrateCart(flash.priceUpdates);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

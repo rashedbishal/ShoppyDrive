@@ -178,6 +178,44 @@ test('a price that goes stale between page load and submit is refused, and the c
     expect((float) $order->items->first()->price)->toBe(150.0);
 });
 
+test('a stale price submitted via items corrects the cart and hands the client the new price, instead of refusing forever', function () {
+    // BIZ-001 retest (2026-11-09): a tester found that retrying after this
+    // refusal kept failing every time — Checkout.tsx resubmits its own
+    // cart store's price, which nothing here ever updated, so the exact
+    // same stale price was refused forever with no way to ever check out.
+    // Fix: always sync the cart (persisting the corrected price) even when
+    // refusing, and hand the corrected cart back as `priceUpdates` for the
+    // client to adopt before the next attempt.
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['price' => 200, 'stock_quantity' => 10]);
+
+    Cart::query()->where('user_id', $user->id)->delete();
+
+    $product->update(['price' => 150]);
+
+    $payload = checkoutPayload($product, 1);
+    $payload['items'][0]['price'] = 200;
+
+    $response = $this->actingAs($user)->post(route('checkout.store'), $payload);
+    $response->assertSessionHas('error');
+    $response->assertSessionHas('priceUpdates');
+    expect(Order::query()->count())->toBe(0);
+
+    $priceUpdates = $response->getSession()->get('priceUpdates');
+    expect((float) $priceUpdates['items'][0]['price'])->toBe(150.0);
+
+    $cart = app(CartManager::class)->getOrCreateUserCart($user);
+    expect((float) $cart->items()->first()->price)->toBe(150.0);
+
+    // A retry at the now-corrected price (exactly what Checkout.tsx would
+    // resubmit after adopting `priceUpdates`) succeeds immediately.
+    $payload['items'][0]['price'] = 150;
+    $this->actingAs($user)->post(route('checkout.store'), $payload)->assertRedirect();
+
+    $order = Order::query()->firstOrFail();
+    expect((float) $order->items->first()->price)->toBe(150.0);
+});
+
 test('a cart price that goes stale between add-to-cart and checkout is corrected, not silently charged', function () {
     $user = User::factory()->create();
     $product = Product::factory()->create(['price' => 200, 'stock_quantity' => 10]);
