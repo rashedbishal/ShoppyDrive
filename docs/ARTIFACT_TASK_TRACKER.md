@@ -10,7 +10,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
 - [ ] BE-009 — "Today" figures and invoices use UTC, not Dhaka time
 - [ ] BE-001 — Malformed input causes server errors
-- [~] BE-002 — A deleted product in a guest cart gives a bare 404 at checkout — tester's "need clear message" was right (real deletes are force-deletes, not soft); fixed for guests and, more severely, for logged-in customers whose item was silently cascade-deleted from their cart; fixed locally 2026-11-09, not pushed/deployed
+- [~] BE-002 — A deleted product in a guest cart gives a bare 404 at checkout — tester's "need clear message" was right (real deletes are force-deletes, not soft); fixed for guests and, more severely, for logged-in customers whose item was silently cascade-deleted from their cart; fix pushed 2026-11-09 (commit `f37c051`), deploy run outcome not yet confirmed
 - [ ] BE-003 — DatabaseSeeder wipes the catalog and has no production guard
 - [ ] BE-007 — Search overrides other filters on admin lists
 - [ ] BE-011 — Pathao sync reports success when every poll failed
@@ -58,14 +58,14 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
 - [ ] DB-001 — Brand delete can hard-delete soft-deleted products through the cascade
 - [ ] DB-002 — No retention or pruning for growing tables, including personal data
-- [~] DB-004 — Expired rate-limit rows pile up in the cache table — already fixed nightly (tester couldn't see this); split into its own hourly command for faster cleanup, fix committed locally 2026-11-09, not yet pushed/deployed
+- [~] DB-004 — Expired rate-limit rows pile up in the cache table — already fixed nightly (tester couldn't see this); split into its own hourly command for faster cleanup, fix pushed 2026-11-09 (commit `81259df`), deploy run outcome not yet confirmed
 
 ## Frontend
 
 - [ ] FE-005 — A server error empties a logged-in customer's cart
 - [ ] FE-006 — Product pages have no search or share tags in the HTML
 - [ ] FE-001 — Customers cannot page through order history
-- [~] FE-002 — Cart drawer and checkout estimates disagree with the server — tester failed it (checkout showed "Enter address" instead of "Free" above the threshold when no address picked yet); fix committed locally 2026-11-09, not yet pushed/deployed
+- [~] FE-002 — Cart drawer and checkout estimates disagree with the server — tester failed it (checkout showed "Enter address" instead of "Free" above the threshold when no address picked yet); fix pushed 2026-11-09 (commit `9dd80c8`), deploy run outcome not yet confirmed
 - [ ] FE-007 — Session timeout on landing-page checkout loses the form and may 405
 - [ ] FE-009 — No noindex or canonical; meta helper defects
 - [ ] FE-010 — No React error boundary
@@ -87,7 +87,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
 - [ ] OPS-002 — If cron or the queue stops, nobody is told and customer mail stops
 - [ ] OPS-003 — A short mail outage fails queued mail, and recovery is one click per row
-- [~] OPS-005 — A dead forwarder phone disables mobile payment with a misleading message — owner's design (heartbeat ping + gate mobile banking out entirely while down) built: new `/api/sms/heartbeat` endpoint, Android app updated, checkout/landing page hide bKash/Nagad while down; fixed locally 2026-11-09, not pushed/deployed, Android app not yet reinstalled
+- [~] OPS-005 — A dead forwarder phone disables mobile payment with a misleading message — owner's design (heartbeat ping + gate mobile banking out entirely while down) built: new `/api/sms/heartbeat` endpoint, Android app updated, checkout/landing page hide bKash/Nagad while down; fix pushed 2026-11-09 (commit `22edbb7`), deploy run outcome not yet confirmed. Android app reinstalled by owner but it's configured for shoppydrive.com, so the heartbeat endpoint 404s until this deploy lands
 - [ ] OPS-006 — Abandoned-cart mail has no opt-out or cap and reaches deleted accounts
 - [ ] OPS-001 — sitemap.xml is missing on the live site
 - [ ] OPS-007 — Logging defaults to one unrotated file at debug level
