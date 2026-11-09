@@ -14,10 +14,10 @@ Claude marks an item here once its result is known. This file records live-site 
 | Frontend (FE) | 13 | 0 | 1 | 0 | 12 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
 | Operations (OPS) | 6 | 0 | 0 | 0 | 6 |
-| Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
+| Performance (PERF) | 7 | 1 | 0 | 0 | 6 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **8** | **7** | **2** | **82** |
+| **All** | **99** | **9** | **7** | **2** | **81** |
 
 ## How to read this
 
@@ -406,10 +406,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Open tabs.
   - **Result:** Not checked
 
-- [ ] **PERF-005** · P3 · LOW · Admin sidebar count scans the orders table
+- [x] **PERF-005** · P3 · LOW · Admin sidebar count scans the orders table
   - **Problem:** is_seen has no index, and the count runs on every admin request. The reviewer also suspected whereDate, but MariaDB 11.8 uses the created_at index for it, so that part was dropped as a false positive.
   - **What to check:** EXPLAIN.
-  - **Result:** Not checked
+  - **Result:** Pass (2026-11-09). Tester couldn't run EXPLAIN themselves and restated the original finding rather than reporting a new failure. Ran it directly against the real local MySQL database on the exact query (`Order::where('is_seen', false)->count()`, `HandleInertiaRequests.php`): `key: orders_is_seen_index`, `type: ref`, `Extra: Using index` — a fully index-covered lookup, no table scan. Already fixed and deployed 2026-11-07. No code change.
 
 - [ ] **PERF-007** · P3 · LOW · Search scans the table despite the FULLTEXT index
   - **Problem:** MATCH alone uses the index, but adding OR sku LIKE gives a full scan.

@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 8 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 2 · Failed: 0 · Skipped: 1
+**Done: 9 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 2 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -98,7 +98,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [ ] PERF-002 — Product cards send the whole product record
 - [ ] PERF-003 — Icon registry and admin layout load on the customer home page
 - [ ] PERF-006 — Admin SMS poll hits the app every 5 seconds per tab
-- [ ] PERF-005 — Admin sidebar count scans the orders table
+- [x] PERF-005 — Admin sidebar count scans the orders table — tester restated the original finding (couldn't run EXPLAIN); re-confirmed directly 2026-11-09, index is present and used, no code change needed
 - [ ] PERF-007 — Search scans the table despite the FULLTEXT index
 - [ ] PERF-008 — Orphaned search cache files until the next deploy
 
