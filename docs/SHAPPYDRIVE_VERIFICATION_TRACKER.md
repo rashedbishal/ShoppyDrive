@@ -16,8 +16,8 @@ Claude marks an item here once its result is known. This file records live-site 
 | Operations (OPS) | 6 | 0 | 0 | 0 | 6 |
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
-| Security (SEC) | 21 | 0 | 0 | 0 | 21 |
-| **All** | **99** | **0** | **0** | **0** | **99** |
+| Security (SEC) | 21 | 1 | 0 | 0 | 20 |
+| **All** | **99** | **1** | **0** | **0** | **98** |
 
 ## How to read this
 
@@ -540,7 +540,7 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Upload a large image.
   - **Result:** Not checked
 
-- [ ] **SEC-024** · P3 · LOW · Token regeneration rewrites .env from a web request
+- [x] **SEC-024** · P3 · LOW · Token regeneration rewrites .env from a web request
   - **Problem:** Regenerating writes .env without a lock, temp file or audit entry and then caches config. A full disk could truncate .env and take the site down.
   - **What to check:** Regenerate with a full disk.
-  - **Result:** Not checked
+  - **Result:** Pass (2026-11-09). Tester couldn't fill a production disk to test this directly, which is the right call — but it's moot anyway. SEC-020's 2026-11-07 follow-up moved the SMS forwarder token out of `.env` into the database; regenerating it today only updates a `Setting` row. No file write happens at all, so a full disk can't corrupt `.env` through this action. Confirmed by reading `App\Support\SmsForwarderToken` and `SmsForwarderSettingsController::regenerate()` directly.

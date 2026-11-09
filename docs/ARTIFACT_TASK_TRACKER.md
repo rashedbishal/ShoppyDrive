@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 0 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 0 · Failed: 0 · Skipped: 0
+**Done: 1 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 0 · Failed: 0 · Skipped: 0
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -130,4 +130,4 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [>] SEC-015 — Register, login and forgot-password reveal whether an email exists — tester failed it; login and register fix live 2026-11-09, forgot-password already generic, ready to retest
 - [>] SEC-016 — Every page publishes all admin route names to guests — tester failed it; fix live 2026-11-09, ready to retest
 - [ ] SEC-018 — Some admin uploads have no size cap
-- [ ] SEC-024 — Token regeneration rewrites .env from a web request
+- [x] SEC-024 — Token regeneration rewrites .env from a web request — superseded by SEC-020's follow-up, no longer touches .env, already verified in production 2026-11-07
