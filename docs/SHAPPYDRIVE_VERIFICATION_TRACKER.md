@@ -9,7 +9,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Group | Total | Pass | Fail | Skipped | Not checked |
 |---|---|---|---|---|---|
 | Backend (BE) | 10 | 0 | 0 | 0 | 10 |
-| Business logic (BIZ) | 32 | 4 | 4 | 2 | 22 |
+| Business logic (BIZ) | 32 | 5 | 4 | 2 | 21 |
 | Database (DB) | 3 | 0 | 0 | 0 | 3 |
 | Frontend (FE) | 13 | 0 | 0 | 0 | 13 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
@@ -17,7 +17,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **5** | **4** | **2** | **88** |
+| **All** | **99** | **6** | **4** | **2** | **87** |
 
 ## How to read this
 
@@ -166,10 +166,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** GET the URLs.
   - **Result:** Pass, with an owner action item (2026-11-09). All three pages return 200 with real policy content, confirming the 2026-11-06 fix is live. Tester correctly flagged that the legal accuracy of the policy text and the privacy disclosures still needs the owner's or a lawyer's review — that was already the explicit, recorded disclaimer on this finding, not something Claude can determine. Verified `legal_business_name`/`trade_licence_number` (Admin › Contact Page) are still genuinely empty, no placeholder data anywhere — the owner still needs to fill in the real business name and trade licence number. No code change.
 
-- [ ] **BIZ-012** · P2 · MEDIUM · A whole-order refund restocks delivered goods automatically
+- [x] **BIZ-012** · P2 · MEDIUM · A whole-order refund restocks delivered goods automatically
   - **Problem:** Refunding a delivered order returns all units to stock whether or not the goods came back.
   - **What to check:** Refund a delivered verified order.
-  - **Result:** Not checked
+  - **Result:** Pass (2026-11-09). Tester skipped it — a genuinely delivered, courier-verified order is hard to set up manually. Reproduced it directly instead: `RefundRestockConfirmationTest` (6/6, re-run) builds a real delivered + courier-verified order and refunds it through the actual `admin.orders.markRefunded` route — without confirming the goods returned, stock stays untouched and the order history records why; with the "goods came back" checkbox ticked, stock restores normally. Already deployed 2026-11-06. Also re-ran the related return/lost-parcel suites (54 tests) to confirm no regression from today's separate BIZ-005 courier-verification change, which deliberately left shipped/delivered orders untouched. No code change.
 
 - [ ] **BIZ-014** · P2 · LOW · A retried checkout puts purchased items back in the cart
   - **Problem:** No duplicate order is made, but after a network retry the customer sees the bought items in the cart again. With a limit-1 coupon the retry returns a hidden error instead.

@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 5 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
+**Done: 6 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -37,7 +37,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [ ] BIZ-031 — Checkout shows payment logos the shop does not accept
 - [x] BIZ-033 — Home page ratings count unmoderated reviews — tester first failed it (product page broke after approving a review), couldn't reproduce directly, owner confirmed fixed on retest 2026-11-09 (likely transient, no code change found/needed)
 - [x] BIZ-034 — No return, refund or shipping policy pages; seller identity missing — tester confirmed pages return 200, flagged legal content still needs owner/lawyer review (already the recorded disclaimer); legal_business_name/trade_licence_number confirmed still empty, owner's to fill in
-- [ ] BIZ-012 — A whole-order refund restocks delivered goods automatically
+- [x] BIZ-012 — A whole-order refund restocks delivered goods automatically — tester skipped it (hard to set up manually); reproduced directly via real route, already deployed and working correctly, no code change needed
 - [ ] BIZ-014 — A retried checkout puts purchased items back in the cart
 - [ ] BIZ-015 — Per-customer coupon limits do not hold across guest and account
 - [ ] BIZ-017 — Incomplete-order conversion ignores flash price and variant ownership
