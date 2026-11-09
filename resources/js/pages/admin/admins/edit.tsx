@@ -1,13 +1,13 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Shield } from 'lucide-react';
 import { PermissionMatrix } from '@/components/admin/PermissionMatrix';
+import PasswordRequirements from '@/components/password-requirements';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
 import {
     email as emailRule,
     maxLength,
-    minLength,
     required,
     validate,
 } from '@/lib/validate';
@@ -38,6 +38,7 @@ type Props = {
 export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
     const { props } = usePage<any>();
     const currentAdmin = props.auth.admin as CurrentAdmin;
+    const passwordRequirements = props.password_requirements as string[];
     // Mirrors AdminController's own rule: only the mother admin can grant
     // permissions, and never the mother's own (she always has full access).
     const canManagePermissions = currentAdmin.is_mother && !adminUser.is_mother;
@@ -64,10 +65,14 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
         e.preventDefault();
 
         clearErrors();
+        // The password's actual strength rule is environment-dependent
+        // (App\Support\PasswordPolicy) and includes a server-only breach
+        // check — nothing to check client-side beyond "was one typed",
+        // left to the server's real error instead of a client guess that
+        // could pass a password the server then rejects.
         const clientErrors: Record<string, string> = validate(data, {
             name: [required(), maxLength(255)],
             email: [required(), maxLength(255), emailRule()],
-            password: data.password ? [minLength(8)] : [],
         });
 
         if (data.password && data.password !== data.password_confirmation) {
@@ -194,8 +199,13 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
                                         onChange={(e) =>
                                             setData('password', e.target.value)
                                         }
-                                        placeholder="Minimum 8 characters"
+                                        placeholder="Leave blank to keep current"
                                     />
+                                    <div className="mt-1">
+                                        <PasswordRequirements
+                                            requirements={passwordRequirements}
+                                        />
+                                    </div>
                                     {errors.password && (
                                         <p className="mt-1 text-xs text-red-600">
                                             {errors.password}

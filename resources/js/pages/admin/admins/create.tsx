@@ -1,15 +1,16 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { PermissionMatrix } from '@/components/admin/PermissionMatrix';
+import PasswordRequirements from '@/components/password-requirements';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
 import {
     email as emailRule,
     maxLength,
-    minLength,
     required,
     validate,
 } from '@/lib/validate';
+import type { SharedPageProps } from '@/types';
 
 type SectionGroup = {
     group: string;
@@ -21,6 +22,8 @@ type Props = {
 };
 
 export default function AdminCreate({ sectionCatalog }: Props) {
+    const { password_requirements: passwordRequirements } =
+        usePage<SharedPageProps>().props;
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
             name: '',
@@ -37,10 +40,15 @@ export default function AdminCreate({ sectionCatalog }: Props) {
         e.preventDefault();
 
         clearErrors();
+        // The password's actual strength rule is environment-dependent
+        // (App\Support\PasswordPolicy) and includes a server-only breach
+        // check — only `required()` is checked client-side; everything
+        // else is left to the server's real error instead of a client
+        // guess that could pass a password the server then rejects.
         const clientErrors: Record<string, string> = validate(data, {
             name: [required(), maxLength(255)],
             email: [required(), maxLength(255), emailRule()],
-            password: [required(), minLength(8)],
+            password: [required()],
         });
 
         if (
@@ -129,8 +137,13 @@ export default function AdminCreate({ sectionCatalog }: Props) {
                                         onChange={(e) =>
                                             setData('password', e.target.value)
                                         }
-                                        placeholder="Minimum 8 characters"
+                                        placeholder="Create a password"
                                     />
+                                    <div className="mt-1">
+                                        <PasswordRequirements
+                                            requirements={passwordRequirements}
+                                        />
+                                    </div>
                                     {errors.password && (
                                         <p className="mt-1 text-xs text-red-600">
                                             {errors.password}
