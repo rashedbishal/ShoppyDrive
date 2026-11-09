@@ -37,10 +37,16 @@ class RefundCalculator
     }
 
     /**
-     * Amount collected from the customer, or null when it cannot be
-     * established (COD order not delivered by the courier).
+     * Amount collected from the customer. `payment_status` is the
+     * authoritative signal that this was actually collected — every path
+     * that sets it PAID for a COD order already means the courier reported
+     * delivery (or an admin otherwise confirmed collection), so there is
+     * nothing further to double-check here (BIZ-008 retest, 2026-11-09:
+     * this used to also require `delivered_at`, which left a paid order
+     * permanently unrefundable, with no on-screen explanation, the moment
+     * the two fields were ever out of sync for any reason).
      */
-    public function collectedPaisa(Order $order): ?int
+    public function collectedPaisa(Order $order): int
     {
         if ($order->payment_status !== PaymentStatus::PAID) {
             return 0;
@@ -48,9 +54,8 @@ class RefundCalculator
 
         if ($order->payment_method === PaymentMethod::COD) {
             // The courier is asked for (int) round(total) — see the Pathao /
-            // Steadfast payloads — and only a courier-reported delivery marks
-            // a COD order paid.
-            return $order->delivered_at === null ? null : ((int) round((float) $order->total)) * 100;
+            // Steadfast payloads.
+            return ((int) round((float) $order->total)) * 100;
         }
 
         $paid = Payment::where('order_id', $order->id)->where('status', PaymentStatus::PAID->value);
@@ -124,15 +129,12 @@ class RefundCalculator
     }
 
     /**
-     * Refundable cap, or null when the collected amount is unknown.
+     * Refundable cap: what was collected, minus non-refundable shipping/tax,
+     * capped at the product's own net value.
      */
-    public function capPaisa(Order $order): ?int
+    public function capPaisa(Order $order): int
     {
         $collected = $this->collectedPaisa($order);
-
-        if ($collected === null) {
-            return null;
-        }
 
         return max(0, min($collected - self::toPaisa($order->shipping_cost) - self::toPaisa($order->tax), $this->productNetPaisa($order)));
     }
@@ -236,7 +238,7 @@ class RefundCalculator
     }
 
     /**
-     * @return array{collected: float|null, product_net: float, shipping: float, cap: float|null, refunded: float, remaining: float|null, product_refund_complete: bool, payment_fully_refunded: bool}
+     * @return array{collected: float, product_net: float, shipping: float, cap: float, refunded: float, remaining: float, product_refund_complete: bool, payment_fully_refunded: bool}
      */
     public function summary(Order $order): array
     {
@@ -245,13 +247,13 @@ class RefundCalculator
         $refunded = $this->refundedPaisa($order);
 
         return [
-            'collected' => $collected === null ? null : self::toTaka($collected),
+            'collected' => self::toTaka($collected),
             'product_net' => self::toTaka($this->productNetPaisa($order)),
             'shipping' => (float) $order->shipping_cost,
-            'cap' => $cap === null ? null : self::toTaka($cap),
+            'cap' => self::toTaka($cap),
             'refunded' => self::toTaka($refunded),
-            'remaining' => $cap === null ? null : self::toTaka(max(0, $cap - $refunded)),
-            'product_refund_complete' => $cap !== null && $refunded >= $cap && $cap > 0,
+            'remaining' => self::toTaka(max(0, $cap - $refunded)),
+            'product_refund_complete' => $refunded >= $cap && $cap > 0,
             'payment_fully_refunded' => $order->payment_status === PaymentStatus::REFUNDED,
         ];
     }

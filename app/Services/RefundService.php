@@ -169,10 +169,6 @@ class RefundService
             throw new CouldNotRecordRefundException('No payment was collected for this order, so nothing can be refunded. Cancel the order instead.');
         }
 
-        if ($this->calculator->collectedPaisa($order) === null) {
-            throw new CouldNotRecordRefundException('The amount collected for this order cannot be established, so no refund can be recorded.');
-        }
-
         if ($this->calculator->hasUnrecordedRefunds($order)) {
             throw new CouldNotRecordRefundException('This order has a refund recorded before the refund ledger existed without an amount, so no further refund can be recorded.');
         }

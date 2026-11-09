@@ -141,7 +141,12 @@ test('COD collection uses the whole-taka amount the courier collected, in both r
     'rounds down (959.45 -> 959)' => [999.40, 99.95, 95_900, 89_900],
 ]);
 
-test('collected amount: online uses paid payment rows, admin-paid uses the total, unpaid is zero, undelivered COD is unknown', function () {
+test('collected amount: online uses paid payment rows, admin-paid uses the total, unpaid is zero, COD uses the total regardless of delivery', function () {
+    // BIZ-008 retest (2026-11-09): collectedPaisa() used to return null for
+    // a COD order paid without delivered_at set, which left it permanently
+    // unrefundable with no on-screen explanation the moment the two fields
+    // were ever out of sync. payment_status alone is now trusted — it's
+    // already the authoritative "this was collected" signal everywhere else.
     $calculator = app(RefundCalculator::class);
 
     $online = refundOrder(['shipping_cost' => 60]);
@@ -150,7 +155,7 @@ test('collected amount: online uses paid payment rows, admin-paid uses the total
 
     expect($calculator->collectedPaisa(refundOrder(['payment_method' => 'mobile_banking'])))->toBe(100_000)
         ->and($calculator->collectedPaisa(refundOrder(['payment_status' => 'unpaid'])))->toBe(0)
-        ->and($calculator->collectedPaisa(refundOrder(['payment_method' => 'cod', 'delivered_at' => null, 'status' => OrderStatus::SHIPPED])))->toBeNull();
+        ->and($calculator->collectedPaisa(refundOrder(['payment_method' => 'cod', 'delivered_at' => null, 'status' => OrderStatus::SHIPPED])))->toBe(100_000);
 });
 
 // ── Shared ledger, through the real admin routes ────────────────────────────

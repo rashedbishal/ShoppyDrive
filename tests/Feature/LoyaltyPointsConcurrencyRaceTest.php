@@ -302,9 +302,11 @@ function createRedeemedPointsRaceOrder(array $overrides = []): array
         'user_id' => $user->id,
         'status' => OrderStatus::PROCESSING,
         // PAY-RETURN-001: markRefunded() now requires a paid order. ZiniPay
-        // (not COD) avoids collectedPaisa()'s COD delivered_at requirement,
-        // which would also flip isCourierInvolved() true and demand a
-        // courier-readiness attestation this fixture deliberately has none of.
+        // (not COD) avoids setting delivered_at just to make this order
+        // refundable, which would flip isCourierInvolved() true and demand
+        // a courier-readiness attestation this fixture deliberately has
+        // none of (collectedPaisa() itself no longer needs delivered_at
+        // for COD — see BIZ-008 retest, 2026-11-09).
         'payment_status' => 'paid',
         'payment_method' => 'zinipay',
         'subtotal' => 1000,

@@ -93,12 +93,12 @@ type Order = {
 };
 
 type RefundSummary = {
-    collected: number | null;
+    collected: number;
     product_net: number;
     shipping: number;
-    cap: number | null;
+    cap: number;
     refunded: number;
-    remaining: number | null;
+    remaining: number;
     product_refund_complete: boolean;
     payment_fully_refunded: boolean;
 };
@@ -269,7 +269,7 @@ export default function OrderShow({
     // PAY-RETURN-001: records a refund already paid back outside the app,
     // for exactly the remaining refundable amount (the server re-checks it).
     const handleMarkRefunded = () => {
-        if (refundSummary.remaining === null || refundSummary.remaining <= 0) {
+        if (refundSummary.remaining <= 0) {
             return;
         }
 
@@ -731,8 +731,6 @@ export default function OrderShow({
                                                     refundProcessing ||
                                                     courierUnresolved ||
                                                     !courierEvidence.eligible ||
-                                                    refundSummary.remaining ===
-                                                        null ||
                                                     refundSummary.remaining <= 0
                                                 }
                                                 onClick={handleMarkRefunded}
