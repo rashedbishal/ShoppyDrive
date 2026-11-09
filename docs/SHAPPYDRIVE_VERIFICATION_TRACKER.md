@@ -14,10 +14,10 @@ Claude marks an item here once its result is known. This file records live-site 
 | Frontend (FE) | 13 | 0 | 1 | 0 | 12 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
 | Operations (OPS) | 6 | 0 | 0 | 0 | 6 |
-| Performance (PERF) | 7 | 2 | 0 | 0 | 5 |
+| Performance (PERF) | 7 | 3 | 0 | 0 | 4 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **10** | **7** | **2** | **80** |
+| **All** | **99** | **11** | **7** | **2** | **79** |
 
 ## How to read this
 
@@ -386,10 +386,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
 
 ## Performance (PERF)
 
-- [ ] **PERF-001** · P1 · MEDIUM · Product listing runs a query for every variant
+- [x] **PERF-001** · P1 · MEDIUM · Product listing runs a query for every variant
   - **Problem:** 12 products with 6 variants each took 101 queries on /products. A 30-variant product page costs about 90 extra, and each variant adds flash-sale lookups.
   - **What to check:** Open the Products page (/products) where some products have many color/size options. It should feel snappy to load, not noticeably slow compared to other pages.
-  - **Result:** Not checked
+  - **Result:** Pass (2026-11-09). Tester's note was cut off ("need"), no actual content. Confirmed the `variants.media` eager-load from the original fix is still intact in `ProductController`, `ProductListingController` and the other call sites it was applied to. `ProductListingTest` (7/7, the audit's own 12×6-variant repro asserting under 40 queries) still passes. Live `/products` returns 200 in ~0.58s. No code change.
 
 - [x] **PERF-002** · P2 · LOW · Product cards send the whole product record
   - **Problem:** Live home HTML is 145 KB (21 KB compressed) and a product page 82 KB (18 KB compressed), with first byte around 0.42s, so this is modest today. Cards need about 10 fields but get all columns plus relations. Ziggy and its script add about 52 KB (estimate). cost_price is correctly hidden, so this is size only.
