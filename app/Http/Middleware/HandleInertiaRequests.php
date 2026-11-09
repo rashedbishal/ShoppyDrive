@@ -9,6 +9,7 @@ use App\Models\Wishlist;
 use App\Services\BundleService;
 use App\Support\CartManager;
 use App\Support\LayoutCache;
+use App\Support\SmsForwarderHeartbeat;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Middleware;
@@ -166,6 +167,12 @@ class HandleInertiaRequests extends Middleware
             'unseen_orders_count' => fn () => $request->user('admin')
                 ? Order::where('is_seen', false)->count()
                 : null,
+            // OPS-005: the forwarder phone can go dark without ever
+            // failing a payment outright — checking this live (never
+            // cached, unlike LayoutCache::settings()) lets checkout and the
+            // landing-page funnel hide bKash/Nagad instead of letting a
+            // customer submit a Transaction ID that can never be matched.
+            'mobile_banking_available' => fn () => ! SmsForwarderHeartbeat::isDown(),
         ];
     }
 

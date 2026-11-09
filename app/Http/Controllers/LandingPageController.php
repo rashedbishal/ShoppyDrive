@@ -23,6 +23,7 @@ use App\Support\BangladeshiPhone;
 use App\Support\CartManager;
 use App\Support\OrderNumberGenerator;
 use App\Support\SafeLogContext;
+use App\Support\SmsForwarderHeartbeat;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -34,6 +35,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -142,6 +144,13 @@ class LandingPageController extends Controller
             'phone.regex' => 'Enter a valid 11-digit Bangladeshi phone number (e.g. 01712345678).',
             'sd_confirm_ref.prohibited' => 'We could not place this order. Please refresh the page and try again.',
         ]);
+
+        // OPS-005: see PlaceOrderRequest::withValidator() for why.
+        if ($request->input('payment_method') === 'mobile_banking' && SmsForwarderHeartbeat::isDown()) {
+            throw ValidationException::withMessages([
+                'payment_method' => 'Mobile payment verification is temporarily unavailable. Please choose Cash on Delivery instead.',
+            ]);
+        }
 
         $orderToken = $request->string('order_token')->toString();
         $resultKey = "lp-order-result:{$orderToken}";

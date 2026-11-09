@@ -223,6 +223,22 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by('ip:'.$request->ip());
         });
 
+        // OPS-005: same phone, same token check as 'sms-forwarder' above,
+        // but for the liveness-only heartbeat it now pings every 1-2
+        // minutes — a real phone calling this every minute must never be
+        // throttled, since a missed heartbeat is exactly what makes it
+        // look dead.
+        RateLimiter::for('sms-forwarder-heartbeat', function (Request $request) {
+            $expected = SmsForwarderToken::current();
+            $given = (string) $request->bearerToken();
+
+            if ($expected !== '' && $given !== '' && hash_equals($expected, $given)) {
+                return Limit::none();
+            }
+
+            return Limit::perMinute(30)->by('ip:'.$request->ip());
+        });
+
         // Everything below is tunable from Admin > Security (see SecurityRateLimits).
         RateLimiter::for('place-order', function (Request $request) {
             $limits = SecurityRateLimits::all();

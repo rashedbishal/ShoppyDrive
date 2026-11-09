@@ -350,8 +350,13 @@ export default function Checkout({
     pointsValue = 0,
     pointsRedeemMaxPercent = 100,
 }: CheckoutProps): React.JSX.Element {
-    const { auth, flash, settings, active_bundle_recipes } =
-        usePage<SharedPageProps>().props;
+    const {
+        auth,
+        flash,
+        settings,
+        active_bundle_recipes,
+        mobile_banking_available: mobileBankingAvailable,
+    } = usePage<SharedPageProps>().props;
     const {
         items: cartItems,
         coupon: storeCoupon,
@@ -459,6 +464,21 @@ export default function Checkout({
         // BIZ-011: honeypot, always empty for real customers.
         sd_confirm_ref: '',
     });
+
+    // OPS-005: the forwarder phone went down after this page was reached
+    // with mobile banking already selected (or this load itself already
+    // found it down) — fall back to COD rather than let the customer
+    // submit a Transaction ID that can never be matched. The server
+    // enforces this too (PlaceOrderRequest), so this is purely UX.
+    useEffect(() => {
+        if (
+            !mobileBankingAvailable &&
+            form.data.payment_method === 'mobile_banking'
+        ) {
+            form.setData('payment_method', 'cod');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mobileBankingAvailable]);
 
     const isDhaka = form.data.state === 'Dhaka';
 
@@ -1462,17 +1482,21 @@ export default function Checkout({
                                 {/* Bkash / Nagad */}
                                 <button
                                     type="button"
+                                    disabled={!mobileBankingAvailable}
                                     onClick={() =>
+                                        mobileBankingAvailable &&
                                         form.setData(
                                             'payment_method',
                                             'mobile_banking',
                                         )
                                     }
                                     className={`flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${
-                                        form.data.payment_method ===
-                                        'mobile_banking'
-                                            ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]'
-                                            : 'border-[var(--color-border)] bg-white hover:border-slate-300'
+                                        !mobileBankingAvailable
+                                            ? 'cursor-not-allowed border-[var(--color-border)] bg-slate-50 opacity-60'
+                                            : form.data.payment_method ===
+                                                'mobile_banking'
+                                              ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]'
+                                              : 'border-[var(--color-border)] bg-white hover:border-slate-300'
                                     }`}
                                 >
                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-white shadow-sm">
@@ -1484,13 +1508,20 @@ export default function Checkout({
                                     <div className="flex-1">
                                         <p className="text-sm font-bold text-[var(--color-text-primary)]">
                                             Bkash / Nagad
-                                            <span className="ml-2 inline-flex items-center rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-semibold text-pink-700">
-                                                Send Money
-                                            </span>
+                                            {mobileBankingAvailable ? (
+                                                <span className="ml-2 inline-flex items-center rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-semibold text-pink-700">
+                                                    Send Money
+                                                </span>
+                                            ) : (
+                                                <span className="ml-2 inline-flex items-center rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                                    Temporarily unavailable
+                                                </span>
+                                            )}
                                         </p>
                                         <p className="text-xs text-[var(--color-text-muted)]">
-                                            Send money & enter your Transaction
-                                            ID
+                                            {mobileBankingAvailable
+                                                ? 'Send money & enter your Transaction ID'
+                                                : 'Mobile payment verification is temporarily unavailable. Please use Cash on Delivery.'}
                                         </p>
                                     </div>
                                     <div

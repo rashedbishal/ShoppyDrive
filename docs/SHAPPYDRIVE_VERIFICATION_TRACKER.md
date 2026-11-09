@@ -13,11 +13,11 @@ Claude marks an item here once its result is known. This file records live-site 
 | Database (DB) | 3 | 0 | 1 | 0 | 2 |
 | Frontend (FE) | 13 | 0 | 1 | 0 | 12 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
-| Operations (OPS) | 6 | 0 | 0 | 0 | 6 |
+| Operations (OPS) | 6 | 0 | 1 | 0 | 5 |
 | Performance (PERF) | 7 | 3 | 0 | 0 | 4 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **11** | **7** | **2** | **79** |
+| **All** | **99** | **11** | **8** | **2** | **78** |
 
 ## How to read this
 
@@ -364,10 +364,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Refuse SMTP.
   - **Result:** Not checked
 
-- [ ] **OPS-005** · P1 · MEDIUM · A dead forwarder phone disables mobile payment with a misleading message
+- [!] **OPS-005** · P1 · MEDIUM · A dead forwarder phone disables mobile payment with a misleading message
   - **Problem:** If the phone is off, customers who paid are told their ID was not found, and no one is alerted. The sidebar badge stays at 0 because nothing arrives. Single point of failure.
   - **What to check:** Turn the phone off.
-  - **Result:** Not checked
+  - **Result:** Fixed locally, not deployed (2026-11-09). Tester (in Bangla) proposed the Android app ping the server every 1-2 minutes so a dead phone is detected within ~5 minutes instead of 6 hours, and the customer sees a friendlier message. Owner's own design, chosen over both of Claude's offered options: when the phone is confirmed down, don't let a customer attempt bKash/Nagad at all — gate it out entirely rather than let them hit a dead end. Built: new `POST /api/sms/heartbeat` the forwarder app's foreground service now pings every 90s; `App\Support\SmsForwarderHeartbeat::isDown()` (5-minute threshold once a heartbeat has ever arrived, falling back to the old 6-hour no-SMS-at-all check before the app update is installed) backs both the admin sidebar badge and a new `mobile_banking_available` shared Inertia prop; Checkout.tsx and the landing-page order form hide/grey out the Bkash/Nagad option while it's false, forcing COD; `PlaceOrderRequest`/`LandingPageController` reject a `mobile_banking` submission server-side regardless (defense in depth). Android app (`~/AndroidStudioProjects/ShoppyDriveSMSForwarder`) updated to send the heartbeat; compiles clean (`gradlew compileDebugKotlin`), not yet reinstalled on the phone. New `SmsForwarderHeartbeatTest`, `ForwarderDownPaymentGateTest`; updated `SmsPollReconciliationTest`. Full suite 2660: 2585 passed, 3 failed (pre-existing local-`.env`-only `ProductionTransportSecurityTest` mismatch, unrelated), 72 skipped. Pint, tsc, ESLint, Prettier clean. Not deployed — awaiting approval to push, and the owner to reinstall the updated Android app on the forwarder phone.
 
 - [ ] **OPS-006** · P1 · MEDIUM · Abandoned-cart mail has no opt-out or cap and reaches deleted accounts
   - **Problem:** Three checkout sessions make three mails. After a cron outage every old row is mailed at once. A customer who deletes their account is still mailed. There is no unsubscribe link.

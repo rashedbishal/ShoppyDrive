@@ -321,7 +321,8 @@ function OrderForm({
     nagadNumber: string | null;
     orderToken: string;
 }) {
-    const { settings } = usePage<SharedPageProps>().props;
+    const { settings, mobile_banking_available: mobileBankingAvailable } =
+        usePage<SharedPageProps>().props;
     const insideDhakaRate = settings.shipping_rate_inside_dhaka ?? 60;
     const outsideDhakaRate = settings.shipping_rate_outside_dhaka ?? 120;
 
@@ -355,6 +356,18 @@ function OrderForm({
         // BIZ-011: honeypot, always empty for real customers.
         sd_confirm_ref: '',
     });
+
+    // OPS-005: see Checkout.tsx's identical guard — the server enforces this
+    // too (LandingPageController::placeOrder()), this is purely UX.
+    useEffect(() => {
+        if (
+            !mobileBankingAvailable &&
+            data.payment_method === 'mobile_banking'
+        ) {
+            setData('payment_method', 'cod');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mobileBankingAvailable]);
 
     const updateState = (v: string) => {
         setState(v);
@@ -564,11 +577,14 @@ function OrderForm({
                         <span className="text-sm">Cash on Delivery</span>
                     </label>
                     {(bkashNumber || nagadNumber) && (
-                        <label className="flex cursor-pointer items-center gap-2">
+                        <label
+                            className={`flex items-center gap-2 ${mobileBankingAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}
+                        >
                             <input
                                 type="radio"
                                 name="pm"
                                 value="mobile_banking"
+                                disabled={!mobileBankingAvailable}
                                 checked={
                                     data.payment_method === 'mobile_banking'
                                 }
@@ -579,6 +595,11 @@ function OrderForm({
                             />
                             <span className="text-sm">
                                 Mobile Banking (Bkash / Nagad)
+                                {!mobileBankingAvailable && (
+                                    <span className="ml-1 text-slate-500">
+                                        — temporarily unavailable
+                                    </span>
+                                )}
                             </span>
                         </label>
                     )}

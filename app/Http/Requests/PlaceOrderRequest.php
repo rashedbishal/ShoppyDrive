@@ -8,6 +8,8 @@ use App\Concerns\NormalizesBangladeshiPhone;
 use App\Http\Middleware\EnsureCheckoutAccess;
 use App\Rules\VariantBelongsToProduct;
 use App\Support\BangladeshDistricts;
+use App\Support\SmsForwarderHeartbeat;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -90,5 +92,22 @@ class PlaceOrderRequest extends FormRequest
             'phone.regex' => 'Enter a valid 11-digit Bangladeshi phone number (e.g. 01712345678).',
             'sd_confirm_ref.prohibited' => 'We could not place this order. Please refresh the page and try again.',
         ];
+    }
+
+    /**
+     * OPS-005: a dead forwarder phone can never match a bKash/Nagad
+     * Transaction ID, so refuse the attempt here rather than let the
+     * customer submit one that can never verify. Checked server-side
+     * regardless of the `mobile_banking_available` prop the checkout page
+     * already hides the option on, in case that page was loaded before
+     * the phone went down.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            if ($this->input('payment_method') === 'mobile_banking' && SmsForwarderHeartbeat::isDown()) {
+                $validator->errors()->add('payment_method', 'Mobile payment verification is temporarily unavailable. Please choose Cash on Delivery instead.');
+            }
+        });
     }
 }

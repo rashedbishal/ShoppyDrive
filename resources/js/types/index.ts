@@ -704,6 +704,8 @@ export interface SharedPageProps {
         addresses_count: number;
     } | null;
     unseen_orders_count: number | null;
+    /** OPS-005: false while the bKash/Nagad SMS-forwarder phone looks dead — checkout and the landing-page funnel hide the mobile banking option while this is false, since a Transaction ID submitted then can never be matched. */
+    mobile_banking_available: boolean;
 }
 
 export interface UiStateToast extends FlashToast {

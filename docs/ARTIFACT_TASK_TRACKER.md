@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 11 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 2 · Failed: 0 · Skipped: 1
+**Done: 11 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 3 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -87,7 +87,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
 - [ ] OPS-002 — If cron or the queue stops, nobody is told and customer mail stops
 - [ ] OPS-003 — A short mail outage fails queued mail, and recovery is one click per row
-- [ ] OPS-005 — A dead forwarder phone disables mobile payment with a misleading message
+- [~] OPS-005 — A dead forwarder phone disables mobile payment with a misleading message — owner's design (heartbeat ping + gate mobile banking out entirely while down) built: new `/api/sms/heartbeat` endpoint, Android app updated, checkout/landing page hide bKash/Nagad while down; fixed locally 2026-11-09, not pushed/deployed, Android app not yet reinstalled
 - [ ] OPS-006 — Abandoned-cart mail has no opt-out or cap and reaches deleted accounts
 - [ ] OPS-001 — sitemap.xml is missing on the live site
 - [ ] OPS-007 — Logging defaults to one unrotated file at debug level

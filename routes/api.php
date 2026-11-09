@@ -16,3 +16,7 @@ Route::post('/csp-report', CspReportController::class)->middleware('throttle:cli
 
 // SMS forwarder phone — authenticated by its bearer token (see SmsTestController)
 Route::post('/sms/receive', [SmsTestController::class, 'receive'])->middleware('throttle:sms-forwarder');
+
+// OPS-005: liveness-only heartbeat from the same phone, pinged every 1-2
+// minutes regardless of SMS traffic (see SmsForwarderHeartbeat).
+Route::post('/sms/heartbeat', [SmsTestController::class, 'heartbeat'])->middleware('throttle:sms-forwarder-heartbeat');

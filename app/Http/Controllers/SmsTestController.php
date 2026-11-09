@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ReceivedSms;
 use App\Services\SmsParserService;
+use App\Support\SmsForwarderHeartbeat;
 use App\Support\SmsForwarderToken;
 use App\Support\SmsRegex;
 use Carbon\Carbon;
@@ -42,18 +43,40 @@ class SmsTestController extends Controller
         }
     }
 
-    public function receive(Request $request): JsonResponse
+    /**
+     * FSA-19: a missing/empty server token (no Setting row configured yet)
+     * must fail closed, never throw — SmsForwarderToken::current() always
+     * returns a string, so hash_equals() never sees null. Same source as
+     * the sms-forwarder* rate limiters (AppServiceProvider::configureRateLimiting()).
+     */
+    private function tokenIsValid(Request $request): bool
     {
         $token = $request->bearerToken();
-
-        // FSA-19: a missing/empty server token (no Setting row configured
-        // yet) must fail closed into the same 401 as a wrong token, never a
-        // 500. SmsForwarderToken::current() always returns a string, so
-        // hash_equals() never sees null. Same source as the sms-forwarder
-        // rate limiter below (AppServiceProvider::configureRateLimiting()).
         $expectedToken = SmsForwarderToken::current();
 
-        if ($expectedToken === '' || ! $token || ! hash_equals($expectedToken, $token)) {
+        return $expectedToken !== '' && $token && hash_equals($expectedToken, $token);
+    }
+
+    /**
+     * OPS-005: a liveness-only ping from the forwarder app's foreground
+     * service, sent every 1-2 minutes regardless of whether any SMS has
+     * arrived — see SmsForwarderHeartbeat for how this is used.
+     * Route: POST /api/sms/heartbeat
+     */
+    public function heartbeat(Request $request): JsonResponse
+    {
+        if (! $this->tokenIsValid($request)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        SmsForwarderHeartbeat::record();
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    public function receive(Request $request): JsonResponse
+    {
+        if (! $this->tokenIsValid($request)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
