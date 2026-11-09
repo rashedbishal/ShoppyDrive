@@ -412,6 +412,7 @@ export default function ProductBundleEdit({ bundle }: Props) {
                                                 clearErrors('image');
                                             }}
                                             error={errors.image}
+                                            maxSizeMb={5}
                                             previewClassName="h-48"
                                         />
                                     </div>

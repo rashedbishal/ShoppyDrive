@@ -357,6 +357,7 @@ export default function ProductBundleCreate() {
                                                 clearErrors('image');
                                             }}
                                             error={errors.image}
+                                            maxSizeMb={5}
                                             previewClassName="h-48"
                                         />
                                     </div>
