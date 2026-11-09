@@ -9,7 +9,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Group | Total | Pass | Fail | Skipped | Not checked |
 |---|---|---|---|---|---|
 | Backend (BE) | 10 | 0 | 0 | 0 | 10 |
-| Business logic (BIZ) | 32 | 3 | 4 | 2 | 23 |
+| Business logic (BIZ) | 32 | 4 | 4 | 2 | 22 |
 | Database (DB) | 3 | 0 | 0 | 0 | 3 |
 | Frontend (FE) | 13 | 0 | 0 | 0 | 13 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
@@ -17,7 +17,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **4** | **4** | **2** | **89** |
+| **All** | **99** | **5** | **4** | **2** | **88** |
 
 ## How to read this
 
@@ -161,10 +161,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Submit a product review as a customer. In Admin, leave it pending (don't approve or reject it yet). Check the home page's rating for that product — it should NOT include your pending review. Then reject the review in Admin and check again — a rejected review also should not count.
   - **Result:** Pass (2026-11-09). First reported Fail (2026-11-08): approving a review broke that product's detail page ("something went wrong") every time. Investigated directly — two realistic reproductions via the real routes (a plain review, and a verified-purchase review that also exercises the review-bonus-points path), both with full exception visibility enabled, found no crash in either case; checked the dev server's browser-console log for the relevant window too, no matching error. Owner/tester confirmed on retest the product page now loads fine after approval — looks like it was transient (stale dev build/HMR state), not a code defect. No code change made, since nothing reproducible was found to fix.
 
-- [ ] **BIZ-034** · P1 · MEDIUM · No return, refund or shipping policy pages; seller identity missing
+- [x] **BIZ-034** · P1 · MEDIUM · No return, refund or shipping policy pages; seller identity missing
   - **Problem:** Live /return-policy, /refund-policy and /shipping-policy return 404. Only privacy, terms and FAQ exist. No legal entity, trade licence or full address in code. No policy acknowledgement at checkout. Privacy text omits stored IP, browser and saved abandoned-checkout phone numbers. Owner or lawyer to compare with the Digital Commerce Operation Guidelines 2021. This is not legal advice.
   - **What to check:** GET the URLs.
-  - **Result:** Not checked
+  - **Result:** Pass, with an owner action item (2026-11-09). All three pages return 200 with real policy content, confirming the 2026-11-06 fix is live. Tester correctly flagged that the legal accuracy of the policy text and the privacy disclosures still needs the owner's or a lawyer's review — that was already the explicit, recorded disclaimer on this finding, not something Claude can determine. Verified `legal_business_name`/`trade_licence_number` (Admin › Contact Page) are still genuinely empty, no placeholder data anywhere — the owner still needs to fill in the real business name and trade licence number. No code change.
 
 - [ ] **BIZ-012** · P2 · MEDIUM · A whole-order refund restocks delivered goods automatically
   - **Problem:** Refunding a delivered order returns all units to stock whether or not the goods came back.
