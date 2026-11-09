@@ -1,4 +1,5 @@
 import { createInertiaApp, router } from '@inertiajs/react';
+import type { ResolvedComponent } from '@inertiajs/react';
 import React from 'react';
 import { toast } from 'sonner';
 import { route as ziggyRoute } from 'ziggy-js';
@@ -9,7 +10,6 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
 import { initializeSiteTheme } from '@/hooks/use-theme';
-import AdminLayout from '@/layouts/admin-layout';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { initAddToCartFeedback } from '@/lib/add-to-cart-feedback';
@@ -436,8 +436,28 @@ router.on('navigate', (event) => {
     }
 });
 
+const storefrontPages = import.meta.glob<{ default: ResolvedComponent }>([
+    './pages/**/*.tsx',
+    '!./pages/admin/**',
+]);
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
+    resolve: async (name) => {
+        if (name.startsWith('admin/')) {
+            const { resolveAdminPage } = await import('@/lib/admin-pages');
+
+            return resolveAdminPage(name);
+        }
+
+        const page = await storefrontPages[`./pages/${name}.tsx`]?.();
+
+        if (!page) {
+            throw new Error(`Page not found: ${name}`);
+        }
+
+        return page.default;
+    },
     layout: (name) => {
         switch (true) {
             case name === 'welcome':
@@ -449,7 +469,8 @@ createInertiaApp({
             case name.startsWith('errors/'):
                 return null;
             case name.startsWith('admin/'):
-                return AdminLayout;
+                // Set on the page itself by resolveAdminPage().
+                return null;
             case name.startsWith('settings/'):
                 return [AppLayout, SettingsLayout];
             default:
