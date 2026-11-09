@@ -18,6 +18,7 @@ use App\Http\Middleware\RedirectToCanonicalDomain;
 use App\Http\Middleware\RedirectToHttps;
 use App\Http\Middleware\RefuseInsecureApi;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\StampPasswordResetRequestedAt;
 use App\Http\Middleware\ThrottleFortifyActions;
 use App\Http\Middleware\TrackDailyVisit;
 use Illuminate\Foundation\Application;
@@ -49,6 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'history.encrypt' => ConditionallyEncryptHistory::class,
             'checkout.access' => EnsureCheckoutAccess::class,
             'fortify.throttle' => ThrottleFortifyActions::class,
+            'fortify.stamp-password-reset' => StampPasswordResetRequestedAt::class,
             'account.active' => EnsureAccountNotAnonymized::class,
         ]);
         $middleware->prepend(SecurityHeaders::class);

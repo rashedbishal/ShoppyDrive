@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Middleware\StampPasswordResetRequestedAt;
 use App\Http\Responses\GenericPasswordResetLinkResponse;
 use App\Http\Responses\LoginResponse;
 use App\Http\Responses\LogoutResponse;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Services\ReferralService;
 use App\Support\CartManager;
 use App\Support\SecurityRateLimits;
+use Carbon\CarbonInterface;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -99,9 +101,16 @@ class FortifyServiceProvider extends ServiceProvider
             'token' => $request->route('token'),
         ]));
 
-        Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('auth/forgot-password', [
-            'status' => $request->session()->get('status'),
-        ]));
+        Fortify::requestPasswordResetLinkView(function (Request $request) {
+            $requestedAt = $request->session()->get(StampPasswordResetRequestedAt::SESSION_KEY);
+
+            return Inertia::render('auth/forgot-password', [
+                'status' => $request->session()->get('status'),
+                'resendAvailableAt' => $requestedAt instanceof CarbonInterface
+                    ? $requestedAt->addSeconds(StampPasswordResetRequestedAt::COOLDOWN_SECONDS)->toIso8601String()
+                    : null,
+            ]);
+        });
 
         Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/verify-email', [
             'status' => $request->session()->get('status'),

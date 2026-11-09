@@ -7,15 +7,45 @@ import {
     Mail,
     ShieldCheck,
 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
 
 export default function ForgotPassword({
     status,
+    resendAvailableAt,
 }: {
     status?: string;
+    resendAvailableAt?: string | null;
 }): React.JSX.Element {
     const { data, setData, post, processing, errors } = useForm({ email: '' });
+
+    // A tester could spam this button with no feedback before the real
+    // server-side limiter eventually refused the request — this mirrors
+    // the email-verification resend cooldown's own pattern, just backed
+    // by the session (StampPasswordResetRequestedAt) instead of a user
+    // column, since a forgot-password request has no account to persist
+    // against.
+    const targetMs = useMemo(
+        () =>
+            resendAvailableAt ? new Date(resendAvailableAt).getTime() : null,
+        [resendAvailableAt],
+    );
+    const [now, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+        if (!targetMs) {
+            return;
+        }
+
+        const interval = setInterval(() => setNow(Date.now()), 1000);
+
+        return () => clearInterval(interval);
+    }, [targetMs]);
+
+    const secondsLeft = targetMs
+        ? Math.max(0, Math.ceil((targetMs - now) / 1000))
+        : 0;
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
@@ -91,11 +121,13 @@ export default function ForgotPassword({
 
                         <button
                             type="submit"
-                            disabled={processing}
+                            disabled={processing || secondsLeft > 0}
                             className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c8102e] text-sm font-semibold text-white transition hover:bg-[#a50d25] disabled:opacity-60"
                         >
                             {processing ? (
                                 <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            ) : secondsLeft > 0 ? (
+                                <span>Try again in {secondsLeft}s</span>
                             ) : (
                                 <>
                                     <span>Send Reset Link</span>

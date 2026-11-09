@@ -87,6 +87,17 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
     {
+        // A tester found an anonymized account still received this link.
+        // ResetUserPassword::reset() already refuses to complete a reset
+        // for one ("This account is no longer active"), so mailing the
+        // link at all only reveals to whoever reads that inbox that the
+        // account still technically exists, for a link that can never be
+        // used. GenericPasswordResetLinkResponse's reply is unaffected —
+        // it never depended on whether a notification was actually sent.
+        if ($this->anonymized_at !== null) {
+            return;
+        }
+
         $this->notify(new QueuedResetPassword($token));
     }
 

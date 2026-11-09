@@ -101,7 +101,7 @@ return [
     |
     */
 
-    'middleware' => ['web', 'fortify.throttle', 'auth.session', 'account.active'],
+    'middleware' => ['web', 'fortify.throttle', 'fortify.stamp-password-reset', 'auth.session', 'account.active'],
 
     /*
     |--------------------------------------------------------------------------

@@ -3,6 +3,7 @@
 use App\Http\Responses\GenericPasswordResetLinkResponse;
 use App\Models\User;
 use App\Notifications\QueuedResetPassword;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -17,6 +18,49 @@ test('reset password link screen can be rendered', function () {
     $response->assertOk();
 });
 
+test('the forgot-password screen starts with no resend cooldown', function () {
+    $this->get(route('password.request'))
+        ->assertInertia(fn ($page) => $page->where('resendAvailableAt', null));
+});
+
+test('a tester could spam the button; requesting a link now sets a cooldown deadline on the next screen load', function () {
+    Notification::fake();
+
+    $user = User::factory()->create();
+
+    $this->travelTo(now());
+    $this->post(route('password.email'), ['email' => $user->email]);
+
+    $response = $this->get(route('password.request'));
+
+    $response->assertInertia(function ($page) {
+        $deadline = $page->toArray()['props']['resendAvailableAt'];
+        expect($deadline)->not->toBeNull();
+        expect(Carbon::parse($deadline)->diffInSeconds(now(), true))->toBeGreaterThan(85)->toBeLessThan(95);
+    });
+});
+
+test('the cooldown is set even for an email that does not exist, so timing cannot reveal whether an account exists', function () {
+    $this->post(route('password.email'), ['email' => 'nobody@example.com']);
+
+    $this->get(route('password.request'))
+        ->assertInertia(fn ($page) => $page->where('resendAvailableAt', fn ($value) => $value !== null));
+});
+
+test('the cooldown deadline is in the past once it has fully elapsed, so the client re-enables the button', function () {
+    $user = User::factory()->create();
+
+    $this->post(route('password.email'), ['email' => $user->email]);
+    $this->travel(91)->seconds();
+
+    $response = $this->get(route('password.request'));
+
+    $response->assertInertia(function ($page) {
+        $deadline = $page->toArray()['props']['resendAvailableAt'];
+        expect(Carbon::parse($deadline)->isPast())->toBeTrue();
+    });
+});
+
 test('reset password link can be requested', function () {
     Notification::fake();
 
@@ -25,6 +69,20 @@ test('reset password link can be requested', function () {
     $this->post(route('password.email'), ['email' => $user->email]);
 
     Notification::assertSentTo($user, QueuedResetPassword::class);
+});
+
+test('an anonymized account never receives a reset link, since it can never complete one anyway', function () {
+    Notification::fake();
+
+    $user = User::factory()->create();
+    $user->anonymize();
+
+    $response = $this->post(route('password.email'), ['email' => $user->email]);
+
+    Notification::assertNothingSent();
+    // SEC-015: the response must stay generic either way, not leak
+    // whether a notification was actually sent.
+    $response->assertSessionHas('status', GenericPasswordResetLinkResponse::MESSAGE);
 });
 
 test('reset password screen can be rendered', function () {
