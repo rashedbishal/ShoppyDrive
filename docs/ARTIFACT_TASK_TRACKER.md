@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 11 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 3 · Failed: 0 · Skipped: 1
+**Done: 12 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 3 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -15,7 +15,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [ ] BE-007 — Search overrides other filters on admin lists
 - [ ] BE-011 — Pathao sync reports success when every poll failed
 - [ ] BE-004 — Pathao sync can stop for up to 24 hours after a killed run
-- [ ] BE-008 — Hover prefetches count as page views
+- [x] BE-008 — Hover prefetches count as page views — tester's claim of a direct controller increment didn't match the code; re-confirmed directly on the actual product route (not just home), added that test coverage, no code change needed
 - [ ] BE-010 — Forgot-password sends mail inside the request with no error handling
 - [ ] BE-012 — Failed newsletter chunk cannot be retried from admin
 

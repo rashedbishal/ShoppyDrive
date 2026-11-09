@@ -8,7 +8,7 @@ Claude marks an item here once its result is known. This file records live-site 
 
 | Group | Total | Pass | Fail | Skipped | Not checked |
 |---|---|---|---|---|---|
-| Backend (BE) | 10 | 0 | 0 | 0 | 10 |
+| Backend (BE) | 10 | 1 | 0 | 0 | 9 |
 | Business logic (BIZ) | 32 | 7 | 5 | 2 | 18 |
 | Database (DB) | 3 | 0 | 1 | 0 | 2 |
 | Frontend (FE) | 13 | 0 | 1 | 0 | 12 |
@@ -17,7 +17,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Performance (PERF) | 7 | 3 | 0 | 0 | 4 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **11** | **8** | **2** | **78** |
+| **All** | **99** | **12** | **8** | **2** | **77** |
 
 ## How to read this
 
@@ -69,10 +69,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Kill a run.
   - **Result:** Not checked
 
-- [ ] **BE-008** · P3 · LOW · Hover prefetches count as page views
+- [x] **BE-008** · P3 · LOW · Hover prefetches count as page views
   - **Problem:** Hovering a card counts as a view and runs the expensive product page.
   - **What to check:** Hover cards.
-  - **Result:** Not checked
+  - **Result:** Pass (2026-11-09). Tester's note ("the controller directly increases the view count during product show") didn't match the code — the only view counter in the app is `DailyVisit.page_view_count`, incremented solely by `TrackDailyVisit` middleware, which already skips any request carrying Inertia's `Purpose: prefetch` header (added by the original BE-008 fix). The existing regression test only covered the home page, not the actual page a hover prefetches — reproduced directly against the real product route (`GET /product/{slug}` with the header): count stays 0 on the prefetch, goes to 1 on a real visit. Added a permanent test for this exact route to close that gap. The one remaining, already-documented tradeoff stands: a hover prefetch still runs the controller server-side (that's what prefetching is), just without counting as a view — unavoidable without disabling the feature. No code change.
 
 - [ ] **BE-010** · P3 · LOW · Forgot-password sends mail inside the request with no error handling
   - **Problem:** During an SMTP outage this can return a 500 or hang, only for existing accounts, which also supports SEC-015.

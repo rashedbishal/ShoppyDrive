@@ -8,6 +8,7 @@ use App\Mail\ContactFormMail;
 use App\Mail\OrderPlacedMail;
 use App\Models\ContactMessage;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\QueuedResetPassword;
@@ -91,6 +92,21 @@ test('a loaded-ahead page is not counted as a visit, a real one is (BE-008)', fu
     expect(DB::table('daily_visits')->sum('page_view_count'))->toEqual(0);
 
     $this->get('/')->assertOk();
+    expect(DB::table('daily_visits')->sum('page_view_count'))->toEqual(1);
+});
+
+/**
+ * BE-008 retest (2026-11-09): a tester specifically called out hovering a
+ * product card, which prefetches /product/{slug} — the only existing test
+ * above covers the home page, not the actual page the fix needs to hold on.
+ */
+test('hovering a product card (a prefetch of its page) is not counted as a visit, a real one is (BE-008)', function () {
+    $product = Product::factory()->create(['is_active' => true, 'published_at' => now()->subDay()]);
+
+    $this->get(route('product.show', $product->slug), ['Purpose' => 'prefetch'])->assertOk();
+    expect(DB::table('daily_visits')->sum('page_view_count'))->toEqual(0);
+
+    $this->get(route('product.show', $product->slug))->assertOk();
     expect(DB::table('daily_visits')->sum('page_view_count'))->toEqual(1);
 });
 
