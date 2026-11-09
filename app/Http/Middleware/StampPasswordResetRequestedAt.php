@@ -20,7 +20,9 @@ use Symfony\Component\HttpFoundation\Response;
  * pattern User::verificationCodeResendAvailableAt() already uses, just
  * session-backed instead of column-backed, since a forgot-password
  * request has no account row to persist against (SEC-015: including for
- * an email that doesn't exist).
+ * an email that doesn't exist). Stored as a Unix timestamp because
+ * config/session.php serializes sessions as JSON, which turns a date object
+ * into a plain string on the next request.
  */
 class StampPasswordResetRequestedAt
 {
@@ -31,7 +33,7 @@ class StampPasswordResetRequestedAt
     public function handle(Request $request, Closure $next): Response
     {
         if ($request->route()?->getName() === 'password.email') {
-            $request->session()->put(self::SESSION_KEY, now());
+            $request->session()->put(self::SESSION_KEY, now()->getTimestamp());
         }
 
         return $next($request);

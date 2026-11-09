@@ -33,15 +33,13 @@ export default function ForgotPassword({
     );
     const [now, setNow] = useState(() => Date.now());
 
+    // Ticks from page load, not from the first request, so the countdown
+    // starts from the right number however long the visitor spent typing.
     useEffect(() => {
-        if (!targetMs) {
-            return;
-        }
-
         const interval = setInterval(() => setNow(Date.now()), 1000);
 
         return () => clearInterval(interval);
-    }, [targetMs]);
+    }, []);
 
     const secondsLeft = targetMs
         ? Math.max(0, Math.ceil((targetMs - now) / 1000))

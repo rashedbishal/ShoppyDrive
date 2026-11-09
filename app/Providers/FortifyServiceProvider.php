@@ -13,7 +13,6 @@ use App\Models\User;
 use App\Services\ReferralService;
 use App\Support\CartManager;
 use App\Support\SecurityRateLimits;
-use Carbon\CarbonInterface;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -106,8 +105,8 @@ class FortifyServiceProvider extends ServiceProvider
 
             return Inertia::render('auth/forgot-password', [
                 'status' => $request->session()->get('status'),
-                'resendAvailableAt' => $requestedAt instanceof CarbonInterface
-                    ? $requestedAt->addSeconds(StampPasswordResetRequestedAt::COOLDOWN_SECONDS)->toIso8601String()
+                'resendAvailableAt' => is_int($requestedAt)
+                    ? now()->setTimestamp($requestedAt + StampPasswordResetRequestedAt::COOLDOWN_SECONDS)->toIso8601String()
                     : null,
             ]);
         });

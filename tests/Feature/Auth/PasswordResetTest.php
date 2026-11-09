@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\StampPasswordResetRequestedAt;
 use App\Http\Responses\GenericPasswordResetLinkResponse;
 use App\Models\User;
 use App\Notifications\QueuedResetPassword;
@@ -58,6 +59,22 @@ test('the cooldown deadline is in the past once it has fully elapsed, so the cli
     $response->assertInertia(function ($page) {
         $deadline = $page->toArray()['props']['resendAvailableAt'];
         expect(Carbon::parse($deadline)->isPast())->toBeTrue();
+    });
+});
+
+test('the cooldown deadline survives the JSON session storage that real requests use', function () {
+    $this->travelTo(now());
+    $this->post(route('password.email'), ['email' => 'nobody@example.com']);
+
+    // The in-memory session used in tests keeps the original PHP value, but
+    // config/session.php stores JSON, so a real next request reads this.
+    $key = StampPasswordResetRequestedAt::SESSION_KEY;
+    session()->put($key, json_decode(json_encode(session()->get($key)), true));
+
+    $this->get(route('password.request'))->assertInertia(function ($page) {
+        $deadline = $page->toArray()['props']['resendAvailableAt'];
+        expect($deadline)->not->toBeNull();
+        expect(Carbon::parse($deadline)->diffInSeconds(now(), true))->toBeGreaterThan(85)->toBeLessThan(95);
     });
 });
 
