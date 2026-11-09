@@ -225,6 +225,40 @@ test('a cancelled order that was paid can still be refunded', function () {
         ->and(OrderRefund::sole()->resulting_order_status)->toBe('refunded');
 });
 
+test('a customer self-cancelling a paid order that never touched a courier can still be refunded with no readiness attestation needed', function () {
+    // BIZ-005 retest (2026-11-09): the customer-cancel route never checks
+    // payment_status (by design — see OrderCancellationService), so a paid
+    // mobile-banking order reaches CANCELLED still PAID with zero courier
+    // evidence. isCourierInvolved() used to still fail closed purely
+    // because the status wasn't PENDING/PROCESSING, demanding a courier
+    // readiness attestation that has nothing to do with this order and
+    // goes stale on every deploy — a real dead end for the common case.
+    $user = User::factory()->create();
+    $order = refundOrder([
+        'user_id' => $user->id,
+        'status' => OrderStatus::PENDING,
+        'payment_method' => 'mobile_banking',
+        'delivered_at' => null,
+    ]);
+
+    actingAs($user)->patch(route('account.orders.cancel', $order->order_number))->assertRedirect();
+
+    expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED)
+        ->and($order->payment_status)->toBe(PaymentStatus::PAID);
+
+    // RedirectCustomerFromAdmin bounces any request from the admin area
+    // while the web guard is still authenticated, regardless of guard.
+    auth('web')->logout();
+
+    // No CourierVerificationReadiness record exists at all in this test —
+    // exactly the state that previously blocked this refund outright.
+    actingAs(createAdmin(), 'admin')
+        ->patch(route('admin.orders.markRefunded', $order), wholeOrderRefundPayload($order))
+        ->assertSessionHas('success');
+
+    expect($order->refresh()->status)->toBe(OrderStatus::REFUNDED);
+});
+
 test('a cancelled order that was never paid still cannot be refunded', function () {
     $order = refundOrder(['status' => OrderStatus::CANCELLED, 'payment_status' => PaymentStatus::UNPAID]);
     courierVerifiedForRefund($order);
@@ -284,13 +318,22 @@ test('the database refuses two ledger rows for the same return request', functio
 
 // ── No-courier path vs. fail-closed courier involvement ─────────────────────
 
-test('only PENDING and PROCESSING orders with no courier signal at all skip courier verification', function (OrderStatus $status) {
+test('only statuses that never imply physical courier handling skip courier verification when there is no courier signal at all', function (OrderStatus $status) {
+    // BIZ-005 retest (2026-11-09): CANCELLED and REFUNDED joined PENDING/
+    // PROCESSING in the safe set — a plain mobile-banking order a customer
+    // cancels before any courier is ever involved reaches CANCELLED the
+    // same way a courier-return-cancelled one does, so it must be judged
+    // by actual evidence, not assumed courier-involved by status alone.
+    // SHIPPED/DELIVERED stay fail-closed: reaching either one means a
+    // courier should have physically handled the order, so missing
+    // evidence there stays suspicious (see the "even with readiness" test).
+    $safeStatuses = [OrderStatus::PENDING, OrderStatus::PROCESSING, OrderStatus::CANCELLED, OrderStatus::REFUNDED];
     $order = refundOrder(['status' => $status, 'delivered_at' => null]);
 
     $eligibility = app(CourierEvidenceChain::class)->eligibility($order);
 
-    expect($eligibility['eligible'])->toBe(in_array($status, [OrderStatus::PENDING, OrderStatus::PROCESSING], true))
-        ->and($eligibility['courier_involved'])->toBe(! in_array($status, [OrderStatus::PENDING, OrderStatus::PROCESSING], true));
+    expect($eligibility['eligible'])->toBe(in_array($status, $safeStatuses, true))
+        ->and($eligibility['courier_involved'])->toBe(! in_array($status, $safeStatuses, true));
 })->with(OrderStatus::cases());
 
 test('the no-courier path needs no readiness attestation', function () {

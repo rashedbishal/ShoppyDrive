@@ -9,7 +9,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Group | Total | Pass | Fail | Skipped | Not checked |
 |---|---|---|---|---|---|
 | Backend (BE) | 10 | 0 | 0 | 0 | 10 |
-| Business logic (BIZ) | 32 | 2 | 3 | 2 | 25 |
+| Business logic (BIZ) | 32 | 2 | 4 | 2 | 24 |
 | Database (DB) | 3 | 0 | 0 | 0 | 3 |
 | Frontend (FE) | 13 | 0 | 0 | 0 | 13 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
@@ -17,7 +17,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **3** | **3** | **2** | **91** |
+| **All** | **99** | **3** | **4** | **2** | **90** |
 
 ## How to read this
 
@@ -106,10 +106,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Convert then cancel.
   - **Result:** Not checked
 
-- [ ] **BIZ-005** · P0 · HIGH · Paid orders can still be cancelled and then cannot be refunded
+- [!] **BIZ-005** · P0 · HIGH · Paid orders can still be cancelled and then cannot be refunded
   - **Problem:** FSA-06 fixed only admin cancel. A customer can cancel a paid pending order, for example a manual mobile-banking order. A courier return report also cancels a paid order. In both cases the order is cancelled but still paid, and the refund screen refuses because "A cancelled order cannot be refunded".
   - **What to check:** Create a paid pending order, PATCH account.orders.cancel.
-  - **Result:** Not checked
+  - **Result:** Fail (tester skipped, "admin needs to handle this manually" — true of all refunds, not a new finding; reproduced the exact check myself anyway). The specific "A cancelled order cannot be refunded" refusal was already fixed, but a different dead end existed: the refund was then refused for needing courier verification, for an order that never touched a courier at all. Fixed locally 2026-11-09 (not yet pushed/deployed): cancelled/refunded orders with no courier evidence no longer require a courier-readiness attestation. Needs push + deploy, then retest.
 
 - [ ] **BIZ-006** · P0 · HIGH · Customers can pay for out-of-stock items and receive no order
   - **Problem:** Example: stock is 0, the customer picks bKash and sees the payment page, pays, submits the TrxID, and gets "insufficient stock". Money is taken, no order exists. Landing pages also lack the late-submission grace and the variant guard, and only an unmatched-SMS count in the sidebar signals the problem.

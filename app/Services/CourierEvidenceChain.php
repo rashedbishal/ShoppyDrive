@@ -26,8 +26,25 @@ use App\Models\OrderStatusHistory;
  */
 class CourierEvidenceChain
 {
-    /** Order statuses that may use the no-courier path (an allowlist — anything else fails closed). */
-    public const NO_COURIER_STATUSES = [OrderStatus::PENDING, OrderStatus::PROCESSING];
+    /**
+     * Order statuses that may use the no-courier path — an allowlist;
+     * anything else fails closed regardless of evidence. SHIPPED and
+     * DELIVERED are deliberately excluded even though they're otherwise
+     * terminal: reaching either one means a courier should have physically
+     * handled the order, so missing evidence there is treated as
+     * suspicious (data gap, a bug elsewhere), not as proof nothing
+     * happened — see the "even with readiness" test guarding exactly this.
+     * CANCELLED and REFUNDED carry no such implication — a plain
+     * mobile-banking order a customer cancels before any courier is ever
+     * involved reaches CANCELLED the same way a courier-return-cancelled
+     * one does, so these two are judged by the actual evidence below
+     * instead (BIZ-005 retest, 2026-11-09): every signal checked there is
+     * permanent once set — nothing in this codebase ever clears a
+     * consignment ID, a raw status column, or a CourierSubmission/
+     * CourierDeliveryEvidence row — so its absence is reliable proof on
+     * its own for these two statuses.
+     */
+    public const NO_COURIER_STATUSES = [OrderStatus::PENDING, OrderStatus::PROCESSING, OrderStatus::CANCELLED, OrderStatus::REFUNDED];
 
     /** Mapper partial notes can't be system-written before this; legacy webhook notes before the second. */
     private const MAPPER_EARLIEST = '2026-10-18 12:40:16';

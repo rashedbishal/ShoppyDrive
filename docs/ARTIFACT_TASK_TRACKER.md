@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 3 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 4 · Failed: 0 · Skipped: 1
+**Done: 3 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -25,7 +25,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [~] BIZ-002 — A cart containing a complete bundle can never be checked out from the website — tester failed it (admin could save a bundle needing more stock than exists, not an "every bundle fails" regression); fix committed locally 2026-11-09, not yet pushed/deployed
 - [ ] BIZ-003 — Guests see a coupon discount at checkout but are charged full price
 - [ ] BIZ-004 — Converting an incomplete order ignores stock, and cancelling it creates stock
-- [ ] BIZ-005 — Paid orders can still be cancelled and then cannot be refunded
+- [~] BIZ-005 — Paid orders can still be cancelled and then cannot be refunded — tester skipped it; reproduced directly and found a real dead end (courier-readiness blocked a non-courier refund), fix committed locally 2026-11-09, not yet pushed/deployed
 - [ ] BIZ-006 — Customers can pay for out-of-stock items and receive no order
 - [-] BIZ-007 — Admin can cancel orders already with Steadfast; Steadfast orders never reach Shipped — owner-closed 2026-11-09: cancel-side already blocked in code (deployed 2026-11-05), no Steadfast cancel API exists, owner accepted the Shipped-status gap as-is
 - [~] BIZ-008 — Refunded orders stay "paid" and keep counting as revenue — tester failed it (no working refund button at all, not the shipping-cap bug); fix committed locally 2026-11-09, not yet pushed/deployed
