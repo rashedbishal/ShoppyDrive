@@ -9,7 +9,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Group | Total | Pass | Fail | Skipped | Not checked |
 |---|---|---|---|---|---|
 | Backend (BE) | 10 | 0 | 0 | 0 | 10 |
-| Business logic (BIZ) | 32 | 0 | 3 | 2 | 27 |
+| Business logic (BIZ) | 32 | 1 | 3 | 2 | 26 |
 | Database (DB) | 3 | 0 | 0 | 0 | 3 |
 | Frontend (FE) | 13 | 0 | 0 | 0 | 13 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
@@ -17,7 +17,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **1** | **3** | **2** | **93** |
+| **All** | **99** | **2** | **3** | **2** | **92** |
 
 ## How to read this
 
@@ -131,10 +131,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Using a test account with loyalty points, start a mobile banking (bKash/Nagad) checkout and redeem points as part of the payment. Let the 2-hour payment window expire without finishing it. Place a separate COD order using those same points. Then go back and complete the first mobile payment with its real transaction ID. Check: did the points get deducted twice (balance going more negative than it should)?
   - **Result:** Skipped (tester, 2026-11-08) — needs live SMS/bKash config, can't test before the site goes live. Not a failure: the balance-never-negative half was already fixed and deployed 2026-11-05, re-verified still green. Owner then chose to also close the remaining "both orders got the discount" gap (previously accepted as a bounded risk) rather than leave it. Fixed locally 2026-11-09 (not yet pushed/deployed): points now stay held for up to 24 extra hours past the normal 2-hour window whenever real SMS evidence of a pending payment already exists. Needs push + deploy, then retest live with real SMS config.
 
-- [ ] **BIZ-011** · P1 · MEDIUM · No bot or quantity protection on COD orders
+- [x] **BIZ-011** · P1 · MEDIUM · No bot or quantity protection on COD orders
   - **Problem:** A guest can order all stock of a product with any valid-format phone, showing it out of stock until staff cancel. No captcha or phone check exists, and no quantity maximum on the main checkout (landing pages cap at 100). Limits are 10 per 10 minutes per IP and 5 per hour per phone.
   - **What to check:** POST a guest order with quantity equal to stock.
-  - **Result:** Not checked
+  - **Result:** Pass (2026-11-09). Tester skipped this one ("requires backend api calls"), so I ran the exact check myself: a guest product with 50 in stock, POSTed a guest COD order for all 50. Correctly refused — "Cash on delivery allows at most 10 of '...' per phone number until earlier orders are dispatched..." — no order created, stock untouched. Already deployed (2026-11-06); no code change needed. Owner confirmed the remaining gaps (bot phone-rotation, no OTP, MariaDB untested) stay as previously declined on 2026-11-06, not revisited.
 
 - [ ] **BIZ-013** · P1 · MEDIUM · Coupon and duplicate-order rejections are invisible at checkout
   - **Problem:** If a coupon expires before Place Order, the server rejects it but the page shows nothing: the button resets and the discount still shows.

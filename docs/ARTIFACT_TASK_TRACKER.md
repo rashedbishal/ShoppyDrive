@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 1 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 4 · Failed: 0 · Skipped: 1
+**Done: 2 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 4 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -30,7 +30,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [-] BIZ-007 — Admin can cancel orders already with Steadfast; Steadfast orders never reach Shipped — owner-closed 2026-11-09: cancel-side already blocked in code (deployed 2026-11-05), no Steadfast cancel API exists, owner accepted the Shipped-status gap as-is
 - [~] BIZ-008 — Refunded orders stay "paid" and keep counting as revenue — tester failed it (no working refund button at all, not the shipping-cap bug); fix committed locally 2026-11-09, not yet pushed/deployed
 - [~] BIZ-010 — Loyalty points can be spent twice through a late mobile payment — tester skipped it (needs live SMS config); owner chose to close the previously-accepted residual gap anyway, fix committed locally 2026-11-09, not yet pushed/deployed
-- [ ] BIZ-011 — No bot or quantity protection on COD orders
+- [x] BIZ-011 — No bot or quantity protection on COD orders — tester skipped it; directly reproduced and confirmed working 2026-11-09, no code change needed, bot/OTP gaps stay owner-declined
 - [ ] BIZ-013 — Coupon and duplicate-order rejections are invisible at checkout
 - [ ] BIZ-029 — Cancelling the Reject prompt still rejects the return and emails the customer
 - [ ] BIZ-030 — COD confirmation says "Total Paid"

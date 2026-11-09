@@ -278,6 +278,8 @@ Computed the "corrected" prorated prices (90/30 for the `BundleCheckoutTest`/`Bu
 
 100 was chosen to match `LandingPageController`'s existing `max:100` on its single-product quantity field — no new business rule invented, just applied consistently to the three request classes the audit flagged as missing it. Did not touch `AppServiceProvider.php:192-207`'s rate limits (10/10min per IP, 5/hour per phone) — those are an existing, working, deliberate business choice already, not a bug; the audit's own severity note frames tightening them (plus adding a bot challenge) as a separate product decision.
 
+**Retest (2026-11-09):** a tester skipped this one ("requires backend api calls to confirm if the error actually exists"), so there was no new failure to react to. Reproduced the tester's exact check directly (a guest product with 50 in stock, guest COD order for all 50): correctly refused with the cap's message, no order created, stock untouched; re-ran `PendingCodLimitTest`, still 14/14. No code change — asked the owner whether to revisit the already-declined bot/OTP gaps (phone rotation, no Turnstile, no SMS OTP) or the untested MariaDB JSON-path query; owner confirmed leaving all of it as previously decided 2026-11-06. This is a local re-confirmation on the same deployed code, not new production evidence — the row's "Prod." column is unchanged.
+
 ## BIZ-010 notes
 
 The order-status-history note ("Review manually") is the only admin-visible surface for this today — there is no dedicated flagged-orders queue. Given the exploit requires a real completed payment (bounded loss, matches the finding's own severity note) and is rare, a plain history note plus the `Log::warning` was judged sufficient rather than building a new review workflow.
