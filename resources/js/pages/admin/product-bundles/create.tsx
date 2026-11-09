@@ -667,8 +667,7 @@ export default function ProductBundleCreate() {
                                                                         {stockFor(
                                                                             item,
                                                                         )}{' '}
-                                                                        in
-                                                                        stock
+                                                                        in stock
                                                                     </p>
                                                                 </div>
                                                                 <button

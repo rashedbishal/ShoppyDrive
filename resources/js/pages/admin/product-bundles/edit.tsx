@@ -722,8 +722,7 @@ export default function ProductBundleEdit({ bundle }: Props) {
                                                                         {stockFor(
                                                                             item,
                                                                         )}{' '}
-                                                                        in
-                                                                        stock
+                                                                        in stock
                                                                     </p>
                                                                 </div>
                                                                 <button
