@@ -12,6 +12,7 @@ use App\Http\Responses\RegisterResponse;
 use App\Models\User;
 use App\Services\ReferralService;
 use App\Support\CartManager;
+use App\Support\PostLoginRedirect;
 use App\Support\SecurityRateLimits;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -89,11 +90,15 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
-        Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
-            'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'canRegister' => Features::enabled(Features::registration()),
-            'status' => $request->session()->get('status'),
-        ]));
+        Fortify::loginView(function (Request $request) {
+            PostLoginRedirect::rememberPreviousPage($request);
+
+            return Inertia::render('auth/login', [
+                'canResetPassword' => Features::enabled(Features::resetPasswords()),
+                'canRegister' => Features::enabled(Features::registration()),
+                'status' => $request->session()->get('status'),
+            ]);
+        });
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
             'email' => $request->email,

@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Mail\WelcomeMail;
 use App\Services\LoyaltyPointsService;
+use App\Support\PostLoginRedirect;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ class EmailVerificationCodeController extends Controller
         $user = $request->user();
 
         if ($user->hasVerifiedEmail()) {
-            return redirect()->intended(config('fortify.home'));
+            return PostLoginRedirect::redirect(config('fortify.home'));
         }
 
         $request->validate([
@@ -29,7 +30,7 @@ class EmailVerificationCodeController extends Controller
         if (! $user->consumeEmailVerificationCode($request->string('code')->toString())) {
             // A duplicate submit lost the race to the one that verified.
             if ($user->hasVerifiedEmail()) {
-                return redirect()->intended(config('fortify.home'));
+                return PostLoginRedirect::redirect(config('fortify.home'));
             }
 
             return redirect()->route('verification.notice')->withErrors([
@@ -46,6 +47,6 @@ class EmailVerificationCodeController extends Controller
         // returns early on any subsequent visit to this page.
         Mail::to($user->email)->send((new WelcomeMail($user))->afterCommit());
 
-        return redirect()->intended(config('fortify.home'));
+        return PostLoginRedirect::redirect(config('fortify.home'));
     }
 }

@@ -10,6 +10,7 @@ use App\Models\SocialAccount;
 use App\Models\User;
 use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
+use App\Support\PostLoginRedirect;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -182,7 +183,7 @@ class SocialAuthController extends Controller
         // Only the *proactive* redirect immediately after a successful
         // social login is removed; manual registration's own immediate
         // OTP requirement (`RegisterResponse`) is untouched by this file.
-        return redirect(config('fortify.home'));
+        return PostLoginRedirect::redirect(config('fortify.home'));
     }
 
     /**

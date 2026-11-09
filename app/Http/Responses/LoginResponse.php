@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Responses;
 
+use App\Support\PostLoginRedirect;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Laravel\Fortify\Fortify;
@@ -26,6 +27,6 @@ class LoginResponse implements LoginResponseContract
 
         return $request->wantsJson()
             ? response()->json(['email_verified' => true])
-            : redirect()->intended(Fortify::redirects('login'));
+            : PostLoginRedirect::redirect(Fortify::redirects('login'));
     }
 }
