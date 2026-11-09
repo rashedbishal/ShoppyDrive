@@ -10,14 +10,14 @@ Claude marks an item here once its result is known. This file records live-site 
 |---|---|---|---|---|---|
 | Backend (BE) | 10 | 0 | 0 | 0 | 10 |
 | Business logic (BIZ) | 32 | 7 | 5 | 2 | 18 |
-| Database (DB) | 3 | 0 | 0 | 0 | 3 |
+| Database (DB) | 3 | 0 | 1 | 0 | 2 |
 | Frontend (FE) | 13 | 0 | 1 | 0 | 12 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
 | Operations (OPS) | 6 | 0 | 0 | 0 | 6 |
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **8** | **6** | **2** | **83** |
+| **All** | **99** | **8** | **7** | **2** | **82** |
 
 ## How to read this
 
@@ -258,10 +258,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** grep for prune commands finds none of these.
   - **Result:** Not checked
 
-- [ ] **DB-004** · P3 · LOW · Expired rate-limit rows pile up in the cache table
+- [!] **DB-004** · P3 · LOW · Expired rate-limit rows pile up in the cache table
   - **Problem:** Each new IP or user key leaves rows only removed if read again.
   - **What to check:** Observe cache table growth.
-  - **Result:** Not checked
+  - **Result:** Fail (tester, 2026-11-08) — asked for a daily/hourly schedule. That already existed (`data:prune`, nightly, deployed 2026-11-07); the tester had no way to see the scheduler or the table to know. Investigating it found a real improvement though: cache rows expire within minutes, so bundling cleanup into the once-a-day run let the table still grow during the day. Fixed locally 2026-11-09 (not yet pushed/deployed): cache cleanup split into its own hourly command. Needs push + deploy, then confirm the schedule actually fires in production.
 
 ## Frontend (FE)
 

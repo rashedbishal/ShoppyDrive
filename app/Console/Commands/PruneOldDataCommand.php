@@ -14,17 +14,16 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 /**
  * DB-002: retention periods (owner-approved) for tables that otherwise grow
  * forever and hold personal data. Orders, payments, refunds, pending
- * checkouts and accounts are never touched here. Failed jobs, job batches
- * and the audit trail are cleaned by their own scheduled commands; see
- * routes/console.php.
+ * checkouts and accounts are never touched here. Failed jobs, job batches,
+ * the audit trail and expired cache (DB-004 retest: PruneExpiredCacheCommand,
+ * hourly — these are short-lived and don't belong on this command's daily
+ * schedule) are cleaned by their own scheduled commands; see routes/console.php.
  *
  * SMS age is measured by created_at (our server's receive time), not the
  * forwarder phone's received_at. Matched SMS are kept longer as payment
@@ -55,8 +54,6 @@ class PruneOldDataCommand extends Command
         ];
 
         $deleted['abandoned_restore_uploads'] = $this->deleteAbandonedRestoreUploads();
-        $deleted['expired_cache_rows'] = $this->deleteExpiredCacheRows();
-        $deleted['expired_cache_files'] = $this->deleteExpiredCacheFiles();
 
         Log::info('[Retention] Old data pruned', $deleted);
         $this->info('Pruned: '.json_encode($deleted));
@@ -78,49 +75,6 @@ class PruneOldDataCommand extends Command
         $disk->delete($abandoned);
 
         return count($abandoned);
-    }
-
-    /**
-     * DB-004: rate-limit counters live in the database cache, and a key that's
-     * never read again is never removed.
-     */
-    private function deleteExpiredCacheRows(): int
-    {
-        $total = 0;
-
-        do {
-            $keys = DB::table('cache')->where('expiration', '<', now()->timestamp)->limit(self::BATCH_SIZE)->pluck('key');
-            $deleted = $keys->isEmpty() ? 0 : DB::table('cache')->whereIn('key', $keys)->delete();
-            $total += $deleted;
-        } while ($deleted > 0);
-
-        return $total;
-    }
-
-    /**
-     * PERF-008: a file cache entry is only removed if read again after it
-     * expires, which a flushed search suggestion never is. Each file starts
-     * with its 10-digit expiry time.
-     */
-    private function deleteExpiredCacheFiles(): int
-    {
-        $directory = (string) config('cache.stores.file.path');
-
-        if (! is_dir($directory)) {
-            return 0;
-        }
-
-        $deleted = 0;
-
-        foreach (File::allFiles($directory) as $file) {
-            $expiresAt = (string) @file_get_contents($file->getPathname(), length: 10);
-
-            if (ctype_digit($expiresAt) && strlen($expiresAt) === 10 && (int) $expiresAt < now()->timestamp) {
-                $deleted += (int) @unlink($file->getPathname());
-            }
-        }
-
-        return $deleted;
     }
 
     private function daysAgo(int $days): CarbonInterface

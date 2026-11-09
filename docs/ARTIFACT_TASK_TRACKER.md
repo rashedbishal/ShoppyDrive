@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 8 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 1 · Failed: 0 · Skipped: 1
+**Done: 8 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 2 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -58,7 +58,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
 - [ ] DB-001 — Brand delete can hard-delete soft-deleted products through the cascade
 - [ ] DB-002 — No retention or pruning for growing tables, including personal data
-- [ ] DB-004 — Expired rate-limit rows pile up in the cache table
+- [~] DB-004 — Expired rate-limit rows pile up in the cache table — already fixed nightly (tester couldn't see this); split into its own hourly command for faster cleanup, fix committed locally 2026-11-09, not yet pushed/deployed
 
 ## Frontend
 

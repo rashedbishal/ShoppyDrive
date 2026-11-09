@@ -42,6 +42,11 @@ Schedule::command('newsletter:prune-attachments')->dailyAt('03:00')->timezone('A
 // 365 days come from config/activitylog.php. Unfinished batches need their own
 // option, or queue:prune-batches keeps them forever.
 Schedule::command('data:prune')->dailyAt('03:30')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
+
+// DB-004: rate-limit counters live in the database cache store and expire
+// within minutes, not days — split out of data:prune's daily run so they
+// don't sit around for up to a day before being cleared.
+Schedule::command('cache:prune-expired')->hourly()->withoutOverlapping(55, false);
 Schedule::command('queue:prune-failed --hours=720')->dailyAt('03:40')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
 Schedule::command('queue:prune-batches --hours=720 --unfinished=720 --cancelled=720')->dailyAt('03:45')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
 Schedule::command('activitylog:clean --force')->dailyAt('03:50')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
