@@ -147,7 +147,6 @@ export default function BlogEdit({ blog }: Props) {
                             <Field
                                 label="Featured Image"
                                 hint="Shown on the blog listing and the post header"
-                                error={errors.featured_image}
                             >
                                 <ImageUpload
                                     value={data.featured_image}
@@ -155,6 +154,7 @@ export default function BlogEdit({ blog }: Props) {
                                         setData('featured_image', file)
                                     }
                                     error={errors.featured_image}
+                                    maxSizeMb={5}
                                     previewClassName="h-32 object-cover"
                                 />
                             </Field>

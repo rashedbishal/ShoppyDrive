@@ -114,7 +114,7 @@ export default function BrandCreate() {
                                     }}
                                 />
                             </Field>
-                            <Field label="Logo" error={errors.logo}>
+                            <Field label="Logo">
                                 <ImageUpload
                                     value={data.logo}
                                     onChange={(file) => setData('logo', file)}

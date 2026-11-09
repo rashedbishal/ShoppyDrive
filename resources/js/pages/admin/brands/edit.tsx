@@ -105,7 +105,7 @@ export default function BrandEdit({ brand }: Props) {
                                     }
                                 />
                             </Field>
-                            <Field label="Logo" error={errors.logo}>
+                            <Field label="Logo">
                                 <ImageUpload
                                     value={data.logo}
                                     onChange={(file) => setData('logo', file)}
