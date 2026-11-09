@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 2 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 4 · Failed: 0 · Skipped: 1
+**Done: 3 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 4 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -32,7 +32,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [~] BIZ-010 — Loyalty points can be spent twice through a late mobile payment — tester skipped it (needs live SMS config); owner chose to close the previously-accepted residual gap anyway, fix committed locally 2026-11-09, not yet pushed/deployed
 - [x] BIZ-011 — No bot or quantity protection on COD orders — tester skipped it; directly reproduced and confirmed working 2026-11-09, no code change needed, bot/OTP gaps stay owner-declined
 - [ ] BIZ-013 — Coupon and duplicate-order rejections are invisible at checkout
-- [ ] BIZ-029 — Cancelling the Reject prompt still rejects the return and emails the customer
+- [x] BIZ-029 — Cancelling the Reject prompt still rejects the return and emails the customer — tester skipped it (no delivered order to test with); re-confirmed in code 2026-11-09, fix unchanged since deploy, no code change needed
 - [ ] BIZ-030 — COD confirmation says "Total Paid"
 - [ ] BIZ-031 — Checkout shows payment logos the shop does not accept
 - [ ] BIZ-033 — Home page ratings count unmoderated reviews

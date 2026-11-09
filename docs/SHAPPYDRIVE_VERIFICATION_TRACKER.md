@@ -9,7 +9,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Group | Total | Pass | Fail | Skipped | Not checked |
 |---|---|---|---|---|---|
 | Backend (BE) | 10 | 0 | 0 | 0 | 10 |
-| Business logic (BIZ) | 32 | 1 | 3 | 2 | 26 |
+| Business logic (BIZ) | 32 | 2 | 3 | 2 | 25 |
 | Database (DB) | 3 | 0 | 0 | 0 | 3 |
 | Frontend (FE) | 13 | 0 | 0 | 0 | 13 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
@@ -17,7 +17,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **2** | **3** | **2** | **92** |
+| **All** | **99** | **3** | **3** | **2** | **91** |
 
 ## How to read this
 
@@ -141,10 +141,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Deactivate a coupon after applying, then place the order.
   - **Result:** Not checked
 
-- [ ] **BIZ-029** · P1 · MEDIUM · Cancelling the Reject prompt still rejects the return and emails the customer
+- [x] **BIZ-029** · P1 · MEDIUM · Cancelling the Reject prompt still rejects the return and emails the customer
   - **Problem:** An admin clicks Reject on a return, then presses Cancel to back out. The return is rejected anyway and the customer is emailed, with no undo.
   - **What to check:** Reject, then Cancel.
-  - **Result:** Not checked
+  - **Result:** Pass (2026-11-09). Tester couldn't test this — their account had no delivered order, and "Return Items" only shows for a delivered order, by design (not a bug). Re-confirmed the actual fix directly in code: `admin/returns/index.tsx`'s `handleReject()` returns early when `prompt()` returns `null` (Cancel), before any request is sent — unchanged since it was fixed and deployed 2026-11-05 (`5762cbb`, last commit to touch this file). Backend `ReturnRequestTest.php` (37/37) still confirms reject+email behaves correctly when actually invoked. No code change needed.
 
 - [ ] **BIZ-030** · P1 · MEDIUM · COD confirmation says "Total Paid"
   - **Problem:** Every order, including unpaid COD, shows "Total Paid" with nothing saying to pay the courier. Customers may refuse payment at the door.
