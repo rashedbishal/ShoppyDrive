@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\OrderStatus;
 use App\Enums\UserRole;
 use App\Mail\VerifyEmailCodeMail;
 use App\Notifications\QueuedResetPassword;
@@ -224,6 +225,19 @@ class User extends Authenticatable implements MustVerifyEmail
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Whether this customer has an order containing the product, which is what
+     * allows them to review it. A cancelled order does not count, because a
+     * cash-on-delivery order costs nothing to place and cancel.
+     */
+    public function hasOrderedProduct(int $productId): bool
+    {
+        return $this->orders()
+            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->whereHas('items', fn ($items) => $items->where('product_id', $productId))
+            ->exists();
     }
 
     public function addresses(): HasMany

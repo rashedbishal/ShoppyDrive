@@ -28,6 +28,10 @@ class ReviewController extends Controller
             'body' => ['required', 'string', 'min:10', 'max:2000'],
         ]);
 
+        if (! $request->user()->hasOrderedProduct($product->id)) {
+            return back()->withErrors(['review' => 'Only customers who have ordered this product can review it.']);
+        }
+
         // BIZ-036: the user-row lock makes two quick submits take turns, so the
         // second one sees the first one's review.
         $review = DB::transaction(function () use ($request, $product, $validated): ?Review {

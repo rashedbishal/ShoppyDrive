@@ -43,6 +43,7 @@ interface ProductDetailProps {
     relatedProducts: Product[];
     reviews: Review[];
     ratingBreakdown: Record<number, number>;
+    canReview: boolean;
     shippingMethods: any[];
 }
 
@@ -51,6 +52,7 @@ export default function ProductDetail({
     relatedProducts = [],
     reviews = [],
     ratingBreakdown,
+    canReview = false,
     shippingMethods = [],
 }: ProductDetailProps): React.JSX.Element {
     const { auth, settings } = usePage<SharedPageProps>().props;
@@ -1079,6 +1081,12 @@ export default function ProductDetail({
                                                     <Check size={14} />
                                                     You have already reviewed
                                                     this product.
+                                                </p>
+                                            ) : !canReview ? (
+                                                <p className="mt-3 text-sm text-[var(--color-text-secondary)]">
+                                                    Only customers who have
+                                                    ordered this product can
+                                                    review it.
                                                 </p>
                                             ) : (
                                                 <form

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Enums\UserRole;
 use App\Models\Address;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\User;
@@ -50,6 +52,15 @@ test('a customer cannot submit a pre-approved or mis-attributed product review',
     $author = User::factory()->create();
     $impersonated = User::factory()->create();
     $product = Product::factory()->create();
+    $order = Order::create([
+        'order_number' => 'ORD-MASS-'.uniqid(), 'user_id' => $author->id, 'status' => 'pending',
+        'payment_status' => 'pending', 'payment_method' => 'cod', 'subtotal' => 100, 'total' => 100,
+        'shipping_address' => ['name' => 'Test', 'phone' => '01700000000'], 'billing_address' => [],
+    ]);
+    OrderItem::create([
+        'order_id' => $order->id, 'product_id' => $product->id, 'product_name' => $product->name, 'sku' => $product->sku,
+        'price' => 100, 'quantity' => 1, 'subtotal' => 100, 'product_snapshot' => ['id' => $product->id, 'name' => $product->name],
+    ]);
 
     $this->actingAs($author)->post(route('product.reviews.store', $product->slug), [
         'rating' => 5,

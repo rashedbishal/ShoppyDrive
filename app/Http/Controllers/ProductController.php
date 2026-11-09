@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Support\ProductCardData;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -177,6 +178,7 @@ class ProductController extends Controller
             'relatedProducts' => $relatedProducts->map(ProductCardData::make(...))->values(),
             'reviews' => $product->reviews,
             'ratingBreakdown' => $ratingBreakdown,
+            'canReview' => Auth::guard('web')->user()?->hasOrderedProduct($product->id) ?? false,
             'shippingMethods' => [],
         ]);
     }

@@ -68,6 +68,7 @@ function deliveredOrderWithProduct(User $user, Product $product): Order
 test('a verified customer submitting a review gets is_approved false', function () {
     $user = User::factory()->create();
     $product = Product::factory()->create();
+    deliveredOrderWithProduct($user, $product);
 
     actingAs($user)->post(route('product.reviews.store', $product->slug), reviewPayload())
         ->assertRedirect();
@@ -90,6 +91,7 @@ test('an unverified customer cannot submit a review at all', function () {
 test('a pending review is excluded from the public product page list and rating breakdown', function () {
     $user = User::factory()->create();
     $product = Product::factory()->create();
+    deliveredOrderWithProduct($user, $product);
 
     actingAs($user)->post(route('product.reviews.store', $product->slug), reviewPayload(['rating' => 1]))
         ->assertRedirect();
@@ -158,6 +160,7 @@ test('admin rejection keeps the review unpublished', function () {
     $this->admin = createAdmin();
     $user = User::factory()->create();
     $product = Product::factory()->create();
+    deliveredOrderWithProduct($user, $product);
 
     actingAs($user)->post(route('product.reviews.store', $product->slug), reviewPayload());
     $review = Review::where('product_id', $product->id)->firstOrFail();
@@ -176,10 +179,118 @@ test('the admin dashboard pending_reviews count reflects a newly submitted revie
     $this->admin = createAdmin();
     $user = User::factory()->create();
     $product = Product::factory()->create();
+    deliveredOrderWithProduct($user, $product);
 
     actingAs($user)->post(route('product.reviews.store', $product->slug), reviewPayload());
 
     auth('web')->logout();
     actingAs($this->admin, 'admin')->get(route('admin.dashboard'))
         ->assertInertia(fn (Assert $page) => $page->where('stats.pending_reviews', 1));
+});
+
+// ── Only customers who ordered the product can review it ────────────────
+
+function orderContainingProduct(User $user, Product $product, OrderStatus $status): Order
+{
+    $order = deliveredOrderWithProduct($user, $product);
+    $order->updateQuietly(['status' => $status]);
+
+    return $order;
+}
+
+test('a customer who never ordered the product cannot review it', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create();
+
+    actingAs($user)->post(route('product.reviews.store', $product->slug), reviewPayload())
+        ->assertSessionHasErrors(['review' => 'Only customers who have ordered this product can review it.']);
+
+    expect(Review::count())->toBe(0);
+});
+
+test('an order for a different product does not allow a review', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create();
+    deliveredOrderWithProduct($user, Product::factory()->create());
+
+    actingAs($user)->post(route('product.reviews.store', $product->slug), reviewPayload())
+        ->assertSessionHasErrors('review');
+
+    expect(Review::count())->toBe(0);
+});
+
+test('another customer\'s order does not allow a review', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create();
+    deliveredOrderWithProduct(User::factory()->create(), $product);
+
+    actingAs($user)->post(route('product.reviews.store', $product->slug), reviewPayload())
+        ->assertSessionHasErrors('review');
+
+    expect(Review::count())->toBe(0);
+});
+
+test('a cancelled order does not allow a review', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create();
+    orderContainingProduct($user, $product, OrderStatus::CANCELLED);
+
+    actingAs($user)->post(route('product.reviews.store', $product->slug), reviewPayload())
+        ->assertSessionHasErrors('review');
+
+    expect(Review::count())->toBe(0);
+});
+
+test('one cancelled order does not block a customer who also has a live order', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create();
+    orderContainingProduct($user, $product, OrderStatus::CANCELLED);
+    orderContainingProduct($user, $product, OrderStatus::PROCESSING);
+
+    actingAs($user)->post(route('product.reviews.store', $product->slug), reviewPayload())
+        ->assertSessionHasNoErrors();
+
+    expect(Review::count())->toBe(1);
+});
+
+test('any order that was not cancelled allows a review', function (OrderStatus $status) {
+    $user = User::factory()->create();
+    $product = Product::factory()->create();
+    orderContainingProduct($user, $product, $status);
+
+    actingAs($user)->post(route('product.reviews.store', $product->slug), reviewPayload())
+        ->assertSessionHasNoErrors();
+
+    expect(Review::where('user_id', $user->id)->count())->toBe(1);
+})->with([
+    'pending' => [OrderStatus::PENDING],
+    'processing' => [OrderStatus::PROCESSING],
+    'shipped' => [OrderStatus::SHIPPED],
+    'delivered' => [OrderStatus::DELIVERED],
+    'refunded' => [OrderStatus::REFUNDED],
+]);
+
+test('a review before delivery is allowed but is not a verified purchase', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create();
+    orderContainingProduct($user, $product, OrderStatus::PENDING);
+
+    actingAs($user)->post(route('product.reviews.store', $product->slug), reviewPayload());
+
+    expect(Review::where('user_id', $user->id)->sole()->order_id)->toBeNull();
+});
+
+test('the product page tells the form who may review', function () {
+    $product = Product::factory()->create(['is_active' => true, 'published_at' => now()->subDay()]);
+    $buyer = User::factory()->create();
+    orderContainingProduct($buyer, $product, OrderStatus::PENDING);
+
+    $this->get(route('product.show', $product->slug))
+        ->assertInertia(fn (Assert $page) => $page->where('canReview', false));
+
+    actingAs(User::factory()->create())->get(route('product.show', $product->slug))
+        ->assertInertia(fn (Assert $page) => $page->where('canReview', false));
+
+    actingAs($buyer)->get(route('product.show', $product->slug))
+        ->assertInertia(fn (Assert $page) => $page->where('canReview', true));
 });

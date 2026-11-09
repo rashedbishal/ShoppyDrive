@@ -269,7 +269,11 @@ test('a review of a different product still earns its bonus (BIZ-036)', function
 
 test('a customer can rewrite a deleted review, but a live one blocks a second (BIZ-036)', function () {
     $user = User::factory()->create(['email_verified_at' => now()]);
-    $product = moneyProduct();
+    [$product, $order] = moneyReviewedProduct($user);
+    $order->items()->create([
+        'product_id' => $product->id, 'product_name' => $product->name, 'sku' => $product->sku, 'price' => 100,
+        'quantity' => 1, 'subtotal' => 100, 'product_snapshot' => ['id' => $product->id, 'name' => $product->name],
+    ]);
     $payload = ['rating' => 5, 'body' => 'A genuinely useful review.'];
 
     actingAs($user)->post(route('product.reviews.store', $product), $payload)->assertSessionHasNoErrors();
