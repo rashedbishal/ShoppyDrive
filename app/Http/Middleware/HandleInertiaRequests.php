@@ -9,6 +9,7 @@ use App\Models\Wishlist;
 use App\Services\BundleService;
 use App\Support\CartManager;
 use App\Support\LayoutCache;
+use App\Support\PasswordPolicy;
 use App\Support\SmsForwarderHeartbeat;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -112,6 +113,7 @@ class HandleInertiaRequests extends Middleware
         $announcementBar = ['announcement_bar' => $homepageSettings['announcement_bar'] ?? null];
         $settingsData = $this->resolveSettings($homepageSettings);
         $popularKeywords = LayoutCache::popularKeywords();
+        $passwordRequirements = PasswordPolicy::requirements();
 
         return [
             ...parent::share($request),
@@ -135,6 +137,13 @@ class HandleInertiaRequests extends Middleware
             'navCategories' => Inertia::once(fn () => $navCategories)->as($this->onceKey('navCategories', $navCategories)),
             'settings' => Inertia::once(fn () => $settingsData)->as($this->onceKey('settings', $settingsData)),
             'popular_keywords' => Inertia::once(fn () => $popularKeywords)->as($this->onceKey('popular_keywords', $popularKeywords)),
+            // A tester found the registration page's password hint ("8+
+            // characters") actively wrong — the real policy is far
+            // stricter — leaving a customer to learn what was still
+            // missing one rule at a time across repeated failed submits.
+            // Effectively constant (env-based only), so this is a
+            // once-prop like the three above rather than per-request work.
+            'password_requirements' => Inertia::once(fn () => $passwordRequirements)->as($this->onceKey('password_requirements', $passwordRequirements)),
             // No session exists on error pages for unmatched URLs (rendered before the web middleware runs).
             'flash' => fn () => $request->hasSession() ? [
                 'success' => $request->session()->get('success'),

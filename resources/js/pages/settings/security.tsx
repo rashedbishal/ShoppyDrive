@@ -4,17 +4,20 @@ import SecurityController from '@/actions/App/Http/Controllers/Settings/Security
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
+import PasswordRequirements from '@/components/password-requirements';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { edit as editConnections } from '@/routes/connections';
 import { edit } from '@/routes/security';
+import type { SharedPageProps } from '@/types';
 
 export default function Security() {
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
 
-    const { auth } = usePage<any>().props;
-    const hasPassword = Boolean(auth.user?.has_password);
+    const { auth, password_requirements: passwordRequirements } =
+        usePage<SharedPageProps>().props;
+    const hasPassword = Boolean((auth.user as any)?.has_password);
 
     return (
         <>
@@ -97,6 +100,10 @@ export default function Security() {
                                         className="mt-1 block w-full"
                                         autoComplete="new-password"
                                         placeholder="New password"
+                                    />
+
+                                    <PasswordRequirements
+                                        requirements={passwordRequirements}
                                     />
 
                                     <InputError message={errors.password} />

@@ -13,6 +13,7 @@ import {
 import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
+import PasswordRequirements from '@/components/password-requirements';
 import type { SharedPageProps } from '@/types';
 
 export default function Register({
@@ -22,7 +23,8 @@ export default function Register({
     referralCode?: string | null;
     referralCodeValid?: boolean | null;
 }): React.JSX.Element {
-    const { settings } = usePage<SharedPageProps>().props;
+    const { settings, password_requirements: passwordRequirements } =
+        usePage<SharedPageProps>().props;
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -391,7 +393,7 @@ export default function Register({
                                         onChange={(e) =>
                                             setData('password', e.target.value)
                                         }
-                                        placeholder="8+ characters"
+                                        placeholder="Create a password"
                                         className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-10 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
                                         required
                                     />
@@ -409,6 +411,9 @@ export default function Register({
                                         )}
                                     </button>
                                 </div>
+                                <PasswordRequirements
+                                    requirements={passwordRequirements}
+                                />
                                 <InputError message={errors.password} />
                             </div>
 

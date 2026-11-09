@@ -706,6 +706,8 @@ export interface SharedPageProps {
     unseen_orders_count: number | null;
     /** OPS-005: false while the bKash/Nagad SMS-forwarder phone looks dead — checkout and the landing-page funnel hide the mobile banking option while this is false, since a Transaction ID submitted then can never be matched. */
     mobile_banking_available: boolean;
+    /** Plain-English mirror of the active password policy (App\Support\PasswordPolicy) — shown on every page that sets a new password, instead of a static/wrong hint. */
+    password_requirements: string[];
 }
 
 export interface UiStateToast extends FlashToast {

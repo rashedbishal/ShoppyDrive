@@ -1,8 +1,10 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { ArrowRight, Eye, EyeOff, KeyRound, Lock } from 'lucide-react';
 import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
+import PasswordRequirements from '@/components/password-requirements';
+import type { SharedPageProps } from '@/types';
 
 export default function ResetPassword({
     token,
@@ -11,6 +13,8 @@ export default function ResetPassword({
     token: string;
     email: string;
 }): React.JSX.Element {
+    const { password_requirements: passwordRequirements } =
+        usePage<SharedPageProps>().props;
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -96,7 +100,7 @@ export default function ResetPassword({
                                     onChange={(e) =>
                                         setData('password', e.target.value)
                                     }
-                                    placeholder="Minimum 8 characters"
+                                    placeholder="Create a password"
                                     className="h-11 w-full rounded-xl border border-gray-200 bg-white pr-12 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/20 focus:outline-none"
                                     required
                                 />
@@ -114,6 +118,9 @@ export default function ResetPassword({
                                     )}
                                 </button>
                             </div>
+                            <PasswordRequirements
+                                requirements={passwordRequirements}
+                            />
                             {data.password.length > 0 && (
                                 <div className="space-y-1">
                                     <div className="flex gap-1">

@@ -4,6 +4,7 @@ import ConnectionsController from '@/actions/App/Http/Controllers/Settings/Conne
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
+import PasswordRequirements from '@/components/password-requirements';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { edit } from '@/routes/connections';
@@ -62,6 +63,7 @@ export default function Connections({ hasPassword, connections }: Props) {
         facebook_login_enabled: boolean;
     };
     const errors = props.errors as { connections?: string } | undefined;
+    const passwordRequirements = props.password_requirements as string[];
 
     const loginEnabled: Record<'google' | 'facebook', boolean> = {
         google: settings.google_login_enabled,
@@ -197,6 +199,9 @@ export default function Connections({ hasPassword, connections }: Props) {
                                         name="password"
                                         autoComplete="new-password"
                                         placeholder="New password"
+                                    />
+                                    <PasswordRequirements
+                                        requirements={passwordRequirements}
                                     />
                                     <InputError message={formErrors.password} />
                                 </div>

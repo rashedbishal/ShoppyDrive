@@ -6,6 +6,7 @@ use App\Models\Admin;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Services\OrderPermanentDeletionService;
+use App\Support\PasswordPolicy;
 use App\Support\SecurityRateLimits;
 use App\Support\SmsForwarderToken;
 use Carbon\CarbonImmutable;
@@ -71,12 +72,7 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
+            ? PasswordPolicy::rule()
             : null,
         );
     }
