@@ -17,7 +17,7 @@ export default function ResetPassword({
         usePage<SharedPageProps>().props;
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
         token,
         email,
         password: '',
@@ -73,13 +73,25 @@ export default function ResetPassword({
                         </p>
                     </div>
 
+                    {errors.email && (
+                        <div
+                            role="alert"
+                            className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                        >
+                            This reset link is invalid or has expired.{' '}
+                            <Link
+                                href={route('password.request')}
+                                className="font-semibold underline"
+                            >
+                                Request a new link
+                            </Link>
+                        </div>
+                    )}
+
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();
-                            post(route('password.update'), {
-                                onFinish: () =>
-                                    reset('password', 'password_confirmation'),
-                            });
+                            post(route('password.update'));
                         }}
                         className="space-y-4"
                     >
