@@ -21,15 +21,15 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
 ## Business logic
 
-- [~] BIZ-001 — COD can charge more than the price the customer saw — tester failed it (retry never worked, not an overcharge); fix committed locally 2026-11-09, not yet pushed/deployed
-- [~] BIZ-002 — A cart containing a complete bundle can never be checked out from the website — tester failed it (admin could save a bundle needing more stock than exists, not an "every bundle fails" regression); fix committed locally 2026-11-09, not yet pushed/deployed
+- [~] BIZ-001 — COD can charge more than the price the customer saw — tester failed it (retry never worked, not an overcharge); fix pushed 2026-11-09 (commit `915600e`), deploy run outcome not yet confirmed
+- [~] BIZ-002 — A cart containing a complete bundle can never be checked out from the website — tester failed it (admin could save a bundle needing more stock than exists, not an "every bundle fails" regression); fix pushed 2026-11-09 (commit `915600e`), deploy run outcome not yet confirmed
 - [ ] BIZ-003 — Guests see a coupon discount at checkout but are charged full price
 - [ ] BIZ-004 — Converting an incomplete order ignores stock, and cancelling it creates stock
-- [~] BIZ-005 — Paid orders can still be cancelled and then cannot be refunded — tester skipped it; reproduced directly and found a real dead end (courier-readiness blocked a non-courier refund), fix committed locally 2026-11-09, not yet pushed/deployed
+- [~] BIZ-005 — Paid orders can still be cancelled and then cannot be refunded — tester skipped it; reproduced directly and found a real dead end (courier-readiness blocked a non-courier refund), fix pushed 2026-11-09 (commit `915600e`), deploy run outcome not yet confirmed
 - [ ] BIZ-006 — Customers can pay for out-of-stock items and receive no order
 - [-] BIZ-007 — Admin can cancel orders already with Steadfast; Steadfast orders never reach Shipped — owner-closed 2026-11-09: cancel-side already blocked in code (deployed 2026-11-05), no Steadfast cancel API exists, owner accepted the Shipped-status gap as-is
-- [~] BIZ-008 — Refunded orders stay "paid" and keep counting as revenue — tester failed it (no working refund button at all, not the shipping-cap bug); fix committed locally 2026-11-09, not yet pushed/deployed
-- [~] BIZ-010 — Loyalty points can be spent twice through a late mobile payment — tester skipped it (needs live SMS config); owner chose to close the previously-accepted residual gap anyway, fix committed locally 2026-11-09, not yet pushed/deployed
+- [~] BIZ-008 — Refunded orders stay "paid" and keep counting as revenue — tester failed it (no working refund button at all, not the shipping-cap bug); fix pushed 2026-11-09 (commit `915600e`), deploy run outcome not yet confirmed
+- [~] BIZ-010 — Loyalty points can be spent twice through a late mobile payment — tester skipped it (needs live SMS config); owner chose to close the previously-accepted residual gap anyway, fix pushed 2026-11-09 (commit `915600e`), deploy run outcome not yet confirmed
 - [x] BIZ-011 — No bot or quantity protection on COD orders — tester skipped it; directly reproduced and confirmed working 2026-11-09, no code change needed, bot/OTP gaps stay owner-declined
 - [ ] BIZ-013 — Coupon and duplicate-order rejections are invisible at checkout
 - [x] BIZ-029 — Cancelling the Reject prompt still rejects the return and emails the customer — tester skipped it (no delivered order to test with); re-confirmed in code 2026-11-09, fix unchanged since deploy, no code change needed
@@ -39,7 +39,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [x] BIZ-034 — No return, refund or shipping policy pages; seller identity missing — tester confirmed pages return 200, flagged legal content still needs owner/lawyer review (already the recorded disclaimer); legal_business_name/trade_licence_number confirmed still empty, owner's to fill in
 - [x] BIZ-012 — A whole-order refund restocks delivered goods automatically — tester skipped it (hard to set up manually); reproduced directly via real route, already deployed and working correctly, no code change needed
 - [x] BIZ-014 — A retried checkout puts purchased items back in the cart — tester skipped it (couldn't manually resubmit); re-confirmed via test 2026-11-09, no code change needed
-- [~] BIZ-015 — Per-customer coupon limits do not hold across guest and account — enforcement worked, tester flagged a vague guest error message; owner chose clarity over the SEC-012 anti-enumeration tradeoff, fix committed locally 2026-11-09, not yet pushed/deployed
+- [~] BIZ-015 — Per-customer coupon limits do not hold across guest and account — enforcement worked, tester flagged a vague guest error message; owner chose clarity over the SEC-012 anti-enumeration tradeoff, fix pushed 2026-11-09 (commit `915600e`), deploy run outcome not yet confirmed
 - [x] BIZ-017 — Incomplete-order conversion ignores flash price and variant ownership — tester's two new complaints (no delivery charge, no add-product option) could not be reproduced, both already implemented and tested; no code change needed
 - [ ] BIZ-024 — Referral discount can be farmed with new emails
 - [ ] BIZ-025 — Transaction IDs are not tied to the checkout time or payer
