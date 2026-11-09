@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 1 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 2 · Failed: 0 · Skipped: 0
+**Done: 1 / 99** · Live, ready to retest: 5 · Fixed, not live yet: 2 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -27,7 +27,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [ ] BIZ-004 — Converting an incomplete order ignores stock, and cancelling it creates stock
 - [ ] BIZ-005 — Paid orders can still be cancelled and then cannot be refunded
 - [ ] BIZ-006 — Customers can pay for out-of-stock items and receive no order
-- [ ] BIZ-007 — Admin can cancel orders already with Steadfast; Steadfast orders never reach Shipped
+- [-] BIZ-007 — Admin can cancel orders already with Steadfast; Steadfast orders never reach Shipped — owner-closed 2026-11-09: cancel-side already blocked in code (deployed 2026-11-05), no Steadfast cancel API exists, owner accepted the Shipped-status gap as-is
 - [ ] BIZ-008 — Refunded orders stay "paid" and keep counting as revenue
 - [ ] BIZ-010 — Loyalty points can be spent twice through a late mobile payment
 - [ ] BIZ-011 — No bot or quantity protection on COD orders

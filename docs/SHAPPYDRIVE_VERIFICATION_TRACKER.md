@@ -9,7 +9,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Group | Total | Pass | Fail | Skipped | Not checked |
 |---|---|---|---|---|---|
 | Backend (BE) | 10 | 0 | 0 | 0 | 10 |
-| Business logic (BIZ) | 32 | 0 | 2 | 0 | 30 |
+| Business logic (BIZ) | 32 | 0 | 2 | 1 | 29 |
 | Database (DB) | 3 | 0 | 0 | 0 | 3 |
 | Frontend (FE) | 13 | 0 | 0 | 0 | 13 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
@@ -17,7 +17,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **1** | **2** | **0** | **96** |
+| **All** | **99** | **1** | **2** | **1** | **95** |
 
 ## How to read this
 
@@ -116,10 +116,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Stock 0, mobile checkout.
   - **Result:** Not checked
 
-- [ ] **BIZ-007** · P1 · MEDIUM · Admin can cancel orders already with Steadfast; Steadfast orders never reach Shipped
+- [-] **BIZ-007** · P1 · MEDIUM · Admin can cancel orders already with Steadfast; Steadfast orders never reach Shipped
   - **Problem:** Example: a COD order is sent to Steadfast and the admin cancels it, restoring stock. The courier delivers and collects cash, but the order stays cancelled because it is terminal. Shipped emails can never fire for Steadfast.
   - **What to check:** Set a consignment on a pending order, PATCH admin.orders.cancel.
-  - **Result:** Not checked
+  - **Result:** Skipped, owner-closed (2026-11-09). Tester deferred this to the owner rather than testing. The cancel-side protection was already deployed 2026-11-05 and matches the owner's actual process (cancel/return it in Steadfast's own portal — confirmed from Steadfast's published API reference that no cancel/delete-order endpoint exists at all, so there was nothing more to build). Owner reviewed the remaining "Steadfast orders never reach Shipped" gap and chose to close the whole finding without fixing it.
 
 - [ ] **BIZ-008** · P1 · MEDIUM · Refunded orders stay "paid" and keep counting as revenue
   - **Problem:** Example: a ৳1,060 paid order with ৳60 shipping is fully refunded. The refund cap excludes shipping, so the total refunded never reaches collected. Payment stays paid and the dashboard still counts ৳1,060. The dashboard comment claims the opposite. Partial refunds are not subtracted either.
