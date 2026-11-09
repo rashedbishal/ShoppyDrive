@@ -14,10 +14,10 @@ Claude marks an item here once its result is known. This file records live-site 
 | Frontend (FE) | 13 | 0 | 1 | 0 | 12 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
 | Operations (OPS) | 6 | 0 | 0 | 0 | 6 |
-| Performance (PERF) | 7 | 1 | 0 | 0 | 6 |
+| Performance (PERF) | 7 | 2 | 0 | 0 | 5 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **9** | **7** | **2** | **81** |
+| **All** | **99** | **10** | **7** | **2** | **80** |
 
 ## How to read this
 
@@ -391,10 +391,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Open the Products page (/products) where some products have many color/size options. It should feel snappy to load, not noticeably slow compared to other pages.
   - **Result:** Not checked
 
-- [ ] **PERF-002** · P2 · LOW · Product cards send the whole product record
+- [x] **PERF-002** · P2 · LOW · Product cards send the whole product record
   - **Problem:** Live home HTML is 145 KB (21 KB compressed) and a product page 82 KB (18 KB compressed), with first byte around 0.42s, so this is modest today. Cards need about 10 fields but get all columns plus relations. Ziggy and its script add about 52 KB (estimate). cost_price is correctly hidden, so this is size only.
   - **What to check:** curl the home page.
-  - **Result:** Not checked
+  - **Result:** Pass (2026-11-09). Tester's note was cut off ("need"), no actual content. Curled the live production home page directly (`https://shoppydrive.com/`): 78.5 KB / 17.1 KB gz — close to the recorded post-fix 70 KB / 16 KB gz (2026-11-07), the small difference being normal content growth, not a regression. Local dev-server measurement was misleadingly larger (134 KB) due to Vite dev-mode scripts, not representative; the actual Inertia JSON payload there was a lean 20 KB. `ProductCardDataTest`/`LayoutCacheTest` (32/32) still pass. No code change.
 
 - [ ] **PERF-003** · P2 · MEDIUM · Icon registry and admin layout load on the customer home page
   - **Problem:** The home page chain is 75 JS chunks, about 367 KB gzip. Admin layouts are in the main chunk. Lucide dynamic icons account for 1,414 of the 1,723 entries in the 653 KB public manifest.

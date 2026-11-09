@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 9 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 2 · Failed: 0 · Skipped: 1
+**Done: 10 / 99** · Live, ready to retest: 11 · Fixed, not live yet: 2 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -95,7 +95,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 ## Performance
 
 - [ ] PERF-001 — Product listing runs a query for every variant
-- [ ] PERF-002 — Product cards send the whole product record
+- [x] PERF-002 — Product cards send the whole product record — tester's note was cut off ("need"); re-confirmed via live production curl (78.5 KB/17.1 KB gz, matches recorded post-fix size), no code change needed
 - [ ] PERF-003 — Icon registry and admin layout load on the customer home page
 - [ ] PERF-006 — Admin SMS poll hits the app every 5 seconds per tab
 - [x] PERF-005 — Admin sidebar count scans the orders table — tester restated the original finding (couldn't run EXPLAIN); re-confirmed directly 2026-11-09, index is present and used, no code change needed
