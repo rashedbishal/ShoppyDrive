@@ -618,21 +618,30 @@ export default function OrderDetail({
                                 </h3>
                                 <div className="space-y-3">
                                     <Button
+                                        asChild
                                         variant="outline"
                                         className="w-full justify-start rounded-xl border-[var(--color-border)] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                                     >
-                                        <MessageSquare
-                                            size={16}
-                                            className="mr-3"
-                                        />
-                                        Contact Support
+                                        <Link href={route('contact')}>
+                                            <MessageSquare
+                                                size={16}
+                                                className="mr-3"
+                                            />
+                                            Contact Support
+                                        </Link>
                                     </Button>
                                     <Button
+                                        asChild
                                         variant="outline"
                                         className="w-full justify-start rounded-xl border-[var(--color-border)] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                                     >
-                                        <Package size={16} className="mr-3" />
-                                        Return Policy
+                                        <Link href={route('return-policy')}>
+                                            <Package
+                                                size={16}
+                                                className="mr-3"
+                                            />
+                                            Return Policy
+                                        </Link>
                                     </Button>
                                 </div>
                             </div>
