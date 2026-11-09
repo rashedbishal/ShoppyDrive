@@ -186,11 +186,12 @@ export default function SubCategoryCreate({ categories }: Props) {
                                     }
                                 />
                             </Field>
-                            <Field label="Image" error={errors.image}>
+                            <Field label="Image">
                                 <ImageUpload
                                     value={data.image}
                                     onChange={(file) => setData('image', file)}
                                     error={errors.image}
+                                    maxSizeMb={5}
                                     previewClassName="h-32 object-contain"
                                 />
                             </Field>

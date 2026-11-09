@@ -39,6 +39,14 @@ class RasterImageOrUrl implements ValidationRule
             return;
         }
 
+        // PHP leaves no temp file when an upload fails (for example over
+        // upload_max_filesize), and reading the type of a missing file throws.
+        if (! $value->isValid()) {
+            $fail('The '.$attribute.' could not be uploaded. The file may be too large, so please try a smaller one.');
+
+            return;
+        }
+
         if (! in_array($value->getMimeType(), self::ALLOWED_MIMES, true)) {
             $fail('The '.$attribute.' must be a JPEG, PNG, WebP, or GIF image.');
 

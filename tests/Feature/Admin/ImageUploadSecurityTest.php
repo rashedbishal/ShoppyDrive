@@ -457,3 +457,27 @@ test('a mixed batch containing one oversized file is rejected without storing an
     expect(ProductMedia::count())->toBe(0);
     expect(Storage::disk('public')->allFiles('products'))->toBeEmpty();
 });
+
+// ── Oversized category and sub-category images ──────────────────────────
+
+dataset('category image routes', [
+    'category' => ['admin.categories.store'],
+    'sub-category' => ['admin.sub-categories.store'],
+]);
+
+test('an image larger than 5MB is refused with a clear message', function (string $routeName) {
+    actingAs(imageSecurityAdmin(), 'admin');
+
+    $this->post(route($routeName), ['image' => UploadedFile::fake()->image('big.jpg')->size(5121)])
+        ->assertSessionHasErrors(['image' => 'The image must be 5MB or smaller.']);
+})->with('category image routes');
+
+test('an image over the server upload limit gets a validation message instead of crashing', function (string $routeName) {
+    actingAs(imageSecurityAdmin(), 'admin');
+
+    // PHP reports a file over upload_max_filesize like this: no temp file at all.
+    $rejectedByPhp = new UploadedFile('', 'huge.jpg', 'image/jpeg', UPLOAD_ERR_INI_SIZE, true);
+
+    $this->post(route($routeName), ['image' => $rejectedByPhp])
+        ->assertSessionHasErrors(['image' => 'The image could not be uploaded. The file may be too large, so please try a smaller one.']);
+})->with('category image routes');

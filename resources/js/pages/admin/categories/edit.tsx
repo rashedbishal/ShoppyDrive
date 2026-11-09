@@ -206,12 +206,12 @@ export default function CategoryEdit({ category }: Props) {
                             <Field
                                 label="Image"
                                 hint="Used on the category page banner"
-                                error={errors.image}
                             >
                                 <ImageUpload
                                     value={data.image}
                                     onChange={(file) => setData('image', file)}
                                     error={errors.image}
+                                    maxSizeMb={5}
                                     previewClassName="h-32 object-contain"
                                 />
                             </Field>
