@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Rules\RasterImageOrUrl;
 use Closure;
@@ -60,7 +61,41 @@ class ProductBundleRequest extends FormRequest
                     }
                 },
             ],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.quantity' => [
+                'required',
+                'integer',
+                'min:1',
+                // BIZ-002 (tester retest, 2026-11-09): this is how many units
+                // of the component one bundle set needs, with no per-unit
+                // quantity picker anywhere a customer could add less — so a
+                // recipe asking for more than the product actually has in
+                // stock can never be bought at all, not even once. Mirrors
+                // InventoryService::assertAvailable()'s own rule that a
+                // variant-less selection of a product that has variants has
+                // no stock of its own.
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $index = (int) explode('.', $attribute)[1];
+                    $productId = (int) $this->input("items.{$index}.product_id");
+                    $variantId = $this->input("items.{$index}.variant_id");
+                    $variantId = $variantId !== null && $variantId !== '' ? (int) $variantId : null;
+
+                    if ($variantId !== null) {
+                        $stock = ProductVariant::query()->whereKey($variantId)->value('stock_quantity');
+                    } else {
+                        $product = Product::query()->find($productId);
+
+                        if ($product === null) {
+                            return;
+                        }
+
+                        $stock = $product->variants()->exists() ? 0 : $product->stock_quantity;
+                    }
+
+                    if ($stock !== null && $value > $stock) {
+                        $fail("This bundle needs {$value}, but only {$stock} unit(s) are in stock — a bundle can never require more of a product than its current stock allows.");
+                    }
+                },
+            ],
         ];
     }
 }

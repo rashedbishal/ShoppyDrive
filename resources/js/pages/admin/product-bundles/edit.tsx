@@ -17,6 +17,7 @@ type SearchVariant = {
     id: number;
     color_value: { value: string } | null;
     size_value: { value: string } | null;
+    stock_quantity: number;
 };
 
 type SearchProduct = {
@@ -26,6 +27,7 @@ type SearchProduct = {
     sku: string | null;
     has_color_variant: boolean;
     has_size_variant: boolean;
+    stock_quantity: number;
     variants: SearchVariant[];
 };
 
@@ -80,6 +82,27 @@ function variantLabel(variant: SearchVariant): string {
     return [variant.color_value?.value, variant.size_value?.value]
         .filter(Boolean)
         .join(' / ');
+}
+
+/**
+ * The real ceiling on this component's quantity (how many units ONE bundle
+ * set needs) — a chosen variant pins exactly one row's own stock; a
+ * variant-less selection of a product that does have variants has no stock
+ * of its own, mirroring the same rule InventoryService::assertAvailable()
+ * already enforces at checkout. There's no per-unit picker anywhere a
+ * customer could ask for less than a bundle set requires, so a recipe
+ * asking for more than this can never actually be bought (BIZ-002 retest).
+ */
+function stockFor(item: SelectedItem): number {
+    if (item.variant_id) {
+        return (
+            item.product.variants.find(
+                (variant) => String(variant.id) === item.variant_id,
+            )?.stock_quantity ?? 0
+        );
+    }
+
+    return item.product.variants.length > 0 ? 0 : item.product.stock_quantity;
 }
 
 export default function ProductBundleEdit({ bundle }: Props) {
@@ -243,6 +266,15 @@ export default function ProductBundleEdit({ bundle }: Props) {
         if (needsVariant) {
             clientErrors.items =
                 'Pick a variant for every product that has one.';
+        }
+
+        const exceedsStock = selectedItems.some(
+            (item) => Number(item.quantity) > stockFor(item),
+        );
+
+        if (exceedsStock) {
+            clientErrors.items =
+                'One or more items need more units per bundle than are currently in stock — lower the quantity or restock first.';
         }
 
         const pairKeys = selectedItems.map(
@@ -645,7 +677,20 @@ export default function ProductBundleEdit({ bundle }: Props) {
                                                                     <input
                                                                         type="number"
                                                                         min="1"
-                                                                        className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                                                        max={stockFor(
+                                                                            item,
+                                                                        )}
+                                                                        className={cn(
+                                                                            'h-9 w-full rounded-lg border px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none',
+                                                                            Number(
+                                                                                item.quantity,
+                                                                            ) >
+                                                                                stockFor(
+                                                                                    item,
+                                                                                )
+                                                                                ? 'border-red-300'
+                                                                                : 'border-slate-200',
+                                                                        )}
                                                                         value={
                                                                             item.quantity
                                                                         }
@@ -661,6 +706,25 @@ export default function ProductBundleEdit({ bundle }: Props) {
                                                                             )
                                                                         }
                                                                     />
+                                                                    <p
+                                                                        className={cn(
+                                                                            'mt-1 text-[11px]',
+                                                                            Number(
+                                                                                item.quantity,
+                                                                            ) >
+                                                                                stockFor(
+                                                                                    item,
+                                                                                )
+                                                                                ? 'font-medium text-red-500'
+                                                                                : 'text-slate-400',
+                                                                        )}
+                                                                    >
+                                                                        {stockFor(
+                                                                            item,
+                                                                        )}{' '}
+                                                                        in
+                                                                        stock
+                                                                    </p>
                                                                 </div>
                                                                 <button
                                                                     type="button"

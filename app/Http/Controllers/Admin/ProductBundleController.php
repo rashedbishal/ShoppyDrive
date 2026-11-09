@@ -69,7 +69,7 @@ class ProductBundleController extends Controller
     {
         return Inertia::render('admin/product-bundles/edit', [
             'bundle' => $productBundle->load([
-                'items.product:id,name,price,sku,has_color_variant,has_size_variant',
+                'items.product:id,name,price,sku,has_color_variant,has_size_variant,stock_quantity',
                 'items.product.variants.colorValue',
                 'items.product.variants.sizeValue',
             ]),
@@ -141,7 +141,7 @@ class ProductBundleController extends Controller
             ->with(['variants.colorValue', 'variants.sizeValue'])
             ->orderBy('name')
             ->limit(50)
-            ->get(['id', 'name', 'price', 'sku', 'has_color_variant', 'has_size_variant']);
+            ->get(['id', 'name', 'price', 'sku', 'has_color_variant', 'has_size_variant', 'stock_quantity']);
 
         return response()->json($products);
     }

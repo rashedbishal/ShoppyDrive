@@ -9,7 +9,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Group | Total | Pass | Fail | Skipped | Not checked |
 |---|---|---|---|---|---|
 | Backend (BE) | 10 | 0 | 0 | 0 | 10 |
-| Business logic (BIZ) | 32 | 0 | 1 | 0 | 31 |
+| Business logic (BIZ) | 32 | 0 | 2 | 0 | 30 |
 | Database (DB) | 3 | 0 | 0 | 0 | 3 |
 | Frontend (FE) | 13 | 0 | 0 | 0 | 13 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
@@ -17,7 +17,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **1** | **1** | **0** | **97** |
+| **All** | **99** | **1** | **2** | **0** | **96** |
 
 ## How to read this
 
@@ -91,10 +91,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Add to cart at 100, raise the price to 150, submit the UI payload.
   - **Result:** Fail (tester, 2026-11-08). The overcharge itself didn't happen — the price stayed at ৳100 on screen, and clicking Confirm correctly refused with "Some prices in your cart have changed. Please review your updated cart and try again." instead of charging ৳150. But retrying never worked: the price never updated and the same refusal repeated every time, with no way to actually place the order. Fixed locally 2026-11-09 (not yet pushed/deployed) — the refusal now also corrects the cart and updates what's shown on screen, so a second attempt succeeds at the real price. Needs push + deploy, then retest.
 
-- [ ] **BIZ-002** · P0 · HIGH · A cart containing a complete bundle can never be checked out from the website
+- [!] **BIZ-002** · P0 · HIGH · A cart containing a complete bundle can never be checked out from the website
   - **Problem:** Every Place Order click shows "Some prices have changed" and no order is made. This affects COD and mobile banking, guests and members.
   - **What to check:** Create bundle A+B, submit the UI payload three times.
-  - **Result:** Not checked
+  - **Result:** Fail (tester, 2026-11-08) — a different scenario: a bundle component's quantity was set higher than the product's actual stock (e.g. recipe needs 10, stock is 5), which the admin shouldn't be able to save. Checkout itself was already fine here (reproduced directly: a clear "Only N unit(s) left in stock" refusal, no order placed — not the generic "Some prices changed"). Fixed locally 2026-11-09 (not yet pushed/deployed): the admin bundle create/edit form now refuses a component quantity above its actual stock, and shows the live stock next to the quantity field. Needs push + deploy, then retest.
 
 - [ ] **BIZ-003** · P0 · HIGH · Guests see a coupon discount at checkout but are charged full price
   - **Problem:** Example: a guest applies SAVE100 on the Cart page on a ৳1,000 cart. Checkout shows Discount −৳100 and Total ৳900, but the order is sent without any coupon code, so the server charges ৳1,000. Logged-in customers: the coupon silently disappears. Applying it again at checkout subtracts it twice on screen.

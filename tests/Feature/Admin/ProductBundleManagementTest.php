@@ -123,8 +123,8 @@ test('a bundle rejects the same product and the same variant pinned twice', func
 
 test('a single product with multiple variants can satisfy the two-item minimum on its own', function () {
     $product = Product::factory()->create();
-    $small = ProductVariant::factory()->create(['product_id' => $product->id]);
-    $large = ProductVariant::factory()->create(['product_id' => $product->id]);
+    $small = ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 10]);
+    $large = ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 10]);
 
     actingAs($this->admin, 'admin');
 
@@ -158,6 +158,104 @@ test('a fixed-price bundle requires a bundle price', function () {
             ['product_id' => $productB->id, 'variant_id' => null, 'quantity' => 1],
         ],
     ])->assertSessionHasErrors('bundle_price');
+});
+
+test('a bundle component cannot require more units than the product has in stock', function () {
+    // BIZ-002 retest (2026-11-09): a tester found that a bundle recipe
+    // asking for more of a product than it has in stock can never actually
+    // be bought — there's no per-unit picker anywhere a customer could buy
+    // less than one full bundle set, so the admin shouldn't be able to
+    // create that recipe in the first place.
+    $productA = Product::factory()->create(['stock_quantity' => 5]);
+    $productB = Product::factory()->create(['stock_quantity' => 10]);
+
+    actingAs($this->admin, 'admin');
+
+    $this->post(route('admin.product-bundles.store'), [
+        'name' => 'Overcommitted Combo',
+        'discount_type' => 'fixed_price',
+        'bundle_price' => 50,
+        'items' => [
+            ['product_id' => $productA->id, 'variant_id' => null, 'quantity' => 10],
+            ['product_id' => $productB->id, 'variant_id' => null, 'quantity' => 1],
+        ],
+    ])->assertSessionHasErrors('items.0.quantity');
+
+    expect(ProductBundle::query()->count())->toBe(0);
+});
+
+test('a bundle component is capped by the chosen variant\'s own stock, not the product\'s', function () {
+    $product = Product::factory()->create(['stock_quantity' => 500]);
+    $variant = ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 3]);
+    $other = Product::factory()->create(['stock_quantity' => 10]);
+
+    actingAs($this->admin, 'admin');
+
+    $this->post(route('admin.product-bundles.store'), [
+        'name' => 'Variant Overcommitted Combo',
+        'discount_type' => 'fixed_price',
+        'bundle_price' => 50,
+        'items' => [
+            ['product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 5],
+            ['product_id' => $other->id, 'variant_id' => null, 'quantity' => 1],
+        ],
+    ])->assertSessionHasErrors('items.0.quantity');
+
+    expect(ProductBundle::query()->count())->toBe(0);
+});
+
+test('a bundle component within stock is accepted, and updating one to exceed stock is refused the same way', function () {
+    $productA = Product::factory()->create(['stock_quantity' => 5]);
+    $productB = Product::factory()->create(['stock_quantity' => 10]);
+
+    actingAs($this->admin, 'admin');
+
+    $this->post(route('admin.product-bundles.store'), [
+        'name' => 'Fits In Stock Combo',
+        'discount_type' => 'fixed_price',
+        'bundle_price' => 50,
+        'items' => [
+            ['product_id' => $productA->id, 'variant_id' => null, 'quantity' => 5],
+            ['product_id' => $productB->id, 'variant_id' => null, 'quantity' => 1],
+        ],
+    ])->assertRedirect(route('admin.product-bundles.index'));
+
+    $bundle = ProductBundle::query()->where('name', 'Fits In Stock Combo')->firstOrFail();
+
+    $this->put(route('admin.product-bundles.update', $bundle->id), [
+        'name' => $bundle->name,
+        'discount_type' => 'fixed_price',
+        'bundle_price' => 50,
+        'is_active' => true,
+        'items' => [
+            ['product_id' => $productA->id, 'variant_id' => null, 'quantity' => 6],
+            ['product_id' => $productB->id, 'variant_id' => null, 'quantity' => 1],
+        ],
+    ])->assertSessionHasErrors('items.0.quantity');
+
+    expect($bundle->refresh()->items->firstWhere('product_id', $productA->id)->quantity)->toBe(5);
+});
+
+test('a variant-less selection of a product that has variants has no stock of its own, so any quantity is refused', function () {
+    // Mirrors InventoryService::assertAvailable()'s same rule at checkout —
+    // a product with real variants is never purchasable without picking one.
+    $product = Product::factory()->create(['stock_quantity' => 50]);
+    ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 20]);
+    $other = Product::factory()->create(['stock_quantity' => 10]);
+
+    actingAs($this->admin, 'admin');
+
+    $this->post(route('admin.product-bundles.store'), [
+        'name' => 'Missing Variant Combo',
+        'discount_type' => 'fixed_price',
+        'bundle_price' => 50,
+        'items' => [
+            ['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1],
+            ['product_id' => $other->id, 'variant_id' => null, 'quantity' => 1],
+        ],
+    ])->assertSessionHasErrors('items.0.quantity');
+
+    expect(ProductBundle::query()->count())->toBe(0);
 });
 
 test('updating a bundle replaces its items', function () {
