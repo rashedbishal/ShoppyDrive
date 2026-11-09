@@ -76,7 +76,10 @@ type ChatItem = {
 };
 
 export default function SocialChatWidget(): React.JSX.Element | null {
-    const { settings } = usePage<SharedPageProps>().props;
+    const {
+        component,
+        props: { settings },
+    } = usePage<SharedPageProps>();
     const [open, setOpen] = useState(false);
     const [burstKey, setBurstKey] = useState(0);
     const [aiPanelOpen, setAiPanelOpen] = useState(false);
@@ -84,6 +87,9 @@ export default function SocialChatWidget(): React.JSX.Element | null {
     const isPanelOpen = useUiStore(
         (state) => state.cartOpen || state.mobileMenuOpen,
     );
+
+    // Below lg the checkout page's fixed Place Order bar fills this corner.
+    const isBehindPlaceOrderBar = component === 'checkout/Checkout';
 
     const items: ChatItem[] = [];
 
@@ -146,6 +152,7 @@ export default function SocialChatWidget(): React.JSX.Element | null {
             className={cn(
                 'fixed right-5 bottom-6 z-[70] flex flex-col items-end gap-3 transition-[opacity,transform] duration-200 ease-out',
                 isPanelOpen && 'pointer-events-none translate-y-3 opacity-0',
+                isBehindPlaceOrderBar && 'max-lg:hidden',
             )}
             aria-hidden={isPanelOpen || undefined}
             inert={isPanelOpen}
