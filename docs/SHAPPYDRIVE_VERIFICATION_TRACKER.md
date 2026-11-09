@@ -9,7 +9,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Group | Total | Pass | Fail | Skipped | Not checked |
 |---|---|---|---|---|---|
 | Backend (BE) | 10 | 0 | 0 | 0 | 10 |
-| Business logic (BIZ) | 32 | 0 | 3 | 1 | 28 |
+| Business logic (BIZ) | 32 | 0 | 3 | 2 | 27 |
 | Database (DB) | 3 | 0 | 0 | 0 | 3 |
 | Frontend (FE) | 13 | 0 | 0 | 0 | 13 |
 | Infrastructure (INFRA) | 4 | 0 | 0 | 0 | 4 |
@@ -17,7 +17,7 @@ Claude marks an item here once its result is known. This file records live-site 
 | Performance (PERF) | 7 | 0 | 0 | 0 | 7 |
 | Reliability and tests (REL) | 3 | 0 | 0 | 0 | 3 |
 | Security (SEC) | 21 | 1 | 0 | 0 | 20 |
-| **All** | **99** | **1** | **3** | **1** | **94** |
+| **All** | **99** | **1** | **3** | **2** | **93** |
 
 ## How to read this
 
@@ -126,10 +126,10 @@ When marking an item, change its checkbox, fill in its Result line with the date
   - **What to check:** Refund a paid order with shipping above 0.
   - **Result:** Fail (tester, 2026-11-08) — couldn't test at all: no working refund/cancel button on a paid order. Traced to a COD order marked paid without a delivered-by-courier timestamp, which silently disabled the refund button with no explanation (not the originally-described shipping-cap bug). Fixed locally 2026-11-09 (not yet pushed/deployed): refund now works for any order with payment_status = paid, regardless of that missing field. Needs push + deploy, then retest.
 
-- [ ] **BIZ-010** · P1 · MEDIUM · Loyalty points can be spent twice through a late mobile payment
+- [-] **BIZ-010** · P1 · MEDIUM · Loyalty points can be spent twice through a late mobile payment
   - **Problem:** Example: with 100 points, start a mobile checkout using them and pay. Wait for the 2-hour hold to end, spend the same points on a COD order, then submit the first TrxID. The grace accepts it. Balance becomes −100 and both orders got the discount.
   - **What to check:** Using a test account with loyalty points, start a mobile banking (bKash/Nagad) checkout and redeem points as part of the payment. Let the 2-hour payment window expire without finishing it. Place a separate COD order using those same points. Then go back and complete the first mobile payment with its real transaction ID. Check: did the points get deducted twice (balance going more negative than it should)?
-  - **Result:** Not checked
+  - **Result:** Skipped (tester, 2026-11-08) — needs live SMS/bKash config, can't test before the site goes live. Not a failure: the balance-never-negative half was already fixed and deployed 2026-11-05, re-verified still green. Owner then chose to also close the remaining "both orders got the discount" gap (previously accepted as a bounded risk) rather than leave it. Fixed locally 2026-11-09 (not yet pushed/deployed): points now stay held for up to 24 extra hours past the normal 2-hour window whenever real SMS evidence of a pending payment already exists. Needs push + deploy, then retest live with real SMS config.
 
 - [ ] **BIZ-011** · P1 · MEDIUM · No bot or quantity protection on COD orders
   - **Problem:** A guest can order all stock of a product with any valid-format phone, showing it out of stock until staff cancel. No captcha or phone check exists, and no quantity maximum on the main checkout (landing pages cap at 100). Limits are 10 per 10 minutes per IP and 5 per hour per phone.

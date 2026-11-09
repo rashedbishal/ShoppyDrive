@@ -93,13 +93,15 @@ test('a late submission is accepted when the matching SMS genuinely arrived with
 });
 
 /*
- * BIZ-010: the FSA-07 grace above re-admits a late submission even after
- * its PendingCheckout's points hold has released (PendingCheckout::
- * scopeHoldingPointsFor() stops counting it once expired), so the same
- * points can legitimately be redeemed again elsewhere in the gap. The late
- * confirmation must not then debit points that are no longer there.
+ * BIZ-010 (fixed 2026-11-09): the FSA-07 grace above can re-admit a late
+ * submission after its PendingCheckout's own 2-hour window has passed.
+ * PendingCheckout::scopeHoldingPointsFor()/hasUnclaimedProofOfPayment()
+ * now keep the reservation alive past that window — for up to
+ * LATE_PAYMENT_GRACE_HOURS — whenever a matching, unconsumed SMS already
+ * proves a late completion is genuinely possible, so a second checkout
+ * elsewhere can no longer redeem the same points out from under it.
  */
-test('a late mobile payment confirmation does not double-debit points already spent elsewhere during the lapsed hold', function () {
+test('a late mobile payment stays held past its own window while a matching SMS already proves it might still complete, so a second checkout cannot spend the same points', function () {
     Setting::updateOrCreate(['key' => 'points_redeem_value_bdt'], ['value' => 1, 'group' => 'referral']);
     Setting::updateOrCreate(['key' => 'points_redeem_max_percent'], ['value' => 50, 'group' => 'referral']);
     $user = User::factory()->create(['points_balance' => 100]);
@@ -119,7 +121,98 @@ test('a late mobile payment confirmation does not double-debit points already sp
 
     $this->travelTo($originalExpiry->clone()->addMinute());
 
-    // The hold has lapsed, so the same points legitimately pay for a second order.
+    // The SMS already proves a late completion is possible, so the points
+    // stay held — this COD order gets no points discount at all.
+    $this->actingAs($user)->post(route('checkout.store'), [
+        'name' => 'Mobile Test', 'email' => $user->email, 'phone' => '01700000000',
+        'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
+        'payment_method' => 'cod', 'order_token' => (string) Str::uuid(),
+        'redeem_points' => true, 'points_to_redeem' => 100,
+        'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
+    ])->assertRedirect();
+
+    $codOrder = Order::query()->firstOrFail();
+    expect($codOrder->points_redeemed)->toBeNull()
+        ->and((float) $codOrder->discount)->toBe(0.0)
+        ->and((int) $user->fresh()->points_balance)->toBe(100);
+
+    // The FSA-07 grace then accepts the first checkout's late submission,
+    // which can now debit the full 100 points normally — nothing else took them.
+    $this->actingAs($user)->post(route('payment.mobile.submit', $pending->token), [
+        'provider' => 'bkash', 'transaction_id' => 'LATE777',
+    ]);
+
+    $mobileOrder = Order::query()->whereKeyNot($codOrder->id)->firstOrFail();
+    expect((int) $user->fresh()->points_balance)->toBe(0)
+        ->and(Order::query()->count())->toBe(2)
+        ->and($mobileOrder->points_redeemed)->toBe(100)
+        ->and($mobileOrder->statusHistories()->where('notes', 'like', '%could not be applied%')->exists())->toBeFalse();
+});
+
+/*
+ * BIZ-010: the hold is bounded, not indefinite — a checkout that's been
+ * expired for longer than LATE_PAYMENT_GRACE_HOURS releases its points
+ * even if a same-amount SMS still technically sits unconsumed, so an
+ * abandoned checkout can never lock a customer's points forever.
+ */
+test('a late mobile payment stops holding its points once its grace window has also fully elapsed', function () {
+    Setting::updateOrCreate(['key' => 'points_redeem_value_bdt'], ['value' => 1, 'group' => 'referral']);
+    Setting::updateOrCreate(['key' => 'points_redeem_max_percent'], ['value' => 50, 'group' => 'referral']);
+    $user = User::factory()->create(['points_balance' => 100]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 50]);
+
+    $pending = startMobileBankingCheckout($this, $user, $product, 1, [
+        'redeem_points' => true, 'points_to_redeem' => 100,
+    ]);
+    $amount = (float) $pending->checkout_data['total'];
+    $originalExpiry = $pending->expires_at->clone();
+
+    ReceivedSms::create([
+        'sender' => '01799999999', 'provider' => 'bkash', 'content' => 'TrxID STALE001',
+        'received_at' => $originalExpiry->clone()->subMinutes(5),
+        'parsed_transaction_id' => 'STALE001', 'parsed_amount' => $amount, 'is_matched' => false,
+    ]);
+
+    // Well past the 24-hour grace on top of the original 2-hour window —
+    // the customer never came back to submit the form at all.
+    $this->travelTo($originalExpiry->clone()->addHours(25));
+
+    $this->actingAs($user)->post(route('checkout.store'), [
+        'name' => 'Mobile Test', 'email' => $user->email, 'phone' => '01700000000',
+        'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
+        'payment_method' => 'cod', 'order_token' => (string) Str::uuid(),
+        'redeem_points' => true, 'points_to_redeem' => 100,
+        'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
+    ])->assertRedirect();
+
+    expect(Order::query()->firstOrFail()->points_redeemed)->toBe(100)
+        ->and((int) $user->fresh()->points_balance)->toBe(0);
+});
+
+/*
+ * BIZ-010: hasUnclaimedProofOfPayment() can only protect a checkout whose
+ * matching SMS already exists at the moment a competing checkout spends
+ * the points — if the SMS is still in transit (forwarder/ingestion delay)
+ * and lands afterward, the race is unavoidable. debitPointsForOrder()'s
+ * own balance check (already in place) remains the final safety net: it
+ * must never push the balance negative, whatever else happens upstream.
+ */
+test('a late mobile payment confirmation still never pushes the balance negative when the race genuinely could not be prevented', function () {
+    Setting::updateOrCreate(['key' => 'points_redeem_value_bdt'], ['value' => 1, 'group' => 'referral']);
+    Setting::updateOrCreate(['key' => 'points_redeem_max_percent'], ['value' => 50, 'group' => 'referral']);
+    $user = User::factory()->create(['points_balance' => 100]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 50]);
+
+    $pending = startMobileBankingCheckout($this, $user, $product, 1, [
+        'redeem_points' => true, 'points_to_redeem' => 100,
+    ]);
+    $amount = (float) $pending->checkout_data['total'];
+    $originalExpiry = $pending->expires_at->clone();
+
+    $this->travelTo($originalExpiry->clone()->addMinute());
+
+    // No matching SMS exists yet at the moment the COD order spends the
+    // points — this is the unavoidable race, not the case the fix covers.
     $this->actingAs($user)->post(route('checkout.store'), [
         'name' => 'Mobile Test', 'email' => $user->email, 'phone' => '01700000000',
         'address_line1' => 'House 1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh',
@@ -129,9 +222,17 @@ test('a late mobile payment confirmation does not double-debit points already sp
     ])->assertRedirect();
     expect((int) $user->fresh()->points_balance)->toBe(0);
 
-    // The FSA-07 grace then accepts the first checkout's late submission.
+    // The SMS only arrives afterward, proving the original payment was
+    // genuinely on time — the late grace still accepts the submission,
+    // but debitPointsForOrder() must skip the now-unavailable debit.
+    ReceivedSms::create([
+        'sender' => '01799999999', 'provider' => 'bkash', 'content' => 'TrxID LATE888',
+        'received_at' => $originalExpiry->clone()->subMinutes(5),
+        'parsed_transaction_id' => 'LATE888', 'parsed_amount' => $amount, 'is_matched' => false,
+    ]);
+
     $this->actingAs($user)->post(route('payment.mobile.submit', $pending->token), [
-        'provider' => 'bkash', 'transaction_id' => 'LATE777',
+        'provider' => 'bkash', 'transaction_id' => 'LATE888',
     ]);
 
     expect((int) $user->fresh()->points_balance)->toBe(0)

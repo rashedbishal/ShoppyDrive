@@ -80,7 +80,17 @@ class LoyaltyPointsService
      */
     public function availablePoints(User $user): int
     {
-        $reserved = (int) PendingCheckout::query()->holdingPointsFor($user->id)->sum('points_reserved');
+        // BIZ-010: scopeHoldingPointsFor() only bounds how far back to look
+        // (plain non-expiry, or expired within its late-payment grace) —
+        // an already-expired row only actually still holds its points when
+        // hasUnclaimedProofOfPayment() says so, which a single SQL sum
+        // can't decide inline. The result set is always tiny (one user's
+        // own in-flight checkouts), so filtering in PHP costs nothing.
+        $reserved = PendingCheckout::query()
+            ->holdingPointsFor($user->id)
+            ->get(['id', 'points_reserved', 'expires_at', 'created_at', 'checkout_data'])
+            ->filter(fn (PendingCheckout $pending): bool => ! $pending->isExpired() || $pending->hasUnclaimedProofOfPayment())
+            ->sum('points_reserved');
 
         return max(0, $user->points_balance - $reserved);
     }
