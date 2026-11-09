@@ -1,8 +1,8 @@
 import { CheckCircle2, Star } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { formatDate, getInitials } from '@/lib/utils';
+import { cn, formatDate, getInitials } from '@/lib/utils';
 import type { Review } from '@/types';
 
 interface ReviewCardProps {
@@ -10,6 +10,30 @@ interface ReviewCardProps {
 }
 
 export function ReviewCard({ review }: ReviewCardProps): React.JSX.Element {
+    const bodyRef = useRef<HTMLParagraphElement>(null);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [isLong, setIsLong] = useState(false);
+
+    // Measured rather than counted in characters: the same review fits on a
+    // desktop but overflows on a phone, and the tab it sits in can be hidden.
+    useEffect(() => {
+        const body = bodyRef.current;
+
+        if (!body || isExpanded) {
+            return;
+        }
+
+        const measure = () =>
+            setIsLong(body.scrollHeight > body.clientHeight + 1);
+
+        measure();
+
+        const observer = new ResizeObserver(measure);
+        observer.observe(body);
+
+        return () => observer.disconnect();
+    }, [isExpanded, review.body]);
+
     return (
         <div className="border-b border-[var(--color-border)] py-8 last:border-0">
             <div className="mb-4 flex items-start gap-4">
@@ -61,9 +85,27 @@ export function ReviewCard({ review }: ReviewCardProps): React.JSX.Element {
                 </h5>
             )}
 
-            <p className="mb-4 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-                {review.body}
-            </p>
+            <div className="mb-4">
+                <p
+                    ref={bodyRef}
+                    className={cn(
+                        'text-sm leading-relaxed break-words text-[var(--color-text-secondary)]',
+                        !isExpanded && 'line-clamp-4',
+                    )}
+                >
+                    {review.body}
+                </p>
+                {isLong && (
+                    <button
+                        type="button"
+                        aria-expanded={isExpanded}
+                        onClick={() => setIsExpanded((expanded) => !expanded)}
+                        className="mt-1 text-sm font-bold text-[var(--color-primary)] hover:underline"
+                    >
+                        {isExpanded ? 'Show less' : 'Read more'}
+                    </button>
+                )}
+            </div>
 
             {review.images && review.images.length > 0 && (
                 <div className="mb-6 flex flex-wrap gap-2">
