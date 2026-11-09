@@ -27,7 +27,7 @@ export default function Register({
         usePage<SharedPageProps>().props;
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
         phone: '',
@@ -38,9 +38,7 @@ export default function Register({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('register'), {
-            onFinish: () => reset('password', 'password_confirmation'),
-        });
+        post(route('register'));
     };
 
     return (
