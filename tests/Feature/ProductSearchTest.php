@@ -226,6 +226,37 @@ test('a search consisting only of a common English stopword matches nothing via 
         ));
 });
 
+test('an English search keyword finds a product named in Bangla', function () {
+    createSearchableProduct(['name' => 'শার্ট', 'meta_keywords' => 'shirt, t-shirt']);
+
+    $this->get(route('search', ['q' => 'shirt']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where(
+            'products.data',
+            fn ($data) => $data->pluck('name')->all() === ['শার্ট']
+        ));
+});
+
+test('an English search keyword finds the right product among several Bangla-named ones', function () {
+    createSearchableProduct(['name' => 'শার্ট', 'meta_keywords' => 'shirt, t-shirt']);
+    createSearchableProduct(['name' => 'জুতা', 'meta_keywords' => 'shoe']);
+
+    $this->get(route('search', ['q' => 'shoe']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where(
+            'products.data',
+            fn ($data) => $data->pluck('name')->all() === ['জুতা']
+        ));
+});
+
+test('a product with no search keywords is still unreachable by an unrelated English term', function () {
+    createSearchableProduct(['name' => 'শার্ট']);
+
+    $this->get(route('search', ['q' => 'shirt']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('products.data', fn ($data) => $data->isEmpty()));
+});
+
 test('search results show a product on an active flash sale at its sale price', function () {
     $product = createSearchableProduct(['name' => 'Comfy T-Shirt', 'price' => 2000]);
     $flashSale = FlashSale::factory()->create([

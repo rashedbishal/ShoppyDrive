@@ -139,6 +139,9 @@ class ProductRequest extends FormRequest
             'hover_image_index' => ['nullable', 'integer', 'min:0'],
             'meta_title' => ['nullable', 'string', 'max:255'],
             'meta_description' => ['nullable', 'string', 'max:500'],
+            // Admin-entered English equivalent(s) for a product named in
+            // Bangla (e.g. "shirt, t-shirt" on শার্ট) — see ProductSearchQuery.
+            'meta_keywords' => ['nullable', 'string', 'max:255'],
         ];
     }
 

@@ -72,6 +72,7 @@ type Product = {
     cry_baby_enabled: boolean;
     meta_title: string | null;
     meta_description: string | null;
+    meta_keywords: string | null;
     media: ProductMedia[];
     variants: ProductVariant[];
 };
@@ -185,6 +186,7 @@ export default function ProductEdit({
             hover_image_index: mediaFlagIndex(product.media, 'is_hover'),
             meta_title: product.meta_title ?? '',
             meta_description: product.meta_description ?? '',
+            meta_keywords: product.meta_keywords ?? '',
         });
 
     const hasVariants = data.has_color_variant || data.has_size_variant;
@@ -707,6 +709,29 @@ export default function ProductEdit({
                                             )
                                         }
                                     />
+                                </Field>
+                                <Field
+                                    label="Search Keywords"
+                                    error={errors.meta_keywords}
+                                >
+                                    <input
+                                        className={inputClass(
+                                            errors.meta_keywords,
+                                        )}
+                                        value={data.meta_keywords}
+                                        onChange={(e) =>
+                                            setData(
+                                                'meta_keywords',
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        If this product's name is in Bangla, add
+                                        its English name here (e.g. "shirt,
+                                        t-shirt") so customers can find it by
+                                        searching in English too.
+                                    </p>
                                 </Field>
                             </CardContent>
                         </Card>

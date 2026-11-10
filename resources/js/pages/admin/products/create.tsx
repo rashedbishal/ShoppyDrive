@@ -73,6 +73,7 @@ export default function ProductCreate({
             hover_image_index: null as number | null,
             meta_title: '',
             meta_description: '',
+            meta_keywords: '',
         });
 
     const hasVariants = data.has_color_variant || data.has_size_variant;
@@ -603,6 +604,29 @@ export default function ProductCreate({
                                             )
                                         }
                                     />
+                                </Field>
+                                <Field
+                                    label="Search Keywords"
+                                    error={errors.meta_keywords}
+                                >
+                                    <input
+                                        className={inputClass(
+                                            errors.meta_keywords,
+                                        )}
+                                        value={data.meta_keywords}
+                                        onChange={(e) =>
+                                            setData(
+                                                'meta_keywords',
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        If this product's name is in Bangla, add
+                                        its English name here (e.g. "shirt,
+                                        t-shirt") so customers can find it by
+                                        searching in English too.
+                                    </p>
                                 </Field>
                             </CardContent>
                         </Card>

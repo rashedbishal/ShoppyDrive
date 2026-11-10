@@ -9,8 +9,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The products.name/sku/short_description substring search used identically
- * by the catalog listing, search results, and autocomplete endpoints.
+ * The products.name/sku/short_description/meta_keywords substring search
+ * used identically by the catalog listing, search results, and autocomplete
+ * endpoints.
  *
  * On MySQL, `name`/`short_description` are matched via the FULLTEXT index
  * (boolean mode: each query word required, matched as a whole word or a
@@ -18,6 +19,10 @@ use Illuminate\Support\Facades\DB;
  * index. `sku` is deliberately left as a plain LIKE — SKU fragments are
  * code-like substrings, not words, and FULLTEXT tokenizing would silently
  * break legitimate partial-SKU lookups (e.g. pasting the middle of a SKU).
+ * `meta_keywords` gets the same plain-LIKE treatment as `sku`, for the same
+ * reason: short, sparse, admin-entered free text (e.g. an English
+ * equivalent for a product named in Bangla), not worth extending the
+ * FULLTEXT index for.
  *
  * Trade-off (intentional, documented — not a bug to "fix" later): a search
  * term shorter than 3 characters, or made up only of symbols, can't use
@@ -78,7 +83,11 @@ class ProductSearchQuery
             $query->orWhere('short_description', 'like', "%{$term}%");
         }
 
-        return $query->orWhere('sku', 'like', "%{$term}%");
+        // An admin's English equivalent for a Bangla-named product (e.g.
+        // "shirt, t-shirt" stored against শার্ট) — see matchingIds()'s own
+        // comment for why this is a plain LIKE rather than FULLTEXT.
+        return $query->orWhere('sku', 'like', "%{$term}%")
+            ->orWhere('meta_keywords', 'like', "%{$term}%");
     }
 
     /**
@@ -107,7 +116,17 @@ class ProductSearchQuery
             ->whereNull('deleted_at')
             ->where('sku', 'like', "%{$term}%");
 
-        return $fullText->union($sku)->limit(self::MAX_MATCHES)->pluck('id');
+        // A product named in Bangla is otherwise unfindable by an English
+        // query — an admin can fill in English equivalents here
+        // (Admin > Products > Search Keywords). Plain LIKE, same reasoning
+        // as sku: short free text, not worth extending the name/
+        // short_description FULLTEXT index for.
+        $keywords = DB::table('products')
+            ->select('id')
+            ->whereNull('deleted_at')
+            ->where('meta_keywords', 'like', "%{$term}%");
+
+        return $fullText->union($sku)->union($keywords)->limit(self::MAX_MATCHES)->pluck('id');
     }
 
     /**

@@ -24,7 +24,7 @@ class Product extends Model
     public const CATALOG_FILTER_FIELDS = ['is_active', 'published_at', 'category_id', 'sub_category_id', 'brand_id', 'price'];
 
     /** Columns the search-bar suggestions depend on (see FlushesSearchSuggestions). */
-    public const SEARCH_SUGGESTION_FIELDS = ['name', 'sku', 'slug', 'price', 'compare_price', 'is_featured', 'is_active', 'published_at'];
+    public const SEARCH_SUGGESTION_FIELDS = ['name', 'sku', 'slug', 'price', 'compare_price', 'is_featured', 'is_active', 'published_at', 'meta_keywords'];
 
     /**
      * FSA-04: wholesale cost never leaves the server in a storefront
