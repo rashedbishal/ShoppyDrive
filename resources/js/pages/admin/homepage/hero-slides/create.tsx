@@ -101,7 +101,7 @@ export default function HeroSlideCreate() {
     return (
         <>
             <Head title="Create Hero Slide — Admin" />
-            <div className="space-y-6">
+            <div className="space-y-5">
                 <div className="flex items-center gap-4">
                     <Button
                         asChild
@@ -127,12 +127,12 @@ export default function HeroSlideCreate() {
                     <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
                         <div className="space-y-5">
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Content
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         <Input
                                             label="Eyebrow"
@@ -203,12 +203,12 @@ export default function HeroSlideCreate() {
 
                         <div className="space-y-5">
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Call to Action
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <div className="grid gap-3">
                                         <Input
                                             label="Label"
@@ -240,7 +240,7 @@ export default function HeroSlideCreate() {
                             </Card>
 
                             <Card>
-                                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Stats / Features
                                     </CardTitle>
@@ -257,7 +257,7 @@ export default function HeroSlideCreate() {
                                         Stat
                                     </Button>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <AnimatePresence initial={false}>
                                         {data.stats.map((stat, index) => (
                                             <AdminReveal
@@ -334,12 +334,12 @@ export default function HeroSlideCreate() {
                             </Card>
 
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Settings
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <div className="flex items-center justify-between">
                                         <label className="text-sm font-medium text-slate-700">
                                             Active

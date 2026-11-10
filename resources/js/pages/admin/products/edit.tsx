@@ -335,12 +335,12 @@ export default function ProductEdit({
                     </AnimatePresence>
                     <div className="space-y-5">
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
                                     Basic Info
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4 pt-4">
+                            <CardContent className="space-y-4 pt-3">
                                 <Field
                                     label="Product Name *"
                                     error={errors.name}
@@ -424,7 +424,7 @@ export default function ProductEdit({
                         </Card>
 
                         <Card className="shadow-sm">
-                            <CardContent className="pt-5">
+                            <CardContent className="pt-3">
                                 <ProductSpecificationsManager
                                     specifications={data.specifications}
                                     onChange={(specifications) =>
@@ -442,12 +442,12 @@ export default function ProductEdit({
                         </Card>
 
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
                                     Pricing & Stock
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4 pt-4">
+                            <CardContent className="space-y-4 pt-3">
                                 <AnimatePresence initial={false}>
                                     {(!hasVariants ||
                                         data.variants.length === 0) && (
@@ -612,12 +612,12 @@ export default function ProductEdit({
                         </Card>
 
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
                                     Media
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="pt-4">
+                            <CardContent className="pt-3">
                                 <MultiMediaUpload
                                     value={data.images}
                                     onChange={setImages}
@@ -671,12 +671,12 @@ export default function ProductEdit({
                         </Card>
 
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
                                     SEO
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4 pt-4">
+                            <CardContent className="space-y-4 pt-3">
                                 <Field
                                     label="Meta Title"
                                     error={errors.meta_title}
@@ -739,12 +739,12 @@ export default function ProductEdit({
 
                     <div className="space-y-5">
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
                                     Organisation
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4 pt-4">
+                            <CardContent className="space-y-4 pt-3">
                                 <Field
                                     label="Category *"
                                     error={errors.category_id}
@@ -826,12 +826,12 @@ export default function ProductEdit({
                         </Card>
 
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
                                     Visibility
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3 pt-4">
+                            <CardContent className="space-y-3 pt-3">
                                 <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
                                     <input
                                         type="checkbox"
@@ -864,12 +864,12 @@ export default function ProductEdit({
                         </Card>
 
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
                                     Delivery
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3 pt-4">
+                            <CardContent className="space-y-3 pt-3">
                                 <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
                                     <input
                                         type="checkbox"
@@ -922,12 +922,12 @@ export default function ProductEdit({
                         </Card>
 
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
                                     Easter Egg
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3 pt-4">
+                            <CardContent className="space-y-3 pt-3">
                                 <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
                                     <input
                                         type="checkbox"

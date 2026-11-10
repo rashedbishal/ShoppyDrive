@@ -82,13 +82,13 @@ function PathaoCourierCard({ settings }: Props) {
 
     return (
         <Card className="shadow-sm">
-            <CardHeader className="border-b border-slate-100 pb-4">
+            <CardHeader className="border-b border-slate-100">
                 <CardTitle className="text-sm font-semibold text-slate-700">
                     Pathao Courier
                 </CardTitle>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-                <CardContent className="space-y-4 pt-4">
+                <CardContent className="space-y-4 pt-3">
                     <p className="text-xs text-slate-400">
                         Get these from your{' '}
                         <a
@@ -288,13 +288,13 @@ function ShippingRateCard({
 
     return (
         <Card className="shadow-sm">
-            <CardHeader className="border-b border-slate-100 pb-4">
+            <CardHeader className="border-b border-slate-100">
                 <CardTitle className="text-sm font-semibold text-slate-700">
                     {title}
                 </CardTitle>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-                <CardContent className="space-y-4 pt-4">
+                <CardContent className="space-y-4 pt-3">
                     <SettingsField label="Delivery Charge (৳)" hint={hint}>
                         <input
                             type="number"
@@ -374,13 +374,13 @@ function SteadfastCourierCard({ settings }: Props) {
 
     return (
         <Card className="shadow-sm">
-            <CardHeader className="border-b border-slate-100 pb-4">
+            <CardHeader className="border-b border-slate-100">
                 <CardTitle className="text-sm font-semibold text-slate-700">
                     Steadfast Courier
                 </CardTitle>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-                <CardContent className="space-y-4 pt-4">
+                <CardContent className="space-y-4 pt-3">
                     <p className="text-xs text-slate-400">
                         Get your Api Key and Secret Key from{' '}
                         <a

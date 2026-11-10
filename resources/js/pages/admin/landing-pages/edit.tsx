@@ -116,7 +116,7 @@ function SectionWrap({
             <AnimatePresence initial={false}>
                 {enabled && open && (
                     <AdminReveal key="section-body">
-                        <CardContent className="space-y-3 pt-4">
+                        <CardContent className="space-y-3 pt-3">
                             {children}
                         </CardContent>
                     </AdminReveal>
@@ -200,12 +200,12 @@ export default function LandingPageEdit({
                 >
                     {/* Basic settings */}
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-3">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Settings
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4 pt-4">
+                        <CardContent className="grid grid-cols-2 gap-4 pt-3">
                             <div className="col-span-2">
                                 <label className={labelClass}>Page Title</label>
                                 <input

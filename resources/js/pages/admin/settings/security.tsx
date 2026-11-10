@@ -318,13 +318,13 @@ function SectionCards({
         <div className="grid gap-4 lg:grid-cols-2">
             {sections.map((section) => (
                 <Card key={section.title} className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100 pb-4">
+                    <CardHeader className="border-b border-slate-100">
                         <CardTitle className="text-sm font-semibold text-slate-900">
                             {section.title}
                         </CardTitle>
                         <p className="text-xs text-slate-600">{section.why}</p>
                     </CardHeader>
-                    <CardContent className="space-y-3 pt-4">
+                    <CardContent className="space-y-3 pt-3">
                         {section.rules.map((rule) => (
                             <RuleRow
                                 key={rule.times}

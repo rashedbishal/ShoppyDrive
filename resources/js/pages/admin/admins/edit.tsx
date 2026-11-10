@@ -113,12 +113,12 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Account Details
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
+                        <CardContent className="space-y-4 pt-3">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-slate-700">
@@ -241,7 +241,7 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
 
                     {canManagePermissions && (
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
                                     Permissions
                                 </CardTitle>
@@ -251,7 +251,7 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
                                     Update or Delete to grant more.
                                 </p>
                             </CardHeader>
-                            <CardContent className="pt-4">
+                            <CardContent className="pt-3">
                                 <PermissionMatrix
                                     catalog={sectionCatalog}
                                     value={data.permissions}

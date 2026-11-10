@@ -77,12 +77,12 @@ export default function MarketingSettingsEdit({
                 {/* Its own <form> — never nested inside the one below. */}
                 <form onSubmit={handleCustomCodeSubmit} className="space-y-3">
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Custom Code
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
+                        <CardContent className="space-y-4 pt-3">
                             <SettingsField
                                 label="Custom Header Code"
                                 hint="Paste any script here — a Google Tag Manager container snippet, a tracking pixel, anything with <script> tags. Rendered exactly as pasted, just before </head>, on every storefront page."
@@ -156,12 +156,12 @@ export default function MarketingSettingsEdit({
                     page, never nested inside each other. */}
                 <form onSubmit={handleTrackingSubmit} className="space-y-3">
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Facebook Conversions API
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
+                        <CardContent className="space-y-4 pt-3">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <SettingsField
                                     label="Google Analytics ID"

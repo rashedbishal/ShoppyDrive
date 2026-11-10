@@ -271,7 +271,7 @@ export default function HomepageEdit({
     return (
         <>
             <Head title={`Edit ${section.section_name} — Admin`} />
-            <div className="space-y-6">
+            <div className="space-y-5">
                 <div className="flex items-center gap-4">
                     <Button
                         asChild
@@ -299,12 +299,12 @@ export default function HomepageEdit({
                         <div className="space-y-5">
                             {isAnnouncementBar ? (
                                 <Card>
-                                    <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardHeader className="border-b border-slate-100">
                                         <CardTitle className="text-base font-semibold">
                                             Announcement Bar Content
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-4 pt-4">
+                                    <CardContent className="space-y-4 pt-3">
                                         <Input
                                             label="Announcement Message"
                                             value={data.title}
@@ -391,12 +391,12 @@ export default function HomepageEdit({
                                 </Card>
                             ) : isHeroSlider ? (
                                 <Card>
-                                    <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardHeader className="border-b border-slate-100">
                                         <CardTitle className="text-base font-semibold">
                                             Hero Slider Settings
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-4 pt-4">
+                                    <CardContent className="space-y-4 pt-3">
                                         <p className="text-sm text-slate-500">
                                             Slide content (images, titles,
                                             descriptions, CTAs) is managed under{' '}
@@ -444,12 +444,12 @@ export default function HomepageEdit({
                                 </Card>
                             ) : isPromotionalBanners ? (
                                 <Card>
-                                    <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardHeader className="border-b border-slate-100">
                                         <CardTitle className="text-base font-semibold">
                                             Promotional Banners
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="pt-4">
+                                    <CardContent className="pt-3">
                                         <p className="text-sm text-slate-500">
                                             Banner content (images, titles,
                                             links) is managed under{' '}
@@ -469,12 +469,12 @@ export default function HomepageEdit({
                                 </Card>
                             ) : (
                                 <Card>
-                                    <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardHeader className="border-b border-slate-100">
                                         <CardTitle className="text-base font-semibold">
                                             Section Content
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-4 pt-4">
+                                    <CardContent className="space-y-4 pt-3">
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Input
                                                 label="Eyebrow (optional)"
@@ -548,7 +548,7 @@ export default function HomepageEdit({
 
                             {isFeaturedProducts && (
                                 <Card>
-                                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 sm:flex-row sm:items-center sm:justify-between">
                                         <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                             <Star className="size-4 fill-amber-500 text-amber-500" />
                                             Featured Products
@@ -634,7 +634,7 @@ export default function HomepageEdit({
                                             )}
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="pt-4">
+                                    <CardContent className="pt-3">
                                         {data.featured_products.length === 0 ? (
                                             <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
                                                 <Star className="mx-auto mb-3 size-10 text-slate-300" />
@@ -713,7 +713,7 @@ export default function HomepageEdit({
 
                             {isProductSection && (
                                 <Card>
-                                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 sm:flex-row sm:items-center sm:justify-between">
                                         <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                             {isNewArrivals ? (
                                                 <Package className="size-4 text-emerald-500" />
@@ -805,7 +805,7 @@ export default function HomepageEdit({
                                             )}
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="pt-4">
+                                    <CardContent className="pt-3">
                                         {data.section_products.length === 0 ? (
                                             <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
                                                 <ShoppingBag className="mx-auto mb-3 size-10 text-slate-300" />
@@ -883,7 +883,7 @@ export default function HomepageEdit({
 
                             {isBrands && (
                                 <Card>
-                                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 sm:flex-row sm:items-center sm:justify-between">
                                         <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                             <ShoppingBag className="size-4 text-violet-500" />
                                             Featured Brands
@@ -961,7 +961,7 @@ export default function HomepageEdit({
                                             )}
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="pt-4">
+                                    <CardContent className="pt-3">
                                         {data.section_brands.length === 0 ? (
                                             <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
                                                 <ShoppingBag className="mx-auto mb-3 size-10 text-slate-300" />
@@ -1028,12 +1028,12 @@ export default function HomepageEdit({
 
                             {isFlashSale && (
                                 <Card>
-                                    <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardHeader className="border-b border-slate-100">
                                         <CardTitle className="text-base font-semibold">
                                             Flash Sale
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="pt-4">
+                                    <CardContent className="pt-3">
                                         <p className="text-sm text-slate-500">
                                             The sale's schedule, products, and
                                             pricing are managed under{' '}
@@ -1061,12 +1061,12 @@ export default function HomepageEdit({
 
                         <div className="space-y-5">
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Settings
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
                                             <p className="text-sm font-medium text-slate-700">

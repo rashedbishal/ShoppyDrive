@@ -11,7 +11,13 @@
       "Bash(awk -F: '$1 < 962')",
       "Bash(python3 -)",
       "Bash(sed -i 's/lg:grid-cols-\\\\[1fr_320px\\\\]/items-start lg:grid-cols-[minmax\\(0,1fr\\)_360px]/' resources/js/pages/admin/orders/show.tsx)",
-      "Bash(grep -n \"Customer$\\\\|Status$\\\\|Status History\\\\|Status &amp\\\\|lucide\" resources/js/pages/admin/orders/show.tsx)"
+      "Bash(grep -n \"Customer$\\\\|Status$\\\\|Status History\\\\|Status &amp\\\\|lucide\" resources/js/pages/admin/orders/show.tsx)",
+      "Bash(cat >> *)",
+      "Bash(xargs sed -i 's/className=\"space-y-6\"/className=\"space-y-5\"/')"
+    ],
+    "additionalDirectories": [
+      "/media/saadman/data3/Projects/ShoppyDrive/resources/css",
+      "/media/saadman/data3/Projects/ShoppyDrive/resources/js/layouts"
     ]
   }
 }

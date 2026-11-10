@@ -46,7 +46,7 @@ export default function PromotionalBannerCreate() {
     return (
         <>
             <Head title="Create Promotional Banner — Admin" />
-            <div className="space-y-6">
+            <div className="space-y-5">
                 <div className="flex items-center gap-4">
                     <Button
                         asChild
@@ -72,12 +72,12 @@ export default function PromotionalBannerCreate() {
                     <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
                         <div className="space-y-5">
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Banner Content
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         <Input
                                             label="Badge"
@@ -152,12 +152,12 @@ export default function PromotionalBannerCreate() {
 
                         <div className="space-y-5">
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Call to Action
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <Input
                                         label="Link URL"
                                         value={data.href}
@@ -182,12 +182,12 @@ export default function PromotionalBannerCreate() {
                             </Card>
 
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Settings
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <div className="flex items-center justify-between">
                                         <label className="text-sm font-medium text-slate-700">
                                             Active

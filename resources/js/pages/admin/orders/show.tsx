@@ -439,7 +439,7 @@ export default function OrderShow({
                 <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
                     <div className="min-w-0 space-y-5">
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
                                     <Package className="mr-1.5 inline size-4" />{' '}
                                     Items
@@ -547,12 +547,12 @@ export default function OrderShow({
 
                         <div className="grid items-stretch gap-5 md:grid-cols-2">
                             <Card className="h-full shadow-sm">
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
                                         <User className="size-4" /> Customer
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-1 pt-4 text-sm text-slate-700">
+                                <CardContent className="space-y-1 pt-3 text-sm text-slate-700">
                                     {order.user ? (
                                         <>
                                             <p className="font-semibold">
@@ -584,7 +584,7 @@ export default function OrderShow({
                                 </CardContent>
                             </Card>
                             <Card className="h-full shadow-sm">
-                                <CardHeader className="flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                <CardHeader className="flex-row items-center justify-between border-b border-slate-100">
                                     <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
                                         <MapPin className="size-4" /> Shipping
                                         Address
@@ -612,7 +612,7 @@ export default function OrderShow({
                                         )}
                                     </AnimatePresence>
                                 </CardHeader>
-                                <CardContent className="pt-4">
+                                <CardContent className="pt-3">
                                     <AnimatePresence
                                         initial={false}
                                         mode="wait"
@@ -846,13 +846,13 @@ export default function OrderShow({
                         </div>
 
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
                                     <History className="size-4" /> Status
                                     History
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="pt-4">
+                            <CardContent className="pt-3">
                                 {order.status_histories.length === 0 ? (
                                     <p className="text-sm text-slate-400">
                                         No history yet.
@@ -896,13 +896,13 @@ export default function OrderShow({
                             order.user_agent ||
                             order.traffic_source) && (
                             <Card className="shadow-sm">
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
                                         <Globe className="size-4" /> Device &
                                         Traffic Source
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-2 pt-4 text-sm text-slate-700">
+                                <CardContent className="space-y-2 pt-3 text-sm text-slate-700">
                                     {order.traffic_source && (
                                         <div>
                                             <p className="text-xs text-slate-500">
@@ -969,13 +969,13 @@ export default function OrderShow({
 
                     <div className="space-y-5">
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
                                     <Wallet className="size-4" /> Status &amp;
                                     Refunds
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3 pt-4">
+                            <CardContent className="space-y-3 pt-3">
                                 <p className="text-xs text-slate-500">
                                     Status now advances automatically from the
                                     courier (see the Courier card below) and can
@@ -1136,12 +1136,12 @@ export default function OrderShow({
                         </Card>
 
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
                                     <Truck className="size-4" /> Courier
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3 pt-4">
+                            <CardContent className="space-y-3 pt-3">
                                 {order.tracking_number && (
                                     <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-sm">
                                         <span className="text-slate-500">
@@ -1341,13 +1341,13 @@ export default function OrderShow({
 
                         {order.status === 'shipped' && (
                             <Card className="border-amber-100 shadow-sm">
-                                <CardHeader className="border-b border-amber-100 pb-4">
+                                <CardHeader className="border-b border-amber-100">
                                     <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-amber-700">
                                         <XCircle className="size-4" /> Cancel
                                         Order
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="pt-4">
+                                <CardContent className="pt-3">
                                     <p className="text-xs text-amber-700">
                                         This order is with the courier. Cancel
                                         it or request a return in the
@@ -1366,13 +1366,13 @@ export default function OrderShow({
                             order.status !== 'shipped' &&
                             order.payment_status !== 'paid' && (
                                 <Card className="border-red-100 shadow-sm">
-                                    <CardHeader className="border-b border-red-100 pb-4">
+                                    <CardHeader className="border-b border-red-100">
                                         <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-red-600">
                                             <XCircle className="size-4" />{' '}
                                             Cancel Order
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="pt-4">
+                                    <CardContent className="pt-3">
                                         <form
                                             onSubmit={handleCancel}
                                             className="space-y-3"
@@ -1413,13 +1413,13 @@ export default function OrderShow({
 
                         {order.status === 'cancelled' && (
                             <Card className="border-red-100 shadow-sm">
-                                <CardHeader className="border-b border-red-100 pb-4">
+                                <CardHeader className="border-b border-red-100">
                                     <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-red-600">
                                         <Trash2 className="size-4" /> Delete
                                         Order
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="pt-4">
+                                <CardContent className="pt-3">
                                     <p className="mb-3 text-xs text-slate-500">
                                         Moves this cancelled order to trash. It
                                         can be restored or permanently deleted

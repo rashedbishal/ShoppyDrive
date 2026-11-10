@@ -78,12 +78,12 @@ export default function AiAssistantSettings({
 
                 <form onSubmit={handleSubmit}>
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Groq API Key
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-5 pt-4">
+                        <CardContent className="space-y-5 pt-3">
                             <p className="text-xs text-slate-500">
                                 The API key from console.groq.com. Shoppers
                                 never see this — it's only used by the server

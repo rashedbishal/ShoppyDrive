@@ -208,7 +208,7 @@ export default function BrandsIndex({ brands, filters }: Props) {
     return (
         <>
             <Head title="Brands — Admin" />
-            <div className="space-y-6">
+            <div className="space-y-5">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#c8102e]/10 text-[#c8102e]">

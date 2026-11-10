@@ -181,12 +181,12 @@ export default function AboutPageConfig({ settings }: Props) {
                 </div>
 
                 <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100 pb-4">
+                    <CardHeader className="border-b border-slate-100">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Hero
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-4">
+                    <CardContent className="space-y-4 pt-3">
                         <SettingsField label="Eyebrow badge">
                             <input
                                 className={settingsInputClass}
@@ -245,7 +245,7 @@ export default function AboutPageConfig({ settings }: Props) {
                 </Card>
 
                 <Card className="shadow-sm">
-                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Stats Strip
                         </CardTitle>
@@ -258,7 +258,7 @@ export default function AboutPageConfig({ settings }: Props) {
                             <Plus className="mr-1 size-3.5" /> Add Stat
                         </Button>
                     </CardHeader>
-                    <CardContent className="space-y-3 pt-4">
+                    <CardContent className="space-y-3 pt-3">
                         <AnimatePresence initial={false}>
                             {data.about_stats.map((stat, index) => (
                                 <AdminReveal key={statRowKeys.keys[index]}>
@@ -305,12 +305,12 @@ export default function AboutPageConfig({ settings }: Props) {
                 </Card>
 
                 <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100 pb-4">
+                    <CardHeader className="border-b border-slate-100">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Mission
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-4">
+                    <CardContent className="space-y-4 pt-3">
                         <div className="grid gap-4 sm:grid-cols-2">
                             <SettingsField label="Eyebrow">
                                 <input
@@ -424,7 +424,7 @@ export default function AboutPageConfig({ settings }: Props) {
                 </Card>
 
                 <Card className="shadow-sm">
-                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Core Values
                         </CardTitle>
@@ -437,7 +437,7 @@ export default function AboutPageConfig({ settings }: Props) {
                             <Plus className="mr-1 size-3.5" /> Add Value
                         </Button>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-4">
+                    <CardContent className="space-y-4 pt-3">
                         <AnimatePresence initial={false}>
                             {data.about_values.map((value, index) => (
                                 <AdminReveal key={valueRowKeys.keys[index]}>
@@ -498,7 +498,7 @@ export default function AboutPageConfig({ settings }: Props) {
                 </Card>
 
                 <Card className="shadow-sm">
-                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Team
                         </CardTitle>
@@ -511,7 +511,7 @@ export default function AboutPageConfig({ settings }: Props) {
                             <Plus className="mr-1 size-3.5" /> Add Member
                         </Button>
                     </CardHeader>
-                    <CardContent className="space-y-3 pt-4">
+                    <CardContent className="space-y-3 pt-3">
                         <AnimatePresence initial={false}>
                             {data.about_team.map((member, index) => (
                                 <AdminReveal key={teamRowKeys.keys[index]}>
@@ -571,12 +571,12 @@ export default function AboutPageConfig({ settings }: Props) {
                 </Card>
 
                 <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100 pb-4">
+                    <CardHeader className="border-b border-slate-100">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Closing Call-to-Action
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-4">
+                    <CardContent className="space-y-4 pt-3">
                         <SettingsField label="Title">
                             <input
                                 className={settingsInputClass}

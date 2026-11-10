@@ -146,7 +146,7 @@ export default function FlashSaleEdit({ flashSale }: Props) {
     return (
         <>
             <Head title="Edit Flash Sale — Admin" />
-            <div className="space-y-6">
+            <div className="space-y-5">
                 <div className="flex items-center gap-4">
                     <Button
                         asChild
@@ -172,12 +172,12 @@ export default function FlashSaleEdit({ flashSale }: Props) {
                     <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
                         <div className="space-y-5">
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Products
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="pt-4">
+                                <CardContent className="pt-3">
                                     <FlashSaleProductsCard
                                         items={data.items}
                                         onChange={(items) =>
@@ -193,12 +193,12 @@ export default function FlashSaleEdit({ flashSale }: Props) {
 
                         <div className="space-y-5">
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Flash Sale Details
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <Field label="Name *" error={errors.name}>
                                         <input
                                             className={inputClass(errors.name)}

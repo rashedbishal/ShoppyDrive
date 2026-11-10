@@ -93,12 +93,12 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                 </div>
 
                 <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100 pb-4">
+                    <CardHeader className="border-b border-slate-100">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             This server, now
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-1 pt-4 text-xs text-slate-600">
+                    <CardContent className="space-y-1 pt-3 text-xs text-slate-600">
                         <p>
                             Release fingerprint:{' '}
                             <code className="break-all">
@@ -131,12 +131,12 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                 </Card>
 
                 <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100 pb-4">
+                    <CardHeader className="border-b border-slate-100">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Attest readiness
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="pt-4">
+                    <CardContent className="pt-3">
                         {errors.password && (
                             <p className="mb-3 rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700">
                                 {errors.password}
@@ -287,12 +287,12 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                 </Card>
 
                 <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100 pb-4">
+                    <CardHeader className="border-b border-slate-100">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Recent attestations
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-2 pt-4 text-xs text-slate-600">
+                    <CardContent className="space-y-2 pt-3 text-xs text-slate-600">
                         {recent.length === 0 && <p>None yet.</p>}
                         {recent.map((r) => (
                             <div key={r.id}>

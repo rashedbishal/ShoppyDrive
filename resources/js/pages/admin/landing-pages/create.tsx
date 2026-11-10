@@ -37,12 +37,12 @@ export default function LandingPageCreate({ products }: Props) {
                 className="sm:max-w-lg"
             >
                 <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100 pb-4">
+                    <CardHeader className="border-b border-slate-100">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Basic Info
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-4">
+                    <CardContent className="space-y-4 pt-3">
                         <form
                             onSubmit={(e) => {
                                 e.preventDefault();
