@@ -124,11 +124,16 @@ class ProductController extends Controller
         // query matches a null `variant_id` OR this one — falls back to the
         // product-wide item when no more specific one exists, so a plain
         // whole-product sale still correctly applies to every variant.
-        $flashSaleItem = FlashSaleItem::findActiveFor($product->id, null);
+        //
+        // PERF-001: resolved in one batch (findActiveForVariants() returns
+        // exactly what findActiveFor() would for each) instead of two
+        // queries per variant.
+        $flashSaleItems = FlashSaleItem::findActiveForVariants($product->id, $product->variants->pluck('id')->all());
+        $flashSaleItem = $flashSaleItems['product'];
 
         $variants = $product->variants
-            ->map(function ($variant) use ($product) {
-                $variantFlashItem = FlashSaleItem::findActiveFor($product->id, $variant->id);
+            ->map(function ($variant) use ($flashSaleItems) {
+                $variantFlashItem = $flashSaleItems['variants'][$variant->id] ?? null;
 
                 return array_merge($variant->toArray(), [
                     'in_flash_sale' => $variantFlashItem !== null,

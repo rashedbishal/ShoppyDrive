@@ -657,7 +657,10 @@ class LandingPageController extends Controller
      */
     private function serializeProduct(mixed $product): array
     {
-        $flashItem = FlashSaleItem::findActiveFor($product->id, null);
+        // PERF-001: one batched lookup for the product and all its variants
+        // (same answers as findActiveFor() per variant).
+        $flashItems = FlashSaleItem::findActiveForVariants($product->id, $product->variants->pluck('id')->all());
+        $flashItem = $flashItems['product'];
         $effectivePrice = (float) ($flashItem?->sale_price ?? $product->price);
 
         return [
@@ -679,8 +682,8 @@ class LandingPageController extends Controller
                 'type' => $m->type,
                 'is_primary' => $m->is_primary,
             ])->values(),
-            'variants' => $product->variants->map(function ($v) use ($product) {
-                $variantFlashItem = FlashSaleItem::findActiveFor($product->id, $v->id);
+            'variants' => $product->variants->map(function ($v) use ($product, $flashItems) {
+                $variantFlashItem = $flashItems['variants'][$v->id] ?? null;
                 $regularVariantPrice = (float) ($v->price ?? $product->price);
                 $effectiveVariantPrice = (float) ($variantFlashItem?->sale_price ?? $regularVariantPrice);
 

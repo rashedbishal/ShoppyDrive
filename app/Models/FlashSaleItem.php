@@ -82,14 +82,75 @@ class FlashSaleItem extends Model
             ->filter(fn (self $item): bool => $item->stock_limit === null || $item->sold_count < $item->stock_limit);
 
         return $candidates
-            ->sort(function (self $a, self $b): int {
-                $aSpecific = $a->variant_id !== null ? 0 : 1;
-                $bSpecific = $b->variant_id !== null ? 0 : 1;
-
-                return [$aSpecific, (float) $a->sale_price, $a->flashSale->starts_at->timestamp]
-                    <=> [$bSpecific, (float) $b->sale_price, $b->flashSale->starts_at->timestamp];
-            })
+            ->sort(self::compareCandidates(...))
             ->first();
+    }
+
+    /**
+     * PERF-001: batched findActiveFor() for one product and many of its
+     * variants — one query for the whole product page instead of one per
+     * variant (a 30-variant product on sale cost 60 extra queries).
+     *
+     * Loads the union of every candidate findActiveFor() would consider for
+     * any of these variants (product-wide items plus items for exactly these
+     * variants), then picks per variant from the same subset, with the same
+     * stock-exhaustion filter and the same compareCandidates() ordering — so
+     * each result is the item findActiveFor($productId, $variantId) returns.
+     * `product` is the findActiveFor($productId, null) answer. Display-only:
+     * pricing and stock enforcement (CartManager, InventoryService) keep
+     * calling findActiveFor() itself.
+     *
+     * @param  list<int>  $variantIds
+     * @return array{product: ?self, variants: array<int, ?self>}
+     */
+    public static function findActiveForVariants(int $productId, array $variantIds): array
+    {
+        $candidates = static::query()
+            ->where('product_id', $productId)
+            ->where(function ($query) use ($variantIds) {
+                $query->whereNull('variant_id');
+
+                if ($variantIds !== []) {
+                    $query->orWhereIn('variant_id', $variantIds);
+                }
+            })
+            ->whereHas('flashSale', function ($query) {
+                $query->where('is_active', true)
+                    ->where('starts_at', '<=', now())
+                    ->where('ends_at', '>=', now());
+            })
+            ->with('flashSale')
+            ->get()
+            ->filter(fn (self $item): bool => $item->stock_limit === null || $item->sold_count < $item->stock_limit);
+
+        $productWide = $candidates->filter(fn (self $item): bool => $item->variant_id === null);
+
+        $variants = [];
+        foreach ($variantIds as $variantId) {
+            $variants[$variantId] = $candidates
+                ->filter(fn (self $item): bool => $item->variant_id === null || (int) $item->variant_id === $variantId)
+                ->sort(self::compareCandidates(...))
+                ->first();
+        }
+
+        return [
+            'product' => $productWide->sort(self::compareCandidates(...))->first(),
+            'variants' => $variants,
+        ];
+    }
+
+    /**
+     * The tie-break shared by findActiveFor() and findActiveForVariants():
+     * variant-specific over product-wide, then lowest sale price, then the
+     * earliest-starting campaign.
+     */
+    private static function compareCandidates(self $a, self $b): int
+    {
+        $aSpecific = $a->variant_id !== null ? 0 : 1;
+        $bSpecific = $b->variant_id !== null ? 0 : 1;
+
+        return [$aSpecific, (float) $a->sale_price, $a->flashSale->starts_at->timestamp]
+            <=> [$bSpecific, (float) $b->sale_price, $b->flashSale->starts_at->timestamp];
     }
 
     /**

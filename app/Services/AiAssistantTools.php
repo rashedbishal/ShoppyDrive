@@ -148,6 +148,10 @@ class AiAssistantTools
             ];
         }
 
+        // PERF-001: one batched lookup instead of one per variant — same
+        // answer findActiveFor($product->id, $v->id) gives for each.
+        $flashItems = FlashSaleItem::findActiveForVariants($product->id, $product->variants->pluck('id')->all())['variants'];
+
         return [
             'found' => true,
             'name' => $product->name,
@@ -159,8 +163,8 @@ class AiAssistantTools
             // product-wide one, the same tie-break CartManager/InventoryService
             // already use, so this can never disagree with what checkout
             // would actually charge.
-            'variants' => $product->variants->map(function ($v) use ($product) {
-                $flash = FlashSaleItem::findActiveFor($product->id, $v->id);
+            'variants' => $product->variants->map(function ($v) use ($flashItems) {
+                $flash = $flashItems[$v->id] ?? null;
 
                 return [
                     'attributes' => $v->attributes,
