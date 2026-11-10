@@ -1,11 +1,11 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { AnimatePresence } from 'framer-motion';
-import { GripVertical, Plus, Save, Search, Trash2 } from 'lucide-react';
+import { GripVertical, Info, Plus, Save, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminFade } from '@/components/admin/admin-motion';
 import { BulkActionBar } from '@/components/admin/bulk-action-bar';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
@@ -242,99 +242,139 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
     return (
         <>
             <Head title="Popular Search Keywords — Admin" />
-            <div className="max-w-xl space-y-5">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-xl font-bold text-slate-900">
-                                Popular Search Keywords
-                            </h1>
-                            <Search className="size-5 text-slate-400" />
-                        </div>
-                        <p className="text-sm text-slate-500">
-                            These keywords appear in the search bar when
-                            customers click on it.
-                        </p>
+            <div className="space-y-5">
+                <div>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-xl font-bold text-slate-900">
+                            Popular Search Keywords
+                        </h1>
+                        <Search className="size-5 text-slate-400" />
                     </div>
+                    <p className="text-sm text-slate-500">
+                        These keywords appear in the search bar when customers
+                        click on it.
+                    </p>
                 </div>
 
-                {/* Add keyword */}
-                <Card className="p-4 shadow-sm">
-                    <form onSubmit={handleAdd} className="flex gap-2">
-                        <div className="flex-1">
-                            <input
-                                className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
-                                value={data.keyword}
-                                onChange={(e) =>
-                                    setData('keyword', e.target.value)
-                                }
-                                placeholder="New keyword…"
-                            />
-                            {errors.keyword && (
-                                <p className="mt-1 text-xs text-red-500">
-                                    {errors.keyword}
-                                </p>
-                            )}
+                <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+                    {/* Keywords list */}
+                    <Card className="order-2 overflow-hidden p-0 shadow-sm lg:order-1">
+                        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                            <h2 className="text-sm font-semibold text-slate-700">
+                                Keywords ({keywords.length})
+                            </h2>
                         </div>
-                        <Button
-                            type="submit"
-                            disabled={processing}
-                            className="shrink-0 bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                        >
-                            <Plus className="size-4" />
-                            Add
-                        </Button>
-                    </form>
-                </Card>
 
-                {/* Keywords list */}
-                <Card className="overflow-hidden p-0 shadow-sm">
-                    <BulkActionBar
-                        count={bulk.selected.length}
-                        statusUrl={bulkStatusRoute.url()}
-                        selectedIds={bulk.selected}
-                        onClear={bulk.clear}
-                        onDelete={() => setBulkConfirmOpen(true)}
-                        deleting={bulkDeleting}
-                        label="keyword(s) selected"
-                    />
+                        <BulkActionBar
+                            count={bulk.selected.length}
+                            statusUrl={bulkStatusRoute.url()}
+                            selectedIds={bulk.selected}
+                            onClear={bulk.clear}
+                            onDelete={() => setBulkConfirmOpen(true)}
+                            deleting={bulkDeleting}
+                            label="keyword(s) selected"
+                        />
 
-                    {keywords.length > 0 && (
-                        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-2">
-                            <Checkbox
-                                checked={bulk.allSelected}
-                                onCheckedChange={bulk.toggleAll}
-                            />
-                            <span className="text-xs font-medium text-slate-500">
-                                Select all
-                            </span>
-                        </div>
-                    )}
-
-                    {keywords.length === 0 ? (
-                        <div className="py-10 text-center text-sm text-slate-400">
-                            No keywords yet. Add one above.
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-slate-50">
-                            {keywords.map((kw) => (
-                                <KeywordRow
-                                    key={kw.id}
-                                    keyword={kw}
-                                    onDelete={setDeleteTargetId}
-                                    selected={bulk.isSelected(kw.id)}
-                                    onToggleSelect={() => bulk.toggle(kw.id)}
+                        {keywords.length > 0 && (
+                            <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/60 px-4 py-2">
+                                <Checkbox
+                                    checked={bulk.allSelected}
+                                    onCheckedChange={bulk.toggleAll}
                                 />
-                            ))}
-                        </div>
-                    )}
-                </Card>
+                                <span className="text-xs font-medium text-slate-500">
+                                    Select all
+                                </span>
+                            </div>
+                        )}
 
-                <p className="text-xs text-slate-400">
-                    Click any keyword to edit it inline. Sort order controls the
-                    display sequence (lower = first). Uncheck "Active" to hide a
-                    keyword without deleting it.
-                </p>
+                        {keywords.length === 0 ? (
+                            <div className="py-10 text-center text-sm text-slate-400">
+                                No keywords yet. Add one using the form.
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-slate-100">
+                                {keywords.map((kw) => (
+                                    <KeywordRow
+                                        key={kw.id}
+                                        keyword={kw}
+                                        onDelete={setDeleteTargetId}
+                                        selected={bulk.isSelected(kw.id)}
+                                        onToggleSelect={() =>
+                                            bulk.toggle(kw.id)
+                                        }
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </Card>
+
+                    <div className="order-1 space-y-5 lg:order-2">
+                        {/* Add keyword */}
+                        <Card className="shadow-sm">
+                            <CardHeader className="border-b border-slate-100">
+                                <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                                    <Plus className="size-4" /> Add keyword
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-3">
+                                <form
+                                    onSubmit={handleAdd}
+                                    className="space-y-3"
+                                >
+                                    <div>
+                                        <input
+                                            className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                            value={data.keyword}
+                                            onChange={(e) =>
+                                                setData(
+                                                    'keyword',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder="New keyword…"
+                                        />
+                                        {errors.keyword && (
+                                            <p className="mt-1 text-xs text-red-500">
+                                                {errors.keyword}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <Button
+                                        type="submit"
+                                        disabled={processing}
+                                        className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                    >
+                                        <Plus className="size-4" />
+                                        Add
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm">
+                            <CardHeader className="border-b border-slate-100">
+                                <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                                    <Info className="size-4" /> How it works
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-3">
+                                <ul className="list-disc space-y-1.5 pl-4 text-xs text-slate-500">
+                                    <li>
+                                        Click any keyword to edit it inline.
+                                    </li>
+                                    <li>
+                                        Sort order controls the display sequence
+                                        (lower = first).
+                                    </li>
+                                    <li>
+                                        Uncheck &quot;Active&quot; to hide a
+                                        keyword without deleting it.
+                                    </li>
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
             </div>
 
             <ConfirmDialog
