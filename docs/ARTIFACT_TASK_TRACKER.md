@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 11 / 99** · Live, ready to retest: 14 · Fixed, not live yet: 6 · Failed: 0 · Skipped: 1
+**Done: 11 / 99** · Live, ready to retest: 16 · Fixed, not live yet: 4 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -88,13 +88,13 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [ ] OPS-002 — If cron or the queue stops, nobody is told and customer mail stops
 - [ ] OPS-003 — A short mail outage fails queued mail, and recovery is one click per row
 - [~] OPS-005 — A dead forwarder phone disables mobile payment with a misleading message — owner's design (heartbeat ping + gate mobile banking out entirely while down) built: new `/api/sms/heartbeat` endpoint, Android app updated, checkout/landing page hide bKash/Nagad while down; fix pushed 2026-11-09 (commit `22edbb7`), deploy run outcome not yet confirmed. Android app reinstalled by owner but it's configured for shoppydrive.com, so the heartbeat endpoint 404s until this deploy lands
-- [~] OPS-006 — Abandoned-cart mail has no opt-out or cap and reaches deleted accounts — tester couldn't test it live (2026-11-10) and listed 7 points; 3, 4, 5 were fixed 2026-11-05, but the audit's "cooldown" was never built, so 1, 2, 6 were real: 3 abandoned attempts still meant 3 mails. Fixed 2026-11-11: max one reminder per customer per 7 days (owner decision), newest cart mailed; unverified emails never mailed; new Settings › Profile toggle turns reminders off or back on (owner decision). Needs a migration on deploy; committed, not pushed
+- [>] OPS-006 — Abandoned-cart mail has no opt-out or cap and reaches deleted accounts — tester couldn't test it live (2026-11-10) and listed 7 points; 3, 4, 5 were fixed 2026-11-05, but the audit's "cooldown" was never built, so 1, 2, 6 were real: 3 abandoned attempts still meant 3 mails. Fixed 2026-11-11: max one reminder per customer per 7 days (owner decision), newest cart mailed; unverified emails never mailed; new Settings › Profile toggle turns reminders off or back on (owner decision). Deployed 2026-11-11 with its migration (run `42895410141`), ready to retest
 - [>] OPS-001 — sitemap.xml is missing on the live site — tester skipped it 2026-11-10: /sitemap.xml no longer 404s and robots.txt has the line, unsure about the scheduled sitemap:generate; rechecked: scheduled daily 04:00 Dhaka, and the live file's Last-Modified is 09 Nov 22:00:04 UTC (= 04:00:04 Dhaka), so the nightly job is running in production. No code change
 - [>] OPS-007 — Logging defaults to one unrotated file at debug level — tester skipped it 2026-11-10 asking for a code-level recheck; rechecked 2026-11-11: production fix (daily files, info level, 30 days, ignores .env) live since `896aede` and intact, no bypasses; only `.env.example` still read single/debug (local defaults), now commented to say production ignores them. Old pre-fix `laravel.log` on the server still needs the owner to clear it
 
 ## Performance
 
-- [~] PERF-001 — Product listing runs a query for every variant — tester re-failed it 2026-11-10 ("really does run multiple queries for a single product"); right: the listing was fixed but the product page still ran 2 flash-sale queries per variant (30 variants on sale = 91 queries). Fixed 2026-11-11 with one batched lookup (also landing page, AI assistant); committed, not pushed
+- [>] PERF-001 — Product listing runs a query for every variant — tester re-failed it 2026-11-10 ("really does run multiple queries for a single product"); right: the listing was fixed but the product page still ran 2 flash-sale queries per variant (30 variants on sale = 91 queries). Fixed 2026-11-11 with one batched lookup (also landing page, AI assistant); deployed 2026-11-11 (run `42895410141`), ready to retest
 - [x] PERF-002 — Product cards send the whole product record — tester's note was cut off ("need"); re-confirmed via live production curl (78.5 KB/17.1 KB gz, matches recorded post-fix size), no code change needed
 - [ ] PERF-003 — Icon registry and admin layout load on the customer home page
 - [ ] PERF-006 — Admin SMS poll hits the app every 5 seconds per tab
