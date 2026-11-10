@@ -385,6 +385,9 @@ export default function ProductsIndex({
                 confirmLabel={
                     cryBabyBulkTarget ? 'Turn on for all' : 'Turn off for all'
                 }
+                processingLabel={
+                    cryBabyBulkTarget ? 'Turning on…' : 'Turning off…'
+                }
                 onConfirm={confirmCryBabyBulkUpdate}
                 processing={updatingCryBaby}
             />

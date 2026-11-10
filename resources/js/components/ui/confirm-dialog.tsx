@@ -14,6 +14,8 @@ type ConfirmDialogProps = {
     title: string;
     description?: string;
     confirmLabel?: string;
+    /** Shown on the confirm button while `processing`. Defaults to "Deleting…" for the Delete action. */
+    processingLabel?: string;
     cancelLabel?: string;
     onConfirm: () => void;
     processing?: boolean;
@@ -29,6 +31,7 @@ export function ConfirmDialog({
     title,
     description,
     confirmLabel = 'Delete',
+    processingLabel,
     cancelLabel = 'Cancel',
     onConfirm,
     processing = false,
@@ -56,7 +59,12 @@ export function ConfirmDialog({
                         onClick={onConfirm}
                         className="bg-red-600 text-white hover:bg-red-700"
                     >
-                        {processing ? 'Deleting…' : confirmLabel}
+                        {processing
+                            ? (processingLabel ??
+                              (confirmLabel === 'Delete'
+                                  ? 'Deleting…'
+                                  : 'Please wait…'))
+                            : confirmLabel}
                     </Button>
                 </DialogFooter>
             </DialogContent>
