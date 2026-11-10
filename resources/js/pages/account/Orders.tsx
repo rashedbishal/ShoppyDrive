@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, getPrimaryImagePath } from '@/lib/utils';
 import type { Order, PaginatedData, SharedPageProps } from '@/types';
 
 interface OrdersProps {
@@ -171,8 +171,18 @@ export default function Orders({
                                                     >
                                                         <img
                                                             src={
-                                                                item.product
-                                                                    ?.primary_image_url ||
+                                                                item.variant
+                                                                    ?.image ||
+                                                                (item
+                                                                    .product_snapshot
+                                                                    ?.image as
+                                                                    | string
+                                                                    | undefined) ||
+                                                                (item.product
+                                                                    ? getPrimaryImagePath(
+                                                                          item.product,
+                                                                      )
+                                                                    : undefined) ||
                                                                 '/placeholder.webp'
                                                             }
                                                             alt={

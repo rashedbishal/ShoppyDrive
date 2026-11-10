@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductMedia;
 use App\Models\ProductVariant;
 use App\Models\User;
 
@@ -75,5 +76,37 @@ test('the admin order detail page includes the ordered item\'s variant attribute
         ->assertInertia(fn ($page) => $page
             ->where('order.items.0.variant.attributes.Size', 'XL')
             ->where('order.items.0.variant.attributes.Color', 'Red')
+        );
+});
+
+test('the account order detail page shows the variant\'s own image, not the product default', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create();
+    $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
+    ProductMedia::create(['product_id' => $product->id, 'path' => '/storage/products/default.jpg', 'type' => 'image', 'is_primary' => true, 'sort_order' => 0]);
+    ProductMedia::create(['product_id' => $product->id, 'variant_id' => $variant->id, 'path' => '/storage/products/variant-only.jpg', 'type' => 'image', 'is_primary' => true, 'sort_order' => 0]);
+
+    $order = createOrderWithVariantItem($user, $product, $variant);
+
+    $this->actingAs($user)
+        ->get(route('account.orders.show', $order->order_number))
+        ->assertInertia(fn ($page) => $page
+            ->where('order.items.0.variant.image', '/storage/products/variant-only.jpg')
+        );
+});
+
+test('the account orders list shows the variant\'s own image, not the product default', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create();
+    $variant = ProductVariant::factory()->create(['product_id' => $product->id]);
+    ProductMedia::create(['product_id' => $product->id, 'path' => '/storage/products/default.jpg', 'type' => 'image', 'is_primary' => true, 'sort_order' => 0]);
+    ProductMedia::create(['product_id' => $product->id, 'variant_id' => $variant->id, 'path' => '/storage/products/variant-only.jpg', 'type' => 'image', 'is_primary' => true, 'sort_order' => 0]);
+
+    createOrderWithVariantItem($user, $product, $variant);
+
+    $this->actingAs($user)
+        ->get(route('account.orders'))
+        ->assertInertia(fn ($page) => $page
+            ->where('orders.data.0.items.0.variant.image', '/storage/products/variant-only.jpg')
         );
 });

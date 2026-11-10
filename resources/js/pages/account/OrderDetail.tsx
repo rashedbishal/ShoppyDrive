@@ -34,7 +34,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, getPrimaryImagePath } from '@/lib/utils';
 import type { Order, SharedPageProps } from '@/types';
 
 const RETURN_STATUS_LABEL: Record<string, string> = {
@@ -383,8 +383,16 @@ export default function OrderDetail({
                                             <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] sm:h-16 sm:w-16">
                                                 <img
                                                     src={
-                                                        item.product
-                                                            ?.primary_image_url ||
+                                                        item.variant?.image ||
+                                                        (item.product_snapshot
+                                                            ?.image as
+                                                            | string
+                                                            | undefined) ||
+                                                        (item.product
+                                                            ? getPrimaryImagePath(
+                                                                  item.product,
+                                                              )
+                                                            : undefined) ||
                                                         '/placeholder.webp'
                                                     }
                                                     alt={item.product_name}

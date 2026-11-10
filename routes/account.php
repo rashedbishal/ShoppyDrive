@@ -50,7 +50,11 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active', 'histor
     // the return route below keeps the default binding, so trashed orders 404 there.
     Route::get('/orders', function (Request $request) {
         $orders = Order::withTrashed()->where('user_id', $request->user()->id)
-            ->with(['items.product'])
+            // PERF-001: items.variant.media / items.product.images, not
+            // just the relations themselves — the appended `image`
+            // accessor on ProductVariant, and the image shown for a
+            // product with no variant, otherwise lazy-load per item.
+            ->with(['items.product.images', 'items.variant.media'])
             ->when($request->search, function ($query, $search) {
                 $query->where('order_number', 'like', "%{$search}%");
             })
@@ -69,7 +73,11 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active', 'histor
             abort(403);
         }
 
-        $order->load(['items.product', 'items.variant', 'statusHistories', 'latestReturnRequest']);
+        // PERF-001: items.variant.media / items.product.images, not just
+        // the relations themselves — the appended `image` accessor on
+        // ProductVariant, and the image shown for a product with no
+        // variant, otherwise lazy-load per item during serialization.
+        $order->load(['items.product.images', 'items.variant.media', 'statusHistories', 'latestReturnRequest']);
 
         return inertia('account/OrderDetail', [
             'order' => $order,
