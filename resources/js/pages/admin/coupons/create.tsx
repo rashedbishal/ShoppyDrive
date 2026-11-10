@@ -114,7 +114,7 @@ export default function CouponCreate({
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-3">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <Field label="Code *" error={errors.code}>
                                     <input
                                         className={`${inputClass(errors.code)} font-mono uppercase`}
@@ -140,7 +140,7 @@ export default function CouponCreate({
                                 </Field>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <Field label="Type *" error={errors.type}>
                                     <Select
                                         selectClassName="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
@@ -183,7 +183,7 @@ export default function CouponCreate({
                                 </Field>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <Field
                                     label="Min Order (৳)"
                                     error={errors.min_order_amount}
@@ -217,7 +217,7 @@ export default function CouponCreate({
                                 </Field>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <Field
                                     label="Per User Limit"
                                     error={errors.per_user_limit}
@@ -240,7 +240,7 @@ export default function CouponCreate({
                                 </Field>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <Field
                                     label="Starts At (Bangladesh time)"
                                     error={errors.starts_at}
