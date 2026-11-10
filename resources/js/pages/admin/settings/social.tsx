@@ -26,13 +26,13 @@ function GoogleLoginCard({ settings }: Props) {
 
     return (
         <Card className="shadow-sm">
-            <CardHeader className="border-b border-slate-100 pb-4">
+            <CardHeader className="border-b border-slate-100">
                 <CardTitle className="text-sm font-semibold text-slate-700">
                     Google Login (OAuth)
                 </CardTitle>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-                <CardContent className="space-y-4 pt-4">
+                <CardContent className="space-y-4 pt-3">
                     <p className="text-xs text-slate-400">
                         Create an OAuth client in the{' '}
                         <a
@@ -120,13 +120,13 @@ function FacebookLoginCard({ settings }: Props) {
 
     return (
         <Card className="shadow-sm">
-            <CardHeader className="border-b border-slate-100 pb-4">
+            <CardHeader className="border-b border-slate-100">
                 <CardTitle className="text-sm font-semibold text-slate-700">
                     Facebook Login (OAuth)
                 </CardTitle>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-                <CardContent className="space-y-4 pt-4">
+                <CardContent className="space-y-4 pt-3">
                     <p className="text-xs text-slate-400">
                         Create an app in{' '}
                         <a

@@ -20,7 +20,7 @@ export default function PromotionalBannersIndex({ banners }: Props) {
     return (
         <>
             <Head title="Promotional Banners — Admin" />
-            <div className="space-y-6">
+            <div className="space-y-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                     <div className="flex items-center gap-4">
                         <Button

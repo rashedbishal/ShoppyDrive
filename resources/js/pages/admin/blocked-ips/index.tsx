@@ -107,7 +107,7 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                     {formOpen && (
                         <AdminReveal key="form">
                             <Card className="border-[#c8102e]/20 shadow-sm">
-                                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100">
                                     <CardTitle className="text-sm font-semibold text-slate-700">
                                         Block a New IP Address
                                     </CardTitle>
@@ -119,7 +119,7 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                                         <X className="size-4" />
                                     </button>
                                 </CardHeader>
-                                <CardContent className="pt-4">
+                                <CardContent className="pt-3">
                                     <form
                                         onSubmit={handleSubmit}
                                         className="space-y-3"

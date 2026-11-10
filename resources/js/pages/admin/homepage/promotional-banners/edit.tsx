@@ -170,7 +170,7 @@ export default function PromotionalBannerEdit({
     return (
         <>
             <Head title="Edit Promotional Banner — Admin" />
-            <div className="space-y-6">
+            <div className="space-y-5">
                 <div className="flex items-center gap-4">
                     <Button
                         asChild
@@ -196,12 +196,12 @@ export default function PromotionalBannerEdit({
                     <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
                         <div className="space-y-5">
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Banner Content
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         <Input
                                             label="Badge"
@@ -276,7 +276,7 @@ export default function PromotionalBannerEdit({
 
                             {/* Product Picker */}
                             <Card>
-                                <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                <CardHeader className="flex flex-col gap-3 border-b border-slate-100 sm:flex-row sm:items-center sm:justify-between">
                                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                         <Package className="size-4 text-emerald-500" />
                                         Banner Products
@@ -360,7 +360,7 @@ export default function PromotionalBannerEdit({
                                         )}
                                     </div>
                                 </CardHeader>
-                                <CardContent className="pt-4">
+                                <CardContent className="pt-3">
                                     {selectedProducts.length === 0 ? (
                                         <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
                                             <Package className="mx-auto mb-3 size-10 text-slate-300" />
@@ -438,12 +438,12 @@ export default function PromotionalBannerEdit({
 
                         <div className="space-y-5">
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Call to Action
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <div className="space-y-1">
                                         <Input
                                             label="Link URL"
@@ -487,12 +487,12 @@ export default function PromotionalBannerEdit({
                             </Card>
 
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Settings
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <div className="flex items-center justify-between">
                                         <label className="text-sm font-medium text-slate-700">
                                             Active

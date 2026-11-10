@@ -336,7 +336,7 @@ export default function ProductBundleEdit({ bundle }: Props) {
     return (
         <>
             <Head title="Edit Bundle — Admin" />
-            <div className="space-y-6">
+            <div className="space-y-5">
                 <div className="flex items-center gap-4">
                     <Button
                         asChild
@@ -362,12 +362,12 @@ export default function ProductBundleEdit({ bundle }: Props) {
                     <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
                         <div className="space-y-5">
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Bundle Details
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <Input
                                         label="Name"
                                         value={data.name}
@@ -478,7 +478,7 @@ export default function ProductBundleEdit({ bundle }: Props) {
                             </Card>
 
                             <Card>
-                                <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                                <CardHeader className="flex flex-col gap-3 border-b border-slate-100 sm:flex-row sm:items-center sm:justify-between">
                                     <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                         <Package className="size-4 text-emerald-500" />
                                         Bundle Products
@@ -573,7 +573,7 @@ export default function ProductBundleEdit({ bundle }: Props) {
                                         )}
                                     </div>
                                 </CardHeader>
-                                <CardContent className="pt-4">
+                                <CardContent className="pt-3">
                                     {errors.items && (
                                         <p className="mb-3 text-xs text-red-500">
                                             {errors.items}
@@ -783,12 +783,12 @@ export default function ProductBundleEdit({ bundle }: Props) {
 
                         <div className="space-y-5">
                             <Card>
-                                <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardHeader className="border-b border-slate-100">
                                     <CardTitle className="text-base font-semibold">
                                         Settings
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-4 pt-4">
+                                <CardContent className="space-y-4 pt-3">
                                     <div className="flex items-center justify-between">
                                         <label className="text-sm font-medium text-slate-700">
                                             Active

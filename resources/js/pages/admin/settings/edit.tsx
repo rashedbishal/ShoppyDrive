@@ -71,12 +71,12 @@ export default function SettingsEdit({ settings }: Props) {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 General
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
+                        <CardContent className="space-y-4 pt-3">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <SettingsField label="Site Name">
                                     <input
@@ -130,12 +130,12 @@ export default function SettingsEdit({ settings }: Props) {
                     </Card>
 
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Social Links
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
+                        <CardContent className="space-y-4 pt-3">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <SettingsField label="Facebook">
                                     <input
@@ -207,12 +207,12 @@ export default function SettingsEdit({ settings }: Props) {
                     </Card>
 
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Chat Widgets
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
+                        <CardContent className="space-y-4 pt-3">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <SettingsField
                                     label="WhatsApp Number"
@@ -252,12 +252,12 @@ export default function SettingsEdit({ settings }: Props) {
                     </Card>
 
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Mobile Banking Payment
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
+                        <CardContent className="space-y-4 pt-3">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <SettingsField
                                     label="Bkash Number"

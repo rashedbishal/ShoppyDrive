@@ -168,7 +168,7 @@ export default function HomepageIndex({ sections }: Props) {
     return (
         <>
             <Head title="Homepage Management — Admin" />
-            <div className="space-y-6">
+            <div className="space-y-5">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900">
@@ -183,7 +183,7 @@ export default function HomepageIndex({ sections }: Props) {
 
                 <div className="grid gap-6 lg:grid-cols-3">
                     <Card className="transition-shadow hover:shadow-md">
-                        <CardHeader className="pb-3">
+                        <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-sm font-medium">
                                 <Images className="size-4 text-blue-500" />
                                 Hero Slides
@@ -208,7 +208,7 @@ export default function HomepageIndex({ sections }: Props) {
                     </Card>
 
                     <Card className="transition-shadow hover:shadow-md">
-                        <CardHeader className="pb-3">
+                        <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-sm font-medium">
                                 <Megaphone className="size-4 text-amber-500" />
                                 Promotional Banners
@@ -237,7 +237,7 @@ export default function HomepageIndex({ sections }: Props) {
                     </Card>
 
                     <Card className="transition-shadow hover:shadow-md">
-                        <CardHeader className="pb-3">
+                        <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-sm font-medium">
                                 <LayoutTemplate className="size-4 text-emerald-500" />
                                 Active Flash Sale
@@ -268,7 +268,7 @@ export default function HomepageIndex({ sections }: Props) {
                             'ring-2 ring-[#c8102e]/20 ring-offset-2',
                     )}
                 >
-                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                    <CardHeader className="flex flex-col gap-3 border-b border-slate-100 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <CardTitle className="text-base font-semibold">
                                 Page Sections

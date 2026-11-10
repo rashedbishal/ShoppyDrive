@@ -1197,3 +1197,17 @@ input[type='search']::-ms-clear {
     width: 0;
     height: 0;
 }
+
+/*
+ * Admin (CMS) density. The shared Card reads these variables and falls back to
+ * its roomy storefront defaults when they are unset, so only the CMS (and
+ * dialogs portaled out of it, hence `body:has()`) gets the compact layout.
+ */
+body:has(.admin-shell) {
+    --card-gap: 0px;
+    --card-py: 0px;
+    --card-px: 1rem;
+    --card-header-py: 0.75rem;
+    --card-header-gap: 0.25rem;
+    --card-content-pb: 1rem;
+}

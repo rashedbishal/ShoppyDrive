@@ -66,12 +66,12 @@ export default function ReferralConfig({ settings }: Props) {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Referral Program
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
+                        <CardContent className="space-y-4 pt-3">
                             <SettingsField
                                 label="Enable Referral Program"
                                 hint="When off, existing referral links stop creating new referral relationships (registration still works), and no new referral discount or points are granted."
@@ -242,12 +242,12 @@ export default function ReferralConfig({ settings }: Props) {
                     </Card>
 
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Loyalty Points — Earning
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
+                        <CardContent className="space-y-4 pt-3">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <SettingsField
                                     label="BDT Per Point (Orders)"
@@ -328,12 +328,12 @@ export default function ReferralConfig({ settings }: Props) {
                     </Card>
 
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Daily Login Bonus
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
+                        <CardContent className="space-y-4 pt-3">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <SettingsField
                                     label="Base Points"
@@ -376,12 +376,12 @@ export default function ReferralConfig({ settings }: Props) {
                     </Card>
 
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Redeeming Points At Checkout
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
+                        <CardContent className="space-y-4 pt-3">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <SettingsField
                                     label="Point Value"

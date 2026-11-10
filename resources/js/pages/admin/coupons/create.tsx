@@ -108,12 +108,12 @@ export default function CouponCreate({
             >
                 <form onSubmit={handleSubmit}>
                     <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100 pb-4">
+                        <CardHeader className="border-b border-slate-100">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Coupon Details
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4 pt-4">
+                        <CardContent className="space-y-4 pt-3">
                             <div className="grid grid-cols-2 gap-4">
                                 <Field label="Code *" error={errors.code}>
                                     <input

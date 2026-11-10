@@ -124,7 +124,7 @@ export default function CustomerShow({ customer, orders }: Props) {
                 <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
                     <div className="space-y-5">
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
                                     Recent Orders
                                 </CardTitle>
@@ -184,12 +184,12 @@ export default function CustomerShow({ customer, orders }: Props) {
 
                     <div className="space-y-5">
                         <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
                                     Profile
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3 pt-4 text-sm">
+                            <CardContent className="space-y-3 pt-3 text-sm">
                                 <div>
                                     <p className="text-xs text-slate-400">
                                         Email

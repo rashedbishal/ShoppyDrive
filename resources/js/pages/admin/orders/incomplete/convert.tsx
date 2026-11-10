@@ -365,7 +365,7 @@ export default function ConvertIncompleteOrder({
     return (
         <>
             <Head title="Convert Incomplete Order — Admin" />
-            <div className="space-y-6">
+            <div className="space-y-5">
                 <div className="flex items-center gap-4">
                     <Button
                         asChild
@@ -394,12 +394,12 @@ export default function ConvertIncompleteOrder({
                 >
                     <div className="space-y-5 lg:col-span-7">
                         <Card>
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-base font-semibold">
                                     Customer & Shipping
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4 pt-4">
+                            <CardContent className="space-y-4 pt-3">
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div className="space-y-1.5">
                                         <Label htmlFor="name">
@@ -575,12 +575,12 @@ export default function ConvertIncompleteOrder({
 
                     <div className="space-y-5 lg:col-span-5">
                         <Card>
-                            <CardHeader className="border-b border-slate-100 pb-4">
+                            <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-base font-semibold">
                                     Products
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4 pt-4">
+                            <CardContent className="space-y-4 pt-3">
                                 {unavailableItems.length > 0 && (
                                     <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
                                         <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
