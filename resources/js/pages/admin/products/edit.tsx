@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { AnimatePresence } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { AdminReveal } from '@/components/admin/admin-motion';
+import { FormPageHeader } from '@/components/admin/form-page-header';
 import {
     ProductFormField as Field,
     productInputClass as inputClass,
@@ -15,7 +16,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
-import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
 import { mediaFlagIndex, remapProductMedia } from '@/lib/product-media-form';
 import { maxLength, minValue, required, validate } from '@/lib/validate';
@@ -289,15 +289,16 @@ export default function ProductEdit({
     return (
         <>
             <Head title={`Edit ${product.name} — Admin`} />
-            <RouteModal
-                title="Edit Product"
-                description={product.name}
-                returnTo={route('admin.products.index')}
-                className="sm:max-w-4xl"
-            >
+            <div className="space-y-5">
+                <FormPageHeader
+                    title="Edit Product"
+                    description={product.name}
+                    backHref={route('admin.products.index')}
+                    backLabel="Back to products"
+                />
                 <form
                     onSubmit={handleSubmit}
-                    className="grid gap-5 lg:grid-cols-[1fr_320px]"
+                    className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]"
                 >
                     <AnimatePresence initial={false}>
                         {errorMessages.length > 0 && (
@@ -333,7 +334,7 @@ export default function ProductEdit({
                             </AdminReveal>
                         )}
                     </AnimatePresence>
-                    <div className="space-y-5">
+                    <div className="min-w-0 space-y-5">
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
@@ -614,65 +615,6 @@ export default function ProductEdit({
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
-                                    Media
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-3">
-                                <MultiMediaUpload
-                                    value={data.images}
-                                    onChange={setImages}
-                                    error={errors.images}
-                                    tagOptions={tagOptions}
-                                    tags={data.media_tags}
-                                    primaryIndex={data.primary_image_index}
-                                    hoverIndex={data.hover_image_index}
-                                    onPrimaryChange={(index) =>
-                                        setData((prev) => ({
-                                            ...prev,
-                                            primary_image_index: index,
-                                            hover_image_index:
-                                                prev.hover_image_index === index
-                                                    ? null
-                                                    : prev.hover_image_index,
-                                        }))
-                                    }
-                                    onHoverChange={(index) =>
-                                        setData('hover_image_index', index)
-                                    }
-                                    onTagChange={(index, tag) =>
-                                        setData((prev) => {
-                                            const next = [...prev.media_tags];
-                                            next[index] = tag;
-
-                                            return {
-                                                ...prev,
-                                                media_tags: next,
-                                            };
-                                        })
-                                    }
-                                />
-                                {errors.images &&
-                                    typeof errors.images === 'string' && (
-                                        <p className="mt-1 text-xs text-red-500">
-                                            {errors.images}
-                                        </p>
-                                    )}
-                                {Object.keys(errors)
-                                    .filter((k) => k.startsWith('images.'))
-                                    .map((k) => (
-                                        <p
-                                            key={k}
-                                            className="mt-1 text-xs text-red-500"
-                                        >
-                                            {errors[k as keyof typeof errors]}
-                                        </p>
-                                    ))}
-                            </CardContent>
-                        </Card>
-
-                        <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100">
-                                <CardTitle className="text-sm font-semibold text-slate-700">
                                     SEO
                                 </CardTitle>
                             </CardHeader>
@@ -737,7 +679,66 @@ export default function ProductEdit({
                         </Card>
                     </div>
 
-                    <div className="space-y-5">
+                    <div className="min-w-0 space-y-5">
+                        <Card className="shadow-sm">
+                            <CardHeader className="border-b border-slate-100">
+                                <CardTitle className="text-sm font-semibold text-slate-700">
+                                    Media
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-3">
+                                <MultiMediaUpload
+                                    value={data.images}
+                                    onChange={setImages}
+                                    error={errors.images}
+                                    tagOptions={tagOptions}
+                                    tags={data.media_tags}
+                                    primaryIndex={data.primary_image_index}
+                                    hoverIndex={data.hover_image_index}
+                                    onPrimaryChange={(index) =>
+                                        setData((prev) => ({
+                                            ...prev,
+                                            primary_image_index: index,
+                                            hover_image_index:
+                                                prev.hover_image_index === index
+                                                    ? null
+                                                    : prev.hover_image_index,
+                                        }))
+                                    }
+                                    onHoverChange={(index) =>
+                                        setData('hover_image_index', index)
+                                    }
+                                    onTagChange={(index, tag) =>
+                                        setData((prev) => {
+                                            const next = [...prev.media_tags];
+                                            next[index] = tag;
+
+                                            return {
+                                                ...prev,
+                                                media_tags: next,
+                                            };
+                                        })
+                                    }
+                                />
+                                {errors.images &&
+                                    typeof errors.images === 'string' && (
+                                        <p className="mt-1 text-xs text-red-500">
+                                            {errors.images}
+                                        </p>
+                                    )}
+                                {Object.keys(errors)
+                                    .filter((k) => k.startsWith('images.'))
+                                    .map((k) => (
+                                        <p
+                                            key={k}
+                                            className="mt-1 text-xs text-red-500"
+                                        >
+                                            {errors[k as keyof typeof errors]}
+                                        </p>
+                                    ))}
+                            </CardContent>
+                        </Card>
+
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
@@ -950,25 +951,24 @@ export default function ProductEdit({
                                 </p>
                             </CardContent>
                         </Card>
+                    </div>
 
-                        <div className="flex flex-col gap-2">
-                            <Button
-                                type="submit"
-                                disabled={processing}
-                                className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                            >
-                                {processing ? 'Saving…' : 'Save Changes'}
-                            </Button>
-                            <Link
-                                href={route('admin.products.index')}
-                                className="text-center text-sm text-slate-500 hover:underline"
-                            >
+                    <div className="sticky bottom-3 z-20 flex items-center justify-end gap-3 rounded-xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur lg:col-span-2">
+                        <Button asChild variant="outline">
+                            <Link href={route('admin.products.index')}>
                                 Cancel
                             </Link>
-                        </div>
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="min-w-40 bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                        >
+                            {processing ? 'Saving…' : 'Save Changes'}
+                        </Button>
                     </div>
                 </form>
-            </RouteModal>
+            </div>
         </>
     );
 }

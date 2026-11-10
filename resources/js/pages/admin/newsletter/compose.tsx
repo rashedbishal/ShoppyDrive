@@ -502,7 +502,7 @@ export default function NewsletterCompose({
                 <AnimatePresence initial={false}>
                     {emailType === 'product_promotion' && (
                         <AdminReveal key="promotion-email">
-                            <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+                            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
                                 <Card className="overflow-hidden p-0 shadow-sm">
                                     <div className="space-y-5 p-6">
                                         {/* Subject */}

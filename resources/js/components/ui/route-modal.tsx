@@ -61,7 +61,10 @@ export function RouteModal({
         >
             <DialogContent
                 appearance="premium"
-                className={cn('sm:max-w-lg', className)}
+                className={cn(
+                    'flex max-h-[85vh] flex-col sm:max-w-lg',
+                    className,
+                )}
             >
                 {/*
                  * Scrolling lives here, not on DialogContent itself — DialogContent
@@ -71,15 +74,13 @@ export function RouteModal({
                  * anywhere underneath, no matter how they're portaled. See
                  * `useDialogPortalTarget` in dialog.tsx.
                  */}
-                <div className="max-h-[calc(85vh-2.5rem)] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>{title}</DialogTitle>
-                        {description && (
-                            <DialogDescription>
-                                {description}
-                            </DialogDescription>
-                        )}
-                    </DialogHeader>
+                <DialogHeader className="pr-9">
+                    <DialogTitle>{title}</DialogTitle>
+                    {description && (
+                        <DialogDescription>{description}</DialogDescription>
+                    )}
+                </DialogHeader>
+                <div className="-mr-2 min-h-0 flex-1 overflow-y-auto pr-2">
                     {children}
                 </div>
             </DialogContent>

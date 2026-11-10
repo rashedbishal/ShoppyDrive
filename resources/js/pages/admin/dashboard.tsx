@@ -326,6 +326,7 @@ function StatCard({
     iconBg,
     iconColor,
     trend,
+    className = '',
 }: {
     label: string;
     value: string | number;
@@ -334,12 +335,15 @@ function StatCard({
     iconBg: string;
     iconColor: string;
     trend?: { value: string; up: boolean };
+    className?: string;
 }) {
     return (
-        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <div
+            className={`min-w-0 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm sm:p-5 ${className}`}
+        >
             <div className="flex items-center justify-between">
                 <div
-                    className={`flex size-10 items-center justify-center rounded-xl ${iconBg}`}
+                    className={`flex size-9 items-center justify-center rounded-xl sm:size-10 ${iconBg}`}
                 >
                     <Icon className={`size-5 ${iconColor}`} />
                 </div>
@@ -356,12 +360,18 @@ function StatCard({
                     </span>
                 )}
             </div>
-            <div className="mt-3">
-                <p className="text-xs font-medium text-slate-400">{label}</p>
-                <p className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900">
+            <div className="mt-2.5 sm:mt-3">
+                <p className="truncate text-xs font-medium text-slate-400">
+                    {label}
+                </p>
+                <p className="mt-0.5 text-xl font-bold tracking-tight whitespace-nowrap text-slate-900 sm:text-2xl">
                     {value}
                 </p>
-                {sub && <p className="mt-0.5 text-xs text-slate-400">{sub}</p>}
+                {sub && (
+                    <p className="mt-0.5 text-[11px] leading-4 text-slate-400 sm:text-xs">
+                        {sub}
+                    </p>
+                )}
             </div>
         </div>
     );
@@ -585,7 +595,7 @@ export default function Dashboard({
                 )}
 
                 {/* ── Stat cards ── */}
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
                     <StatCard
                         label="Today's Visitors"
                         value={stats.today_visitors.toLocaleString()}
@@ -632,11 +642,12 @@ export default function Dashboard({
                         icon={Box}
                         iconBg="bg-emerald-50"
                         iconColor="text-emerald-600"
+                        className="col-span-2 xl:col-span-1"
                     />
                 </div>
 
                 {/* ── Revenue chart + quick actions ── */}
-                <div className="grid gap-5 lg:grid-cols-[1fr_260px]">
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
                     <RevenueChart data={chartData} />
 
                     <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
@@ -672,7 +683,7 @@ export default function Dashboard({
                 <VisitorsChart data={visitorChartData} />
 
                 {/* ── Recent orders + low stock ── */}
-                <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
                     {/* Recent orders */}
                     <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
                         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">

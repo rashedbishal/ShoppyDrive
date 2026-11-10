@@ -505,7 +505,10 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent appearance="premium" className="sm:max-w-3xl">
+            <DialogContent
+                appearance="premium"
+                className="flex max-h-[90vh] flex-col sm:max-w-3xl"
+            >
                 {/*
                  * Scrolling lives here, not on DialogContent itself (see the
                  * same note in route-modal.tsx): DialogContent is also the
@@ -513,15 +516,14 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                  * itself the scroll container made the button scroll away
                  * with the rest of the content instead of staying put.
                  */}
-                <div className="max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Create Order</DialogTitle>
-                        <DialogDescription>
-                            Place an order on behalf of a customer who called or
-                            messaged in.
-                        </DialogDescription>
-                    </DialogHeader>
-
+                <DialogHeader className="pr-9">
+                    <DialogTitle>Create Order</DialogTitle>
+                    <DialogDescription>
+                        Place an order on behalf of a customer who called or
+                        messaged in.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="-mr-2 min-h-0 flex-1 overflow-y-auto pr-2">
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="space-y-2">
                             <Label>Customer</Label>

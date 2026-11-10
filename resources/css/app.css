@@ -1211,3 +1211,22 @@ body:has(.admin-shell) {
     --card-header-gap: 0.25rem;
     --card-content-pb: 1rem;
 }
+
+/*
+ * Toasts are always solid. They used to read `--popover`, which doesn't exist
+ * (only `--ui-popover` does), so the background resolved to nothing and the
+ * page showed through. Fixed light colours regardless of the Sonner theme (a
+ * dark one rendered them black), not the theme tokens, because the glass
+ * themes make those translucent on purpose.
+ */
+html body [data-sonner-toaster][data-sonner-theme] {
+    --normal-bg: #ffffff;
+    --normal-text: #1a1a2e;
+    --normal-border: #e2e8f0;
+    --success-bg: #f0fdf4;
+    --success-text: #166534;
+    --success-border: #bbf7d0;
+    --error-bg: #fef2f2;
+    --error-text: #991b1b;
+    --error-border: #fecaca;
+}

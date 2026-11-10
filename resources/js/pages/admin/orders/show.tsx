@@ -436,7 +436,7 @@ export default function OrderShow({
                     </div>
                 )}
 
-                <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
                     <div className="min-w-0 space-y-5">
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100">

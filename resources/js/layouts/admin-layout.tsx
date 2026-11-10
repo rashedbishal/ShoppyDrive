@@ -5,6 +5,7 @@ import {
     Award,
     Ban,
     Bot,
+    ChevronDown,
     DatabaseBackup,
     Folder,
     FolderTree,
@@ -24,6 +25,8 @@ import {
     Package,
     PackagePlus,
     Palette,
+    PanelLeftClose,
+    PanelLeftOpen,
     PhoneMissed,
     Search,
     Settings,
@@ -435,6 +438,27 @@ function canViewSection(admin: CurrentAdmin | undefined, section?: string) {
     );
 }
 
+const SIDEBAR_COLLAPSED_KEY = 'admin.sidebar.collapsed';
+const SIDEBAR_CLOSED_SECTIONS_KEY = 'admin.sidebar.closedSections';
+
+function readStored<T>(key: string, fallback: T): T {
+    try {
+        const raw = window.localStorage.getItem(key);
+
+        return raw === null ? fallback : (JSON.parse(raw) as T);
+    } catch {
+        return fallback;
+    }
+}
+
+function writeStored(key: string, value: unknown): void {
+    try {
+        window.localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+        // Private mode / blocked storage: the sidebar still works, it just forgets.
+    }
+}
+
 function SidebarContent({
     currentUrl,
     logoUrl,
@@ -442,6 +466,9 @@ function SidebarContent({
     unseenOrdersCount,
     unmatchedSmsCount,
     forwarderSeemsDown,
+    collapsed = false,
+    onToggleCollapsed,
+    onLogout,
     onClose,
 }: {
     currentUrl: string;
@@ -450,9 +477,15 @@ function SidebarContent({
     unseenOrdersCount?: number | null;
     unmatchedSmsCount?: number;
     forwarderSeemsDown?: boolean;
+    collapsed?: boolean;
+    onToggleCollapsed?: () => void;
+    onLogout?: () => void;
     onClose?: () => void;
 }) {
     const mostSpecificMatch = findMostSpecificMatch(currentUrl);
+    const [closedSections, setClosedSections] = useState<
+        Record<string, boolean>
+    >(() => readStored(SIDEBAR_CLOSED_SECTIONS_KEY, {}));
     const visibleNavSections = navSections
         .map((section) => ({
             ...section,
@@ -464,34 +497,63 @@ function SidebarContent({
         }))
         .filter((section) => section.items.length > 0);
 
+    const isItemActive = (item: NavItem): boolean =>
+        (item.exact
+            ? currentUrl === item.href
+            : mostSpecificMatch?.href === item.href) ||
+        item.extraMatches.some((m) => currentUrl.startsWith(m));
+
+    const toggleSection = (label: string) => {
+        setClosedSections((previous) => {
+            const next = { ...previous, [label]: !previous[label] };
+            writeStored(SIDEBAR_CLOSED_SECTIONS_KEY, next);
+
+            return next;
+        });
+    };
+
+    const initials = (admin?.name ?? '?')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase())
+        .join('');
+
     return (
         <div className="flex h-full flex-col">
             {/* Logo */}
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+            <div
+                className={`flex h-14 shrink-0 items-center border-b border-slate-200/80 ${
+                    collapsed ? 'justify-center px-2' : 'justify-between px-4'
+                }`}
+            >
                 <Link
                     href="/admin/dashboard"
-                    className="flex items-center gap-2.5"
+                    className="flex min-w-0 items-center gap-2.5"
                     onClick={onClose}
+                    title={collapsed ? 'ShoppyDrive — Admin Panel' : undefined}
                 >
                     {logoUrl ? (
                         <img
                             src={logoUrl}
                             alt="Logo"
-                            className="size-8 rounded-xl object-contain"
+                            className="size-8 shrink-0 rounded-xl object-contain"
                         />
                     ) : (
-                        <span className="flex size-8 items-center justify-center rounded-xl bg-[#c8102e]">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#c8102e]">
                             <AppLogoIcon className="size-4 fill-current text-white" />
                         </span>
                     )}
-                    <div className="leading-none">
-                        <p className="text-[14px] font-bold text-slate-900">
-                            ShoppyDrive
-                        </p>
-                        <p className="text-[11px] text-slate-400">
-                            Admin Panel
-                        </p>
-                    </div>
+                    {!collapsed && (
+                        <div className="leading-none">
+                            <p className="text-[14px] font-bold text-slate-900">
+                                ShoppyDrive
+                            </p>
+                            <p className="text-[11px] text-slate-400">
+                                Admin Panel
+                            </p>
+                        </div>
+                    )}
                 </Link>
                 {onClose && (
                     <button
@@ -504,67 +566,224 @@ function SidebarContent({
                 )}
             </div>
 
-            {/* Nav */}
-            <nav className="flex-1 overflow-y-auto px-3 py-4">
-                {visibleNavSections.map((section) => (
-                    <div key={section.label} className="mb-5">
-                        <p className="mb-1.5 px-2 text-[10px] font-semibold tracking-widest text-slate-400 uppercase">
-                            {section.label}
-                        </p>
-                        {section.items.map((item) => {
-                            const isActive =
-                                (item.exact
-                                    ? currentUrl === item.href
-                                    : mostSpecificMatch?.href === item.href) ||
-                                item.extraMatches.some((m) =>
-                                    currentUrl.startsWith(m),
-                                );
-                            const Icon = item.icon;
-                            const unseenCount =
-                                item.href === '/admin/orders'
-                                    ? (unseenOrdersCount ?? 0)
-                                    : item.href === '/admin/received-sms'
-                                      ? (unmatchedSmsCount ?? 0)
-                                      : 0;
+            {onToggleCollapsed && (
+                <div className={`shrink-0 pt-3 ${collapsed ? 'px-2' : 'px-3'}`}>
+                    <button
+                        type="button"
+                        onClick={onToggleCollapsed}
+                        title={collapsed ? 'Expand sidebar' : undefined}
+                        aria-label={
+                            collapsed ? 'Expand sidebar' : 'Collapse sidebar'
+                        }
+                        className={`flex w-full items-center rounded-lg py-1.5 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 ${
+                            collapsed ? 'justify-center' : 'gap-2.5 px-2.5'
+                        }`}
+                    >
+                        {collapsed ? (
+                            <PanelLeftOpen className="size-4" />
+                        ) : (
+                            <>
+                                <PanelLeftClose className="size-4" />
+                                Collapse
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
 
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    onClick={onClose}
-                                    className={`mb-0.5 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
-                                        isActive
-                                            ? 'bg-[#c8102e]/8 text-[#c8102e]'
-                                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <Icon className="size-4 shrink-0" />
-                                    {item.label}
-                                    <span className="ml-auto flex items-center gap-1.5">
-                                        {/* OPS-005: the forwarder phone is a single point of failure with no other liveness signal. */}
-                                        {item.href === '/admin/received-sms' &&
-                                            forwarderSeemsDown && (
-                                                <span title="No payment SMS received in a while — check the forwarder phone">
-                                                    <TriangleAlert className="size-3.5 shrink-0 text-amber-500" />
+            {/* Nav */}
+            <nav
+                className={`flex-1 overflow-x-hidden overflow-y-auto py-3 ${
+                    collapsed ? 'px-2' : 'px-3'
+                }`}
+            >
+                {visibleNavSections.map((section, sectionIndex) => {
+                    const hasActive = section.items.some(isItemActive);
+                    const collapsible = !collapsed && section.items.length > 1;
+                    const isOpen =
+                        collapsed ||
+                        !collapsible ||
+                        hasActive ||
+                        !closedSections[section.label];
+
+                    return (
+                        <div
+                            key={section.label}
+                            className={
+                                sectionIndex > 0
+                                    ? collapsed
+                                        ? 'mt-2 border-t border-slate-100 pt-2'
+                                        : 'mt-1 border-t border-slate-100 pt-2'
+                                    : ''
+                            }
+                        >
+                            {!collapsed &&
+                                (collapsible ? (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            toggleSection(section.label)
+                                        }
+                                        disabled={hasActive}
+                                        aria-expanded={isOpen}
+                                        className="group mb-1 flex w-full items-center justify-between rounded-md px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-400 uppercase transition-colors hover:text-slate-600 disabled:cursor-default disabled:hover:text-slate-400"
+                                    >
+                                        {section.label}
+                                        <ChevronDown
+                                            className={`size-3.5 transition-transform duration-200 ${
+                                                isOpen ? '' : '-rotate-90'
+                                            } ${hasActive ? 'opacity-30' : ''}`}
+                                        />
+                                    </button>
+                                ) : (
+                                    <p className="mb-1 px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-400 uppercase">
+                                        {section.label}
+                                    </p>
+                                ))}
+                            <div
+                                className={`grid transition-[grid-template-rows] duration-200 ease-out ${
+                                    isOpen
+                                        ? 'grid-rows-[1fr]'
+                                        : 'grid-rows-[0fr]'
+                                }`}
+                            >
+                                <div className="min-h-0 space-y-0.5 overflow-hidden">
+                                    {section.items.map((item) => {
+                                        const isActive = isItemActive(item);
+                                        const Icon = item.icon;
+                                        const unseenCount =
+                                            item.href === '/admin/orders'
+                                                ? (unseenOrdersCount ?? 0)
+                                                : item.href ===
+                                                    '/admin/received-sms'
+                                                  ? (unmatchedSmsCount ?? 0)
+                                                  : 0;
+                                        const showSmsWarning =
+                                            item.href ===
+                                                '/admin/received-sms' &&
+                                            forwarderSeemsDown;
+
+                                        return (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                onClick={onClose}
+                                                title={
+                                                    collapsed
+                                                        ? item.label
+                                                        : undefined
+                                                }
+                                                aria-current={
+                                                    isActive
+                                                        ? 'page'
+                                                        : undefined
+                                                }
+                                                className={`group relative flex items-center rounded-lg text-sm font-medium transition-colors duration-150 ${
+                                                    collapsed
+                                                        ? 'h-9 justify-center'
+                                                        : 'gap-2.5 px-2.5 py-2'
+                                                } ${
+                                                    isActive
+                                                        ? 'bg-[#c8102e]/8 font-semibold text-[#c8102e]'
+                                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                                }`}
+                                            >
+                                                {isActive && (
+                                                    <span className="absolute top-1.5 bottom-1.5 left-0 w-[3px] rounded-r-full bg-[#c8102e]" />
+                                                )}
+                                                <span className="relative flex shrink-0">
+                                                    <Icon
+                                                        className={`size-4 transition-colors duration-150 ${
+                                                            isActive
+                                                                ? ''
+                                                                : 'text-slate-400 group-hover:text-slate-700'
+                                                        }`}
+                                                    />
+                                                    {collapsed &&
+                                                        (unseenCount > 0 ||
+                                                            showSmsWarning) && (
+                                                            <span
+                                                                className={`absolute -top-1 -right-1 size-2 rounded-full ring-2 ring-white ${
+                                                                    unseenCount >
+                                                                    0
+                                                                        ? 'bg-[#c8102e]'
+                                                                        : 'bg-amber-500'
+                                                                }`}
+                                                            />
+                                                        )}
                                                 </span>
-                                            )}
-                                        {unseenCount > 0 && (
-                                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c8102e] px-1.5 text-[11px] font-bold text-white">
-                                                {unseenCount > 99
-                                                    ? '99+'
-                                                    : unseenCount}
-                                            </span>
-                                        )}
-                                        {isActive && (
-                                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#c8102e]" />
-                                        )}
-                                    </span>
-                                </Link>
-                            );
-                        })}
-                    </div>
-                ))}
+                                                {!collapsed && (
+                                                    <>
+                                                        <span className="truncate">
+                                                            {item.label}
+                                                        </span>
+                                                        <span className="ml-auto flex items-center gap-1.5">
+                                                            {/* OPS-005: the forwarder phone is a single point of failure with no other liveness signal. */}
+                                                            {showSmsWarning && (
+                                                                <span title="No payment SMS received in a while — check the forwarder phone">
+                                                                    <TriangleAlert className="size-3.5 shrink-0 text-amber-500" />
+                                                                </span>
+                                                            )}
+                                                            {unseenCount >
+                                                                0 && (
+                                                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c8102e] px-1.5 text-[11px] font-bold text-white">
+                                                                    {unseenCount >
+                                                                    99
+                                                                        ? '99+'
+                                                                        : unseenCount}
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
             </nav>
+
+            {/* Footer: profile */}
+            <div className="shrink-0 border-t border-slate-200/80 p-3">
+                {admin && (
+                    <div
+                        className={`flex items-center rounded-xl bg-slate-50 ${
+                            collapsed ? 'flex-col gap-1.5 p-1.5' : 'gap-2.5 p-2'
+                        }`}
+                    >
+                        <span
+                            title={collapsed ? admin.name : undefined}
+                            className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#c8102e]/10 text-xs font-bold text-[#c8102e]"
+                        >
+                            {initials}
+                        </span>
+                        {!collapsed && (
+                            <div className="min-w-0 flex-1 leading-tight">
+                                <p className="truncate text-sm font-semibold text-slate-800">
+                                    {admin.name}
+                                </p>
+                                <p className="text-[11px] text-slate-400">
+                                    {admin.is_mother ? 'Super admin' : 'Admin'}
+                                </p>
+                            </div>
+                        )}
+                        {onLogout && (
+                            <button
+                                type="button"
+                                onClick={onLogout}
+                                title="Log out"
+                                aria-label="Log out"
+                                className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                            >
+                                <LogOut className="size-4" />
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
@@ -636,6 +855,9 @@ export default function AdminLayout({
     const currentUrl = page.url;
     const logoUrl = (page.props.settings as AppSettings)?.logo ?? null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() =>
+        readStored(SIDEBAR_COLLAPSED_KEY, false),
+    );
     const [hasMobileLogoError, setHasMobileLogoError] = useState(false);
     const { toasts, dismiss, unmatchedCount, forwarderSeemsDown } =
         useSmsPolling();
@@ -656,10 +878,22 @@ export default function AdminLayout({
 
     const handleLogout = () => router.post(route('admin.logout'));
 
+    const toggleSidebarCollapsed = () => {
+        setSidebarCollapsed((previous) => {
+            writeStored(SIDEBAR_COLLAPSED_KEY, !previous);
+
+            return !previous;
+        });
+    };
+
     return (
         <div className="admin-shell flex min-h-screen bg-slate-50">
             {/* Desktop sidebar */}
-            <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
+            <aside
+                className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-slate-200/80 bg-white transition-[width] duration-200 ease-out lg:flex ${
+                    sidebarCollapsed ? 'w-16' : 'w-56'
+                }`}
+            >
                 <SidebarContent
                     currentUrl={currentUrl}
                     logoUrl={logoUrl}
@@ -667,6 +901,9 @@ export default function AdminLayout({
                     unseenOrdersCount={unseenOrdersCount}
                     unmatchedSmsCount={unmatchedCount}
                     forwarderSeemsDown={forwarderSeemsDown}
+                    collapsed={sidebarCollapsed}
+                    onToggleCollapsed={toggleSidebarCollapsed}
+                    onLogout={handleLogout}
                 />
             </aside>
 
@@ -702,6 +939,7 @@ export default function AdminLayout({
                                 unseenOrdersCount={unseenOrdersCount}
                                 unmatchedSmsCount={unmatchedCount}
                                 forwarderSeemsDown={forwarderSeemsDown}
+                                onLogout={handleLogout}
                                 onClose={() => setSidebarOpen(false)}
                             />
                         </motion.aside>
@@ -712,10 +950,10 @@ export default function AdminLayout({
             {/* Main area */}
             <div className="flex min-w-0 flex-1 flex-col">
                 {/* Top bar */}
-                <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4">
+                <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4 lg:hidden">
                     <button
                         type="button"
-                        className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
+                        className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
                         onClick={() => setSidebarOpen(true)}
                     >
                         <Menu className="size-5" />
@@ -724,7 +962,7 @@ export default function AdminLayout({
                     <Link
                         href={adminDashboard()}
                         aria-label="Admin dashboard home"
-                        className="absolute left-1/2 flex size-9 -translate-x-1/2 items-center justify-center overflow-hidden rounded-xl bg-[#c8102e] shadow-sm lg:hidden"
+                        className="absolute left-1/2 flex size-9 -translate-x-1/2 items-center justify-center overflow-hidden rounded-xl bg-[#c8102e] shadow-sm"
                     >
                         {logoUrl && !hasMobileLogoError ? (
                             <img
