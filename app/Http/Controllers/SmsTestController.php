@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ReceivedSms;
 use App\Services\SmsParserService;
+use App\Support\SmsAdminNotifier;
 use App\Support\SmsForwarderHeartbeat;
 use App\Support\SmsForwarderToken;
 use App\Support\SmsRegex;
@@ -134,6 +135,11 @@ class SmsTestController extends Controller
             'transaction_id' => $sms->parsed_transaction_id,
             'amount' => $sms->parsed_amount,
         ]);
+
+        // PERF-006 (web push follow-up): replaces the admin layout's poll —
+        // queued, so a slow/unreachable push service can never delay this
+        // response to the forwarder app.
+        SmsAdminNotifier::notifyNewSms($sms);
 
         return response()->json(['status' => 'ok']);
     }

@@ -1,7 +1,7 @@
-import { Head, Link, router, usePage, usePoll } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import { MessageSquare, Search, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -155,9 +155,30 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [deletingItem, setDeletingItem] = useState<ReceivedSms | null>(null);
 
-    usePoll(15000, { only: ['sms'], preserveScroll: true } as Parameters<
-        typeof usePoll
-    >[1]);
+    // PERF-006 (web push follow-up): replaces a 15-second usePoll — the
+    // service worker (public/admin-push-sw.js) messages this page the
+    // instant a push for a new SMS arrives, so the table only ever
+    // refreshes when something actually changed.
+    useEffect(() => {
+        if (!('serviceWorker' in navigator)) {
+            return;
+        }
+
+        const onMessage = (event: MessageEvent) => {
+            if (
+                event.data?.source === 'admin-push-sw' &&
+                event.data?.payload?.data?.type === 'new-sms'
+            ) {
+                // reload() always preserves scroll/state — unlike a plain visit, there's no option to opt out.
+                router.reload({ only: ['sms'] });
+            }
+        };
+
+        navigator.serviceWorker.addEventListener('message', onMessage);
+
+        return () =>
+            navigator.serviceWorker.removeEventListener('message', onMessage);
+    }, []);
 
     const applyFilters = (overrides: Record<string, string | number>) => {
         if (

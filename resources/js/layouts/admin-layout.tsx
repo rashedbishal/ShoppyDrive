@@ -48,8 +48,8 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
-import { useSmsPolling } from '@/hooks/useSmsPolling';
-import type { SmsToast } from '@/hooks/useSmsPolling';
+import { useWebPushSms } from '@/hooks/useWebPushSms';
+import type { SmsToast } from '@/hooks/useWebPushSms';
 import { dashboard as adminDashboard } from '@/routes/admin';
 import type { AppSettings, SharedPageProps } from '@/types';
 
@@ -440,6 +440,8 @@ function canViewSection(admin: CurrentAdmin | undefined, section?: string) {
 
 const SIDEBAR_COLLAPSED_KEY = 'admin.sidebar.collapsed';
 const SIDEBAR_CLOSED_SECTIONS_KEY = 'admin.sidebar.closedSections';
+/** PERF-006 (web push follow-up): dismissing the "enable notifications" banner is per-browser, not per-session, so it doesn't reappear on every page load. */
+const PUSH_BANNER_DISMISSED_KEY = 'admin.sms.pushBannerDismissed';
 
 function readStored<T>(key: string, fallback: T): T {
     try {
@@ -852,6 +854,8 @@ export default function AdminLayout({
     const page = usePage<SharedPageProps>();
     const admin = page.props.auth?.admin as CurrentAdmin | null;
     const unseenOrdersCount = page.props.unseen_orders_count;
+    const unmatchedCount = page.props.unmatched_sms_count ?? 0;
+    const forwarderSeemsDown = !page.props.mobile_banking_available;
     const currentUrl = page.url;
     const logoUrl = (page.props.settings as AppSettings)?.logo ?? null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -859,9 +863,26 @@ export default function AdminLayout({
         readStored(SIDEBAR_COLLAPSED_KEY, false),
     );
     const [hasMobileLogoError, setHasMobileLogoError] = useState(false);
-    const { toasts, dismiss, unmatchedCount, forwarderSeemsDown } =
-        useSmsPolling();
+    const canReceiveSmsPush = canViewSection(
+        admin ?? undefined,
+        'received_sms',
+    );
+    const { toasts, dismiss, permission, isSubscribed, enableNotifications } =
+        useWebPushSms(canReceiveSmsPush ? page.props.vapid_public_key : null);
     const handleDismiss = useCallback((key: number) => dismiss(key), [dismiss]);
+    const [pushBannerDismissed, setPushBannerDismissed] = useState<boolean>(
+        () => readStored(PUSH_BANNER_DISMISSED_KEY, false),
+    );
+    const showPushBanner =
+        canReceiveSmsPush &&
+        !!page.props.vapid_public_key &&
+        permission === 'default' &&
+        !isSubscribed &&
+        !pushBannerDismissed;
+    const dismissPushBanner = () => {
+        writeStored(PUSH_BANNER_DISMISSED_KEY, true);
+        setPushBannerDismissed(true);
+    };
 
     // Prefetched pages (e.g. Add Product) hold form options such as categories.
     // Any admin write can change those, so drop what's cached instead of
@@ -1003,6 +1024,35 @@ export default function AdminLayout({
 
             {/* SMS toast notifications */}
             <div className="pointer-events-none fixed right-5 bottom-5 z-50 flex flex-col items-end gap-2.5">
+                {showPushBanner && (
+                    <div className="pointer-events-auto flex w-80 items-start gap-3 rounded-xl bg-slate-900 px-4 py-3 shadow-xl ring-1 ring-white/10">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-white">
+                                Enable SMS notifications
+                            </p>
+                            <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
+                                Get notified instantly when a new payment SMS
+                                arrives, without keeping this page open.
+                            </p>
+                            <div className="mt-2 flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => void enableNotifications()}
+                                    className="rounded-md bg-pink-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-pink-500"
+                                >
+                                    Enable
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={dismissPushBanner}
+                                    className="rounded-md px-2.5 py-1 text-[11px] font-semibold text-slate-400 hover:text-slate-200"
+                                >
+                                    Not now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 <AnimatePresence>
                     {toasts.map((toast) => (
                         <motion.div

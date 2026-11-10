@@ -6,8 +6,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ReceivedSms;
-use App\Support\SmsForwarderHeartbeat;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,32 +26,16 @@ class ReceivedSmsController extends Controller
     private const UNMATCHED_STALE_MINUTES = 30;
 
     /**
-     * Lightweight poll endpoint for the admin layout toast notifications.
-     * Returns SMS records with id > after, capped at 10, plus a running
-     * count of stale unmatched SMS (FSA-07) and whether the forwarder phone
-     * looks dead (OPS-005, see SmsForwarderHeartbeat) for the sidebar
-     * badge — both piggyback on the same poll already running; no new
-     * route, table, or dashboard.
-     * Route: GET /admin/sms/poll
+     * PERF-006 (web push follow-up): the admin sidebar badge used to come
+     * from the removed sms/poll endpoint; it's now a plain per-request
+     * shared prop (HandleInertiaRequests), same mechanism as
+     * unseen_orders_count, so the threshold stays defined in one place.
      */
-    public function poll(Request $request): JsonResponse
+    public static function unmatchedStaleCount(): int
     {
-        $after = (int) $request->query('after', 0);
-
-        $sms = ReceivedSms::where('id', '>', $after)
-            ->orderBy('id')
-            ->limit(10)
-            ->get(['id', 'sender', 'content', 'parsed_transaction_id', 'parsed_amount', 'received_at']);
-
-        $unmatchedCount = ReceivedSms::where('is_matched', false)
+        return ReceivedSms::where('is_matched', false)
             ->where('received_at', '<=', now()->subMinutes(self::UNMATCHED_STALE_MINUTES))
             ->count();
-
-        return response()->json([
-            'sms' => $sms,
-            'unmatched_count' => $unmatchedCount,
-            'forwarder_seems_down' => SmsForwarderHeartbeat::isDown(),
-        ]);
     }
 
     public function index(Request $request): Response

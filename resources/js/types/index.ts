@@ -706,6 +706,10 @@ export interface SharedPageProps {
     unseen_orders_count: number | null;
     /** OPS-005: false while the bKash/Nagad SMS-forwarder phone looks dead — checkout and the landing-page funnel hide the mobile banking option while this is false, since a Transaction ID submitted then can never be matched. */
     mobile_banking_available: boolean;
+    /** PERF-006 (web push follow-up): admin sidebar badge, null for a non-admin or an admin without the received_sms permission. */
+    unmatched_sms_count: number | null;
+    /** PERF-006 (web push follow-up): this admin's VAPID public key for subscribing to push, null for a non-admin. */
+    vapid_public_key: string | null;
     /** Plain-English mirror of the active password policy (App\Support\PasswordPolicy) — shown on every page that sets a new password, instead of a static/wrong hint. */
     password_requirements: string[];
 }

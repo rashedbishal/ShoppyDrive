@@ -35,6 +35,7 @@ use App\Http\Controllers\Admin\PopularKeywordController;
 use App\Http\Controllers\Admin\ProductBundleController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\PromotionalBannerController;
+use App\Http\Controllers\Admin\PushSubscriptionController;
 use App\Http\Controllers\Admin\ReceivedSmsController;
 use App\Http\Controllers\Admin\ReturnController;
 use App\Http\Controllers\Admin\ReviewController;
@@ -261,7 +262,10 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
 
     Route::get('received-sms', [ReceivedSmsController::class, 'index'])->name('received-sms.index')->middleware(AdminSections::middleware('received_sms', 'view'));
     Route::delete('received-sms/{receivedSms}', [ReceivedSmsController::class, 'destroy'])->name('received-sms.destroy')->middleware(AdminSections::middleware('received_sms', 'delete'));
-    Route::get('sms/poll', [ReceivedSmsController::class, 'poll'])->name('sms.poll')->middleware(AdminSections::middleware('received_sms', 'view'));
+
+    // PERF-006 (web push follow-up): replaces the removed sms/poll endpoint.
+    Route::post('push-subscriptions', [PushSubscriptionController::class, 'store'])->name('push-subscriptions.store')->middleware(AdminSections::middleware('received_sms', 'view'));
+    Route::delete('push-subscriptions', [PushSubscriptionController::class, 'destroy'])->name('push-subscriptions.destroy')->middleware(AdminSections::middleware('received_sms', 'view'));
 
     Route::get('sms-patterns', [SmsPatternController::class, 'index'])->name('sms-patterns.index')->middleware(AdminSections::middleware('sms_patterns', 'view'));
     Route::post('sms-patterns', [SmsPatternController::class, 'store'])->name('sms-patterns.store')->middleware(AdminSections::middleware('sms_patterns', 'create'));

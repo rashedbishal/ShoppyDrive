@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\Admin\ReceivedSmsController;
 use App\Models\Address;
+use App\Models\Admin;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Models\Wishlist;
@@ -175,6 +177,24 @@ class HandleInertiaRequests extends Middleware
             'cart_base_shipping_rate' => fn () => $this->resolveBaseShippingRate($request),
             'unseen_orders_count' => fn () => $request->user('admin')
                 ? Order::where('is_seen', false)->count()
+                : null,
+            // PERF-006 (web push follow-up): the admin sidebar badge, moved
+            // off the removed sms/poll endpoint onto the same per-request
+            // shared-prop mechanism as unseen_orders_count above — gated by
+            // the received_sms permission, since not every admin can see it.
+            // instanceof, not a truthy check: a stale admin-guard session
+            // left over from an earlier actingAs() switch in a test can
+            // resolve $request->user('admin') to a web-guard User instead,
+            // which has no canAccess() (ReviewSubmissionTest hit exactly
+            // this — its own comments document the same guard-switch quirk).
+            'unmatched_sms_count' => fn () => $request->user('admin') instanceof Admin
+                ? ($request->user('admin')->canAccess('received_sms') ? ReceivedSmsController::unmatchedStaleCount() : null)
+                : null,
+            // The admin layout's "forwarder seems down" badge derives this
+            // from the inverse of mobile_banking_available below, so it's
+            // never a second, separately-computed signal.
+            'vapid_public_key' => fn () => $request->user('admin')
+                ? config('services.webpush.public_key')
                 : null,
             // OPS-005: the forwarder phone can go dark without ever
             // failing a payment outright — checking this live (never
