@@ -19,6 +19,12 @@ export default function SmsForwarderSettings({
 
     const [showToken, setShowToken] = useState(false);
 
+    const origin = typeof window === 'undefined' ? '' : window.location.origin;
+    const endpoints = [
+        { label: 'Receive SMS', path: '/api/sms/receive' },
+        { label: 'Heartbeat', path: '/api/sms/heartbeat' },
+    ];
+
     const handleRegenerate = () => {
         if (
             !confirm(
@@ -55,7 +61,7 @@ export default function SmsForwarderSettings({
     return (
         <>
             <Head title="SMS Forwarder Settings — Admin" />
-            <div className="max-w-2xl space-y-5">
+            <div className="space-y-5">
                 <h1 className="text-xl font-bold text-slate-900">
                     SMS Forwarder Settings
                 </h1>
@@ -108,87 +114,141 @@ export default function SmsForwarderSettings({
                     </div>
                 )}
 
-                <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100">
-                        <CardTitle className="text-sm font-semibold text-slate-700">
-                            Bearer Token
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-3">
-                        <p className="text-xs text-slate-500">
-                            This token authenticates your Android SMS forwarder
-                            app. Set it as the Bearer token in your app's HTTP
-                            header.
-                        </p>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-700">
-                                Current Token
-                            </label>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    readOnly
-                                    className={inputClass}
-                                    value={
-                                        showToken && fullToken
-                                            ? fullToken
-                                            : maskedToken
-                                    }
-                                />
-                                {fullToken && (
-                                    <>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() =>
-                                                setShowToken((v) => !v)
-                                            }
-                                            className="shrink-0"
-                                        >
-                                            {showToken
-                                                ? 'Hide'
-                                                : 'Show Full Token'}
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() =>
-                                                copyToClipboard(fullToken)
-                                            }
-                                            className="shrink-0"
-                                        >
-                                            Copy
-                                        </Button>
-                                    </>
-                                )}
-                            </div>
-                            <p className="text-xs text-slate-400">
-                                {fullToken
-                                    ? 'Only the last 8 characters are shown for security.'
-                                    : 'You have view-only access. Ask the owner for update access to reveal or regenerate this token.'}
+                <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+                    <Card className="shadow-sm">
+                        <CardHeader className="border-b border-slate-100">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
+                                Bearer Token
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-3">
+                            <p className="text-xs text-slate-500">
+                                This token authenticates your Android SMS
+                                forwarder app. Set it as the Bearer token in
+                                your app's HTTP header.
                             </p>
-                        </div>
 
-                        {fullToken && (
-                            <div className="border-t border-slate-100 pt-2">
-                                <Button
-                                    type="button"
-                                    onClick={handleRegenerate}
-                                    className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                                >
-                                    Regenerate Token
-                                </Button>
-                                <p className="mt-2 text-xs text-slate-400">
-                                    Regenerating will invalidate the old token.
-                                    You must update your Android app
-                                    immediately.
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700">
+                                    Current Token
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        readOnly
+                                        className={inputClass}
+                                        value={
+                                            showToken && fullToken
+                                                ? fullToken
+                                                : maskedToken
+                                        }
+                                    />
+                                    {fullToken && (
+                                        <>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setShowToken((v) => !v)
+                                                }
+                                                className="shrink-0"
+                                            >
+                                                {showToken
+                                                    ? 'Hide'
+                                                    : 'Show Full Token'}
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    copyToClipboard(fullToken)
+                                                }
+                                                className="shrink-0"
+                                            >
+                                                Copy
+                                            </Button>
+                                        </>
+                                    )}
+                                </div>
+                                <p className="text-xs text-slate-400">
+                                    {fullToken
+                                        ? 'Only the last 8 characters are shown for security.'
+                                        : 'You have view-only access. Ask the owner for update access to reveal or regenerate this token.'}
                                 </p>
                             </div>
-                        )}
-                    </CardContent>
-                </Card>
+
+                            {fullToken && (
+                                <div className="border-t border-slate-100 pt-2">
+                                    <Button
+                                        type="button"
+                                        onClick={handleRegenerate}
+                                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                    >
+                                        Regenerate Token
+                                    </Button>
+                                    <p className="mt-2 text-xs text-slate-400">
+                                        Regenerating will invalidate the old
+                                        token. You must update your Android app
+                                        immediately.
+                                    </p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-sm">
+                        <CardHeader className="border-b border-slate-100">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
+                                Setup in your Android app
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-3">
+                            <div className="space-y-2">
+                                {endpoints.map((endpoint) => (
+                                    <div
+                                        key={endpoint.path}
+                                        className="space-y-1"
+                                    >
+                                        <p className="text-xs font-medium text-slate-700">
+                                            {endpoint.label}
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <code className="min-w-0 flex-1 truncate rounded-lg bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
+                                                POST {origin}
+                                                {endpoint.path}
+                                            </code>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    copyToClipboard(
+                                                        `${origin}${endpoint.path}`,
+                                                    )
+                                                }
+                                                className="shrink-0"
+                                            >
+                                                Copy
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <ol className="list-decimal space-y-1.5 border-t border-slate-100 pt-3 pl-4 text-xs text-slate-500">
+                                <li>Copy the token on the left.</li>
+                                <li>
+                                    In the app, set it as the Bearer token in
+                                    the HTTP header and use the URLs above.
+                                </li>
+                                <li>
+                                    After regenerating, update the app
+                                    immediately. The old token stops working.
+                                </li>
+                            </ol>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </>
     );
