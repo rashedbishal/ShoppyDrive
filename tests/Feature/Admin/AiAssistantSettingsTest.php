@@ -48,6 +48,11 @@ test('the chosen model is saved and only an allow-listed model is accepted', fun
 
 test('a view-only admin does not receive the full key', function () {
     Setting::updateOrCreate(['key' => 'ai_assistant_api_key'], ['value' => 'secret-key', 'group' => 'ai_assistant']);
+    // The index page's model dropdown calls AiAssistantService::availableModels(),
+    // which queries Groq's /models endpoint whenever a key is saved (REL-004:
+    // Http::preventStrayRequests() means this must be faked, not left to fall
+    // through to a caught connection failure).
+    Http::fake(['api.groq.com/*' => Http::response(['data' => [['id' => 'llama-3.1-8b-instant']]])]);
     $admin = Admin::create([
         'name' => 'Staff', 'email' => 'ai-viewer@example.com', 'password' => bcrypt('password'),
         'permissions' => ['ai_assistant' => ['view']],
