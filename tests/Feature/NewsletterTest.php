@@ -246,3 +246,31 @@ test('the public subscription-status endpoint no longer exists', function (): vo
     $this->getJson('/newsletter/status?email=active@example.com')->assertNotFound();
     expect(app('router')->getRoutes()->getByName('newsletter.status'))->toBeNull();
 });
+
+test('an email with a local part over 64 characters is rejected', function (): void {
+    $response = $this->post('/newsletter/subscribe', [
+        'email' => str_repeat('a', 65).'@example.com',
+    ]);
+
+    $response->assertSessionHasErrors('email');
+    $this->assertDatabaseCount('newsletter_subscribers', 0);
+});
+
+test('an email longer than 254 characters is rejected', function (): void {
+    $domain = implode('.', array_fill(0, 4, str_repeat('b', 60))).'.com';
+    $email = str_repeat('a', 64).'@'.$domain;
+    expect(strlen($email))->toBeGreaterThan(254);
+
+    $response = $this->post('/newsletter/subscribe', ['email' => $email]);
+
+    $response->assertSessionHasErrors('email');
+    $this->assertDatabaseCount('newsletter_subscribers', 0);
+});
+
+test('an email with a 64 character local part is still accepted', function (): void {
+    $email = str_repeat('a', 64).'@example.com';
+
+    $this->post('/newsletter/subscribe', ['email' => $email])->assertSessionHasNoErrors();
+
+    $this->assertDatabaseHas('newsletter_subscribers', ['email' => $email]);
+});

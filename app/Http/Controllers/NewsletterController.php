@@ -19,7 +19,13 @@ class NewsletterController extends Controller
 {
     public function subscribe(Request $request): RedirectResponse
     {
-        $request->validate(['email' => ['required', 'email', 'max:255']]);
+        // RFC 5321: an address is at most 254 characters, 64 of them before the @.
+        $request->validate([
+            'email' => ['required', 'email', 'max:254', 'regex:/^[^@]{1,64}@/'],
+        ], [
+            'email.max' => 'That email address is too long.',
+            'email.regex' => 'That email address is too long.',
+        ]);
 
         $subscriber = NewsletterSubscriber::where('email', $request->email)->first();
 

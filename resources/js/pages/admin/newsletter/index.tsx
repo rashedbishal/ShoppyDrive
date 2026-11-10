@@ -201,7 +201,10 @@ export default function NewsletterIndex({
                                             .toUpperCase()}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-medium text-slate-800">
+                                        <p
+                                            className="truncate text-sm font-medium text-slate-800"
+                                            title={subscriber.email}
+                                        >
                                             {subscriber.email}
                                         </p>
                                         <p className="text-xs text-slate-400">
