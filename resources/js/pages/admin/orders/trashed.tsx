@@ -126,9 +126,9 @@ export default function TrashedOrders({
                             orders.data.map((order) => (
                                 <div
                                     key={order.id}
-                                    className="flex items-center gap-4 px-4 py-3"
+                                    className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:flex-nowrap sm:gap-4"
                                 >
-                                    <div className="min-w-0 flex-1">
+                                    <div className="w-full min-w-0 sm:w-auto sm:flex-1">
                                         <p className="font-mono text-sm font-bold text-slate-800">
                                             {order.order_number}
                                         </p>
@@ -140,50 +140,61 @@ export default function TrashedOrders({
                                             ).toLocaleDateString()}
                                         </p>
                                     </div>
-                                    <p className="hidden text-sm font-bold text-slate-800 sm:block">
-                                        ৳{order.total.toLocaleString()}
-                                    </p>
-                                    <Badge variant="error" size="sm">
-                                        {order.status}
-                                    </Badge>
-                                    <div className="flex items-center gap-1.5">
-                                        <button
-                                            type="button"
-                                            disabled={restoringId === order.id}
-                                            onClick={() => handleRestore(order)}
-                                            className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                                        >
-                                            <RotateCcw className="size-3.5" />
-                                            {restoringId === order.id
-                                                ? 'Restoring…'
-                                                : 'Restore'}
-                                        </button>
-                                        {canPermanentlyDelete &&
-                                            ((order.deletion_blockers ?? [])
-                                                .length === 0 ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setDeleteTarget(order)
-                                                    }
-                                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                                                    title="Permanently delete"
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </button>
-                                            ) : (
-                                                <span
-                                                    className="cursor-help rounded-lg p-1.5 text-slate-300"
-                                                    title={`Can't be permanently deleted: ${(
-                                                        order.deletion_blockers ??
-                                                        []
-                                                    )
-                                                        .map((b) => b.message)
-                                                        .join(' ')}`}
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </span>
-                                            ))}
+                                    <div className="order-last flex w-full items-center gap-2 sm:order-none sm:w-auto sm:gap-4">
+                                        <p className="mr-auto text-sm font-bold text-slate-800 sm:mr-0">
+                                            ৳{order.total.toLocaleString()}
+                                        </p>
+                                        <Badge variant="error" size="sm">
+                                            {order.status}
+                                        </Badge>
+                                        <div className="ml-auto flex items-center gap-1.5 sm:ml-0">
+                                            <button
+                                                type="button"
+                                                disabled={
+                                                    restoringId === order.id
+                                                }
+                                                onClick={() =>
+                                                    handleRestore(order)
+                                                }
+                                                className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                                            >
+                                                <RotateCcw className="size-3.5" />
+                                                {restoringId === order.id
+                                                    ? 'Restoring…'
+                                                    : 'Restore'}
+                                            </button>
+                                            {canPermanentlyDelete &&
+                                                ((order.deletion_blockers ?? [])
+                                                    .length === 0 ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setDeleteTarget(
+                                                                order,
+                                                            )
+                                                        }
+                                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                                        title="Permanently delete"
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </button>
+                                                ) : (
+                                                    <span
+                                                        className="cursor-help rounded-lg p-1.5 text-slate-300"
+                                                        title={`Can't be permanently deleted: ${(
+                                                            order.deletion_blockers ??
+                                                            []
+                                                        )
+                                                            .map(
+                                                                (b) =>
+                                                                    b.message,
+                                                            )
+                                                            .join(' ')}`}
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </span>
+                                                ))}
+                                        </div>
                                     </div>
                                 </div>
                             ))

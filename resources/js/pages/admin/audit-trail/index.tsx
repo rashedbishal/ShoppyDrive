@@ -264,7 +264,7 @@ export default function AuditTrailIndex({
                                 return (
                                     <div
                                         key={item.id}
-                                        className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50/60"
+                                        className="admin-row-card flex flex-wrap items-start gap-x-3 gap-y-1 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap"
                                     >
                                         <Badge
                                             variant={badge.variant}
@@ -287,7 +287,7 @@ export default function AuditTrailIndex({
                                                 {item.log_name_label}
                                             </p>
                                         </div>
-                                        <p className="shrink-0 text-xs text-slate-400">
+                                        <p className="order-last w-full text-xs text-slate-400 sm:order-none sm:w-auto sm:shrink-0">
                                             {new Date(
                                                 item.created_at,
                                             ).toLocaleString('en-BD', {

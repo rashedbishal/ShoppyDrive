@@ -193,7 +193,7 @@ export default function NewsletterIndex({
                             subscribers.data.map((subscriber) => (
                                 <div
                                     key={subscriber.id}
-                                    className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
+                                    className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4"
                                 >
                                     <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">
                                         {subscriber.email
@@ -214,17 +214,19 @@ export default function NewsletterIndex({
                                             ).toLocaleDateString()}
                                         </p>
                                     </div>
-                                    <span
-                                        className={`hidden shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold sm:inline-flex ${
-                                            subscriber.is_active
-                                                ? 'bg-emerald-50 text-emerald-700'
-                                                : 'bg-slate-100 text-slate-500'
-                                        }`}
-                                    >
-                                        {subscriber.is_active
-                                            ? 'Active'
-                                            : 'Unsubscribed'}
-                                    </span>
+                                    <div className="order-last w-full pl-12 sm:order-none sm:w-auto sm:pl-0">
+                                        <span
+                                            className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                                subscriber.is_active
+                                                    ? 'bg-emerald-50 text-emerald-700'
+                                                    : 'bg-slate-100 text-slate-500'
+                                            }`}
+                                        >
+                                            {subscriber.is_active
+                                                ? 'Active'
+                                                : 'Unsubscribed'}
+                                        </span>
+                                    </div>
                                     <button
                                         type="button"
                                         onClick={() =>

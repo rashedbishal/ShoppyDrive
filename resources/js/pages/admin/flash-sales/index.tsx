@@ -179,7 +179,7 @@ export default function FlashSalesIndex({ flashSales, filters }: Props) {
                             flashSales.data.map((sale) => (
                                 <div
                                     key={sale.id}
-                                    className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
+                                    className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4"
                                 >
                                     <Checkbox
                                         checked={bulk.isSelected(sale.id)}
@@ -201,22 +201,28 @@ export default function FlashSalesIndex({ flashSales, filters }: Props) {
                                             ).toLocaleString()}
                                         </p>
                                     </div>
-                                    <p className="hidden text-xs text-slate-500 sm:block">
-                                        {sale.items_count} products
-                                    </p>
-                                    {isLive(sale) && (
-                                        <Badge variant="success" size="sm">
-                                            Live
+                                    <div className="order-last flex w-full items-center gap-2 pl-7 sm:order-none sm:w-auto sm:gap-4 sm:pl-0">
+                                        <p className="mr-auto text-xs text-slate-500 sm:mr-0">
+                                            {sale.items_count} products
+                                        </p>
+                                        {isLive(sale) && (
+                                            <Badge variant="success" size="sm">
+                                                Live
+                                            </Badge>
+                                        )}
+                                        <Badge
+                                            variant={
+                                                sale.is_active
+                                                    ? 'success'
+                                                    : 'error'
+                                            }
+                                            size="sm"
+                                        >
+                                            {sale.is_active
+                                                ? 'Active'
+                                                : 'Inactive'}
                                         </Badge>
-                                    )}
-                                    <Badge
-                                        variant={
-                                            sale.is_active ? 'success' : 'error'
-                                        }
-                                        size="sm"
-                                    >
-                                        {sale.is_active ? 'Active' : 'Inactive'}
-                                    </Badge>
+                                    </div>
                                     <div className="flex items-center gap-1.5">
                                         <Link
                                             href={route(

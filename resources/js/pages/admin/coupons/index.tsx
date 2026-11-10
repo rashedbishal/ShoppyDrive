@@ -172,7 +172,7 @@ export default function CouponsIndex({ coupons, filters }: Props) {
                             coupons.data.map((coupon) => (
                                 <div
                                     key={coupon.id}
-                                    className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
+                                    className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4"
                                 >
                                     <Checkbox
                                         checked={bulk.isSelected(coupon.id)}
@@ -188,44 +188,47 @@ export default function CouponsIndex({ coupons, filters }: Props) {
                                             {coupon.name}
                                         </p>
                                     </div>
-                                    <div className="hidden text-right sm:block">
-                                        <p className="text-sm font-semibold text-slate-800">
-                                            {coupon.type === 'percent'
-                                                ? `${coupon.value}%`
-                                                : `৳${coupon.value.toLocaleString()}`}
-                                        </p>
-                                        <p className="text-xs text-slate-400">
-                                            {coupon.applies_to === 'selected'
-                                                ? 'Selected items · '
-                                                : ''}
-                                            {coupon.used_count} used
-                                            {coupon.max_uses
-                                                ? ` / ${coupon.max_uses}`
-                                                : ''}
-                                        </p>
-                                    </div>
-                                    <div className="text-right">
-                                        {coupon.expires_at && (
-                                            <p className="text-xs text-slate-400">
-                                                Exp:{' '}
-                                                {new Date(
-                                                    coupon.expires_at,
-                                                ).toLocaleDateString()}
+                                    <div className="order-last flex w-full items-center justify-between gap-x-3 gap-y-1 pl-7 sm:order-none sm:w-auto sm:gap-4 sm:pl-0">
+                                        <div className="text-left sm:text-right">
+                                            <p className="text-sm font-semibold text-slate-800">
+                                                {coupon.type === 'percent'
+                                                    ? `${coupon.value}%`
+                                                    : `৳${coupon.value.toLocaleString()}`}
                                             </p>
-                                        )}
+                                            <p className="text-xs text-slate-400">
+                                                {coupon.applies_to ===
+                                                'selected'
+                                                    ? 'Selected items · '
+                                                    : ''}
+                                                {coupon.used_count} used
+                                                {coupon.max_uses
+                                                    ? ` / ${coupon.max_uses}`
+                                                    : ''}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            {coupon.expires_at && (
+                                                <p className="text-xs text-slate-400">
+                                                    Exp:{' '}
+                                                    {new Date(
+                                                        coupon.expires_at,
+                                                    ).toLocaleDateString()}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <Badge
+                                            variant={
+                                                coupon.is_active
+                                                    ? 'success'
+                                                    : 'error'
+                                            }
+                                            size="sm"
+                                        >
+                                            {coupon.is_active
+                                                ? 'Active'
+                                                : 'Inactive'}
+                                        </Badge>
                                     </div>
-                                    <Badge
-                                        variant={
-                                            coupon.is_active
-                                                ? 'success'
-                                                : 'error'
-                                        }
-                                        size="sm"
-                                    >
-                                        {coupon.is_active
-                                            ? 'Active'
-                                            : 'Inactive'}
-                                    </Badge>
                                     <div className="flex items-center gap-1.5">
                                         <Link
                                             href={route(

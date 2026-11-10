@@ -245,7 +245,7 @@ export default function ProductsIndex({
                             products.data.map((p) => (
                                 <div
                                     key={p.id}
-                                    className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
+                                    className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4"
                                 >
                                     <img
                                         src={
@@ -264,35 +264,37 @@ export default function ProductsIndex({
                                             {p.category?.name ?? 'No category'}
                                         </p>
                                     </div>
-                                    <div className="hidden text-right sm:block">
-                                        <p className="text-sm font-bold text-slate-800">
-                                            ৳{p.price.toLocaleString()}
-                                        </p>
-                                        <p className="text-xs text-slate-400">
-                                            Stock: {p.stock_quantity}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {p.cry_baby_enabled && (
-                                            <span
-                                                title="Crying baby easter egg is on"
-                                                className="flex size-6 items-center justify-center rounded-full bg-amber-50 text-amber-600"
+                                    <div className="order-last flex w-full items-center justify-between gap-3 sm:order-none sm:w-auto sm:gap-4">
+                                        <div className="flex items-baseline gap-2 sm:block sm:text-right">
+                                            <p className="text-sm font-bold text-slate-800">
+                                                ৳{p.price.toLocaleString()}
+                                            </p>
+                                            <p className="text-xs text-slate-400">
+                                                Stock: {p.stock_quantity}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {p.cry_baby_enabled && (
+                                                <span
+                                                    title="Crying baby easter egg is on"
+                                                    className="flex size-6 items-center justify-center rounded-full bg-amber-50 text-amber-600"
+                                                >
+                                                    <Baby className="size-3.5" />
+                                                </span>
+                                            )}
+                                            <Badge
+                                                variant={
+                                                    p.is_active
+                                                        ? 'success'
+                                                        : 'error'
+                                                }
+                                                size="sm"
                                             >
-                                                <Baby className="size-3.5" />
-                                            </span>
-                                        )}
-                                        <Badge
-                                            variant={
-                                                p.is_active
-                                                    ? 'success'
-                                                    : 'error'
-                                            }
-                                            size="sm"
-                                        >
-                                            {p.is_active
-                                                ? 'Active'
-                                                : 'Inactive'}
-                                        </Badge>
+                                                {p.is_active
+                                                    ? 'Active'
+                                                    : 'Inactive'}
+                                            </Badge>
+                                        </div>
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <Link

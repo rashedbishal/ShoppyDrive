@@ -190,7 +190,7 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
                             subCategories.data.map((cat) => (
                                 <div
                                     key={cat.id}
-                                    className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
+                                    className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4"
                                 >
                                     <Checkbox
                                         checked={bulk.isSelected(cat.id)}
@@ -203,7 +203,7 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
                                         name={cat.name}
                                     />
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-semibold text-slate-800">
+                                        <p className="truncate text-sm font-semibold text-slate-800">
                                             {cat.name}
                                         </p>
                                         <p className="text-xs text-slate-400">
@@ -213,14 +213,20 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
                                                 : ''}
                                         </p>
                                     </div>
-                                    <Badge
-                                        variant={
-                                            cat.is_active ? 'success' : 'error'
-                                        }
-                                        size="sm"
-                                    >
-                                        {cat.is_active ? 'Active' : 'Inactive'}
-                                    </Badge>
+                                    <div className="order-last w-full pl-7 sm:order-none sm:w-auto sm:pl-0">
+                                        <Badge
+                                            variant={
+                                                cat.is_active
+                                                    ? 'success'
+                                                    : 'error'
+                                            }
+                                            size="sm"
+                                        >
+                                            {cat.is_active
+                                                ? 'Active'
+                                                : 'Inactive'}
+                                        </Badge>
+                                    </div>
                                     <div className="flex items-center gap-1.5">
                                         <Link
                                             href={route(

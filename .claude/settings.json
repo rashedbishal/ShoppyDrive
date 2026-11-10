@@ -17,7 +17,10 @@
       "Bash(sed -i 's|<div className=\"flex items-center justify-between border-b border-slate-200 px-5 py-4\">|<div className=\"flex h-14 shrink-0 items-center justify-between border-b border-slate-200 px-5\">|' resources/js/layouts/admin-layout.tsx)",
       "Bash(git diff *)",
       "Bash(grep -n \"Media$\\\\|sticky bottom\\\\|space-y-5\\\\\">$\" resources/js/pages/admin/products/edit.tsx)",
-      "mcp__laravel-boost__database-query"
+      "mcp__laravel-boost__database-query",
+      "Bash(grep -rnE 'className=[{`\"][^\"]*\\\\bhidden\\\\b[^\"]*\\\\b\\(sm|md|lg\\):\\(block|flex|inline|table-cell|inline-flex\\)' .)",
+      "Bash(awk -F: '{print $1\":\"$2}')",
+      "Bash(grep -rn 'className=\"px-4 py-3 hover:bg-slate-50/60\"\\\\|className=\"flex flex-col gap-3 px-4 py-3 sm:flex-row\\\\|p-4\"$' returns reviews received-sms orders/incomplete failed-jobs sms-patterns)"
     ],
     "additionalDirectories": [
       "/media/saadman/data3/Projects/ShoppyDrive/resources/css",

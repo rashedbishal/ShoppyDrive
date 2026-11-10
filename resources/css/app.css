@@ -1230,3 +1230,56 @@ html body [data-sonner-toaster][data-sonner-theme] {
     --error-text: #991b1b;
     --error-border: #fecaca;
 }
+
+/*
+ * Phone-only card treatment for admin list rows (orders, products, customers,
+ * …). Above `sm` the rows keep their flat, divided look. Unlayered on purpose:
+ * it has to beat the row's own `px-4 py-3` and the parent's `divide-y`.
+ *
+ * Layout: the identity (image/title/subtitle) and actions form the top block;
+ * whatever the page pushed to the end of the row with `order-last` (price,
+ * counts, status…) becomes a footer under a dashed rule. Nothing is truncated
+ * on a phone — long names and emails wrap instead.
+ */
+@media (max-width: 639px) {
+    .admin-row-card {
+        margin: 0.75rem;
+        padding: 1rem;
+        row-gap: 0.875rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.05),
+            0 4px 12px -4px rgba(15, 23, 42, 0.06);
+    }
+
+    .admin-row-card > .order-last {
+        padding: 0.75rem 0 0;
+        border-top: 1px dashed #e2e8f0;
+    }
+
+    /* Titles and subtitles wrap, up to two lines each; the text block then
+       reserves exactly that much height, so a short name and a long one give
+       cards of the same size. */
+    .admin-row-card .truncate {
+        display: -webkit-box;
+        overflow: hidden;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    .admin-row-card > .min-w-0 {
+        min-height: 4.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .admin-row-card .line-clamp-2 {
+        display: block;
+        overflow: visible;
+        -webkit-line-clamp: unset;
+    }
+}

@@ -159,7 +159,7 @@ export default function IncompleteOrdersIndex({
                             incompleteOrders.data.map((incomplete) => (
                                 <div
                                     key={incomplete.id}
-                                    className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center"
+                                    className="admin-row-card flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center"
                                 >
                                     <div className="min-w-0 sm:w-48 sm:shrink-0">
                                         <p className="font-mono text-sm font-bold text-slate-800">
@@ -205,33 +205,35 @@ export default function IncompleteOrdersIndex({
                                         ))}
                                     </div>
 
-                                    <p className="shrink-0 text-xs text-slate-400 sm:w-28">
-                                        {new Date(
-                                            incomplete.created_at,
-                                        ).toLocaleDateString()}
-                                    </p>
+                                    <div className="flex items-center justify-between gap-3 sm:contents">
+                                        <p className="shrink-0 text-xs text-slate-400 sm:w-28">
+                                            {new Date(
+                                                incomplete.created_at,
+                                            ).toLocaleDateString()}
+                                        </p>
 
-                                    <div className="flex shrink-0 items-center gap-1.5">
-                                        <Link
-                                            href={route(
-                                                'admin.orders.incomplete.convert',
-                                                incomplete.id,
-                                            )}
-                                            className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                                        >
-                                            Convert
-                                            <ArrowRight className="size-3.5" />
-                                        </Link>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setDeleteTarget(incomplete)
-                                            }
-                                            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                                            title="Delete"
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </button>
+                                        <div className="flex shrink-0 items-center gap-1.5">
+                                            <Link
+                                                href={route(
+                                                    'admin.orders.incomplete.convert',
+                                                    incomplete.id,
+                                                )}
+                                                className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                                            >
+                                                Convert
+                                                <ArrowRight className="size-3.5" />
+                                            </Link>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setDeleteTarget(incomplete)
+                                                }
+                                                className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                                title="Delete"
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))

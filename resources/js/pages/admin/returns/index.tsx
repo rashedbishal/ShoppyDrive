@@ -171,9 +171,9 @@ export default function ReturnsIndex({ returns, filters }: Props) {
                             returns.data.map((r) => (
                                 <div
                                     key={r.id}
-                                    className="px-4 py-3 hover:bg-slate-50/60"
+                                    className="admin-row-card px-4 py-3 hover:bg-slate-50/60"
                                 >
-                                    <div className="flex items-start gap-3">
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
                                         <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className="text-sm font-semibold text-slate-800">
@@ -219,7 +219,7 @@ export default function ReturnsIndex({ returns, filters }: Props) {
                                                 </p>
                                             )}
                                         </div>
-                                        <div className="flex shrink-0 items-center gap-1">
+                                        <div className="flex shrink-0 items-center justify-end gap-1 empty:hidden">
                                             {r.status === 'pending' && (
                                                 <>
                                                     <button

@@ -168,11 +168,11 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
                                 <Link
                                     key={order.id}
                                     href={route('admin.orders.show', order.id)}
-                                    className={`flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60 ${
+                                    className={`admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4 ${
                                         order.is_seen ? '' : 'bg-red-50/40'
                                     }`}
                                 >
-                                    <div className="min-w-0 flex-1">
+                                    <div className="w-full min-w-0 sm:w-auto sm:flex-1">
                                         <div className="flex items-center gap-2">
                                             <p className="font-mono text-sm font-bold text-slate-800">
                                                 {order.order_number}
@@ -193,28 +193,30 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
                                             ).toLocaleDateString()}
                                         </p>
                                     </div>
-                                    <p className="hidden text-sm font-bold text-slate-800 sm:block">
-                                        ৳{order.total.toLocaleString()}
-                                    </p>
-                                    <Badge
-                                        variant={
-                                            statusVariant[order.status] ??
-                                            'default'
-                                        }
-                                        size="sm"
-                                    >
-                                        {order.status}
-                                    </Badge>
-                                    <Badge
-                                        variant={
-                                            paymentVariant[
-                                                order.payment_status
-                                            ] ?? 'default'
-                                        }
-                                        size="sm"
-                                    >
-                                        {order.payment_status}
-                                    </Badge>
+                                    <div className="order-last flex w-full items-center gap-2 sm:order-none sm:w-auto sm:gap-4">
+                                        <p className="mr-auto text-sm font-bold text-slate-800 sm:mr-0">
+                                            ৳{order.total.toLocaleString()}
+                                        </p>
+                                        <Badge
+                                            variant={
+                                                statusVariant[order.status] ??
+                                                'default'
+                                            }
+                                            size="sm"
+                                        >
+                                            {order.status}
+                                        </Badge>
+                                        <Badge
+                                            variant={
+                                                paymentVariant[
+                                                    order.payment_status
+                                                ] ?? 'default'
+                                            }
+                                            size="sm"
+                                        >
+                                            {order.payment_status}
+                                        </Badge>
+                                    </div>
                                 </Link>
                             ))
                         )}

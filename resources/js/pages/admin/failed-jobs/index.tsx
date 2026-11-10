@@ -153,7 +153,7 @@ export default function FailedJobsIndex({
                             {failedJobs.data.map((job) => (
                                 <li
                                     key={job.uuid}
-                                    className="flex flex-wrap items-start justify-between gap-3 p-4"
+                                    className="admin-row-card flex flex-wrap items-start justify-between gap-3 p-4"
                                 >
                                     <div className="min-w-0 flex-1 space-y-1">
                                         <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-800">

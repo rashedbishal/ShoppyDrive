@@ -121,7 +121,7 @@ export default function LandingPagesIndex({ pages }: Props) {
                                         }
                                     />
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                             <span className="text-sm font-semibold text-slate-800">
                                                 {page.title}
                                             </span>
@@ -133,7 +133,7 @@ export default function LandingPagesIndex({ pages }: Props) {
                                                     : 'Inactive'}
                                             </span>
                                         </div>
-                                        <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-400">
+                                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-400">
                                             <span className="font-mono">
                                                 /lp/{page.slug}
                                             </span>

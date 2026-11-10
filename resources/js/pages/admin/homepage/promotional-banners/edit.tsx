@@ -377,10 +377,10 @@ export default function PromotionalBannerEdit({
                                             <table className="w-full text-sm">
                                                 <thead className="border-b border-slate-200 bg-slate-50">
                                                     <tr>
-                                                        <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                                                        <th className="px-3 py-3 text-left font-semibold text-slate-700 sm:px-4">
                                                             Product
                                                         </th>
-                                                        <th className="w-28 px-4 py-3 text-right font-semibold text-slate-700">
+                                                        <th className="w-20 px-2 py-3 text-right font-semibold text-slate-700 sm:w-28 sm:px-4">
                                                             Price
                                                         </th>
                                                         <th className="w-12" />
@@ -398,12 +398,12 @@ export default function PromotionalBannerEdit({
                                                                     }
                                                                     className="transition hover:bg-slate-50/50"
                                                                 >
-                                                                    <td className="px-4 py-3 font-medium text-slate-900">
+                                                                    <td className="px-3 py-3 font-medium text-slate-900 sm:px-4">
                                                                         {
                                                                             product.name
                                                                         }
                                                                     </td>
-                                                                    <td className="px-4 py-3 text-right text-slate-600">
+                                                                    <td className="px-3 py-3 text-right text-slate-600 sm:px-4">
                                                                         ৳
                                                                         {Number(
                                                                             product.price,
@@ -411,7 +411,7 @@ export default function PromotionalBannerEdit({
                                                                             0,
                                                                         )}
                                                                     </td>
-                                                                    <td className="px-4 py-3 text-right">
+                                                                    <td className="px-3 py-3 text-right sm:px-4">
                                                                         <button
                                                                             type="button"
                                                                             onClick={() =>
