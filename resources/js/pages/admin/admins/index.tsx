@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { clickableRow } from '@/lib/clickable-row';
 
 type AdminUser = {
     id: number;
@@ -102,7 +103,12 @@ export default function AdminsIndex({ admins }: Props) {
                         {admins.map((admin) => (
                             <div
                                 key={admin.id}
-                                className="flex items-center gap-4 px-4 py-3"
+                                {...clickableRow(
+                                    canEdit(admin)
+                                        ? route('admin.admins.edit', admin.id)
+                                        : null,
+                                )}
+                                className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 sm:flex-nowrap sm:gap-4"
                             >
                                 <div
                                     className={`flex size-9 shrink-0 items-center justify-center rounded-full ${admin.is_mother ? 'bg-amber-100' : 'bg-slate-100'}`}
@@ -115,7 +121,7 @@ export default function AdminsIndex({ admins }: Props) {
                                 </div>
 
                                 <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                         <span className="text-sm font-semibold text-slate-800">
                                             {admin.name}
                                         </span>
@@ -130,12 +136,13 @@ export default function AdminsIndex({ admins }: Props) {
                                             </span>
                                         )}
                                     </div>
-                                    <p className="text-xs text-slate-400">
+                                    <p className="truncate text-xs text-slate-400">
                                         {admin.email}
                                     </p>
                                 </div>
 
-                                <p className="hidden shrink-0 text-xs text-slate-400 sm:block">
+                                <p className="order-last w-full pl-12 text-xs text-slate-400 sm:order-none sm:w-auto sm:shrink-0 sm:pl-0">
+                                    <span className="sm:hidden">Joined </span>
                                     {new Date(
                                         admin.created_at,
                                     ).toLocaleDateString('en-BD', {

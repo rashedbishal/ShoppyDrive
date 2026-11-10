@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { clickableRow } from '@/lib/clickable-row';
 import {
     destroyMany as bulkDestroyRoute,
     updateStatusMany as bulkStatusRoute,
@@ -171,7 +172,13 @@ export default function ProductBundlesIndex({ bundles, filters }: Props) {
                             bundles.data.map((bundle) => (
                                 <div
                                     key={bundle.id}
-                                    className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
+                                    {...clickableRow(
+                                        route(
+                                            'admin.product-bundles.edit',
+                                            bundle.id,
+                                        ),
+                                    )}
+                                    className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4"
                                 >
                                     <Checkbox
                                         checked={bulk.isSelected(bundle.id)}
@@ -185,7 +192,7 @@ export default function ProductBundlesIndex({ bundles, filters }: Props) {
                                         className="size-10 shrink-0 rounded-lg border border-slate-100 object-cover"
                                     />
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-semibold text-slate-800">
+                                        <p className="truncate text-sm font-semibold text-slate-800">
                                             {bundle.name}
                                         </p>
                                         <p className="text-xs text-slate-400">
@@ -195,21 +202,23 @@ export default function ProductBundlesIndex({ bundles, filters }: Props) {
                                                 : 'Free delivery'}
                                         </p>
                                     </div>
-                                    <p className="hidden text-xs text-slate-500 sm:block">
-                                        {bundle.items_count} products
-                                    </p>
-                                    <Badge
-                                        variant={
-                                            bundle.is_active
-                                                ? 'success'
-                                                : 'error'
-                                        }
-                                        size="sm"
-                                    >
-                                        {bundle.is_active
-                                            ? 'Active'
-                                            : 'Inactive'}
-                                    </Badge>
+                                    <div className="order-last flex w-full items-center gap-2 pl-7 sm:order-none sm:w-auto sm:gap-4 sm:pl-0">
+                                        <p className="mr-auto text-xs text-slate-500 sm:mr-0">
+                                            {bundle.items_count} products
+                                        </p>
+                                        <Badge
+                                            variant={
+                                                bundle.is_active
+                                                    ? 'success'
+                                                    : 'error'
+                                            }
+                                            size="sm"
+                                        >
+                                            {bundle.is_active
+                                                ? 'Active'
+                                                : 'Inactive'}
+                                        </Badge>
+                                    </div>
                                     <div className="flex items-center gap-1.5">
                                         <Link
                                             href={route(

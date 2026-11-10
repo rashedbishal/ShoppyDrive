@@ -96,7 +96,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
                             customers.data.map((customer) => (
                                 <div
                                     key={customer.id}
-                                    className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
+                                    className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4"
                                 >
                                     <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">
                                         {customer.name
@@ -104,17 +104,17 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                             .toUpperCase()}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-semibold text-slate-800">
+                                        <p className="truncate text-sm font-semibold text-slate-800">
                                             {customer.name}
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="truncate text-xs text-slate-400">
                                             {customer.email}
                                             {customer.phone
                                                 ? ` · ${customer.phone}`
                                                 : ''}
                                         </p>
                                     </div>
-                                    <div className="hidden text-right sm:block">
+                                    <div className="order-last flex w-full items-baseline justify-between gap-2 sm:order-none sm:block sm:w-auto sm:text-right">
                                         <p className="text-sm font-semibold text-slate-800">
                                             {customer.orders_count} orders
                                         </p>

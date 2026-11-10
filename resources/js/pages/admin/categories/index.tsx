@@ -19,6 +19,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
 import { resolveCategoryColor } from '@/lib/category-colors';
 import { CategoryIcon } from '@/lib/category-icons';
+import { clickableRow } from '@/lib/clickable-row';
 import { cn } from '@/lib/utils';
 import {
     destroyMany as bulkDestroyRoute,
@@ -237,6 +238,12 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                                 return (
                                     <div
                                         key={cat.id}
+                                        {...clickableRow(
+                                            route(
+                                                'admin.categories.edit',
+                                                cat.id,
+                                            ),
+                                        )}
                                         draggable={canReorder}
                                         onDragStart={() => {
                                             dragIndexRef.current = index;
@@ -249,15 +256,15 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                                             setDraggingId(null);
                                         }}
                                         className={cn(
-                                            'flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60',
+                                            'admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4',
                                             draggingId === cat.id &&
                                                 'opacity-40',
                                         )}
                                     >
                                         {canReorder ? (
-                                            <GripVertical className="size-4 shrink-0 cursor-grab text-slate-300 active:cursor-grabbing" />
+                                            <GripVertical className="size-4 shrink-0 cursor-grab text-slate-300 active:cursor-grabbing max-sm:hidden" />
                                         ) : (
-                                            <span className="size-4 shrink-0" />
+                                            <span className="size-4 shrink-0 max-sm:hidden" />
                                         )}
                                         <Checkbox
                                             checked={bulk.isSelected(cat.id)}
@@ -283,37 +290,41 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                                             name={cat.name}
                                         />
                                         <div className="min-w-0 flex-1">
-                                            <p className="text-sm font-semibold text-slate-800">
+                                            <p className="truncate text-sm font-semibold text-slate-800">
                                                 {cat.name}
                                             </p>
-                                            <p className="text-xs text-slate-400">
+                                            <p className="truncate text-xs text-slate-400">
                                                 {cat.slug}
                                             </p>
                                         </div>
-                                        <div className="hidden flex-col items-end gap-0.5 sm:flex">
-                                            <p className="text-xs font-medium text-slate-600">
-                                                {cat.sub_categories_count} sub-
-                                                {cat.sub_categories_count === 1
-                                                    ? 'category'
-                                                    : 'categories'}
-                                            </p>
-                                            <p className="text-xs text-slate-400">
-                                                {cat.direct_products_count}{' '}
-                                                direct products
-                                            </p>
+                                        <div className="order-last flex w-full items-center justify-between gap-3 sm:order-none sm:w-auto sm:gap-4">
+                                            <div className="flex flex-col gap-0.5 sm:items-end">
+                                                <p className="text-xs font-medium text-slate-600">
+                                                    {cat.sub_categories_count}{' '}
+                                                    sub-
+                                                    {cat.sub_categories_count ===
+                                                    1
+                                                        ? 'category'
+                                                        : 'categories'}
+                                                </p>
+                                                <p className="text-xs text-slate-400">
+                                                    {cat.direct_products_count}{' '}
+                                                    direct products
+                                                </p>
+                                            </div>
+                                            <Badge
+                                                variant={
+                                                    cat.is_active
+                                                        ? 'success'
+                                                        : 'error'
+                                                }
+                                                size="sm"
+                                            >
+                                                {cat.is_active
+                                                    ? 'Active'
+                                                    : 'Inactive'}
+                                            </Badge>
                                         </div>
-                                        <Badge
-                                            variant={
-                                                cat.is_active
-                                                    ? 'success'
-                                                    : 'error'
-                                            }
-                                            size="sm"
-                                        >
-                                            {cat.is_active
-                                                ? 'Active'
-                                                : 'Inactive'}
-                                        </Badge>
                                         <div className="flex items-center gap-1.5">
                                             <Link
                                                 href={route(

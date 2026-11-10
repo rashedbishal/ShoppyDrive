@@ -51,67 +51,126 @@ function ReportTable({ report }: { report: RestoreReport }) {
         { added: 0, updated: 0, skipped: 0, conflicts: 0 },
     );
 
+    const stats = (row: {
+        added: number;
+        updated: number;
+        skipped: number;
+        conflicts: number;
+    }) => [
+        ['New', row.added],
+        ['Updated', row.updated],
+        ['Same', row.skipped],
+        ['Conflicts', row.conflicts],
+    ];
+
     return (
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
-            <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-left text-xs text-slate-500">
-                    <tr>
-                        <th className="px-3 py-2 font-medium">Table</th>
-                        <th className="px-3 py-2 text-right font-medium">
-                            New
-                        </th>
-                        <th className="px-3 py-2 text-right font-medium">
-                            Updated
-                        </th>
-                        <th className="px-3 py-2 text-right font-medium">
-                            Already same (skipped)
-                        </th>
-                        <th className="px-3 py-2 text-right font-medium">
-                            Conflicts (skipped)
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {report.tables.map((table) => (
-                        <tr
-                            key={table.table}
-                            className="border-t border-slate-100"
-                        >
-                            <td className="px-3 py-1.5 font-mono text-xs text-slate-700">
-                                {table.table}
+        <>
+            {/* Phone: one small card per table instead of a 5-column grid. */}
+            <div className="space-y-2 sm:hidden">
+                {report.tables.map((table) => (
+                    <div
+                        key={table.table}
+                        className="rounded-lg border border-slate-200 p-3"
+                    >
+                        <p className="font-mono text-xs break-all text-slate-700">
+                            {table.table}
+                        </p>
+                        <dl className="mt-2 grid grid-cols-4 gap-2 text-center">
+                            {stats(table).map(([label, value]) => (
+                                <div key={label}>
+                                    <dd className="text-sm font-semibold text-slate-800">
+                                        {value}
+                                    </dd>
+                                    <dt className="text-[10px] text-slate-400">
+                                        {label}
+                                    </dt>
+                                </div>
+                            ))}
+                        </dl>
+                    </div>
+                ))}
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-xs font-semibold text-slate-700">
+                        Total
+                    </p>
+                    <dl className="mt-2 grid grid-cols-4 gap-2 text-center">
+                        {stats(totals).map(([label, value]) => (
+                            <div key={label}>
+                                <dd className="text-sm font-semibold text-slate-800">
+                                    {value}
+                                </dd>
+                                <dt className="text-[10px] text-slate-400">
+                                    {label}
+                                </dt>
+                            </div>
+                        ))}
+                    </dl>
+                </div>
+            </div>
+
+            <div className="hidden overflow-x-auto rounded-lg border border-slate-200 sm:block">
+                <table className="w-full text-sm">
+                    <thead className="bg-slate-50 text-left text-xs text-slate-500">
+                        <tr>
+                            <th className="px-3 py-2 font-medium">Table</th>
+                            <th className="px-3 py-2 text-right font-medium">
+                                New
+                            </th>
+                            <th className="px-3 py-2 text-right font-medium">
+                                Updated
+                            </th>
+                            <th className="px-3 py-2 text-right font-medium">
+                                Already same (skipped)
+                            </th>
+                            <th className="px-3 py-2 text-right font-medium">
+                                Conflicts (skipped)
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {report.tables.map((table) => (
+                            <tr
+                                key={table.table}
+                                className="border-t border-slate-100"
+                            >
+                                <td className="px-3 py-1.5 font-mono text-xs text-slate-700">
+                                    {table.table}
+                                </td>
+                                <td className="px-3 py-1.5 text-right">
+                                    {table.added}
+                                </td>
+                                <td className="px-3 py-1.5 text-right">
+                                    {table.updated}
+                                </td>
+                                <td className="px-3 py-1.5 text-right">
+                                    {table.skipped}
+                                </td>
+                                <td className="px-3 py-1.5 text-right">
+                                    {table.conflicts}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                    <tfoot>
+                        <tr className="border-t border-slate-200 bg-slate-50 font-semibold">
+                            <td className="px-3 py-2">Total</td>
+                            <td className="px-3 py-2 text-right">
+                                {totals.added}
                             </td>
-                            <td className="px-3 py-1.5 text-right">
-                                {table.added}
+                            <td className="px-3 py-2 text-right">
+                                {totals.updated}
                             </td>
-                            <td className="px-3 py-1.5 text-right">
-                                {table.updated}
+                            <td className="px-3 py-2 text-right">
+                                {totals.skipped}
                             </td>
-                            <td className="px-3 py-1.5 text-right">
-                                {table.skipped}
-                            </td>
-                            <td className="px-3 py-1.5 text-right">
-                                {table.conflicts}
+                            <td className="px-3 py-2 text-right">
+                                {totals.conflicts}
                             </td>
                         </tr>
-                    ))}
-                </tbody>
-                <tfoot>
-                    <tr className="border-t border-slate-200 bg-slate-50 font-semibold">
-                        <td className="px-3 py-2">Total</td>
-                        <td className="px-3 py-2 text-right">{totals.added}</td>
-                        <td className="px-3 py-2 text-right">
-                            {totals.updated}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                            {totals.skipped}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                            {totals.conflicts}
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+                    </tfoot>
+                </table>
+            </div>
+        </>
     );
 }
 

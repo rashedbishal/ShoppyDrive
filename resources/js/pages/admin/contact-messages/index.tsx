@@ -153,7 +153,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                                             </p>
                                             <a
                                                 href={`mailto:${message.email}`}
-                                                className="text-xs text-slate-400 hover:underline"
+                                                className="text-xs break-all text-slate-400 hover:underline"
                                             >
                                                 {message.email}
                                             </a>

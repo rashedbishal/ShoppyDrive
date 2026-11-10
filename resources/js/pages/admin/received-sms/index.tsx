@@ -290,7 +290,7 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
                             sms.data.map((item) => (
                                 <div
                                     key={item.id}
-                                    className="px-4 py-3 hover:bg-slate-50/60"
+                                    className="admin-row-card px-4 py-3 hover:bg-slate-50/60"
                                 >
                                     <div className="flex items-start gap-4">
                                         <div className="min-w-0 flex-1 space-y-1">

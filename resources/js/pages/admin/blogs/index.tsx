@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { clickableRow } from '@/lib/clickable-row';
 import {
     destroyMany as bulkDestroyRoute,
     updateStatusMany as bulkStatusRoute,
@@ -154,7 +155,10 @@ export default function BlogsIndex({ blogs, filters }: Props) {
                             blogs.data.map((blog) => (
                                 <div
                                     key={blog.id}
-                                    className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50/60"
+                                    {...clickableRow(
+                                        route('admin.blogs.edit', blog.slug),
+                                    )}
+                                    className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4"
                                 >
                                     <Checkbox
                                         checked={bulk.isSelected(blog.id)}
@@ -183,18 +187,20 @@ export default function BlogsIndex({ blogs, filters }: Props) {
                                                 : ''}
                                         </p>
                                     </div>
-                                    <Badge
-                                        variant={
-                                            blog.is_published
-                                                ? 'success'
-                                                : 'error'
-                                        }
-                                        size="sm"
-                                    >
-                                        {blog.is_published
-                                            ? 'Published'
-                                            : 'Draft'}
-                                    </Badge>
+                                    <div className="order-last w-full pl-7 sm:order-none sm:w-auto sm:pl-0">
+                                        <Badge
+                                            variant={
+                                                blog.is_published
+                                                    ? 'success'
+                                                    : 'error'
+                                            }
+                                            size="sm"
+                                        >
+                                            {blog.is_published
+                                                ? 'Published'
+                                                : 'Draft'}
+                                        </Badge>
+                                    </div>
                                     <div className="flex items-center gap-1.5">
                                         <Link
                                             href={route(

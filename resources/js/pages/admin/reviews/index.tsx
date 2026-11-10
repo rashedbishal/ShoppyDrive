@@ -138,7 +138,7 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
                             reviews.data.map((review) => (
                                 <div
                                     key={review.id}
-                                    className="px-4 py-3 hover:bg-slate-50/60"
+                                    className="admin-row-card px-4 py-3 hover:bg-slate-50/60"
                                 >
                                     <div className="flex items-start gap-3">
                                         <div className="min-w-0 flex-1">

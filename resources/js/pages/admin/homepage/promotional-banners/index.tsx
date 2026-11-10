@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { clickableRow } from '@/lib/clickable-row';
 import { DEFAULT_BANNER_GRADIENT, isCssGradient } from '@/lib/gradient';
 import type { PromotionalBanner } from '@/types';
 
@@ -58,7 +59,16 @@ export default function PromotionalBannersIndex({ banners }: Props) {
                         </Card>
                     ) : (
                         banners.map((banner) => (
-                            <Card key={banner.id} className="overflow-hidden">
+                            <Card
+                                key={banner.id}
+                                {...clickableRow(
+                                    route(
+                                        'admin.promotional-banners.edit',
+                                        banner.id,
+                                    ),
+                                )}
+                                className="overflow-hidden"
+                            >
                                 <div className="flex flex-col md:flex-row">
                                     <div className="relative h-40 w-full shrink-0 md:h-auto md:w-80">
                                         <img
