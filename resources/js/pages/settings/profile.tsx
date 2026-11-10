@@ -1,4 +1,5 @@
-import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Form, Head, Link, router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
@@ -6,6 +7,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 
@@ -13,12 +15,29 @@ export default function Profile({
     mustVerifyEmail,
     status,
     pendingEmailChange,
+    cartRemindersEnabled,
 }: {
     mustVerifyEmail: boolean;
     status?: string;
     pendingEmailChange?: { new_email: string; sent_to: string } | null;
+    cartRemindersEnabled: boolean;
 }) {
     const { auth } = usePage().props;
+    const [savingCartReminders, setSavingCartReminders] = useState(false);
+
+    // OPS-006: the email's unsubscribe link only turns these off; this
+    // lets the customer see the setting and turn it back on too.
+    const updateCartReminders = (enabled: boolean) => {
+        router.patch(
+            ProfileController.updateCartReminders.url(),
+            { enabled },
+            {
+                preserveScroll: true,
+                onStart: () => setSavingCartReminders(true),
+                onFinish: () => setSavingCartReminders(false),
+            },
+        );
+    };
 
     return (
         <>
@@ -171,6 +190,33 @@ export default function Profile({
                         </Form>
                     </div>
                 )}
+
+                <div className="space-y-4">
+                    <Heading
+                        variant="small"
+                        title="Email preferences"
+                        description="Choose which optional emails we send you. Order updates are always sent."
+                    />
+
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="grid gap-1">
+                            <Label id="cart-reminders-label">
+                                Cart reminder emails
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                                A reminder if you leave items at checkout, at
+                                most once a week.
+                            </p>
+                        </div>
+
+                        <Switch
+                            checked={cartRemindersEnabled}
+                            onCheckedChange={updateCartReminders}
+                            disabled={savingCartReminders}
+                            aria-labelledby="cart-reminders-label"
+                        />
+                    </div>
+                </div>
             </div>
 
             <DeleteUser />

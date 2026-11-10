@@ -73,6 +73,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'anonymized_at' => 'datetime',
             'anonymization_snapshot' => 'array',
             'abandoned_cart_reminders_enabled' => 'boolean',
+            'last_abandoned_cart_reminder_at' => 'datetime',
         ];
     }
 

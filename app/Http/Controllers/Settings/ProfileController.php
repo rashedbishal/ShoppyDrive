@@ -35,7 +35,28 @@ class ProfileController extends Controller
                 'new_email' => $pending['email'],
                 'sent_to' => $request->user()->email,
             ],
+            // OPS-006: the column is NOT NULL, default on; `?? true` only
+            // covers a user instance created in memory before that default.
+            'cartRemindersEnabled' => (bool) ($request->user()->abandoned_cart_reminders_enabled ?? true),
         ]);
+    }
+
+    /**
+     * OPS-006: the email's unsubscribe link only turns cart reminders off;
+     * this lets a customer see the setting and turn it back on as well.
+     */
+    public function updateCartReminders(Request $request): RedirectResponse
+    {
+        $request->validate(['enabled' => ['required', 'boolean']]);
+        $enabled = $request->boolean('enabled');
+
+        $request->user()->update(['abandoned_cart_reminders_enabled' => $enabled]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => $enabled
+            ? __('Cart reminder emails are on.')
+            : __('Cart reminder emails are off.')]);
+
+        return to_route('profile.edit');
     }
 
     /**

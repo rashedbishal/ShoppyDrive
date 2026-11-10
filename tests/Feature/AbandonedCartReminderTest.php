@@ -298,3 +298,78 @@ test('editing an already-reminded cart does not trigger a second reminder (uncha
     $this->artisan('cart:remind-abandoned')->assertExitCode(0);
     Mail::assertNothingQueued();
 });
+
+/*
+ * OPS-006 (cooldown, 2026-11-11): reminder_sent_at only dedupes per checkout
+ * attempt, so three abandoned attempts used to mean three emails. A customer
+ * now gets at most one reminder per AbandonedCartReminderJob::COOLDOWN_DAYS.
+ */
+test('three abandoned checkout attempts in one run send the customer one reminder, about the newest cart', function () {
+    Mail::fake();
+    $user = User::factory()->create();
+    $oldest = IncompleteOrder::factory()->create(['user_id' => $user->id, 'created_at' => now()->subHours(5)]);
+    $middle = IncompleteOrder::factory()->create(['user_id' => $user->id, 'created_at' => now()->subHours(4)]);
+    $newest = IncompleteOrder::factory()->create(['user_id' => $user->id, 'created_at' => now()->subHours(3)]);
+
+    $this->artisan('cart:remind-abandoned')->assertExitCode(0);
+
+    Mail::assertQueued(AbandonedCartReminderMail::class, 1);
+    Mail::assertQueued(AbandonedCartReminderMail::class, fn ($mail) => $mail->incompleteOrder->is($newest));
+    expect($oldest->refresh()->reminder_sent_at)->not->toBeNull()
+        ->and($middle->refresh()->reminder_sent_at)->not->toBeNull()
+        ->and($user->refresh()->last_abandoned_cart_reminder_at)->not->toBeNull();
+});
+
+test('a later abandoned checkout inside the 7-day cooldown is not mailed, and is not retried', function () {
+    Mail::fake();
+    $user = User::factory()->create();
+    $user->forceFill(['last_abandoned_cart_reminder_at' => now()->subDays(6)])->save();
+    $incompleteOrder = IncompleteOrder::factory()->create(['user_id' => $user->id, 'created_at' => now()->subHours(2)]);
+
+    $this->artisan('cart:remind-abandoned')->assertExitCode(0);
+    $this->artisan('cart:remind-abandoned')->assertExitCode(0);
+
+    Mail::assertNothingQueued();
+    expect($incompleteOrder->refresh()->reminder_sent_at)->not->toBeNull()
+        ->and($user->refresh()->last_abandoned_cart_reminder_at->toDateTimeString())->toBe(now()->subDays(6)->toDateTimeString());
+});
+
+test('a customer is reminded again once the 7-day cooldown has passed', function () {
+    Mail::fake();
+    $this->freezeTime();
+    $user = User::factory()->create();
+    $user->forceFill(['last_abandoned_cart_reminder_at' => now()->subDays(7)->subMinute()])->save();
+    $incompleteOrder = IncompleteOrder::factory()->create(['user_id' => $user->id, 'created_at' => now()->subHours(2)]);
+
+    AbandonedCartReminderJob::dispatchSync($incompleteOrder->id);
+
+    Mail::assertQueued(AbandonedCartReminderMail::class, 1);
+    expect($user->refresh()->last_abandoned_cart_reminder_at->toDateTimeString())->toBe(now()->toDateTimeString());
+});
+
+test('a skipped attempt (opted out) does not start the cooldown', function () {
+    Mail::fake();
+    $user = User::factory()->create(['abandoned_cart_reminders_enabled' => false]);
+    $incompleteOrder = IncompleteOrder::factory()->create(['user_id' => $user->id]);
+
+    AbandonedCartReminderJob::dispatchSync($incompleteOrder->id);
+
+    Mail::assertNothingQueued();
+    expect($user->refresh()->last_abandoned_cart_reminder_at)->toBeNull();
+});
+
+test('a customer with an unverified email is not mailed, but can be once they verify', function () {
+    Mail::fake();
+    $user = User::factory()->unverified()->create();
+    $incompleteOrder = IncompleteOrder::factory()->create(['user_id' => $user->id, 'created_at' => now()->subHours(2)]);
+
+    AbandonedCartReminderJob::dispatchSync($incompleteOrder->id);
+
+    Mail::assertNothingQueued();
+    expect($incompleteOrder->refresh()->reminder_sent_at)->toBeNull();
+
+    $user->forceFill(['email_verified_at' => now()])->save();
+    AbandonedCartReminderJob::dispatchSync($incompleteOrder->id);
+
+    Mail::assertQueued(AbandonedCartReminderMail::class, 1);
+});

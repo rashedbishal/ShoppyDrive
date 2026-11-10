@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Mail\AbandonedCartReminderMail;
 use App\Models\IncompleteOrder;
 use App\Models\Order;
+use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,9 @@ use Illuminate\Support\Facades\Mail;
 class AbandonedCartReminderJob implements ShouldQueue
 {
     use Queueable;
+
+    /** OPS-006 (owner decision 2026-11-11): at most one reminder per customer per 7 days. */
+    public const COOLDOWN_DAYS = 7;
 
     public function __construct(
         public readonly int $incompleteOrderId,
@@ -48,17 +52,25 @@ class AbandonedCartReminderJob implements ShouldQueue
         // claim means the customer may simply never get this reminder,
         // rather than risking two.
         $claimed = DB::transaction(function (): ?IncompleteOrder {
-            $incompleteOrder = IncompleteOrder::with('user')
-                ->lockForUpdate()
-                ->find($this->incompleteOrderId);
+            // OPS-006: the customer's row is locked first, then this cart's —
+            // the same order checkout uses (it locks the user, then deletes
+            // their IncompleteOrder rows), so the two can't deadlock. Locking
+            // the customer also serializes this customer's other reminder
+            // jobs, so the per-customer cooldown below can't be raced.
+            $userId = IncompleteOrder::whereKey($this->incompleteOrderId)->value('user_id');
+            $user = $userId === null ? null : User::lockForUpdate()->find($userId);
+
+            $incompleteOrder = IncompleteOrder::lockForUpdate()->find($this->incompleteOrderId);
 
             if ($incompleteOrder === null || $incompleteOrder->reminder_sent_at !== null) {
                 return null;
             }
 
-            if (! $incompleteOrder->user?->email) {
+            if ($user === null || (int) $incompleteOrder->user_id !== $user->id || ! $user->email) {
                 return null;
             }
+
+            $incompleteOrder->setRelation('user', $user);
 
             // OPS-006: User::anonymize() deliberately leaves the email
             // column untouched (so refund/audit history stays legible),
@@ -78,6 +90,13 @@ class AbandonedCartReminderJob implements ShouldQueue
                 return null;
             }
 
+            // OPS-006: never mail an address the customer hasn't proven is
+            // theirs. Left unclaimed, so a customer who verifies before the
+            // 72-hour ceiling can still be reminded on a later run.
+            if ($user->email_verified_at === null) {
+                return null;
+            }
+
             // Defense in depth: the order-creation paths that clean up a
             // matching IncompleteOrder row (by phone or user_id) might
             // have missed this one for some other reason — e.g. a third
@@ -91,9 +110,23 @@ class AbandonedCartReminderJob implements ShouldQueue
                 ->where('created_at', '>=', $incompleteOrder->created_at)
                 ->exists();
 
+            // OPS-006: at most one reminder per customer per cooldown, however
+            // many checkout attempts they abandoned — `reminder_sent_at` only
+            // dedupes per attempt. An attempt inside the cooldown is claimed
+            // without sending; with a cooldown longer than the command's
+            // 72-hour ceiling, it would have expired before the next chance.
+            $inCooldown = $user->last_abandoned_cart_reminder_at !== null
+                && $user->last_abandoned_cart_reminder_at->gt(now()->subDays(self::COOLDOWN_DAYS));
+
             $incompleteOrder->update(['reminder_sent_at' => now()]);
 
-            return $hasOrderedSince ? null : $incompleteOrder;
+            if ($hasOrderedSince || $inCooldown) {
+                return null;
+            }
+
+            $user->forceFill(['last_abandoned_cart_reminder_at' => now()])->save();
+
+            return $incompleteOrder;
         });
 
         if ($claimed === null) {

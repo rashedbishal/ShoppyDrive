@@ -29,6 +29,11 @@ class RemindAbandonedCarts extends Command
             ->whereNull('reminder_sent_at')
             ->where('created_at', '<=', now()->subHour())
             ->where('created_at', '>', now()->subHours(self::MAX_AGE_HOURS))
+            // OPS-006: newest first, so when one customer has several
+            // attempts in a run, the per-customer cooldown in
+            // AbandonedCartReminderJob lets their latest cart be the one mailed.
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->get(['id']);
 
         foreach ($eligible as $incompleteOrder) {

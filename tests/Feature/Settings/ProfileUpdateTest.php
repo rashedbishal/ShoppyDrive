@@ -116,3 +116,50 @@ test('correct password must be provided to delete account', function () {
 
     expect($user->fresh())->not->toBeNull();
 });
+
+/*
+ * OPS-006: the reminder email's unsubscribe link only turns cart reminders
+ * off; Settings › Profile shows the setting and turns it off or back on.
+ */
+test('the profile page shows whether cart reminder emails are on', function () {
+    $user = User::factory()->create(['abandoned_cart_reminders_enabled' => false]);
+
+    $response = $this->actingAs($user)->get(route('profile.edit'));
+
+    $response->assertOk()->assertInertia(fn ($page) => $page->where('cartRemindersEnabled', false));
+});
+
+test('a customer can turn cart reminder emails back on after unsubscribing, and off again', function () {
+    $user = User::factory()->create(['abandoned_cart_reminders_enabled' => false]);
+
+    $this->actingAs($user)
+        ->patch(route('profile.cart-reminders.update'), ['enabled' => true])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('profile.edit'));
+
+    expect($user->refresh()->abandoned_cart_reminders_enabled)->toBeTrue();
+
+    $this->actingAs($user)
+        ->patch(route('profile.cart-reminders.update'), ['enabled' => false])
+        ->assertRedirect(route('profile.edit'));
+
+    expect($user->refresh()->abandoned_cart_reminders_enabled)->toBeFalse();
+});
+
+test('the cart reminder setting only changes for the signed-in customer and needs a yes/no value', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $this->actingAs($user)
+        ->patch(route('profile.cart-reminders.update'), ['enabled' => 'maybe'])
+        ->assertSessionHasErrors('enabled');
+    $this->actingAs($user)->patch(route('profile.cart-reminders.update'), ['enabled' => false]);
+
+    expect($user->refresh()->abandoned_cart_reminders_enabled)->toBeFalse()
+        ->and($otherUser->refresh()->abandoned_cart_reminders_enabled)->toBeTrue();
+});
+
+test('a guest cannot change cart reminder settings', function () {
+    $this->patch(route('profile.cart-reminders.update'), ['enabled' => false])
+        ->assertRedirect(route('login'));
+});
