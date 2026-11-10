@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\ReturnStatus;
 use App\Models\Cart;
 use App\Models\FlashSale;
 use App\Models\FlashSaleItem;
@@ -11,8 +12,10 @@ use App\Models\PendingCheckout;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\ReceivedSms;
+use App\Models\ReturnRequest;
 use App\Models\User;
 use App\Services\InventoryService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
@@ -283,6 +286,80 @@ test('restoring stock for an order twice does not double-credit it', function ()
     $service->restoreForOrder($order->fresh());
 
     expect($product->refresh()->stock_quantity)->toBe(12);
+});
+
+test('restoring stock for a cancelled order locks products in id order, not order-item order (BIZ-022)', function () {
+    // The higher-id product is deliberately the *first* order item, so a
+    // restore that locked rows in order_item order (instead of product id
+    // order) would still issue its UPDATEs highest-id-first — the opposite
+    // of what a concurrent order placement (or another order's restore)
+    // sharing these same two products would be locking them in.
+    $lower = Product::factory()->create(['stock_quantity' => 5]);
+    $higher = Product::factory()->create(['stock_quantity' => 5]);
+    expect($higher->id)->toBeGreaterThan($lower->id);
+
+    $order = Order::create([
+        'order_number' => 'ORD-TEST-LOCKORDER',
+        'status' => 'cancelled',
+        'payment_status' => 'unpaid',
+        'payment_method' => 'cod',
+        'subtotal' => 200, 'shipping_cost' => 0, 'discount' => 0, 'tax' => 0, 'total' => 200,
+        'shipping_address' => [], 'billing_address' => [],
+    ]);
+    $order->items()->create(['product_id' => $higher->id, 'variant_id' => null, 'product_name' => $higher->name, 'price' => 100, 'quantity' => 1, 'subtotal' => 100, 'product_snapshot' => []]);
+    $order->items()->create(['product_id' => $lower->id, 'variant_id' => null, 'product_name' => $lower->name, 'price' => 100, 'quantity' => 1, 'subtotal' => 100, 'product_snapshot' => []]);
+
+    DB::enableQueryLog();
+    app(InventoryService::class)->restoreForOrder($order->fresh());
+    $lockQuery = collect(DB::getQueryLog())->first(fn ($q) => str_contains($q['query'], 'select "id" from "products"'));
+    DB::disableQueryLog();
+
+    expect($lockQuery)->not->toBeNull()
+        ->and($lockQuery['query'])->toContain('order by "id" asc')
+        ->and($higher->refresh()->stock_quantity)->toBe(6)
+        ->and($lower->refresh()->stock_quantity)->toBe(6);
+});
+
+test('approving a return locks products in id order, not order-item order (BIZ-022)', function () {
+    $customer = User::factory()->create();
+    $lower = Product::factory()->create(['price' => 100, 'stock_quantity' => 5]);
+    $higher = Product::factory()->create(['price' => 100, 'stock_quantity' => 5]);
+    expect($higher->id)->toBeGreaterThan($lower->id);
+
+    $order = Order::create([
+        'order_number' => 'ORD-TEST-RETURN-LOCKORDER',
+        'status' => 'delivered',
+        'payment_status' => 'paid',
+        'payment_method' => 'cod',
+        'subtotal' => 200, 'shipping_cost' => 0, 'discount' => 0, 'tax' => 0, 'total' => 200,
+        'shipping_address' => [], 'billing_address' => [],
+        'delivered_at' => now()->subDay(),
+    ]);
+    // Deliberately the higher-id product first, same reasoning as the
+    // restoreForOrder() test above.
+    $higherItem = $order->items()->create(['product_id' => $higher->id, 'variant_id' => null, 'product_name' => $higher->name, 'price' => 100, 'quantity' => 1, 'subtotal' => 100, 'product_snapshot' => []]);
+    $lowerItem = $order->items()->create(['product_id' => $lower->id, 'variant_id' => null, 'product_name' => $lower->name, 'price' => 100, 'quantity' => 1, 'subtotal' => 100, 'product_snapshot' => []]);
+
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id,
+        'user_id' => $customer->id,
+        'reason' => 'Changed my mind',
+        'status' => ReturnStatus::PENDING,
+        'items' => [
+            ['order_item_id' => $higherItem->id, 'product_id' => $higher->id, 'quantity' => 1],
+            ['order_item_id' => $lowerItem->id, 'product_id' => $lower->id, 'quantity' => 1],
+        ],
+    ]);
+
+    DB::enableQueryLog();
+    app(InventoryService::class)->restoreForReturnRequest($returnRequest);
+    $lockQuery = collect(DB::getQueryLog())->first(fn ($q) => str_contains($q['query'], 'select "id" from "products"'));
+    DB::disableQueryLog();
+
+    expect($lockQuery)->not->toBeNull()
+        ->and($lockQuery['query'])->toContain('order by "id" asc')
+        ->and($higher->refresh()->stock_quantity)->toBe(6)
+        ->and($lower->refresh()->stock_quantity)->toBe(6);
 });
 
 test('confirming a mobile-banking payment decrements stock and rejects if stock ran out meanwhile', function () {

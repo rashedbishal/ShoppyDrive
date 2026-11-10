@@ -31,8 +31,10 @@ class InventoryService
 {
     /**
      * BIZ-022: takes every stock lock an order will need, in id order, before
-     * its lines are decremented. Two orders sharing products in opposite order
-     * then queue instead of deadlocking, and the lines keep their own order
+     * its lines are decremented (every order-creation path) or restored
+     * (restoreForOrder()/restoreForReturnRequest()). Two transactions sharing
+     * products in opposite order then queue instead of deadlocking — on
+     * either side, or across the two — and the lines keep their own order
      * on the invoice.
      *
      * @param  iterable<array<string, mixed>|object>  $lines  Each with product_id and variant_id.
@@ -230,6 +232,19 @@ class InventoryService
 
             $orderItemIds = $order->items()->orderBy('id')->pluck('id');
 
+            // BIZ-022: the ascending-*order_item*-id order above only
+            // protects this order against itself (see this method's own
+            // docblock); it says nothing about a *different* order's items,
+            // whose ids interleave with this order's arbitrarily. Without
+            // this, two orders sharing the same two products in opposite
+            // order can still deadlock here — this cancellation restoring
+            // stock while another order's placement, or another
+            // cancellation, races it for the same rows. lockStockInOrder()
+            // takes every lock this restore will need, in global
+            // product/variant id order, matching every order-creation path
+            // that already calls it before decrementing.
+            $this->lockStockInOrder($order->items()->get(['product_id', 'variant_id']));
+
             foreach ($orderItemIds as $orderItemId) {
                 $item = OrderItem::whereKey($orderItemId)->lockForUpdate()->first();
 
@@ -300,6 +315,14 @@ class InventoryService
                 ->groupBy('order_item_id')
                 ->map(fn ($group) => (int) $group->sum('quantity'))
                 ->sortKeys();
+
+            // BIZ-022: sortKeys() above only gives a deterministic
+            // processing order for this one return request — it's an
+            // order_item id order, not a product/variant id order, so two
+            // concurrent restores sharing products in opposite order could
+            // still deadlock on the rows below without this. Same fix as
+            // restoreForOrder().
+            $this->lockStockInOrder(OrderItem::query()->whereIn('id', $quantityByOrderItemId->keys())->get(['product_id', 'variant_id']));
 
             foreach ($quantityByOrderItemId as $orderItemId => $requestedQuantity) {
                 $item = OrderItem::whereKey($orderItemId)->lockForUpdate()->first();
