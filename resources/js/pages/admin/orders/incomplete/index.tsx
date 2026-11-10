@@ -105,7 +105,7 @@ export default function IncompleteOrdersIndex({
             <Head title="Incomplete Orders — Admin" />
             <div className="space-y-5">
                 <div className="flex items-center justify-between gap-3">
-                    <div>
+                    <div className="min-w-0">
                         <h1 className="text-xl font-bold text-slate-900">
                             Incomplete Orders
                         </h1>
@@ -118,7 +118,7 @@ export default function IncompleteOrdersIndex({
                         <button
                             type="button"
                             onClick={() => setConfirmDeleteAll(true)}
-                            className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+                            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold whitespace-nowrap text-red-600 hover:bg-red-50"
                         >
                             <Trash2 className="size-3.5" />
                             Delete All
