@@ -2,6 +2,7 @@ import { AnimatePresence } from 'framer-motion';
 import { Star, Trash2, Wand2 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
+import { belowCostWarning } from '@/lib/price-warnings';
 import { cn } from '@/lib/utils';
 
 type BulkFields = {
@@ -52,9 +53,12 @@ type Props = {
 
 function VariantField({
     label,
+    warning,
     children,
 }: {
     label: string;
+    /** Advisory only (amber), e.g. a price below this variant's cost. */
+    warning?: string | null;
     children: React.ReactNode;
 }): React.JSX.Element {
     return (
@@ -63,6 +67,11 @@ function VariantField({
                 {label}
             </span>
             {children}
+            {warning && (
+                <span className="mt-1 block text-xs text-amber-600">
+                    {warning}
+                </span>
+            )}
         </label>
     );
 }
@@ -788,7 +797,13 @@ export function ProductVariantManager({
                                                             }
                                                         />
                                                     </VariantField>
-                                                    <VariantField label="Price (৳)">
+                                                    <VariantField
+                                                        label="Price (৳)"
+                                                        warning={belowCostWarning(
+                                                            row.price,
+                                                            row.cost_price,
+                                                        )}
+                                                    >
                                                         <input
                                                             type="number"
                                                             min="0"

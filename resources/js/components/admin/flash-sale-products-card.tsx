@@ -3,6 +3,7 @@ import { Package, Search, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import { useRowKeys } from '@/hooks/use-row-keys';
+import { belowCostWarning } from '@/lib/price-warnings';
 import { formatCurrency } from '@/lib/utils';
 
 export type FlashSaleItemData = {
@@ -21,12 +22,19 @@ export type FlashSaleItemData = {
     /** The real stock ceiling for whichever this row targets (the variant's own, or the whole product's) — a UI hint only; the backend validates it authoritatively regardless. */
     available_stock: number;
     variant_label: string | null;
+    /**
+     * Below-cost warning only (never sent anywhere that reads it). Null when
+     * no cost was entered or this admin can't see cost prices — see
+     * Admin\FlashSaleController::canSeeCostPrices().
+     */
+    cost_price: number | null;
 };
 
 type SearchVariant = {
     id: number;
     sku: string | null;
     price: number;
+    cost_price: number | null;
     stock_quantity: number;
     attributes: Record<string, string> | null;
 };
@@ -36,6 +44,8 @@ type SearchProduct = {
     name: string;
     sku: string | null;
     price: number;
+    /** For the whole product: its costliest variant's cost, or its own. */
+    cost_price: number | null;
     available_stock: number;
     image: string | null;
     variants: SearchVariant[];
@@ -168,6 +178,9 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                       variant.sku ||
                       `Variant #${variant.id}`
                     : null,
+                cost_price: variant
+                    ? (variant.cost_price ?? null)
+                    : (product.cost_price ?? null),
             },
         ]);
         setQuery('');
@@ -320,6 +333,10 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                     <AnimatePresence initial={false}>
                         {items.map((item, i) => {
                             const priceError = errors[`items.${i}.sale_price`];
+                            const costWarning = belowCostWarning(
+                                item.sale_price,
+                                item.cost_price,
+                            );
                             const productError =
                                 errors[`items.${i}.product_id`] ??
                                 errors[`items.${i}.variant_id`];
@@ -369,6 +386,11 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                                             {priceError && (
                                                 <p className="mt-1 text-xs text-red-500">
                                                     {priceError}
+                                                </p>
+                                            )}
+                                            {!priceError && costWarning && (
+                                                <p className="mt-1 text-xs text-amber-600">
+                                                    {costWarning}
                                                 </p>
                                             )}
                                         </div>

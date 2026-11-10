@@ -15,6 +15,7 @@ use App\Support\AdminDateTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -49,6 +50,7 @@ class FlashSaleController extends Controller
     public function searchProducts(Request $request): JsonResponse
     {
         $query = $request->string('q')->toString();
+        $showCost = $this->canSeeCostPrices();
 
         $products = Product::with(['images', 'variants'])
             ->active()
@@ -61,12 +63,14 @@ class FlashSaleController extends Controller
                 'name' => $product->name,
                 'sku' => $product->sku,
                 'price' => (float) $product->price,
+                'cost_price' => $showCost ? self::wholeProductCost($product) : null,
                 'available_stock' => $product->available_stock,
                 'image' => $product->primaryImagePath(),
                 'variants' => $product->variants->map(fn (ProductVariant $variant) => [
                     'id' => $variant->id,
                     'sku' => $variant->sku,
                     'price' => (float) $variant->price,
+                    'cost_price' => $showCost && $variant->cost_price !== null ? (float) $variant->cost_price : null,
                     'stock_quantity' => $variant->stock_quantity,
                     'attributes' => $variant->attributes,
                 ])->values(),
@@ -105,14 +109,28 @@ class FlashSaleController extends Controller
             // available_stock, which needs variants loaded to give the live
             // total. The stock_quantity column alone goes stale for a variant
             // product.
-            'items.product:id,name,price,sku,stock_quantity',
-            'items.product.variants:id,product_id,stock_quantity',
-            'items.variant:id,product_id,sku,price,stock_quantity,attributes',
+            'items.product:id,name,price,sku,stock_quantity,cost_price',
+            'items.product.variants:id,product_id,stock_quantity,cost_price',
+            'items.variant:id,product_id,sku,price,stock_quantity,attributes,cost_price',
         ]);
+
+        // Below-cost warning only: cost_price stays hidden in toArray(), and
+        // is added per item here only for admins who may see it at all.
+        $showCost = $this->canSeeCostPrices();
+        $items = $flashSale->items->map(fn (FlashSaleItem $item): array => [
+            ...$item->toArray(),
+            'cost_price' => match (true) {
+                ! $showCost => null,
+                $item->variant !== null => $item->variant->cost_price !== null ? (float) $item->variant->cost_price : null,
+                $item->product !== null => self::wholeProductCost($item->product),
+                default => null,
+            },
+        ])->all();
 
         return Inertia::render('admin/flash-sales/edit', [
             'flashSale' => [
                 ...$flashSale->toArray(),
+                'items' => $items,
                 'starts_at_input' => AdminDateTime::toInput($flashSale->starts_at),
                 'ends_at_input' => AdminDateTime::toInput($flashSale->ends_at),
             ],
@@ -201,5 +219,31 @@ class FlashSaleController extends Controller
         }
 
         return redirect()->route('admin.flash-sales.index')->with('success', count($ids).' flash sale(s) deleted.');
+    }
+
+    /**
+     * Cost prices are shown only on the product edit screen, so only an
+     * admin allowed to edit products sees them here, to warn about a flash
+     * sale price below cost. Anyone else gets the form without the warning.
+     */
+    private function canSeeCostPrices(): bool
+    {
+        return (bool) Auth::guard('admin')->user()?->canAccess('products', 'update');
+    }
+
+    /**
+     * A whole-product item sells every variant at the sale price, so it is
+     * below cost if it is below the costliest variant; a product without
+     * variants uses its own cost. Null when no cost was ever entered.
+     */
+    private static function wholeProductCost(Product $product): ?float
+    {
+        $costs = $product->variants->isNotEmpty()
+            ? $product->variants->pluck('cost_price')
+            : collect([$product->cost_price]);
+
+        $highest = $costs->filter(fn ($cost): bool => $cost !== null)->max();
+
+        return $highest === null ? null : (float) $highest;
     }
 }

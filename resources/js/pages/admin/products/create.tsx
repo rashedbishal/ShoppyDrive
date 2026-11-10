@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ComboboxField } from '@/components/ui/combobox';
 import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
 import { Select } from '@/components/ui/select';
+import { belowCostWarning } from '@/lib/price-warnings';
 import { remapProductMedia } from '@/lib/product-media-form';
 import { maxLength, minValue, required, validate } from '@/lib/validate';
 import { buildMediaTagOptions } from '@/lib/variant-media-tags';
@@ -352,6 +353,10 @@ export default function ProductCreate({
                                                 <Field
                                                     label="Price (৳) *"
                                                     error={errors.price}
+                                                    warning={belowCostWarning(
+                                                        data.price,
+                                                        data.cost_price,
+                                                    )}
                                                 >
                                                     <input
                                                         type="number"

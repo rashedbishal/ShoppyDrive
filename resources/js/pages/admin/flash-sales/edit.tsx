@@ -30,6 +30,8 @@ type FlashSaleItemRaw = {
     sale_price: number;
     product: FlashSaleItemProduct | null;
     variant: FlashSaleItemVariant | null;
+    /** Only sent to admins who may see cost prices; null otherwise. */
+    cost_price: number | null;
 };
 
 type FlashSale = {
@@ -68,6 +70,7 @@ function toItemData(item: FlashSaleItemRaw): FlashSaleItemData {
               item.variant.sku ||
               `Variant #${item.variant.id}`
             : null,
+        cost_price: item.cost_price ?? null,
     };
 }
 
