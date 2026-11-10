@@ -71,8 +71,11 @@ it('serializes concurrent per-user coupon redemption under real MySQL locking in
     // database *name*; without this, a future remote DB_HOST in .env
     // would be trusted silently.
     $allowedHosts = ['127.0.0.1', 'localhost'];
-    // REL-003: another local port, such as a MariaDB copy of production, has to be named.
-    $allowedPort = (string) (env('RACE_TEST_PORT') ?: '3306');
+    // REL-003: defaults to whatever port the 'mysql' connection is already
+    // configured for (DB_PORT), so changing that alone is enough to run this
+    // against a non-3306 local MySQL/MariaDB — RACE_TEST_PORT is only needed
+    // to point at a genuinely different port than the app's own DB_PORT.
+    $allowedPort = (string) (env('RACE_TEST_PORT') ?: $params['port']);
 
     if (! in_array($params['host'], $allowedHosts, true) || (string) $params['port'] !== $allowedPort) {
         test()->markTestSkipped("Resolved MySQL host/port ({$params['host']}:{$params['port']}) is not in the explicit local-testing allowlist (host: 127.0.0.1 or localhost, port: {$allowedPort}) — refusing to connect.");
