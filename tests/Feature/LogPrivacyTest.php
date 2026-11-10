@@ -110,3 +110,45 @@ test('an SMS log line has no sender', function () {
 
     expect($logs())->toContain('SMS received')->not->toContain('01712345678');
 });
+
+test('a failed Groq response logs only the status and error classifier, never the message text', function () {
+    // An LLM API's own error message routinely quotes the offending input
+    // back verbatim (a content-policy violation naming the exact text that
+    // tripped it) — and that input is this customer's own typed chat
+    // message, not something this app ever chose to send back.
+    $context = SafeLogContext::aiProviderResponse([
+        'error' => ['message' => "Your message quoting the customer's address House 12, Road 7 violates our policy.", 'type' => 'invalid_request_error', 'code' => 'content_policy'],
+    ], 422);
+
+    expect($context)->toBe(['http_status' => 422, 'type' => 'invalid_request_error', 'code' => 'content_policy']);
+    expectNoCustomerDetails(json_encode($context));
+});
+
+test('an odd Groq error reply cannot break logging', function (mixed $json) {
+    expect(SafeLogContext::aiProviderResponse($json, 500))->toBe(['http_status' => 500, 'type' => null, 'code' => null]);
+})->with([null, 'plain text', 7]);
+
+test('an unexpectedly-shaped Groq reply logs only its top-level keys, never their values', function () {
+    $context = SafeLogContext::aiProviderResponseShape([
+        'note' => "Here's what House 12, Road 7 means for your order.",
+        'id' => 'chatcmpl-1',
+    ]);
+
+    expect($context)->toBe(['keys' => ['note', 'id']]);
+    expectNoCustomerDetails(json_encode($context));
+});
+
+test('the AI assistant keeps the customer\'s own chat message out of the log when Groq rejects the request', function () {
+    Setting::updateOrCreate(['key' => 'ai_assistant_api_key'], ['value' => 'a-key', 'group' => 'ai_assistant']);
+    Setting::updateOrCreate(['key' => 'ai_assistant_enabled'], ['value' => true, 'group' => 'ai_assistant']);
+    $logs = capturedLogs();
+    Http::fake(['api.groq.com/*' => Http::response([
+        'error' => ['message' => "Content violates policy: 'House 12, Road 7'", 'type' => 'invalid_request_error'],
+    ], 422)]);
+
+    $this->postJson(route('assistant.chat'), ['message' => 'My address is House 12, Road 7'])->assertOk();
+
+    $output = $logs();
+    expect($output)->toContain('Groq request failed');
+    expectNoCustomerDetails($output);
+});

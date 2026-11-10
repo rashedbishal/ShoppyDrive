@@ -61,4 +61,43 @@ final class SafeLogContext
             'sql_state' => $e instanceof QueryException ? ($e->errorInfo[0] ?? null) : null,
         ];
     }
+
+    /**
+     * SEC-023: a failed or malformed Groq response, with never the message
+     * text — unlike a courier's validation error (a field name, e.g.
+     * "recipient_phone is required"), an LLM API's error message commonly
+     * quotes the offending input back verbatim (a content-policy violation
+     * naming the exact text that tripped it), and that input is this
+     * customer's own typed chat message. `type`/`code` are a fixed,
+     * API-defined classifier, never free text, so they're safe to keep.
+     *
+     * @param  mixed  $json  the decoded response body; anything but an array is ignored
+     * @return array{http_status: int|null, type: string|null, code: string|null}
+     */
+    public static function aiProviderResponse(mixed $json, ?int $httpStatus = null): array
+    {
+        $error = is_array($json) ? ($json['error'] ?? null) : null;
+
+        return [
+            'http_status' => $httpStatus,
+            'type' => is_scalar($error['type'] ?? null) ? (string) $error['type'] : null,
+            'code' => is_scalar($error['code'] ?? null) ? (string) $error['code'] : null,
+        ];
+    }
+
+    /**
+     * A successful Groq response that didn't have the shape expected
+     * (`choices[0].message` missing) — only the top-level keys actually
+     * present, never their values, which can hold this customer's own
+     * typed chat message echoed back inside an otherwise-malformed reply.
+     *
+     * @param  mixed  $json  the decoded response body; anything but an array is ignored
+     * @return array{keys: list<int|string>}
+     */
+    public static function aiProviderResponseShape(mixed $json): array
+    {
+        return [
+            'keys' => is_array($json) ? array_keys($json) : [],
+        ];
+    }
 }

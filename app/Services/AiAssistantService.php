@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Support\AiAssistantConfig;
+use App\Support\SafeLogContext;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -86,7 +87,10 @@ class AiAssistantService
             $choice = $response['choices'][0]['message'] ?? null;
 
             if (! is_array($choice)) {
-                Log::warning('[AI assistant] Unexpected Groq response shape', ['response' => $response]);
+                // SEC-023: never the raw response — a malformed reply can
+                // still echo this customer's own chat message back inside
+                // it.
+                Log::warning('[AI assistant] Unexpected Groq response shape', SafeLogContext::aiProviderResponseShape($response));
 
                 return ['reply' => "Sorry, I didn't catch that — could you rephrase?", 'cart' => $latestCart];
             }
@@ -284,9 +288,12 @@ class AiAssistantService
                 return $response->json();
             }
 
+            // SEC-023: never the raw body — an LLM API's own error message
+            // commonly quotes the offending input back verbatim (e.g. a
+            // content-policy violation naming the exact text that tripped
+            // it), and that input is this customer's own typed chat message.
             Log::warning('[AI assistant] Groq request failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
+                ...SafeLogContext::aiProviderResponse($response->json(), $response->status()),
                 'attempt' => $attempt,
             ]);
 
