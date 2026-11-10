@@ -190,7 +190,7 @@ export default function ProductsIndex({
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     <div className="flex flex-wrap gap-2 border-b border-slate-100 p-4">
-                        <div className="relative min-w-[200px] flex-1">
+                        <div className="relative w-full flex-none sm:w-auto sm:min-w-[200px] sm:flex-1">
                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                             <input
                                 type="text"
@@ -208,7 +208,7 @@ export default function ProductsIndex({
                             onChange={(e) =>
                                 applyFilters({ status: e.target.value })
                             }
-                            containerClassName="min-w-40"
+                            containerClassName="min-w-0 flex-1 sm:min-w-40 sm:flex-none"
                             selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
                         >
                             <option value="">All Status</option>
@@ -220,7 +220,7 @@ export default function ProductsIndex({
                             onChange={(e) =>
                                 applyFilters({ category_id: e.target.value })
                             }
-                            containerClassName="min-w-40"
+                            containerClassName="min-w-0 flex-1 sm:min-w-40 sm:flex-none"
                             selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
                         >
                             <option value="">All Categories</option>
