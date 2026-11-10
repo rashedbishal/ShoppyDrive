@@ -49,7 +49,7 @@ export default function HeroSlidesIndex({ slides }: Props) {
                     </Button>
                 </div>
 
-                <div className="grid gap-6">
+                <div className="grid gap-4">
                     {slides.length === 0 ? (
                         <Card className="flex flex-col items-center justify-center py-12 text-slate-400">
                             <p>No hero slides created yet.</p>
@@ -57,8 +57,8 @@ export default function HeroSlidesIndex({ slides }: Props) {
                     ) : (
                         slides.map((slide) => (
                             <Card key={slide.id} className="overflow-hidden">
-                                <div className="flex flex-col md:flex-row">
-                                    <div className="relative h-40 w-full shrink-0 bg-slate-100 md:h-auto md:w-64">
+                                <div className="flex flex-col md:h-44 md:flex-row">
+                                    <div className="relative h-40 w-full shrink-0 overflow-hidden bg-slate-100 md:h-full md:w-72">
                                         {isVideoUrl(slide.image) ? (
                                             <video
                                                 src={`${slide.image}#t=0.1`}
@@ -87,9 +87,9 @@ export default function HeroSlidesIndex({ slides }: Props) {
                                             </div>
                                         )}
                                     </div>
-                                    <CardContent className="flex min-w-0 flex-1 flex-col justify-between p-6">
-                                        <div className="min-w-0 space-y-2">
-                                            <div className="flex min-w-0 items-center gap-2">
+                                    <CardContent className="flex min-w-0 flex-1 flex-col justify-between p-4">
+                                        <div className="min-w-0 space-y-1.5">
+                                            <div className="flex h-4 min-w-0 items-center gap-2">
                                                 <p className="min-w-0 truncate text-[10px] font-bold tracking-widest text-primary uppercase">
                                                     {slide.eyebrow}
                                                 </p>
@@ -100,14 +100,14 @@ export default function HeroSlidesIndex({ slides }: Props) {
                                                     Order: {slide.sort_order}
                                                 </p>
                                             </div>
-                                            <h3 className="truncate text-lg font-bold text-slate-800">
+                                            <h3 className="h-7 truncate text-lg leading-7 font-bold text-slate-800">
                                                 {slide.title}
                                             </h3>
-                                            <p className="line-clamp-2 text-sm text-slate-500">
+                                            <p className="line-clamp-2 h-10 text-sm leading-5 text-slate-500">
                                                 {slide.description}
                                             </p>
                                         </div>
-                                        <div className="mt-4 flex items-center justify-end gap-2">
+                                        <div className="mt-3 flex items-center justify-end gap-2">
                                             <Button
                                                 asChild
                                                 variant="outline"
