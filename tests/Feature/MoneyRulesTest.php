@@ -102,6 +102,57 @@ test('paying a mobile checkout with nothing else in the cart still removes the c
     expect(Cart::find($pending->cart_id))->toBeNull();
 });
 
+test('staging a mobile checkout never buys or loses an item added to the cart after the page was loaded (BIZ-019)', function () {
+    // Checkout.tsx submits its own client-side cart snapshot, taken when
+    // the page loaded — this simulates another tab adding a second
+    // product to the same cart after that, before this stale submission
+    // (which only knows about $paid) reaches the server.
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    $paid = moneyProduct();
+    $addedLater = moneyProduct();
+    $cart = Cart::create(['user_id' => $user->id]);
+    CartItem::create(['cart_id' => $cart->id, 'product_id' => $paid->id, 'quantity' => 1, 'price' => 500]);
+    CartItem::create(['cart_id' => $cart->id, 'product_id' => $addedLater->id, 'quantity' => 2, 'price' => 500]);
+
+    $pending = moneyStagePayment($user, $paid, 1);
+
+    // Staging itself never removes anything from the cart — only the
+    // staked snapshot that decides what the customer is told to pay for
+    // must exclude $addedLater; the cart stays fully intact until payment
+    // actually completes.
+    expect(collect($pending->checkout_data['items'])->pluck('product_id')->all())->toBe([$paid->id])
+        ->and((float) $pending->checkout_data['subtotal'])->toBe(500.0)
+        ->and($cart->fresh()->items()->pluck('quantity', 'product_id')->all())->toBe([$paid->id => 1, $addedLater->id => 2]);
+
+    moneyPayStaged($user, $pending);
+
+    // Paying removes only what was staged; $addedLater survives.
+    expect($cart->fresh())->not->toBeNull()
+        ->and($cart->items()->pluck('quantity', 'product_id')->all())->toBe([$addedLater->id => 2]);
+});
+
+test('placing a COD order never buys or loses an item added to the cart after the page was loaded (BIZ-019)', function () {
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    $ordered = moneyProduct();
+    $addedLater = moneyProduct();
+    $cart = Cart::create(['user_id' => $user->id]);
+    CartItem::create(['cart_id' => $cart->id, 'product_id' => $ordered->id, 'quantity' => 1, 'price' => 500]);
+    CartItem::create(['cart_id' => $cart->id, 'product_id' => $addedLater->id, 'quantity' => 2, 'price' => 500]);
+
+    $response = actingAs($user)->post(route('checkout.store'), moneyCheckoutPayload([
+        'email' => $user->email,
+        'payment_method' => 'cod',
+        'items' => [['product_id' => $ordered->id, 'variant_id' => null, 'quantity' => 1, 'price' => (float) $ordered->price]],
+    ]));
+
+    $order = Order::query()->where('user_id', $user->id)->sole();
+    $response->assertRedirect(route('order.confirmation', $order->order_number));
+
+    expect($order->items()->pluck('product_id')->all())->toBe([$ordered->id])
+        ->and($cart->fresh())->not->toBeNull()
+        ->and($cart->items()->pluck('quantity', 'product_id')->all())->toBe([$addedLater->id => 2]);
+});
+
 test('the referral preview counts a Buy Now item when the cart is empty (BIZ-018)', function () {
     Setting::insert([
         ['key' => 'referral_enabled', 'value' => json_encode(true), 'group' => 'referral'],

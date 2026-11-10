@@ -96,18 +96,18 @@ class CartManager
     /**
      * @param  array<int, array{product_id:int, variant_id:int|null, quantity:int, bundle_id?:int|null, bundle_unit_quantity?:int|null}>  $items
      */
-    public function syncUserCart(User $user, array $items, bool $merge = false): Cart
+    public function syncUserCart(User $user, array $items, bool $merge = false, bool $deleteOmitted = true): Cart
     {
         return $this->writeUserCart($user, fn (Cart $cart) => $merge
             ? $this->mergeItemPayloads($cart, $items)
-            : $this->replaceItems($cart, $items));
+            : $this->replaceItems($cart, $items, $deleteOmitted));
     }
 
-    public function syncSessionCart(string $sessionId, array $items, bool $merge = false): Cart
+    public function syncSessionCart(string $sessionId, array $items, bool $merge = false, bool $deleteOmitted = true): Cart
     {
         return $this->writeSessionCart($sessionId, fn (Cart $cart) => $merge
             ? $this->mergeItemPayloads($cart, $items)
-            : $this->replaceItems($cart, $items));
+            : $this->replaceItems($cart, $items, $deleteOmitted));
     }
 
     /**
@@ -204,6 +204,52 @@ class CartManager
     }
 
     /**
+     * BIZ-019: narrows `$cart`'s already-loaded `items` relation, in memory
+     * only, to exactly the rows matching `$items`' product/variant/bundle —
+     * never touches the database. Call right after syncing with
+     * `deleteOmitted: false` (see `replaceItems()`), so every later step —
+     * stock/price checks, totals, coupon eligibility, order creation, and
+     * the post-order cart cleanup — sees only what this submission is
+     * buying, the same set it would have seen when deletion used to keep
+     * the cart physically trimmed to that list. Anything else genuinely in
+     * the cart (added elsewhere while checkout was open) is left alone in
+     * the database, for a future checkout to deal with — not silently
+     * bought, and not silently lost.
+     *
+     * BE-002: a row whose product is already gone or hidden is kept
+     * regardless — it was never visible to the client to begin with, so
+     * its absence from `$items` isn't this submission excluding it, the
+     * same exception `replaceItems()`'s own deletion makes. Checkout's
+     * collectCartIssues() (run right after this) still needs to see it to
+     * block checkout and name it; validItems() drops it again once that
+     * check has had its chance.
+     *
+     * @param  array<int, array{product_id:int, variant_id?:int|null, bundle_id?:int|null}>  $items
+     */
+    public function restrictToSubmittedItems(Cart $cart, array $items): Cart
+    {
+        $keys = collect($items)
+            ->map(fn (array $item): string => $this->itemKey(
+                (int) $item['product_id'],
+                isset($item['variant_id']) ? (int) $item['variant_id'] : null,
+                isset($item['bundle_id']) ? (int) $item['bundle_id'] : null,
+            ))
+            ->all();
+
+        $cart->setRelation('items', $cart->items
+            ->filter(fn (CartItem $item): bool => $item->product === null
+                || ! $item->product->isPubliclyVisible()
+                || in_array(
+                    $this->itemKey($item->product_id, $item->variant_id, $item->bundle_id),
+                    $keys,
+                    true,
+                ))
+            ->values());
+
+        return $cart;
+    }
+
+    /**
      * Checkout priced `$cart` before taking any lock. Call inside its order
      * transaction, right after locking the purchaser, to prove those rows are
      * still what would be charged. A guest has no purchaser lock, so the
@@ -229,6 +275,14 @@ class CartManager
         // deliberately dropped — deleted, hidden (FSA-05) or a foreign
         // variant (FSA-01) — isn't mistaken for a concurrent change.
         $lockedItems = $this->validItems($locked->setRelation('items', $locked->items()->with(['product.category', 'product.subCategory', 'product.brand', 'variant'])->get()));
+
+        // BIZ-019: restricted to the rows `$cart` was actually priced from,
+        // by id — the checkout caller narrows `$cart->items` to exactly its
+        // own submission (see restrictToSubmittedItems()), but the real
+        // cart row may hold other items added elsewhere while checkout was
+        // open. Those must never register as "the cart changed": they were
+        // never part of what this checkout is charging for.
+        $lockedItems = $lockedItems->whereIn('id', $cart->items->pluck('id'));
 
         if ($snapshot($cart->items) !== $snapshot($lockedItems)) {
             throw new CartChangedException('Your cart changed while placing this order. Please review it and try again.');
@@ -310,9 +364,19 @@ class CartManager
     }
 
     /**
+     * BIZ-019: `$deleteOmitted` must be false for a checkout submission.
+     * Checkout.tsx's own cart store is a client-side snapshot that goes
+     * stale the moment another tab/device changes the server cart while
+     * this page sits open — unlike the general cart-sync call (`/cart`
+     * drawer, cart page), checkout has no way to remove an item on the
+     * page itself, so an item present on the server but absent from a
+     * checkout submission is never a deliberate removal, only staleness.
+     * Deleting it anyway would silently drop something the customer is
+     * still shopping for, discovered only after they'd already paid.
+     *
      * @param  array<int, array{product_id:int, variant_id:int|null, quantity:int, bundle_id?:int|null, bundle_unit_quantity?:int|null}>  $items
      */
-    private function replaceItems(Cart $cart, array $items): void
+    private function replaceItems(Cart $cart, array $items, bool $deleteOmitted = true): void
     {
         $normalized = $this->normalizePayloads($items);
         // BE-002: `product` loaded so the deletion step below can tell an
@@ -350,7 +414,7 @@ class CartManager
             unset($existingKeys[$itemKey]);
         }
 
-        if ($existingKeys !== []) {
+        if ($deleteOmitted && $existingKeys !== []) {
             // BE-002: a row whose product is already gone or hidden was
             // never visible to the client to begin with, so its absence
             // from this resubmission isn't the customer choosing to drop

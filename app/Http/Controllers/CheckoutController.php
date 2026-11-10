@@ -224,11 +224,20 @@ class CheckoutController extends Controller
         // at the old price — which is what let a customer get stuck
         // refusing the same stale price forever, unable to ever check out
         // (BIZ-001 retest, 2026-11-09).
+        // BIZ-019: deleteOmitted: false — Checkout.tsx's items list is a
+        // client-side snapshot that goes stale the instant another tab adds
+        // something to the same cart while this page sits open; the
+        // checkout page itself has no way to remove an item, so unlike the
+        // general cart-sync call, an existing row missing from this
+        // submission is never a deliberate removal. restrictToSubmittedItems()
+        // below keeps this request's own view of the cart scoped to exactly
+        // what it submitted, same as before — the extra row just survives
+        // in the database instead of being deleted.
         if ($items !== null) {
             if ($request->user() !== null) {
-                $this->cartManager->syncUserCart($request->user(), $items);
+                $this->cartManager->syncUserCart($request->user(), $items, deleteOmitted: false);
             } else {
-                $this->cartManager->syncSessionCart($request->session()->getId(), $items);
+                $this->cartManager->syncSessionCart($request->session()->getId(), $items, deleteOmitted: false);
             }
         }
 
@@ -253,6 +262,16 @@ class CheckoutController extends Controller
         // subCategory/brand too, since collectCartIssues()/validItems()
         // below call isPubliclyVisible(), which reads all three per item.
         $cart->load('items.product.category', 'items.product.subCategory', 'items.product.brand', 'items.variant');
+
+        // BIZ-019: the sync above no longer deletes a row this submission
+        // didn't mention, so without this, everything below — stock/price
+        // checks, totals, the order itself, and the post-order cleanup —
+        // would see any item added to the cart elsewhere while checkout was
+        // open too, and either block on its unrelated stock issue or charge
+        // for something the customer never reviewed on this page.
+        if ($items !== null) {
+            $cart = $this->cartManager->restrictToSubmittedItems($cart, $items);
+        }
 
         // A deleted/deactivated product or an out-of-stock quantity must
         // block the whole checkout, not silently drop that line and place
@@ -505,8 +524,19 @@ class CheckoutController extends Controller
                         }
                     }
 
-                    $cart->items()->delete();
-                    $cart->delete();
+                    // BIZ-019: only the rows this order was actually built
+                    // from — $cart->items() (the relation query) ignores the
+                    // in-memory restrictToSubmittedItems() narrowing above
+                    // and would otherwise delete every row for this cart,
+                    // including anything added to it elsewhere while this
+                    // checkout was in flight. The cart row itself cascades
+                    // its items on delete, so it's only removed once none
+                    // are left.
+                    $cart->items()->whereKey($cart->items->pluck('id'))->delete();
+
+                    if ($cart->items()->doesntExist()) {
+                        $cart->delete();
+                    }
 
                     // A real order went through for this phone number (or
                     // this logged-in customer, who may have used a different
