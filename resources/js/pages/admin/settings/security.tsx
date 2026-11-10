@@ -314,30 +314,47 @@ function SectionCards({
     disabled: boolean;
     setValue: (field: LimitField, value: number) => void;
 }) {
+    // Two independent stacks, each section going to the shorter one (a header
+    // counts as roughly one rule), so uneven cards never stretch a grid row.
+    const columns: LimitSection[][] = [[], []];
+    const heights = [0, 0];
+
+    sections.forEach((section) => {
+        const target = heights[1] < heights[0] ? 1 : 0;
+        columns[target].push(section);
+        heights[target] += section.rules.length + 1;
+    });
+
     return (
-        <div className="grid gap-4 lg:grid-cols-2">
-            {sections.map((section) => (
-                <Card key={section.title} className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100">
-                        <CardTitle className="text-sm font-semibold text-slate-900">
-                            {section.title}
-                        </CardTitle>
-                        <p className="text-xs text-slate-600">{section.why}</p>
-                    </CardHeader>
-                    <CardContent className="space-y-3 pt-3">
-                        {section.rules.map((rule) => (
-                            <RuleRow
-                                key={rule.times}
-                                rule={rule}
-                                data={data}
-                                bounds={bounds}
-                                errors={errors}
-                                disabled={disabled}
-                                setValue={setValue}
-                            />
-                        ))}
-                    </CardContent>
-                </Card>
+        <div className="grid items-start gap-4 lg:grid-cols-2">
+            {columns.map((column, index) => (
+                <div key={index} className="space-y-4">
+                    {column.map((section) => (
+                        <Card key={section.title} className="shadow-sm">
+                            <CardHeader className="border-b border-slate-100">
+                                <CardTitle className="text-sm font-semibold text-slate-900">
+                                    {section.title}
+                                </CardTitle>
+                                <p className="text-xs text-slate-600">
+                                    {section.why}
+                                </p>
+                            </CardHeader>
+                            <CardContent className="space-y-3 pt-3">
+                                {section.rules.map((rule) => (
+                                    <RuleRow
+                                        key={rule.times}
+                                        rule={rule}
+                                        data={data}
+                                        bounds={bounds}
+                                        errors={errors}
+                                        disabled={disabled}
+                                        setValue={setValue}
+                                    />
+                                ))}
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
             ))}
         </div>
     );

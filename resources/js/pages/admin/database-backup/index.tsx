@@ -306,7 +306,7 @@ export default function DatabaseBackupIndex({
         <>
             <Head title="Database Backup — Admin" />
 
-            <div className="max-w-4xl space-y-6">
+            <div className="space-y-5">
                 <div>
                     <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900">
                         <DatabaseBackup className="size-5" />
@@ -341,72 +341,81 @@ export default function DatabaseBackupIndex({
                     </Card>
                 )}
 
-                <Card className="space-y-3 p-5 shadow-sm">
-                    <h2 className="font-semibold text-slate-900">
-                        Download a backup
-                    </h2>
-                    <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                        <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                        <p>
-                            This file holds every customer's details, password
-                            hashes and your courier keys. Keep it somewhere
-                            private and never send it by email or chat.
-                        </p>
-                    </div>
-                    {/* A normal form post: the browser saves the download. */}
-                    <form
-                        method="post"
-                        action={route('admin.database-backup.download')}
-                        onSubmit={() => setTimeout(() => setPassword(''), 0)}
-                        className="space-y-2"
-                    >
-                        <input type="hidden" name="_token" value={csrfToken} />
-                        <label
-                            htmlFor="download-password"
-                            className="block text-sm font-medium text-slate-700"
-                        >
-                            Enter your password to download
-                        </label>
-                        <input
-                            id="download-password"
-                            type="password"
-                            name="password"
-                            autoComplete="current-password"
-                            className={inputClass}
-                            value={password}
-                            onChange={(event) =>
-                                setPassword(event.target.value)
-                            }
-                        />
-                        {errors.password && !pendingReport && (
-                            <p className="text-xs text-red-500">
-                                {errors.password}
+                <div className="grid items-stretch gap-5 lg:grid-cols-2">
+                    <Card className="h-full space-y-3 p-5 shadow-sm">
+                        <h2 className="font-semibold text-slate-900">
+                            Download a backup
+                        </h2>
+                        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                            <p>
+                                This file holds every customer's details,
+                                password hashes and your courier keys. Keep it
+                                somewhere private and never send it by email or
+                                chat.
                             </p>
-                        )}
-                        <Button type="submit" disabled={!password}>
-                            <Download className="mr-1.5 size-4" />
-                            Download backup
-                        </Button>
-                    </form>
-                </Card>
+                        </div>
+                        {/* A normal form post: the browser saves the download. */}
+                        <form
+                            method="post"
+                            action={route('admin.database-backup.download')}
+                            onSubmit={() =>
+                                setTimeout(() => setPassword(''), 0)
+                            }
+                            className="space-y-2"
+                        >
+                            <input
+                                type="hidden"
+                                name="_token"
+                                value={csrfToken}
+                            />
+                            <label
+                                htmlFor="download-password"
+                                className="block text-sm font-medium text-slate-700"
+                            >
+                                Enter your password to download
+                            </label>
+                            <input
+                                id="download-password"
+                                type="password"
+                                name="password"
+                                autoComplete="current-password"
+                                className={inputClass}
+                                value={password}
+                                onChange={(event) =>
+                                    setPassword(event.target.value)
+                                }
+                            />
+                            {errors.password && !pendingReport && (
+                                <p className="text-xs text-red-500">
+                                    {errors.password}
+                                </p>
+                            )}
+                            <Button type="submit" disabled={!password}>
+                                <Download className="mr-1.5 size-4" />
+                                Download backup
+                            </Button>
+                        </form>
+                    </Card>
 
-                <Card className="space-y-3 p-5 shadow-sm">
-                    <h2 className="font-semibold text-slate-900">
-                        Restore a backup
-                    </h2>
-                    <p className="text-sm text-slate-500">
-                        Upload a file to check it first. New rows are added,
-                        changed rows are updated, identical rows are skipped,
-                        and nothing is ever deleted. Restoring rewrites live
-                        data, so choose a quiet time. No customer emails are
-                        sent, and stock is not adjusted.
-                    </p>
-                    {pendingReport ? (
-                        <PendingRestore report={pendingReport} />
-                    ) : (
-                        <UploadBackup maxMegabytes={maxUploadMegabytes} />
-                    )}
-                </Card>
+                    <Card className="h-full space-y-3 p-5 shadow-sm">
+                        <h2 className="font-semibold text-slate-900">
+                            Restore a backup
+                        </h2>
+                        <p className="text-sm text-slate-500">
+                            Upload a file to check it first. New rows are added,
+                            changed rows are updated, identical rows are
+                            skipped, and nothing is ever deleted. Restoring
+                            rewrites live data, so choose a quiet time. No
+                            customer emails are sent, and stock is not adjusted.
+                        </p>
+                        {pendingReport ? (
+                            <PendingRestore report={pendingReport} />
+                        ) : (
+                            <UploadBackup maxMegabytes={maxUploadMegabytes} />
+                        )}
+                    </Card>
+                </div>
             </div>
         </>
     );
