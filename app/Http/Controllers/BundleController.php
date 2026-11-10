@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ProductBundle;
 use App\Services\BundleService;
+use App\Support\DisplayOrderSettings;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -13,7 +14,7 @@ class BundleController extends Controller
 {
     public function index(): Response
     {
-        $bundles = ProductBundle::query()
+        $bundlesQuery = ProductBundle::query()
             ->active()
             ->with([
                 // Excludes bundles whose component product was deleted/deactivated
@@ -28,8 +29,8 @@ class BundleController extends Controller
                             'variant',
                         ]);
                 },
-            ])
-            ->orderBy('sort_order')
+            ]);
+        $bundles = DisplayOrderSettings::applyToQuery($bundlesQuery, 'bundle_deals')
             ->get()
             ->filter(fn (ProductBundle $bundle): bool => $bundle->items->count() >= 2)
             ->each(fn (ProductBundle $bundle) => $bundle->setAttribute('available_sets', app(BundleService::class)->availableSets($bundle)))

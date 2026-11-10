@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FlashSaleItem;
 use App\Models\Product;
+use App\Support\DisplayOrderSettings;
 use App\Support\ProductCardData;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
@@ -85,13 +86,14 @@ class ProductController extends Controller
             $ratingBreakdown[$star] = (int) ($approvedRatingCounts[$star] ?? 0);
         }
 
-        $relatedProducts = Product::query()
+        $relatedProductsQuery = Product::query()
             ->visible()
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->with(['images', 'brand', 'variants.media'])
             ->withCount(['reviews as reviews_count' => fn ($q) => $q->where('is_approved', true)])
-            ->withAvg(['reviews as average_rating' => fn ($q) => $q->where('is_approved', true)], 'rating')
+            ->withAvg(['reviews as average_rating' => fn ($q) => $q->where('is_approved', true)], 'rating');
+        $relatedProducts = DisplayOrderSettings::applyToQuery($relatedProductsQuery, 'related_products', ['published_at', 'created_at'])
             ->limit(8)
             ->get();
 

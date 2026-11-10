@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\CourierVerificationReadinessController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
+use App\Http\Controllers\Admin\DisplayOrderSettingsController;
 use App\Http\Controllers\Admin\FailedJobController;
 use App\Http\Controllers\Admin\FlashSaleController;
 use App\Http\Controllers\Admin\HeroSlideController;
@@ -224,6 +225,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::post('settings/sms-forwarder/regenerate', [SmsForwarderSettingsController::class, 'regenerate'])->name('settings.sms-forwarder.regenerate')->middleware(AdminSections::middleware('sms_forwarder', 'update'));
     Route::get('settings/ai-assistant', [AiAssistantSettingsController::class, 'index'])->name('settings.ai-assistant.index')->middleware(AdminSections::middleware('ai_assistant', 'view'));
     Route::post('settings/ai-assistant', [AiAssistantSettingsController::class, 'update'])->name('settings.ai-assistant.update')->middleware(AdminSections::middleware('ai_assistant', 'update'));
+    Route::get('settings/display-order', [DisplayOrderSettingsController::class, 'index'])->name('settings.display-order.index')->middleware(AdminSections::middleware('display_order', 'view'));
+    Route::post('settings/display-order', [DisplayOrderSettingsController::class, 'update'])->name('settings.display-order.update')->middleware(AdminSections::middleware('display_order', 'update'));
 
     // Admins management is deliberately NOT part of the permission matrix —
     // see AdminSections's docblock. AdminController enforces its own

@@ -12,6 +12,7 @@ use App\Models\HomepageSetting;
 use App\Models\Product;
 use App\Models\ProductBundle;
 use App\Services\BundleService;
+use App\Support\DisplayOrderSettings;
 use App\Support\LayoutCache;
 use App\Support\ProductCardData;
 use Inertia\Inertia;
@@ -31,6 +32,7 @@ class HomeController extends Controller
                     // its own `media` relation during serialization if not
                     // eager-loaded — one query per variant otherwise.
                     ->with(['product.brand', 'product.images', 'product.variants.media']);
+                DisplayOrderSettings::applyToQuery($query, 'flash_sale_items');
             },
         ])
             ->where('is_active', true)
@@ -70,11 +72,12 @@ class HomeController extends Controller
             ->get()
             ->keyBy('section_key');
 
-        $featuredProducts = Product::visible()
+        $featuredProductsQuery = Product::visible()
             ->featured()
             ->with($productEagerLoads)
             ->withCount(['reviews as reviews_count' => static fn ($q) => $q->where('is_approved', true)])
-            ->withAvg(['reviews as average_rating' => static fn ($q) => $q->where('is_approved', true)], 'rating')
+            ->withAvg(['reviews as average_rating' => static fn ($q) => $q->where('is_approved', true)], 'rating');
+        $featuredProducts = DisplayOrderSettings::applyToQuery($featuredProductsQuery, 'featured_products', ['published_at', 'created_at'])
             ->limit(8)
             ->get();
 
@@ -87,9 +90,8 @@ class HomeController extends Controller
                 ->with($productEagerLoads)
                 ->withCount(['reviews as reviews_count' => static fn ($q) => $q->where('is_approved', true)])
                 ->withAvg(['reviews as average_rating' => static fn ($q) => $q->where('is_approved', true)], 'rating')
-                ->get()
-                ->sortBy(fn (Product $product) => array_search($product->id, $newArrivalIds))
-                ->values();
+                ->get();
+            $newArrivals = DisplayOrderSettings::applyToCollection($newArrivals, 'new_arrivals', fn (Product $product) => $product->published_at ?? $product->created_at);
         } else {
             $newArrivals = collect();
         }
@@ -103,9 +105,8 @@ class HomeController extends Controller
                 ->with($productEagerLoads)
                 ->withCount(['reviews as reviews_count' => static fn ($q) => $q->where('is_approved', true)])
                 ->withAvg(['reviews as average_rating' => static fn ($q) => $q->where('is_approved', true)], 'rating')
-                ->get()
-                ->sortBy(fn (Product $product) => array_search($product->id, $bestSellerIds))
-                ->values();
+                ->get();
+            $bestSellers = DisplayOrderSettings::applyToCollection($bestSellers, 'best_sellers', fn (Product $product) => $product->published_at ?? $product->created_at);
         } else {
             $bestSellers = collect();
         }
@@ -116,9 +117,8 @@ class HomeController extends Controller
         if (! empty($brandIds)) {
             $brands = Brand::active()
                 ->whereIn('id', $brandIds)
-                ->get(['id', 'name', 'slug', 'logo', 'description'])
-                ->sortBy(fn (Brand $brand) => array_search($brand->id, $brandIds))
-                ->values();
+                ->get(['id', 'name', 'slug', 'logo', 'description', 'created_at']);
+            $brands = DisplayOrderSettings::applyToCollection($brands, 'homepage_brands', fn (Brand $brand) => $brand->created_at);
         } else {
             $brands = collect();
         }
@@ -136,8 +136,8 @@ class HomeController extends Controller
                             'variant',
                         ]);
                 },
-            ])
-            ->orderBy('sort_order')
+            ]);
+        $bundleDeals = DisplayOrderSettings::applyToQuery($bundleDeals, 'bundle_deals')
             ->get()
             ->filter(fn (ProductBundle $bundle): bool => $bundle->items->count() >= 2)
             ->take(3)

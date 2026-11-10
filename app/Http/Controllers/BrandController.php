@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\FlashSaleItem;
 use App\Models\Product;
+use App\Support\DisplayOrderSettings;
 use App\Support\PageSeo;
 use App\Support\ProductCardData;
 use Inertia\Inertia;
@@ -16,13 +17,12 @@ class BrandController extends Controller
 {
     public function index(): Response
     {
-        $brands = Brand::query()
+        $brandsQuery = Brand::query()
             ->active()
             ->withCount([
                 'products as products_count' => static fn ($query) => $query->visible(),
-            ])
-            ->orderByDesc('id')
-            ->get();
+            ]);
+        $brands = DisplayOrderSettings::applyToQuery($brandsQuery, 'brands_listing')->get();
 
         return Inertia::render('catalog/BrandListing', [
             'brands' => $brands,
@@ -38,7 +38,7 @@ class BrandController extends Controller
 
         PageSeo::share($brand->name, $brand->description, $brand->logo);
 
-        $products = Product::query()
+        $productsQuery = Product::query()
             ->visible()
             ->where('brand_id', $brand->id)
             // PERF-001: variants.media — ProductVariant's appended `image`
@@ -49,9 +49,12 @@ class BrandController extends Controller
             ])
             ->withAvg([
                 'reviews as average_rating' => static fn ($query) => $query->where('is_approved', true),
-            ], 'rating')
-            ->orderByDesc('is_featured')
-            ->orderByDesc('published_at')
+            ], 'rating');
+        // DISPLAY-ORDER: random re-shuffles every request, including across
+        // pages — a page-2 visit can repeat or skip rows a page-1 visit
+        // already showed. Accepted trade-off of "random" meaning a fresh
+        // shuffle on every page load, not a fixed-for-the-day order.
+        $products = DisplayOrderSettings::applyToQuery($productsQuery, 'brand_detail_products', ['published_at', 'created_at'])
             ->paginate(12)
             ->withQueryString();
 

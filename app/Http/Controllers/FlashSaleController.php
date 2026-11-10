@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\FlashSale;
 use App\Models\FlashSaleItem;
 use App\Models\Product;
+use App\Support\DisplayOrderSettings;
 use App\Support\ProductCardData;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -37,6 +38,7 @@ class FlashSaleController extends Controller
                                     ], 'rating');
                             },
                         ]);
+                    DisplayOrderSettings::applyToQuery($query, 'flash_sale_items');
                 },
             ])
             ->first();
@@ -48,7 +50,7 @@ class FlashSaleController extends Controller
             ->limit(3)
             ->get();
 
-        $featuredProducts = Product::query()
+        $featuredProductsQuery = Product::query()
             ->visible()
             ->featured()
             ->with(['brand', 'images', 'variants.media'])
@@ -57,7 +59,8 @@ class FlashSaleController extends Controller
             ])
             ->withAvg([
                 'reviews as average_rating' => static fn ($q) => $q->where('is_approved', true),
-            ], 'rating')
+            ], 'rating');
+        $featuredProducts = DisplayOrderSettings::applyToQuery($featuredProductsQuery, 'featured_products', ['published_at', 'created_at'])
             ->limit(8)
             ->get();
 

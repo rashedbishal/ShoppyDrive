@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+    ArrowUpDown,
     Award,
     Ban,
     Bot,
@@ -238,6 +239,14 @@ const navSections: NavSection[] = [
                 exact: false,
                 extraMatches: [] as string[],
                 section: 'search_keywords',
+            },
+            {
+                label: 'Display Order',
+                href: '/admin/settings/display-order',
+                icon: ArrowUpDown,
+                exact: false,
+                extraMatches: [] as string[],
+                section: 'display_order',
             },
         ],
     },

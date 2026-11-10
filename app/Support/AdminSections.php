@@ -51,6 +51,7 @@ final class AdminSections
         'landing_pages' => ['label' => 'Landing Pages', 'group' => 'Content', 'abilities' => ['create', 'update', 'delete']],
         'blog' => ['label' => 'Blog', 'group' => 'Content', 'abilities' => ['create', 'update', 'delete']],
         'search_keywords' => ['label' => 'Search Keywords', 'group' => 'Content', 'abilities' => ['create', 'update', 'delete']],
+        'display_order' => ['label' => 'Display Order', 'group' => 'Content', 'abilities' => ['update']],
 
         // Users
         'customers' => ['label' => 'Customers', 'group' => 'Users', 'abilities' => ['delete']],

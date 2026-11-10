@@ -43,12 +43,24 @@ test('an unapproved or rejected review does not change the rating shown on any h
     );
 });
 
-test('homepage curated products and brands keep the order the admin picked them in', function () {
-    $products = Product::factory()->count(3)->create(['published_at' => now()->subDay()]);
-    $brands = Brand::factory()->count(3)->create();
+test('homepage curated products and brands order newest-first regardless of the admin\'s pick order (DISPLAY-ORDER-001)', function () {
+    // Which products/brands appear is still exactly the admin's picked
+    // list; superseded by DisplayOrderSettings is only the *order* they
+    // display in — "Descending" (the default) is newest first by
+    // published_at/created_at, not the array position below.
+    $products = [
+        Product::factory()->create(['published_at' => now()->subDays(3)]),
+        Product::factory()->create(['published_at' => now()->subDays(2)]),
+        Product::factory()->create(['published_at' => now()->subDay()]),
+    ];
+    $brands = [
+        Brand::factory()->create(['created_at' => now()->subDays(3)]),
+        Brand::factory()->create(['created_at' => now()->subDays(2)]),
+        Brand::factory()->create(['created_at' => now()->subDay()]),
+    ];
 
-    $productIds = [$products[2]->id, $products[0]->id, $products[1]->id];
-    $brandIds = [$brands[1]->id, $brands[2]->id, $brands[0]->id];
+    $productIds = [$products[0]->id, $products[2]->id, $products[1]->id];
+    $brandIds = [$brands[1]->id, $brands[0]->id, $brands[2]->id];
 
     HomepageSetting::create([
         'section_key' => 'new_arrivals', 'section_name' => 'New Arrivals',
@@ -67,13 +79,13 @@ test('homepage curated products and brands keep the order the admin picked them 
     ]);
 
     $this->get('/')->assertInertia(fn ($page) => $page
-        ->where('newArrivals.0.id', $productIds[0])
-        ->where('newArrivals.1.id', $productIds[1])
-        ->where('newArrivals.2.id', $productIds[2])
-        ->where('bestSellers.0.id', $productIds[0])
-        ->where('bestSellers.2.id', $productIds[2])
-        ->where('brands.0.id', $brandIds[0])
-        ->where('brands.1.id', $brandIds[1])
-        ->where('brands.2.id', $brandIds[2])
+        ->where('newArrivals.0.id', $products[2]->id)
+        ->where('newArrivals.1.id', $products[1]->id)
+        ->where('newArrivals.2.id', $products[0]->id)
+        ->where('bestSellers.0.id', $products[2]->id)
+        ->where('bestSellers.2.id', $products[0]->id)
+        ->where('brands.0.id', $brands[2]->id)
+        ->where('brands.1.id', $brands[1]->id)
+        ->where('brands.2.id', $brands[0]->id)
     );
 });

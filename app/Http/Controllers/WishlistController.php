@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\Wishlist;
 use App\Support\CartManager;
+use App\Support\DisplayOrderSettings;
 use App\Support\ProductCardData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -38,11 +39,11 @@ class WishlistController extends Controller
 
     public function index(Request $request): Response
     {
-        $items = Wishlist::where('user_id', $request->user()->id)
+        $wishlistQuery = Wishlist::where('user_id', $request->user()->id)
             // PERF-001: variants.media — ProductVariant's appended `image`
             // accessor otherwise lazy-loads it per variant on serialization.
-            ->with(['product' => fn ($q) => $q->with(['images', 'brand', 'category', 'subCategory', 'variants.media'])])
-            ->get();
+            ->with(['product' => fn ($q) => $q->with(['images', 'brand', 'category', 'subCategory', 'variants.media'])]);
+        $items = DisplayOrderSettings::applyToQuery($wishlistQuery, 'wishlist')->get();
 
         // Same gap as every other storefront listing surface: this was
         // hardcoded to false/null unconditionally, so a wishlisted product
