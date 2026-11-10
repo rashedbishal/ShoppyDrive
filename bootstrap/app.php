@@ -17,6 +17,7 @@ use App\Http\Middleware\RedirectCustomerFromAdmin;
 use App\Http\Middleware\RedirectToCanonicalDomain;
 use App\Http\Middleware\RedirectToHttps;
 use App\Http\Middleware\RefuseInsecureApi;
+use App\Http\Middleware\RejectUntrustedHost;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\StampPasswordResetRequestedAt;
 use App\Http\Middleware\ThrottleFortifyActions;
@@ -64,6 +65,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Laravel skips this in local and testing environments. The live
         // APP_URL host was confirmed as shoppydrive.com from the app's own
         // http→https 308 redirect target (RedirectToHttps reads APP_URL).
+        // Kept as genuine defense in depth, but confirmed live this alone
+        // does not reliably reject a forged Host — see RejectUntrustedHost
+        // below, which is this finding's actual fix.
         $middleware->trustHosts();
 
         // INFRA-001: deploys put the site in maintenance mode while files sync
@@ -79,8 +83,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Runs before session/cookie middleware so a www. visitor (and now a
         // plain-HTTP visitor — MED-18A) is redirected before anything gets
         // set for the wrong host/scheme, and so a blocked IP is declined
-        // before a session/cart is ever started for it.
+        // before a session/cart is ever started for it. RejectUntrustedHost
+        // runs first of all of these (SEC-011): nothing else here should
+        // ever act on a Host it didn't actually trust.
         $middleware->web(prepend: [
+            RejectUntrustedHost::class,
             RedirectToCanonicalDomain::class,
             RedirectToHttps::class,
             BlockBlockedIp::class,
