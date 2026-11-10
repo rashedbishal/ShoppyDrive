@@ -5,12 +5,15 @@ import {
     ArrowLeft,
     Ban,
     Globe,
+    History,
     MapPin,
     Package,
     Pencil,
     RefreshCw,
     Trash2,
     Truck,
+    User,
+    Wallet,
     X,
     XCircle,
 } from 'lucide-react';
@@ -433,8 +436,8 @@ export default function OrderShow({
                     </div>
                 )}
 
-                <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-                    <div className="space-y-5">
+                <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+                    <div className="min-w-0 space-y-5">
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
@@ -542,24 +545,332 @@ export default function OrderShow({
                             </CardContent>
                         </Card>
 
+                        <div className="grid items-stretch gap-5 md:grid-cols-2">
+                            <Card className="h-full shadow-sm">
+                                <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                                        <User className="size-4" /> Customer
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-1 pt-4 text-sm text-slate-700">
+                                    {order.user ? (
+                                        <>
+                                            <p className="font-semibold">
+                                                {order.user.name}
+                                            </p>
+                                            <p className="text-slate-500">
+                                                {order.user.email}
+                                            </p>
+                                            {order.user.phone && (
+                                                <p className="text-slate-500">
+                                                    {order.user.phone}
+                                                </p>
+                                            )}
+                                            <Link
+                                                href={route(
+                                                    'admin.customers.show',
+                                                    order.user.id,
+                                                )}
+                                                className="text-xs text-[#c8102e] hover:underline"
+                                            >
+                                                View customer →
+                                            </Link>
+                                        </>
+                                    ) : (
+                                        <p className="text-slate-400">
+                                            Guest order
+                                        </p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                            <Card className="h-full shadow-sm">
+                                <CardHeader className="flex-row items-center justify-between border-b border-slate-100 pb-4">
+                                    <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                                        <MapPin className="size-4" /> Shipping
+                                        Address
+                                    </CardTitle>
+                                    <AnimatePresence initial={false}>
+                                        {!isEditingAddress && (
+                                            <AdminFade key="edit-address-button">
+                                                <button
+                                                    type="button"
+                                                    onClick={
+                                                        startEditingAddress
+                                                    }
+                                                    disabled={courierUnresolved}
+                                                    title={
+                                                        courierUnresolved
+                                                            ? courierUnresolvedNote
+                                                            : undefined
+                                                    }
+                                                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                                >
+                                                    <Pencil className="size-3.5" />{' '}
+                                                    Edit
+                                                </button>
+                                            </AdminFade>
+                                        )}
+                                    </AnimatePresence>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    <AnimatePresence
+                                        initial={false}
+                                        mode="wait"
+                                    >
+                                        {isEditingAddress ? (
+                                            <AdminReveal key="address-a">
+                                                <form
+                                                    onSubmit={handleSaveAddress}
+                                                    className="space-y-3"
+                                                >
+                                                    <div>
+                                                        <p className="mb-1 text-xs font-medium text-slate-500">
+                                                            Recipient name
+                                                        </p>
+                                                        <p className="text-sm font-semibold text-slate-800">
+                                                            {
+                                                                order
+                                                                    .shipping_address
+                                                                    .name
+                                                            }
+                                                        </p>
+                                                        <p className="mt-0.5 text-xs text-slate-400">
+                                                            Not editable here.
+                                                        </p>
+                                                    </div>
+                                                    <Input
+                                                        label="Phone"
+                                                        value={
+                                                            addressData.phone
+                                                        }
+                                                        onChange={(e) =>
+                                                            setAddressData(
+                                                                'phone',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        error={
+                                                            addressErrors.phone
+                                                        }
+                                                    />
+                                                    <Input
+                                                        label="Address line 1"
+                                                        value={
+                                                            addressData.address_line1
+                                                        }
+                                                        onChange={(e) =>
+                                                            setAddressData(
+                                                                'address_line1',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        error={
+                                                            addressErrors.address_line1
+                                                        }
+                                                    />
+                                                    <Input
+                                                        label="Address line 2"
+                                                        value={
+                                                            addressData.address_line2
+                                                        }
+                                                        onChange={(e) =>
+                                                            setAddressData(
+                                                                'address_line2',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        error={
+                                                            addressErrors.address_line2
+                                                        }
+                                                    />
+                                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                        <Input
+                                                            label="City"
+                                                            value={
+                                                                addressData.city
+                                                            }
+                                                            onChange={(e) =>
+                                                                setAddressData(
+                                                                    'city',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            error={
+                                                                addressErrors.city
+                                                            }
+                                                        />
+                                                        <Input
+                                                            label="District / State"
+                                                            value={
+                                                                addressData.state
+                                                            }
+                                                            onChange={(e) =>
+                                                                setAddressData(
+                                                                    'state',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            error={
+                                                                addressErrors.state
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                        <Input
+                                                            label="Postal code"
+                                                            value={
+                                                                addressData.postal_code
+                                                            }
+                                                            onChange={(e) =>
+                                                                setAddressData(
+                                                                    'postal_code',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            error={
+                                                                addressErrors.postal_code
+                                                            }
+                                                        />
+                                                        <Input
+                                                            label="Country"
+                                                            value={
+                                                                addressData.country
+                                                            }
+                                                            onChange={(e) =>
+                                                                setAddressData(
+                                                                    'country',
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            error={
+                                                                addressErrors.country
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="flex gap-2 pt-1">
+                                                        <Button
+                                                            type="submit"
+                                                            disabled={
+                                                                addressProcessing
+                                                            }
+                                                            className="flex-1 bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                                                        >
+                                                            {addressProcessing
+                                                                ? 'Saving…'
+                                                                : 'Save address'}
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            disabled={
+                                                                addressProcessing
+                                                            }
+                                                            onClick={
+                                                                cancelEditingAddress
+                                                            }
+                                                        >
+                                                            <X className="size-4" />
+                                                        </Button>
+                                                    </div>
+                                                </form>
+                                            </AdminReveal>
+                                        ) : (
+                                            <AdminReveal key="address-b">
+                                                <div className="space-y-0.5 text-sm text-slate-700">
+                                                    <p className="font-semibold">
+                                                        {
+                                                            order
+                                                                .shipping_address
+                                                                .name
+                                                        }
+                                                    </p>
+                                                    <p>
+                                                        {
+                                                            order
+                                                                .shipping_address
+                                                                .phone
+                                                        }
+                                                    </p>
+                                                    <p>
+                                                        {
+                                                            order
+                                                                .shipping_address
+                                                                .address_line1
+                                                        }
+                                                    </p>
+                                                    {order.shipping_address
+                                                        .address_line2 && (
+                                                        <p>
+                                                            {
+                                                                order
+                                                                    .shipping_address
+                                                                    .address_line2
+                                                            }
+                                                        </p>
+                                                    )}
+                                                    <p>
+                                                        {
+                                                            order
+                                                                .shipping_address
+                                                                .city
+                                                        }
+                                                        ,{' '}
+                                                        {
+                                                            order
+                                                                .shipping_address
+                                                                .state
+                                                        }{' '}
+                                                        {
+                                                            order
+                                                                .shipping_address
+                                                                .postal_code
+                                                        }
+                                                    </p>
+                                                    <p>
+                                                        {
+                                                            order
+                                                                .shipping_address
+                                                                .country
+                                                        }
+                                                    </p>
+                                                </div>
+                                            </AdminReveal>
+                                        )}
+                                    </AnimatePresence>
+                                </CardContent>
+                            </Card>
+                        </div>
+
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
-                                <CardTitle className="text-sm font-semibold text-slate-700">
-                                    Status History
+                                <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                                    <History className="size-4" /> Status
+                                    History
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-2 pt-4">
+                            <CardContent className="pt-4">
                                 {order.status_histories.length === 0 ? (
                                     <p className="text-sm text-slate-400">
                                         No history yet.
                                     </p>
                                 ) : (
-                                    order.status_histories.map((h) => (
+                                    order.status_histories.map((h, index) => (
                                         <div
                                             key={h.id}
-                                            className="flex items-start gap-3"
+                                            className="relative flex items-start gap-3 pb-4 last:pb-0"
                                         >
-                                            <div className="mt-1 size-2 shrink-0 rounded-full bg-slate-300" />
+                                            {index <
+                                                order.status_histories.length -
+                                                    1 && (
+                                                <span className="absolute top-3.5 bottom-0 left-[3px] w-px bg-slate-200" />
+                                            )}
+                                            <div
+                                                className={`relative mt-1 size-2 shrink-0 rounded-full ${index === order.status_histories.length - 1 ? 'bg-[#c8102e] ring-4 ring-red-50' : 'bg-slate-300'}`}
+                                            />
                                             <div>
                                                 <p className="text-xs font-medium text-slate-700">
                                                     {h.status}
@@ -580,13 +891,88 @@ export default function OrderShow({
                                 )}
                             </CardContent>
                         </Card>
+
+                        {(order.ip_address ||
+                            order.user_agent ||
+                            order.traffic_source) && (
+                            <Card className="shadow-sm">
+                                <CardHeader className="border-b border-slate-100 pb-4">
+                                    <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                                        <Globe className="size-4" /> Device &
+                                        Traffic Source
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2 pt-4 text-sm text-slate-700">
+                                    {order.traffic_source && (
+                                        <div>
+                                            <p className="text-xs text-slate-500">
+                                                Came From
+                                            </p>
+                                            <div className="mt-0.5 flex items-center gap-2">
+                                                <Badge
+                                                    variant={
+                                                        trafficSourceVariant[
+                                                            order.traffic_source
+                                                        ] ?? 'default'
+                                                    }
+                                                >
+                                                    {trafficSourceLabel[
+                                                        order.traffic_source
+                                                    ] ?? order.traffic_source}
+                                                </Badge>
+                                                {order.traffic_referrer && (
+                                                    <span className="text-xs text-slate-400">
+                                                        via{' '}
+                                                        {order.traffic_referrer}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {order.ip_address && (
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div>
+                                                <p className="text-xs text-slate-500">
+                                                    IP Address
+                                                </p>
+                                                <p className="font-mono font-medium">
+                                                    {order.ip_address}
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleBlockIp}
+                                                disabled={blockingIp}
+                                                className="flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                                            >
+                                                <Ban className="size-3" />
+                                                {blockingIp
+                                                    ? 'Blocking…'
+                                                    : 'Block IP'}
+                                            </button>
+                                        </div>
+                                    )}
+                                    {order.user_agent && (
+                                        <div>
+                                            <p className="text-xs text-slate-500">
+                                                Browser / Device
+                                            </p>
+                                            <p className="text-xs font-medium break-all text-slate-600">
+                                                {order.user_agent}
+                                            </p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
 
                     <div className="space-y-5">
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
-                                <CardTitle className="text-sm font-semibold text-slate-700">
-                                    Status
+                                <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                                    <Wallet className="size-4" /> Status &amp;
+                                    Refunds
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3 pt-4">
@@ -749,469 +1135,6 @@ export default function OrderShow({
                             </CardContent>
                         </Card>
 
-                        {order.status === 'shipped' && (
-                            <Card className="border-amber-100 shadow-sm">
-                                <CardHeader className="border-b border-amber-100 pb-4">
-                                    <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-amber-700">
-                                        <XCircle className="size-4" /> Cancel
-                                        Order
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="pt-4">
-                                    <p className="text-xs text-amber-700">
-                                        This order is with the courier. Cancel
-                                        it or request a return in the
-                                        courier&apos;s portal — the order is
-                                        cancelled and its stock restored
-                                        automatically when the courier reports
-                                        it.
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {order.status !== 'cancelled' &&
-                            order.status !== 'refunded' &&
-                            order.status !== 'delivered' &&
-                            order.status !== 'shipped' &&
-                            order.payment_status !== 'paid' && (
-                                <Card className="border-red-100 shadow-sm">
-                                    <CardHeader className="border-b border-red-100 pb-4">
-                                        <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-red-600">
-                                            <XCircle className="size-4" />{' '}
-                                            Cancel Order
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="pt-4">
-                                        <form
-                                            onSubmit={handleCancel}
-                                            className="space-y-3"
-                                        >
-                                            <textarea
-                                                rows={2}
-                                                placeholder="Reason (optional)"
-                                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-red-400 focus:outline-none"
-                                                value={cancelData.reason}
-                                                onChange={(e) =>
-                                                    setCancelData(
-                                                        'reason',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                            <Button
-                                                type="submit"
-                                                disabled={
-                                                    cancelProcessing ||
-                                                    courierUnresolved
-                                                }
-                                                className="w-full bg-red-600 text-white hover:bg-red-700"
-                                            >
-                                                {cancelProcessing
-                                                    ? 'Cancelling…'
-                                                    : 'Cancel This Order'}
-                                            </Button>
-                                            {courierUnresolved && (
-                                                <p className="text-xs text-amber-700">
-                                                    {courierUnresolvedNote}
-                                                </p>
-                                            )}
-                                        </form>
-                                    </CardContent>
-                                </Card>
-                            )}
-
-                        {order.status === 'cancelled' && (
-                            <Card className="border-red-100 shadow-sm">
-                                <CardHeader className="border-b border-red-100 pb-4">
-                                    <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-red-600">
-                                        <Trash2 className="size-4" /> Delete
-                                        Order
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="pt-4">
-                                    <p className="mb-3 text-xs text-slate-500">
-                                        Moves this cancelled order to trash. It
-                                        can be restored or permanently deleted
-                                        from there.
-                                    </p>
-                                    <Button
-                                        className="w-full bg-red-600 text-white hover:bg-red-700"
-                                        onClick={() =>
-                                            setIsDeleteDialogOpen(true)
-                                        }
-                                    >
-                                        <Trash2 className="size-4" /> Delete
-                                        This Order
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        <Card className="shadow-sm">
-                            <CardHeader className="border-b border-slate-100 pb-4">
-                                <CardTitle className="text-sm font-semibold text-slate-700">
-                                    Customer
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-1 pt-4 text-sm text-slate-700">
-                                {order.user ? (
-                                    <>
-                                        <p className="font-semibold">
-                                            {order.user.name}
-                                        </p>
-                                        <p className="text-slate-500">
-                                            {order.user.email}
-                                        </p>
-                                        {order.user.phone && (
-                                            <p className="text-slate-500">
-                                                {order.user.phone}
-                                            </p>
-                                        )}
-                                        <Link
-                                            href={route(
-                                                'admin.customers.show',
-                                                order.user.id,
-                                            )}
-                                            className="text-xs text-[#c8102e] hover:underline"
-                                        >
-                                            View customer →
-                                        </Link>
-                                    </>
-                                ) : (
-                                    <p className="text-slate-400">
-                                        Guest order
-                                    </p>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card className="shadow-sm">
-                            <CardHeader className="flex-row items-center justify-between border-b border-slate-100 pb-4">
-                                <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                                    <MapPin className="size-4" /> Shipping
-                                    Address
-                                </CardTitle>
-                                <AnimatePresence initial={false}>
-                                    {!isEditingAddress && (
-                                        <AdminFade key="edit-address-button">
-                                            <button
-                                                type="button"
-                                                onClick={startEditingAddress}
-                                                disabled={courierUnresolved}
-                                                title={
-                                                    courierUnresolved
-                                                        ? courierUnresolvedNote
-                                                        : undefined
-                                                }
-                                                className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                            >
-                                                <Pencil className="size-3.5" />{' '}
-                                                Edit
-                                            </button>
-                                        </AdminFade>
-                                    )}
-                                </AnimatePresence>
-                            </CardHeader>
-                            <CardContent className="pt-4">
-                                <AnimatePresence initial={false} mode="wait">
-                                    {isEditingAddress ? (
-                                        <AdminReveal key="address-a">
-                                            <form
-                                                onSubmit={handleSaveAddress}
-                                                className="space-y-3"
-                                            >
-                                                <div>
-                                                    <p className="mb-1 text-xs font-medium text-slate-500">
-                                                        Recipient name
-                                                    </p>
-                                                    <p className="text-sm font-semibold text-slate-800">
-                                                        {
-                                                            order
-                                                                .shipping_address
-                                                                .name
-                                                        }
-                                                    </p>
-                                                    <p className="mt-0.5 text-xs text-slate-400">
-                                                        Not editable here.
-                                                    </p>
-                                                </div>
-                                                <Input
-                                                    label="Phone"
-                                                    value={addressData.phone}
-                                                    onChange={(e) =>
-                                                        setAddressData(
-                                                            'phone',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    error={addressErrors.phone}
-                                                />
-                                                <Input
-                                                    label="Address line 1"
-                                                    value={
-                                                        addressData.address_line1
-                                                    }
-                                                    onChange={(e) =>
-                                                        setAddressData(
-                                                            'address_line1',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    error={
-                                                        addressErrors.address_line1
-                                                    }
-                                                />
-                                                <Input
-                                                    label="Address line 2"
-                                                    value={
-                                                        addressData.address_line2
-                                                    }
-                                                    onChange={(e) =>
-                                                        setAddressData(
-                                                            'address_line2',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    error={
-                                                        addressErrors.address_line2
-                                                    }
-                                                />
-                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                                    <Input
-                                                        label="City"
-                                                        value={addressData.city}
-                                                        onChange={(e) =>
-                                                            setAddressData(
-                                                                'city',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        error={
-                                                            addressErrors.city
-                                                        }
-                                                    />
-                                                    <Input
-                                                        label="District / State"
-                                                        value={
-                                                            addressData.state
-                                                        }
-                                                        onChange={(e) =>
-                                                            setAddressData(
-                                                                'state',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        error={
-                                                            addressErrors.state
-                                                        }
-                                                    />
-                                                </div>
-                                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                                    <Input
-                                                        label="Postal code"
-                                                        value={
-                                                            addressData.postal_code
-                                                        }
-                                                        onChange={(e) =>
-                                                            setAddressData(
-                                                                'postal_code',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        error={
-                                                            addressErrors.postal_code
-                                                        }
-                                                    />
-                                                    <Input
-                                                        label="Country"
-                                                        value={
-                                                            addressData.country
-                                                        }
-                                                        onChange={(e) =>
-                                                            setAddressData(
-                                                                'country',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        error={
-                                                            addressErrors.country
-                                                        }
-                                                    />
-                                                </div>
-                                                <div className="flex gap-2 pt-1">
-                                                    <Button
-                                                        type="submit"
-                                                        disabled={
-                                                            addressProcessing
-                                                        }
-                                                        className="flex-1 bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                                                    >
-                                                        {addressProcessing
-                                                            ? 'Saving…'
-                                                            : 'Save address'}
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        disabled={
-                                                            addressProcessing
-                                                        }
-                                                        onClick={
-                                                            cancelEditingAddress
-                                                        }
-                                                    >
-                                                        <X className="size-4" />
-                                                    </Button>
-                                                </div>
-                                            </form>
-                                        </AdminReveal>
-                                    ) : (
-                                        <AdminReveal key="address-b">
-                                            <div className="space-y-0.5 text-sm text-slate-700">
-                                                <p className="font-semibold">
-                                                    {
-                                                        order.shipping_address
-                                                            .name
-                                                    }
-                                                </p>
-                                                <p>
-                                                    {
-                                                        order.shipping_address
-                                                            .phone
-                                                    }
-                                                </p>
-                                                <p>
-                                                    {
-                                                        order.shipping_address
-                                                            .address_line1
-                                                    }
-                                                </p>
-                                                {order.shipping_address
-                                                    .address_line2 && (
-                                                    <p>
-                                                        {
-                                                            order
-                                                                .shipping_address
-                                                                .address_line2
-                                                        }
-                                                    </p>
-                                                )}
-                                                <p>
-                                                    {
-                                                        order.shipping_address
-                                                            .city
-                                                    }
-                                                    ,{' '}
-                                                    {
-                                                        order.shipping_address
-                                                            .state
-                                                    }{' '}
-                                                    {
-                                                        order.shipping_address
-                                                            .postal_code
-                                                    }
-                                                </p>
-                                                <p>
-                                                    {
-                                                        order.shipping_address
-                                                            .country
-                                                    }
-                                                </p>
-                                            </div>
-                                        </AdminReveal>
-                                    )}
-                                </AnimatePresence>
-                            </CardContent>
-                        </Card>
-
-                        {(order.ip_address ||
-                            order.user_agent ||
-                            order.traffic_source) && (
-                            <Card className="shadow-sm">
-                                <CardHeader className="border-b border-slate-100 pb-4">
-                                    <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                                        <Globe className="size-4" /> Device &
-                                        Traffic Source
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-2 pt-4 text-sm text-slate-700">
-                                    {order.traffic_source && (
-                                        <div>
-                                            <p className="text-xs text-slate-500">
-                                                Came From
-                                            </p>
-                                            <div className="mt-0.5 flex items-center gap-2">
-                                                <Badge
-                                                    variant={
-                                                        trafficSourceVariant[
-                                                            order.traffic_source
-                                                        ] ?? 'default'
-                                                    }
-                                                >
-                                                    {trafficSourceLabel[
-                                                        order.traffic_source
-                                                    ] ?? order.traffic_source}
-                                                </Badge>
-                                                {order.traffic_referrer && (
-                                                    <span className="text-xs text-slate-400">
-                                                        via{' '}
-                                                        {order.traffic_referrer}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {order.ip_address && (
-                                        <div className="flex items-center justify-between gap-2">
-                                            <div>
-                                                <p className="text-xs text-slate-500">
-                                                    IP Address
-                                                </p>
-                                                <p className="font-mono font-medium">
-                                                    {order.ip_address}
-                                                </p>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={handleBlockIp}
-                                                disabled={blockingIp}
-                                                className="flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-                                            >
-                                                <Ban className="size-3" />
-                                                {blockingIp
-                                                    ? 'Blocking…'
-                                                    : 'Block IP'}
-                                            </button>
-                                        </div>
-                                    )}
-                                    {order.user_agent && (
-                                        <div>
-                                            <p className="text-xs text-slate-500">
-                                                Browser / Device
-                                            </p>
-                                            <p className="text-xs font-medium break-all text-slate-600">
-                                                {order.user_agent}
-                                            </p>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {order.tracking_number && (
-                            <Card className="shadow-sm">
-                                <CardContent className="pt-4">
-                                    <p className="text-xs text-slate-500">
-                                        Tracking
-                                    </p>
-                                    <p className="font-mono text-sm font-medium text-slate-800">
-                                        {order.tracking_number}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        )}
-
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100 pb-4">
                                 <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
@@ -1219,6 +1142,16 @@ export default function OrderShow({
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3 pt-4">
+                                {order.tracking_number && (
+                                    <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-sm">
+                                        <span className="text-slate-500">
+                                            Tracking
+                                        </span>
+                                        <span className="font-mono font-medium text-slate-800">
+                                            {order.tracking_number}
+                                        </span>
+                                    </div>
+                                )}
                                 {courierSubmission &&
                                 (courierSubmission.state === 'submitting' ||
                                     courierSubmission.state === 'unknown') ? (
@@ -1405,6 +1338,105 @@ export default function OrderShow({
                                 )}
                             </CardContent>
                         </Card>
+
+                        {order.status === 'shipped' && (
+                            <Card className="border-amber-100 shadow-sm">
+                                <CardHeader className="border-b border-amber-100 pb-4">
+                                    <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-amber-700">
+                                        <XCircle className="size-4" /> Cancel
+                                        Order
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    <p className="text-xs text-amber-700">
+                                        This order is with the courier. Cancel
+                                        it or request a return in the
+                                        courier&apos;s portal — the order is
+                                        cancelled and its stock restored
+                                        automatically when the courier reports
+                                        it.
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {order.status !== 'cancelled' &&
+                            order.status !== 'refunded' &&
+                            order.status !== 'delivered' &&
+                            order.status !== 'shipped' &&
+                            order.payment_status !== 'paid' && (
+                                <Card className="border-red-100 shadow-sm">
+                                    <CardHeader className="border-b border-red-100 pb-4">
+                                        <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-red-600">
+                                            <XCircle className="size-4" />{' '}
+                                            Cancel Order
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="pt-4">
+                                        <form
+                                            onSubmit={handleCancel}
+                                            className="space-y-3"
+                                        >
+                                            <textarea
+                                                rows={2}
+                                                placeholder="Reason (optional)"
+                                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-red-400 focus:outline-none"
+                                                value={cancelData.reason}
+                                                onChange={(e) =>
+                                                    setCancelData(
+                                                        'reason',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                            <Button
+                                                type="submit"
+                                                disabled={
+                                                    cancelProcessing ||
+                                                    courierUnresolved
+                                                }
+                                                className="w-full bg-red-600 text-white hover:bg-red-700"
+                                            >
+                                                {cancelProcessing
+                                                    ? 'Cancelling…'
+                                                    : 'Cancel This Order'}
+                                            </Button>
+                                            {courierUnresolved && (
+                                                <p className="text-xs text-amber-700">
+                                                    {courierUnresolvedNote}
+                                                </p>
+                                            )}
+                                        </form>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                        {order.status === 'cancelled' && (
+                            <Card className="border-red-100 shadow-sm">
+                                <CardHeader className="border-b border-red-100 pb-4">
+                                    <CardTitle className="flex items-center gap-1.5 text-sm font-semibold text-red-600">
+                                        <Trash2 className="size-4" /> Delete
+                                        Order
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="pt-4">
+                                    <p className="mb-3 text-xs text-slate-500">
+                                        Moves this cancelled order to trash. It
+                                        can be restored or permanently deleted
+                                        from there.
+                                    </p>
+                                    <Button
+                                        className="w-full bg-red-600 text-white hover:bg-red-700"
+                                        onClick={() =>
+                                            setIsDeleteDialogOpen(true)
+                                        }
+                                    >
+                                        <Trash2 className="size-4" /> Delete
+                                        This Order
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 </div>
             </div>

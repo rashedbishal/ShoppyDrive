@@ -8,7 +8,10 @@
       "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm run build)",
       "Bash(node -e \"console.log\\(Object.keys\\(require\\('lucide-react'\\)\\).filter\\(k => /ArrowUpDown|GripVertical|Check|X$/.test\\(k\\)\\).slice\\(0,20\\)\\)\")",
       "Bash(awk 'NR==900,NR==965' resources/js/pages/Home.tsx)",
-      "Bash(awk -F: '$1 < 962')"
+      "Bash(awk -F: '$1 < 962')",
+      "Bash(python3 -)",
+      "Bash(sed -i 's/lg:grid-cols-\\\\[1fr_320px\\\\]/items-start lg:grid-cols-[minmax\\(0,1fr\\)_360px]/' resources/js/pages/admin/orders/show.tsx)",
+      "Bash(grep -n \"Customer$\\\\|Status$\\\\|Status History\\\\|Status &amp\\\\|lucide\" resources/js/pages/admin/orders/show.tsx)"
     ]
   }
 }
