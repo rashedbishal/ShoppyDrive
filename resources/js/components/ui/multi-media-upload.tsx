@@ -137,7 +137,7 @@ export function MultiMediaUpload({
 
     return (
         <div className={cn('w-full', className)}>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] items-start gap-3">
                 {previews.map((preview, index) => (
                     <div key={preview.id} className="min-w-0 space-y-1.5">
                     <div
@@ -247,7 +247,7 @@ export function MultiMediaUpload({
 
                 <div
                     className={cn(
-                        'flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-colors hover:bg-slate-50',
+                        'flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-2 text-center transition-colors hover:bg-slate-50',
                         displayedError ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
                     )}
                     onClick={() => fileInputRef.current?.click()}
@@ -255,8 +255,8 @@ export function MultiMediaUpload({
                     <div className="rounded-full bg-slate-100 p-2.5">
                         <ImagePlus className="size-5 text-slate-400" />
                     </div>
-                    <p className="mt-2 text-xs font-medium text-slate-500">Add Media</p>
-                    <p className="text-[10px] text-slate-400">Images or Videos</p>
+                    <p className="mt-1.5 text-xs leading-tight font-medium text-slate-500">Add Media</p>
+                    <p className="text-[10px] leading-tight text-slate-400">Images or Videos</p>
                 </div>
             </div>
 
