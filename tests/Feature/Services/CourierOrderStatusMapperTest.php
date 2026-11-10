@@ -56,11 +56,10 @@ it('maps pathao slugs to order statuses', function () {
 
 it('maps steadfast statuses to order statuses', function () {
     expect(CourierOrderStatusMapper::forSteadfast('in_review'))->toBe(OrderStatus::PENDING);
-    expect(CourierOrderStatusMapper::forSteadfast('pending_parcels'))->toBe(OrderStatus::PENDING);
-    expect(CourierOrderStatusMapper::forSteadfast('waiting_approval'))->toBe(OrderStatus::PROCESSING);
-    expect(CourierOrderStatusMapper::forSteadfast('delivered_parcels'))->toBe(OrderStatus::DELIVERED);
-    expect(CourierOrderStatusMapper::forSteadfast('partial_parcels'))->toBe(OrderStatus::DELIVERED);
-    expect(CourierOrderStatusMapper::forSteadfast('cancelled_parcells'))->toBe(OrderStatus::CANCELLED);
+    expect(CourierOrderStatusMapper::forSteadfast('pending'))->toBe(OrderStatus::PENDING);
+    expect(CourierOrderStatusMapper::forSteadfast('delivered'))->toBe(OrderStatus::DELIVERED);
+    expect(CourierOrderStatusMapper::forSteadfast('partial_delivered'))->toBe(OrderStatus::DELIVERED);
+    expect(CourierOrderStatusMapper::forSteadfast('cancelled'))->toBe(OrderStatus::CANCELLED);
     expect(CourierOrderStatusMapper::forSteadfast('unknown'))->toBeNull();
 });
 
@@ -69,10 +68,9 @@ it('humanizes a raw status into readable text', function () {
     expect(CourierOrderStatusMapper::label('in_review'))->toBe('In Review');
 });
 
-it('corrects steadfast\'s "parcells" typo in the display label only', function () {
-    expect(CourierOrderStatusMapper::label('cancelled_parcells'))->toBe('Cancelled Parcels');
-    expect(CourierOrderStatusMapper::forSteadfast('cancelled_parcells'))->toBe(OrderStatus::CANCELLED);
-});
+it('never settles an order on an approval-pending or needs-attention steadfast status', function (string $status) {
+    expect(CourierOrderStatusMapper::forSteadfast($status))->toBeNull();
+})->with(['delivered_approval_pending', 'partial_delivered_approval_pending', 'cancelled_approval_pending', 'unknown_approval_pending', 'hold', 'exceptional']);
 
 it('advances the order status when the mapped status differs', function () {
     $order = makeMapperTestOrder();
@@ -87,7 +85,7 @@ it('advances the order status when the mapped status differs', function () {
 it('sets delivered_at and payment_status when mapped to delivered', function () {
     $order = makeMapperTestOrder();
 
-    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered_parcels');
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered');
 
     expect($order->status)->toBe(OrderStatus::DELIVERED);
     expect($order->payment_status)->toBe(PaymentStatus::PAID);
@@ -106,10 +104,10 @@ it('never overwrites a refunded order', function () {
 it('never overwrites a cancelled order', function () {
     $order = makeMapperTestOrder(['status' => 'cancelled']);
 
-    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered_parcels');
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered');
 
     expect($order->status)->toBe(OrderStatus::CANCELLED);
-    expect($order->steadfast_status)->toBe('delivered_parcels');
+    expect($order->steadfast_status)->toBe('delivered');
 });
 
 it('never regresses a delivered order back to an earlier status', function () {
@@ -119,11 +117,11 @@ it('never regresses a delivered order back to an earlier status', function () {
     $order = makeMapperTestOrder(['status' => 'delivered', 'payment_status' => 'paid']);
     $order->forceFill(['delivered_at' => now()->subDay()])->save();
 
-    CourierOrderStatusMapper::sync($order, 'steadfast', 'pending_parcels');
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'pending');
 
     expect($order->status)->toBe(OrderStatus::DELIVERED);
     expect($order->payment_status->value)->toBe('paid');
-    expect($order->steadfast_status)->toBe('pending_parcels');
+    expect($order->steadfast_status)->toBe('pending');
     expect($order->statusHistories()->latest()->first()->notes)->toContain('already delivered');
 });
 
@@ -134,12 +132,12 @@ it('a late delivered webhook after cancellation does not resurrect the order or 
     $order->update(['status' => OrderStatus::CANCELLED]);
 
     // The courier's "delivered" webhook for the original shipment arrives late.
-    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered_parcels');
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered');
 
     expect($order->status)->toBe(OrderStatus::CANCELLED);
     expect($order->payment_status->value)->toBe('unpaid');
     expect($order->delivered_at)->toBeNull();
-    expect($order->steadfast_status)->toBe('delivered_parcels');
+    expect($order->steadfast_status)->toBe('delivered');
 });
 
 it('a late delivered webhook after cancellation writes a history note once, then is idempotent on retry', function () {

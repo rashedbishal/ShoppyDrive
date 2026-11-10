@@ -273,9 +273,9 @@ match ($argv[2]) {
         $order,
         $app->make(App\Services\RefundService::class),
     ),
-    'steadfast-cancelled' => App\Services\CourierOrderStatusMapper::sync($order, 'steadfast', 'cancelled_parcells'),
-    'steadfast-stale' => App\Services\CourierOrderStatusMapper::sync($order, 'steadfast', 'pending_parcels'),
-    'steadfast-duplicate' => App\Services\CourierOrderStatusMapper::sync($order, 'steadfast', 'waiting_approval'),
+    'steadfast-cancelled' => App\Services\CourierOrderStatusMapper::sync($order, 'steadfast', 'cancelled'),
+    'steadfast-stale' => App\Services\CourierOrderStatusMapper::sync($order, 'steadfast', 'pending'),
+    'steadfast-duplicate' => App\Services\CourierOrderStatusMapper::sync($order, 'steadfast', 'hold'),
 };
 PHP;
 
@@ -480,12 +480,12 @@ it('leaves an admin-cancelled order alone when a courier cancellation report rac
 
     $order->refresh();
     expect($order->status)->toBe(OrderStatus::CANCELLED)
-        ->and($order->steadfast_status)->toBe('cancelled_parcells');
+        ->and($order->steadfast_status)->toBe('cancelled');
     // The courier's report is still recorded, but as a no-op: the order
     // was already cancelled by the time the contender's locked re-read ran.
     expect(OrderStatusHistory::where('order_id', $order->id)->pluck('notes')->all())
         ->toHaveCount(2)
-        ->and(OrderStatusHistory::where('order_id', $order->id)->latest('id')->value('notes'))->toBe('Steadfast reported "Cancelled Parcels".');
+        ->and(OrderStatusHistory::where('order_id', $order->id)->latest('id')->value('notes'))->toBe('Steadfast reported "Cancelled".');
     expect(ReferralPointTransaction::where('order_id', $order->id)->where('type', PointTransactionType::REFUND)->count())->toBe(1);
     expect($user->refresh()->points_balance)->toBe(100);
 })->skip(fn () => DB::connection()->getDriverName() !== 'mysql', 'requires a real MySQL connection to exercise InnoDB locking-read semantics');
@@ -757,7 +757,7 @@ it('refuses a stale webhook blocked behind the transaction that shipped the orde
     $order->refresh();
 
     expect($order->status)->toBe(OrderStatus::SHIPPED);
-    expect($order->steadfast_status)->toBe('pending_parcels');
+    expect($order->steadfast_status)->toBe('pending');
     expect($order->stock_restored_at)->toBeNull();
     expect($order->points_refunded_at)->toBeNull();
     expect($user->refresh()->points_balance)->toBe($balanceBefore);
@@ -773,8 +773,8 @@ it('records one report when a duplicate webhook is blocked behind the first unde
     [, $monitor] = $conns;
     [, $order, $admin] = createRedeemedPointsRaceOrder();
 
-    raceAdminActions($monitor, $order, $admin, fn () => CourierOrderStatusMapper::sync($order, 'steadfast', 'waiting_approval'), 'steadfast-duplicate');
+    raceAdminActions($monitor, $order, $admin, fn () => CourierOrderStatusMapper::sync($order, 'steadfast', 'hold'), 'steadfast-duplicate');
 
     expect($order->statusHistories()->where('notes', 'like', 'Steadfast reported%')->count())->toBe(1);
-    expect(CourierDeliveryEvidence::where('order_id', $order->id)->where('raw_status', 'waiting_approval')->count())->toBe(1);
+    expect(CourierDeliveryEvidence::where('order_id', $order->id)->where('raw_status', 'hold')->count())->toBe(1);
 })->skip(fn () => DB::connection()->getDriverName() !== 'mysql', 'requires a real MySQL connection to exercise InnoDB locking-read semantics');

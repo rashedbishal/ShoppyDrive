@@ -642,7 +642,7 @@ it('rolls back the whole courier status change when the evidence insert fails on
             SQL);
         $historyBefore = OrderStatusHistory::where('order_id', $order->id)->count();
 
-        expect(fn () => CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered_parcels'))->toThrow(QueryException::class);
+        expect(fn () => CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered'))->toThrow(QueryException::class);
 
         $fresh = DB::table('orders')->where('id', $order->id)->first();
         expect($fresh->status)->toBe('processing')
@@ -662,8 +662,8 @@ it('never loses evidence when a partial and a full report arrive at the same mom
 
     $order = evidenceRaceOrder();
     $startAt = microtime(true) + 4;
-    $a = startEvidenceSync($order, 'new', 'partial_parcels', $startAt);
-    $b = startEvidenceSync($order, 'new', 'delivered_parcels', $startAt);
+    $a = startEvidenceSync($order, 'new', 'partial_delivered', $startAt);
+    $b = startEvidenceSync($order, 'new', 'delivered', $startAt);
     expect($a->wait()->output())->toBe('done')->and($b->wait()->output())->toBe('done');
 
     $rows = CourierDeliveryEvidence::where('order_id', $order->id)->whereIn('evidence_type', ['transition', 'observation'])->orderBy('id')->get();

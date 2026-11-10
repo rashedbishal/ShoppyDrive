@@ -61,20 +61,20 @@ function staleG0Write(Order $order, string $provider, string $raw): void
 test('a courier report writes one evidence row linked to its history note, in the mapper transaction', function () {
     $order = sentOrder();
 
-    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered_parcels', source: CourierEvidenceSource::STEADFAST_WEBHOOK);
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered', source: CourierEvidenceSource::STEADFAST_WEBHOOK);
     $row = CourierDeliveryEvidence::where('evidence_type', CourierEvidenceType::TRANSITION)->sole();
 
     expect($row->previous_raw_status)->toBeNull()
-        ->and($row->raw_status)->toBe('delivered_parcels')
+        ->and($row->raw_status)->toBe('delivered')
         ->and($row->mapped_order_status)->toBe('delivered')
         ->and($row->order_status_before)->toBe('pending')
         ->and($row->order_status_after)->toBe('delivered')
         ->and($row->is_full_delivery)->toBeTrue()
         ->and($row->is_partial)->toBeFalse()
         ->and($row->source)->toBe(CourierEvidenceSource::STEADFAST_WEBHOOK)
-        ->and($row->orderStatusHistory->notes)->toStartWith('Steadfast reported "Delivered Parcels"');
+        ->and($row->orderStatusHistory->notes)->toStartWith('Steadfast reported "Delivered"');
 
-    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered_parcels'); // repeated report
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered'); // repeated report
     expect(CourierDeliveryEvidence::where('order_id', $order->id)->count())->toBe(2); // anchor + transition only
 });
 
@@ -113,7 +113,7 @@ test('a raw status changed without evidence is recorded as a raw-mismatch gap on
 test('a stale G1 writer after deployment leaves an unlinked courier note, recorded as a gap', function () {
     $order = sentOrder();
     staleG1Sync($order, 'steadfast', 'in_review');
-    CourierOrderStatusMapper::sync($order->refresh(), 'steadfast', 'waiting_approval');
+    CourierOrderStatusMapper::sync($order->refresh(), 'steadfast', 'delivered');
 
     expect(CourierDeliveryEvidence::where('gap_reason', 'unlinked_history')->count())->toBe(1)
         ->and(CourierDeliveryEvidence::where('gap_reason', 'raw_mismatch')->count())->toBe(1);
@@ -123,7 +123,7 @@ test('V2: a stale unmapped partial report then a trusted full delivery is never 
     makeCourierReadinessCurrent();
     $order = sentOrder();
     staleG1Sync($order, 'steadfast', 'partial_delivered'); // unmapped: raw + note, no evidence
-    CourierOrderStatusMapper::sync($order->refresh(), 'steadfast', 'delivered_parcels'); // trusted full transition
+    CourierOrderStatusMapper::sync($order->refresh(), 'steadfast', 'delivered'); // trusted full transition
 
     $chain = app(CourierEvidenceChain::class);
     expect($order->refresh()->status)->toBe(OrderStatus::DELIVERED)
@@ -136,7 +136,7 @@ test('V1: a historical consignment (no anchor) whose partial report was overwrit
     $order = evidenceOrder(['steadfast_consignment_id' => 'OLD-1']);
     staleG0Write($order, 'steadfast', 'partial_delivered');
     staleG0Write($order, 'steadfast', 'in_review'); // overwritten, no history
-    CourierOrderStatusMapper::sync($order->refresh(), 'steadfast', 'delivered_parcels');
+    CourierOrderStatusMapper::sync($order->refresh(), 'steadfast', 'delivered');
 
     $eligibility = app(CourierEvidenceChain::class)->eligibility($order->refresh());
     expect($eligibility['eligible'])->toBeFalse()->and(implode(' ', $eligibility['reasons']))->toContain('needs a current mother-admin verification');
@@ -160,7 +160,7 @@ test('partial evidence from every system source blocks; admin free text never do
 
     expect(app(CourierEvidenceChain::class)->partialBlockers($order->refresh()) !== [])->toBe($blocks);
 })->with([
-    'partial evidence row' => [fn (Order $o) => CourierOrderStatusMapper::sync($o, 'steadfast', 'partial_parcels'), true],
+    'partial evidence row' => [fn (Order $o) => CourierOrderStatusMapper::sync($o, 'steadfast', 'partial_delivered'), true],
     'raw column partial' => [fn (Order $o) => staleG0Write($o, 'steadfast', 'partial_delivered'), true],
     'mapper partial note' => [fn (Order $o) => OrderStatusHistory::create(['order_id' => $o->id, 'status' => 'delivered', 'notes' => 'Pathao reported "Partial Delivery" — order status updated to delivered.']), true],
     'legacy webhook partial note' => [fn (Order $o) => OrderStatusHistory::create(['order_id' => $o->id, 'status' => 'shipped', 'notes' => 'Steadfast status updated to "partial_delivered".']), true],
@@ -238,7 +238,7 @@ test('the evidence migration refuses to roll back once application evidence exis
 test('a verification goes stale on new evidence, a new courier note, or a raw-status change without history', function (Closure $change) {
     makeCourierReadinessCurrent();
     $order = sentOrder();
-    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered_parcels');
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered');
     $order->forceFill(['payment_status' => 'paid'])->save();
     $verification = verifyConsignmentForTest($order->refresh());
     $chain = app(CourierEvidenceChain::class);
@@ -249,7 +249,7 @@ test('a verification goes stale on new evidence, a new courier note, or a raw-st
     expect($chain->staleReason($verification, $order->refresh(), app(CourierVerificationReadinessService::class)->current()))->not->toBeNull()
         ->and($chain->eligibility($order)['eligible'])->toBeFalse();
 })->with([
-    'new courier report' => [fn (Order $o) => CourierOrderStatusMapper::sync($o, 'steadfast', 'cancelled_parcells')],
+    'new courier report' => [fn (Order $o) => CourierOrderStatusMapper::sync($o, 'steadfast', 'cancelled')],
     'unlogged raw change' => [fn (Order $o) => staleG0Write($o, 'steadfast', 'something_else')],
     'stale G1 courier note' => [fn (Order $o) => staleG1Sync($o, 'steadfast', 'waiting_approval')],
 ]);

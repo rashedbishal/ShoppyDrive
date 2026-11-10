@@ -123,7 +123,7 @@ test('a cancelled order cannot then be refunded, and its redeemed points are cre
     // describes, to prove the same "a cancelled order cannot then be
     // refunded" invariant holds regardless of which entry point cancelled
     // it, which is this test's actual point.
-    CourierOrderStatusMapper::sync($order, 'steadfast', 'cancelled_parcells');
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'cancelled');
     expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED);
 
     // PAY-RETURN-001: refunding a cancelled order is refused.
@@ -208,7 +208,7 @@ test('a courier cancellation whose refund fails is rolled back entirely and succ
     $failing = true;
     failRedeemedPointsRefundLedger($failing);
 
-    expect(fn () => CourierOrderStatusMapper::sync($order, 'steadfast', 'cancelled_parcells'))
+    expect(fn () => CourierOrderStatusMapper::sync($order, 'steadfast', 'cancelled'))
         ->toThrow(RuntimeException::class, 'Simulated REFUND ledger failure.');
 
     $order->refresh();
@@ -221,7 +221,7 @@ test('a courier cancellation whose refund fails is rolled back entirely and succ
     // The raw status was rolled back too, so the courier's retry of the same
     // report is not swallowed as "unchanged" — it now goes through.
     $failing = false;
-    CourierOrderStatusMapper::sync($order, 'steadfast', 'cancelled_parcells');
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'cancelled');
 
     expect($order->status)->toBe(OrderStatus::CANCELLED);
     expect($this->customer->refresh()->points_balance)->toBe(100);
@@ -286,7 +286,7 @@ test('a steadfast cancellation webhook whose refund fails returns 500, persists 
         'notification_type' => 'delivery_status',
         'consignment_id' => 'SF-ATOMIC-1',
         'invoice' => $order->order_number,
-        'status' => 'cancelled_parcells',
+        'status' => 'cancelled',
         'tracking_message' => 'Parcel cancelled.',
     ];
     $failing = true;
@@ -304,7 +304,7 @@ test('a steadfast cancellation webhook whose refund fails returns 500, persists 
     postAtomicitySteadfastWebhook($payload)->assertOk();
 
     expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED)
-        ->and($order->steadfast_status)->toBe('cancelled_parcells');
+        ->and($order->steadfast_status)->toBe('cancelled');
     expect($this->customer->refresh()->points_balance)->toBe(100);
     expect(refundLedgerCount($order))->toBe(1);
     expect(OrderStatusHistory::where('order_id', $order->id)->count())->toBe(1);

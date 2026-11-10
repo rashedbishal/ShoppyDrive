@@ -225,7 +225,7 @@ it('replaying the same signed webhook does not create duplicate status history e
     expect($order->statusHistories()->count())->toBe($historyCountAfterFirst);
 });
 
-it('a late, validly-signed delivered_parcels webhook cannot resurrect a cancelled order through the real controller', function () {
+it('a late, validly-signed delivered webhook cannot resurrect a cancelled order through the real controller', function () {
     $order = makeSteadfastOrder();
     configureSteadfastWebhookSecret();
     $order->update(['status' => 'cancelled']);
@@ -233,7 +233,7 @@ it('a late, validly-signed delivered_parcels webhook cannot resurrect a cancelle
     $response = postSignedSteadfastWebhook([
         'notification_type' => 'delivery_status',
         'consignment_id' => 'CONSIGN-ABC',
-        'status' => 'delivered_parcels',
+        'status' => 'delivered',
     ]);
 
     $response->assertOk();
@@ -253,13 +253,13 @@ it('a late, validly-signed webhook cannot regress a delivered order back to pend
     $response = postSignedSteadfastWebhook([
         'notification_type' => 'delivery_status',
         'consignment_id' => 'CONSIGN-ABC',
-        'status' => 'pending_parcels',
+        'status' => 'pending',
     ]);
 
     $response->assertOk();
     expect($order->refresh()->status->value)->toBe('delivered');
     expect($order->payment_status->value)->toBe('paid');
-    expect($order->steadfast_status)->toBe('pending_parcels');
+    expect($order->steadfast_status)->toBe('pending');
 });
 
 it('ignores an invoice-only webhook instead of matching the order by invoice', function () {
@@ -341,10 +341,10 @@ it('records structured courier evidence tagged with the webhook source only afte
     configureSteadfastWebhookSecret();
     $order = makeSteadfastOrder();
 
-    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'delivered_parcels'], 'wrong-secret')->assertUnauthorized();
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'delivered'], 'wrong-secret')->assertUnauthorized();
     expect(CourierDeliveryEvidence::count())->toBe(0);
 
-    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'delivered_parcels'])->assertOk();
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'delivered'])->assertOk();
 
     $evidence = CourierDeliveryEvidence::sole();
     expect($evidence->source)->toBe(CourierEvidenceSource::STEADFAST_WEBHOOK)
@@ -357,7 +357,7 @@ it('records structured courier evidence tagged with the webhook source only afte
 /**
  * @return array{0: Order, 1: User, 2: Product, 3: Coupon}
  */
-function makeShippedSteadfastOrder(string $status = 'shipped', string $rawStatus = 'waiting_approval'): array
+function makeShippedSteadfastOrder(string $status = 'shipped', string $rawStatus = 'in_review'): array
 {
     $customer = User::factory()->create(['points_balance' => 0]);
     $coupon = Coupon::factory()->create(['used_count' => 1]);
@@ -402,13 +402,13 @@ it('a stale webhook cannot move a shipped order backward', function (string $sta
     expect($evidence->raw_status)->toBe($staleStatus);
     expect($evidence->order_status_after)->toBe('shipped');
     expect($order->statusHistories()->latest('id')->firstOrFail()->notes)->toContain('status left unchanged')->toContain('Late report');
-})->with(['in_review', 'pending_parcels', 'waiting_approval']);
+})->with(['in_review', 'pending']);
 
 it('a customer cannot cancel a shipped order after a stale webhook', function () {
     configureSteadfastWebhookSecret();
     [$order, $customer, $product, $coupon] = makeShippedSteadfastOrder();
 
-    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'pending_parcels'])->assertOk();
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'pending'])->assertOk();
 
     $this->actingAs($customer)->patch(route('account.orders.cancel', $order))->assertSessionHas('error');
 
@@ -428,21 +428,21 @@ it('a stale webhook cannot move a processing order back to pending', function ()
 it('a duplicate stale webhook is recorded once', function () {
     configureSteadfastWebhookSecret();
     [$order] = makeShippedSteadfastOrder();
-    $payload = ['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'pending_parcels'];
+    $payload = ['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'pending'];
 
     postSignedSteadfastWebhook($payload)->assertOk();
     postSignedSteadfastWebhook($payload)->assertOk();
 
     expect($order->statusHistories()->count())->toBe(1);
-    expect(CourierDeliveryEvidence::where('order_id', $order->id)->where('raw_status', 'pending_parcels')->count())->toBe(1);
+    expect(CourierDeliveryEvidence::where('order_id', $order->id)->where('raw_status', 'pending')->count())->toBe(1);
 });
 
 it('later statuses still advance an order after a stale webhook was refused', function () {
     configureSteadfastWebhookSecret();
     [$order] = makeShippedSteadfastOrder();
 
-    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'pending_parcels'])->assertOk();
-    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'delivered_parcels'])->assertOk();
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'pending'])->assertOk();
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'delivered'])->assertOk();
 
     expect($order->refresh()->status)->toBe(OrderStatus::DELIVERED);
     expect($order->delivered_at)->not->toBeNull();
@@ -456,16 +456,15 @@ it('webhooks still move an order forward', function (string $from, string $raw, 
 
     expect($order->refresh()->status)->toBe($expected);
 })->with([
-    'pending to processing' => ['pending', 'waiting_approval', OrderStatus::PROCESSING],
-    'processing to delivered' => ['processing', 'delivered_parcels', OrderStatus::DELIVERED],
-    'shipped to delivered' => ['shipped', 'delivered_parcels', OrderStatus::DELIVERED],
-    'shipped to partly delivered' => ['shipped', 'partial_parcels', OrderStatus::DELIVERED],
+    'processing to delivered' => ['processing', 'delivered', OrderStatus::DELIVERED],
+    'shipped to delivered' => ['shipped', 'delivered', OrderStatus::DELIVERED],
+    'shipped to partly delivered' => ['shipped', 'partial_delivered', OrderStatus::DELIVERED],
 ]);
 
 it('a genuine courier cancellation of a shipped order still runs its side effects once', function () {
     configureSteadfastWebhookSecret();
     [$order, , $product] = makeShippedSteadfastOrder();
-    $payload = ['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'cancelled_parcells'];
+    $payload = ['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'cancelled'];
 
     postSignedSteadfastWebhook($payload)->assertOk();
     postSignedSteadfastWebhook($payload)->assertOk();
@@ -479,9 +478,9 @@ it('a stale webhook leaves terminal orders alone', function (string $status) {
     configureSteadfastWebhookSecret();
     [$order, $customer, $product, $coupon] = makeShippedSteadfastOrder($status);
 
-    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'pending_parcels'])->assertOk();
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'pending'])->assertOk();
 
     expect($order->refresh()->status->value)->toBe($status);
-    expect($order->steadfast_status)->toBe('pending_parcels');
+    expect($order->steadfast_status)->toBe('pending');
     assertNoCancellationSideEffects($order, $customer, $product, $coupon);
 })->with(['delivered', 'cancelled', 'refunded']);

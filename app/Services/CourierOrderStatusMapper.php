@@ -49,21 +49,27 @@ class CourierOrderStatusMapper
     ];
 
     /**
-     * The complete set of statuses Steadfast reports, as confirmed directly
-     * by Steadfast — not the broader generic set in their public docs.
+     * BIZ-027: from Steadfast's own official API docs' "Status reference"
+     * section (portal.packzy.com/api/v1), not a third-party SDK's guess.
+     * `hold`, every `*_approval_pending` value, `exceptional` and `unknown`
+     * are deliberately left out — the docs say outright "do not settle your
+     * books on it [an `_approval_pending` value] — wait for delivered,
+     * partial_delivered or cancelled", and `hold`/`exceptional` need a
+     * human ("contact support"), not an automatic status change. Any status
+     * missing from this map is still recorded on the order and flagged as
+     * unrecognized (see isUnrecognized()) — the order's own status is never
+     * touched for it.
      *
      * @var array<string, OrderStatus>
      */
     private const STEADFAST_MAP = [
+        'pending' => OrderStatus::PENDING,
         'in_review' => OrderStatus::PENDING,
-        'pending_parcels' => OrderStatus::PENDING,
 
-        'waiting_approval' => OrderStatus::PROCESSING,
+        'delivered' => OrderStatus::DELIVERED,
+        'partial_delivered' => OrderStatus::DELIVERED,
 
-        'delivered_parcels' => OrderStatus::DELIVERED,
-        'partial_parcels' => OrderStatus::DELIVERED,
-
-        'cancelled_parcells' => OrderStatus::CANCELLED,
+        'cancelled' => OrderStatus::CANCELLED,
     ];
 
     public static function forPathao(string $rawStatus): ?OrderStatus
@@ -109,10 +115,7 @@ class CourierOrderStatusMapper
      */
     public static function label(string $rawStatus): string
     {
-        $label = ucwords(str_replace('_', ' ', self::normalize($rawStatus)));
-
-        // Steadfast's own "cancelled_parcells" value has a typo; correct it for display only.
-        return str_replace('Parcells', 'Parcels', $label);
+        return ucwords(str_replace('_', ' ', self::normalize($rawStatus)));
     }
 
     /**

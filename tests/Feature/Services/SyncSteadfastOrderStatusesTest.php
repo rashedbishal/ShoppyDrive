@@ -48,12 +48,12 @@ function fakeSteadfastStatus(string $status): void
 
 test('a parcel Steadfast reports as delivered moves the order, and the proof is recorded as a poll', function () {
     $order = steadfastSyncOrder('ORD-SF-1', 'shipped', 'CID-1');
-    fakeSteadfastStatus('delivered_parcels');
+    fakeSteadfastStatus('delivered');
 
     $this->artisan('steadfast:sync-statuses')->assertSuccessful();
 
     expect($order->fresh()->status->value)->toBe('delivered')
-        ->and($order->fresh()->steadfast_status)->toBe('delivered_parcels')
+        ->and($order->fresh()->steadfast_status)->toBe('delivered')
         ->and(CourierDeliveryEvidence::query()->where('order_id', $order->id)->where('source', 'steadfast_poll')->exists())->toBeTrue();
 });
 
@@ -85,7 +85,7 @@ test('finished, unsent, other-courier and very old orders are not polled', funct
     steadfastSyncOrder('ORD-SF-7', 'shipped', null);
     $old = steadfastSyncOrder('ORD-SF-8', 'shipped', 'CID-8');
     $old->forceFill(['created_at' => now()->subDays(SyncSteadfastOrderStatuses::MAX_ORDER_AGE_DAYS + 1)])->save();
-    fakeSteadfastStatus('delivered_parcels');
+    fakeSteadfastStatus('delivered');
 
     $this->artisan('steadfast:sync-statuses')->assertSuccessful();
 
@@ -97,7 +97,7 @@ test('one failed check does not stop the other orders', function () {
     $second = steadfastSyncOrder('ORD-SF-10', 'shipped', 'CID-GOOD');
     Http::fake([
         '*/status_by_cid/CID-BAD' => Http::response(['status' => 500, 'message' => 'Server error'], 500),
-        '*/status_by_cid/CID-GOOD' => Http::response(['status' => 200, 'delivery_status' => 'delivered_parcels']),
+        '*/status_by_cid/CID-GOOD' => Http::response(['status' => 200, 'delivery_status' => 'delivered']),
     ]);
 
     $this->artisan('steadfast:sync-statuses')->assertSuccessful();

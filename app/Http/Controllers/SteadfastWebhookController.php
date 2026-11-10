@@ -62,8 +62,10 @@ class SteadfastWebhookController extends Controller
      * same invoice (and never recorded on the order) would otherwise move
      * the real order's status. No consignment ID, no match, more than one
      * match, or an invoice that contradicts the matched order → the order is
-     * left alone (the webhook is still acknowledged). Whether Steadfast always
-     * includes `consignment_id` in delivery_status webhooks is unverified.
+     * left alone (the webhook is still acknowledged). BIZ-027: Steadfast's
+     * own API docs show `consignment_id` as a field of every `delivery_status`
+     * event's example payload, so this is the documented shape — still
+     * handled defensively in case a given webhook omits it.
      *
      * @param  array<string, mixed>  $payload
      */
@@ -102,6 +104,12 @@ class SteadfastWebhookController extends Controller
         return $order;
     }
 
+    /**
+     * BIZ-027: matches Steadfast's own documented verification exactly —
+     * HMAC-SHA256 of the raw request body, hex-encoded, keyed with the
+     * merchant's webhook auth token, compared against `X-Signature`. Their
+     * docs show this same scheme in both a Node.js and a PHP example.
+     */
     private function verifySignature(Request $request): bool
     {
         $secret = Setting::where('key', 'steadfast_webhook_secret')->first()?->value;
