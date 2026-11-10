@@ -647,7 +647,7 @@ export default function Dashboard({
                 </div>
 
                 {/* ── Revenue chart + quick actions ── */}
-                <div className="grid gap-5 lg:grid-cols-[1fr_260px]">
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
                     <RevenueChart data={chartData} />
 
                     <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
@@ -683,7 +683,7 @@ export default function Dashboard({
                 <VisitorsChart data={visitorChartData} />
 
                 {/* ── Recent orders + low stock ── */}
-                <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
                     {/* Recent orders */}
                     <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
                         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">

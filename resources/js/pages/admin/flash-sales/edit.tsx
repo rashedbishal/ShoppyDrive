@@ -169,7 +169,7 @@ export default function FlashSaleEdit({ flashSale }: Props) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                    <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
                         <div className="space-y-5">
                             <Card>
                                 <CardHeader className="border-b border-slate-100">

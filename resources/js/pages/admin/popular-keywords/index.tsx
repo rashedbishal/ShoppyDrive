@@ -256,7 +256,7 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                     </p>
                 </div>
 
-                <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+                <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
                     {/* Keywords list */}
                     <Card className="order-2 overflow-hidden p-0 shadow-sm lg:order-1">
                         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">

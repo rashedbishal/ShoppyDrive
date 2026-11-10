@@ -16,7 +16,8 @@
       "Bash(xargs sed -i 's/className=\"space-y-6\"/className=\"space-y-5\"/')",
       "Bash(sed -i 's|<div className=\"flex items-center justify-between border-b border-slate-200 px-5 py-4\">|<div className=\"flex h-14 shrink-0 items-center justify-between border-b border-slate-200 px-5\">|' resources/js/layouts/admin-layout.tsx)",
       "Bash(git diff *)",
-      "Bash(grep -n \"Media$\\\\|sticky bottom\\\\|space-y-5\\\\\">$\" resources/js/pages/admin/products/edit.tsx)"
+      "Bash(grep -n \"Media$\\\\|sticky bottom\\\\|space-y-5\\\\\">$\" resources/js/pages/admin/products/edit.tsx)",
+      "mcp__laravel-boost__database-query"
     ],
     "additionalDirectories": [
       "/media/saadman/data3/Projects/ShoppyDrive/resources/css",

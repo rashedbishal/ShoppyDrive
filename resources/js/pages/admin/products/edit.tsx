@@ -298,7 +298,7 @@ export default function ProductEdit({
                 />
                 <form
                     onSubmit={handleSubmit}
-                    className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]"
+                    className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]"
                 >
                     <AnimatePresence initial={false}>
                         {errorMessages.length > 0 && (
@@ -334,7 +334,7 @@ export default function ProductEdit({
                             </AdminReveal>
                         )}
                     </AnimatePresence>
-                    <div className="space-y-5">
+                    <div className="min-w-0 space-y-5">
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
@@ -679,7 +679,7 @@ export default function ProductEdit({
                         </Card>
                     </div>
 
-                    <div className="space-y-5">
+                    <div className="min-w-0 space-y-5">
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">

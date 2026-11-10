@@ -121,7 +121,7 @@ export default function CustomerShow({ customer, orders }: Props) {
                     )}
                 </div>
 
-                <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
                     <div className="space-y-5">
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100">
