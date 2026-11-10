@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
+import { clickableRow } from '@/lib/clickable-row';
 type Product = {
     id: number;
     name: string;
@@ -245,6 +246,9 @@ export default function ProductsIndex({
                             products.data.map((p) => (
                                 <div
                                     key={p.id}
+                                    {...clickableRow(
+                                        route('admin.products.edit', p.id),
+                                    )}
                                     className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4"
                                 >
                                     <img

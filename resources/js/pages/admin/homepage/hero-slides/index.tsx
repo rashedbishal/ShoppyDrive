@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Plus, Pencil, Trash2, ArrowLeft, Film } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { clickableRow } from '@/lib/clickable-row';
 import { isVideoUrl } from '@/lib/utils';
 import type { HeroSlide } from '@/types';
 type Props = {
@@ -56,7 +57,13 @@ export default function HeroSlidesIndex({ slides }: Props) {
                         </Card>
                     ) : (
                         slides.map((slide) => (
-                            <Card key={slide.id} className="overflow-hidden">
+                            <Card
+                                key={slide.id}
+                                {...clickableRow(
+                                    route('admin.hero-slides.edit', slide.id),
+                                )}
+                                className="overflow-hidden"
+                            >
                                 <div className="flex flex-col md:h-44 md:flex-row">
                                     <div className="relative h-40 w-full shrink-0 overflow-hidden bg-slate-100 md:h-full md:w-72">
                                         {isVideoUrl(slide.image) ? (

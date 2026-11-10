@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { clickableRow } from '@/lib/clickable-row';
 import { cn } from '@/lib/utils';
 import {
     destroyMany as bulkDestroyRoute,
@@ -53,6 +54,7 @@ function BrandCard({
 
     return (
         <div
+            {...clickableRow(route('admin.brands.edit', brand.id))}
             className={cn(
                 'group relative flex flex-col overflow-hidden rounded-2xl border bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_32px_-16px_rgba(15,23,42,0.25)]',
                 selected

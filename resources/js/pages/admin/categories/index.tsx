@@ -19,6 +19,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
 import { resolveCategoryColor } from '@/lib/category-colors';
 import { CategoryIcon } from '@/lib/category-icons';
+import { clickableRow } from '@/lib/clickable-row';
 import { cn } from '@/lib/utils';
 import {
     destroyMany as bulkDestroyRoute,
@@ -237,6 +238,12 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                                 return (
                                     <div
                                         key={cat.id}
+                                        {...clickableRow(
+                                            route(
+                                                'admin.categories.edit',
+                                                cat.id,
+                                            ),
+                                        )}
                                         draggable={canReorder}
                                         onDragStart={() => {
                                             dragIndexRef.current = index;

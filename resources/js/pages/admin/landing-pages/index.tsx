@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { clickableRow } from '@/lib/clickable-row';
 import {
     destroyMany as bulkDestroyRoute,
     updateStatusMany as bulkStatusRoute,
@@ -112,6 +113,12 @@ export default function LandingPagesIndex({ pages }: Props) {
                             {pages.map((page) => (
                                 <div
                                     key={page.id}
+                                    {...clickableRow(
+                                        route(
+                                            'admin.landing-pages.edit',
+                                            page.id,
+                                        ),
+                                    )}
                                     className="flex items-center gap-4 px-4 py-3"
                                 >
                                     <Checkbox

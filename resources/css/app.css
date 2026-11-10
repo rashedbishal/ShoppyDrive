@@ -1283,3 +1283,8 @@ html body [data-sonner-toaster][data-sonner-theme] {
         -webkit-line-clamp: unset;
     }
 }
+
+/* Whole-row click targets (see lib/clickable-row.ts). */
+[data-clickable-row] {
+    cursor: pointer;
+}

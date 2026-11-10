@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { clickableRow } from '@/lib/clickable-row';
 import {
     destroyMany as bulkDestroyRoute,
     updateStatusMany as bulkStatusRoute,
@@ -190,6 +191,12 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
                             subCategories.data.map((cat) => (
                                 <div
                                     key={cat.id}
+                                    {...clickableRow(
+                                        route(
+                                            'admin.sub-categories.edit',
+                                            cat.id,
+                                        ),
+                                    )}
                                     className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4"
                                 >
                                     <Checkbox

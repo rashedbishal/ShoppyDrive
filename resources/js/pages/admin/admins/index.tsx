@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { clickableRow } from '@/lib/clickable-row';
 
 type AdminUser = {
     id: number;
@@ -102,6 +103,11 @@ export default function AdminsIndex({ admins }: Props) {
                         {admins.map((admin) => (
                             <div
                                 key={admin.id}
+                                {...clickableRow(
+                                    canEdit(admin)
+                                        ? route('admin.admins.edit', admin.id)
+                                        : null,
+                                )}
                                 className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 sm:flex-nowrap sm:gap-4"
                             >
                                 <div

@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { clickableRow } from '@/lib/clickable-row';
 import {
     destroyMany as bulkDestroyRoute,
     updateStatusMany as bulkStatusRoute,
@@ -154,6 +155,9 @@ export default function BlogsIndex({ blogs, filters }: Props) {
                             blogs.data.map((blog) => (
                                 <div
                                     key={blog.id}
+                                    {...clickableRow(
+                                        route('admin.blogs.edit', blog.slug),
+                                    )}
                                     className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4"
                                 >
                                     <Checkbox
