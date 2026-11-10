@@ -467,7 +467,7 @@ function SidebarContent({
     return (
         <div className="flex h-full flex-col">
             {/* Logo */}
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+            <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 px-5">
                 <Link
                     href="/admin/dashboard"
                     className="flex items-center gap-2.5"
