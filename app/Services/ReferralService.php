@@ -13,6 +13,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ReferralService
 {
@@ -86,8 +87,10 @@ class ReferralService
     /**
      * Whether this user still qualifies for the one-time referred-customer
      * discount on their next order.
+     *
+     * @param  array<string, mixed>|null  $shippingAddress
      */
-    public function isEligibleForDiscount(?User $user, ?string $phone = null): bool
+    public function isEligibleForDiscount(?User $user, ?string $phone = null, ?array $shippingAddress = null): bool
     {
         if ($user === null || ! $this->isEnabled()) {
             return false;
@@ -95,7 +98,8 @@ class ReferralService
 
         return $user->referred_by_id !== null
             && $user->referral_discount_used_order_id === null
-            && ! $this->referralDiscountUsedByPhone($phone, $user->id);
+            && ! $this->referralDiscountUsedByPhone($phone, $user->id)
+            && ! $this->referralDiscountUsedByAddress($shippingAddress, $user->id);
     }
 
     /**
@@ -121,6 +125,72 @@ class ReferralService
                 ->whereKeyNot($excludeUserId)
                 ->select('referral_discount_used_order_id'))
             ->exists();
+    }
+
+    /**
+     * BIZ-024: a different phone number alone doesn't stop the same person
+     * re-claiming the one-time discount under a new email — but a physical
+     * delivery address is far harder to vary cheaply. Matched the same
+     * lenient way as the phone check (only a recorded *discount-using* order
+     * counts, and a cancelled/refunded one gives it back), on the normalized
+     * address_line1 + city + state (whitespace/case/punctuation-insensitive,
+     * per owner decision) rather than a raw string, since two genuine
+     * customers almost never type the exact same characters for the same
+     * place, and the normalized set is always this small (one candidate
+     * order per account that has ever used the discount), so comparing in
+     * PHP avoids depending on JSON/LOWER/TRIM behaving identically across
+     * MySQL (production) and SQLite (tests).
+     *
+     * @param  array<string, mixed>|null  $shippingAddress
+     */
+    public function referralDiscountUsedByAddress(?array $shippingAddress, int $excludeUserId): bool
+    {
+        $normalized = self::normalizeAddressForMatch($shippingAddress);
+
+        if ($normalized === null) {
+            return false;
+        }
+
+        return Order::withTrashed()
+            ->where('used_referral_discount', true)
+            ->whereIn('id', User::withTrashed()
+                ->whereNotNull('referral_discount_used_order_id')
+                ->whereKeyNot($excludeUserId)
+                ->select('referral_discount_used_order_id'))
+            ->get(['shipping_address'])
+            ->contains(fn (Order $order) => self::normalizeAddressForMatch($order->shipping_address) === $normalized);
+    }
+
+    /**
+     * A stable, whitespace/case/punctuation-insensitive key for
+     * address_line1 + city + state, or null when any of the three is
+     * missing/blank — an incomplete address never counts as a match either
+     * way, rather than matching everything else that's also incomplete.
+     *
+     * @param  array<string, mixed>|null  $address
+     */
+    private static function normalizeAddressForMatch(?array $address): ?string
+    {
+        if ($address === null) {
+            return null;
+        }
+
+        $parts = array_map(function (mixed $part): ?string {
+            if (! is_string($part) || trim($part) === '') {
+                return null;
+            }
+
+            $clean = preg_replace('/[^\p{L}\p{N}\s]/u', ' ', Str::lower(trim($part)));
+            $clean = trim(preg_replace('/\s+/', ' ', (string) $clean));
+
+            return $clean === '' ? null : $clean;
+        }, [$address['address_line1'] ?? null, $address['city'] ?? null, $address['state'] ?? null]);
+
+        if (in_array(null, $parts, true)) {
+            return null;
+        }
+
+        return implode('|', $parts);
     }
 
     public function minOrderAmountForDiscount(): float

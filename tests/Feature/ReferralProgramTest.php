@@ -48,9 +48,11 @@ function placeAndDeliverQualifyingOrder(User $referred, Product $product, int $d
 
     test()->actingAs($referred)->post(route('checkout.store'), codPayload([
         'email' => $referred->email,
-        // BIZ-024: separate referred customers have separate phones; the
-        // same phone counts as the same person for the referral discount.
+        // BIZ-024: separate referred customers have separate phones and
+        // delivery addresses; the same phone or address counts as the same
+        // person for the referral discount.
         'phone' => sprintf('017%08d', $referred->id),
+        'address_line1' => "House {$referred->id}, Road 7",
         'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
     ]));
 

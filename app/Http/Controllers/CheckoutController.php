@@ -43,7 +43,7 @@ class CheckoutController extends Controller
 {
     private const string FREE_ORDER_MESSAGE = 'This order total is ৳0, so there is nothing to pay by bKash or Nagad. Please choose Cash on Delivery.';
 
-    /** BIZ-024: the phone a referral discount was refused for in this session. */
+    /** BIZ-024: the phone+address a referral discount was refused for in this session. */
     private const REFERRAL_REFUSED_SESSION_KEY = 'checkout.referral_refused_phone';
 
     // CHECKOUT-COD-002: same idempotency-cache window as
@@ -320,10 +320,11 @@ class CheckoutController extends Controller
         }
 
         // BIZ-024: the page showed this account's referral discount, but the
-        // phone already received one on another account. Never charge more
-        // than the page showed: refuse once with an explanation, and let the
-        // re-rendered page (now without the discount) be submitted again.
-        if ($refusal = $this->refuseReferralAlreadyUsedByPhone($request, $subtotal, $couponDiscount)) {
+        // phone or delivery address already received one on another
+        // account. Never charge more than the page showed: refuse once with
+        // an explanation, and let the re-rendered page (now without the
+        // discount) be submitted again.
+        if ($refusal = $this->refuseReferralAlreadyUsed($request, $shippingAddress, $subtotal, $couponDiscount)) {
             return $refusal;
         }
 
@@ -371,7 +372,10 @@ class CheckoutController extends Controller
         }
     }
 
-    private function refuseReferralAlreadyUsedByPhone(PlaceOrderRequest $request, float $subtotal, float $couponDiscount): ?RedirectResponse
+    /**
+     * @param  array<string, mixed>  $shippingAddress
+     */
+    private function refuseReferralAlreadyUsed(PlaceOrderRequest $request, array $shippingAddress, float $subtotal, float $couponDiscount): ?RedirectResponse
     {
         $user = $request->user();
         $phone = (string) $request->phone;
@@ -382,14 +386,31 @@ class CheckoutController extends Controller
             && $this->referrals->isEligibleForDiscount($user)
             && $this->referrals->calculateReferralDiscount($user, $subtotal) > 0;
 
-        if (! $pageShowedReferralDiscount
-            || ! $this->referrals->referralDiscountUsedByPhone($phone, $user->id)
-            || $request->session()->get(self::REFERRAL_REFUSED_SESSION_KEY) === $phone) {
+        if (! $pageShowedReferralDiscount) {
             return null;
         }
 
-        $request->session()->put(self::REFERRAL_REFUSED_SESSION_KEY, $phone);
-        $message = 'The referral welcome discount was already used with this phone number, so it can\'t be applied again. Please review your total and place the order again.';
+        $usedByPhone = $this->referrals->referralDiscountUsedByPhone($phone, $user->id);
+        $usedByAddress = $this->referrals->referralDiscountUsedByAddress($shippingAddress, $user->id);
+
+        // BIZ-024: a stable token for *this exact submitted* phone+address —
+        // not the normalized match key, which is private to the service —
+        // so resubmitting the same unchanged input isn't refused twice in a
+        // row, but changing either one (to a genuinely different, unused
+        // phone/address) is re-checked instead of staying refused forever.
+        $refusalSignature = implode('|', [
+            $phone, $shippingAddress['address_line1'] ?? '', $shippingAddress['city'] ?? '', $shippingAddress['state'] ?? '',
+        ]);
+
+        if ((! $usedByPhone && ! $usedByAddress)
+            || $request->session()->get(self::REFERRAL_REFUSED_SESSION_KEY) === $refusalSignature) {
+            return null;
+        }
+
+        $request->session()->put(self::REFERRAL_REFUSED_SESSION_KEY, $refusalSignature);
+        $message = $usedByPhone
+            ? 'The referral welcome discount was already used with this phone number, so it can\'t be applied again. Please review your total and place the order again.'
+            : 'The referral welcome discount was already used with this delivery address, so it can\'t be applied again. Please review your total and place the order again.';
 
         return back()->with('error', $message)->withErrors(['referral' => $message])->withInput();
     }
@@ -456,7 +477,7 @@ class CheckoutController extends Controller
                     $this->maybeAutoSaveAddress($request, $shippingAddress);
 
                     [$discount, $finalCouponId, $finalCouponCode, $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount] =
-                        $this->resolveFinalDiscount($request, $subtotal, $couponId, $couponCode, $couponDiscount, $lockedUser);
+                        $this->resolveFinalDiscount($request, $subtotal, $couponId, $couponCode, $couponDiscount, $lockedUser, $shippingAddress);
 
                     $total = max(0, $subtotal - $discount + $shippingCost);
 
@@ -587,7 +608,7 @@ class CheckoutController extends Controller
                 $lockedUser = auth()->check() ? $this->referrals->lockUser(auth()->id()) : null;
                 $this->cartManager->lockForCheckout($cart);
                 [$discount, $finalCouponId, $finalCouponCode, $usedReferralDiscount, $pointsToRedeem, $pointsDiscountAmount] =
-                    $this->resolveFinalDiscount($request, $subtotal, $couponId, $couponCode, $couponDiscount, $lockedUser);
+                    $this->resolveFinalDiscount($request, $subtotal, $couponId, $couponCode, $couponDiscount, $lockedUser, $shippingAddress);
                 $total = max(0, $subtotal - $discount + $shippingCost);
 
                 // BIZ-020: nothing to send means no SMS could ever confirm it,
@@ -627,6 +648,7 @@ class CheckoutController extends Controller
      * enough balance; otherwise an eligible referred customer's one-time
      * discount auto-applies. Only one of the three ever contributes.
      *
+     * @param  array<string, mixed>  $shippingAddress
      * @return array{0: float, 1: int|null, 2: string|null, 3: bool, 4: int, 5: float}
      */
     private function resolveFinalDiscount(
@@ -636,6 +658,7 @@ class CheckoutController extends Controller
         ?string $couponCode,
         float $couponDiscount,
         ?User $user,
+        array $shippingAddress,
     ): array {
         if ($couponDiscount > 0) {
             return [$couponDiscount, $couponId, $couponCode, false, 0, 0.0];
@@ -651,8 +674,9 @@ class CheckoutController extends Controller
             }
         }
 
-        // BIZ-024: the authoritative check includes the checkout phone.
-        if ($user && $this->referrals->isEligibleForDiscount($user, $request->phone)) {
+        // BIZ-024: the authoritative check includes the checkout phone and
+        // delivery address, not just the account's own flags.
+        if ($user && $this->referrals->isEligibleForDiscount($user, $request->phone, $shippingAddress)) {
             $referralDiscount = $this->referrals->calculateReferralDiscount($user, $subtotal);
 
             if ($referralDiscount > 0) {
