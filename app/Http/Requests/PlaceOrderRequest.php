@@ -67,6 +67,9 @@ class PlaceOrderRequest extends FormRequest
             // (CHECKOUT-COD-002, same requirement as CART-01 on the landing
             // page flow).
             'order_token' => ['required', 'uuid'],
+            // "Buy Now": the order is that one product alone and never touches
+            // the customer's cart (CheckoutController::store()).
+            'buy_now' => ['nullable', 'boolean'],
             'items' => ['nullable', 'array'],
             // Existence (and visibility — deactivated, or hidden via its
             // brand/category/sub-category) is deliberately NOT checked
@@ -158,6 +161,17 @@ class PlaceOrderRequest extends FormRequest
         $validator->after(function (Validator $validator) {
             if ($this->input('payment_method') === 'mobile_banking' && SmsForwarderHeartbeat::isDown()) {
                 $validator->errors()->add('payment_method', 'Mobile payment verification is temporarily unavailable. Please choose Cash on Delivery instead.');
+            }
+
+            // A Buy Now order is exactly one product line (never a bundle),
+            // so a crafted request can't use it to slip a whole cart through
+            // the path that skips the real cart.
+            if ($this->boolean('buy_now')) {
+                $items = $this->input('items');
+
+                if (! is_array($items) || count($items) !== 1 || ! empty(data_get($items, '0.bundle_id'))) {
+                    $validator->errors()->add('items', 'Buy Now is for one product at a time.');
+                }
             }
         });
     }

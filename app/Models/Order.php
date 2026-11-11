@@ -61,6 +61,7 @@ class Order extends Model
         'landing_page_id',
         'guest_token',
         'order_token',
+        'is_buy_now',
         'status',
         'is_seen',
         'seen_at',
@@ -101,6 +102,7 @@ class Order extends Model
         return [
             'status' => OrderStatus::class,
             'is_seen' => 'boolean',
+            'is_buy_now' => 'boolean',
             'seen_at' => 'datetime',
             'payment_status' => PaymentStatus::class,
             'payment_method' => PaymentMethod::class,

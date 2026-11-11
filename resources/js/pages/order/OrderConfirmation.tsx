@@ -27,10 +27,13 @@ function addDays(dateString: string, days: number): string {
 
 interface OrderConfirmationProps {
     order: Order;
+    /** True for a "Buy Now" order, which never touched the customer's cart. */
+    keepCart?: boolean;
 }
 
 export default function OrderConfirmation({
     order,
+    keepCart = false,
 }: OrderConfirmationProps): React.JSX.Element {
     const clearCart = useCartStore((state) => state.clearCart);
 
@@ -57,9 +60,12 @@ export default function OrderConfirmation({
         return true;
     })();
 
-    // Clear local cart on mount if order was successful
+    // Clear local cart on mount if order was successful — except after a
+    // "Buy Now", which was bought on its own and left the cart alone.
     useEffect(() => {
-        clearCart();
+        if (!keepCart) {
+            clearCart();
+        }
     }, []);
 
     // Pushes to GTM's own expected dataLayer shape, so a Facebook Pixel tag

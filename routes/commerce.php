@@ -59,6 +59,9 @@ Route::get('/order/{order:order_number}/confirmation', function (Request $reques
 
     return inertia('order/OrderConfirmation', [
         'order' => OrderConfirmationAccess::payload($order),
+        // A Buy Now order never touched the customer's cart, so this page
+        // must not empty the cart they still have.
+        'keepCart' => (bool) $order->is_buy_now,
     ]);
 })->middleware('throttle:order-tracking')->name('order.confirmation');
 

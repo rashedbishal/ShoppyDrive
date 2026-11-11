@@ -369,43 +369,18 @@ export default function Checkout({
     // becomes optional for them, phone stays required either way.
     const isGuest = !auth.user;
 
-    // A "Buy Now" item is shown merged with whatever's already in the cart
-    // (summed into the same line if it's the same product/variant) — but
-    // only for this page's display and for what gets submitted if the order
-    // is actually placed. It's never written back into the cart store
-    // itself, so abandoning checkout here leaves the real cart exactly as
-    // it was. Memoized so the array reference is stable across unrelated
-    // re-renders (e.g. typing in any field) — otherwise this is a brand new
-    // array every render, which would defeat OrderSummary's memoization.
-    const items = useMemo(() => {
-        if (!buyNowItem) {
-            return cartItems;
-        }
-
-        const existingIndex = cartItems.findIndex(
-            (item) => item.item_key === buyNowItem.item_key,
-        );
-
-        if (existingIndex === -1) {
-            return [...cartItems, buyNowItem];
-        }
-
-        return cartItems.map((item, index) => {
-            if (index !== existingIndex) {
-                return item;
-            }
-
-            const quantity = item.quantity + buyNowItem.quantity;
-            const subtotal = item.price * quantity;
-
-            return {
-                ...item,
-                quantity,
-                subtotal,
-                formatted_subtotal: formatCurrency(subtotal),
-            };
-        });
-    }, [buyNowItem, cartItems]);
+    // "Buy Now" is that one product on its own: the page shows, prices and
+    // submits only it, and the order is built from its own temporary basket on
+    // the server. The cart store (and the customer's saved cart) is never read
+    // from, written to or emptied by it, so whatever was in the cart is still
+    // there afterwards. A normal checkout (no Buy Now item) uses the whole cart.
+    // Memoized so the array reference is stable across unrelated re-renders
+    // (e.g. typing in any field), which would otherwise defeat OrderSummary's
+    // memoization.
+    const items = useMemo(
+        () => (buyNowItem ? [buyNowItem] : cartItems),
+        [buyNowItem, cartItems],
+    );
 
     // The server can't see a guest's cart, so an empty one is caught here. Only
     // on arrival: the cart also empties when an order is placed, and that visit
@@ -720,6 +695,9 @@ export default function Checkout({
                 coupon_code: appliedCoupon?.code ?? null,
                 redeem_points: redeemingPoints,
                 points_to_redeem: redeemingPoints ? pointsToUse : null,
+                // Buy Now: built on the server from this one line only, apart
+                // from the cart (see CheckoutController::store()).
+                buy_now: Boolean(buyNowItem),
                 items: items.map((item) => ({
                     product_id: item.product.id,
                     variant_id: item.variant?.id ?? null,
@@ -882,6 +860,30 @@ export default function Checkout({
                 <div className="mb-4 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
                     <AlertCircle size={16} className="shrink-0" />
                     {flash.info}
+                </div>
+            )}
+
+            {buyNowItem && cartItems.length > 0 && (
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                    <span className="flex items-center gap-2">
+                        <AlertCircle size={16} className="shrink-0" />
+                        You are buying only this item. Your cart (
+                        {cartItems.reduce(
+                            (n, item) => n + item.quantity,
+                            0,
+                        )}{' '}
+                        {cartItems.reduce((n, item) => n + item.quantity, 0) ===
+                        1
+                            ? 'item'
+                            : 'items'}
+                        ) is unchanged.
+                    </span>
+                    <Link
+                        href={route('checkout.index')}
+                        className="font-semibold text-[var(--color-primary)] hover:underline"
+                    >
+                        Checkout my cart instead
+                    </Link>
                 </div>
             )}
 

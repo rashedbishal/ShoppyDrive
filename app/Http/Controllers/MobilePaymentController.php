@@ -210,6 +210,7 @@ class MobilePaymentController extends Controller
 
                 $order = Order::create([
                     'order_number' => $data['order_number'],
+                    'is_buy_now' => (bool) ($data['is_buy_now'] ?? false),
                     'user_id' => $freshPending->user_id,
                     'status' => 'processing',
                     'payment_status' => PaymentStatus::PAID->value,

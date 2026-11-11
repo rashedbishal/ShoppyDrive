@@ -73,6 +73,44 @@ class CartManager
         );
     }
 
+    /**
+     * "Buy Now" is built from its own temporary basket, keyed by the checkout
+     * page's one-time order token, so the customer's real cart (server row and
+     * browser copy) is never read, changed or emptied by it. The basket is a
+     * guest-style cart that no lookup by user or session can ever return.
+     *
+     * @param  array<int, array{product_id:int, variant_id:int|null, quantity:int, bundle_id?:int|null, bundle_unit_quantity?:int|null}>  $items
+     */
+    public function buyNowCart(string $orderToken, array $items): Cart
+    {
+        $this->syncSessionCart(self::buyNowKey($orderToken), $items, deleteOmitted: false);
+
+        return Cart::query()
+            ->with(self::CART_RELATIONS)
+            ->where('session_id', self::buyNowKey($orderToken))
+            ->whereNull('user_id')
+            ->firstOrFail();
+    }
+
+    /**
+     * Removes the temporary Buy Now basket, whatever happened to the order.
+     * Safe to call when it is already gone (a successful order deletes it).
+     */
+    public function discardBuyNowCart(string $orderToken): void
+    {
+        $carts = Cart::query()->where('session_id', self::buyNowKey($orderToken))->whereNull('user_id');
+
+        $carts->get()->each(function (Cart $cart): void {
+            $cart->items()->delete();
+            $cart->delete();
+        });
+    }
+
+    private static function buyNowKey(string $orderToken): string
+    {
+        return 'buy-now:'.$orderToken;
+    }
+
     public function mergeSessionCartIntoUserCart(User $user, string $sessionId): Cart
     {
         return $this->writeUserCart($user, function (Cart $userCart) use ($sessionId): void {

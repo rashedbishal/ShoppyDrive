@@ -92,8 +92,12 @@ class CheckoutController extends Controller
         }
 
         $user = $request->user();
-        // BIZ-018: Buy Now is part of what this order will pay for.
-        $subtotal = (float) ($cart['subtotal'] ?? 0) + (float) ($buyNowItem['subtotal'] ?? 0);
+        // A Buy Now checkout is that one product alone (never the cart), so
+        // the referral preview is based on it only; a cart checkout on the
+        // cart's own subtotal.
+        $subtotal = $buyNowItem !== null
+            ? (float) $buyNowItem['subtotal']
+            : (float) ($cart['subtotal'] ?? 0);
 
         return Inertia::render('checkout/Checkout', [
             'cart' => $cart,
@@ -158,6 +162,20 @@ class CheckoutController extends Controller
     }
 
     public function store(PlaceOrderRequest $request): RedirectResponse|\Symfony\Component\HttpFoundation\Response
+    {
+        try {
+            return $this->placeOrder($request);
+        } finally {
+            // "Buy Now" is built from its own temporary basket (never the
+            // customer's cart); drop it whatever the outcome — a placed
+            // order already removed it, a refusal or error must not leave it.
+            if ($request->boolean('buy_now')) {
+                $this->cartManager->discardBuyNowCart($request->string('order_token')->toString());
+            }
+        }
+    }
+
+    private function placeOrder(PlaceOrderRequest $request): RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
         // BIZ-014: a retry of a submission that already placed its order
         // (network retry, double-click) must go straight to that order,
@@ -233,7 +251,14 @@ class CheckoutController extends Controller
         // below keeps this request's own view of the cart scoped to exactly
         // what it submitted, same as before — the extra row just survives
         // in the database instead of being deleted.
-        if ($items !== null) {
+        // "Buy Now": the order is that one product alone. It is built from its
+        // own temporary basket, so the customer's real cart (server and
+        // browser) is not written to, read from, or emptied by it.
+        $isBuyNow = $items !== null && $request->boolean('buy_now');
+
+        if ($isBuyNow) {
+            $buyNowCart = $this->cartManager->buyNowCart($request->string('order_token')->toString(), $items);
+        } elseif ($items !== null) {
             if ($request->user() !== null) {
                 $this->cartManager->syncUserCart($request->user(), $items, deleteOmitted: false);
             } else {
@@ -242,6 +267,12 @@ class CheckoutController extends Controller
         }
 
         if ($priceWasStale) {
+            if ($isBuyNow) {
+                // The refreshed Buy Now page (back() reloads it) carries the
+                // current price; there is no cart store to correct.
+                return back()->with('error', 'The price of this item has changed. Please review the updated price and try again.');
+            }
+
             // Checkout.tsx's displayed/submitted prices come from its own
             // client-side cart store, not the server's `cart` prop — so
             // without handing the corrected prices back directly, the
@@ -252,7 +283,7 @@ class CheckoutController extends Controller
                 ->with('priceUpdates', $this->cartManager->serializeForRequest($request));
         }
 
-        $cart = $this->cartManager->getCurrentCart($request);
+        $cart = $isBuyNow ? $buyNowCart : $this->cartManager->getCurrentCart($request);
 
         abort_if(! $cart || $cart->items->isEmpty(), 422, 'Your cart is empty.');
 
@@ -484,6 +515,7 @@ class CheckoutController extends Controller
                     $order = Order::create([
                         'order_number' => OrderNumberGenerator::generate(),
                         'order_token' => $request->string('order_token')->toString(),
+                        'is_buy_now' => $request->boolean('buy_now'),
                         'user_id' => auth()->id(),
                         'status' => 'pending',
                         'payment_status' => 'unpaid',
@@ -742,9 +774,13 @@ class CheckoutController extends Controller
         PendingCheckout::create([
             'token' => $token,
             'user_id' => auth()->id(),
-            'cart_id' => $cart->id,
+            // A Buy Now basket is temporary and the customer's real cart is
+            // not part of it: with no cart_id, the payment step has nothing to
+            // remove paid lines from.
+            'cart_id' => $request->boolean('buy_now') ? null : $cart->id,
             'points_reserved' => $pointsRedeemed ?: null,
             'checkout_data' => [
+                'is_buy_now' => $request->boolean('buy_now'),
                 'order_number' => $orderNumber,
                 'shipping_address' => $shippingAddress,
                 'items' => $itemsSnapshot,
