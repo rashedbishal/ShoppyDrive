@@ -57,8 +57,10 @@ test('the product search uses a product\'s own cost when it has no variants, and
 });
 
 test('an admin who cannot edit products never receives cost prices from the product search', function () {
-    $product = Product::factory()->create(['name' => 'Secret Cost', 'price' => 1000, 'cost_price' => 600, 'is_active' => true]);
-    ProductVariant::factory()->create(['product_id' => $product->id, 'price' => 1000, 'cost_price' => 650]);
+    // SKU and stock are pinned: the factory's random ones (e.g. "VAR-06500", stock 650)
+    // could contain the sentinel digits below and fail the substring check at random.
+    $product = Product::factory()->create(['name' => 'Secret Cost', 'sku' => 'SECRET-SKU', 'stock_quantity' => 7, 'price' => 1000, 'cost_price' => 600, 'is_active' => true]);
+    ProductVariant::factory()->create(['product_id' => $product->id, 'sku' => 'SECRET-VAR', 'stock_quantity' => 7, 'price' => 1000, 'cost_price' => 650]);
     actingAs(flashSaleOnlyAdmin(), 'admin');
 
     $response = get(route('admin.flash-sales.products.search', ['q' => 'Secret Cost']));
