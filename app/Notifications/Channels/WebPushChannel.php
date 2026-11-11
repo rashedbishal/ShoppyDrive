@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Notifications\Channels;
 
 use App\Models\Admin;
+use App\Support\WebPushConfig;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 use Minishlink\WebPush\Subscription;
@@ -35,6 +36,15 @@ class WebPushChannel
         }
 
         $payload = json_encode($notification->toWebPush($notifiable));
+
+        // Without a key pair (Admin > SMS Forwarder) nothing can be sent;
+        // skip quietly rather than fail inside the library.
+        if (! WebPushConfig::isConfigured()) {
+            Log::warning('[WebPush] Skipped: no VAPID keys are set up (Admin > SMS Forwarder).');
+
+            return;
+        }
+
         $webPush = $this->client();
 
         foreach ($subscriptions as $subscription) {
@@ -69,9 +79,9 @@ class WebPushChannel
     {
         return new WebPush([
             'VAPID' => [
-                'subject' => (string) config('services.webpush.subject'),
-                'publicKey' => (string) config('services.webpush.public_key'),
-                'privateKey' => (string) config('services.webpush.private_key'),
+                'subject' => WebPushConfig::subject(),
+                'publicKey' => (string) WebPushConfig::publicKey(),
+                'privateKey' => (string) WebPushConfig::privateKey(),
             ],
         ]);
     }

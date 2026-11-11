@@ -57,6 +57,10 @@ const LOW05_EXEMPT_ADMIN_ROUTES = [
     // and hardcoded mother-only inside SecuritySettingsController::updateHeartbeat().
     'admin.settings.security.heartbeat.update',
 
+    // Mother-only via the `admin.mother` route middleware (creates the VAPID key pair
+    // for instant SMS notifications); not part of the Permissions matrix.
+    'admin.settings.sms-forwarder.push-keys.generate',
+
     // Hardcoded mother-only *inside*
     // MarketingSettingsController::updateCustomCode() — same pattern as
     // settings.security.update above; confirmed no route middleware of any

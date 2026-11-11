@@ -2,6 +2,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useWebPushSms } from '@/hooks/useWebPushSms';
 
 type ForwarderStatus = {
     is_down: boolean;
@@ -12,10 +13,18 @@ type ForwarderStatus = {
     down_after_minutes: number;
 };
 
+type PushStatus = {
+    configured: boolean;
+    source: 'cms' | 'env' | null;
+    subscribed_browsers: number;
+    can_manage: boolean;
+};
+
 type Props = {
     maskedToken: string;
     fullToken: string | null;
     forwarderStatus: ForwarderStatus;
+    pushStatus: PushStatus;
 };
 
 const formatMinutes = (minutes: number): string => {
@@ -70,10 +79,129 @@ function PhoneStatusCard({ status }: { status: ForwarderStatus }) {
     );
 }
 
+function SmsNotificationsCard({ status }: { status: PushStatus }) {
+    const { props } = usePage<any>();
+    const { permission, isSubscribed, enableNotifications } = useWebPushSms(
+        status.configured ? (props.vapid_public_key ?? null) : null,
+    );
+
+    const handleGenerate = () => {
+        const message = status.configured
+            ? 'Create new notification keys? Every browser that enabled notifications will have to press "Enable" again.'
+            : 'Create the notification keys for this site?';
+
+        if (!confirm(message)) {
+            return;
+        }
+
+        router.post(route('admin.settings.sms-forwarder.push-keys.generate'));
+    };
+
+    const handleEnable = async () => {
+        await enableNotifications();
+        window.location.reload();
+    };
+
+    return (
+        <Card className="shadow-sm">
+            <CardHeader className="border-b border-slate-100">
+                <CardTitle className="text-sm font-semibold text-slate-700">
+                    Instant SMS Notifications
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-3 text-sm text-slate-600">
+                <p className="text-xs text-slate-500">
+                    When a bKash / Nagad SMS arrives, your browser can show a
+                    notification right away and the Received SMS table updates
+                    by itself. This needs a one-time pair of keys, created here
+                    (nothing to type or copy), and then each admin presses
+                    "Enable" once in the browser they use.
+                </p>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                            status.configured
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'bg-amber-50 text-amber-800'
+                        }`}
+                    >
+                        {status.configured
+                            ? 'Keys are set up'
+                            : 'Keys are not set up'}
+                    </span>
+                    {status.configured && (
+                        <span className="text-xs text-slate-500">
+                            {status.subscribed_browsers} browser(s) enabled
+                        </span>
+                    )}
+                </div>
+
+                {status.can_manage ? (
+                    <div>
+                        <Button
+                            type="button"
+                            variant={status.configured ? 'outline' : 'default'}
+                            size="sm"
+                            onClick={handleGenerate}
+                        >
+                            {status.configured
+                                ? 'Create new keys'
+                                : 'Generate notification keys'}
+                        </Button>
+                    </div>
+                ) : (
+                    !status.configured && (
+                        <p className="text-xs text-slate-500">
+                            Only the main (mother) admin can create the keys.
+                        </p>
+                    )
+                )}
+
+                {status.configured && (
+                    <div className="space-y-1 border-t border-slate-100 pt-3">
+                        <p className="text-xs font-semibold text-slate-700">
+                            This browser
+                        </p>
+                        {permission === 'unsupported' && (
+                            <p className="text-xs text-slate-500">
+                                This browser does not support notifications.
+                            </p>
+                        )}
+                        {permission === 'denied' && (
+                            <p className="text-xs text-slate-500">
+                                Notifications are blocked for this site. Allow
+                                them in the browser's site settings (the lock
+                                icon next to the address), then reload.
+                            </p>
+                        )}
+                        {permission === 'granted' && isSubscribed && (
+                            <p className="text-xs font-medium text-emerald-700">
+                                Notifications are ON for this browser.
+                            </p>
+                        )}
+                        {(permission === 'default' ||
+                            (permission === 'granted' && !isSubscribed)) && (
+                            <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => void handleEnable()}
+                            >
+                                Enable notifications on this browser
+                            </Button>
+                        )}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function SmsForwarderSettings({
     maskedToken,
     fullToken,
     forwarderStatus,
+    pushStatus,
 }: Props) {
     const { props } = usePage<any>();
     const flash = props.flash as
@@ -130,6 +258,8 @@ export default function SmsForwarderSettings({
                 </h1>
 
                 <PhoneStatusCard status={forwarderStatus} />
+
+                <SmsNotificationsCard status={pushStatus} />
 
                 {flash?.newToken && (
                     <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4">

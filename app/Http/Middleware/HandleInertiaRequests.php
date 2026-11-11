@@ -13,6 +13,7 @@ use App\Support\CartManager;
 use App\Support\LayoutCache;
 use App\Support\PasswordPolicy;
 use App\Support\SmsForwarderHeartbeat;
+use App\Support\WebPushConfig;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Middleware;
@@ -194,7 +195,7 @@ class HandleInertiaRequests extends Middleware
             // from the inverse of mobile_banking_available below, so it's
             // never a second, separately-computed signal.
             'vapid_public_key' => fn () => $request->user('admin')
-                ? config('services.webpush.public_key')
+                ? WebPushConfig::publicKey()
                 : null,
             // OPS-005: the forwarder phone can go dark without ever
             // failing a payment outright — checking this live (never
