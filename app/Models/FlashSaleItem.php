@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -151,6 +152,32 @@ class FlashSaleItem extends Model
 
         return [$aSpecific, (float) $a->sale_price, $a->flashSale->starts_at->timestamp]
             <=> [$bSpecific, (float) $b->sale_price, $b->flashSale->starts_at->timestamp];
+    }
+
+    /**
+     * Item 28: the SQL form of activePricesForProducts(), as a correlated
+     * subquery on `products.id` — the cheapest product-wide sale price with
+     * stock left in a campaign running right now, or NULL. Same scope as
+     * that method (variant_id IS NULL, active window, stock limit not
+     * reached), so a listing sorted by it orders products by exactly the
+     * flash price their cards show. Used by Product::scopeOrderByDisplayedPrice().
+     *
+     * @return Builder<self>
+     */
+    public static function activePriceForProductSubquery(): Builder
+    {
+        return static::query()
+            ->selectRaw('MIN(flash_sale_items.sale_price)')
+            ->whereColumn('flash_sale_items.product_id', 'products.id')
+            ->whereNull('flash_sale_items.variant_id')
+            ->where(fn ($query) => $query
+                ->whereNull('flash_sale_items.stock_limit')
+                ->orWhereColumn('flash_sale_items.sold_count', '<', 'flash_sale_items.stock_limit'))
+            ->whereHas('flashSale', function ($query) {
+                $query->where('is_active', true)
+                    ->where('starts_at', '<=', now())
+                    ->where('ends_at', '>=', now());
+            });
     }
 
     /**

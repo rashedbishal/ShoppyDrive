@@ -70,8 +70,8 @@ class SearchController extends Controller
             ))
             ->tap(function ($q) use ($sort) {
                 match ($sort) {
-                    'price_asc' => $q->orderBy('price'),
-                    'price_desc' => $q->orderByDesc('price'),
+                    'price_asc' => $q->orderByDisplayedPrice('asc'),
+                    'price_desc' => $q->orderByDisplayedPrice('desc'),
                     'newest' => $q->orderByDesc('published_at')->orderByDesc('created_at'),
                     'rating' => $q->orderByRaw('COALESCE(average_rating, 0) DESC')->orderByDesc('reviews_count'),
                     default => $q->orderByDesc('is_featured')->orderByDesc('published_at'),

@@ -151,8 +151,8 @@ class ProductListingController extends Controller
         }
 
         match ($request->string('sort', 'relevance')->toString()) {
-            'price_asc' => $query->orderBy('price'),
-            'price_desc' => $query->orderByDesc('price'),
+            'price_asc' => $query->orderByDisplayedPrice('asc'),
+            'price_desc' => $query->orderByDisplayedPrice('desc'),
             'newest' => $query->orderByDesc('published_at')->orderByDesc('created_at'),
             'top_rated' => $query->orderByRaw('COALESCE(average_rating, 0) DESC')->orderByDesc('reviews_count'),
             'most_reviewed' => $query->orderByDesc('reviews_count')->orderByRaw('COALESCE(average_rating, 0) DESC'),

@@ -273,6 +273,24 @@ class Product extends Model
     }
 
     /**
+     * Item 28: sort by the price a customer actually sees on the card — the
+     * active flash-sale price when there is one, the regular price
+     * otherwise. Sorting by the `price` column alone put a ৳2,000 product
+     * on flash sale at ৳500 last in "Low to High". Products with variants
+     * already store their cheapest variant price in `price`, which is what
+     * their card shows. `products.id` breaks ties so pagination is stable.
+     */
+    public function scopeOrderByDisplayedPrice($query, string $direction = 'asc')
+    {
+        $direction = strtolower($direction) === 'desc' ? 'desc' : 'asc';
+        $flashPrice = FlashSaleItem::activePriceForProductSubquery();
+
+        return $query
+            ->orderByRaw("COALESCE(({$flashPrice->toSql()}), products.price) {$direction}", $flashPrice->getBindings())
+            ->orderBy('products.id', $direction);
+    }
+
+    /**
      * FSA-05: the instance form of `visible()` — whether a customer may see
      * or buy this product right now. Also false once this product's own
      * brand, category or sub-category has been deactivated, even though
