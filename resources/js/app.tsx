@@ -74,18 +74,52 @@ const appName = APP_NAME;
 
 const LAST_USER_KEY = `${STORAGE_KEYS.cart}.last_user`;
 
-function readInitialUserId(): number | null {
-    try {
-        const raw = document.getElementById('app')?.dataset.page;
+type InitialPage = { component?: string; props?: Record<string, unknown> };
 
-        if (raw) {
-            return JSON.parse(raw)?.props?.auth?.user?.id ?? null;
-        }
-    } catch {
-        // Missing or malformed page data: fall through to the default below.
+let initialPageCache: InitialPage | null | undefined;
+
+/**
+ * The page data the server rendered into this document. Inertia v3 writes it
+ * to `<script data-page="app" type="application/json">`, next to an empty
+ * `<div id="app">`; v2 wrote it to `<div id="app" data-page>`, which is all
+ * this used to read, so every reader below silently got nothing (start-up
+ * then treated every logged-in full page load as a logout, briefly emptying
+ * the cart and wishlist in every open tab). Both are accepted. Null when
+ * missing or malformed; parsed once.
+ */
+function readInitialPage(): InitialPage | null {
+    if (initialPageCache !== undefined) {
+        return initialPageCache;
     }
 
-    return null;
+    initialPageCache = null;
+
+    try {
+        const raw =
+            document.querySelector<HTMLScriptElement>(
+                'script[data-page="app"][type="application/json"]',
+            )?.textContent ?? document.getElementById('app')?.dataset.page;
+
+        if (raw) {
+            const parsed = JSON.parse(raw);
+
+            if (parsed && typeof parsed === 'object') {
+                initialPageCache = parsed as InitialPage;
+            }
+        }
+    } catch {
+        // Missing or malformed page data: callers use their defaults.
+    }
+
+    return initialPageCache;
+}
+
+function readInitialUserId(): number | null {
+    const auth = readInitialPage()?.props?.auth as
+        | { user?: { id?: number } | null }
+        | undefined;
+
+    return auth?.user?.id ?? null;
 }
 
 /**
@@ -97,61 +131,25 @@ function readInitialUserId(): number | null {
  * for that case.
  */
 function initialPageCarriesAuth(): boolean {
-    try {
-        const raw = document.getElementById('app')?.dataset.page;
+    const props = readInitialPage()?.props;
 
-        if (raw) {
-            const props = JSON.parse(raw)?.props;
-
-            return !(props && typeof props === 'object' && !('auth' in props));
-        }
-    } catch {
-        // Missing or malformed page data: fall through to the default below.
-    }
-
-    return true;
+    return !(props && typeof props === 'object' && !('auth' in props));
 }
 
 function readInitialCart(): Cart | null {
-    try {
-        const raw = document.getElementById('app')?.dataset.page;
-
-        if (raw) {
-            return JSON.parse(raw)?.props?.cart ?? null;
-        }
-    } catch {
-        // Missing or malformed page data: fall through to the default below.
-    }
-
-    return null;
+    return (readInitialPage()?.props?.cart as Cart | null | undefined) ?? null;
 }
 
 function readInitialComponent(): string | null {
-    try {
-        const raw = document.getElementById('app')?.dataset.page;
-
-        if (raw) {
-            return JSON.parse(raw)?.component ?? null;
-        }
-    } catch {
-        // Missing or malformed page data: fall through to the default below.
-    }
-
-    return null;
+    return readInitialPage()?.component ?? null;
 }
 
 function readInitialBundleRecipes(): BundleRecipe[] {
-    try {
-        const raw = document.getElementById('app')?.dataset.page;
-
-        if (raw) {
-            return JSON.parse(raw)?.props?.active_bundle_recipes ?? [];
-        }
-    } catch {
-        // Missing or malformed page data: fall through to the default below.
-    }
-
-    return [];
+    return (
+        (readInitialPage()?.props?.active_bundle_recipes as
+            | BundleRecipe[]
+            | undefined) ?? []
+    );
 }
 
 let prevAuthUserId: number | null = null;
@@ -160,6 +158,15 @@ let isHydratingCart = false;
 let cartSyncInFlight = false;
 let pendingSync: boolean | null = null;
 let lastSyncedSignature = '';
+
+/**
+ * Start-up (below) already applied the server-rendered page's cart, or
+ * merged a just-logged-in guest's cart into it. Inertia then fires
+ * `navigate` for that same first page; re-applying its cart there would
+ * overwrite the merge result with the page's older, pre-merge cart. Only
+ * that first event is skipped.
+ */
+let initialPageCartApplied = false;
 
 /**
  * Cross-device cart sync. A logged-in save carries the server cart version
@@ -623,6 +630,7 @@ if (typeof window !== 'undefined') {
             }
 
             applyLogin(initialUserId, initialCart, guestJustLoggedIn);
+            initialPageCartApplied = true;
         }
     }
 }
@@ -715,6 +723,8 @@ if (typeof window !== 'undefined') {
 router.on('navigate', (event) => {
     const props = event.detail.page.props as SharedPageProps;
     currentPageComponent = event.detail.page.component;
+    const startupAppliedThisCart = initialPageCartApplied;
+    initialPageCartApplied = false;
 
     // Inertia preserves the original document between visits, so Blade only
     // writes this attribute on the initial load. Keep it in sync with the
@@ -762,7 +772,7 @@ router.on('navigate', (event) => {
             // FE-011: keep the unsaved items and try again now.
             cartSyncRetryAttempt = 0;
             void syncAuthenticatedCart(false);
-        } else {
+        } else if (!startupAppliedThisCart) {
             hydrateCart(currentCart);
         }
 
