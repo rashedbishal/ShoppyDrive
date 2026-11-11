@@ -162,7 +162,7 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
                                                         : 'Pending'}
                                                 </Badge>
                                             </div>
-                                            <p className="mt-1 line-clamp-2 text-xs text-slate-600">
+                                            <p className="keep-clamp mt-1 line-clamp-2 text-xs text-slate-600">
                                                 {review.body}
                                             </p>
                                             <p className="mt-1 text-xs text-slate-400">
