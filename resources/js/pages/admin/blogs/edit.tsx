@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import { maxLength, required, validate } from '@/lib/validate';
 import type { Blog } from '@/types';
 
@@ -37,6 +38,7 @@ const inputClass = (err?: string) =>
     `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;
 
 export default function BlogEdit({ blog }: Props) {
+    const listUrl = useAdminListUrl('admin.blogs.index');
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
             _method: 'PUT',
@@ -79,7 +81,7 @@ export default function BlogEdit({ blog }: Props) {
             <Head title="Edit Blog Post — Admin" />
             <RouteModal
                 title="Edit Blog Post"
-                returnTo={route('admin.blogs.index')}
+                returnTo={listUrl}
                 className="sm:max-w-2xl"
             >
                 <form onSubmit={handleSubmit}>
@@ -250,7 +252,7 @@ export default function BlogEdit({ blog }: Props) {
                                     {processing ? 'Saving…' : 'Save Changes'}
                                 </Button>
                                 <Link
-                                    href={route('admin.blogs.index')}
+                                    href={listUrl}
                                     className="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
                                 >
                                     Cancel

@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Setting;
 use App\Models\Wishlist;
 use App\Services\BundleService;
+use App\Support\AdminListUrl;
 use App\Support\CartManager;
 use App\Support\LayoutCache;
 use App\Support\PasswordPolicy;
@@ -176,6 +177,12 @@ class HandleInertiaRequests extends Middleware
                 'addresses_count' => Address::where('user_id', $request->user()->id)->count(),
             ] : null,
             'cart_base_shipping_rate' => fn () => $this->resolveBaseShippingRate($request),
+            // The page/filters each admin list was last viewed with, so the
+            // create/edit pages' Back and Cancel links return there instead
+            // of page 1 (see AdminListUrl).
+            'admin_list_urls' => fn () => $request->user('admin') && $request->hasSession()
+                ? AdminListUrl::all()
+                : null,
             'unseen_orders_count' => fn () => $request->user('admin')
                 ? Order::where('is_seen', false)->count()
                 : null,

@@ -30,6 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 
 type OrderItem = {
     id: number;
@@ -159,6 +160,7 @@ export default function OrderShow({
     canVerifyDelivery,
     canConfirmLostParcel,
 }: Props) {
+    const listUrl = useAdminListUrl('admin.orders.index');
     const [isVerifyOpen, setIsVerifyOpen] = useState(false);
     // COURIER-SEND-RACE-002 (L2/L3): mirrors the server-side guards, which
     // remain the real boundary — these only avoid offering a refused action.
@@ -372,7 +374,7 @@ export default function OrderShow({
             <div className="space-y-5">
                 <div className="flex items-start gap-3">
                     <Link
-                        href={route('admin.orders.index')}
+                        href={listUrl}
                         className="mt-0.5 shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                     >
                         <ArrowLeft className="size-4" />

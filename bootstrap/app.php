@@ -19,6 +19,7 @@ use App\Http\Middleware\RedirectToCanonicalDomain;
 use App\Http\Middleware\RedirectToHttps;
 use App\Http\Middleware\RefuseInsecureApi;
 use App\Http\Middleware\RejectUntrustedHost;
+use App\Http\Middleware\RememberAdminListUrl;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\StampPasswordResetRequestedAt;
 use App\Http\Middleware\ThrottleFortifyActions;
@@ -42,6 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.session' => AuthenticateAdminSession::class,
             'admin.can' => EnsureAdminPermission::class,
             'admin.mother' => EnsureMotherAdmin::class,
+            'admin.remember-list' => RememberAdminListUrl::class,
             'redirect-customer-from-admin' => RedirectCustomerFromAdmin::class,
             // SEC-021: a separate alias, not a same-named override of
             // inertia-laravel's own 'inertia.encrypt' — that package

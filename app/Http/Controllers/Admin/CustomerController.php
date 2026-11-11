@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\Order;
 use App\Models\User;
+use App\Support\AdminListUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,11 +20,17 @@ use Throwable;
 
 class CustomerController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $customers = User::withCount('orders')
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%")->orWhere('email', 'like', "%{$request->search}%"))
             ->latest()->paginate(20)->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($customers, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         return Inertia::render('admin/customers/index', [
             'customers' => $customers,
@@ -68,10 +75,10 @@ class CustomerController extends Controller
         if ($avatarWarning !== null) {
             Inertia::flash('toast', ['type' => 'warning', 'message' => $avatarWarning]);
 
-            return redirect()->route('admin.customers.index');
+            return AdminListUrl::redirect('admin.customers.index');
         }
 
-        return redirect()->route('admin.customers.index')->with('success', 'Customer anonymized successfully. Their order and payment history has been preserved.');
+        return AdminListUrl::redirect('admin.customers.index')->with('success', 'Customer anonymized successfully. Their order and payment history has been preserved.');
     }
 
     /**

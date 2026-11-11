@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import { maxLength, required, validate } from '@/lib/validate';
 
 const slugify = (name: string) =>
@@ -39,6 +40,7 @@ const inputClass = (err?: string) =>
     `h-9 w-full rounded-lg border px-3 text-sm focus:outline-none focus:ring-1 ${err ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`;
 
 export default function BrandCreate() {
+    const listUrl = useAdminListUrl('admin.brands.index');
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
             name: '',
@@ -72,7 +74,7 @@ export default function BrandCreate() {
             <Head title="Add Brand — Admin" />
             <RouteModal
                 title="Add Brand"
-                returnTo={route('admin.brands.index')}
+                returnTo={listUrl}
                 className="sm:max-w-xl"
             >
                 <form onSubmit={handleSubmit}>
@@ -157,7 +159,7 @@ export default function BrandCreate() {
                                     {processing ? 'Saving…' : 'Create Brand'}
                                 </Button>
                                 <Link
-                                    href={route('admin.brands.index')}
+                                    href={listUrl}
                                     className="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
                                 >
                                     Cancel

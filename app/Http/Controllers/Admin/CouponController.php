@@ -16,6 +16,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\SubCategory;
 use App\Support\AdminDateTime;
+use App\Support\AdminListUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,10 +31,16 @@ class CouponController extends Controller
 
     private const TARGET_FIELDS = ['target_category_ids', 'target_sub_category_ids', 'target_products'];
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $coupons = Coupon::when($request->search, fn ($q) => $q->where('code', 'like', "%{$request->search}%")->orWhere('name', 'like', "%{$request->search}%"))
             ->latest()->paginate(20)->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($coupons, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         return Inertia::render('admin/coupons/index', [
             'coupons' => $coupons,
@@ -90,7 +97,7 @@ class CouponController extends Controller
             $this->syncTargets($coupon, $data);
         });
 
-        return redirect()->route('admin.coupons.index')->with('success', 'Coupon updated.');
+        return AdminListUrl::redirect('admin.coupons.index')->with('success', 'Coupon updated.');
     }
 
     /**
@@ -122,14 +129,14 @@ class CouponController extends Controller
     {
         $coupon->delete();
 
-        return redirect()->route('admin.coupons.index')->with('success', 'Coupon deleted.');
+        return AdminListUrl::redirect('admin.coupons.index')->with('success', 'Coupon deleted.');
     }
 
     public function updateStatusMany(Request $request): RedirectResponse
     {
         $result = $this->updateStatusInBulk($request, Coupon::class);
 
-        return redirect()->route('admin.coupons.index')->with('success', $result['count'].' coupon(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
+        return AdminListUrl::redirect('admin.coupons.index')->with('success', $result['count'].' coupon(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
     }
 
     public function destroyMany(Request $request): RedirectResponse
@@ -141,7 +148,7 @@ class CouponController extends Controller
 
         Coupon::whereIn('id', $ids)->delete();
 
-        return redirect()->route('admin.coupons.index')->with('success', count($ids).' coupon(s) deleted.');
+        return AdminListUrl::redirect('admin.coupons.index')->with('success', count($ids).' coupon(s) deleted.');
     }
 
     /**

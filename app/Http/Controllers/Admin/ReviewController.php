@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\ReviewApprovedMail;
 use App\Models\Review;
 use App\Services\LoyaltyPointsService;
+use App\Support\AdminListUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,7 @@ class ReviewController extends Controller
         private readonly LoyaltyPointsService $loyalty,
     ) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $reviews = Review::with(['user:id,name,email', 'product:id,name,slug'])
             ->when($request->search, fn ($q) => $q->whereHas('product', fn ($pq) => $pq->where('name', 'like', "%{$request->search}%"))
@@ -33,6 +34,12 @@ class ReviewController extends Controller
             ->when($request->status === 'approved', fn ($q) => $q->where('is_approved', true))
             ->when($request->status === 'pending', fn ($q) => $q->where('is_approved', false))
             ->latest()->paginate(20)->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($reviews, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         return Inertia::render('admin/reviews/index', [
             'reviews' => $reviews,

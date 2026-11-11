@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\User;
+use App\Support\AdminListUrl;
 use App\Support\MotherPasswordGate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,7 @@ class AuditTrailController extends Controller
         'orders' => 'Order Activity',
     ];
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $logName = $request->string('log_name')->value();
         $logName = array_key_exists($logName, self::LOG_NAME_LABELS) ? $logName : null;
@@ -50,6 +51,12 @@ class AuditTrailController extends Controller
                 'subject_type' => $activity->subject_type !== null ? class_basename($activity->subject_type) : null,
                 'created_at' => $activity->created_at,
             ]);
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($activities, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         $currentAdmin = Auth::guard('admin')->user();
 

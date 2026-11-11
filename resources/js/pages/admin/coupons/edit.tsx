@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import { maxLength, minValue, required, validate } from '@/lib/validate';
 
 type Coupon = {
@@ -58,6 +59,7 @@ export default function CouponEdit({
     categories,
     subCategories,
 }: Props) {
+    const listUrl = useAdminListUrl('admin.coupons.index');
     const { data, setData, put, processing, errors, setError, clearErrors } =
         useForm({
             code: coupon.code,
@@ -130,7 +132,7 @@ export default function CouponEdit({
             <RouteModal
                 title="Edit Coupon"
                 description={coupon.code}
-                returnTo={route('admin.coupons.index')}
+                returnTo={listUrl}
                 className="sm:max-w-2xl"
             >
                 <form onSubmit={handleSubmit}>
@@ -329,7 +331,7 @@ export default function CouponEdit({
                                     {processing ? 'Saving…' : 'Save Changes'}
                                 </Button>
                                 <Link
-                                    href={route('admin.coupons.index')}
+                                    href={listUrl}
                                     className="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
                                 >
                                     Cancel

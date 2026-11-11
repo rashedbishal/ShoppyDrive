@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
 import { Select } from '@/components/ui/select';
+import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import { belowCostWarning } from '@/lib/price-warnings';
 import { mediaFlagIndex, remapProductMedia } from '@/lib/product-media-form';
 import { maxLength, minValue, required, validate } from '@/lib/validate';
@@ -127,6 +128,7 @@ export default function ProductEdit({
     brands,
     attributeValues,
 }: Props) {
+    const listUrl = useAdminListUrl('admin.products.index');
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
             _method: 'PUT',
@@ -294,7 +296,7 @@ export default function ProductEdit({
                 <FormPageHeader
                     title="Edit Product"
                     description={product.name}
-                    backHref={route('admin.products.index')}
+                    backHref={listUrl}
                     backLabel="Back to products"
                 />
                 <form
@@ -960,9 +962,7 @@ export default function ProductEdit({
 
                     <div className="sticky bottom-3 z-20 flex items-center justify-end gap-3 rounded-xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur lg:col-span-2">
                         <Button asChild variant="outline">
-                            <Link href={route('admin.products.index')}>
-                                Cancel
-                            </Link>
+                            <Link href={listUrl}>Cancel</Link>
                         </Button>
                         <Button
                             type="submit"

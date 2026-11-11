@@ -30,6 +30,7 @@ use App\Services\OrderLostParcelService;
 use App\Services\OrderPermanentDeletionService;
 use App\Services\RefundCalculator;
 use App\Services\RefundService;
+use App\Support\AdminListUrl;
 use App\Support\OrderNumberGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -49,13 +50,19 @@ class OrderController extends Controller
         private readonly OrderPermanentDeletionService $permanentDeletion,
     ) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $orders = Order::with('user:id,name,email')
             ->when($request->search, fn ($q) => $q->where('order_number', 'like', "%{$request->search}%"))
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->payment_status, fn ($q) => $q->where('payment_status', $request->payment_status))
             ->latest()->paginate(20)->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($orders, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         return Inertia::render('admin/orders/index', [
             'orders' => $orders,
@@ -370,10 +377,10 @@ class OrderController extends Controller
 
         $order->delete();
 
-        return redirect()->route('admin.orders.index')->with('success', 'Order moved to trash.');
+        return AdminListUrl::redirect('admin.orders.index')->with('success', 'Order moved to trash.');
     }
 
-    public function trashed(Request $request): Response
+    public function trashed(Request $request): Response|RedirectResponse
     {
         $orders = Order::onlyTrashed()
             ->with('user:id,name,email')
@@ -381,6 +388,12 @@ class OrderController extends Controller
             ->orderByDesc('deleted_at')
             ->paginate(20)
             ->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($orders, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         // DB-001: only the mother admin sees permanent deletion at all, with
         // the reasons an order can't be deleted and any pending first step.
@@ -443,7 +456,7 @@ class OrderController extends Controller
             return back()->withErrors([$e->field => $e->getMessage()]);
         }
 
-        return redirect()->route('admin.orders.trashed')->with('success', "Order {$orderNumber} was permanently deleted.");
+        return AdminListUrl::redirect('admin.orders.trashed')->with('success', "Order {$orderNumber} was permanently deleted.");
     }
 
     /**

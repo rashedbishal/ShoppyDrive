@@ -4,6 +4,7 @@ import { FlashSaleProductsCard } from '@/components/admin/flash-sale-products-ca
 import type { FlashSaleItemData } from '@/components/admin/flash-sale-products-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import { maxLength, required, validate } from '@/lib/validate';
 
 function Field({
@@ -27,6 +28,7 @@ function Field({
 }
 
 export default function FlashSaleCreate() {
+    const listUrl = useAdminListUrl('admin.flash-sales.index');
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
             name: '',
@@ -89,7 +91,7 @@ export default function FlashSaleCreate() {
                         size="icon"
                         className="rounded-full"
                     >
-                        <Link href={route('admin.flash-sales.index')}>
+                        <Link href={listUrl}>
                             <ArrowLeft className="size-5" />
                         </Link>
                     </Button>
@@ -213,9 +215,7 @@ export default function FlashSaleCreate() {
                             variant="ghost"
                             className="text-slate-500"
                         >
-                            <Link href={route('admin.flash-sales.index')}>
-                                Cancel
-                            </Link>
+                            <Link href={listUrl}>Cancel</Link>
                         </Button>
                     </div>
                 </form>

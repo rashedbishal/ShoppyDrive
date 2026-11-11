@@ -12,6 +12,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\SubCategory;
 use App\Services\ImageOptimizer;
+use App\Support\AdminListUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -22,7 +23,7 @@ class SubCategoryController extends Controller
 {
     use FlashesDeletionBlockedByProducts, UpdatesStatusInBulk;
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         // Newest-created first, matching the categories table. sort_order/name
         // are only tiebreakers here; storefront menus keep their own ordering.
@@ -34,6 +35,12 @@ class SubCategoryController extends Controller
             ->orderBy('sort_order')
             ->orderBy('name')
             ->paginate(20)->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($subCategories, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         return Inertia::render('admin/sub-categories/index', [
             'subCategories' => $subCategories,
@@ -90,7 +97,7 @@ class SubCategoryController extends Controller
         $data['is_active'] = $data['is_active'] ?? false;
         $subCategory->update($data);
 
-        return redirect()->route('admin.sub-categories.index')->with('success', 'Sub-category updated.');
+        return AdminListUrl::redirect('admin.sub-categories.index')->with('success', 'Sub-category updated.');
     }
 
     public function destroy(SubCategory $subCategory): RedirectResponse
@@ -106,19 +113,19 @@ class SubCategoryController extends Controller
                 $products,
             );
 
-            return redirect()->route('admin.sub-categories.index');
+            return AdminListUrl::redirect('admin.sub-categories.index');
         }
 
         $subCategory->delete();
 
-        return redirect()->route('admin.sub-categories.index')->with('success', 'Sub-category deleted.');
+        return AdminListUrl::redirect('admin.sub-categories.index')->with('success', 'Sub-category deleted.');
     }
 
     public function updateStatusMany(Request $request): RedirectResponse
     {
         $result = $this->updateStatusInBulk($request, SubCategory::class);
 
-        return redirect()->route('admin.sub-categories.index')->with('success', $result['count'].' sub-category(ies) '.($result['active'] ? 'activated' : 'deactivated').'.');
+        return AdminListUrl::redirect('admin.sub-categories.index')->with('success', $result['count'].' sub-category(ies) '.($result['active'] ? 'activated' : 'deactivated').'.');
     }
 
     public function destroyMany(Request $request): RedirectResponse
@@ -141,13 +148,13 @@ class SubCategoryController extends Controller
                 $products,
             );
 
-            return redirect()->route('admin.sub-categories.index');
+            return AdminListUrl::redirect('admin.sub-categories.index');
         }
 
         // Per-model delete (not a query-builder delete) so the model's
         // deleting hook runs, same as single delete.
         $subCategories->each(fn (SubCategory $subCategory) => $subCategory->delete());
 
-        return redirect()->route('admin.sub-categories.index')->with('success', count($ids).' sub-category(ies) deleted.');
+        return AdminListUrl::redirect('admin.sub-categories.index')->with('success', count($ids).' sub-category(ies) deleted.');
     }
 }

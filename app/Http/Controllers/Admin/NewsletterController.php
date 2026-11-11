@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SendNewsletterChunk;
 use App\Models\NewsletterSubscriber;
 use App\Models\Product;
+use App\Support\AdminListUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
@@ -41,7 +42,7 @@ class NewsletterController extends Controller
 
     public const BATCH_NAME_PREFIX = 'newsletter:';
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $subscribers = NewsletterSubscriber::query()
             ->when($request->search, fn ($q) => $q->where('email', 'like', "%{$request->search}%"))
@@ -50,6 +51,12 @@ class NewsletterController extends Controller
             ->latest()
             ->paginate(20)
             ->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($subscribers, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         return Inertia::render('admin/newsletter/index', [
             'subscribers' => $subscribers,

@@ -707,6 +707,8 @@ export interface SharedPageProps {
         addresses_count: number;
     } | null;
     unseen_orders_count: number | null;
+    /** Each admin list's last-viewed URL (page + filters), keyed by route name; null for a non-admin. Read via `useAdminListUrl`. */
+    admin_list_urls: Record<string, string> | null;
     /** OPS-005: false while the bKash/Nagad SMS-forwarder phone looks dead — checkout and the landing-page funnel hide the mobile banking option while this is false, since a Transaction ID submitted then can never be matched. */
     mobile_banking_available: boolean;
     /** PERF-006 (web push follow-up): admin sidebar badge, null for a non-admin or an admin without the received_sms permission. */

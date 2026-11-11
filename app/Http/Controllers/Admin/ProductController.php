@@ -17,6 +17,7 @@ use App\Models\ProductMedia;
 use App\Models\ProductVariant;
 use App\Models\SubCategory;
 use App\Services\ImageOptimizer;
+use App\Support\AdminListUrl;
 use App\Support\CatalogFilterCache;
 use App\Support\ProductStockToken;
 use App\Support\SearchSuggestionCache;
@@ -35,7 +36,7 @@ use Throwable;
 
 class ProductController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $products = Product::with([
             'category:id,name',
@@ -53,6 +54,12 @@ class ProductController extends Controller
             ->latest()
             ->paginate(20)
             ->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($products, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         $products->getCollection()->transform(function (Product $product) {
             $primaryImage = $product->images->firstWhere('is_primary', true) ?? $product->images->first();
@@ -215,7 +222,7 @@ class ProductController extends Controller
             return $this->duplicateSkuResponse($e);
         }
 
-        return redirect()->route('admin.products.index')->with('success', 'Product updated.');
+        return AdminListUrl::redirect('admin.products.index')->with('success', 'Product updated.');
     }
 
     public function destroy(Product $product): RedirectResponse
@@ -239,7 +246,7 @@ class ProductController extends Controller
         // hook re-checks the same order-history condition as a backstop.
         $product->forceDelete();
 
-        return redirect()->route('admin.products.index')->with('success', 'Product permanently deleted.');
+        return AdminListUrl::redirect('admin.products.index')->with('success', 'Product permanently deleted.');
     }
 
     /**

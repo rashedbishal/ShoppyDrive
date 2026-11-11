@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { Select } from '@/components/ui/select';
+import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import {
     DHAKA_CITY_OPTIONS,
     DISTRICT_OPTIONS,
@@ -86,6 +87,7 @@ export default function ConvertIncompleteOrder({
     incompleteOrder,
     items: initialItems,
 }: Props) {
+    const listUrl = useAdminListUrl('admin.orders.incomplete.index');
     const unavailableItems = initialItems.filter((item) => !item.available);
 
     const [lines, setLines] = useState<OrderLine[]>(
@@ -373,7 +375,7 @@ export default function ConvertIncompleteOrder({
                         size="icon"
                         className="rounded-full"
                     >
-                        <Link href={route('admin.orders.incomplete.index')}>
+                        <Link href={listUrl}>
                             <ArrowLeft className="size-5" />
                         </Link>
                     </Button>

@@ -5,6 +5,7 @@ import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import PermanentOrderDeleteDialog from '@/components/admin/PermanentOrderDeleteDialog';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 
 type Order = {
     id: number;
@@ -39,6 +40,7 @@ export default function TrashedOrders({
     canPermanentlyDelete,
     pendingPermanentDeletion,
 }: Props) {
+    const listUrl = useAdminListUrl('admin.orders.index');
     const [search, setSearch] = useState(filters.search ?? '');
     const [restoringId, setRestoringId] = useState<number | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
@@ -81,7 +83,7 @@ export default function TrashedOrders({
             <div className="space-y-5">
                 <div className="flex items-center gap-3">
                     <Link
-                        href={route('admin.orders.index')}
+                        href={listUrl}
                         className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                     >
                         <ArrowLeft className="size-4" />

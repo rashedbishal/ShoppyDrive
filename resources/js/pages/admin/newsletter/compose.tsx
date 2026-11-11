@@ -14,6 +14,7 @@ import { AdminReveal } from '@/components/admin/admin-motion';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
+import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import { useRowKeys } from '@/hooks/use-row-keys';
 import {
     dialogItem,
@@ -49,6 +50,7 @@ export default function NewsletterCompose({
     products,
     active_subscribers_count,
 }: Props) {
+    const listUrl = useAdminListUrl('admin.newsletter.index');
     const [emailType, setEmailType] = useState<EmailType>(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [selectedProductId, setSelectedProductId] = useState<number | null>(
@@ -159,7 +161,7 @@ export default function NewsletterCompose({
                 <div className="space-y-5">
                     <div className="flex items-center gap-3">
                         <Link
-                            href={route('admin.newsletter.index')}
+                            href={listUrl}
                             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                         >
                             <ArrowLeft className="size-4" />

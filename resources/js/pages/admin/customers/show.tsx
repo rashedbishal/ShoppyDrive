@@ -5,6 +5,7 @@ import { DeleteCustomerDialog } from '@/components/admin/delete-customer-dialog'
 import { RestoreCustomerDialog } from '@/components/admin/restore-customer-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 
 type Order = {
     id: number;
@@ -51,6 +52,7 @@ const statusVariant: Record<
 };
 
 export default function CustomerShow({ customer, orders }: Props) {
+    const listUrl = useAdminListUrl('admin.customers.index');
     const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
     const [restoreTarget, setRestoreTarget] = useState<Customer | null>(null);
 
@@ -61,7 +63,7 @@ export default function CustomerShow({ customer, orders }: Props) {
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                         <Link
-                            href={route('admin.customers.index')}
+                            href={listUrl}
                             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                         >
                             <ArrowLeft className="size-4" />

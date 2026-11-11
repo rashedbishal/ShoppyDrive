@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\ProductBundle;
 use App\Models\ProductBundleItem;
 use App\Services\ImageOptimizer;
+use App\Support\AdminListUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class ProductBundleController extends Controller
 {
     use UpdatesStatusInBulk;
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $bundles = ProductBundle::withCount('items')
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
@@ -30,6 +31,12 @@ class ProductBundleController extends Controller
             ->latest()
             ->paginate(20)
             ->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($bundles, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         return Inertia::render('admin/product-bundles/index', [
             'bundles' => $bundles,
@@ -98,7 +105,7 @@ class ProductBundleController extends Controller
 
         $this->syncItems($productBundle, $items);
 
-        return redirect()->route('admin.product-bundles.index')->with('success', 'Bundle updated.');
+        return AdminListUrl::redirect('admin.product-bundles.index')->with('success', 'Bundle updated.');
     }
 
     public function destroy(ProductBundle $productBundle): RedirectResponse
@@ -106,14 +113,14 @@ class ProductBundleController extends Controller
         $productBundle->items()->delete();
         $productBundle->delete();
 
-        return redirect()->route('admin.product-bundles.index')->with('success', 'Bundle deleted.');
+        return AdminListUrl::redirect('admin.product-bundles.index')->with('success', 'Bundle deleted.');
     }
 
     public function updateStatusMany(Request $request): RedirectResponse
     {
         $result = $this->updateStatusInBulk($request, ProductBundle::class);
 
-        return redirect()->route('admin.product-bundles.index')->with('success', $result['count'].' bundle(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
+        return AdminListUrl::redirect('admin.product-bundles.index')->with('success', $result['count'].' bundle(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
     }
 
     public function destroyMany(Request $request): RedirectResponse
@@ -128,7 +135,7 @@ class ProductBundleController extends Controller
             $bundle->delete();
         }
 
-        return redirect()->route('admin.product-bundles.index')->with('success', count($ids).' bundle(s) deleted.');
+        return AdminListUrl::redirect('admin.product-bundles.index')->with('success', count($ids).' bundle(s) deleted.');
     }
 
     public function searchProducts(Request $request): JsonResponse

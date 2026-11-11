@@ -15,6 +15,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Services\InventoryService;
 use App\Services\ManualOrderPricing;
+use App\Support\AdminListUrl;
 use App\Support\CartManager;
 use App\Support\OrderNumberGenerator;
 use Illuminate\Http\JsonResponse;
@@ -30,7 +31,7 @@ class IncompleteOrderController extends Controller
         private readonly CartManager $cartManager,
     ) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $incompleteOrders = IncompleteOrder::query()
             ->with('user:id,name,email')
@@ -40,6 +41,12 @@ class IncompleteOrderController extends Controller
             ->latest()
             ->paginate(20)
             ->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($incompleteOrders, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         return Inertia::render('admin/orders/incomplete/index', [
             'incompleteOrders' => $incompleteOrders,

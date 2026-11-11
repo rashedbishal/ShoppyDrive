@@ -12,6 +12,7 @@ use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Support\AdminDateTime;
+use App\Support\AdminListUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,11 +25,17 @@ class FlashSaleController extends Controller
 {
     use UpdatesStatusInBulk;
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $flashSales = FlashSale::withCount('items')
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
             ->latest()->paginate(20)->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($flashSales, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         return Inertia::render('admin/flash-sales/index', [
             'flashSales' => $flashSales,
@@ -155,7 +162,7 @@ class FlashSaleController extends Controller
             }
         });
 
-        return redirect()->route('admin.flash-sales.index')->with('success', 'Flash sale updated.');
+        return AdminListUrl::redirect('admin.flash-sales.index')->with('success', 'Flash sale updated.');
     }
 
     /**
@@ -196,14 +203,14 @@ class FlashSaleController extends Controller
         $flashSale->items()->delete();
         $flashSale->delete();
 
-        return redirect()->route('admin.flash-sales.index')->with('success', 'Flash sale deleted.');
+        return AdminListUrl::redirect('admin.flash-sales.index')->with('success', 'Flash sale deleted.');
     }
 
     public function updateStatusMany(Request $request): RedirectResponse
     {
         $result = $this->updateStatusInBulk($request, FlashSale::class);
 
-        return redirect()->route('admin.flash-sales.index')->with('success', $result['count'].' flash sale(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
+        return AdminListUrl::redirect('admin.flash-sales.index')->with('success', $result['count'].' flash sale(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
     }
 
     public function destroyMany(Request $request): RedirectResponse
@@ -218,7 +225,7 @@ class FlashSaleController extends Controller
             $flashSale->delete();
         }
 
-        return redirect()->route('admin.flash-sales.index')->with('success', count($ids).' flash sale(s) deleted.');
+        return AdminListUrl::redirect('admin.flash-sales.index')->with('success', count($ids).' flash sale(s) deleted.');
     }
 
     /**

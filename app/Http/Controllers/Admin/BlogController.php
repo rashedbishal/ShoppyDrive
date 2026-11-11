@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\BlogRequest;
 use App\Models\Blog;
 use App\Services\ImageOptimizer;
 use App\Support\AdminDateTime;
+use App\Support\AdminListUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -20,13 +21,19 @@ class BlogController extends Controller
 {
     use UpdatesStatusInBulk;
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $blogs = Blog::query()
             ->when($request->search, fn ($q) => $q->where('title', 'like', "%{$request->search}%"))
             ->latest()
             ->paginate(20)
             ->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($blogs, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         return Inertia::render('admin/blogs/index', [
             'blogs' => $blogs,
@@ -88,21 +95,21 @@ class BlogController extends Controller
 
         $blog->update($data);
 
-        return redirect()->route('admin.blogs.index')->with('success', 'Blog post updated.');
+        return AdminListUrl::redirect('admin.blogs.index')->with('success', 'Blog post updated.');
     }
 
     public function destroy(Blog $blog): RedirectResponse
     {
         $blog->delete();
 
-        return redirect()->route('admin.blogs.index')->with('success', 'Blog post deleted.');
+        return AdminListUrl::redirect('admin.blogs.index')->with('success', 'Blog post deleted.');
     }
 
     public function updateStatusMany(Request $request): RedirectResponse
     {
         $result = $this->updateStatusInBulk($request, Blog::class, 'is_published');
 
-        return redirect()->route('admin.blogs.index')->with('success', $result['count'].' blog(s) '.($result['active'] ? 'published' : 'unpublished').'.');
+        return AdminListUrl::redirect('admin.blogs.index')->with('success', $result['count'].' blog(s) '.($result['active'] ? 'published' : 'unpublished').'.');
     }
 
     public function destroyMany(Request $request): RedirectResponse
@@ -114,6 +121,6 @@ class BlogController extends Controller
 
         Blog::whereIn('id', $ids)->delete();
 
-        return redirect()->route('admin.blogs.index')->with('success', count($ids).' blog post(s) deleted.');
+        return AdminListUrl::redirect('admin.blogs.index')->with('success', count($ids).' blog post(s) deleted.');
     }
 }

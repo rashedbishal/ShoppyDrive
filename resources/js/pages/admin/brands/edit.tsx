@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import { maxLength, required, validate } from '@/lib/validate';
 
 type Brand = {
@@ -37,6 +38,7 @@ function Field({
 }
 
 export default function BrandEdit({ brand }: Props) {
+    const listUrl = useAdminListUrl('admin.brands.index');
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
             _method: 'PUT',
@@ -76,7 +78,7 @@ export default function BrandEdit({ brand }: Props) {
             <RouteModal
                 title="Edit Brand"
                 description={brand.name}
-                returnTo={route('admin.brands.index')}
+                returnTo={listUrl}
                 className="sm:max-w-xl"
             >
                 <form onSubmit={handleSubmit}>
@@ -148,7 +150,7 @@ export default function BrandEdit({ brand }: Props) {
                                     {processing ? 'Saving…' : 'Save Changes'}
                                 </Button>
                                 <Link
-                                    href={route('admin.brands.index')}
+                                    href={listUrl}
                                     className="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
                                 >
                                     Cancel

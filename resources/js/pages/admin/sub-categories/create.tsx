@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
+import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import {
     maxLength,
     minValue,
@@ -40,6 +41,7 @@ function Field({
 }
 
 export default function SubCategoryCreate({ categories }: Props) {
+    const listUrl = useAdminListUrl('admin.sub-categories.index');
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
             name: '',
@@ -87,7 +89,7 @@ export default function SubCategoryCreate({ categories }: Props) {
             <Head title="Add Sub-category — Admin" />
             <RouteModal
                 title="Add Sub-category"
-                returnTo={route('admin.sub-categories.index')}
+                returnTo={listUrl}
                 className="sm:max-w-xl"
             >
                 <form onSubmit={handleSubmit}>
@@ -228,7 +230,7 @@ export default function SubCategoryCreate({ categories }: Props) {
                                         : 'Create Sub-category'}
                                 </Button>
                                 <Link
-                                    href={route('admin.sub-categories.index')}
+                                    href={listUrl}
                                     className="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
                                 >
                                     Cancel

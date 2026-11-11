@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ReceivedSms;
+use App\Support\AdminListUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -38,7 +39,7 @@ class ReceivedSmsController extends Controller
             ->count();
     }
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $sms = ReceivedSms::with('matchedOrder:id,order_number')
             ->when($request->matched === 'yes', fn ($q) => $q->where('is_matched', true))
@@ -49,6 +50,12 @@ class ReceivedSmsController extends Controller
             ->latest()
             ->paginate(20)
             ->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($sms, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         return Inertia::render('admin/received-sms/index', [
             'sms' => $sms,

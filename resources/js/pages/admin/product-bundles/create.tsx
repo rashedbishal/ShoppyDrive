@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import { cn } from '@/lib/utils';
 import { maxLength, required, validate } from '@/lib/validate';
 
@@ -112,6 +113,7 @@ function stockNote(item: SelectedItem): string {
 }
 
 export default function ProductBundleCreate() {
+    const listUrl = useAdminListUrl('admin.product-bundles.index');
     const { data, setData, post, processing, errors, setError, clearErrors } =
         useForm({
             name: '',
@@ -763,9 +765,7 @@ export default function ProductBundleCreate() {
                             variant="ghost"
                             className="text-slate-500"
                         >
-                            <Link href={route('admin.product-bundles.index')}>
-                                Cancel
-                            </Link>
+                            <Link href={listUrl}>Cancel</Link>
                         </Button>
                     </div>
                 </form>

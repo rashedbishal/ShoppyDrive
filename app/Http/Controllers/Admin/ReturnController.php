@@ -16,6 +16,7 @@ use App\Services\CourierEvidenceChain;
 use App\Services\InventoryService;
 use App\Services\RefundCalculator;
 use App\Services\RefundService;
+use App\Support\AdminListUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,7 +27,7 @@ use Inertia\Response;
 
 class ReturnController extends Controller
 {
-    public function index(Request $request, RefundCalculator $calculator, CourierEvidenceChain $courierEvidence): Response
+    public function index(Request $request, RefundCalculator $calculator, CourierEvidenceChain $courierEvidence): Response|RedirectResponse
     {
         $returns = ReturnRequest::with(['user:id,name,email', 'order'])
             ->when($request->search, fn ($q) => $q->whereHas('order', fn ($oq) => $oq->where('order_number', 'like', "%{$request->search}%"))
@@ -35,6 +36,12 @@ class ReturnController extends Controller
             ->latest()
             ->paginate(20)
             ->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($returns, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         // PAY-RETURN-001: the real maximum (or why no refund can be recorded) for approved returns.
         $returns->getCollection()->each(function (ReturnRequest $returnRequest) use ($calculator, $courierEvidence): void {

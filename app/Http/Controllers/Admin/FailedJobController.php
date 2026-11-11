@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\AdminListUrl;
 use App\Support\FailedJobSummary;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -21,12 +22,18 @@ use Inertia\Response;
  */
 class FailedJobController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $failedJobs = $this->failedJobs()
             ->orderByDesc('failed_at')
             ->paginate(20)
             ->through(fn (object $failedJob): array => FailedJobSummary::from($failedJob));
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($failedJobs, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         $admin = Auth::guard('admin')->user();
 

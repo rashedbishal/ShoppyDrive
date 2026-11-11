@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Concerns\RecordsAdminActions;
 use App\Http\Controllers\Controller;
 use App\Models\ContactMessage;
+use App\Support\AdminListUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ class ContactMessageController extends Controller
 {
     use RecordsAdminActions;
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $messages = ContactMessage::query()
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%")
@@ -26,6 +27,12 @@ class ContactMessageController extends Controller
             ->latest()
             ->paginate(20)
             ->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($messages, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         return Inertia::render('admin/contact-messages/index', [
             'messages' => $messages,

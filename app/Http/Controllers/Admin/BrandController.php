@@ -11,6 +11,7 @@ use App\Models\Brand;
 use App\Models\HomepageSetting;
 use App\Models\Product;
 use App\Services\ImageOptimizer;
+use App\Support\AdminListUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -21,13 +22,19 @@ class BrandController extends Controller
 {
     use UpdatesStatusInBulk;
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $brands = Brand::withCount('products')
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
             ->when($request->status === 'active', fn ($q) => $q->where('is_active', true))
             ->when($request->status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->orderByDesc('created_at')->paginate(20)->withQueryString();
+
+        $pastLastPage = AdminListUrl::redirectIfPastLastPage($brands, $request);
+
+        if ($pastLastPage !== null) {
+            return $pastLastPage;
+        }
 
         return Inertia::render('admin/brands/index', [
             'brands' => $brands,
@@ -75,7 +82,7 @@ class BrandController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Brand updated.']);
 
-        return redirect()->route('admin.brands.index');
+        return AdminListUrl::redirect('admin.brands.index');
     }
 
     public function destroy(Brand $brand): RedirectResponse
@@ -93,7 +100,7 @@ class BrandController extends Controller
                 ])->all(),
             ]);
 
-            return redirect()->route('admin.brands.index');
+            return AdminListUrl::redirect('admin.brands.index');
         }
 
         $brand->is_active = false;
@@ -102,7 +109,7 @@ class BrandController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Brand deleted.']);
 
-        return redirect()->route('admin.brands.index');
+        return AdminListUrl::redirect('admin.brands.index');
     }
 
     public function updateStatusMany(Request $request): RedirectResponse
@@ -111,7 +118,7 @@ class BrandController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => $result['count'].' brand(s) '.($result['active'] ? 'activated' : 'deactivated').'.']);
 
-        return redirect()->route('admin.brands.index');
+        return AdminListUrl::redirect('admin.brands.index');
     }
 
     public function destroyMany(Request $request): RedirectResponse
@@ -143,7 +150,7 @@ class BrandController extends Controller
                 ])->all(),
             ]);
 
-            return redirect()->route('admin.brands.index');
+            return AdminListUrl::redirect('admin.brands.index');
         }
 
         foreach ($brands as $brand) {
@@ -154,7 +161,7 @@ class BrandController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => count($ids).' brand(s) deleted.']);
 
-        return redirect()->route('admin.brands.index');
+        return AdminListUrl::redirect('admin.brands.index');
     }
 
     private function syncHomepageSetting(Brand $brand): void
