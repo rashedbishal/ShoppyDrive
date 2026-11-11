@@ -24,6 +24,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
 import { SIDEBAR_LAYOUT_CLASS } from '@/lib/constants';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
+import { usePriceRangeCommit } from '@/lib/hooks/usePriceRangeCommit';
 import { cn } from '@/lib/utils';
 import type { Brand, Category, PaginatedData, Product } from '@/types';
 
@@ -79,23 +80,46 @@ function PriceRangeFilter({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
     useEffect(() => setInputHi(String(hi)), [hi]);
 
-    const loPercent = cap > 0 ? (lo / cap) * 100 : 0;
-    const hiPercent = cap > 0 ? (hi / cap) * 100 : 100;
+    // What the handles and labels show. While a handle is held this moves on
+    // its own and the search only reloads on release (usePriceRangeCommit),
+    // instead of once per ৳10 step, which could hit the rate limit (429).
+    const [sliderLo, setSliderLo] = useState(lo);
+    const [sliderHi, setSliderHi] = useState(hi);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
+    useEffect(() => setSliderLo(lo), [lo]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
+    useEffect(() => setSliderHi(hi), [hi]);
+
+    const priceCommit = usePriceRangeCommit(onChange);
+    const isCommitKey = (key: string): boolean =>
+        [
+            'ArrowLeft',
+            'ArrowRight',
+            'ArrowUp',
+            'ArrowDown',
+            'Home',
+            'End',
+            'PageUp',
+            'PageDown',
+        ].includes(key);
+
+    const loPercent = cap > 0 ? (sliderLo / cap) * 100 : 0;
+    const hiPercent = cap > 0 ? (sliderHi / cap) * 100 : 100;
     const minOnTop = loPercent > 95;
 
     const commitLo = (raw: string) => {
         const v = Math.max(
             0,
-            Math.min(Math.round(Number(raw) / 10) * 10, hi - 10),
+            Math.min(Math.round(Number(raw) / 10) * 10, sliderHi - 10),
         );
-        onChange(isNaN(v) ? 0 : v, hi);
+        priceCommit.commitNow(isNaN(v) ? 0 : v, sliderHi);
     };
     const commitHi = (raw: string) => {
         const v = Math.max(
-            lo + 10,
+            sliderLo + 10,
             Math.min(Math.round(Number(raw) / 10) * 10, cap),
         );
-        onChange(lo, isNaN(v) ? cap : v);
+        priceCommit.commitNow(sliderLo, isNaN(v) ? cap : v);
     };
 
     return (
@@ -106,7 +130,7 @@ function PriceRangeFilter({
                         Min
                     </span>
                     <span className="text-sm font-bold text-[var(--color-primary)]">
-                        ৳{lo.toLocaleString('en-BD')}
+                        ৳{sliderLo.toLocaleString('en-BD')}
                     </span>
                 </div>
                 <div className="flex items-center text-sm text-[var(--color-text-muted)]">
@@ -117,7 +141,7 @@ function PriceRangeFilter({
                         Max
                     </span>
                     <span className="text-sm font-bold text-[var(--color-primary)]">
-                        ৳{hi.toLocaleString('en-BD')}
+                        ৳{sliderHi.toLocaleString('en-BD')}
                     </span>
                 </div>
             </div>
@@ -144,10 +168,18 @@ function PriceRangeFilter({
                     min={0}
                     max={cap}
                     step={10}
-                    value={lo}
-                    onChange={(e) =>
-                        onChange(Math.min(Number(e.target.value), hi - 10), hi)
-                    }
+                    value={sliderLo}
+                    aria-label="Minimum price"
+                    onPointerDown={priceCommit.startDrag}
+                    onChange={(e) => {
+                        const nextLo = Math.min(
+                            Number(e.target.value),
+                            sliderHi - 10,
+                        );
+                        setSliderLo(nextLo);
+                        priceCommit.schedule(nextLo, sliderHi);
+                    }}
+                    onKeyUp={(e) => isCommitKey(e.key) && priceCommit.flush()}
                     className={cn(
                         'absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent opacity-0',
                         minOnTop ? 'z-30' : 'z-20',
@@ -158,10 +190,18 @@ function PriceRangeFilter({
                     min={10}
                     max={cap}
                     step={10}
-                    value={hi}
-                    onChange={(e) =>
-                        onChange(lo, Math.max(Number(e.target.value), lo + 10))
-                    }
+                    value={sliderHi}
+                    aria-label="Maximum price"
+                    onPointerDown={priceCommit.startDrag}
+                    onChange={(e) => {
+                        const nextHi = Math.max(
+                            Number(e.target.value),
+                            sliderLo + 10,
+                        );
+                        setSliderHi(nextHi);
+                        priceCommit.schedule(sliderLo, nextHi);
+                    }}
+                    onKeyUp={(e) => isCommitKey(e.key) && priceCommit.flush()}
                     className={cn(
                         'absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent opacity-0',
                         minOnTop ? 'z-20' : 'z-30',
@@ -314,15 +354,15 @@ export default function SearchResults({
     const applyChange = (
         updater: (c: SearchFilters) => SearchFilters,
     ): void => {
-        setDraft((c) => {
-            const next = updater(c);
+        // Sent from here, never from inside a state updater: React may run
+        // an updater twice, which sent every filter change as two identical
+        // requests against the product-browsing rate limit.
+        const next = updater(draft);
+        setDraft(next);
 
-            if (isDesktop) {
-                submitFilters(next);
-            }
-
-            return next;
-        });
+        if (isDesktop) {
+            submitFilters(next);
+        }
     };
 
     const handleClearAll = (): void => {

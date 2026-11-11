@@ -9,7 +9,7 @@ import {
     Search,
     SlidersHorizontal,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { route } from 'ziggy-js';
 import {
@@ -28,6 +28,7 @@ import {
     SIDEBAR_LAYOUT_CLASS,
 } from '@/lib/constants';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
+import { usePriceRangeCommit } from '@/lib/hooks/usePriceRangeCommit';
 import { cn } from '@/lib/utils';
 import type {
     Attribute,
@@ -135,36 +136,7 @@ function PriceRangeFilter({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
     useEffect(() => setInputHi(String(hi)), [hi]);
 
-    const onApplyRef = useRef(onApply);
-    useEffect(() => {
-        onApplyRef.current = onApply;
-    }, [onApply]);
-
-    const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-        undefined,
-    );
-    const pendingRef = useRef<[number, number] | undefined>(undefined);
-
-    const debouncedApply = (lo: number, hi: number): void => {
-        pendingRef.current = [lo, hi];
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => {
-            if (pendingRef.current) {
-                onApplyRef.current(...pendingRef.current);
-                pendingRef.current = undefined;
-            }
-        }, 350);
-    };
-    debouncedApply.flush = (): void => {
-        clearTimeout(timeoutRef.current);
-
-        if (pendingRef.current) {
-            onApplyRef.current(...pendingRef.current);
-            pendingRef.current = undefined;
-        }
-    };
-
-    useEffect(() => () => clearTimeout(timeoutRef.current), []);
+    const priceCommit = usePriceRangeCommit(onApply);
 
     const parseLo = (raw: string): number =>
         Math.max(0, Math.min(Number(raw) || 0, cap));
@@ -182,7 +154,7 @@ function PriceRangeFilter({
     // When both handles meet, keep the one that can still move on top.
     const isLoOnTop = loPercent > 50;
 
-    const commitSlider = (): void => debouncedApply.flush();
+    const commitSlider = (): void => priceCommit.flush();
     const isCommitKey = (key: string): boolean =>
         [
             'ArrowLeft',
@@ -218,7 +190,7 @@ function PriceRangeFilter({
                                 const { value } = e.target;
                                 setInputLo(value);
                                 const parsedLo = parseLo(value);
-                                debouncedApply(
+                                priceCommit.schedule(
                                     parsedLo,
                                     parseHi(inputHi, parsedLo),
                                 );
@@ -248,7 +220,7 @@ function PriceRangeFilter({
                                 const { value } = e.target;
                                 setInputHi(value);
                                 const parsedLo = parseLo(inputLo);
-                                debouncedApply(
+                                priceCommit.schedule(
                                     parsedLo,
                                     parseHi(value, parsedLo),
                                 );
@@ -264,8 +236,9 @@ function PriceRangeFilter({
 
             {/* Dual-handle slider. The native range inputs are invisible and ignore
                 pointer events except on their own thumb, so each handle is only
-                draggable where it is; the filter applies (debounced) as it's
-                dragged, and immediately on release/keyboard commit. */}
+                draggable where it is. While a handle is held only the numbers
+                move; the filter applies once, on release (usePriceRangeCommit),
+                so a slow drag can't flood the server with requests. */}
             <div className="px-1 pt-1">
                 <div className="relative mx-2.5 h-6">
                     <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-[var(--color-border)]" />
@@ -289,9 +262,9 @@ function PriceRangeFilter({
                                 sliderHi,
                             );
                             setInputLo(String(nextLo));
-                            debouncedApply(nextLo, sliderHi);
+                            priceCommit.schedule(nextLo, sliderHi);
                         }}
-                        onPointerUp={commitSlider}
+                        onPointerDown={priceCommit.startDrag}
                         onKeyUp={(e) => isCommitKey(e.key) && commitSlider()}
                         className={cn(
                             PRICE_SLIDER_INPUT_CLASS,
@@ -316,9 +289,9 @@ function PriceRangeFilter({
                                 sliderLo,
                             );
                             setInputHi(String(nextHi));
-                            debouncedApply(sliderLo, nextHi);
+                            priceCommit.schedule(sliderLo, nextHi);
                         }}
-                        onPointerUp={commitSlider}
+                        onPointerDown={priceCommit.startDrag}
                         onKeyUp={(e) => isCommitKey(e.key) && commitSlider()}
                         className={cn(
                             PRICE_SLIDER_INPUT_CLASS,
@@ -538,15 +511,15 @@ function ProductListingPage({
         updater: (current: ProductListingFilters) => ProductListingFilters,
         nextUrl?: string,
     ): void => {
-        setDraftFilters((current) => {
-            const next = updater(current);
+        // Sent from here, never from inside a state updater: React may run
+        // an updater twice, which sent every filter change as two identical
+        // requests against the product-browsing rate limit.
+        const next = updater(draftFilters);
+        setDraftFilters(next);
 
-            if (isDesktop) {
-                submitFilters(next, nextUrl);
-            }
-
-            return next;
-        });
+        if (isDesktop) {
+            submitFilters(next, nextUrl);
+        }
     };
 
     const handleSearchSubmit = (event: FormEvent<HTMLFormElement>): void => {
