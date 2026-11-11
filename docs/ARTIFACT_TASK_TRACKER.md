@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 11 / 99** · Live, ready to retest: 20 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
+**Done: 11 / 99** · Live, ready to retest: 21 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -11,7 +11,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [ ] BE-009 — "Today" figures and invoices use UTC, not Dhaka time
 - [ ] BE-001 — Malformed input causes server errors
 - [~] BE-002 — A deleted product in a guest cart gives a bare 404 at checkout — tester's "need clear message" was right (real deletes are force-deletes, not soft); fixed for guests and, more severely, for logged-in customers whose item was silently cascade-deleted from their cart; fix pushed 2026-11-09 (commit `f37c051`), deploy run outcome not yet confirmed
-- [ ] BE-003 — DatabaseSeeder wipes the catalog and has no production guard
+- [>] BE-003 — DatabaseSeeder wipes the catalog and has no production guard — tester marked it Fail (2026-11-11) from code inspection ("no `app()->isProduction()` guard"); that is not what the code says. The guard exists (`app()->environment('production')` throws before anything is touched; shipped `e1ebd4b`, deployed 2026-11-07), just not under that exact method name. Proved with a real run: on a scratch SQLite database holding a marker category, `APP_ENV=production php artisan db:seed --force` stopped with "Refusing to seed demo data in production…", the category survived and no test@example.com user was created. Normal local seeding still works (11 categories, 36 products, test user). Nothing in `composer.json`, the workflows or the app runs `db:seed`, and no other seeder truncates or sets a password. No code change; ready to retest (read the file, do not run db:seed on the live site)
 - [ ] BE-007 — Search overrides other filters on admin lists
 - [ ] BE-011 — Pathao sync reports success when every poll failed
 - [ ] BE-004 — Pathao sync can stop for up to 24 hours after a killed run
