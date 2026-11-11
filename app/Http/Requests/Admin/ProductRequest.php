@@ -27,6 +27,12 @@ class ProductRequest extends FormRequest
 
     private const MAX_SPECIFICATIONS = 30;
 
+    /** Largest value the decimal(10, 2) price columns can hold; above it the database throws instead of validating. */
+    private const MAX_MONEY = 99999999.99;
+
+    /** Largest value the signed 32-bit integer stock columns can hold. */
+    private const MAX_INTEGER = 2147483647;
+
     public function authorize(): bool
     {
         return true;
@@ -56,26 +62,26 @@ class ProductRequest extends FormRequest
             'sub_category_id' => ['required', 'integer', 'exists:sub_categories,id'],
             'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
             // BIZ-020: with variants this field is hidden and derived from them.
-            'price' => [Rule::requiredIf(! $hasVariants), 'nullable', 'numeric', $hasVariants ? 'min:0' : 'gt:0'],
-            'compare_price' => ['nullable', 'numeric', 'min:0'],
-            'cost_price' => ['nullable', 'numeric', 'min:0'],
-            'stock_quantity' => [Rule::requiredIf(! $hasVariants), 'nullable', 'integer', 'min:0'],
-            'low_stock_threshold' => ['nullable', 'integer', 'min:0'],
+            'price' => [Rule::requiredIf(! $hasVariants), 'nullable', 'numeric', $hasVariants ? 'min:0' : 'gt:0', 'max:'.self::MAX_MONEY],
+            'compare_price' => ['nullable', 'numeric', 'min:0', 'max:'.self::MAX_MONEY],
+            'cost_price' => ['nullable', 'numeric', 'min:0', 'max:'.self::MAX_MONEY],
+            'stock_quantity' => [Rule::requiredIf(! $hasVariants), 'nullable', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
+            'low_stock_threshold' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
             'is_active' => ['boolean'],
             'is_featured' => ['boolean'],
             'free_delivery' => ['boolean'],
-            'free_delivery_min_qty' => ['nullable', 'integer', 'min:1'],
+            'free_delivery_min_qty' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_INTEGER],
             'has_color_variant' => ['boolean'],
             'has_size_variant' => ['boolean'],
             'variants' => [Rule::requiredIf($hasVariants), 'array'],
             'variants.*.color_value_id' => ['nullable', 'integer', 'exists:attribute_values,id'],
             'variants.*.size_value_id' => ['nullable', 'integer', 'exists:attribute_values,id'],
             'variants.*.sku' => ['nullable', 'string', 'max:100'],
-            'variants.*.price' => ['required_with:variants', 'numeric', 'gt:0'],
-            'variants.*.compare_price' => ['nullable', 'numeric', 'min:0'],
-            'variants.*.cost_price' => ['nullable', 'numeric', 'min:0'],
-            'variants.*.stock_quantity' => ['required_with:variants', 'integer', 'min:0'],
-            'variants.*.low_stock_threshold' => ['nullable', 'integer', 'min:0'],
+            'variants.*.price' => ['required_with:variants', 'numeric', 'gt:0', 'max:'.self::MAX_MONEY],
+            'variants.*.compare_price' => ['nullable', 'numeric', 'min:0', 'max:'.self::MAX_MONEY],
+            'variants.*.cost_price' => ['nullable', 'numeric', 'min:0', 'max:'.self::MAX_MONEY],
+            'variants.*.stock_quantity' => ['required_with:variants', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
+            'variants.*.low_stock_threshold' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
             'variants.*.is_default' => ['boolean'],
             'cry_baby_enabled' => ['boolean'],
             // FSA-20: counts only newly uploaded files (UploadedFile
@@ -135,8 +141,8 @@ class ProductRequest extends FormRequest
             }],
             'media_tags' => ['nullable', 'array'],
             'media_tags.*' => ['nullable', 'string'],
-            'primary_image_index' => ['nullable', 'integer', 'min:0'],
-            'hover_image_index' => ['nullable', 'integer', 'min:0'],
+            'primary_image_index' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
+            'hover_image_index' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
             'meta_title' => ['nullable', 'string', 'max:255'],
             'meta_description' => ['nullable', 'string', 'max:500'],
             // Admin-entered English equivalent(s) for a product named in
