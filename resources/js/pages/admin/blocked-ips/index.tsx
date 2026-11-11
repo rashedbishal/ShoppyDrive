@@ -242,7 +242,9 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => setUnblockTarget(blockedIp)}
+                                        onClick={() =>
+                                            setUnblockTarget(blockedIp)
+                                        }
                                         className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
                                     >
                                         <Trash2 className="size-3.5" />

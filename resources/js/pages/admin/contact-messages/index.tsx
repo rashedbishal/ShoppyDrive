@@ -29,7 +29,9 @@ type Props = {
 
 export default function ContactMessagesIndex({ messages, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
-    const [deleteTarget, setDeleteTarget] = useState<ContactMessageRow | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<ContactMessageRow | null>(
+        null,
+    );
     const [clearAllOpen, setClearAllOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
@@ -60,13 +62,16 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
         }
 
         setDeleting(true);
-        router.delete(route('admin.contact-messages.destroy', deleteTarget.id), {
-            preserveScroll: true,
-            onFinish: () => {
-                setDeleting(false);
-                setDeleteTarget(null);
+        router.delete(
+            route('admin.contact-messages.destroy', deleteTarget.id),
+            {
+                preserveScroll: true,
+                onFinish: () => {
+                    setDeleting(false);
+                    setDeleteTarget(null);
+                },
             },
-        });
+        );
     };
 
     const confirmClearAll = () => {
@@ -181,9 +186,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() =>
-                                            setDeleteTarget(message)
-                                        }
+                                        onClick={() => setDeleteTarget(message)}
                                         className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
                                         aria-label={`Delete message from ${message.name}`}
                                     >

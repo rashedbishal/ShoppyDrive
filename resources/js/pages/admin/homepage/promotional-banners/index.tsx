@@ -23,12 +23,15 @@ export default function PromotionalBannersIndex({ banners }: Props) {
         }
 
         setDeleting(true);
-        router.delete(route('admin.promotional-banners.destroy', deleteTarget), {
-            onFinish: () => {
-                setDeleting(false);
-                setDeleteTarget(null);
+        router.delete(
+            route('admin.promotional-banners.destroy', deleteTarget),
+            {
+                onFinish: () => {
+                    setDeleting(false);
+                    setDeleteTarget(null);
+                },
             },
-        });
+        );
     };
 
     return (

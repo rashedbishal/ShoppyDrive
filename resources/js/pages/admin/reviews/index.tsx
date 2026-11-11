@@ -253,7 +253,7 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                setDeleteTarget(review.id)
+                                                    setDeleteTarget(review.id)
                                                 }
                                                 className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
                                             >
