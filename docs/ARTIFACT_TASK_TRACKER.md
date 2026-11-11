@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 11 / 99** · Live, ready to retest: 17 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
+**Done: 11 / 99** · Live, ready to retest: 18 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -17,7 +17,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [ ] BE-004 — Pathao sync can stop for up to 24 hours after a killed run
 - [x] BE-008 — Hover prefetches count as page views — tester's claim of a direct controller increment didn't match the code; re-confirmed directly on the actual product route (not just home), added that test coverage, no code change needed
 - [ ] BE-010 — Forgot-password sends mail inside the request with no error handling
-- [ ] BE-012 — Failed newsletter chunk cannot be retried from admin
+- [>] BE-012 — Failed newsletter chunk cannot be retried from admin — tester marked it Fail (2026-11-11) describing a per-recipient loop and a blocked retry; not reproducible on current `main` (shipped in `cef9550`, deploy run `42323203844`): each chunk is ONE BCC message, so it goes out whole or not at all (no per-recipient state to lose), a failed chunk never cancels the others (`allowFailures()`), and Failed Jobs offers Retry with a "some may get it twice" warning. New end-to-end test proves it: a chunk fails 3 tries, the other chunk is delivered, admin retry re-delivers the failed one. No code change; ready to retest on the live site
 
 ## Business logic
 
