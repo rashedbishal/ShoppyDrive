@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 11 / 99** · Live, ready to retest: 18 · Fixed, not live yet: 6 · Failed: 0 · Skipped: 1
+**Done: 11 / 99** · Live, ready to retest: 19 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -65,7 +65,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [~] FE-005 — A server error empties a logged-in customer's cart — tester skipped it (2026-11-11, couldn't test: needs a real 500 with APP_DEBUG off). Re-checked the code: the in-site-navigation case was already fixed (`6dbf2ba`, deployed 2026-11-05), but the same "missing auth = logout" mistake was still on the full-page-load path (typing the URL, refresh, plain link landing on a 500 page), which wiped the local cart, wishlist and login marker. Fixed locally in `resources/js/app.tsx` (not pushed yet): a page with no shared props now leaves all of that untouched. To retest after deploy: log in, add an item, open a page that errors (500, APP_DEBUG off) by typing its URL, then go home — the cart must still be there
 - [ ] FE-006 — Product pages have no search or share tags in the HTML
 - [ ] FE-001 — Customers cannot page through order history
-- [~] FE-002 — Cart drawer and checkout estimates disagree with the server — tester failed it (checkout showed "Enter address" instead of "Free" above the threshold when no address picked yet); fix pushed 2026-11-09 (commit `9dd80c8`), deploy run outcome not yet confirmed
+- [>] FE-002 — Cart drawer and checkout estimates disagree with the server — tester skipped it (2026-11-11): "possibly no free delivery threshold implemented". It is implemented, but it is a setting, not a built-in number: Admin › Homepage › announcement bar › "Free Delivery Minimum Amount (৳)" (0 = off), so with nothing set there is no threshold to test. Re-checked all three audit points against the current code: the drawer (`CartDrawer.tsx`) and checkout (`Checkout.tsx`) both use the shared `isDeliveryFree()` (threshold, per-product free delivery with minimum quantity, free-delivery bundles) and the drawer's coupon preview counts only eligible items; `HandleInertiaRequests` now only shares the inputs (threshold, rates) from the same settings the server uses, not its own rule. 11 browser-side scenarios run in Node agree with the server calculator's own test scenarios. No code change beyond the 2026-11-09 fix (`9dd80c8`); to retest: set the free-delivery minimum (e.g. ৳1000), put more than that in the cart — drawer and checkout must both say Free before any address is chosen, and below it show the rate
 - [ ] FE-007 — Session timeout on landing-page checkout loses the form and may 405
 - [ ] FE-009 — No noindex or canonical; meta helper defects
 - [ ] FE-010 — No React error boundary
