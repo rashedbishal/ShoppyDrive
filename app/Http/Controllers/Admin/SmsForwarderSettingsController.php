@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\SmsForwarderHeartbeat;
 use App\Support\SmsForwarderToken;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ class SmsForwarderSettingsController extends Controller
         $maskedToken = $this->maskToken($token);
         $canReveal = $request->user('admin')?->canAccess('sms_forwarder', 'update') ?? false;
 
-        $props = ['maskedToken' => $maskedToken];
+        $props = ['maskedToken' => $maskedToken, 'forwarderStatus' => SmsForwarderHeartbeat::status()];
         if ($canReveal) {
             $props['fullToken'] = $token;
         }

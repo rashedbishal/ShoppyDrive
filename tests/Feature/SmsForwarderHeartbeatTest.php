@@ -86,3 +86,48 @@ test('a real heartbeat takes priority over the fallback even if an SMS recently 
     // a heartbeat exists, only the heartbeat's own freshness counts.
     expect(SmsForwarderHeartbeat::isDown())->toBeTrue();
 });
+
+/*
+ * A deploy runs `cache:clear`, which used to erase the heartbeat, so a phone
+ * that was already off stayed "available" (slow 6-hour fallback) after every
+ * deploy. The heartbeat now lives in the durable limiter store instead.
+ */
+test('a recorded heartbeat survives cache:clear, so an off phone stays detected after a deploy', function (): void {
+    // Production shape: default cache and limiter cache are different stores.
+    config(['cache.default' => 'array', 'cache.limiter' => 'database']);
+
+    SmsForwarderHeartbeat::record();
+    $this->travel(10)->minutes();
+
+    $this->artisan('cache:clear')->assertSuccessful();
+
+    expect(SmsForwarderHeartbeat::lastHeartbeatAt())->not->toBeNull()
+        ->and(SmsForwarderHeartbeat::isDown())->toBeTrue();
+});
+
+test('the admin SMS forwarder page reports the phone status', function (): void {
+    $admin = createMotherAdmin(['email' => 'mother-sms@example.com']);
+
+    // Nothing received yet: fallback mode, not down.
+    $this->actingAs($admin, 'admin')->get(route('admin.settings.sms-forwarder.index'))
+        ->assertInertia(fn ($page) => $page
+            ->where('forwarderStatus.mode', 'fallback')
+            ->where('forwarderStatus.is_down', false)
+            ->where('forwarderStatus.last_heartbeat_at', null));
+
+    SmsForwarderHeartbeat::record();
+
+    $this->actingAs($admin, 'admin')->get(route('admin.settings.sms-forwarder.index'))
+        ->assertInertia(fn ($page) => $page
+            ->where('forwarderStatus.mode', 'heartbeat')
+            ->where('forwarderStatus.is_down', false)
+            ->where('forwarderStatus.minutes_since_heartbeat', 0));
+
+    $this->travel(7)->minutes();
+
+    $this->actingAs($admin, 'admin')->get(route('admin.settings.sms-forwarder.index'))
+        ->assertInertia(fn ($page) => $page
+            ->where('forwarderStatus.is_down', true)
+            ->where('forwarderStatus.minutes_since_heartbeat', 7)
+            ->where('forwarderStatus.down_after_minutes', 5));
+});

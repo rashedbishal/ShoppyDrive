@@ -3,14 +3,85 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+type ForwarderStatus = {
+    is_down: boolean;
+    mode: 'heartbeat' | 'fallback';
+    last_heartbeat_at: string | null;
+    minutes_since_heartbeat: number | null;
+    last_sms_at: string | null;
+    down_after_minutes: number;
+    fallback_silent_hours: number;
+};
+
 type Props = {
     maskedToken: string;
     fullToken: string | null;
+    forwarderStatus: ForwarderStatus;
 };
+
+const formatMinutes = (minutes: number): string => {
+    if (minutes < 1) {
+        return 'less than a minute';
+    }
+
+    if (minutes < 60) {
+        return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+
+    return hours < 48
+        ? `${hours} hour${hours === 1 ? '' : 's'}`
+        : `${Math.floor(hours / 24)} days`;
+};
+
+function PhoneStatusCard({ status }: { status: ForwarderStatus }) {
+    const heartbeatMode = status.mode === 'heartbeat';
+    const tone = status.is_down
+        ? 'border-red-200 bg-red-50 text-red-900'
+        : heartbeatMode
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+          : 'border-amber-200 bg-amber-50 text-amber-900';
+
+    return (
+        <div className={`space-y-1 rounded-lg border p-4 text-sm ${tone}`}>
+            <p className="font-semibold">
+                {status.is_down
+                    ? 'Forwarder phone looks OFFLINE — bKash / Nagad are hidden from customers'
+                    : heartbeatMode
+                      ? 'Forwarder phone is online — bKash / Nagad are available'
+                      : 'No ping from the phone received yet'}
+            </p>
+            {heartbeatMode && status.minutes_since_heartbeat !== null && (
+                <p>
+                    Last ping: {formatMinutes(status.minutes_since_heartbeat)}{' '}
+                    ago. It counts as offline after {status.down_after_minutes}{' '}
+                    minutes without a ping.
+                </p>
+            )}
+            {!heartbeatMode && (
+                <p>
+                    The site has not received a ping from the phone since it was
+                    last restarted or updated, so it cannot tell whether the
+                    phone is on. Until a ping arrives it only hides bKash /
+                    Nagad after {status.fallback_silent_hours} hours with no SMS
+                    at all. Open the forwarder app on the phone to send a ping.
+                </p>
+            )}
+            <p className="text-xs opacity-80">
+                Last SMS received:{' '}
+                {status.last_sms_at
+                    ? new Date(status.last_sms_at).toLocaleString()
+                    : 'none yet'}
+            </p>
+        </div>
+    );
+}
 
 export default function SmsForwarderSettings({
     maskedToken,
     fullToken,
+    forwarderStatus,
 }: Props) {
     const { props } = usePage<any>();
     const flash = props.flash as
@@ -65,6 +136,8 @@ export default function SmsForwarderSettings({
                 <h1 className="text-xl font-bold text-slate-900">
                     SMS Forwarder Settings
                 </h1>
+
+                <PhoneStatusCard status={forwarderStatus} />
 
                 {flash?.newToken && (
                     <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
