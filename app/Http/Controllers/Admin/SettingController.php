@@ -74,6 +74,7 @@ class SettingController extends Controller
      */
     private const GENERAL_FIELDS = [
         'site_name', 'logo', 'currency_symbol', 'guest_checkout_enabled',
+        'order_notification_email', 'order_cancellation_email',
         'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number', 'social_links',
     ];
 
@@ -131,6 +132,10 @@ class SettingController extends Controller
         $request->validate([
             'site_name' => ['nullable', 'string', 'max:255'],
             'contact_email' => ['nullable', 'email', 'max:255'],
+            // Shop-side recipients of the new-order and order-cancelled alerts
+            // (see OrderNotificationRecipients); empty means the main admin.
+            'order_notification_email' => ['nullable', 'email', 'max:255'],
+            'order_cancellation_email' => ['nullable', 'email', 'max:255'],
             'contact_phone' => ['nullable', 'string', 'max:50'],
             'contact_address' => ['nullable', 'string', 'max:500'],
             'legal_business_name' => ['nullable', 'string', 'max:255'],
@@ -240,6 +245,7 @@ class SettingController extends Controller
         $fields = [
             'site_name', 'contact_email', 'contact_phone', 'contact_address', 'currency_symbol',
             'legal_business_name', 'trade_licence_number',
+            'order_notification_email', 'order_cancellation_email',
             'social_links',
             'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number',
             'google_client_id', 'google_client_secret', 'google_redirect_uri',
@@ -349,6 +355,7 @@ class SettingController extends Controller
     {
         return match (true) {
             in_array($key, ['site_name', 'logo', 'currency_symbol', 'guest_checkout_enabled']) => 'general',
+            in_array($key, ['order_notification_email', 'order_cancellation_email']) => 'notifications',
             in_array($key, ['contact_email', 'contact_phone', 'contact_address', 'legal_business_name', 'trade_licence_number']) => 'contact',
             in_array($key, ['social_links']) => 'social',
             in_array($key, ['whatsapp_number', 'messenger_link']) => 'chat_widgets',

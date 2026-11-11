@@ -8,6 +8,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Jobs\SendFacebookPurchaseEventJob;
+use App\Mail\CancelledOrderAlertMail;
 use App\Mail\NewOrderAlertMail;
 use App\Mail\OrderCancelledMail;
 use App\Mail\OrderDeliveredMail;
@@ -18,6 +19,7 @@ use App\Services\CouponService;
 use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
 use App\Support\FacebookConversionsApiConfig;
+use App\Support\OrderNotificationRecipients;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -238,7 +240,7 @@ class Order extends Model
         // webhook, so this can never double-send for the same order.
         static::created(function (self $order): void {
             static::dispatchMail(OrderPlacedMail::class, $order);
-            static::dispatchAdminMail(NewOrderAlertMail::class, $order);
+            static::dispatchAdminMail(NewOrderAlertMail::class, $order, OrderNotificationRecipients::newOrder());
 
             // Guarded here (not just inside the job) so a misconfigured or
             // disabled integration never even queues a pointless job.
@@ -277,6 +279,12 @@ class Order extends Model
                 app(CouponService::class)->release($order);
             }
 
+            // Shop-side notice (the customer's own is OrderCancelledMail below),
+            // sent to the "order cancellation email" in Admin > Settings.
+            if ($order->status === OrderStatus::CANCELLED) {
+                static::dispatchAdminMail(CancelledOrderAlertMail::class, $order, OrderNotificationRecipients::cancellation());
+            }
+
             match ($order->status) {
                 OrderStatus::SHIPPED => static::dispatchMail(ShippedWithTrackingMail::class, $order),
                 OrderStatus::DELIVERED => static::dispatchMail(OrderDeliveredMail::class, $order),
@@ -312,18 +320,20 @@ class Order extends Model
         Mail::to($email)->send($mailable->afterCommit());
     }
 
-    private static function dispatchAdminMail(string $mailableClass, self $order): void
+    /**
+     * @param  string|null  $recipient  From OrderNotificationRecipients: the address
+     *                                  configured in Admin > Settings, else the mother admin's.
+     */
+    private static function dispatchAdminMail(string $mailableClass, self $order, ?string $recipient): void
     {
-        $adminEmail = Admin::where('is_mother', true)->value('email');
-
-        if (! $adminEmail) {
-            Log::warning('No mother admin configured — skipping admin order alert.', ['order_number' => $order->order_number]);
+        if (! $recipient) {
+            Log::warning('No order notification recipient configured — skipping admin order alert.', ['order_number' => $order->order_number]);
 
             return;
         }
 
         /** @var Mailable $mailable */
         $mailable = new $mailableClass($order);
-        Mail::to($adminEmail)->send($mailable->afterCommit());
+        Mail::to($recipient)->send($mailable->afterCommit());
     }
 }

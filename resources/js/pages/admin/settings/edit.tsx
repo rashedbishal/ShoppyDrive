@@ -15,11 +15,15 @@ type Props = {
 export default function SettingsEdit({ settings }: Props) {
     const socialLinks = (settings.social_links ?? {}) as Record<string, string>;
 
-    const { data, setData, post, processing } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
         _method: 'PUT',
         site_name: (settings.site_name as string) ?? '',
         currency_symbol: (settings.currency_symbol as string) ?? '৳',
         guest_checkout_enabled: Boolean(settings.guest_checkout_enabled),
+        order_notification_email:
+            (settings.order_notification_email as string) ?? '',
+        order_cancellation_email:
+            (settings.order_cancellation_email as string) ?? '',
         logo:
             (settings.logo as string | null) ?? (null as File | string | null),
         social_links: {
@@ -126,6 +130,69 @@ export default function SettingsEdit({ settings }: Props) {
                                     }
                                 />
                             </SettingsField>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-sm">
+                        <CardHeader className="border-b border-slate-100">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
+                                Order Notification Emails
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-3">
+                            <p className="text-xs text-slate-500">
+                                Customers always get their own order
+                                confirmation and cancellation emails. These two
+                                fields set which shop email address is told
+                                about each event. Leave a field empty to send it
+                                to the main admin's login email instead.
+                            </p>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <SettingsField
+                                    label="Order Confirmation Email"
+                                    hint="Receives an email every time a new order is placed."
+                                >
+                                    <input
+                                        type="email"
+                                        className={settingsInputClass}
+                                        value={data.order_notification_email}
+                                        onChange={(e) =>
+                                            setData(
+                                                'order_notification_email',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="orders@yourshop.com"
+                                    />
+                                    {errors.order_notification_email && (
+                                        <p className="mt-1 text-xs font-medium text-red-600">
+                                            {errors.order_notification_email}
+                                        </p>
+                                    )}
+                                </SettingsField>
+                                <SettingsField
+                                    label="Order Cancellation Email"
+                                    hint="Receives an email every time an order is cancelled."
+                                >
+                                    <input
+                                        type="email"
+                                        className={settingsInputClass}
+                                        value={data.order_cancellation_email}
+                                        onChange={(e) =>
+                                            setData(
+                                                'order_cancellation_email',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="cancellations@yourshop.com"
+                                    />
+                                    {errors.order_cancellation_email && (
+                                        <p className="mt-1 text-xs font-medium text-red-600">
+                                            {errors.order_cancellation_email}
+                                        </p>
+                                    )}
+                                </SettingsField>
+                            </div>
                         </CardContent>
                     </Card>
 

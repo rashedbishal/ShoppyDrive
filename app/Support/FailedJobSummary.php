@@ -6,6 +6,7 @@ namespace App\Support;
 
 use App\Jobs\AbandonedCartReminderJob;
 use App\Jobs\SendNewsletterChunk;
+use App\Mail\CancelledOrderAlertMail;
 use App\Mail\ContactFormMail;
 use App\Mail\LowStockAlertMail;
 use App\Mail\NewOrderAlertMail;
@@ -42,6 +43,7 @@ final class FailedJobSummary
     private const RETRYABLE_JOBS = [
         OrderPlacedMail::class,
         NewOrderAlertMail::class,
+        CancelledOrderAlertMail::class,
         ShippedWithTrackingMail::class,
         OrderDeliveredMail::class,
         OrderCancelledMail::class,
