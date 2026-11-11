@@ -222,6 +222,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     // (unchanged) regardless of this matrix; only `view` is gated here.
     Route::get('settings/security', [SecuritySettingsController::class, 'edit'])->name('settings.security.edit')->middleware(AdminSections::middleware('security', 'view'));
     Route::put('settings/security', [SecuritySettingsController::class, 'update'])->name('settings.security.update');
+    // OPS-002: same hardcoded mother-only pattern as settings.security.update.
+    Route::put('settings/security/heartbeat', [SecuritySettingsController::class, 'updateHeartbeat'])->name('settings.security.heartbeat.update');
     Route::get('settings/sms-forwarder', [SmsForwarderSettingsController::class, 'index'])->name('settings.sms-forwarder.index')->middleware(AdminSections::middleware('sms_forwarder', 'view'));
     Route::post('settings/sms-forwarder/regenerate', [SmsForwarderSettingsController::class, 'regenerate'])->name('settings.sms-forwarder.regenerate')->middleware(AdminSections::middleware('sms_forwarder', 'update'));
     Route::get('settings/ai-assistant', [AiAssistantSettingsController::class, 'index'])->name('settings.ai-assistant.index')->middleware(AdminSections::middleware('ai_assistant', 'view'));

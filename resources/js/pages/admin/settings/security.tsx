@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Info, Lock, ShieldCheck } from 'lucide-react';
+import { Activity, Info, Lock, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -56,6 +56,8 @@ type Props = {
     bounds: Record<LimitField, { default: number; min: number; max: number }>;
     canEdit: boolean;
     visitorIp: string;
+    heartbeatPingUrl: string | null;
+    heartbeatConfigured: boolean;
 };
 
 type LimitRule = {
@@ -299,6 +301,101 @@ const EXTRA_SECTIONS: LimitSection[] = [
     },
 ];
 
+function CronMonitoringCard({
+    pingUrl,
+    configured,
+    canEdit,
+}: {
+    pingUrl: string | null;
+    configured: boolean;
+    canEdit: boolean;
+}) {
+    const form = useForm<{ heartbeat_ping_url: string }>({
+        heartbeat_ping_url: pingUrl ?? '',
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        form.put(route('admin.settings.security.heartbeat.update'), {
+            preserveScroll: true,
+        });
+    };
+
+    return (
+        <Card className="shadow-sm">
+            <CardHeader className="border-b border-slate-100">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <Activity className="size-4 text-[#c8102e]" />
+                    Cron &amp; queue monitoring
+                    <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                            configured
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'bg-amber-50 text-amber-800'
+                        }`}
+                    >
+                        {configured ? 'Active' : 'Not set up'}
+                    </span>
+                </CardTitle>
+                <p className="text-xs text-slate-600">
+                    If your hosting's scheduled task (cron) stops, customer
+                    emails and courier updates silently stop too, and the site
+                    cannot warn you because it is the thing that stopped. Create
+                    a free "heartbeat" monitor at a service such as
+                    Healthchecks.io or UptimeRobot, set it to expect a ping
+                    every few minutes, and paste its ping URL below. The site
+                    pings it every minute while everything is running, and the
+                    service alerts you when the pings stop.
+                </p>
+            </CardHeader>
+            <CardContent className="pt-3">
+                {canEdit ? (
+                    <form onSubmit={handleSubmit} className="space-y-3">
+                        <input
+                            type="url"
+                            value={form.data.heartbeat_ping_url}
+                            onChange={(e) =>
+                                form.setData(
+                                    'heartbeat_ping_url',
+                                    e.target.value,
+                                )
+                            }
+                            placeholder="https://hc-ping.com/your-unique-id"
+                            className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/15 focus:outline-none"
+                        />
+                        {form.errors.heartbeat_ping_url && (
+                            <p className="text-xs font-medium text-red-600">
+                                {form.errors.heartbeat_ping_url}
+                            </p>
+                        )}
+                        <p className="text-xs text-slate-600">
+                            Leave empty to switch this off. Treat the URL like a
+                            password: anyone who has it can fake a healthy
+                            signal.
+                        </p>
+                        <Button
+                            type="submit"
+                            disabled={form.processing}
+                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                        >
+                            {form.processing
+                                ? 'Saving…'
+                                : 'Save monitoring URL'}
+                        </Button>
+                    </form>
+                ) : (
+                    <p className="text-sm text-slate-700">
+                        {configured
+                            ? 'A monitoring URL is set up.'
+                            : 'No monitoring URL is set up yet.'}{' '}
+                        Only the main (mother) admin can change it.
+                    </p>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
 function SectionCards({
     sections,
     data,
@@ -468,6 +565,8 @@ export default function SecuritySettings({
     bounds,
     canEdit,
     visitorIp,
+    heartbeatPingUrl,
+    heartbeatConfigured,
 }: Props) {
     const { data, setData, put, processing, errors } = useForm<Limits>(limits);
 
@@ -526,6 +625,12 @@ export default function SecuritySettings({
                         end up sharing one limit.
                     </p>
                 </div>
+
+                <CronMonitoringCard
+                    pingUrl={heartbeatPingUrl}
+                    configured={heartbeatConfigured}
+                    canEdit={canEdit}
+                />
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <h2 className="pt-1 text-xs font-bold tracking-wider text-slate-700 uppercase">

@@ -53,6 +53,10 @@ const LOW05_EXEMPT_ADMIN_ROUTES = [
     // gates this one; the controller itself checks is_mother.
     'admin.settings.security.update',
 
+    // OPS-002: the cron-monitoring ping URL, saved from the same Security page
+    // and hardcoded mother-only inside SecuritySettingsController::updateHeartbeat().
+    'admin.settings.security.heartbeat.update',
+
     // Hardcoded mother-only *inside*
     // MarketingSettingsController::updateCustomCode() — same pattern as
     // settings.security.update above; confirmed no route middleware of any

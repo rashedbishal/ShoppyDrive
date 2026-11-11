@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 11 / 99** · Live, ready to retest: 17 · Fixed, not live yet: 4 · Failed: 0 · Skipped: 1
+**Done: 11 / 99** · Live, ready to retest: 17 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -85,7 +85,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
 ## Operations
 
-- [ ] OPS-002 — If cron or the queue stops, nobody is told and customer mail stops
+- [~] OPS-002 — If cron or the queue stops, nobody is told and customer mail stops — tester marked it Fail (2026-11-11): the dashboard banner (deployed 2026-11-05) only helps someone already looking; they expected an active alert. Real gap, owner chose the design: new Admin › Security card (mother-only) takes a heartbeat-monitor ping URL (Healthchecks.io, UptimeRobot, etc.); `app:drain-queue` pings it every minute after a clean run, so the monitor alerts when cron or the queue stops. Fixed locally, not pushed yet. To test after deploy: paste a ping URL, confirm the monitor shows pings, then disable cron and confirm the monitor alerts
 - [>] OPS-003 — A short mail outage fails queued mail, and recovery is one click per row — tester marked it Fail (2026-11-11) with the audit's original numbers (3 tries / 30s backoff, mail.timeout null, no bulk retry); not reproducible on current `main`: re-ran "refuse SMTP" on a scratch SQLite DB (MAIL_PORT=1) through `app:drain-queue` and the job was rescheduled 300s out (attempts=1, not failed), `mail.mailers.smtp.timeout` reads 15, and Admin › Failed jobs has Retry All. All three sub-fixes shipped in `b1ad61a` (deploy run `42046689296`, 2026-11-05). Likely tested an older deploy or a `composer dev` worker. No code change; ready to retest on the live site
 - [~] OPS-005 — A dead forwarder phone disables mobile payment with a misleading message — owner's design (heartbeat ping + gate mobile banking out entirely while down) built: new `/api/sms/heartbeat` endpoint, Android app updated, checkout/landing page hide bKash/Nagad while down; fix pushed 2026-11-09 (commit `22edbb7`), deploy run outcome not yet confirmed. Android app reinstalled by owner but it's configured for shoppydrive.com, so the heartbeat endpoint 404s until this deploy lands
 - [>] OPS-006 — Abandoned-cart mail has no opt-out or cap and reaches deleted accounts — tester couldn't test it live (2026-11-10) and listed 7 points; 3, 4, 5 were fixed 2026-11-05, but the audit's "cooldown" was never built, so 1, 2, 6 were real: 3 abandoned attempts still meant 3 mails. Fixed 2026-11-11: max one reminder per customer per 7 days (owner decision), newest cart mailed; unverified emails never mailed; new Settings › Profile toggle turns reminders off or back on (owner decision). Deployed 2026-11-11 with its migration (run `42895410141`), ready to retest

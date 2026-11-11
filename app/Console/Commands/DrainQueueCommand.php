@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Support\HeartbeatPing;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -90,6 +91,21 @@ class DrainQueueCommand extends Command
     {
         Cache::forever(self::LAST_RUN_CACHE_KEY, now()->getTimestamp());
 
+        $status = $this->drainQueue();
+
+        // OPS-002: the external dead-man's-switch ping is sent only after a
+        // run that finished cleanly, so a cron that fires but can't actually
+        // work the queue (a worker error, a job killed by the per-job
+        // timeout) goes quiet to the monitor just like a dead cron would.
+        if ($status === self::SUCCESS) {
+            HeartbeatPing::send();
+        }
+
+        return $status;
+    }
+
+    private function drainQueue(): int
+    {
         /** @var DatabaseQueue $queue */
         $queue = Queue::connection(self::CONNECTION);
         $startedAt = now();
