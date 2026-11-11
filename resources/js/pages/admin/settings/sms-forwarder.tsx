@@ -105,14 +105,17 @@ function SmsNotificationsCard({ status }: { status: PushStatus }) {
 
     const [enableMessage, setEnableMessage] = useState<string | null>(null);
     const [enabling, setEnabling] = useState(false);
+    const [enableStep, setEnableStep] = useState<string | null>(null);
 
     const handleEnable = async () => {
         setEnabling(true);
         setEnableMessage(null);
+        setEnableStep(null);
 
-        const result = await enableNotifications();
+        const result = await enableNotifications(setEnableStep);
 
         setEnabling(false);
+        setEnableStep(null);
 
         if (result.ok) {
             window.location.reload();
@@ -223,6 +226,11 @@ function SmsNotificationsCard({ status }: { status: PushStatus }) {
                                     ? 'Enabling…'
                                     : 'Enable notifications on this browser'}
                             </Button>
+                        )}
+                        {enabling && enableStep && (
+                            <p className="text-xs text-slate-600">
+                                {enableStep}
+                            </p>
                         )}
                         {enableMessage && (
                             <p className="text-xs font-medium text-red-600">

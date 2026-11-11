@@ -1046,7 +1046,17 @@ export default function AdminLayout({
                             <div className="mt-2 flex gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => void enableNotifications()}
+                                    onClick={() =>
+                                        void enableNotifications().then(
+                                            (result) => {
+                                                if (!result.ok) {
+                                                    window.alert(
+                                                        result.message,
+                                                    );
+                                                }
+                                            },
+                                        )
+                                    }
                                     className="rounded-md bg-pink-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-pink-500"
                                 >
                                     Enable

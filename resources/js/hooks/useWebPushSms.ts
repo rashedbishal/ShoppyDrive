@@ -43,6 +43,28 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
     return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 }
 
+/** Rejects with `message` if `promise` has not settled in `ms`, so no step can hang silently. */
+function withTimeout<T>(
+    promise: Promise<T>,
+    ms: number,
+    message: string,
+): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error(message)), ms);
+
+        promise.then(
+            (value) => {
+                clearTimeout(timer);
+                resolve(value);
+            },
+            (error) => {
+                clearTimeout(timer);
+                reject(error);
+            },
+        );
+    });
+}
+
 export type EnableResult = { ok: true } | { ok: false; message: string };
 
 export type PushPermissionState =
@@ -141,83 +163,113 @@ export function useWebPushSms(vapidPublicKey: string | null) {
      * the permission prompt otherwise. Resolves with the reason when it did
      * not work, so the caller can show it instead of failing silently.
      */
-    const enableNotifications = useCallback(async (): Promise<EnableResult> => {
-        if (permission === 'unsupported' || !vapidPublicKey) {
-            return {
-                ok: false,
-                message:
-                    'This browser does not support notifications, or the notification keys are not set up.',
-            };
-        }
-
-        try {
-            const result = await Notification.requestPermission();
-            setPermission(result as PushPermissionState);
-
-            if (result !== 'granted') {
+    const enableNotifications = useCallback(
+        async (onStep?: (text: string) => void): Promise<EnableResult> => {
+            if (permission === 'unsupported' || !vapidPublicKey) {
                 return {
                     ok: false,
                     message:
-                        'Notifications were not allowed. Click the lock or bell icon next to the address bar, set Notifications to Allow, then press the button again.',
+                        'This browser does not support notifications, or the notification keys are not set up.',
                 };
             }
 
-            await navigator.serviceWorker.register('/admin-push-sw.js', {
-                scope: '/admin/',
-            });
-            // subscribe() needs an active service worker, which a first-time
-            // registration does not have yet.
-            const registration = await navigator.serviceWorker.ready;
+            const step = (text: string) => onStep?.(text);
 
-            // A sign-up made with an older key pair (e.g. before "Create new
-            // keys") makes subscribe() throw, so drop it first.
-            const stale = await registration.pushManager.getSubscription();
+            try {
+                step('1/5 Asking the browser for permission…');
+                const result = await withTimeout(
+                    Notification.requestPermission(),
+                    60_000,
+                    'The browser did not answer the permission question. Look for a bell or lock icon at the right end of the address bar, allow notifications there, then press the button again.',
+                );
+                setPermission(result as PushPermissionState);
 
-            if (stale) {
-                await stale.unsubscribe();
-            }
+                if (result !== 'granted') {
+                    return {
+                        ok: false,
+                        message:
+                            'Notifications were not allowed. Click the lock or bell icon next to the address bar, set Notifications to Allow, then press the button again.',
+                    };
+                }
 
-            const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                // TS's DOM lib types Uint8Array generically over ArrayBufferLike,
-                // which it won't narrow to the plain BufferSource this API wants —
-                // the value itself is a perfectly normal Uint8Array at runtime.
-                applicationServerKey: urlBase64ToUint8Array(
-                    vapidPublicKey,
-                ) as BufferSource,
-            });
+                step('2/5 Starting the notification worker…');
+                await withTimeout(
+                    navigator.serviceWorker.register('/admin-push-sw.js', {
+                        scope: '/admin/',
+                    }),
+                    15_000,
+                    'The notification worker file (/admin-push-sw.js) could not be loaded.',
+                );
+                // subscribe() needs an active service worker, which a first-time
+                // registration does not have yet.
+                const registration = await withTimeout(
+                    navigator.serviceWorker.ready,
+                    15_000,
+                    'The notification worker did not become active. Reload the page and try again.',
+                );
 
-            const response = await fetch(pushSubscriptions.store.url(), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-XSRF-TOKEN': getXsrfToken(),
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify(subscription.toJSON()),
-            });
+                // A sign-up made with an older key pair (e.g. before "Create new
+                // keys") makes subscribe() throw, so drop it first.
+                const stale = await registration.pushManager.getSubscription();
 
-            if (!response.ok) {
-                await subscription.unsubscribe();
+                if (stale) {
+                    await stale.unsubscribe();
+                }
 
+                step("3/5 Signing up with the browser's push service…");
+                const subscription = await withTimeout(
+                    registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        // TS's DOM lib types Uint8Array generically over ArrayBufferLike,
+                        // which it won't narrow to the plain BufferSource this API wants —
+                        // the value itself is a perfectly normal Uint8Array at runtime.
+                        applicationServerKey: urlBase64ToUint8Array(
+                            vapidPublicKey,
+                        ) as BufferSource,
+                    }),
+                    25_000,
+                    "The browser's push service did not answer. Chrome needs to reach Google's push service for this: check your internet or firewall, and that Chrome's \"Use Google services for push messaging\" is not turned off.",
+                );
+
+                step('4/5 Saving this browser on the server…');
+                const response = await withTimeout(
+                    fetch(pushSubscriptions.store.url(), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-XSRF-TOKEN': getXsrfToken(),
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify(subscription.toJSON()),
+                    }),
+                    15_000,
+                    'The server did not answer when saving this browser.',
+                );
+
+                if (!response.ok) {
+                    await subscription.unsubscribe();
+
+                    return {
+                        ok: false,
+                        message: `The server did not accept this browser (HTTP ${response.status}). Reload the page and try again.`,
+                    };
+                }
+
+                step('5/5 Done.');
+                setIsSubscribed(true);
+
+                return { ok: true };
+            } catch (error) {
                 return {
                     ok: false,
-                    message: `The server did not accept this browser (HTTP ${response.status}). Reload the page and try again.`,
+                    message: `Could not turn notifications on: ${error instanceof Error ? error.message : String(error)}`,
                 };
             }
-
-            setIsSubscribed(true);
-
-            return { ok: true };
-        } catch (error) {
-            return {
-                ok: false,
-                message: `Could not turn notifications on: ${error instanceof Error ? error.message : String(error)}`,
-            };
-        }
-    }, [permission, vapidPublicKey]);
+        },
+        [permission, vapidPublicKey],
+    );
 
     const disableNotifications = useCallback(async () => {
         if (permission === 'unsupported') {
