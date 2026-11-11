@@ -707,28 +707,43 @@ export default function ProductDetail({
                             <div className="sticky top-24 rounded-3xl border border-[var(--color-border)] bg-white p-6 shadow-sm md:p-8">
                                 {/* Brand & Stats */}
                                 <div className="mb-4 flex items-center justify-between">
-                                    <Link
-                                        href={route(
-                                            'brand.show',
-                                            product.brand?.slug || '#',
-                                        )}
-                                        className="text-sm font-bold tracking-widest text-[var(--color-primary)] uppercase hover:underline"
-                                    >
-                                        {product.brand?.name ||
-                                            'GENUINE PRODUCT'}
-                                    </Link>
+                                    {/* A product with no brand shows no label. A brand
+                                        shown here is always active: a product whose
+                                        brand is inactive 404s (isPubliclyVisible). */}
+                                    {product.brand && (
+                                        <Link
+                                            href={route(
+                                                'brand.show',
+                                                product.brand.slug,
+                                            )}
+                                            className="text-sm font-bold tracking-widest text-[var(--color-primary)] uppercase hover:underline"
+                                        >
+                                            {product.brand.name}
+                                        </Link>
+                                    )}
                                     <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-1">
-                                            <Star
-                                                size={16}
-                                                className="fill-[var(--color-accent)] text-[var(--color-accent)]"
-                                            />
-                                            <span className="text-sm font-bold">
-                                                {product.average_rating?.toFixed(
-                                                    1,
-                                                ) || '5.0'}
+                                        {/* A rating is shown only when approved reviews exist — never a made-up default. */}
+                                        {(product.reviews_count ?? 0) > 0 &&
+                                        product.average_rating != null ? (
+                                            <div className="flex items-center gap-1">
+                                                <Star
+                                                    size={16}
+                                                    className="fill-[var(--color-accent)] text-[var(--color-accent)]"
+                                                />
+                                                <span className="text-sm font-bold">
+                                                    {product.average_rating.toFixed(
+                                                        1,
+                                                    )}
+                                                </span>
+                                                <span className="text-xs text-[var(--color-text-muted)]">
+                                                    ({product.reviews_count})
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                                                No reviews yet
                                             </span>
-                                        </div>
+                                        )}
                                         <div className="h-4 w-px bg-[var(--color-border)]" />
                                         <span className="text-xs font-medium tracking-wide text-[var(--color-text-muted)] uppercase">
                                             SKU:{' '}

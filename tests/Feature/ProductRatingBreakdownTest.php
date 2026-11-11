@@ -137,9 +137,9 @@ test('products with no approved reviews report null average and zero count, not 
 
     unapprovedReview($product, $user, 1);
 
-    // FSA-18: average_rating must be null (not 0 or missing) for the
-    // frontend's `product.average_rating?.toFixed(1) || '5.0'` fallback to
-    // engage correctly — preserved exactly as instructed, not changed here.
+    // FSA-18: average_rating must be null (not 0 or missing) and the count
+    // zero, so ProductDetail.tsx shows "No reviews yet" rather than a rating
+    // (its old made-up '5.0' fallback was removed on 2026-11-11).
     $this->get(route('product.show', $product->slug))
         ->assertInertia(fn (Assert $page) => $page
             ->where('product.average_rating', null)
