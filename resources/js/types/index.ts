@@ -163,6 +163,8 @@ export interface ProductMedia extends Timestamped {
     id: Id;
     product_id: Id;
     variant_id?: Id | null;
+    /** Set when the image was chosen for a colour: it belongs to every variant of that colour. */
+    color_value_id?: Id | null;
     path: string;
     type: 'image' | 'video';
     alt?: string | null;

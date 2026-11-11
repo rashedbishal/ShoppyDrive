@@ -563,6 +563,90 @@ test('media can be tagged to a specific color variant', function () {
     expect($generalMedia->variant_id)->toBeNull();
 });
 
+/** A Red/Blue × M/XL product (no Blue/XL), saved with the given media tags. */
+function saveColorSizeProduct(array $images, array $mediaTags): Product
+{
+    test()->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => test()->category->id,
+        'sub_category_id' => test()->subCategory->id,
+        'has_color_variant' => true,
+        'has_size_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            ['color_value_id' => test()->red->id, 'size_value_id' => test()->sizeM->id, 'price' => 500, 'stock_quantity' => 5, 'is_default' => true],
+            ['color_value_id' => test()->red->id, 'size_value_id' => test()->sizeXl->id, 'price' => 500, 'stock_quantity' => 5, 'is_default' => false],
+            ['color_value_id' => test()->blue->id, 'size_value_id' => test()->sizeM->id, 'price' => 500, 'stock_quantity' => 5, 'is_default' => false],
+        ],
+        'images' => $images,
+        'media_tags' => $mediaTags,
+    ]))->assertRedirect(route('admin.products.index'));
+
+    return Product::where('slug', 'test-product')->firstOrFail();
+}
+
+test('on a color and size product, one image chosen for a color serves every size of it', function () {
+    actingAs($this->admin, 'admin');
+
+    $product = saveColorSizeProduct(['/storage/products/red.jpg', '/storage/products/general.jpg'], ["color:{$this->red->id}", null]);
+
+    $redMedia = $product->media()->where('path', '/storage/products/red.jpg')->firstOrFail();
+    expect($redMedia->color_value_id)->toBe($this->red->id);
+    expect($redMedia->variant_id)->toBeNull();
+
+    $images = ProductVariant::where('product_id', $product->id)->get()
+        ->mapWithKeys(fn (ProductVariant $v) => ["{$v->attributes['Color']}/{$v->attributes['Size']}" => $v->image]);
+    expect($images->all())->toBe([
+        'Red/M' => '/storage/products/red.jpg',
+        'Red/XL' => '/storage/products/red.jpg',
+        'Blue/M' => null,
+    ]);
+});
+
+test('a color/size pair tag from a form opened before the change counts as its color', function () {
+    actingAs($this->admin, 'admin');
+
+    $product = saveColorSizeProduct(['/storage/products/red.jpg'], ["pair:{$this->red->id}-{$this->sizeM->id}"]);
+
+    $media = $product->media()->firstOrFail();
+    expect($media->color_value_id)->toBe($this->red->id);
+    expect($media->variant_id)->toBeNull();
+    expect(ProductVariant::where('product_id', $product->id)->where('size_value_id', $this->sizeXl->id)->firstOrFail()->image)
+        ->toBe('/storage/products/red.jpg');
+});
+
+test('a color tag for a color the product has no variant of is ignored', function () {
+    actingAs($this->admin, 'admin');
+    $green = AttributeValue::create(['attribute_id' => $this->red->attribute_id, 'value' => 'Green', 'color_hex' => '#00ff00']);
+
+    $product = saveColorSizeProduct(['/storage/products/green.jpg'], ["color:{$green->id}"]);
+
+    $media = $product->media()->firstOrFail();
+    expect($media->color_value_id)->toBeNull();
+    expect($media->variant_id)->toBeNull();
+});
+
+test('a color tag on a color-only product records the color as well as its variant', function () {
+    actingAs($this->admin, 'admin');
+
+    $this->post(route('admin.products.store'), baseProductPayload([
+        'category_id' => $this->category->id,
+        'sub_category_id' => $this->subCategory->id,
+        'has_color_variant' => true,
+        'price' => null,
+        'stock_quantity' => null,
+        'variants' => [
+            ['color_value_id' => $this->red->id, 'price' => 1000, 'stock_quantity' => 5, 'is_default' => true],
+        ],
+        'images' => ['/storage/products/red.jpg'],
+        'media_tags' => ["color:{$this->red->id}"],
+    ]))->assertRedirect(route('admin.products.index'));
+
+    $media = Product::where('slug', 'test-product')->firstOrFail()->media()->firstOrFail();
+    expect($media->color_value_id)->toBe($this->red->id);
+    expect($media->variant_id)->toBe(ProductVariant::where('color_value_id', $this->red->id)->value('id'));
+});
+
 test('admin can submit a partial set of color/size pairs, skipping unwanted combinations', function () {
     actingAs($this->admin, 'admin');
 

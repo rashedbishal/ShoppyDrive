@@ -31,6 +31,7 @@ type ProductMedia = {
     is_primary: boolean;
     is_hover: boolean;
     variant_id: number | null;
+    color_value_id: number | null;
 };
 type ProductVariant = {
     id: number;
@@ -91,11 +92,20 @@ type Props = {
     };
 };
 
+/**
+ * Images are picked per colour: an image saved for a colour, or an older one
+ * saved for a colour/size pair (Red/L), shows as that colour (Red), and
+ * saving keeps it for every Red variant.
+ */
 function mediaTagFor(
     media: ProductMedia,
     variants: ProductVariant[],
 ): string | null {
-    if (media.variant_id === null) {
+    if (media.color_value_id != null) {
+        return `color:${media.color_value_id}`;
+    }
+
+    if (media.variant_id == null) {
         return null;
     }
 
@@ -105,11 +115,7 @@ function mediaTagFor(
         return null;
     }
 
-    if (variant.color_value_id !== null && variant.size_value_id !== null) {
-        return `pair:${variant.color_value_id}-${variant.size_value_id}`;
-    }
-
-    if (variant.color_value_id !== null) {
+    if (variant.color_value_id != null) {
         return `color:${variant.color_value_id}`;
     }
 

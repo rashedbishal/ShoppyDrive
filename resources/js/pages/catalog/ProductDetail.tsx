@@ -279,15 +279,25 @@ export default function ProductDetail({
         // eslint-disable-next-line react-hooks/exhaustive-deps -- once per product, not per price/name change
     }, [product.id]);
 
-    // Jump the main image to the selected variant's own photo (if it has
-    // one) without touching the rest of the gallery — the thumbnails for
-    // every other image/variant stay put.
+    // Jump the main image to the selected variant's photo without touching
+    // the rest of the gallery — the thumbnails for every other image/variant
+    // stay put. Its own photo first (a size, or an older colour/size pick),
+    // otherwise the photo chosen for its colour: Red/XL shows the Red image.
     useEffect(() => {
         if (!selectedVariant) {
             return;
         }
 
-        const idx = media.findIndex((m) => m.variant_id === selectedVariant.id);
+        const ownIdx = media.findIndex(
+            (m) => m.variant_id === selectedVariant.id,
+        );
+        const idx =
+            ownIdx !== -1 || selectedVariant.color_value_id == null
+                ? ownIdx
+                : media.findIndex(
+                      (m) =>
+                          m.color_value_id === selectedVariant.color_value_id,
+                  );
 
         if (idx !== -1) {
             // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
@@ -305,6 +315,27 @@ export default function ProductDetail({
         setCurrentImageIndex(idx);
 
         const item = media[idx];
+
+        // A colour image selects that colour, keeping the size already
+        // chosen when that colour comes in it, otherwise the colour's first
+        // variant (the colour's own variant on a colour-only product).
+        if (item?.color_value_id != null) {
+            const ofColor = variants.filter(
+                (v) => v.color_value_id === item.color_value_id,
+            );
+            const keepsSize = ofColor.find(
+                (v) =>
+                    selectedVariant?.size_value_id != null &&
+                    v.size_value_id === selectedVariant.size_value_id,
+            );
+            const variant = keepsSize ?? ofColor[0];
+
+            if (variant) {
+                setSelectedAttributes(variant.attributes);
+            }
+
+            return;
+        }
 
         if (!item?.variant_id) {
             setSelectedAttributes({});

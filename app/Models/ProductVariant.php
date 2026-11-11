@@ -18,7 +18,7 @@ class ProductVariant extends Model
      *
      * @var list<string>
      */
-    protected $hidden = ['cost_price'];
+    protected $hidden = ['cost_price', 'media'];
 
     protected $fillable = [
         'product_id',
@@ -47,10 +47,28 @@ class ProductVariant extends Model
         ];
     }
 
+    /**
+     * This variant's photo: an image chosen for this exact variant (a size on
+     * a size-only product, or an older colour/size pick), otherwise the image
+     * chosen for its colour — one Red photo serves Red/S, Red/M and Red/L.
+     * A video can't be a thumbnail, so the colour fallback only takes images.
+     */
     public function getImageAttribute(): ?string
     {
-        return $this->media->firstWhere('is_primary', true)?->path
-            ?? $this->media->first()?->path;
+        $own = $this->media->where('variant_id', $this->id);
+        $byColor = $this->color_value_id === null
+            ? collect()
+            : $this->media->where('color_value_id', $this->color_value_id)->where('type', 'image');
+
+        foreach ([$own, $byColor] as $candidates) {
+            $media = $candidates->firstWhere('is_primary', true) ?? $candidates->first();
+
+            if ($media !== null) {
+                return $media->path;
+            }
+        }
+
+        return null;
     }
 
     public function product(): BelongsTo
@@ -68,8 +86,16 @@ class ProductVariant extends Model
         return $this->belongsTo(AttributeValue::class, 'size_value_id');
     }
 
+    /**
+     * Every media row of this variant's product, not only rows pointing at
+     * this variant: a colour image has no `variant_id`, and `image` picks from
+     * these. Kept under this name so the existing `variants.media` eager loads
+     * (PERF-001) fetch it in one query. Hidden from JSON (`$hidden`): the
+     * gallery is `Product::media`, and repeating it on every variant would
+     * bloat every product card.
+     */
     public function media(): HasMany
     {
-        return $this->hasMany(ProductMedia::class, 'variant_id');
+        return $this->hasMany(ProductMedia::class, 'product_id', 'product_id')->orderBy('sort_order')->orderBy('id');
     }
 }

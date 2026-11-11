@@ -529,7 +529,7 @@ class ProductController extends Controller
 
             ProductMedia::create([
                 'product_id' => $product->id,
-                'variant_id' => $this->resolveVariantIdFromTag($mediaTags[$i] ?? null, $variantsByKey),
+                ...$this->resolveMediaTag($mediaTags[$i] ?? null, $variantsByKey),
                 'path' => $item['path'],
                 'type' => $item['type'],
                 'is_primary' => $i === $primaryIndex,
@@ -540,28 +540,44 @@ class ProductController extends Controller
     }
 
     /**
+     * Images are chosen per colour, not per colour/size pair: `color:{id}`
+     * stores the colour, so the image belongs to every variant of it (see
+     * ProductVariant::getImageAttribute()). On a colour-only product it also
+     * links that colour's variant, as before. `size:{id}` (size-only products)
+     * links the size's variant. `pair:{colour}-{size}` is no longer offered;
+     * one sent by a form opened before this change counts as its colour. A
+     * colour or size no variant of this product has is ignored.
+     *
      * @param  array<string, ProductVariant>  $variantsByKey
+     * @return array{variant_id: int|null, color_value_id: int|null}
      */
-    private function resolveVariantIdFromTag(?string $tag, array $variantsByKey): ?int
+    private function resolveMediaTag(?string $tag, array $variantsByKey): array
     {
-        if (! $tag) {
-            return null;
-        }
+        $none = ['variant_id' => null, 'color_value_id' => null];
 
-        if (str_starts_with($tag, 'color:')) {
-            return $variantsByKey[$this->variantKey((int) substr($tag, 6), null)]->id ?? null;
+        if (! $tag) {
+            return $none;
         }
 
         if (str_starts_with($tag, 'size:')) {
-            return $variantsByKey[$this->variantKey(null, (int) substr($tag, 5))]->id ?? null;
+            return ['variant_id' => $variantsByKey[$this->variantKey(null, (int) substr($tag, 5))]->id ?? null, 'color_value_id' => null];
         }
 
-        if (str_starts_with($tag, 'pair:')) {
-            [$colorId, $sizeId] = array_map('intval', explode('-', substr($tag, 5)));
+        $colorId = match (true) {
+            str_starts_with($tag, 'color:') => (int) substr($tag, 6),
+            str_starts_with($tag, 'pair:') => (int) explode('-', substr($tag, 5))[0],
+            default => null,
+        };
 
-            return $variantsByKey[$this->variantKey($colorId, $sizeId)]->id ?? null;
+        $colorVariants = array_filter($variantsByKey, fn (ProductVariant $variant): bool => $colorId !== null && (int) $variant->color_value_id === $colorId);
+
+        if ($colorVariants === []) {
+            return $none;
         }
 
-        return null;
+        return [
+            'variant_id' => $variantsByKey[$this->variantKey($colorId, null)]->id ?? null,
+            'color_value_id' => $colorId,
+        ];
     }
 }

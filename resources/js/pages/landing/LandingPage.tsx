@@ -425,6 +425,8 @@ function OrderForm({
         phone: '',
         email: '',
         address_line1: '',
+        // No "Area / Landmark" field, same as the regular checkout: sent
+        // empty so the request keeps the shape the server validates.
         address_line2: '',
         city: '',
         state: '',
@@ -779,23 +781,6 @@ function OrderForm({
                             {errors.address_line1}
                         </p>
                     )}
-                </div>
-                <div>
-                    <FieldLabel htmlFor={`${fieldId}-landmark`}>
-                        Area / Landmark{' '}
-                        <span className="font-normal text-slate-400">
-                            (optional)
-                        </span>
-                    </FieldLabel>
-                    <input
-                        id={`${fieldId}-landmark`}
-                        className={inputClass}
-                        placeholder="Nearby landmark"
-                        value={data.address_line2}
-                        onChange={(e) =>
-                            setData('address_line2', e.target.value)
-                        }
-                    />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
