@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CartVersionConflictException;
 use App\Http\Requests\AddToCartRequest;
 use App\Http\Requests\SyncCartRequest;
 use App\Support\CartManager;
@@ -39,16 +40,54 @@ class CartController extends Controller
         return back()->with('success', 'Added to cart');
     }
 
+    /**
+     * A full-cart save carrying `base_version` is refused with 409 and the
+     * current cart when the cart changed since that version, so the device
+     * can re-apply its own change on top instead of deleting lines it never
+     * saw. The one-time login merge only adds, so it is never refused.
+     */
     public function sync(SyncCartRequest $request): JsonResponse
     {
-        $cart = $this->cartManager->syncUserCart(
-            $request->user(),
-            $request->validated('items'),
-            $request->boolean('merge'),
-        );
+        $merge = $request->boolean('merge');
+
+        try {
+            $cart = $this->cartManager->syncUserCart(
+                $request->user(),
+                $request->validated('items'),
+                $merge,
+                expectedVersion: $merge ? null : $request->validated('base_version'),
+            );
+        } catch (CartVersionConflictException) {
+            return response()->json([
+                'conflict' => true,
+                'cart' => $this->cartManager->serializeForRequest($request),
+            ], 409);
+        }
 
         return response()->json([
             'cart' => $this->cartManager->serialize($cart),
+        ]);
+    }
+
+    /**
+     * Polled by the storefront so a cart changed on another device shows up
+     * without a page load. Sends the cart only when its version differs
+     * from the one the device already has.
+     */
+    public function state(Request $request): JsonResponse
+    {
+        $version = $this->cartManager->versionForUser($request->user());
+
+        if ($request->query('version') === $version) {
+            return response()->json(['changed' => false, 'version' => $version]);
+        }
+
+        $cart = $this->cartManager->serializeForRequest($request);
+
+        return response()->json([
+            'changed' => true,
+            'version' => $cart['version'] ?? CartManager::EMPTY_VERSION,
+            'cart' => $cart,
         ]);
     }
 }

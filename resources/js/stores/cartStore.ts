@@ -35,6 +35,15 @@ type CartStoreState = {
     coupon: Coupon | null;
     shippingEstimate: number;
     tax: number;
+    /**
+     * The server cart version (CartManager::version()) these items were last
+     * based on, or null when unknown (a guest, or a copy saved before this
+     * existed). Sent with each logged-in save so the server can refuse one
+     * made from an older copy (cross-device sync).
+     */
+    serverVersion: string | null;
+    /** Quantity per item_key in that server version — the base the conflict merge compares this device's changes against. */
+    serverBase: Record<string, number>;
     /** Active bundle recipes, kept in sync with the `active_bundle_recipes` shared prop by app.tsx — not persisted, it's catalog data, not cart state. */
     bundleRecipes: BundleRecipe[];
     setBundleRecipes: (recipes: BundleRecipe[]) => void;
@@ -51,6 +60,8 @@ type CartStoreState = {
     setShippingEstimate: (amount: number) => void;
     setTax: (amount: number) => void;
     hydrateCart: (cart: Cart) => void;
+    /** Records which server cart version the current items are based on. */
+    setServerSnapshot: (version: string | null, items: CartItem[]) => void;
     getItemCount: () => number;
     getSubtotal: () => number;
     getDiscount: () => number;
@@ -59,8 +70,19 @@ type CartStoreState = {
 
 type CartPersistedState = Pick<
     CartStoreState,
-    'items' | 'coupon' | 'shippingEstimate' | 'tax'
+    | 'items'
+    | 'coupon'
+    | 'shippingEstimate'
+    | 'tax'
+    | 'serverVersion'
+    | 'serverBase'
 >;
+
+export function quantitiesByItemKey(items: CartItem[]): Record<string, number> {
+    return Object.fromEntries(
+        items.map((item) => [item.item_key, item.quantity]),
+    );
+}
 
 type StorageLike = {
     getItem: (name: string) => string | null;
@@ -197,6 +219,8 @@ export const useCartStore = create<CartStoreState>()(
             coupon: null,
             shippingEstimate: 0,
             tax: 0,
+            serverVersion: null,
+            serverBase: {},
             bundleRecipes: [],
             setBundleRecipes: (recipes) => {
                 set({ bundleRecipes: recipes });
@@ -432,6 +456,8 @@ export const useCartStore = create<CartStoreState>()(
                     coupon: null,
                     shippingEstimate: 0,
                     tax: 0,
+                    serverVersion: null,
+                    serverBase: {},
                 });
             },
             mergeGuestCart: (items) => {
@@ -483,6 +509,14 @@ export const useCartStore = create<CartStoreState>()(
                     coupon: cart.coupon ?? null,
                     shippingEstimate: cart.shipping_estimate,
                     tax: cart.tax,
+                    serverVersion: cart.version ?? null,
+                    serverBase: quantitiesByItemKey(cart.items),
+                });
+            },
+            setServerSnapshot: (version, items) => {
+                set({
+                    serverVersion: version,
+                    serverBase: quantitiesByItemKey(items),
                 });
             },
             getItemCount: () => {
@@ -525,6 +559,8 @@ export const useCartStore = create<CartStoreState>()(
                 coupon: state.coupon,
                 shippingEstimate: state.shippingEstimate,
                 tax: state.tax,
+                serverVersion: state.serverVersion,
+                serverBase: state.serverBase,
             }),
         },
     ),

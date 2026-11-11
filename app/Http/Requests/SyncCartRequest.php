@@ -19,6 +19,9 @@ class SyncCartRequest extends FormRequest
     {
         return [
             'merge' => ['sometimes', 'boolean'],
+            // The CartManager::version() the items were based on; absent
+            // means an unconditional save (older open pages after a deploy).
+            'base_version' => ['sometimes', 'nullable', 'string', 'max:64'],
             'items' => ['present', 'array'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.variant_id' => [

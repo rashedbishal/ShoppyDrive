@@ -16,9 +16,10 @@ import { APP_NAME } from '@/lib/constants';
 import { STORAGE_KEYS } from '@/lib/constants';
 import { takePurchasedLines } from '@/lib/purchased-cart-lines';
 import type { PurchasedCartLine } from '@/lib/purchased-cart-lines';
+import { formatCurrency } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
-import type { BundleRecipe, Cart, SharedPageProps } from '@/types';
+import type { BundleRecipe, Cart, CartItem, SharedPageProps } from '@/types';
 import { Ziggy as ziggyConfig } from './ziggy';
 
 declare global {
@@ -125,6 +126,20 @@ function readInitialCart(): Cart | null {
     return null;
 }
 
+function readInitialComponent(): string | null {
+    try {
+        const raw = document.getElementById('app')?.dataset.page;
+
+        if (raw) {
+            return JSON.parse(raw)?.component ?? null;
+        }
+    } catch {
+        // Missing or malformed page data: fall through to the default below.
+    }
+
+    return null;
+}
+
 function readInitialBundleRecipes(): BundleRecipe[] {
     try {
         const raw = document.getElementById('app')?.dataset.page;
@@ -145,6 +160,25 @@ let isHydratingCart = false;
 let cartSyncInFlight = false;
 let pendingSync: boolean | null = null;
 let lastSyncedSignature = '';
+
+/**
+ * Cross-device cart sync. A logged-in save carries the server cart version
+ * its items were based on; the server refuses (409) a save made from an
+ * older copy, and this tab then re-applies its own change on top of the
+ * current cart (rebaseOntoServerCart) and saves again. Separately, a
+ * visible logged-in page checks the server every CART_POLL_INTERVAL_MS, and
+ * when the tab regains focus, so another device's change shows up without
+ * a page load. Same-browser tabs still sync instantly via the `storage`
+ * event below.
+ */
+const EMPTY_CART_VERSION = 'empty';
+const CART_POLL_INTERVAL_MS = 15000;
+const MAX_CART_CONFLICT_RETRIES = 3;
+const CART_UPDATED_ELSEWHERE_MESSAGE =
+    'Your cart was changed on another device. Please check it.';
+let cartConflictRetries = 0;
+let cartPollInFlight = false;
+let currentPageComponent: string | null = null;
 
 /**
  * FE-011: a failed cart save used to be silent, and the signature was
@@ -244,6 +278,8 @@ function hydrateCart(cart: Cart | null): void {
 
     if (cart === null) {
         useCartStore.getState().clearCart();
+        // No server cart is the same as an empty one (CartManager::EMPTY_VERSION).
+        useCartStore.getState().setServerSnapshot(EMPTY_CART_VERSION, []);
         lastSyncedSignature = '';
     } else {
         useCartStore.getState().hydrateCart(cart);
@@ -251,6 +287,190 @@ function hydrateCart(cart: Cart | null): void {
     }
 
     isHydratingCart = false;
+}
+
+/**
+ * hydrateCart() for a change that came from elsewhere (another device), not
+ * a page visit. A coupon applied on the Cart page lives only in this
+ * browser, so it is kept unless the server cart carries its own.
+ */
+function hydrateCartFromElsewhere(cart: Cart | null): void {
+    const localCoupon = useCartStore.getState().coupon;
+
+    hydrateCart(cart);
+
+    if (localCoupon !== null && (cart?.coupon ?? null) === null) {
+        useCartStore.getState().applyCoupon(localCoupon);
+    }
+}
+
+function signatureOfItems(items: CartItem[]): string {
+    return items
+        .map((item) => `${item.item_key}:${item.quantity}`)
+        .sort()
+        .join('|');
+}
+
+/**
+ * Applies this tab's own unsaved changes on top of the server's current
+ * cart. A change is measured against `serverBase`, the server copy this tab
+ * last had: a line removed here is removed; a line added here, or whose
+ * quantity changed here, takes this tab's quantity. Every other line is
+ * the server's, including lines another device added or removed. Returns
+ * the merged items, or null when they equal the server's (nothing to save).
+ */
+function rebaseOntoServerCart(serverCart: Cart | null): CartItem[] | null {
+    const { items: localItems, serverBase } = useCartStore.getState();
+    const serverItems = serverCart?.items ?? [];
+    const merged = new Map(serverItems.map((item) => [item.item_key, item]));
+    const localKeys = new Set(localItems.map((item) => item.item_key));
+
+    for (const key of Object.keys(serverBase)) {
+        if (!localKeys.has(key)) {
+            merged.delete(key);
+        }
+    }
+
+    for (const item of localItems) {
+        if (serverBase[item.item_key] === item.quantity) {
+            continue;
+        }
+
+        const existing = merged.get(item.item_key);
+
+        merged.set(
+            item.item_key,
+            existing === undefined
+                ? item
+                : {
+                      ...existing,
+                      quantity: item.quantity,
+                      bundle_unit_quantity: item.bundle_unit_quantity,
+                      subtotal: existing.price * item.quantity,
+                      formatted_subtotal: formatCurrency(
+                          existing.price * item.quantity,
+                      ),
+                  },
+        );
+    }
+
+    const mergedItems = [...merged.values()];
+
+    return signatureOfItems(mergedItems) === signatureOfItems(serverItems)
+        ? null
+        : mergedItems;
+}
+
+/**
+ * The server refused a save because the cart changed elsewhere since this
+ * tab's copy. Take the current cart, re-apply this tab's change and save
+ * again (the `finally` in syncAuthenticatedCart() sends it). If it keeps
+ * conflicting, show the server's cart rather than loop.
+ */
+function handleCartConflict(serverCart: Cart | null): void {
+    const canRetry = cartConflictRetries < MAX_CART_CONFLICT_RETRIES;
+    // Read before hydrateCart() replaces this tab's items and base.
+    const mergedItems = canRetry ? rebaseOntoServerCart(serverCart) : null;
+
+    hydrateCartFromElsewhere(serverCart);
+
+    if (mergedItems === null) {
+        cartSyncDirty = false;
+        cartConflictRetries = 0;
+
+        if (!canRetry) {
+            toast.info(CART_UPDATED_ELSEWHERE_MESSAGE);
+        }
+
+        return;
+    }
+
+    cartConflictRetries += 1;
+    isHydratingCart = true;
+    useCartStore.setState({ items: mergedItems });
+    isHydratingCart = false;
+    lastSyncedSignature = signatureOfItems(mergedItems);
+    cartSyncDirty = true;
+    pendingSync = pendingSync === null ? false : pendingSync;
+}
+
+/**
+ * Pages where the cart must not change underneath the customer: checkout
+ * and payment (the order is built from what the page shows), order pages,
+ * landing-page funnels (their own basket) and admin.
+ */
+function isCartPollingPaused(component: string | null): boolean {
+    return (
+        component === null ||
+        ['checkout/', 'order/', 'landing/', 'admin/', 'errors/'].some(
+            (prefix) => component.startsWith(prefix),
+        )
+    );
+}
+
+/**
+ * Picks up a change made to this customer's cart on another device. Never
+ * overwrites a change made here that is unsaved or being saved: that save
+ * carries its base version, and a conflict is merged instead.
+ */
+async function pollCartState(): Promise<void> {
+    if (
+        activeAuthUserId === null ||
+        document.visibilityState !== 'visible' ||
+        isCartPollingPaused(currentPageComponent) ||
+        cartPollInFlight ||
+        cartSyncInFlight ||
+        cartSyncDirty
+    ) {
+        return;
+    }
+
+    const userId = activeAuthUserId;
+    const versionBefore = useCartStore.getState().serverVersion;
+    cartPollInFlight = true;
+
+    try {
+        const response = await fetch(
+            route(
+                'cart.state',
+                versionBefore === null ? {} : { version: versionBefore },
+            ),
+            {
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            },
+        );
+
+        if (!response.ok) {
+            return;
+        }
+
+        const payload = (await response.json()) as {
+            changed: boolean;
+            cart?: Cart | null;
+        };
+
+        // Anything that happened here while waiting wins over this answer.
+        if (
+            !payload.changed ||
+            activeAuthUserId !== userId ||
+            cartSyncInFlight ||
+            cartSyncDirty ||
+            isCartPollingPaused(currentPageComponent) ||
+            useCartStore.getState().serverVersion !== versionBefore
+        ) {
+            return;
+        }
+
+        hydrateCartFromElsewhere(payload.cart ?? null);
+    } catch {
+        // Offline or similar: the next check tries again.
+    } finally {
+        cartPollInFlight = false;
+    }
 }
 
 async function syncAuthenticatedCart(merge: boolean): Promise<void> {
@@ -275,6 +495,10 @@ async function syncAuthenticatedCart(merge: boolean): Promise<void> {
             },
             body: JSON.stringify({
                 merge,
+                // Unknown (null) keeps the old unconditional save.
+                ...(merge || state.serverVersion === null
+                    ? {}
+                    : { base_version: state.serverVersion }),
                 items: state.items.map((item) => ({
                     product_id: item.product.id,
                     variant_id: item.variant?.id ?? null,
@@ -284,6 +508,13 @@ async function syncAuthenticatedCart(merge: boolean): Promise<void> {
                 })),
             }),
         });
+
+        if (response.status === 409) {
+            const conflict = (await response.json()) as { cart: Cart | null };
+            handleCartConflict(conflict.cart);
+
+            return;
+        }
 
         if (!response.ok) {
             const temporary =
@@ -299,6 +530,7 @@ async function syncAuthenticatedCart(merge: boolean): Promise<void> {
         const payload = (await response.json()) as { cart: Cart | null };
         cartSyncDirty = false;
         cartSyncRetryAttempt = 0;
+        cartConflictRetries = 0;
 
         if (cartSyncFailureShown) {
             cartSyncFailureShown = false;
@@ -446,6 +678,19 @@ function removeItemsBoughtByOrder(
     });
 }
 
+// Cross-device sync: check the server cart regularly while the page is
+// visible, and straight away when the customer comes back to the tab.
+if (typeof window !== 'undefined') {
+    currentPageComponent = readInitialComponent();
+    setInterval(() => void pollCartState(), CART_POLL_INTERVAL_MS);
+    window.addEventListener('focus', () => void pollCartState());
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            void pollCartState();
+        }
+    });
+}
+
 // Another tab changed the cart: show the same cart here. Not re-saved to
 // the server from this tab, because the tab that changed it already did.
 if (typeof window !== 'undefined') {
@@ -469,6 +714,7 @@ if (typeof window !== 'undefined') {
 
 router.on('navigate', (event) => {
     const props = event.detail.page.props as SharedPageProps;
+    currentPageComponent = event.detail.page.component;
 
     // Inertia preserves the original document between visits, so Blade only
     // writes this attribute on the initial load. Keep it in sync with the

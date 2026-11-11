@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Exceptions\CartChangedException;
+use App\Exceptions\CartVersionConflictException;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\FlashSaleItem;
@@ -25,6 +26,9 @@ use Illuminate\Support\Facades\DB;
  */
 class CartManager
 {
+    /** `version()` of a cart with no rows and no coupon, or no cart at all. */
+    public const EMPTY_VERSION = 'empty';
+
     // items.product.category/subCategory/brand: isPubliclyVisible() reads
     // all three inside validItems()'s per-item filter — without this,
     // each cart item lazy-loads its own three relations separately.
@@ -132,13 +136,62 @@ class CartManager
     }
 
     /**
+     * `$expectedVersion` is the cart version (see `version()`) the caller's
+     * items were based on. When given and the cart has changed since — on
+     * another device, or server-side (checkout, the AI assistant) — nothing
+     * is written, so a device holding an older copy can never delete lines
+     * it never saw. Null keeps the unconditional write.
+     *
      * @param  array<int, array{product_id:int, variant_id:int|null, quantity:int, bundle_id?:int|null, bundle_unit_quantity?:int|null}>  $items
+     *
+     * @throws CartVersionConflictException
      */
-    public function syncUserCart(User $user, array $items, bool $merge = false, bool $deleteOmitted = true): Cart
+    public function syncUserCart(User $user, array $items, bool $merge = false, bool $deleteOmitted = true, ?string $expectedVersion = null): Cart
     {
         return $this->writeUserCart($user, fn (Cart $cart) => $merge
             ? $this->mergeItemPayloads($cart, $items)
-            : $this->replaceItems($cart, $items, $deleteOmitted));
+            : $this->replaceItems($cart, $items, $deleteOmitted), $expectedVersion);
+    }
+
+    /**
+     * The logged-in customer's cart version without loading the cart's
+     * relations — the cheap check behind the cart.state poll. Same cart row
+     * as getCurrentCart() picks for a logged-in request.
+     */
+    public function versionForUser(User $user): string
+    {
+        return $this->version(Cart::query()->where('user_id', $user->id)->first(['id']));
+    }
+
+    /**
+     * Identifies the cart's current contents: every row's product, variant,
+     * bundle and quantity, plus the cart coupon. Computed from the rows
+     * themselves rather than a stored counter, so every path that writes a
+     * cart (sync, checkout clean-up, mobile payment, the AI assistant,
+     * bundle assembly) changes it without having to remember to. A missing
+     * cart and an empty one share `EMPTY_VERSION`.
+     */
+    public function version(?Cart $cart): string
+    {
+        if ($cart === null) {
+            return self::EMPTY_VERSION;
+        }
+
+        $lines = CartItem::query()
+            ->where('cart_id', $cart->id)
+            ->get(['product_id', 'variant_id', 'bundle_id', 'bundle_unit_quantity', 'quantity'])
+            ->map(fn (CartItem $item): string => implode(':', [
+                $item->product_id ?? '-', $item->variant_id ?? '-', $item->bundle_id ?? '-', $item->bundle_unit_quantity ?? '-', $item->quantity,
+            ]))
+            ->sort()
+            ->values();
+        $couponId = Cart::query()->whereKey($cart->id)->value('coupon_id');
+
+        if ($lines->isEmpty() && $couponId === null) {
+            return self::EMPTY_VERSION;
+        }
+
+        return hash('xxh128', $lines->implode('|').'#'.($couponId ?? '-'));
     }
 
     public function syncSessionCart(string $sessionId, array $items, bool $merge = false, bool $deleteOmitted = true): Cart
@@ -154,15 +207,24 @@ class CartManager
      * statement, so the plain reads after it see every earlier commit (see
      * LoyaltyPointsService::availablePoints()).
      *
+     * `$expectedVersion` is checked after both locks and before any write,
+     * so no other writer can slip in between the check and the write.
+     *
      * @param  callable(Cart): mixed  $write
+     *
+     * @throws CartVersionConflictException
      */
-    private function writeUserCart(User $user, callable $write): Cart
+    private function writeUserCart(User $user, callable $write, ?string $expectedVersion = null): Cart
     {
-        return DB::transaction(function () use ($user, $write): Cart {
+        return DB::transaction(function () use ($user, $write, $expectedVersion): Cart {
             User::query()->whereKey($user->id)->lockForUpdate()->first();
 
             $cart = $this->getOrCreateUserCart($user);
             Cart::query()->whereKey($cart->id)->lockForUpdate()->first();
+
+            if ($expectedVersion !== null && $this->version($cart) !== $expectedVersion) {
+                throw new CartVersionConflictException('The cart changed since this copy of it was loaded.');
+            }
 
             $this->mergeDuplicateRows($cart);
             $write($cart);
@@ -393,6 +455,8 @@ class CartManager
             'item_count' => (int) $items->sum('quantity'),
             'formatted_subtotal' => $this->formatMoney($subtotal),
             'formatted_total' => $this->formatMoney($total),
+            // After reconcile()/autoAssemble() above, which may rewrite rows.
+            'version' => $this->version($cart),
         ];
     }
 

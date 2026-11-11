@@ -45,6 +45,7 @@ Route::middleware(['checkout.access', 'auth.session', 'account.active'])->group(
 
 Route::middleware(['auth', 'auth.session', 'account.active'])->group(function () {
     Route::post('/cart/sync', [CartController::class, 'sync'])->name('cart.sync');
+    Route::get('/cart/state', [CartController::class, 'state'])->middleware('throttle:cart-state')->name('cart.state');
 
     // The bKash/Nagad payment page's "Cancel payment" link. BIZ-026: moved
     // here when the retired ZiniPay gateway's routes were removed; same URL,

@@ -207,6 +207,10 @@ class AppServiceProvider extends ServiceProvider
         // Generous enough for fast browsing; one product page is one event.
         RateLimiter::for('meta-tracking', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?? 'ip:'.$request->ip()));
 
+        // A logged-in page checks its cart about every 15 seconds while
+        // visible (cart.state); this only stops abuse, never normal tabs.
+        RateLimiter::for('cart-state', fn (Request $request) => Limit::perMinute(60)->by('user:'.$request->user()?->id));
+
         RateLimiter::for('ai-assistant', fn (Request $request) => Limit::perHour(20)->by($request->user()?->id ?? 'ip:'.$request->ip()));
 
         // The bKash/Nagad SMS-forwarder phone: only requests with a wrong

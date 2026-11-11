@@ -296,6 +296,8 @@ export interface Cart {
     item_count: number;
     formatted_subtotal: string;
     formatted_total: string;
+    /** CartManager::version(): identifies the server cart's contents, for cross-device sync. */
+    version?: string;
 }
 
 export interface Address {
