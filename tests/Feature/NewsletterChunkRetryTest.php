@@ -26,11 +26,17 @@ use function Pest\Laravel\travel;
 
 uses(RefreshDatabase::class);
 
+/**
+ * `--memory` is raised because queue:work stops after the current job once the
+ * process passes its default 128 MB, and under the full suite this single
+ * PHPUnit process is already well past that, so each call would handle only
+ * one job instead of draining the queue.
+ */
 function runNewsletterQueueOnce(): void
 {
     Artisan::call('queue:work', [
         'connection' => 'database', '--queue' => 'default,'.DrainQueueCommand::NEWSLETTER_QUEUE,
-        '--stop-when-empty' => true, '--tries' => 3, '--sleep' => 0,
+        '--stop-when-empty' => true, '--tries' => 3, '--sleep' => 0, '--memory' => 4096,
     ]);
 }
 

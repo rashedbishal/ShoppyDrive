@@ -16,7 +16,11 @@ use Illuminate\Validation\Rule;
 
 class PlaceOrderRequest extends FormRequest
 {
-    use NormalizesBangladeshiPhone;
+    use NormalizesBangladeshiPhone {
+        // This class defines its own prepareForValidation(), which would
+        // otherwise silently replace the trait's phone clean-up (FE-012).
+        prepareForValidation as protected normalizePhoneInput;
+    }
 
     public function authorize(): bool
     {
@@ -105,6 +109,8 @@ class PlaceOrderRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $this->normalizePhoneInput();
+
         $items = $this->input('items');
 
         if (! is_array($items)) {
