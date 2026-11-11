@@ -27,6 +27,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -55,6 +56,22 @@ return Application::configure(basePath: dirname(__DIR__))
             'fortify.stamp-password-reset' => StampPasswordResetRequestedAt::class,
             'account.active' => EnsureAccountNotAnonymized::class,
         ]);
+        // Admin access is decided BEFORE Laravel looks a record up from the
+        // URL (route-model binding, SubstituteBindings). Without this, a
+        // visitor or an under-privileged admin got a 404 for an order,
+        // customer or product ID that does not exist and a redirect/403 for
+        // one that does, which let anyone count the shop's records by trying
+        // IDs. Each call inserts directly before SubstituteBindings, so the
+        // order below is the order they run in.
+        foreach ([
+            RedirectCustomerFromAdmin::class,
+            EnsureAdmin::class,
+            AuthenticateAdminSession::class,
+            EnsureAdminPermission::class,
+            EnsureMotherAdmin::class,
+        ] as $adminGate) {
+            $middleware->prependToPriorityList(before: SubstituteBindings::class, prepend: $adminGate);
+        }
         $middleware->prepend(SecurityHeaders::class);
         $middleware->api(prepend: [RefuseInsecureApi::class]);
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
