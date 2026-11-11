@@ -33,8 +33,31 @@ type PendingPayment = {
     provider: 'bkash' | 'nagad';
 };
 
+type Variant = {
+    id: number;
+    sku: string | null;
+    price: number;
+    compare_price: number | null;
+    stock_quantity: number;
+    attributes: Record<string, string> | null;
+    image: string | null;
+};
+
+/** "Red / M" from a variant's attributes (falls back to its SKU). */
+function variantName(variant: Variant): string {
+    const values = Object.values(variant.attributes ?? {});
+
+    return values.length > 0 ? values.join(' / ') : (variant.sku ?? 'Option');
+}
+
 type Props = {
-    page: { id: number; title: string; slug: string; sections: Sections };
+    page: {
+        id: number;
+        title: string;
+        slug: string;
+        sections: Sections;
+        max_order_quantity: number;
+    };
     product: {
         id: number;
         name: string;
@@ -46,7 +69,9 @@ type Props = {
         flash_sale_price?: number | null;
         free_delivery: boolean;
         free_delivery_min_qty: number | null;
+        stock_quantity?: number | null;
         media: ProductMedia[];
+        variants: Variant[];
     };
     bkashNumber: string | null;
     nagadNumber: string | null;
@@ -338,12 +363,18 @@ function FieldLabel({
 function OrderForm({
     product,
     slug,
+    maxQuantity,
+    focusedVariantId,
+    onFocusVariant,
     bkashNumber,
     nagadNumber,
     orderToken,
 }: {
     product: Props['product'];
     slug: string;
+    maxQuantity: number;
+    focusedVariantId: number | null;
+    onFocusVariant: (id: number | null) => void;
     bkashNumber: string | null;
     nagadNumber: string | null;
     orderToken: string;
@@ -354,7 +385,16 @@ function OrderForm({
     const insideDhakaRate = settings.shipping_rate_inside_dhaka ?? 60;
     const outsideDhakaRate = settings.shipping_rate_outside_dhaka ?? 120;
 
-    const [qty, setQty] = useState(1);
+    const hasVariants = product.variants.length > 0;
+    // Plain product: one quantity. Variant product: a quantity per variant.
+    const [plainQty, setPlainQty] = useState(1);
+    const [variantQty, setVariantQty] = useState<Record<number, number>>({});
+    const chosenVariants = product.variants.filter(
+        (v) => (variantQty[v.id] ?? 0) > 0,
+    );
+    const qty = hasVariants
+        ? chosenVariants.reduce((sum, v) => sum + (variantQty[v.id] ?? 0), 0)
+        : plainQty;
     const [state, setState] = useState('');
     const [city, setCity] = useState('');
 
@@ -365,10 +405,22 @@ function OrderForm({
         insideDhakaRate,
         outsideDhakaRate,
     );
-    const subtotal = product.price * qty;
+    const focusedVariant =
+        product.variants.find((v) => v.id === focusedVariantId) ?? null;
+    const lowestVariantPrice = hasVariants
+        ? Math.min(...product.variants.map((v) => v.price))
+        : product.price;
+    const subtotal = hasVariants
+        ? chosenVariants.reduce(
+              (sum, v) => sum + v.price * (variantQty[v.id] ?? 0),
+              0,
+          )
+        : product.price * qty;
     const total = subtotal + shipping;
 
-    const { data, setData, post, processing, errors } = useForm({
+    const [variantError, setVariantError] = useState<string | null>(null);
+
+    const { data, setData, post, processing, errors, transform } = useForm({
         name: '',
         phone: '',
         email: '',
@@ -384,6 +436,8 @@ function OrderForm({
         // BIZ-011: honeypot, always empty for real customers.
         sd_confirm_ref: '',
     });
+    // The server reports a bad variant list under `items` (not a form field here).
+    const itemsError = (errors as Record<string, string | undefined>).items;
 
     // OPS-005: see Checkout.tsx's identical guard — the server enforces this
     // too (LandingPageController::placeOrder()), this is purely UX.
@@ -405,14 +459,55 @@ function OrderForm({
         setCity(v);
         setData('city', v);
     };
+    const plainStock = product.stock_quantity ?? maxQuantity;
     const updateQty = (v: number) => {
-        const q = Math.max(1, v);
-        setQty(q);
+        const q = Math.min(
+            Math.max(1, v),
+            maxQuantity,
+            Math.max(1, plainStock),
+        );
+        setPlainQty(q);
         setData('quantity', q);
+    };
+
+    // One variant's quantity: never below 0, above its stock, or above what is
+    // left of the page's per-order limit shared by all variants.
+    const updateVariantQty = (variant: Variant, next: number) => {
+        const others = qty - (variantQty[variant.id] ?? 0);
+        const ceiling = Math.min(
+            variant.stock_quantity,
+            Math.max(0, maxQuantity - others),
+        );
+        setVariantQty((current) => ({
+            ...current,
+            [variant.id]: Math.min(Math.max(0, next), ceiling),
+        }));
+        onFocusVariant(variant.id);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (hasVariants && qty === 0) {
+            setVariantError('Choose at least one option and a quantity.');
+
+            return;
+        }
+
+        setVariantError(null);
+        transform((formData) => {
+            const { quantity, ...rest } = formData;
+
+            return hasVariants
+                ? {
+                      ...rest,
+                      items: chosenVariants.map((v) => ({
+                          variant_id: v.id,
+                          quantity: variantQty[v.id],
+                      })),
+                  }
+                : { ...rest, quantity };
+        });
         post(route('lp.order', slug));
     };
 
@@ -423,15 +518,29 @@ function OrderForm({
         <div className="space-y-4 rounded-2xl bg-white p-6 shadow-xl ring-1 ring-slate-200">
             <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
+                    {hasVariants && !focusedVariant && (
+                        <span className="text-sm text-slate-500">From</span>
+                    )}
                     <span className="text-2xl font-bold text-slate-900">
-                        {formatCurrency(product.price)}
+                        {formatCurrency(
+                            focusedVariant?.price ??
+                                (hasVariants
+                                    ? lowestVariantPrice
+                                    : product.price),
+                        )}
                     </span>
-                    {product.compare_price &&
+                    {!hasVariants &&
+                        product.compare_price &&
                         product.compare_price > product.price && (
                             <span className="text-sm text-slate-400 line-through">
                                 {formatCurrency(product.compare_price)}
                             </span>
                         )}
+                    {focusedVariant?.compare_price && (
+                        <span className="text-sm text-slate-400 line-through">
+                            {formatCurrency(focusedVariant.compare_price)}
+                        </span>
+                    )}
                 </div>
                 <p className="text-xs text-slate-500">
                     {product.free_delivery
@@ -445,33 +554,153 @@ function OrderForm({
                     value={data.sd_confirm_ref}
                     onChange={(value) => setData('sd_confirm_ref', value)}
                 />
-                {/* Quantity */}
-                <div className="flex items-center gap-3">
-                    <span className="w-16 text-sm font-medium text-slate-700">
-                        Qty
-                    </span>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => updateQty(qty - 1)}
-                            aria-label="Decrease quantity"
-                            className="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
-                        >
-                            −
-                        </button>
-                        <span className="w-8 text-center text-sm font-semibold">
-                            {qty}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={() => updateQty(qty + 1)}
-                            aria-label="Increase quantity"
-                            className="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
-                        >
-                            +
-                        </button>
+                {hasVariants ? (
+                    <div className="space-y-2">
+                        <div className="flex items-baseline justify-between">
+                            <span className="text-sm font-medium text-slate-700">
+                                Choose your options
+                            </span>
+                            <span className="text-xs text-slate-500">
+                                {qty} of {maxQuantity} max
+                            </span>
+                        </div>
+                        <div className="space-y-2">
+                            {product.variants.map((variant) => {
+                                const count = variantQty[variant.id] ?? 0;
+                                const soldOut = variant.stock_quantity < 1;
+
+                                return (
+                                    <div
+                                        key={variant.id}
+                                        onClick={() =>
+                                            onFocusVariant(variant.id)
+                                        }
+                                        className={`flex cursor-pointer items-center gap-3 rounded-xl border p-2 transition-colors ${
+                                            focusedVariantId === variant.id
+                                                ? 'border-[#c8102e] bg-red-50/40'
+                                                : 'border-slate-200 hover:border-slate-300'
+                                        } ${soldOut ? 'opacity-60' : ''}`}
+                                    >
+                                        {variant.image ? (
+                                            <img
+                                                src={variant.image}
+                                                alt={variantName(variant)}
+                                                className="size-12 shrink-0 rounded-lg object-cover"
+                                            />
+                                        ) : (
+                                            <div className="size-12 shrink-0 rounded-lg bg-slate-100" />
+                                        )}
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-semibold text-slate-800">
+                                                {variantName(variant)}
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                {formatCurrency(variant.price)}
+                                                {variant.compare_price && (
+                                                    <span className="ml-1 line-through">
+                                                        {formatCurrency(
+                                                            variant.compare_price,
+                                                        )}
+                                                    </span>
+                                                )}
+                                                {soldOut ? (
+                                                    <span className="ml-2 font-medium text-red-500">
+                                                        Out of stock
+                                                    </span>
+                                                ) : variant.stock_quantity <=
+                                                  5 ? (
+                                                    <span className="ml-2 font-medium text-amber-600">
+                                                        Only{' '}
+                                                        {variant.stock_quantity}{' '}
+                                                        left
+                                                    </span>
+                                                ) : null}
+                                            </p>
+                                        </div>
+                                        <div
+                                            className="flex items-center gap-1.5"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <button
+                                                type="button"
+                                                disabled={count === 0}
+                                                onClick={() =>
+                                                    updateVariantQty(
+                                                        variant,
+                                                        count - 1,
+                                                    )
+                                                }
+                                                aria-label={`Decrease ${variantName(variant)}`}
+                                                className="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                                            >
+                                                −
+                                            </button>
+                                            <span className="w-6 text-center text-sm font-semibold">
+                                                {count}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                disabled={
+                                                    soldOut ||
+                                                    count >=
+                                                        variant.stock_quantity ||
+                                                    qty >= maxQuantity
+                                                }
+                                                onClick={() =>
+                                                    updateVariantQty(
+                                                        variant,
+                                                        count + 1,
+                                                    )
+                                                }
+                                                aria-label={`Increase ${variantName(variant)}`}
+                                                className="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        {(variantError || itemsError || errors.quantity) && (
+                            <p className="text-xs text-red-500">
+                                {variantError ?? itemsError ?? errors.quantity}
+                            </p>
+                        )}
                     </div>
-                </div>
+                ) : (
+                    <div className="flex items-center gap-3">
+                        <span className="w-16 text-sm font-medium text-slate-700">
+                            Qty
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => updateQty(qty - 1)}
+                                aria-label="Decrease quantity"
+                                className="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                            >
+                                −
+                            </button>
+                            <span className="w-8 text-center text-sm font-semibold">
+                                {qty}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => updateQty(qty + 1)}
+                                aria-label="Increase quantity"
+                                className="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                            >
+                                +
+                            </button>
+                        </div>
+                        {errors.quantity && (
+                            <p className="text-xs text-red-500">
+                                {errors.quantity}
+                            </p>
+                        )}
+                    </div>
+                )}
 
                 {/* Personal info */}
                 <div>
@@ -786,6 +1015,19 @@ export default function LandingPageShow({
     }, [!!pendingPayment]);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [activeMediaIdx, setActiveMediaIdx] = useState(0);
+    // The variant the customer is looking at (picked in the order form): its
+    // photo and price replace the product's in the hero and the gallery.
+    const [focusedVariantId, setFocusedVariantId] = useState<number | null>(
+        null,
+    );
+    const [showVariantImage, setShowVariantImage] = useState(false);
+    const focusedVariant =
+        product.variants.find((v) => v.id === focusedVariantId) ?? null;
+    const hasVariants = product.variants.length > 0;
+    const focusVariant = (id: number | null) => {
+        setFocusedVariantId(id);
+        setShowVariantImage(true);
+    };
     const allMedia = product.media ?? [];
     const primaryIdx = allMedia.findIndex(
         (m) => m.is_primary && m.type === 'image',
@@ -798,6 +1040,17 @@ export default function LandingPageShow({
               ]
             : allMedia;
     const heroImage = orderedMedia.find((m) => m.type === 'image');
+    const heroImageSrc = focusedVariant?.image ?? heroImage?.path;
+    const heroPrice =
+        focusedVariant?.price ??
+        (hasVariants
+            ? Math.min(...product.variants.map((v) => v.price))
+            : product.price);
+    const heroCompare = focusedVariant
+        ? focusedVariant.compare_price
+        : hasVariants
+          ? null
+          : product.compare_price;
 
     return (
         <>
@@ -872,31 +1125,30 @@ export default function LandingPageShow({
                                     </p>
                                 )}
                                 <div className="flex items-center gap-3 pt-2">
+                                    {hasVariants && !focusedVariant && (
+                                        <span className="text-sm text-white/70">
+                                            From
+                                        </span>
+                                    )}
                                     <span className="text-3xl font-bold">
-                                        {formatCurrency(product.price)}
+                                        {formatCurrency(heroPrice)}
                                     </span>
-                                    {product.compare_price &&
-                                        product.compare_price >
-                                            product.price && (
+                                    {heroCompare && heroCompare > heroPrice && (
+                                        <>
                                             <span className="text-lg text-white/50 line-through">
-                                                {formatCurrency(
-                                                    product.compare_price,
-                                                )}
+                                                {formatCurrency(heroCompare)}
                                             </span>
-                                        )}
-                                    {product.compare_price &&
-                                        product.compare_price >
-                                            product.price && (
                                             <span className="rounded-full bg-red-500 px-2.5 py-0.5 text-xs font-bold text-white">
                                                 {Math.round(
                                                     (1 -
-                                                        product.price /
-                                                            product.compare_price) *
+                                                        heroPrice /
+                                                            heroCompare) *
                                                         100,
                                                 )}
                                                 % OFF
                                             </span>
-                                        )}
+                                        </>
+                                    )}
                                 </div>
                                 <a
                                     href="#order-form"
@@ -905,10 +1157,10 @@ export default function LandingPageShow({
                                     {sec.hero?.cta_text || 'Order Now'}
                                 </a>
                             </div>
-                            {heroImage && (
+                            {heroImageSrc && (
                                 <div className="order-1 lg:order-2">
                                     <img
-                                        src={heroImage.path}
+                                        src={heroImageSrc}
                                         alt={product.name}
                                         className="max-h-96 w-full rounded-2xl object-contain"
                                     />
@@ -957,8 +1209,15 @@ export default function LandingPageShow({
                                         </h2>
                                         <div className="space-y-3">
                                             {/* Active media viewer */}
-                                            {orderedMedia[activeMediaIdx]
-                                                ?.type === 'video' ? (
+                                            {showVariantImage &&
+                                            focusedVariant?.image ? (
+                                                <img
+                                                    src={focusedVariant.image}
+                                                    alt={`${product.name} – ${variantName(focusedVariant)}`}
+                                                    className="max-h-80 w-full rounded-2xl bg-slate-50 object-contain"
+                                                />
+                                            ) : orderedMedia[activeMediaIdx]
+                                                  ?.type === 'video' ? (
                                                 <video
                                                     key={
                                                         orderedMedia[
@@ -993,11 +1252,14 @@ export default function LandingPageShow({
                                                             <button
                                                                 key={item.id}
                                                                 type="button"
-                                                                onClick={() =>
+                                                                onClick={() => {
+                                                                    setShowVariantImage(
+                                                                        false,
+                                                                    );
                                                                     setActiveMediaIdx(
                                                                         i,
-                                                                    )
-                                                                }
+                                                                    );
+                                                                }}
                                                                 className={`relative size-16 shrink-0 overflow-hidden rounded-xl border-2 bg-slate-100 transition-colors ${i === activeMediaIdx ? 'border-[#c8102e]' : 'border-transparent'}`}
                                                             >
                                                                 {item.type ===
@@ -1104,6 +1366,9 @@ export default function LandingPageShow({
                                 <OrderForm
                                     product={product}
                                     slug={page.slug}
+                                    maxQuantity={page.max_order_quantity}
+                                    focusedVariantId={focusedVariantId}
+                                    onFocusVariant={focusVariant}
                                     bkashNumber={bkashNumber}
                                     nagadNumber={nagadNumber}
                                     orderToken={orderToken}

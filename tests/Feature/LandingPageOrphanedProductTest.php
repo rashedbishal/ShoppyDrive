@@ -23,7 +23,7 @@ test('landing page 404s instead of crashing when its product was soft-deleted', 
     get(route('lp.show', $page->slug))->assertNotFound();
 });
 
-test('landing page 404s instead of crashing when its product is deactivated', function () {
+test('landing page still loads when its product is deactivated (inactive products are allowed)', function () {
     $product = Product::factory()->create(['is_active' => true, 'published_at' => now()->subDay()]);
     $page = LandingPage::create([
         'title' => 'Promo',
@@ -34,7 +34,7 @@ test('landing page 404s instead of crashing when its product is deactivated', fu
     ]);
     $product->update(['is_active' => false]);
 
-    get(route('lp.show', $page->slug))->assertNotFound();
+    get(route('lp.show', $page->slug))->assertOk();
 });
 
 test('landing page order placement 404s instead of crashing when its product was soft-deleted', function () {

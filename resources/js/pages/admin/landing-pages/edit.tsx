@@ -16,7 +16,12 @@ import { Select } from '@/components/ui/select';
 import { useRowKeys } from '@/hooks/use-row-keys';
 import { maxLength, pattern, required, validate } from '@/lib/validate';
 
-type Product = { id: number; name: string; price: number };
+type Product = {
+    id: number;
+    name: string;
+    price: number;
+    is_active: boolean;
+};
 
 type Sections = {
     hero: {
@@ -54,6 +59,7 @@ type Props = {
         slug: string;
         product_id: number;
         is_active: boolean;
+        max_order_quantity: number;
     };
     sections: Sections;
     products: Product[];
@@ -143,6 +149,7 @@ export default function LandingPageEdit({
             slug: page.slug,
             product_id: String(page.product_id),
             is_active: page.is_active,
+            max_order_quantity: page.max_order_quantity ?? 100,
             sections: initialSections,
         });
 
@@ -258,10 +265,43 @@ export default function LandingPageEdit({
                                     {products.map((p) => (
                                         <option key={p.id} value={p.id}>
                                             {p.name}
+                                            {p.is_active ? '' : ' (inactive)'}
                                         </option>
                                     ))}
                                 </Select>
                             </div>
+                            {/* Most units one customer can order at once (all variants together) */}
+                            <div className="col-span-2">
+                                <label className="mb-1 block text-sm font-medium text-slate-700">
+                                    Most items per order
+                                </label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={100}
+                                    className={inputClass}
+                                    value={data.max_order_quantity}
+                                    onChange={(e) =>
+                                        setData(
+                                            'max_order_quantity',
+                                            Number(e.target.value) || 1,
+                                        )
+                                    }
+                                />
+                                <p className="mt-1 text-xs text-slate-400">
+                                    The most units a customer can buy in one
+                                    order from this page, all options together
+                                    (1 to 100). Cash-on-delivery orders are also
+                                    limited per phone number by the shop's
+                                    pending-order rule.
+                                </p>
+                                {errors.max_order_quantity && (
+                                    <p className="mt-1 text-xs text-red-600">
+                                        {errors.max_order_quantity}
+                                    </p>
+                                )}
+                            </div>
+
                             <div className="col-span-2 flex items-center gap-2">
                                 <input
                                     type="checkbox"

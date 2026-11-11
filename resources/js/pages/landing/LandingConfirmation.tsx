@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 type OrderItem = {
     id: number;
     product_name: string;
+    variant_label?: string | null;
     price: number;
     quantity: number;
     subtotal: number;
@@ -114,7 +115,13 @@ export default function LandingConfirmation({
                                         className="flex items-center justify-between text-sm"
                                     >
                                         <span className="text-slate-700">
-                                            {item.product_name}{' '}
+                                            {item.product_name}
+                                            {item.variant_label && (
+                                                <span className="text-slate-500">
+                                                    {' '}
+                                                    ({item.variant_label})
+                                                </span>
+                                            )}{' '}
                                             <span className="text-slate-400">
                                                 ×{item.quantity}
                                             </span>

@@ -8,10 +8,10 @@ use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Models\LandingPage;
 use App\Models\Product;
-use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,22 +20,13 @@ class LandingPageController extends Controller
     use UpdatesStatusInBulk;
 
     /**
-     * FSA-08: a landing page has no variant selector, and
-     * InventoryService::decrementForOrderItem() always throws
-     * InsufficientStockException for a variant product ordered with no
-     * variant_id — every order placed through a landing page for such a
-     * product fails deterministically, with mobile banking having already
-     * collected payment first. Block it at the one place landing pages are
-     * created or repointed at a product, rather than touching the funnel
-     * itself or the payment flow.
+     * A landing page can promote any product that still exists — active or
+     * switched off in the shop, with or without colour/size variants. Only a
+     * deleted product is refused.
      */
-    private function productHasVariantsRule(): Closure
+    private function productExistsRule(): Exists
     {
-        return function (string $attribute, mixed $value, Closure $fail): void {
-            if (Product::whereKey($value)->whereHas('variants')->exists()) {
-                $fail('This product has colour/size variants, which landing pages don\'t support yet. Choose a variant-less product, or add a variant selector to the landing-page funnel before using this one.');
-            }
-        };
+        return Rule::exists('products', 'id')->whereNull('deleted_at');
     }
 
     public function index(): Response
@@ -49,9 +40,8 @@ class LandingPageController extends Controller
 
     public function create(): Response
     {
-        $products = Product::where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'price']);
+        $products = Product::orderBy('name')
+            ->get(['id', 'name', 'price', 'is_active']);
 
         return Inertia::render('admin/landing-pages/create', ['products' => $products]);
     }
@@ -61,8 +51,9 @@ class LandingPageController extends Controller
         $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9\-]+$/', 'unique:landing_pages,slug'],
-            'product_id' => ['required', 'integer', 'exists:products,id', $this->productHasVariantsRule()],
+            'product_id' => ['required', 'integer', $this->productExistsRule()],
             'is_active' => ['boolean'],
+            'max_order_quantity' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         $page = LandingPage::create([
@@ -70,6 +61,7 @@ class LandingPageController extends Controller
             'slug' => $request->slug,
             'product_id' => $request->product_id,
             'is_active' => $request->boolean('is_active', true),
+            'max_order_quantity' => $request->integer('max_order_quantity', 100),
             'sections' => LandingPage::defaultSections(),
         ]);
 
@@ -79,9 +71,8 @@ class LandingPageController extends Controller
 
     public function edit(LandingPage $landingPage): Response
     {
-        $products = Product::where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'price']);
+        $products = Product::orderBy('name')
+            ->get(['id', 'name', 'price', 'is_active']);
 
         return Inertia::render('admin/landing-pages/edit', [
             'page' => $landingPage->load('product:id,name,price,free_delivery'),
@@ -95,8 +86,9 @@ class LandingPageController extends Controller
         $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9\-]+$/', Rule::unique('landing_pages', 'slug')->ignore($landingPage->id)],
-            'product_id' => ['required', 'integer', 'exists:products,id', $this->productHasVariantsRule()],
+            'product_id' => ['required', 'integer', $this->productExistsRule()],
             'is_active' => ['boolean'],
+            'max_order_quantity' => ['nullable', 'integer', 'min:1', 'max:100'],
             'sections' => ['nullable', 'array'],
             'sections.description.custom_content' => ['nullable', 'string', 'max:20000'],
         ]);
@@ -106,6 +98,7 @@ class LandingPageController extends Controller
             'slug' => $request->slug,
             'product_id' => $request->product_id,
             'is_active' => $request->boolean('is_active'),
+            'max_order_quantity' => $request->integer('max_order_quantity', (int) $landingPage->max_order_quantity),
             'sections' => $request->input('sections', $landingPage->sections),
         ]);
 

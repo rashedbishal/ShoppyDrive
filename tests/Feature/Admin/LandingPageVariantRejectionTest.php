@@ -12,11 +12,11 @@ use function Pest\Laravel\actingAs;
 uses(RefreshDatabase::class);
 
 /*
- * FSA-08: a landing page has no variant selector, so every order placed
- * through one for a variant product fails deterministically at
- * InventoryService::decrementForOrderItem() — with mobile banking having
- * already collected payment first (FSA-07). Blocked at admin save instead
- * of building a variant selector into the funnel.
+ * FSA-08 (superseded 2026-11-11): landing pages used to refuse a product with
+ * colour/size variants because the funnel had no variant selector. It has one
+ * now (one row per variant with its own quantity), so variants are accepted.
+ * A landing page may also promote an inactive product; only a deleted product
+ * is refused.
  */
 beforeEach(function () {
     $this->admin = createAdmin();
@@ -25,70 +25,72 @@ beforeEach(function () {
     ProductVariant::factory()->create(['product_id' => $this->variantProduct->id]);
 });
 
-test('creating a landing page for a variant product is rejected', function () {
-    actingAs($this->admin, 'admin');
-
-    $response = $this->post(route('admin.landing-pages.store'), [
+function landingPagePayload(Product $product, array $overrides = []): array
+{
+    return array_merge([
         'title' => 'Promo',
-        'slug' => 'promo-variant-'.uniqid(),
-        'product_id' => $this->variantProduct->id,
+        'slug' => 'promo-'.uniqid(),
+        'product_id' => $product->id,
         'is_active' => true,
-    ]);
+    ], $overrides);
+}
 
-    $response->assertSessionHasErrors('product_id');
+test('a landing page can be created for a variant product', function () {
+    actingAs($this->admin, 'admin')
+        ->post(route('admin.landing-pages.store'), landingPagePayload($this->variantProduct))
+        ->assertSessionHasNoErrors();
+
+    expect(LandingPage::query()->where('product_id', $this->variantProduct->id)->exists())->toBeTrue();
+});
+
+test('a landing page can be created for an inactive product', function () {
+    $inactive = Product::factory()->create(['is_active' => false]);
+
+    actingAs($this->admin, 'admin')
+        ->post(route('admin.landing-pages.store'), landingPagePayload($inactive))
+        ->assertSessionHasNoErrors();
+
+    expect(LandingPage::query()->where('product_id', $inactive->id)->exists())->toBeTrue();
+});
+
+test('a deleted product is refused', function () {
+    $deleted = Product::factory()->create();
+    $deleted->delete();
+
+    actingAs($this->admin, 'admin')
+        ->post(route('admin.landing-pages.store'), landingPagePayload($deleted))
+        ->assertSessionHasErrors('product_id');
+
     expect(LandingPage::query()->count())->toBe(0);
 });
 
-test('creating a landing page for a variant-less product still works', function () {
-    actingAs($this->admin, 'admin');
+test('the product list offered to the admin includes inactive products', function () {
+    $inactive = Product::factory()->create(['is_active' => false, 'name' => 'Switched Off Item']);
 
-    $response = $this->post(route('admin.landing-pages.store'), [
-        'title' => 'Promo',
-        'slug' => 'promo-plain-'.uniqid(),
-        'product_id' => $this->plainProduct->id,
-        'is_active' => true,
-    ]);
-
-    $response->assertSessionDoesntHaveErrors();
-    expect(LandingPage::query()->where('product_id', $this->plainProduct->id)->exists())->toBeTrue();
+    actingAs($this->admin, 'admin')
+        ->get(route('admin.landing-pages.create'))
+        ->assertInertia(fn ($page) => $page->where('products', fn ($products) => collect($products)->pluck('id')->contains($inactive->id)));
 });
 
-test('repointing an existing landing page at a variant product is rejected', function () {
-    actingAs($this->admin, 'admin');
-    $page = LandingPage::create([
-        'title' => 'Promo', 'slug' => 'promo-'.uniqid(), 'product_id' => $this->plainProduct->id,
-        'is_active' => true, 'sections' => LandingPage::defaultSections(),
-    ]);
+test('the most units per order defaults to 100 and the admin can change it, from 1 to 100', function () {
+    actingAs($this->admin, 'admin')
+        ->post(route('admin.landing-pages.store'), landingPagePayload($this->plainProduct))
+        ->assertSessionHasNoErrors();
 
-    $response = $this->put(route('admin.landing-pages.update', $page), [
-        'title' => $page->title,
-        'slug' => $page->slug,
-        'product_id' => $this->variantProduct->id,
-        'is_active' => true,
-        'sections' => $page->sections,
-    ]);
+    $page = LandingPage::query()->sole();
+    expect($page->max_order_quantity)->toBe(100);
 
-    $response->assertSessionHasErrors('product_id');
-    expect($page->refresh()->product_id)->toBe($this->plainProduct->id);
-});
+    $this->put(route('admin.landing-pages.update', $page), [
+        'title' => $page->title, 'slug' => $page->slug, 'product_id' => $page->product_id,
+        'is_active' => true, 'max_order_quantity' => 7, 'sections' => $page->sections,
+    ])->assertSessionHasNoErrors();
+    expect($page->refresh()->max_order_quantity)->toBe(7);
 
-test('saving other fields on a landing page already pointed at a variant product is blocked until the product changes', function () {
-    actingAs($this->admin, 'admin');
-    // Simulates a pre-existing row created before this validation existed
-    // (bypassing the model-level guard the way a raw seed/import would).
-    $page = LandingPage::create([
-        'title' => 'Promo', 'slug' => 'promo-'.uniqid(), 'product_id' => $this->variantProduct->id,
-        'is_active' => true, 'sections' => LandingPage::defaultSections(),
-    ]);
-
-    $response = $this->put(route('admin.landing-pages.update', $page), [
-        'title' => 'Promo (renamed)',
-        'slug' => $page->slug,
-        'product_id' => $this->variantProduct->id,
-        'is_active' => true,
-        'sections' => $page->sections,
-    ]);
-
-    $response->assertSessionHasErrors('product_id');
-    expect($page->refresh()->title)->toBe('Promo');
+    foreach ([0, 101] as $bad) {
+        $this->put(route('admin.landing-pages.update', $page), [
+            'title' => $page->title, 'slug' => $page->slug, 'product_id' => $page->product_id,
+            'is_active' => true, 'max_order_quantity' => $bad, 'sections' => $page->sections,
+        ])->assertSessionHasErrors('max_order_quantity');
+    }
+    expect($page->refresh()->max_order_quantity)->toBe(7);
 });

@@ -13,6 +13,7 @@ use App\Models\LandingPage;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PendingCheckout;
+use App\Models\Product;
 use App\Models\ReceivedSms;
 use App\Models\Setting;
 use App\Services\InventoryService;
@@ -55,7 +56,11 @@ class LandingPageController extends Controller
         // 500 instead of 404 when `page->product` turns out to be null.
         $page = LandingPage::where('slug', $slug)
             ->where('is_active', true)
-            ->whereHas('product', fn ($q) => $q->visible())
+            // The page's own product, switched off in the shop or not: a
+            // landing page may promote an inactive or unpublished product.
+            // Still gone: a deleted product (the relation excludes
+            // soft-deleted ones) and one whose category/brand is deactivated.
+            ->whereHas('product', fn ($q) => $q->taxonomyActive())
             ->with([
                 // PERF-001: variants.media — ProductVariant's appended
                 // `image` accessor otherwise lazy-loads it per variant.
@@ -69,6 +74,7 @@ class LandingPageController extends Controller
                 'title' => $page->title,
                 'slug' => $page->slug,
                 'sections' => $page->getSections(),
+                'max_order_quantity' => (int) $page->max_order_quantity,
             ],
             'product' => $this->serializeProduct($page->product),
             'bkashNumber' => Setting::find('bkash_number')?->value,
@@ -103,12 +109,65 @@ class LandingPageController extends Controller
      */
     private const ORDER_TOKEN_LOCK_WAIT_SECONDS = 10;
 
+    /**
+     * A product without variants is ordered with one `quantity`; one with
+     * variants is ordered with `items`, a line per variant (each its own
+     * quantity). Either way the page's own "most units per order" limit
+     * (Admin > Landing pages) caps the total, checked in orderLines().
+     *
+     * @return array<string, mixed>
+     */
+    private function quantityRules(LandingPage $page, Product $product): array
+    {
+        $max = max(1, (int) $page->max_order_quantity);
+
+        if ($product->variants->isEmpty()) {
+            return ['quantity' => ['required', 'integer', 'min:1', 'max:'.$max]];
+        }
+
+        return [
+            'items' => ['required', 'array', 'min:1', 'max:'.$product->variants->count()],
+            'items.*.variant_id' => ['required', 'integer', 'distinct', Rule::in($product->variants->pluck('id')->all())],
+            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:'.$max],
+        ];
+    }
+
+    /**
+     * The validated order as lines of variant id (null for a product without
+     * variants) and quantity, in variant-id order so concurrent orders take
+     * their stock locks in the same order. Total units are capped here.
+     *
+     * @return list<array{variant_id: int|null, quantity: int}>
+     */
+    private function orderLines(Request $request, LandingPage $page, Product $product): array
+    {
+        if ($product->variants->isEmpty()) {
+            $lines = [['variant_id' => null, 'quantity' => (int) $request->input('quantity')]];
+        } else {
+            $lines = collect($request->input('items', []))
+                ->map(fn ($item): array => ['variant_id' => (int) $item['variant_id'], 'quantity' => (int) $item['quantity']])
+                ->sortBy('variant_id')
+                ->values()
+                ->all();
+        }
+
+        $max = max(1, (int) $page->max_order_quantity);
+
+        if (array_sum(array_column($lines, 'quantity')) > $max) {
+            throw ValidationException::withMessages([
+                $product->variants->isEmpty() ? 'quantity' : 'items' => "You can order up to {$max} items at a time.",
+            ]);
+        }
+
+        return $lines;
+    }
+
     public function placeOrder(Request $request, string $slug): RedirectResponse
     {
         $page = LandingPage::where('slug', $slug)
             ->where('is_active', true)
-            ->whereHas('product', fn ($q) => $q->visible())
-            ->with('product')
+            ->whereHas('product', fn ($q) => $q->taxonomyActive())
+            ->with('product.variants')
             ->firstOrFail();
         $product = $page->product;
 
@@ -132,7 +191,7 @@ class LandingPageController extends Controller
             'city' => ['required', 'string', 'max:255'],
             'state' => ['required', 'string', 'max:255', Rule::in(BangladeshDistricts::ALL)],
             'postal_code' => ['nullable', 'string', 'max:20'],
-            'quantity' => ['required', 'integer', 'min:1', 'max:100'],
+            ...$this->quantityRules($page, $product),
             'payment_method' => ['required', 'in:cod,mobile_banking'],
             'provider' => ['required_if:payment_method,mobile_banking', 'nullable', 'in:bkash,nagad'],
             // Missing/malformed must fail validation here, never silently
@@ -143,7 +202,12 @@ class LandingPageController extends Controller
         ], [
             'phone.regex' => 'Enter a valid 11-digit Bangladeshi phone number (e.g. 01712345678).',
             'sd_confirm_ref.prohibited' => 'We could not place this order. Please refresh the page and try again.',
+            'items.required' => 'Choose at least one option and quantity.',
+            'items.min' => 'Choose at least one option and quantity.',
+            'items.*.variant_id.in' => 'One of the selected options is no longer available. Please refresh the page.',
         ]);
+
+        $lines = $this->orderLines($request, $page, $product);
 
         // OPS-005: see PlaceOrderRequest::withValidator() for why.
         if ($request->input('payment_method') === 'mobile_banking' && SmsForwarderHeartbeat::isDown()) {
@@ -167,14 +231,14 @@ class LandingPageController extends Controller
         $lock = Cache::lock("lp-order-lock:{$orderToken}", self::ORDER_TOKEN_LOCK_WAIT_SECONDS * 3);
 
         try {
-            return $lock->block(self::ORDER_TOKEN_LOCK_WAIT_SECONDS, function () use ($request, $page, $product, $slug, $resultKey) {
+            return $lock->block(self::ORDER_TOKEN_LOCK_WAIT_SECONDS, function () use ($request, $page, $product, $slug, $resultKey, $lines) {
                 // The other holder may have finished and released between
                 // our first check above and actually acquiring the lock.
                 if (($cached = Cache::get($resultKey)) !== null) {
                     return $this->redirectForCachedLandingOrder($cached, $slug);
                 }
 
-                return $this->completeLandingPageOrder($request, $page, $product, $slug, $resultKey);
+                return $this->completeLandingPageOrder($request, $page, $product, $slug, $resultKey, $lines);
             });
         } catch (LockTimeoutException) {
             // Someone else is actively processing this exact submission and
@@ -228,11 +292,41 @@ class LandingPageController extends Controller
         return redirect()->route('lp.show', $slug);
     }
 
-    private function completeLandingPageOrder(Request $request, LandingPage $page, mixed $product, string $slug, string $resultKey): RedirectResponse
+    /**
+     * @param  list<array{variant_id: int|null, quantity: int}>  $lines
+     */
+    private function completeLandingPageOrder(Request $request, LandingPage $page, mixed $product, string $slug, string $resultKey, array $lines): RedirectResponse
     {
-        $qty = (int) $request->quantity;
-        $price = $this->cartManager->resolvePrice($product->id, null);
-        $subtotal = round($price * $qty, 2);
+        $product->loadMissing(['media', 'variants.media']);
+        $primaryImage = $product->media->where('is_primary', true)->first()?->path ?? $product->media->first()?->path;
+
+        $itemsData = [];
+
+        foreach ($lines as $line) {
+            $variant = $line['variant_id'] !== null ? $product->variants->firstWhere('id', $line['variant_id']) : null;
+            $price = $this->cartManager->resolvePrice($product->id, $line['variant_id']);
+
+            $itemsData[] = [
+                'product_id' => $product->id,
+                'variant_id' => $line['variant_id'],
+                'product_name' => $product->name,
+                'sku' => $variant?->sku ?? $product->sku ?? '',
+                'price' => $price,
+                'quantity' => $line['quantity'],
+                'subtotal' => round($price * $line['quantity'], 2),
+                'product_snapshot' => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $variant?->sku ?? $product->sku,
+                    'price' => $price,
+                    'image' => $variant?->image ?? $primaryImage,
+                    'variant_attributes' => $variant?->attributes,
+                ],
+            ];
+        }
+
+        $qty = array_sum(array_column($lines, 'quantity'));
+        $subtotal = round(array_sum(array_column($itemsData, 'subtotal')), 2);
         $shippingCost = $this->shippingCalculator->forItemsWithoutBundles(
             ['state' => $request->state, 'city' => $request->city],
             [['free_delivery' => (bool) $product->free_delivery, 'free_delivery_min_qty' => $product->free_delivery_min_qty, 'quantity' => $qty]],
@@ -252,32 +346,14 @@ class LandingPageController extends Controller
             'country' => 'Bangladesh',
         ];
 
-        $itemData = [
-            'product_id' => $product->id,
-            'variant_id' => null,
-            'product_name' => $product->name,
-            'sku' => $product->sku ?? '',
-            'price' => $price,
-            'quantity' => $qty,
-            'subtotal' => $subtotal,
-            'product_snapshot' => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'sku' => $product->sku,
-                'price' => $price,
-                'image' => $product->media->where('is_primary', true)->first()?->path
-                    ?? $product->media->first()?->path,
-            ],
-        ];
-
         if ($request->payment_method === 'cod') {
             $guestToken = Str::random(40);
             $orderNumber = OrderNumberGenerator::generate();
 
             try {
-                $order = DB::transaction(function () use ($request, $page, $shippingAddress, $itemData, $subtotal, $shippingCost, $total, $guestToken, $orderNumber) {
+                $order = DB::transaction(function () use ($request, $page, $product, $qty, $shippingAddress, $itemsData, $subtotal, $shippingCost, $total, $guestToken, $orderNumber) {
                     // BIZ-011: before any stock is taken.
-                    $this->pendingCodLimit->assertWithinLimit($shippingAddress['phone'], [$itemData['product_id'] => (int) $itemData['quantity']]);
+                    $this->pendingCodLimit->assertWithinLimit($shippingAddress['phone'], [$product->id => $qty]);
 
                     $order = Order::create([
                         'order_number' => $orderNumber,
@@ -299,8 +375,12 @@ class LandingPageController extends Controller
 
                     $order->statusHistories()->create(['status' => 'pending', 'notes' => 'Order placed via landing page.']);
 
-                    $flashSaleItemId = $this->inventory->decrementForOrderItem($order, $itemData['product_id'], $itemData['variant_id'], $itemData['quantity'], (float) $itemData['price']);
-                    $order->items()->create([...$itemData, 'flash_sale_item_id' => $flashSaleItemId]);
+                    // All lines or none: a line that is out of stock throws and
+                    // the whole order (and every stock change) rolls back.
+                    foreach ($itemsData as $itemData) {
+                        $flashSaleItemId = $this->inventory->decrementForOrderItem($order, $itemData['product_id'], $itemData['variant_id'], $itemData['quantity'], (float) $itemData['price']);
+                        $order->items()->create([...$itemData, 'flash_sale_item_id' => $flashSaleItemId]);
+                    }
 
                     return $order;
                 });
@@ -324,7 +404,9 @@ class LandingPageController extends Controller
         // decrementForOrderItem() only runs once the customer has already
         // paid and submitted their TrxID (below, in submitPayment()).
         try {
-            $this->inventory->assertAvailable($itemData['product_id'], $itemData['variant_id'], $itemData['quantity'], (float) $itemData['price']);
+            foreach ($itemsData as $itemData) {
+                $this->inventory->assertAvailable($itemData['product_id'], $itemData['variant_id'], $itemData['quantity'], (float) $itemData['price']);
+            }
         } catch (InsufficientStockException $e) {
             return back()->withErrors(['quantity' => $e->getMessage()])->withInput();
         }
@@ -341,7 +423,7 @@ class LandingPageController extends Controller
             'checkout_data' => [
                 'order_number' => $orderNumber,
                 'shipping_address' => $shippingAddress,
-                'items' => [$itemData],
+                'items' => $itemsData,
                 'subtotal' => $subtotal,
                 'shipping_cost' => $shippingCost,
                 'discount' => 0,
@@ -607,6 +689,9 @@ class LandingPageController extends Controller
                 'items' => $order->items->map(fn ($item) => [
                     'id' => $item->id,
                     'product_name' => $item->product_name,
+                    // e.g. "Color: Red, Size: M" for a variant line.
+                    'variant_label' => collect($item->product_snapshot['variant_attributes'] ?? [])
+                        ->map(fn ($value, $name) => "{$name}: {$value}")->implode(', ') ?: null,
                     'price' => (float) $item->price,
                     'quantity' => $item->quantity,
                     'subtotal' => (float) $item->subtotal,
@@ -676,6 +761,7 @@ class LandingPageController extends Controller
             'flash_sale_price' => $flashItem?->sale_price,
             'free_delivery' => $product->free_delivery,
             'free_delivery_min_qty' => $product->free_delivery_min_qty,
+            'stock_quantity' => $product->variants->isEmpty() ? (int) $product->stock_quantity : null,
             'media' => $product->media->map(fn ($m) => [
                 'id' => $m->id,
                 'path' => $m->path,
@@ -693,6 +779,8 @@ class LandingPageController extends Controller
                     'price' => $effectiveVariantPrice,
                     'stock_quantity' => $v->stock_quantity,
                     'attributes' => $v->attributes,
+                    'image' => $v->image,
+                    'compare_price' => $v->compare_price && (float) $v->compare_price > $effectiveVariantPrice ? (float) $v->compare_price : null,
                     'in_flash_sale' => $variantFlashItem !== null,
                     'flash_sale_price' => $variantFlashItem?->sale_price,
                 ];

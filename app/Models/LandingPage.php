@@ -14,12 +14,13 @@ class LandingPage extends Model
 {
     use Auditable;
 
-    protected $fillable = ['title', 'slug', 'product_id', 'is_active', 'sections'];
+    protected $fillable = ['title', 'slug', 'product_id', 'is_active', 'max_order_quantity', 'sections'];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'max_order_quantity' => 'integer',
             'sections' => 'array',
         ];
     }
