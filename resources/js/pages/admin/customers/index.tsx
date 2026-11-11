@@ -96,7 +96,31 @@ export default function CustomersIndex({ customers, filters }: Props) {
                             customers.data.map((customer) => (
                                 <div
                                     key={customer.id}
-                                    className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4"
+                                    role="link"
+                                    tabIndex={0}
+                                    onClick={() =>
+                                        router.visit(
+                                            route(
+                                                'admin.customers.show',
+                                                customer.id,
+                                            ),
+                                        )
+                                    }
+                                    onKeyDown={(event) => {
+                                        if (
+                                            event.target ===
+                                                event.currentTarget &&
+                                            event.key === 'Enter'
+                                        ) {
+                                            router.visit(
+                                                route(
+                                                    'admin.customers.show',
+                                                    customer.id,
+                                                ),
+                                            );
+                                        }
+                                    }}
+                                    className="admin-row-card flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#c8102e] sm:flex-nowrap sm:gap-4"
                                 >
                                     <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">
                                         {customer.name
@@ -131,6 +155,9 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                                 'admin.customers.show',
                                                 customer.id,
                                             )}
+                                            onClick={(event) =>
+                                                event.stopPropagation()
+                                            }
                                             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                                         >
                                             <Eye className="size-4" />
@@ -139,9 +166,10 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                             <button
                                                 type="button"
                                                 title="Anonymize"
-                                                onClick={() =>
-                                                    setDeleteTarget(customer)
-                                                }
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    setDeleteTarget(customer);
+                                                }}
                                                 className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
                                             >
                                                 <Trash2 className="size-4" />
