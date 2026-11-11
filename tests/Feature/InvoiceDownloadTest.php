@@ -201,3 +201,17 @@ test('a prepaid guest landing-page order has an invoice before delivery', functi
 
     assertPdfDownload(get(route('lp.invoice', $order->guest_token)), $order);
 })->with(['pending', 'processing', 'shipped', 'delivered']);
+
+test('BE-009: the invoice date is the Dhaka calendar day, not the UTC day the order was stored on', function (string $createdAtUtc, string $expectedDate) {
+    $order = invoiceOrder(User::factory()->create(), 'delivered');
+    $order->forceFill(['created_at' => $createdAtUtc])->saveQuietly();
+    $order->load(['items.product', 'items.variant', 'user']);
+
+    $html = view('invoices.order', ['order' => $order])->render();
+
+    expect($html)->toContain($expectedDate);
+})->with([
+    '03:00 Dhaka on 5 Nov is 21:00 UTC on 4 Nov (the reported case)' => ['2026-11-04 21:00:00', '05 Nov 2026'],
+    '23:59 Dhaka is still the same Dhaka day' => ['2026-11-05 17:59:00', '05 Nov 2026'],
+    'midnight in Dhaka starts the next day' => ['2026-11-05 18:00:00', '06 Nov 2026'],
+]);

@@ -2,13 +2,13 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 11 / 99** · Live, ready to retest: 21 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
+**Done: 11 / 99** · Live, ready to retest: 22 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
 ## Backend
 
-- [ ] BE-009 — "Today" figures and invoices use UTC, not Dhaka time
+- [>] BE-009 — "Today" figures and invoices use UTC, not Dhaka time — tester marked it Fail (2026-11-11) because `config/app.php` still says `'timezone' => 'UTC'`. That is deliberate and not the bug: timestamps are stored in UTC (changing the config would shift every stored time), and the fix (`dad977d`, deployed 2026-11-05) moved only the places that show a day: the dashboard's today/yesterday boundaries and 7-day chart, the visitor counter's day, and the invoice "Date Issued" are all computed in Asia/Dhaka. Checked with the tester's own example: an order at 03:00 Dhaka on 5 Nov (21:00 UTC on 4 Nov) is invoiced 05 Nov 2026, counts as today's order/revenue on the dashboard, and a 03:30 Dhaka visit is counted on the Dhaka day. New invoice-date test added (fails when the conversion is removed, so it really guards this). No application code change; ready to retest: place an order between 00:00 and 06:00 Dhaka time and check the invoice date and the dashboard Today figures
 - [ ] BE-001 — Malformed input causes server errors
 - [~] BE-002 — A deleted product in a guest cart gives a bare 404 at checkout — tester's "need clear message" was right (real deletes are force-deletes, not soft); fixed for guests and, more severely, for logged-in customers whose item was silently cascade-deleted from their cart; fix pushed 2026-11-09 (commit `f37c051`), deploy run outcome not yet confirmed
 - [>] BE-003 — DatabaseSeeder wipes the catalog and has no production guard — tester marked it Fail (2026-11-11) from code inspection ("no `app()->isProduction()` guard"); that is not what the code says. The guard exists (`app()->environment('production')` throws before anything is touched; shipped `e1ebd4b`, deployed 2026-11-07), just not under that exact method name. Proved with a real run: on a scratch SQLite database holding a marker category, `APP_ENV=production php artisan db:seed --force` stopped with "Refusing to seed demo data in production…", the category survived and no test@example.com user was created. Normal local seeding still works (11 categories, 36 products, test user). Nothing in `composer.json`, the workflows or the app runs `db:seed`, and no other seeder truncates or sets a password. No code change; ready to retest (read the file, do not run db:seed on the live site)
