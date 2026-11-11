@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getXsrfToken } from '@/lib/csrf';
+import { useTouchReorder } from '@/lib/hooks/useTouchReorder';
 import { cn } from '@/lib/utils';
 import type { HomepageSetting } from '@/types';
 
@@ -105,6 +106,16 @@ export default function HomepageIndex({ sections }: Props) {
             setSavingOrder(false);
         }
     };
+
+    const touchReorder = useTouchReorder({
+        enabled: isReordering,
+        onStart: (index) => setDraggingId(displayedSections[index]?.id ?? null),
+        onDrop: (from, to) => {
+            dragIndexRef.current = from;
+            handleDrop(to);
+        },
+        onEnd: () => setDraggingId(null),
+    });
 
     const handleDrop = (dropIndex: number) => {
         const dragIndex = dragIndexRef.current;
@@ -337,7 +348,11 @@ export default function HomepageIndex({ sections }: Props) {
                             {displayedSections.map((section, index) => (
                                 <div
                                     key={section.id}
-                                    draggable={isReordering}
+                                    draggable={
+                                        isReordering &&
+                                        touchReorder.touchDraggingIndex === null
+                                    }
+                                    {...touchReorder.rowProps(index)}
                                     onDragStart={() => {
                                         if (!isReordering) {
                                             return;
@@ -363,11 +378,16 @@ export default function HomepageIndex({ sections }: Props) {
                                             : 'hover:bg-slate-50/50',
                                         draggingId === section.id &&
                                             'opacity-40',
+                                        touchReorder.touchOverIndex === index &&
+                                            touchReorder.touchDraggingIndex !==
+                                                index &&
+                                            'ring-2 ring-[#c8102e]/40 ring-inset',
                                     )}
                                 >
                                     <div
+                                        {...touchReorder.handleProps(index)}
                                         className={cn(
-                                            'transition-colors',
+                                            '-m-2.5 p-2.5 transition-colors',
                                             isReordering
                                                 ? 'cursor-grab text-slate-400 hover:text-slate-600 active:cursor-grabbing'
                                                 : 'cursor-default text-slate-200',

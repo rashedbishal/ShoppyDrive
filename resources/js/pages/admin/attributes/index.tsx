@@ -23,6 +23,7 @@ import {
     dialogOverlayMotion,
     dialogPanel,
 } from '@/lib/dialog-motion';
+import { useTouchReorder } from '@/lib/hooks/useTouchReorder';
 import { cn } from '@/lib/utils';
 import { maxLength, required, validate } from '@/lib/validate';
 
@@ -126,8 +127,8 @@ function toastFirstError(errors: Record<string, string | string[]>) {
     toast.error(Array.isArray(first) ? first[0] : first);
 }
 
-type DragHandlers = {
-    draggable: true;
+type DragHandlers = React.HTMLAttributes<HTMLElement> & {
+    draggable: boolean;
     onDragStart: () => void;
     onDragOver: (e: React.DragEvent) => void;
     onDrop: () => void;
@@ -139,6 +140,7 @@ function ValueChip({
     isColor,
     reorderMode,
     isDragging,
+    isDropTarget,
     dragHandlers,
     onEdit,
     onDelete,
@@ -147,6 +149,7 @@ function ValueChip({
     isColor: boolean;
     reorderMode: boolean;
     isDragging: boolean;
+    isDropTarget: boolean;
     dragHandlers: DragHandlers;
     onEdit: () => void;
     onDelete: () => void;
@@ -156,8 +159,9 @@ function ValueChip({
             <div
                 {...dragHandlers}
                 className={cn(
-                    'flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1.5 pr-3.5 pl-2 shadow-sm',
+                    'flex cursor-grab items-center gap-2 rounded-full border border-slate-200 bg-white py-1.5 pr-3.5 pl-2 shadow-sm',
                     isDragging && 'opacity-40',
+                    isDropTarget && 'ring-2 ring-[#c8102e]/40',
                 )}
             >
                 <GripVertical className="size-3.5 shrink-0 cursor-grab text-slate-300 active:cursor-grabbing" />
@@ -263,6 +267,16 @@ function AttributeCard({
             },
         );
     };
+
+    const touchReorder = useTouchReorder({
+        enabled: reorderMode,
+        onStart: (index) => setDraggingId(reorderValues[index]?.id ?? null),
+        onDrop: (from, to) => {
+            dragIndexRef.current = from;
+            handleDrop(to);
+        },
+        onEnd: () => setDraggingId(null),
+    });
 
     const handleDrop = (dropIndex: number) => {
         const dragIndex = dragIndexRef.current;
@@ -385,10 +399,18 @@ function AttributeCard({
                                 isColor={isColor}
                                 reorderMode={reorderMode}
                                 isDragging={draggingId === value.id}
+                                isDropTarget={
+                                    touchReorder.touchOverIndex === index &&
+                                    touchReorder.touchDraggingIndex !== index
+                                }
                                 onEdit={() => onEdit(value)}
                                 onDelete={() => onDelete(value.id)}
                                 dragHandlers={{
-                                    draggable: true,
+                                    ...touchReorder.rowProps(index),
+                                    ...touchReorder.handleProps(index),
+                                    draggable:
+                                        touchReorder.touchDraggingIndex ===
+                                        null,
                                     onDragStart: () => {
                                         dragIndexRef.current = index;
                                         setDraggingId(value.id);

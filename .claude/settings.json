@@ -22,7 +22,9 @@
       "Bash(awk -F: '{print $1\":\"$2}')",
       "Bash(grep -rn 'className=\"px-4 py-3 hover:bg-slate-50/60\"\\\\|className=\"flex flex-col gap-3 px-4 py-3 sm:flex-row\\\\|p-4\"$' returns reviews received-sms orders/incomplete failed-jobs sms-patterns)",
       "Bash(grep -rn \"route\\(\\\\s*$\\\\|route\\('admin\\\\.[a-z-]*\\\\.edit'\" --include=index.tsx .)",
-      "Bash(python3 - *)"
+      "Bash(python3 - *)",
+      "Bash(sed -i \"22a import { useTouchReorder } from '@/lib/hooks/useTouchReorder';\" resources/js/pages/admin/categories/index.tsx)",
+      "Bash(sed -i \"s|^                    . Drag the handle on the left to reorder|&|\" resources/js/pages/admin/categories/index.tsx)"
     ],
     "additionalDirectories": [
       "/media/saadman/data3/Projects/ShoppyDrive/resources/css",

@@ -20,6 +20,7 @@ import { useBulkSelect } from '@/hooks/use-bulk-select';
 import { resolveCategoryColor } from '@/lib/category-colors';
 import { CategoryIcon } from '@/lib/category-icons';
 import { clickableRow } from '@/lib/clickable-row';
+import { useTouchReorder } from '@/lib/hooks/useTouchReorder';
 import { cn } from '@/lib/utils';
 import {
     destroyMany as bulkDestroyRoute,
@@ -107,6 +108,16 @@ export default function CategoriesIndex({ categories, filters }: Props) {
             },
         });
     };
+
+    const touchReorder = useTouchReorder({
+        enabled: canReorder,
+        onStart: (index) => setDraggingId(items[index]?.id ?? null),
+        onDrop: (from, to) => {
+            dragIndexRef.current = from;
+            handleDrop(to);
+        },
+        onEnd: () => setDraggingId(null),
+    });
 
     const handleDrop = (dropIndex: number) => {
         const dragIndex = dragIndexRef.current;
@@ -244,7 +255,12 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                                                 cat.id,
                                             ),
                                         )}
-                                        draggable={canReorder}
+                                        draggable={
+                                            canReorder &&
+                                            touchReorder.touchDraggingIndex ===
+                                                null
+                                        }
+                                        {...touchReorder.rowProps(index)}
                                         onDragStart={() => {
                                             dragIndexRef.current = index;
                                             setDraggingId(cat.id);
@@ -259,10 +275,23 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                                             'admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4',
                                             draggingId === cat.id &&
                                                 'opacity-40',
+                                            touchReorder.touchOverIndex ===
+                                                index &&
+                                                touchReorder.touchDraggingIndex !==
+                                                    index &&
+                                                'ring-2 ring-[#c8102e]/40 ring-inset',
                                         )}
                                     >
                                         {canReorder ? (
-                                            <GripVertical className="size-4 shrink-0 cursor-grab text-slate-300 active:cursor-grabbing max-sm:hidden" />
+                                            <span
+                                                {...touchReorder.handleProps(
+                                                    index,
+                                                )}
+                                                aria-label="Drag to reorder"
+                                                className="-m-2 flex size-8 shrink-0 cursor-grab items-center justify-center rounded-md text-slate-300 active:cursor-grabbing"
+                                            >
+                                                <GripVertical className="size-4" />
+                                            </span>
                                         ) : (
                                             <span className="size-4 shrink-0 max-sm:hidden" />
                                         )}
