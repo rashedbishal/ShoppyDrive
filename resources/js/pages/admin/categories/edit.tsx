@@ -96,7 +96,7 @@ export default function CategoryEdit({ category }: Props) {
                 className="sm:max-w-xl"
             >
                 {/* Stats strip */}
-                <div className="flex gap-3">
+                <div className="mb-4 flex flex-wrap gap-3">
                     <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white px-4 py-2.5 shadow-sm">
                         <FolderOpen className="size-4 text-slate-400" />
                         <span className="text-sm font-semibold text-slate-700">
