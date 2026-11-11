@@ -2,6 +2,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useWebPushSms } from '@/hooks/useWebPushSms';
 
 type ForwarderStatus = {
@@ -91,16 +92,17 @@ function SmsNotificationsCard({ status }: { status: PushStatus }) {
         status.configured ? (props.vapid_public_key ?? null) : null,
     );
 
-    const handleGenerate = () => {
-        const message = status.configured
-            ? 'Create new notification keys? Every browser that enabled notifications will have to press "Enable" again.'
-            : 'Create the notification keys for this site?';
+    const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+    const [generating, setGenerating] = useState(false);
 
-        if (!confirm(message)) {
-            return;
-        }
-
-        router.post(route('admin.settings.sms-forwarder.push-keys.generate'));
+    const generateKeys = () => {
+        setGenerating(true);
+        router.post(route('admin.settings.sms-forwarder.push-keys.generate'), {
+            onFinish: () => {
+                setGenerating(false);
+                setGenerateDialogOpen(false);
+            },
+        });
     };
 
     const [enableMessage, setEnableMessage] = useState<string | null>(null);
@@ -177,7 +179,7 @@ function SmsNotificationsCard({ status }: { status: PushStatus }) {
                             type="button"
                             variant={status.configured ? 'outline' : 'default'}
                             size="sm"
-                            onClick={handleGenerate}
+                            onClick={() => setGenerateDialogOpen(true)}
                         >
                             {status.configured
                                 ? 'Create new keys'
@@ -263,6 +265,26 @@ function SmsNotificationsCard({ status }: { status: PushStatus }) {
                     </div>
                 )}
             </CardContent>
+            <ConfirmDialog
+                open={generateDialogOpen}
+                onOpenChange={setGenerateDialogOpen}
+                title={
+                    status.configured
+                        ? 'Create new notification keys?'
+                        : 'Generate notification keys?'
+                }
+                description={
+                    status.configured
+                        ? 'Every browser with notifications enabled will need to enable them again.'
+                        : 'This creates the keys required to enable instant SMS notifications in each admin browser.'
+                }
+                confirmLabel={
+                    status.configured ? 'Create new keys' : 'Generate keys'
+                }
+                processingLabel="Generating…"
+                onConfirm={generateKeys}
+                processing={generating}
+            />
         </Card>
     );
 }
@@ -279,6 +301,8 @@ export default function SmsForwarderSettings({
         | undefined;
 
     const [showToken, setShowToken] = useState(false);
+    const [regenerateDialogOpen, setRegenerateDialogOpen] = useState(false);
+    const [regenerating, setRegenerating] = useState(false);
 
     const origin = typeof window === 'undefined' ? '' : window.location.origin;
     const endpoints = [
@@ -286,16 +310,14 @@ export default function SmsForwarderSettings({
         { label: 'Heartbeat', path: '/api/sms/heartbeat' },
     ];
 
-    const handleRegenerate = () => {
-        if (
-            !confirm(
-                'Are you sure? You will need to update the token in your Android app.',
-            )
-        ) {
-            return;
-        }
-
-        router.post(route('admin.settings.sms-forwarder.regenerate'));
+    const regenerateToken = () => {
+        setRegenerating(true);
+        router.post(route('admin.settings.sms-forwarder.regenerate'), {
+            onFinish: () => {
+                setRegenerating(false);
+                setRegenerateDialogOpen(false);
+            },
+        });
     };
 
     const copyToClipboard = (text: string) => {
@@ -447,7 +469,9 @@ export default function SmsForwarderSettings({
                                 <div className="border-t border-slate-100 pt-2">
                                     <Button
                                         type="button"
-                                        onClick={handleRegenerate}
+                                        onClick={() =>
+                                            setRegenerateDialogOpen(true)
+                                        }
                                         className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
                                     >
                                         Regenerate Token
@@ -515,6 +539,16 @@ export default function SmsForwarderSettings({
                     </Card>
                 </div>
             </div>
+            <ConfirmDialog
+                open={regenerateDialogOpen}
+                onOpenChange={setRegenerateDialogOpen}
+                title="Regenerate forwarder token?"
+                description="The existing token will stop working. Update the token in your Android forwarder app immediately after generating the new one."
+                confirmLabel="Regenerate token"
+                processingLabel="Regenerating…"
+                onConfirm={regenerateToken}
+                processing={regenerating}
+            />
         </>
     );
 }
