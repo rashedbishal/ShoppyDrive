@@ -15,7 +15,6 @@ type ForwarderStatus = {
 
 type PushStatus = {
     configured: boolean;
-    source: 'cms' | 'env' | null;
     subscribed_browsers: number;
     can_manage: boolean;
 };

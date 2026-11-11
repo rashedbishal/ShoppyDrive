@@ -13,9 +13,8 @@ use Minishlink\WebPush\VAPID;
  * The VAPID key pair that identifies this site to the browsers' push services
  * (Google, Mozilla, Apple) so admin SMS notifications can be delivered. Like
  * every other credential here it lives in Setting and is created from the
- * admin panel (Admin > SMS Forwarder, mother admin only), never typed by hand.
- * VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY in `.env` still work as a fallback, so
- * an installation that already set them keeps working.
+ * admin panel (Admin > SMS Forwarder, mother admin only), never typed by hand
+ * and deliberately NOT read from `.env`.
  *
  * The private key must never leave the server, and neither key is in
  * LayoutCache::PUBLIC_SETTING_KEYS. Only the public key is given to the
@@ -29,12 +28,12 @@ class WebPushConfig
 
     public static function publicKey(): ?string
     {
-        return self::stored(self::PUBLIC_KEY_SETTING) ?? self::fromEnv('public_key');
+        return self::stored(self::PUBLIC_KEY_SETTING);
     }
 
     public static function privateKey(): ?string
     {
-        return self::stored(self::PRIVATE_KEY_SETTING) ?? self::fromEnv('private_key');
+        return self::stored(self::PRIVATE_KEY_SETTING);
     }
 
     public static function subject(): string
@@ -45,20 +44,6 @@ class WebPushConfig
     public static function isConfigured(): bool
     {
         return self::publicKey() !== null && self::privateKey() !== null;
-    }
-
-    /**
-     * Where the active pair comes from, for the admin page.
-     *
-     * @return 'cms'|'env'|null
-     */
-    public static function source(): ?string
-    {
-        if (self::stored(self::PUBLIC_KEY_SETTING) !== null && self::stored(self::PRIVATE_KEY_SETTING) !== null) {
-            return 'cms';
-        }
-
-        return self::fromEnv('public_key') !== null && self::fromEnv('private_key') !== null ? 'env' : null;
     }
 
     /**
@@ -83,13 +68,6 @@ class WebPushConfig
     private static function stored(string $key): ?string
     {
         $value = Setting::where('key', $key)->value('value');
-
-        return is_string($value) && trim($value) !== '' ? trim($value) : null;
-    }
-
-    private static function fromEnv(string $key): ?string
-    {
-        $value = config("services.webpush.{$key}");
 
         return is_string($value) && trim($value) !== '' ? trim($value) : null;
     }

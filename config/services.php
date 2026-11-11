@@ -47,9 +47,9 @@ return [
         'redirect' => env('FACEBOOK_REDIRECT_URI'),
     ],
 
+    // The VAPID key pair is NOT configured here or in .env: it is created
+    // from Admin > SMS Forwarder and stored as a Setting (see WebPushConfig).
     'webpush' => [
-        'public_key' => env('VAPID_PUBLIC_KEY'),
-        'private_key' => env('VAPID_PRIVATE_KEY'),
         'subject' => env('APP_URL', 'http://localhost'),
     ],
 

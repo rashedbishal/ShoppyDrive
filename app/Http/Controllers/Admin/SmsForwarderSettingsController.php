@@ -29,7 +29,6 @@ class SmsForwarderSettingsController extends Controller
             // public one reaches admins through the `vapid_public_key` shared prop.
             'pushStatus' => [
                 'configured' => WebPushConfig::isConfigured(),
-                'source' => WebPushConfig::source(),
                 'subscribed_browsers' => PushSubscription::count(),
                 'can_manage' => (bool) $request->user('admin')?->is_mother,
             ],

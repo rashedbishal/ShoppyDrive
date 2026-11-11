@@ -29,10 +29,6 @@ function pushSubscriptionFor(Admin $admin): PushSubscription
     ]);
 }
 
-beforeEach(function () {
-    config(['services.webpush.public_key' => null, 'services.webpush.private_key' => null]);
-});
-
 // ── Generating ───────────────────────────────────────────────────────────────
 
 test('the mother admin can generate the keys, and they are saved and usable', function () {
@@ -46,7 +42,6 @@ test('the mother admin can generate the keys, and they are saved and usable', fu
         ->assertSessionHas('success');
 
     expect(WebPushConfig::isConfigured())->toBeTrue()
-        ->and(WebPushConfig::source())->toBe('cms')
         ->and(WebPushConfig::publicKey())->toMatch('/^[A-Za-z0-9_-]{60,100}$/')
         ->and(WebPushConfig::privateKey())->toMatch('/^[A-Za-z0-9_-]{40,60}$/');
 });
@@ -77,23 +72,25 @@ test('an ordinary admin cannot generate the keys', function () {
 
 // ── Where the keys come from ─────────────────────────────────────────────────
 
-test('keys saved in the admin panel win over .env, and .env still works on its own', function () {
+test('the keys come only from the admin panel, never from .env', function () {
+    // Even if a VAPID value is present in config/env, it is ignored.
     config(['services.webpush.public_key' => 'env-public', 'services.webpush.private_key' => 'env-private']);
 
-    expect(WebPushConfig::publicKey())->toBe('env-public')->and(WebPushConfig::source())->toBe('env');
+    expect(WebPushConfig::publicKey())->toBeNull()
+        ->and(WebPushConfig::isConfigured())->toBeFalse();
 
     Setting::create(['key' => WebPushConfig::PUBLIC_KEY_SETTING, 'value' => 'cms-public', 'group' => 'notifications']);
     Setting::create(['key' => WebPushConfig::PRIVATE_KEY_SETTING, 'value' => 'cms-private', 'group' => 'notifications']);
 
     expect(WebPushConfig::publicKey())->toBe('cms-public')
         ->and(WebPushConfig::privateKey())->toBe('cms-private')
-        ->and(WebPushConfig::source())->toBe('cms');
+        ->and(WebPushConfig::isConfigured())->toBeTrue();
 });
 
 test('blank values count as not configured', function () {
     Setting::create(['key' => WebPushConfig::PUBLIC_KEY_SETTING, 'value' => '   ', 'group' => 'notifications']);
 
-    expect(WebPushConfig::isConfigured())->toBeFalse()->and(WebPushConfig::source())->toBeNull();
+    expect(WebPushConfig::isConfigured())->toBeFalse();
 });
 
 // ── What the browser is given ────────────────────────────────────────────────
@@ -109,7 +106,6 @@ test('admins get the public key (so the Enable banner appears) and never the pri
     $response->assertInertia(fn ($page) => $page
         ->where('vapid_public_key', $public)
         ->where('pushStatus.configured', true)
-        ->where('pushStatus.source', 'cms')
         ->where('pushStatus.can_manage', true));
     expect($response->getContent())->not->toContain($private);
 });
