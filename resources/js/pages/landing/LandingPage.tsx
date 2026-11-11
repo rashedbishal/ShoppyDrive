@@ -12,7 +12,7 @@ import {
     Star,
     Truck,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import HoneypotField from '@/components/honeypot-field';
 import SocialChatWidget from '@/components/layout/SocialChatWidget';
 import { Select } from '@/components/ui/select';
@@ -279,8 +279,14 @@ function InlinePayment({
                     </p>
                 )}
                 <div>
+                    <label
+                        htmlFor="lp-transaction-id"
+                        className="mb-1 block text-sm font-medium text-slate-700"
+                    >
+                        Transaction ID
+                    </label>
                     <input
-                        aria-label="Transaction ID from SMS"
+                        id="lp-transaction-id"
                         className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 font-mono text-sm tracking-wider uppercase focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/30 focus:outline-none"
                         value={data.transaction_id}
                         onChange={(e) =>
@@ -308,6 +314,27 @@ function InlinePayment({
     );
 }
 
+/** A visible label tied to its input, so the field is still named once the placeholder is gone. */
+function FieldLabel({
+    htmlFor,
+    required = false,
+    children,
+}: {
+    htmlFor: string;
+    required?: boolean;
+    children: React.ReactNode;
+}) {
+    return (
+        <label
+            htmlFor={htmlFor}
+            className="mb-1 block text-sm font-medium text-slate-700"
+        >
+            {children}
+            {required && <span className="ml-1 text-red-500">*</span>}
+        </label>
+    );
+}
+
 function OrderForm({
     product,
     slug,
@@ -323,6 +350,7 @@ function OrderForm({
 }) {
     const { settings, mobile_banking_available: mobileBankingAvailable } =
         usePage<SharedPageProps>().props;
+    const fieldId = useId();
     const insideDhakaRate = settings.shipping_rate_inside_dhaka ?? 60;
     const outsideDhakaRate = settings.shipping_rate_outside_dhaka ?? 120;
 
@@ -426,6 +454,7 @@ function OrderForm({
                         <button
                             type="button"
                             onClick={() => updateQty(qty - 1)}
+                            aria-label="Decrease quantity"
                             className="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
                         >
                             −
@@ -436,6 +465,7 @@ function OrderForm({
                         <button
                             type="button"
                             onClick={() => updateQty(qty + 1)}
+                            aria-label="Increase quantity"
                             className="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
                         >
                             +
@@ -445,10 +475,13 @@ function OrderForm({
 
                 {/* Personal info */}
                 <div>
+                    <FieldLabel htmlFor={`${fieldId}-name`} required>
+                        Full Name
+                    </FieldLabel>
                     <input
-                        aria-label="Full Name"
+                        id={`${fieldId}-name`}
                         className={inputClass}
-                        placeholder="Full Name *"
+                        placeholder="Your full name"
                         value={data.name}
                         onChange={(e) => setData('name', e.target.value)}
                     />
@@ -459,13 +492,16 @@ function OrderForm({
                     )}
                 </div>
                 <div>
+                    <FieldLabel htmlFor={`${fieldId}-phone`} required>
+                        Phone Number
+                    </FieldLabel>
                     <input
-                        aria-label="Phone Number"
+                        id={`${fieldId}-phone`}
                         type="tel"
                         inputMode="tel"
                         maxLength={20}
                         className={inputClass}
-                        placeholder="Phone Number *"
+                        placeholder="017XXXXXXXX"
                         value={data.phone}
                         onChange={(e) => setData('phone', e.target.value)}
                     />
@@ -479,43 +515,72 @@ function OrderForm({
                         </p>
                     )}
                 </div>
-                <input
-                    aria-label="Email (optional)"
-                    className={inputClass}
-                    placeholder="Email (optional)"
-                    value={data.email}
-                    onChange={(e) => setData('email', e.target.value)}
-                />
+                <div>
+                    <FieldLabel htmlFor={`${fieldId}-email`}>
+                        Email{' '}
+                        <span className="font-normal text-slate-400">
+                            (optional)
+                        </span>
+                    </FieldLabel>
+                    <input
+                        id={`${fieldId}-email`}
+                        className={inputClass}
+                        placeholder="you@example.com"
+                        value={data.email}
+                        onChange={(e) => setData('email', e.target.value)}
+                    />
+                </div>
 
                 {/* Address */}
-                <input
-                    aria-label="Address"
-                    className={inputClass}
-                    placeholder="Address *"
-                    value={data.address_line1}
-                    onChange={(e) => setData('address_line1', e.target.value)}
-                />
-                {errors.address_line1 && (
-                    <p className="-mt-2 text-xs text-red-500">
-                        {errors.address_line1}
-                    </p>
-                )}
-                <input
-                    aria-label="Area / Landmark (optional)"
-                    className={inputClass}
-                    placeholder="Area / Landmark (optional)"
-                    value={data.address_line2}
-                    onChange={(e) => setData('address_line2', e.target.value)}
-                />
+                <div>
+                    <FieldLabel htmlFor={`${fieldId}-address`} required>
+                        Address
+                    </FieldLabel>
+                    <input
+                        id={`${fieldId}-address`}
+                        className={inputClass}
+                        placeholder="House, road, area"
+                        value={data.address_line1}
+                        onChange={(e) =>
+                            setData('address_line1', e.target.value)
+                        }
+                    />
+                    {errors.address_line1 && (
+                        <p className="mt-0.5 text-xs text-red-500">
+                            {errors.address_line1}
+                        </p>
+                    )}
+                </div>
+                <div>
+                    <FieldLabel htmlFor={`${fieldId}-landmark`}>
+                        Area / Landmark{' '}
+                        <span className="font-normal text-slate-400">
+                            (optional)
+                        </span>
+                    </FieldLabel>
+                    <input
+                        id={`${fieldId}-landmark`}
+                        className={inputClass}
+                        placeholder="Nearby landmark"
+                        value={data.address_line2}
+                        onChange={(e) =>
+                            setData('address_line2', e.target.value)
+                        }
+                    />
+                </div>
 
                 <div className="grid grid-cols-2 gap-2">
                     <div>
                         <Select
+                            label="District"
+                            required
+                            labelClassName="text-slate-700"
+                            containerClassName="space-y-0 [&>label]:mb-1 [&>label]:block"
                             selectClassName={inputClass}
                             value={data.state}
                             onChange={(e) => updateState(e.target.value)}
                         >
-                            <option value="">District *</option>
+                            <option value="">Select district</option>
                             {BD_DISTRICTS.map((d) => (
                                 <option key={d} value={d}>
                                     {d}
@@ -531,11 +596,15 @@ function OrderForm({
                     <div>
                         {data.state === 'Dhaka' ? (
                             <Select
+                                label="Area"
+                                required
+                                labelClassName="text-slate-700"
+                                containerClassName="space-y-0 [&>label]:mb-1 [&>label]:block"
                                 selectClassName={inputClass}
                                 value={data.city}
                                 onChange={(e) => updateCity(e.target.value)}
                             >
-                                <option value="">Area *</option>
+                                <option value="">Select area</option>
                                 <option value="Inside Dhaka City Corporation">
                                     Inside Dhaka City
                                 </option>
@@ -544,13 +613,21 @@ function OrderForm({
                                 </option>
                             </Select>
                         ) : (
-                            <input
-                                aria-label="City / Upazila"
-                                className={inputClass}
-                                placeholder="City / Upazila *"
-                                value={data.city}
-                                onChange={(e) => updateCity(e.target.value)}
-                            />
+                            <>
+                                <FieldLabel
+                                    htmlFor={`${fieldId}-city`}
+                                    required
+                                >
+                                    City / Upazila
+                                </FieldLabel>
+                                <input
+                                    id={`${fieldId}-city`}
+                                    className={inputClass}
+                                    placeholder="City or upazila"
+                                    value={data.city}
+                                    onChange={(e) => updateCity(e.target.value)}
+                                />
+                            </>
                         )}
                         {errors.city && (
                             <p className="mt-0.5 text-xs text-red-500">
