@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 11 / 99** · Live, ready to retest: 19 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
+**Done: 11 / 99** · Live, ready to retest: 20 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -66,7 +66,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [ ] FE-006 — Product pages have no search or share tags in the HTML
 - [ ] FE-001 — Customers cannot page through order history
 - [>] FE-002 — Cart drawer and checkout estimates disagree with the server — tester skipped it (2026-11-11): "possibly no free delivery threshold implemented". It is implemented, but it is a setting, not a built-in number: Admin › Homepage › announcement bar › "Free Delivery Minimum Amount (৳)" (0 = off), so with nothing set there is no threshold to test. Re-checked all three audit points against the current code: the drawer (`CartDrawer.tsx`) and checkout (`Checkout.tsx`) both use the shared `isDeliveryFree()` (threshold, per-product free delivery with minimum quantity, free-delivery bundles) and the drawer's coupon preview counts only eligible items; `HandleInertiaRequests` now only shares the inputs (threshold, rates) from the same settings the server uses, not its own rule. 11 browser-side scenarios run in Node agree with the server calculator's own test scenarios. No code change beyond the 2026-11-09 fix (`9dd80c8`); to retest: set the free-delivery minimum (e.g. ৳1000), put more than that in the cart — drawer and checkout must both say Free before any address is chosen, and below it show the rate
-- [ ] FE-007 — Session timeout on landing-page checkout loses the form and may 405
+- [>] FE-007 — Session timeout on landing-page checkout loses the form and may 405 — tester skipped it (2026-11-11): had to wait 2 hours for a session to expire, and asked that the user get a friendly message on a 419. Already built (`218a8e8`, deployed 2026-11-06) and now proven live without waiting: on a local copy with APP_DEBUG off, a form POST with no valid session/CSRF token (exactly what an expired session sends) to the landing-page order route returns a redirect back to the same page (so the form stays filled) carrying the message "Your session expired for security. Your details are still here — please press the button again."; a plain non-Inertia post gets the themed "Session expired — refresh the page and try that again" page. No code change. Quick retest on the live site without waiting 2 hours: open a landing page, then in the browser's dev tools delete the site's cookies (session + XSRF-TOKEN), fill the form and submit — the message appears, the form stays filled, and pressing the button again places the order
 - [ ] FE-009 — No noindex or canonical; meta helper defects
 - [ ] FE-010 — No React error boundary
 - [ ] FE-011 — Failed cart sync is silent and the item later vanishes
