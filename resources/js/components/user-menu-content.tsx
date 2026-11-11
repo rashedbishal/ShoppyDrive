@@ -48,7 +48,7 @@ export function UserMenuContent({ user, isAdmin = false }: Props) {
                 <DropdownMenuItem asChild>
                     <Link
                         className="flex w-full cursor-pointer items-center"
-                        href={route('profile.edit')}
+                        href={route('account.profile')}
                         prefetch
                         onClick={cleanup}
                     >

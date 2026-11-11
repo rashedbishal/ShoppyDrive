@@ -107,7 +107,7 @@ test('after an email change, a code mailed to the new address verifies it', func
     $user = User::factory()->unverified()->create(['email' => 'typo@example.com']);
     sendVerificationCodeTo($user);
 
-    $this->actingAs($user)->patch(route('profile.update'), [
+    $this->actingAs($user)->post(route('account.profile.update'), [
         'name' => $user->name,
         'email' => 'correct@example.com',
     ])->assertSessionHasNoErrors();

@@ -177,7 +177,7 @@ describe('customer account deletion', function () {
         $customer = User::factory()->create(['name' => 'Rafiq Islam', 'phone' => '01712345678']);
         $order = historyOrder(['user_id' => $customer->id]);
 
-        actingAs($customer)->delete(route('profile.destroy'), ['password' => 'password'])->assertRedirect(route('home'));
+        actingAs($customer)->delete(route('account.profile.destroy'), ['password' => 'password'])->assertRedirect(route('home'));
 
         $this->assertGuest();
         $customer = User::find($customer->id);
@@ -193,7 +193,7 @@ describe('customer account deletion', function () {
         $customer = User::factory()->create();
         historyOrder(['user_id' => $customer->id, 'status' => OrderStatus::CANCELLED])->delete();
 
-        actingAs($customer)->delete(route('profile.destroy'), ['password' => 'password'])->assertRedirect(route('home'));
+        actingAs($customer)->delete(route('account.profile.destroy'), ['password' => 'password'])->assertRedirect(route('home'));
 
         expect(User::find($customer->id)?->anonymized_at)->not->toBeNull();
     });
@@ -202,7 +202,7 @@ describe('customer account deletion', function () {
         $referrer = User::factory()->create();
         $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
 
-        actingAs($referrer)->delete(route('profile.destroy'), ['password' => 'password'])->assertRedirect(route('home'));
+        actingAs($referrer)->delete(route('account.profile.destroy'), ['password' => 'password'])->assertRedirect(route('home'));
 
         expect(User::find($referrer->id)?->anonymized_at)->not->toBeNull();
         expect($referred->refresh()->referred_by_id)->toBe($referrer->id);
@@ -211,7 +211,7 @@ describe('customer account deletion', function () {
     test('a customer with no retained history is permanently deleted', function () {
         $customer = User::factory()->create();
 
-        actingAs($customer)->delete(route('profile.destroy'), ['password' => 'password'])->assertRedirect(route('home'));
+        actingAs($customer)->delete(route('account.profile.destroy'), ['password' => 'password'])->assertRedirect(route('home'));
 
         expect(User::withTrashed()->find($customer->id))->toBeNull();
     });

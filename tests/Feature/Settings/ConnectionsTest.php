@@ -14,10 +14,10 @@ test('connections page is displayed with linked providers', function () {
     ]);
 
     $this->actingAs($user)
-        ->get(route('connections.edit'))
+        ->get(route('account.connections'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('settings/connections')
+            ->component('account/Connections')
             ->where('hasPassword', true)
             ->has('connections', 1)
             ->where('connections.0.provider', 'google'),
@@ -37,7 +37,7 @@ test('SEC-004: OAuth tokens never reach the browser, including via the shared au
     // This page's own `connections` prop already mapped to a safe shape —
     // the real risk was `auth.user`, shared on every page, which reads the
     // same User instance this page lazy-loads socialAccounts onto.
-    $response = $this->actingAs($user)->get(route('connections.edit'));
+    $response = $this->actingAs($user)->get(route('account.connections'));
 
     $response->assertOk();
     expect(json_encode($response->viewData('page')['props']))->not->toContain('canary-access-token')
@@ -48,13 +48,13 @@ test('a social-only user can set a password for the first time', function () {
     $user = User::factory()->withoutPassword()->create();
 
     $response = $this->actingAs($user)
-        ->from(route('connections.edit'))
-        ->put(route('connections.password.update'), [
+        ->from(route('account.connections'))
+        ->put(route('account.connections.password.update'), [
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
         ]);
 
-    $response->assertSessionHasNoErrors()->assertRedirect(route('connections.edit'));
+    $response->assertSessionHasNoErrors()->assertRedirect(route('account.connections'));
 
     $user->refresh();
     expect($user->has_password)->toBeTrue();
@@ -64,7 +64,7 @@ test('a social-only user can set a password for the first time', function () {
 test('a user who already has a password cannot use the set password endpoint', function () {
     $user = User::factory()->create();
 
-    $response = $this->actingAs($user)->put(route('connections.password.update'), [
+    $response = $this->actingAs($user)->put(route('account.connections.password.update'), [
         'password' => 'new-password',
         'password_confirmation' => 'new-password',
     ]);
@@ -80,7 +80,7 @@ test('a user can disconnect a provider when another sign-in method remains', fun
         'provider_id' => 'google-123',
     ]);
 
-    $response = $this->actingAs($user)->delete(route('connections.destroy', $account));
+    $response = $this->actingAs($user)->delete(route('account.connections.destroy', $account));
 
     $response->assertRedirect();
     expect(SocialAccount::find($account->id))->toBeNull();
@@ -94,7 +94,7 @@ test('a social-only user cannot disconnect their only sign-in method', function 
         'provider_id' => 'google-123',
     ]);
 
-    $response = $this->actingAs($user)->delete(route('connections.destroy', $account));
+    $response = $this->actingAs($user)->delete(route('account.connections.destroy', $account));
 
     $response->assertRedirect();
     expect(SocialAccount::find($account->id))->not->toBeNull();
@@ -110,7 +110,7 @@ test('a user cannot disconnect another user\'s social account', function () {
 
     $intruder = User::factory()->create();
 
-    $response = $this->actingAs($intruder)->delete(route('connections.destroy', $account));
+    $response = $this->actingAs($intruder)->delete(route('account.connections.destroy', $account));
 
     $response->assertForbidden();
     expect(SocialAccount::find($account->id))->not->toBeNull();

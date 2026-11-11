@@ -4,6 +4,7 @@ import {
     Gift,
     Heart,
     LayoutDashboard,
+    Link2,
     Lock,
     LogOut,
     MapPin,
@@ -23,6 +24,7 @@ const navItems = [
     { label: 'Addresses', href: '/account/addresses', icon: MapPin },
     { label: 'Profile', href: '/account/profile', icon: User },
     { label: 'Change Password', href: '/account/password', icon: Lock },
+    { label: 'Connected Accounts', href: '/account/connections', icon: Link2 },
 ];
 
 export default function AccountLayout({

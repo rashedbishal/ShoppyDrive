@@ -215,7 +215,7 @@ test('each protected route has its limiter attached', function (string $routeNam
     ['account.orders.invoice', 'throttle:invoice-download'],
     ['lp.invoice', 'throttle:invoice-download'],
     ['product.reviews.store', 'throttle:review'],
-    ['connections.password.update', 'throttle:password-check'],
+    ['account.connections.password.update', 'throttle:password-check'],
 ]);
 
 test('the contact form is limited with a friendly message', function () {
@@ -347,9 +347,13 @@ test('account actions and webhooks have their limiters attached', function (stri
     ['wishlist.sync', 'throttle:account-action'],
     ['wishlist.clear', 'throttle:account-action'],
     ['wishlist.add-all-to-cart', 'throttle:account-action'],
-    ['profile.update', 'throttle:account-action'],
-    ['profile.destroy', 'throttle:account-action'],
-    ['connections.destroy', 'throttle:account-action'],
+    ['account.profile.update', 'throttle:account-action'],
+    ['account.profile.destroy', 'throttle:account-action'],
+    ['account.connections.destroy', 'throttle:account-action'],
+    ['account.profile.email.cancel', 'throttle:account-action'],
+    ['account.profile.cart-reminders.update', 'throttle:account-action'],
+    ['account.profile.email.confirm', 'throttle:verification-code'],
+    ['account.password.update', 'throttle:6,1'],
     ['steadfast.webhook', 'throttle:webhook'],
 ]);
 

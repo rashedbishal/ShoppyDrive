@@ -207,7 +207,7 @@ test('an authenticated user can connect an additional provider from settings', f
 
     $response = $this->get('/auth/facebook/callback');
 
-    $response->assertRedirect(route('connections.edit'));
+    $response->assertRedirect(route('account.connections'));
     $this->assertAuthenticatedAs($user);
 
     expect(User::count())->toBe(1);
@@ -266,7 +266,7 @@ test('an authenticated user cannot connect a provider account already linked to 
 
     $response = $this->get('/auth/google/callback');
 
-    $response->assertRedirect(route('connections.edit'));
+    $response->assertRedirect(route('account.connections'));
     $response->assertSessionHasErrors('connections');
     expect($user->socialAccounts()->where('provider', 'google')->exists())->toBeFalse();
 });

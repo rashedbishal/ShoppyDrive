@@ -11,7 +11,6 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
 import { initializeSiteTheme } from '@/hooks/use-theme';
 import AppLayout from '@/layouts/app-layout';
-import SettingsLayout from '@/layouts/settings/layout';
 import { initAddToCartFeedback } from '@/lib/add-to-cart-feedback';
 import { APP_NAME } from '@/lib/constants';
 import { STORAGE_KEYS } from '@/lib/constants';
@@ -501,8 +500,6 @@ createInertiaApp({
             case name.startsWith('admin/'):
                 // Set on the page itself by resolveAdminPage().
                 return null;
-            case name.startsWith('settings/'):
-                return [AppLayout, SettingsLayout];
             default:
                 return AppLayout;
         }

@@ -19,7 +19,7 @@ class ConnectionsController extends Controller
     {
         $user = $request->user();
 
-        return Inertia::render('settings/connections', [
+        return Inertia::render('account/Connections', [
             'hasPassword' => $user->has_password,
             'connections' => $user->socialAccounts->map(fn (SocialAccount $account) => [
                 'id' => $account->id,

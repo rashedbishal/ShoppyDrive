@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Hash;
 test('a logged-in customer can change their password from the account page', function () {
     $user = User::factory()->create(['password' => Hash::make('old-password-123')]);
 
-    $response = $this->actingAs($user)->put(route('user-password.update'), [
+    $response = $this->actingAs($user)->put(route('account.password.update'), [
         'current_password' => 'old-password-123',
         'password' => 'new-password-456',
         'password_confirmation' => 'new-password-456',
@@ -23,7 +23,7 @@ test('a logged-in customer can change their password from the account page', fun
 test('changing the password is rejected when the current password is wrong', function () {
     $user = User::factory()->create(['password' => Hash::make('old-password-123')]);
 
-    $response = $this->actingAs($user)->put(route('user-password.update'), [
+    $response = $this->actingAs($user)->put(route('account.password.update'), [
         'current_password' => 'totally-wrong',
         'password' => 'new-password-456',
         'password_confirmation' => 'new-password-456',
@@ -37,5 +37,5 @@ test('the account change-password page route resolves to the authenticated setti
     // Regression guard for ACCT-001: the frontend used to call
     // route('password.update'), which is Fortify's own token-based
     // reset-password route (POST /reset-password) and 405s under PUT.
-    expect(route('user-password.update'))->toContain('/settings/password');
+    expect(route('account.password.update'))->toContain('/account/password');
 });

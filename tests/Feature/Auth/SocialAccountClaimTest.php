@@ -55,7 +55,7 @@ test('a pre-registered unverified account is claimed by the verified Google owne
 
     // The registrant's live session, captured before the claim.
     $this->post(route('login.store'), ['email' => 'victim@example.com', 'password' => 'attacker-password']);
-    $this->get(route('profile.edit'))->assertOk();
+    $this->get(route('account.profile'))->assertOk();
     $attackerSession = session()->all();
 
     auth()->logout();
@@ -78,7 +78,7 @@ test('a pre-registered unverified account is claimed by the verified Google owne
     auth()->logout();
     $this->app['auth']->forgetGuards();
     $this->flushSession();
-    $this->withSession($attackerSession)->get(route('profile.edit'))->assertRedirect(route('login'));
+    $this->withSession($attackerSession)->get(route('account.profile'))->assertRedirect(route('login'));
     $this->assertGuest();
 
     // …and the old password no longer works.
@@ -204,7 +204,7 @@ test('an unverified account cannot connect a provider from settings', function (
 
     $this->actingAs($user)
         ->get('/auth/facebook/callback')
-        ->assertRedirect(route('connections.edit'))
+        ->assertRedirect(route('account.connections'))
         ->assertSessionHasErrors(['connections' => 'Verify your email address before connecting Facebook.']);
 
     expect($user->socialAccounts()->exists())->toBeFalse();

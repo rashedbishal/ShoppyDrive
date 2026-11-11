@@ -19,13 +19,13 @@ test('a customer cannot escalate their own role or verification status through t
     // assignment protection this very test exists to prove.
     $user->forceFill(['role' => UserRole::CUSTOMER])->save();
 
-    $this->actingAs($user)->patch(route('profile.update'), [
+    $this->actingAs($user)->post(route('account.profile.update'), [
         'name' => 'Still Just A Customer',
         'email' => $user->email,
         'role' => 'admin',
         'has_password' => false,
         'email_verified_at' => null,
-    ])->assertRedirect(route('profile.edit'));
+    ])->assertRedirect(route('account.profile'));
 
     $user->refresh();
     expect($user->role)->toBe(UserRole::CUSTOMER);

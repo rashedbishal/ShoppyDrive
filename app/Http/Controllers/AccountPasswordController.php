@@ -1,26 +1,19 @@
 <?php
 
-namespace App\Http\Controllers\Settings;
+declare(strict_types=1);
 
-use App\Http\Controllers\Controller;
+namespace App\Http\Controllers;
+
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
-use Inertia\Response;
 
-class SecurityController extends Controller
+/**
+ * Account > Change Password. The page itself is rendered by a route closure in
+ * routes/account.php; this only saves the new password.
+ */
+class AccountPasswordController extends Controller
 {
-    /**
-     * Show the user's security settings page.
-     */
-    public function edit(): Response
-    {
-        return Inertia::render('settings/security');
-    }
-
-    /**
-     * Update the user's password.
-     */
     public function update(PasswordUpdateRequest $request): RedirectResponse
     {
         $request->user()->update([

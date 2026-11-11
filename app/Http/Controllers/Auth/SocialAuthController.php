@@ -255,7 +255,7 @@ class SocialAuthController extends Controller
         // pre-registered the address; a provider attached now would survive
         // the real owner later verifying or claiming it.
         if ($user instanceof User && ! $user->hasVerifiedEmail()) {
-            return redirect()->route('connections.edit')->withErrors([
+            return redirect()->route('account.connections')->withErrors([
                 'connections' => 'Verify your email address before connecting '.ucfirst($provider).'.',
             ]);
         }
@@ -272,7 +272,7 @@ class SocialAuthController extends Controller
         }
 
         if ($existing && $existing->user_id !== $user->id) {
-            return redirect()->route('connections.edit')->withErrors([
+            return redirect()->route('account.connections')->withErrors([
                 'connections' => 'This '.ucfirst($provider).' account is already linked to another ShoppyDrive account.',
             ]);
         }
@@ -289,6 +289,6 @@ class SocialAuthController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => ucfirst($provider).' account connected.']);
 
-        return redirect()->route('connections.edit');
+        return redirect()->route('account.connections');
     }
 }

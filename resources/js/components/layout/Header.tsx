@@ -9,6 +9,7 @@ import {
     Search,
     ShoppingBag,
     UserCircle2,
+    UserCog,
     X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -458,6 +459,16 @@ export default function Header(): React.JSX.Element {
                                         >
                                             <Package className="size-4" />
                                             My orders
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onSelect={(e) => {
+                                                e.preventDefault();
+                                                router.get('/account/profile');
+                                            }}
+                                            className="cursor-pointer rounded-xl px-3 py-2.5"
+                                        >
+                                            <UserCog className="size-4" />
+                                            Profile &amp; settings
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem

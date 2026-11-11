@@ -25,7 +25,7 @@ export default function ChangePassword(): React.JSX.Element {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        form.put(route('user-password.update'), {
+        form.put(route('account.password.update'), {
             onSuccess: () => form.reset(),
         });
     };

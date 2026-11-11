@@ -35,7 +35,7 @@ test('updating the profile fails validation when the name is missing', function 
     expect($user->refresh()->name)->toBe('Old Name');
 });
 
-test('the email field is never written even if a different email is submitted', function () {
+test('a verified customer\'s different email is not written until the code sent to the current address is entered', function () {
     $user = User::factory()->create(['email' => 'original@example.com']);
 
     $response = $this->actingAs($user)->post(route('account.profile.update'), [

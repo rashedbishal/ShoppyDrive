@@ -1,10 +1,12 @@
 <?php
 
 use App\Enums\OrderStatus;
+use App\Http\Controllers\AccountPasswordController;
 use App\Http\Controllers\AccountProfileController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\ReturnRequestController;
+use App\Http\Controllers\Settings\ConnectionsController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Address;
 use App\Models\Order;
@@ -116,10 +118,9 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active', 'histor
     Route::put('/addresses/{address}', [AddressController::class, 'update'])->middleware('throttle:account-action')->name('account.addresses.update');
     Route::delete('/addresses/{address}', [AddressController::class, 'destroy'])->middleware('throttle:account-action')->name('account.addresses.destroy');
     Route::patch('/addresses/{address}/default', [AddressController::class, 'setDefault'])->middleware('throttle:account-action')->name('account.addresses.default');
-    Route::get('/profile', fn () => inertia('account/Profile'))->name('account.profile');
     Route::get('/password', fn () => inertia('account/ChangePassword'))->name('account.password');
-
-    Route::post('/profile', [AccountProfileController::class, 'update'])->middleware('throttle:account-action')->name('account.profile.update');
+    Route::put('/password', [AccountPasswordController::class, 'update'])->middleware('throttle:6,1')->name('account.password.update');
+    Route::delete('/profile', [AccountProfileController::class, 'destroy'])->middleware('throttle:account-action')->name('account.profile.destroy');
 
     // FSA-15: a pending order can already have a courier consignment —
     // CourierSubmissionService::claim()/markSent() never touch `status`,
@@ -151,4 +152,24 @@ Route::middleware(['auth', 'auth.session', 'account.active'])->prefix('account')
     Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->middleware('throttle:account-action')->name('wishlist.toggle');
     Route::post('/wishlist/clear', [WishlistController::class, 'clear'])->middleware('throttle:account-action')->name('wishlist.clear');
     Route::post('/wishlist/add-all-to-cart', [WishlistController::class, 'addAllToCart'])->middleware('throttle:account-action')->name('wishlist.add-all-to-cart');
+});
+
+/*
+ * Profile, email change and connected accounts deliberately do NOT require a
+ * verified email (unlike the rest of Account): a customer who mistyped their
+ * email at sign-up has to be able to correct it and ask for a new verification
+ * message. This is the same access the former /settings pages had.
+ */
+Route::middleware(['auth', 'auth.session', 'account.active', 'history.encrypt'])->prefix('account')->group(function () {
+    Route::get('/profile', [AccountProfileController::class, 'edit'])->name('account.profile');
+    Route::post('/profile', [AccountProfileController::class, 'update'])->middleware('throttle:account-action')->name('account.profile.update');
+    // SEC-009: confirm (or cancel) an email change with the code sent to the current address.
+    Route::post('/profile/email/confirm', [AccountProfileController::class, 'confirmEmailChange'])->middleware('throttle:verification-code')->name('account.profile.email.confirm');
+    Route::delete('/profile/email/pending', [AccountProfileController::class, 'cancelEmailChange'])->middleware('throttle:account-action')->name('account.profile.email.cancel');
+    // OPS-006: turn abandoned-cart reminder emails off, or back on.
+    Route::patch('/profile/cart-reminders', [AccountProfileController::class, 'updateCartReminders'])->middleware('throttle:account-action')->name('account.profile.cart-reminders.update');
+
+    Route::get('/connections', [ConnectionsController::class, 'edit'])->name('account.connections');
+    Route::put('/connections/password', [ConnectionsController::class, 'setPassword'])->middleware('throttle:password-check')->name('account.connections.password.update');
+    Route::delete('/connections/{socialAccount}', [ConnectionsController::class, 'destroy'])->middleware('throttle:account-action')->name('account.connections.destroy');
 });
