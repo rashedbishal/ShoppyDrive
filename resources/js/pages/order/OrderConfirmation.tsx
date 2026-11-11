@@ -14,7 +14,6 @@ import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import { Button } from '@/components/ui/button';
 import { trackMetaPurchase } from '@/lib/meta-tracking';
 import { formatCurrency } from '@/lib/utils';
-import { useCartStore } from '@/stores/cartStore';
 import type { Order } from '@/types';
 
 const DELIVERY_ESTIMATE_DAYS: [number, number] = [3, 5];
@@ -32,12 +31,12 @@ interface OrderConfirmationProps {
     keepCart?: boolean;
 }
 
+// The cart itself is cleaned up by app.tsx's navigate handler when this page
+// opens (removeItemsBoughtByOrder()): only the purchased lines are removed,
+// and nothing for a Buy Now order (`keepCart`).
 export default function OrderConfirmation({
     order,
-    keepCart = false,
 }: OrderConfirmationProps): React.JSX.Element {
-    const clearCart = useCartStore((state) => state.clearCart);
-
     // BIZ-030: this hardcoded "Total Paid" regardless of payment_status —
     // every COD order (unpaid until the courier collects it) told the
     // customer they'd already paid, with nothing saying to pay the
@@ -60,14 +59,6 @@ export default function OrderConfirmation({
 
         return true;
     })();
-
-    // Clear local cart on mount if order was successful — except after a
-    // "Buy Now", which was bought on its own and left the cart alone.
-    useEffect(() => {
-        if (!keepCart) {
-            clearCart();
-        }
-    }, []);
 
     // Pushes to GTM's own expected dataLayer shape, so a Facebook Pixel tag
     // configured in Tag Manager can read `fb_event_id` to deduplicate

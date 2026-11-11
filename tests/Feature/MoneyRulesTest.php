@@ -153,6 +153,33 @@ test('placing a COD order never buys or loses an item added to the cart after th
         ->and($cart->items()->pluck('quantity', 'product_id')->all())->toBe([$addedLater->id => 2]);
 });
 
+test('the order confirmation page hands the browser the cart that is left, so items added in another tab survive', function () {
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    $ordered = moneyProduct();
+    $addedInOtherTab = moneyProduct();
+    $cart = Cart::create(['user_id' => $user->id]);
+    CartItem::create(['cart_id' => $cart->id, 'product_id' => $ordered->id, 'quantity' => 1, 'price' => 500]);
+    CartItem::create(['cart_id' => $cart->id, 'product_id' => $addedInOtherTab->id, 'quantity' => 1, 'price' => 500]);
+
+    actingAs($user)->post(route('checkout.store'), moneyCheckoutPayload([
+        'email' => $user->email,
+        'payment_method' => 'cod',
+        'items' => [['product_id' => $ordered->id, 'variant_id' => null, 'quantity' => 1, 'price' => (float) $ordered->price]],
+    ]));
+
+    $order = Order::query()->where('user_id', $user->id)->sole();
+
+    // app.tsx replaces the logged-in browser cart with this shared `cart`
+    // prop on the confirmation page instead of emptying it.
+    actingAs($user)->get(route('order.confirmation', $order->order_number))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('order/OrderConfirmation')
+            ->where('keepCart', false)
+            ->has('cart.items', 1)
+            ->where('cart.items.0.product.id', $addedInOtherTab->id)
+        );
+});
+
 test('the referral preview counts a Buy Now item when the cart is empty (BIZ-018)', function () {
     Setting::insert([
         ['key' => 'referral_enabled', 'value' => json_encode(true), 'group' => 'referral'],

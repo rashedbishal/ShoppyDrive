@@ -7,6 +7,7 @@ import { STORAGE_KEYS } from '@/lib/constants';
 import { getCouponEligibleSubtotal } from '@/lib/coupon';
 import { trackMetaProductEvent } from '@/lib/meta-tracking';
 import type { MetaTrackedItem } from '@/lib/meta-tracking';
+import type { PurchasedCartLine } from '@/lib/purchased-cart-lines';
 import { formatCurrency } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
 import type {
@@ -42,6 +43,8 @@ type CartStoreState = {
     updateQuantity: (itemKey: string, quantity: number) => void;
     updateBundleQuantity: (bundleId: number, multiplier: number) => void;
     removeBundle: (bundleId: number) => void;
+    /** After an order: takes away exactly what was bought, keeping anything added meanwhile. Not a customer removal, so no RemoveFromCart event. */
+    removePurchasedLines: (lines: PurchasedCartLine[]) => void;
     clearCart: () => void;
     mergeGuestCart: (items: CartItem[]) => void;
     applyCoupon: (coupon: Coupon | null) => void;
@@ -386,6 +389,42 @@ export const useCartStore = create<CartStoreState>()(
                     'RemoveFromCart',
                     removed.map(metaItemFromCartItem),
                 );
+            },
+            removePurchasedLines: (lines) => {
+                const purchased = new Map<string, number>();
+
+                lines.forEach((line) => {
+                    purchased.set(
+                        line.item_key,
+                        (purchased.get(line.item_key) ?? 0) + line.quantity,
+                    );
+                });
+
+                set((state) => ({
+                    items: state.items.flatMap((item) => {
+                        const bought = purchased.get(item.item_key) ?? 0;
+                        const remaining = item.quantity - bought;
+
+                        if (bought === 0) {
+                            return [item];
+                        }
+
+                        return remaining > 0
+                            ? [
+                                  {
+                                      ...item,
+                                      quantity: remaining,
+                                      subtotal: item.price * remaining,
+                                      formatted_subtotal: formatCurrency(
+                                          item.price * remaining,
+                                      ),
+                                  },
+                              ]
+                            : [];
+                    }),
+                    // The coupon belonged to the order just placed.
+                    coupon: null,
+                }));
             },
             clearCart: () => {
                 set({

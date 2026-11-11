@@ -14,6 +14,8 @@ import AppLayout from '@/layouts/app-layout';
 import { initAddToCartFeedback } from '@/lib/add-to-cart-feedback';
 import { APP_NAME } from '@/lib/constants';
 import { STORAGE_KEYS } from '@/lib/constants';
+import { takePurchasedLines } from '@/lib/purchased-cart-lines';
+import type { PurchasedCartLine } from '@/lib/purchased-cart-lines';
 import { useCartStore } from '@/stores/cartStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import type { BundleRecipe, Cart, SharedPageProps } from '@/types';
@@ -413,6 +415,58 @@ useCartStore.subscribe((state) => {
     void syncAuthenticatedCart(false);
 });
 
+/**
+ * After an order: remove only the cart lines that order bought (remembered
+ * per tab by Checkout.tsx), keeping anything added meanwhile in another tab.
+ * A logged-in cart with nothing unsaved is simply replaced with the
+ * server's, which already removed exactly those lines (BIZ-019); local
+ * removal is only for a guest's browser-only cart, or a logged-in cart with
+ * changes not yet saved (which then saves the result).
+ */
+function removeItemsBoughtByOrder(
+    purchasedLines: PurchasedCartLine[],
+    serverCart: Cart | null,
+): void {
+    if (activeAuthUserId !== null && !cartSyncDirty) {
+        hydrateCart(serverCart);
+
+        return;
+    }
+
+    // Pick up whatever another tab saved before removing, so its items
+    // aren't overwritten by this tab's older copy.
+    void Promise.resolve(useCartStore.persist.rehydrate()).then(() => {
+        useCartStore.getState().removePurchasedLines(purchasedLines);
+
+        if (activeAuthUserId !== null) {
+            // FE-011: the unsaved changes, minus what was just bought.
+            cartSyncRetryAttempt = 0;
+            void syncAuthenticatedCart(false);
+        }
+    });
+}
+
+// Another tab changed the cart: show the same cart here. Not re-saved to
+// the server from this tab, because the tab that changed it already did.
+if (typeof window !== 'undefined') {
+    window.addEventListener('storage', (event) => {
+        if (event.key !== STORAGE_KEYS.cart || event.newValue === null) {
+            return;
+        }
+
+        isHydratingCart = true;
+
+        void Promise.resolve(useCartStore.persist.rehydrate()).finally(() => {
+            lastSyncedSignature = useCartStore
+                .getState()
+                .items.map((item) => `${item.item_key}:${item.quantity}`)
+                .sort()
+                .join('|');
+            isHydratingCart = false;
+        });
+    });
+}
+
 router.on('navigate', (event) => {
     const props = event.detail.page.props as SharedPageProps;
 
@@ -437,6 +491,11 @@ router.on('navigate', (event) => {
     const currentUserId = props.auth?.user?.id ?? null;
     const stored = localStorage.getItem(LAST_USER_KEY);
     const currentCart = props.cart ?? null;
+    const purchasedLines =
+        event.detail.page.component === 'order/OrderConfirmation' &&
+        !(props as { keepCart?: boolean }).keepCart
+            ? takePurchasedLines()
+            : null;
     useCartStore.getState().setBundleRecipes(props.active_bundle_recipes ?? []);
 
     if (stored !== null && currentUserId === null) {
@@ -451,7 +510,9 @@ router.on('navigate', (event) => {
     } else if (currentUserId !== null) {
         activeAuthUserId = currentUserId;
 
-        if (cartSyncDirty) {
+        if (purchasedLines !== null) {
+            removeItemsBoughtByOrder(purchasedLines, currentCart);
+        } else if (cartSyncDirty) {
             // FE-011: keep the unsaved items and try again now.
             cartSyncRetryAttempt = 0;
             void syncAuthenticatedCart(false);
@@ -462,6 +523,10 @@ router.on('navigate', (event) => {
         prevAuthUserId = currentUserId;
     } else {
         prevAuthUserId = null;
+
+        if (purchasedLines !== null) {
+            removeItemsBoughtByOrder(purchasedLines, currentCart);
+        }
     }
 });
 

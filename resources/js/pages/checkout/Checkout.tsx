@@ -44,6 +44,10 @@ import { getXsrfToken } from '@/lib/csrf';
 import { isDeliveryFree } from '@/lib/delivery';
 import { trackMetaInitiateCheckout } from '@/lib/meta-tracking';
 import { normalizeBdPhoneInput } from '@/lib/phone';
+import {
+    forgetPurchasedLines,
+    rememberPurchasedLines,
+} from '@/lib/purchased-cart-lines';
 import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import type { Address, CartItem, Coupon, SharedPageProps } from '@/types';
@@ -709,6 +713,19 @@ export default function Checkout({
         }
 
         setSubmitting(true);
+
+        // Remembered so the confirmation removes only these lines from the
+        // cart; Buy Now never touches the cart, so it leaves no record.
+        if (buyNowItem) {
+            forgetPurchasedLines();
+        } else {
+            rememberPurchasedLines(
+                items.map((item) => ({
+                    item_key: item.item_key,
+                    quantity: item.quantity,
+                })),
+            );
+        }
 
         const redeemingPoints = !appliedCoupon && usePoints && pointsToUse > 0;
 
