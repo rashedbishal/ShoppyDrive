@@ -523,7 +523,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                         messaged in.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="-mr-2 min-h-0 flex-1 overflow-y-auto pr-2">
+                <div className="-mx-2 min-h-0 flex-1 overflow-y-auto px-2">
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="space-y-2">
                             <Label>Customer</Label>
