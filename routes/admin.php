@@ -44,6 +44,7 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SmsForwarderSettingsController;
 use App\Http\Controllers\Admin\SmsPatternController;
 use App\Http\Controllers\Admin\SubCategoryController;
+use App\Http\Controllers\Admin\SystemMonitorController;
 use App\Support\AdminSections;
 use Illuminate\Routing\PendingResourceRegistration;
 use Illuminate\Support\Facades\Route;
@@ -238,6 +239,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
 
     // Clearing the log is deliberately NOT part of the permission matrix
     // (AuditTrailController hardcodes mother-only) — only viewing is gated.
+    // OPS-002: read-only health page; same view permission as Failed Jobs.
+    Route::get('monitor', [SystemMonitorController::class, 'index'])->name('monitor.index')->middleware(AdminSections::middleware('failed_jobs', 'view'));
     Route::get('failed-jobs', [FailedJobController::class, 'index'])->name('failed-jobs.index')->middleware(AdminSections::middleware('failed_jobs', 'view'));
     Route::post('failed-jobs/retry-all', [FailedJobController::class, 'retryAll'])->name('failed-jobs.retryAll')->middleware(AdminSections::middleware('failed_jobs', 'update'));
     Route::post('failed-jobs/{uuid}/retry', [FailedJobController::class, 'retry'])->whereUuid('uuid')->name('failed-jobs.retry')->middleware(AdminSections::middleware('failed_jobs', 'update'));

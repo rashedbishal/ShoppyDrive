@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+    Activity,
     ArrowUpDown,
     Award,
     Ban,
@@ -316,6 +317,14 @@ const navSections: NavSection[] = [
                 exact: false,
                 extraMatches: [] as string[],
                 motherOnly: true,
+            },
+            {
+                label: 'System Monitor',
+                href: '/admin/monitor',
+                icon: Activity,
+                exact: false,
+                extraMatches: [] as string[],
+                section: 'failed_jobs',
             },
             {
                 label: 'Failed Jobs',

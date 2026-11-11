@@ -3,6 +3,7 @@
 use App\Http\Middleware\AuthenticateAdminSession;
 use App\Http\Middleware\BlockBlockedIp;
 use App\Http\Middleware\CaptureTrafficSource;
+use App\Http\Middleware\CheckCronHealth;
 use App\Http\Middleware\ConditionallyEncryptHistory;
 use App\Http\Middleware\EnsureAccountNotAnonymized;
 use App\Http\Middleware\EnsureAdmin;
@@ -99,6 +100,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             TrackDailyVisit::class,
+            CheckCronHealth::class,
             CaptureTrafficSource::class,
             HidePrivatePagesFromSearchEngines::class,
         ]);
