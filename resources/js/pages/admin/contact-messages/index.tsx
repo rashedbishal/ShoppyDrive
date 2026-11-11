@@ -78,7 +78,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
         <>
             <Head title="Contact Messages — Admin" />
             <div className="space-y-5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900">
                             Contact Messages
@@ -93,7 +93,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                         <button
                             type="button"
                             onClick={handleClearAll}
-                            className="flex items-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 sm:w-auto"
                         >
                             <Trash2 className="size-4" />
                             Erase All

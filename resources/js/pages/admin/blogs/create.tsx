@@ -23,8 +23,10 @@ function Field({
             <label className="mb-1 block text-sm font-medium text-slate-700">
                 {label}
             </label>
-            {hint && <p className="mb-1.5 text-xs text-slate-400">{hint}</p>}
             {children}
+            {hint && !error && (
+                <p className="mt-1 text-xs text-slate-400">{hint}</p>
+            )}
             {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
     );

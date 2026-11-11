@@ -187,10 +187,7 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-slate-700">
-                                        New Password{' '}
-                                        <span className="font-normal text-slate-400">
-                                            (leave blank to keep current)
-                                        </span>
+                                        New Password
                                     </label>
                                     <input
                                         type="password"
@@ -199,7 +196,7 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
                                         onChange={(e) =>
                                             setData('password', e.target.value)
                                         }
-                                        placeholder="Leave blank to keep current"
+                                        placeholder="Leave blank to keep"
                                     />
                                     <div className="mt-1">
                                         <PasswordRequirements
@@ -215,7 +212,7 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
 
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-slate-700">
-                                        Confirm New Password
+                                        Confirm Password
                                     </label>
                                     <input
                                         type="password"
@@ -227,7 +224,7 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
                                                 e.target.value,
                                             )
                                         }
-                                        placeholder="Repeat new password"
+                                        placeholder="Repeat password"
                                     />
                                     {errors.password_confirmation && (
                                         <p className="mt-1 text-xs text-red-600">

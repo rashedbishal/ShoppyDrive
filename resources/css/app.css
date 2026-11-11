@@ -1277,7 +1277,7 @@ html body [data-sonner-toaster][data-sonner-theme] {
         justify-content: center;
     }
 
-    .admin-row-card .line-clamp-2 {
+    .admin-row-card .line-clamp-2:not(.keep-clamp) {
         display: block;
         overflow: visible;
         -webkit-line-clamp: unset;

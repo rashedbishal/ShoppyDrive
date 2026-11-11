@@ -298,8 +298,7 @@ function AttributeCard({
                         {attribute.name}
                     </h2>
                     <p className="text-xs text-slate-400">
-                        {attribute.values.length} value
-                        {attribute.values.length === 1 ? '' : 's'}
+                        {attribute.values.length} value(s)
                     </p>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -558,7 +557,7 @@ export default function AttributesIndex({ attributes }: Props) {
                                     {attribute.values.length}
                                 </p>
                                 <p className="text-[11px] font-medium tracking-wide text-slate-400 uppercase">
-                                    {attribute.name}
+                                    {attribute.name}(s)
                                 </p>
                             </div>
                         ))}

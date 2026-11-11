@@ -520,7 +520,7 @@ function RuleRow({
             <p className="mb-2.5 text-sm font-semibold text-slate-800">
                 {rule.label}
             </p>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+            <div className="grid grid-cols-[2.75rem_5rem_1fr] items-center gap-2 text-sm text-slate-700 sm:flex sm:flex-wrap">
                 <span>Allow</span>
                 <NumberBox
                     field={rule.times}
@@ -530,7 +530,8 @@ function RuleRow({
                     disabled={disabled}
                     onChange={(value) => setValue(rule.times, value)}
                 />
-                <span>{rule.noun} every</span>
+                <span>{rule.noun}</span>
+                <span>every</span>
                 <NumberBox
                     field={rule.minutes}
                     value={data[rule.minutes]}
