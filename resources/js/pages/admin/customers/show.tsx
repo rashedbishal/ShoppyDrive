@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, RotateCcw, Trash2 } from 'lucide-react';
+import { ArrowLeft, RotateCcw, UserX } from 'lucide-react';
 import { useState } from 'react';
 import { DeleteCustomerDialog } from '@/components/admin/delete-customer-dialog';
 import { RestoreCustomerDialog } from '@/components/admin/restore-customer-dialog';
@@ -58,28 +58,28 @@ export default function CustomerShow({ customer, orders }: Props) {
         <>
             <Head title={`${customer.name} — Admin`} />
             <div className="space-y-5">
-                <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
                         <Link
                             href={route('admin.customers.index')}
                             className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                         >
                             <ArrowLeft className="size-4" />
                         </Link>
-                        <div className="flex items-center gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
                             {customer.avatar ? (
                                 <img
                                     src={customer.avatar}
                                     alt={customer.name}
-                                    className="size-10 rounded-full object-cover"
+                                    className="size-10 shrink-0 rounded-full object-cover"
                                 />
                             ) : (
-                                <div className="flex size-10 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-500">
+                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-500">
                                     {customer.name.slice(0, 2).toUpperCase()}
                                 </div>
                             )}
-                            <div>
-                                <div className="flex items-center gap-2">
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                     <h1 className="text-xl font-bold text-slate-900">
                                         {customer.name}
                                     </h1>
@@ -92,7 +92,7 @@ export default function CustomerShow({ customer, orders }: Props) {
                                         </Badge>
                                     )}
                                 </div>
-                                <p className="text-sm text-slate-500">
+                                <p className="truncate text-sm text-slate-500">
                                     {customer.email}
                                 </p>
                             </div>
@@ -103,9 +103,9 @@ export default function CustomerShow({ customer, orders }: Props) {
                         <button
                             type="button"
                             onClick={() => setDeleteTarget(customer)}
-                            className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                            className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 sm:w-auto sm:py-1.5"
                         >
-                            <Trash2 className="size-3.5" />
+                            <UserX className="size-3.5" />
                             Anonymize Customer
                         </button>
                     )}
@@ -113,7 +113,7 @@ export default function CustomerShow({ customer, orders }: Props) {
                         <button
                             type="button"
                             onClick={() => setRestoreTarget(customer)}
-                            className="flex items-center gap-1.5 rounded-lg border border-[#c8102e]/20 px-3 py-1.5 text-xs font-semibold text-[#c8102e] hover:bg-[#c8102e]/5"
+                            className="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#c8102e]/20 px-3 py-2 text-xs font-semibold text-[#c8102e] hover:bg-[#c8102e]/5 sm:w-auto sm:py-1.5"
                         >
                             <RotateCcw className="size-3.5" />
                             Restore Customer
