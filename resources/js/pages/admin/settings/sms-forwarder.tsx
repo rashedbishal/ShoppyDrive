@@ -97,12 +97,16 @@ function SmsNotificationsCard({ status }: { status: PushStatus }) {
 
     const generateKeys = () => {
         setGenerating(true);
-        router.post(route('admin.settings.sms-forwarder.push-keys.generate'), {
-            onFinish: () => {
-                setGenerating(false);
-                setGenerateDialogOpen(false);
+        router.post(
+            route('admin.settings.sms-forwarder.push-keys.generate'),
+            {},
+            {
+                onFinish: () => {
+                    setGenerating(false);
+                    setGenerateDialogOpen(false);
+                },
             },
-        });
+        );
     };
 
     const [enableMessage, setEnableMessage] = useState<string | null>(null);
@@ -312,12 +316,16 @@ export default function SmsForwarderSettings({
 
     const regenerateToken = () => {
         setRegenerating(true);
-        router.post(route('admin.settings.sms-forwarder.regenerate'), {
-            onFinish: () => {
-                setRegenerating(false);
-                setRegenerateDialogOpen(false);
+        router.post(
+            route('admin.settings.sms-forwarder.regenerate'),
+            {},
+            {
+                onFinish: () => {
+                    setRegenerating(false);
+                    setRegenerateDialogOpen(false);
+                },
             },
-        });
+        );
     };
 
     const copyToClipboard = (text: string) => {
