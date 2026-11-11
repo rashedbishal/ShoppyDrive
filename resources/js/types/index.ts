@@ -99,6 +99,9 @@ export interface AppSettings {
     referral_enabled?: boolean;
     referral_discount_type?: 'percent' | 'fixed';
     referral_discount_value?: number;
+    /** Whether customers may attach photos to a review, and the most per review. */
+    review_images_enabled?: boolean;
+    review_images_max?: number;
 }
 
 export interface Category extends Timestamped, SoftDeletable {

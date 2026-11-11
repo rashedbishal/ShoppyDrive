@@ -23,6 +23,7 @@ import { FlashSaleCountdown } from '@/components/shared/FlashSaleCountdown';
 import { ProductCarousel } from '@/components/shared/ProductCarousel';
 import { RatingBreakdown } from '@/components/shared/RatingBreakdown';
 import { ReviewCard } from '@/components/shared/ReviewCard';
+import { ReviewImagePicker } from '@/components/shared/ReviewImagePicker';
 import { VariantSelectionModal } from '@/components/shared/VariantSelectionModal';
 import { Badge } from '@/components/ui/badge';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
@@ -67,6 +68,13 @@ export default function ProductDetail({
         Record<'title' | 'body' | 'rating' | 'review', string>
     >;
     const [reviewRating, setReviewRating] = useState(0);
+    // Photos for the review, when the shop allows them (Admin > Settings).
+    const [reviewImages, setReviewImages] = useState<File[]>([]);
+    const reviewImagesEnabled = Boolean(settings.review_images_enabled);
+    const reviewImagesMax = settings.review_images_max ?? 3;
+    const reviewImagesError = Object.entries(reviewForm.errors).find(
+        ([key]) => key === 'images' || key.startsWith('images.'),
+    )?.[1];
     const [reviewSubmitting, setReviewSubmitting] = useState(false);
     // The server sends the newest reviews first (capped at 50); this only
     // re-orders those already on the page.
@@ -100,12 +108,16 @@ export default function ProductDetail({
                 rating: reviewRating,
                 title: reviewForm.data.title,
                 body: reviewForm.data.body,
+                ...(reviewImagesEnabled && reviewImages.length > 0
+                    ? { images: reviewImages }
+                    : {}),
             },
             {
                 preserveScroll: true,
                 onSuccess: () => {
                     reviewForm.reset();
                     setReviewRating(0);
+                    setReviewImages([]);
                 },
                 onError: (errors) => reviewForm.setError(errors as any),
                 onFinish: () => setReviewSubmitting(false),
@@ -1200,6 +1212,24 @@ export default function ProductDetail({
                                                             </p>
                                                         )}
                                                     </div>
+
+                                                    {reviewImagesEnabled && (
+                                                        <ReviewImagePicker
+                                                            files={reviewImages}
+                                                            onChange={
+                                                                setReviewImages
+                                                            }
+                                                            max={
+                                                                reviewImagesMax
+                                                            }
+                                                            error={
+                                                                reviewImagesError
+                                                            }
+                                                            disabled={
+                                                                reviewSubmitting
+                                                            }
+                                                        />
+                                                    )}
 
                                                     <Button
                                                         type="submit"

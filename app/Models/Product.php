@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Concerns\Auditable;
 use App\Concerns\FlushesCatalogFilters;
 use App\Concerns\FlushesSearchSuggestions;
+use App\Services\ReviewImageStorage;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Mews\Purifier\Facades\Purifier;
 
 class Product extends Model
@@ -118,6 +120,17 @@ class Product extends Model
                 throw new \RuntimeException(
                     "Cannot permanently delete product \"{$product->name}\": it has order history. Soft-delete it instead.",
                 );
+            }
+
+            // Permanently deleting a product also deletes its reviews at the
+            // database level (no model events), so their photos are removed
+            // from disk here, once the delete has committed.
+            if ($product->isForceDeleting()) {
+                $photos = Review::withTrashed()->where('product_id', $product->id)->pluck('images')->flatten()->filter()->values()->all();
+
+                if ($photos !== []) {
+                    DB::afterCommit(fn () => app(ReviewImageStorage::class)->delete($photos));
+                }
             }
         });
     }

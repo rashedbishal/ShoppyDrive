@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Check, Search, Star, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
+import { ImageLightbox } from '@/components/shared/ImageLightbox';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
@@ -11,6 +12,7 @@ type Review = {
     rating: number;
     title: string | null;
     body: string;
+    images?: string[] | null;
     is_approved: boolean;
     created_at: string;
     user: { id: number; name: string; email: string } | null;
@@ -29,6 +31,38 @@ type Props = {
     reviews: Paginated<Review>;
     filters: { search?: string; status?: string };
 };
+
+/** The photos a customer attached to a review, small, each opening full size. */
+function ReviewPhotos({ images }: { images: string[] }) {
+    const [open, setOpen] = useState<number | null>(null);
+
+    return (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+            {images.map((image, index) => (
+                <button
+                    key={image}
+                    type="button"
+                    onClick={() => setOpen(index)}
+                    aria-label={`View review photo ${index + 1}`}
+                    className="size-14 overflow-hidden rounded-md border border-slate-200 hover:opacity-80"
+                >
+                    <img
+                        src={image}
+                        alt={`Review photo ${index + 1}`}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                    />
+                </button>
+            ))}
+            <ImageLightbox
+                images={images}
+                index={open}
+                onIndexChange={setOpen}
+                label="Review photo"
+            />
+        </div>
+    );
+}
 
 export default function ReviewsIndex({ reviews, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
@@ -62,8 +96,13 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
         router.patch(route('admin.reviews.approve', id));
     const handleReject = (id: number) =>
         router.patch(route('admin.reviews.reject', id));
-    const handleDelete = (id: number) => {
-        if (!confirm('Delete this review?')) {
+    const handleDelete = (id: number, photoCount = 0) => {
+        const message =
+            photoCount > 0
+                ? `Delete this review? Its ${photoCount} ${photoCount === 1 ? 'photo' : 'photos'} will also be permanently deleted.`
+                : 'Delete this review?';
+
+        if (!confirm(message)) {
             return;
         }
 
@@ -165,6 +204,12 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
                                             <p className="mt-1 line-clamp-2 text-xs text-slate-600">
                                                 {review.body}
                                             </p>
+                                            {review.images &&
+                                                review.images.length > 0 && (
+                                                    <ReviewPhotos
+                                                        images={review.images}
+                                                    />
+                                                )}
                                             <p className="mt-1 text-xs text-slate-400">
                                                 {review.user?.name ?? 'Unknown'}{' '}
                                                 ·{' '}
@@ -204,7 +249,11 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    handleDelete(review.id)
+                                                    handleDelete(
+                                                        review.id,
+                                                        review.images?.length ??
+                                                            0,
+                                                    )
                                                 }
                                                 className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
                                             >

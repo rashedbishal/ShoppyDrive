@@ -20,6 +20,8 @@ export default function SettingsEdit({ settings }: Props) {
         site_name: (settings.site_name as string) ?? '',
         currency_symbol: (settings.currency_symbol as string) ?? '৳',
         guest_checkout_enabled: Boolean(settings.guest_checkout_enabled),
+        review_images_enabled: Boolean(settings.review_images_enabled),
+        review_images_max: Number(settings.review_images_max) || 3,
         order_notification_email:
             (settings.order_notification_email as string) ?? '',
         order_cancellation_email:
@@ -130,6 +132,89 @@ export default function SettingsEdit({ settings }: Props) {
                                     }
                                 />
                             </SettingsField>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-sm">
+                        <CardHeader className="border-b border-slate-100">
+                            <CardTitle className="text-sm font-semibold text-slate-700">
+                                Customer Review Photos
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-3">
+                            <SettingsField
+                                label="Allow photos with reviews"
+                                hint="When on, customers who can review a product may attach photos of what they received. You still approve every review (and its photos) before it appears. Off by default."
+                            >
+                                <Switch
+                                    checked={data.review_images_enabled}
+                                    onCheckedChange={(checked) =>
+                                        setData(
+                                            'review_images_enabled',
+                                            checked,
+                                        )
+                                    }
+                                />
+                            </SettingsField>
+                            {data.review_images_enabled && (
+                                <SettingsField
+                                    label="Photos allowed per review"
+                                    hint="The most photos one customer can attach to a single review (1 to 5)."
+                                >
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={5}
+                                        step={1}
+                                        className={`${settingsInputClass} max-w-[120px]`}
+                                        value={data.review_images_max}
+                                        onChange={(e) =>
+                                            setData(
+                                                'review_images_max',
+                                                Math.min(
+                                                    5,
+                                                    Math.max(
+                                                        1,
+                                                        Number(
+                                                            e.target.value,
+                                                        ) || 1,
+                                                    ),
+                                                ),
+                                            )
+                                        }
+                                    />
+                                    {errors.review_images_max && (
+                                        <p className="mt-1 text-xs font-medium text-red-600">
+                                            {errors.review_images_max}
+                                        </p>
+                                    )}
+                                </SettingsField>
+                            )}
+                            <div className="rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
+                                <p className="mb-1 font-semibold text-slate-700">
+                                    Standard photo rules (fixed)
+                                </p>
+                                <ul className="list-disc space-y-0.5 pl-4">
+                                    <li>
+                                        JPG, PNG or WebP only (no GIF or SVG)
+                                    </li>
+                                    <li>Up to 5 MB per photo</li>
+                                    <li>
+                                        At least 200 × 200 pixels (no more than
+                                        10,000 pixels on a side)
+                                    </li>
+                                    <li>
+                                        Saved resized to at most 1600 pixels on
+                                        the longest side, as an optimized image,
+                                        with camera data (such as location)
+                                        removed
+                                    </li>
+                                    <li>
+                                        Deleting a review also deletes its
+                                        photos from the server
+                                    </li>
+                                </ul>
+                            </div>
                         </CardContent>
                     </Card>
 

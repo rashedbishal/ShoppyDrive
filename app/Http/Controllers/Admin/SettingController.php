@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\PathaoCourierService;
 use App\Services\SteadfastCourierService;
+use App\Support\ReviewImageSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -74,6 +75,7 @@ class SettingController extends Controller
      */
     private const GENERAL_FIELDS = [
         'site_name', 'logo', 'currency_symbol', 'guest_checkout_enabled',
+        'review_images_enabled', 'review_images_max',
         'order_notification_email', 'order_cancellation_email',
         'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number', 'social_links',
     ];
@@ -142,6 +144,9 @@ class SettingController extends Controller
             'trade_licence_number' => ['nullable', 'string', 'max:100'],
             'currency_symbol' => ['nullable', 'string', 'max:10'],
             'guest_checkout_enabled' => ['nullable', 'boolean'],
+            // Customer review photos: on/off and how many per review (1 to 5).
+            'review_images_enabled' => ['nullable', 'boolean'],
+            'review_images_max' => ['nullable', 'integer', 'min:1', 'max:'.ReviewImageSettings::MAX_PER_REVIEW_LIMIT],
             'logo' => $request->hasFile('logo') ? ['image', 'max:2048'] : ['nullable'],
             'social_links' => ['nullable', 'array'],
             'social_links.facebook' => ['nullable', 'string', 'max:500'],
@@ -239,6 +244,22 @@ class SettingController extends Controller
             Setting::updateOrCreate(
                 ['key' => 'guest_checkout_enabled'],
                 ['value' => $request->boolean('guest_checkout_enabled'), 'group' => 'general'],
+            );
+        }
+
+        // Same reason as guest_checkout_enabled above: a real boolean, and a
+        // real integer, not the strings a multipart request carries.
+        if ($request->has('review_images_enabled')) {
+            Setting::updateOrCreate(
+                ['key' => ReviewImageSettings::ENABLED_KEY],
+                ['value' => $request->boolean('review_images_enabled'), 'group' => 'reviews'],
+            );
+        }
+
+        if ($request->filled('review_images_max')) {
+            Setting::updateOrCreate(
+                ['key' => ReviewImageSettings::MAX_PER_REVIEW_KEY],
+                ['value' => $request->integer('review_images_max'), 'group' => 'reviews'],
             );
         }
 

@@ -1,6 +1,7 @@
 import { CheckCircle2, Star } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
+import { ImageLightbox } from '@/components/shared/ImageLightbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn, formatDate, getInitials } from '@/lib/utils';
 import type { Review } from '@/types';
@@ -13,6 +14,7 @@ export function ReviewCard({ review }: ReviewCardProps): React.JSX.Element {
     const bodyRef = useRef<HTMLParagraphElement>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isLong, setIsLong] = useState(false);
+    const [openImage, setOpenImage] = useState<number | null>(null);
 
     // Measured rather than counted in characters: the same review fits on a
     // desktop but overflows on a phone, and the tab it sits in can be hidden.
@@ -112,15 +114,25 @@ export function ReviewCard({ review }: ReviewCardProps): React.JSX.Element {
                     {review.images.map((image, index) => (
                         <button
                             key={index}
+                            type="button"
+                            onClick={() => setOpenImage(index)}
+                            aria-label={`View review photo ${index + 1}`}
                             className="relative h-20 w-20 overflow-hidden rounded-lg border border-[var(--color-border)] transition-opacity hover:opacity-80"
                         >
                             <img
                                 src={image}
                                 alt={`Review image ${index + 1}`}
+                                loading="lazy"
                                 className="h-full w-full object-cover"
                             />
                         </button>
                     ))}
+                    <ImageLightbox
+                        images={review.images}
+                        index={openImage}
+                        onIndexChange={setOpenImage}
+                        label="Review photo"
+                    />
                 </div>
             )}
         </div>

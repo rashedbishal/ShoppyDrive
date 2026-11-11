@@ -60,6 +60,8 @@ final class LayoutCache
         'whatsapp_number', 'messenger_link', 'ai_assistant_enabled', 'referral_enabled',
         'referral_discount_type', 'referral_discount_value',
         'shipping_rate_inside_dhaka', 'shipping_rate_outside_dhaka',
+        // Whether review photos are allowed and how many (not secrets: the review form needs them).
+        'review_images_enabled', 'review_images_max',
     ];
 
     public static function forget(string ...$keys): void

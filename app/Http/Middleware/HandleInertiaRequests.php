@@ -265,6 +265,9 @@ class HandleInertiaRequests extends Middleware
             'google_login_enabled' => filled(config('services.google.client_id')),
             'facebook_login_enabled' => filled(config('services.facebook.client_id')),
             'referral_enabled' => (bool) $db->get('referral_enabled', false),
+            // Review photos: whether the review form offers them, and how many (Admin > Settings).
+            'review_images_enabled' => (bool) $db->get('review_images_enabled', false),
+            'review_images_max' => max(1, min(5, (int) $db->get('review_images_max', 3))),
             'referral_discount_type' => $db->get('referral_discount_type', 'percent'),
             'referral_discount_value' => (float) $db->get('referral_discount_value', 0),
             'free_delivery_threshold' => (float) ($homepageSettings['announcement_bar']['metadata']['free_delivery_amount'] ?? 0),
