@@ -30,22 +30,12 @@ class SmsForwarderHeartbeat
     private const DOWN_AFTER_MINUTES = 5;
 
     /**
-     * Before any phone has ever sent a heartbeat (old app version not yet
-     * reinstalled, or a fresh setup), fall back to the original, far more
-     * conservative "no SMS received at all" signal — this must never start
-     * reporting false positives just because the heartbeat endpoint has
-     * never been called yet.
-     */
-    private const FALLBACK_SILENT_MINUTES = 360;
-
-    /**
      * The last ping is kept in the same durable store the rate limiters use
      * (`cache.limiter`, the database cache in production), NOT the default
      * cache: every deploy runs `cache:clear`, which empties the default
-     * store, and a forgotten ping silently switched this check to the slow
-     * 6-hour fallback — so a phone that was already off kept bKash/Nagad
-     * available to customers after each deploy until it happened to ping
-     * again. `cache:clear` leaves the database store alone.
+     * store, so a forgotten ping made a phone that was already off look
+     * undetectable after each deploy. `cache:clear` leaves the database store
+     * alone.
      */
     private static function store(): Repository
     {
@@ -70,12 +60,11 @@ class SmsForwarderHeartbeat
      *
      * @return array{
      *     is_down: bool,
-     *     mode: 'heartbeat'|'fallback',
+     *     has_heartbeat: bool,
      *     last_heartbeat_at: string|null,
      *     minutes_since_heartbeat: int|null,
      *     last_sms_at: string|null,
      *     down_after_minutes: int,
-     *     fallback_silent_hours: int,
      * }
      */
     public static function status(): array
@@ -85,26 +74,25 @@ class SmsForwarderHeartbeat
 
         return [
             'is_down' => self::isDown(),
-            'mode' => $lastHeartbeat !== null ? 'heartbeat' : 'fallback',
+            'has_heartbeat' => $lastHeartbeat !== null,
             'last_heartbeat_at' => $lastHeartbeat?->toIso8601String(),
             'minutes_since_heartbeat' => $lastHeartbeat !== null ? (int) floor(now()->diffInMinutes($lastHeartbeat, true)) : null,
             'last_sms_at' => $lastReceivedAt !== null ? Carbon::parse($lastReceivedAt)->toIso8601String() : null,
             'down_after_minutes' => self::DOWN_AFTER_MINUTES,
-            'fallback_silent_hours' => intdiv(self::FALLBACK_SILENT_MINUTES, 60),
         ];
     }
 
+    /**
+     * No ping on record counts as down, the same as a stale one: the phone is
+     * not known to be on, so bKash/Nagad are not offered until it pings.
+     * (This used to fall back to "no SMS at all for 6 hours" before the first
+     * ping, which left bKash/Nagad open for hours with the phone off.)
+     */
     public static function isDown(): bool
     {
         $lastHeartbeat = self::lastHeartbeatAt();
 
-        if ($lastHeartbeat !== null) {
-            return now()->diffInMinutes($lastHeartbeat, true) >= self::DOWN_AFTER_MINUTES;
-        }
-
-        $lastReceivedAt = ReceivedSms::max('received_at');
-
-        return $lastReceivedAt !== null
-            && now()->diffInMinutes($lastReceivedAt, true) >= self::FALLBACK_SILENT_MINUTES;
+        return $lastHeartbeat === null
+            || now()->diffInMinutes($lastHeartbeat, true) >= self::DOWN_AFTER_MINUTES;
     }
 }

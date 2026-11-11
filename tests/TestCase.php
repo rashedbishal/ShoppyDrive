@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Support\SmsForwarderHeartbeat;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -49,6 +50,11 @@ abstract class TestCase extends BaseTestCase
         Storage::fake('public');
         config(['inertia.ssr.enabled' => false]);
         Http::preventStrayRequests();
+
+        // OPS-005: no ping on record now counts as "forwarder phone down" and
+        // hides bKash/Nagad, so every test starts with a healthy phone;
+        // tests about the down states clear or age it themselves.
+        SmsForwarderHeartbeat::record();
     }
 
     protected function skipUnlessFortifyHas(string $feature, ?string $message = null): void

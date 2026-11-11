@@ -5,12 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type ForwarderStatus = {
     is_down: boolean;
-    mode: 'heartbeat' | 'fallback';
+    has_heartbeat: boolean;
     last_heartbeat_at: string | null;
     minutes_since_heartbeat: number | null;
     last_sms_at: string | null;
     down_after_minutes: number;
-    fallback_silent_hours: number;
 };
 
 type Props = {
@@ -36,36 +35,29 @@ const formatMinutes = (minutes: number): string => {
 };
 
 function PhoneStatusCard({ status }: { status: ForwarderStatus }) {
-    const heartbeatMode = status.mode === 'heartbeat';
     const tone = status.is_down
         ? 'border-red-200 bg-red-50 text-red-900'
-        : heartbeatMode
-          ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-          : 'border-amber-200 bg-amber-50 text-amber-900';
+        : 'border-emerald-200 bg-emerald-50 text-emerald-900';
 
     return (
         <div className={`space-y-1 rounded-lg border p-4 text-sm ${tone}`}>
             <p className="font-semibold">
                 {status.is_down
                     ? 'Forwarder phone looks OFFLINE — bKash / Nagad are hidden from customers'
-                    : heartbeatMode
-                      ? 'Forwarder phone is online — bKash / Nagad are available'
-                      : 'No ping from the phone received yet'}
+                    : 'Forwarder phone is online — bKash / Nagad are available'}
             </p>
-            {heartbeatMode && status.minutes_since_heartbeat !== null && (
+            {status.has_heartbeat && status.minutes_since_heartbeat !== null ? (
                 <p>
                     Last ping: {formatMinutes(status.minutes_since_heartbeat)}{' '}
                     ago. It counts as offline after {status.down_after_minutes}{' '}
                     minutes without a ping.
                 </p>
-            )}
-            {!heartbeatMode && (
+            ) : (
                 <p>
-                    The site has not received a ping from the phone since it was
-                    last restarted or updated, so it cannot tell whether the
-                    phone is on. Until a ping arrives it only hides bKash /
-                    Nagad after {status.fallback_silent_hours} hours with no SMS
-                    at all. Open the forwarder app on the phone to send a ping.
+                    No ping from the phone has been received yet, so the site
+                    treats it as offline. Open the forwarder app on the phone
+                    (with the correct server address and token) to send a ping;
+                    bKash / Nagad come back within a minute.
                 </p>
             )}
             <p className="text-xs opacity-80">

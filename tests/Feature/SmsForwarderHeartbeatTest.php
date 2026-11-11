@@ -5,8 +5,14 @@ declare(strict_types=1);
 use App\Models\ReceivedSms;
 use App\Support\SmsForwarderHeartbeat;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    // Tests/TestCase records a fresh ping for every test; these start from none.
+    Cache::store(config('cache.limiter'))->flush();
+});
 
 /*
  * OPS-005: the forwarder app's foreground service now pings this endpoint
@@ -57,23 +63,26 @@ test('isDown is false right after a heartbeat and true once it is stale', functi
     expect(SmsForwarderHeartbeat::isDown())->toBeTrue();
 });
 
-test('before any heartbeat has ever been recorded, it falls back to the no-SMS-at-all signal', function (): void {
+test('with no heartbeat on record the phone counts as down, whatever SMS history there is', function (): void {
     expect(SmsForwarderHeartbeat::lastHeartbeatAt())->toBeNull();
 
-    // No SMS ever — not this phone's problem to report yet.
-    expect(SmsForwarderHeartbeat::isDown())->toBeFalse();
+    // No SMS ever, and no ping: not known to be on, so not offered.
+    expect(SmsForwarderHeartbeat::isDown())->toBeTrue();
 
+    // A recent SMS does not change that: only a ping proves the phone is on now.
     ReceivedSms::create([
         'sender' => '01799999999', 'provider' => 'bkash', 'content' => 'x',
-        'received_at' => now()->subHours(7), 'parsed_transaction_id' => uniqid('TXN'), 'parsed_amount' => 100,
+        'received_at' => now(), 'parsed_transaction_id' => uniqid('TXN'), 'parsed_amount' => 100,
     ]);
 
-    // Old-app phones that never send a heartbeat still fall back to the
-    // original 6-hour silence check.
     expect(SmsForwarderHeartbeat::isDown())->toBeTrue();
+
+    // The first ping brings it back.
+    SmsForwarderHeartbeat::record();
+    expect(SmsForwarderHeartbeat::isDown())->toBeFalse();
 });
 
-test('a real heartbeat takes priority over the fallback even if an SMS recently arrived', function (): void {
+test('a stale heartbeat means down even if an SMS recently arrived', function (): void {
     ReceivedSms::create([
         'sender' => '01799999999', 'provider' => 'bkash', 'content' => 'x',
         'received_at' => now(), 'parsed_transaction_id' => uniqid('TXN'), 'parsed_amount' => 100,
@@ -82,8 +91,7 @@ test('a real heartbeat takes priority over the fallback even if an SMS recently 
     SmsForwarderHeartbeat::record();
     $this->travel(6)->minutes();
 
-    // A recent SMS alone would say "not down" under the fallback, but once
-    // a heartbeat exists, only the heartbeat's own freshness counts.
+    // Only the heartbeat's own freshness counts, never SMS traffic.
     expect(SmsForwarderHeartbeat::isDown())->toBeTrue();
 });
 
@@ -108,18 +116,18 @@ test('a recorded heartbeat survives cache:clear, so an off phone stays detected 
 test('the admin SMS forwarder page reports the phone status', function (): void {
     $admin = createMotherAdmin(['email' => 'mother-sms@example.com']);
 
-    // Nothing received yet: fallback mode, not down.
+    // No ping on record: shown as offline, with the explanation.
     $this->actingAs($admin, 'admin')->get(route('admin.settings.sms-forwarder.index'))
         ->assertInertia(fn ($page) => $page
-            ->where('forwarderStatus.mode', 'fallback')
-            ->where('forwarderStatus.is_down', false)
+            ->where('forwarderStatus.has_heartbeat', false)
+            ->where('forwarderStatus.is_down', true)
             ->where('forwarderStatus.last_heartbeat_at', null));
 
     SmsForwarderHeartbeat::record();
 
     $this->actingAs($admin, 'admin')->get(route('admin.settings.sms-forwarder.index'))
         ->assertInertia(fn ($page) => $page
-            ->where('forwarderStatus.mode', 'heartbeat')
+            ->where('forwarderStatus.has_heartbeat', true)
             ->where('forwarderStatus.is_down', false)
             ->where('forwarderStatus.minutes_since_heartbeat', 0));
 
@@ -130,4 +138,14 @@ test('the admin SMS forwarder page reports the phone status', function (): void 
             ->where('forwarderStatus.is_down', true)
             ->where('forwarderStatus.minutes_since_heartbeat', 7)
             ->where('forwarderStatus.down_after_minutes', 5));
+});
+
+test('the checkout page offers bKash/Nagad only while the phone is pinging', function (): void {
+    createMotherAdmin();
+
+    $this->get(route('home'))->assertInertia(fn ($page) => $page->where('mobile_banking_available', false));
+
+    SmsForwarderHeartbeat::record();
+
+    $this->get(route('home'))->assertInertia(fn ($page) => $page->where('mobile_banking_available', true));
 });
