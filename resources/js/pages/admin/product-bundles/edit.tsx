@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { useAdminListUrl } from '@/hooks/use-admin-list-url';
+import { uniqueId } from '@/lib/unique-id';
 import { cn } from '@/lib/utils';
 import { maxLength, required, validate } from '@/lib/validate';
 
@@ -155,7 +155,7 @@ export default function ProductBundleEdit({ bundle }: Props) {
 
     const [selectedItems, setSelectedItems] = useState<SelectedItem[]>(() =>
         bundle.items.map((item) => ({
-            uid: crypto.randomUUID(),
+            uid: uniqueId(),
             product: item.product,
             variant_id: item.variant_id ? String(item.variant_id) : '',
             quantity: String(item.quantity),
@@ -240,7 +240,7 @@ export default function ProductBundleEdit({ bundle }: Props) {
         const next = [
             ...selectedItems,
             {
-                uid: crypto.randomUUID(),
+                uid: uniqueId(),
                 product,
                 variant_id: '',
                 quantity: '1',

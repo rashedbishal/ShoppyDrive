@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { useAdminListUrl } from '@/hooks/use-admin-list-url';
+import { uniqueId } from '@/lib/unique-id';
 import { cn } from '@/lib/utils';
 import { maxLength, required, validate } from '@/lib/validate';
 
@@ -209,7 +209,7 @@ export default function ProductBundleCreate() {
         const next = [
             ...selectedItems,
             {
-                uid: crypto.randomUUID(),
+                uid: uniqueId(),
                 product,
                 variant_id: '',
                 quantity: '1',
