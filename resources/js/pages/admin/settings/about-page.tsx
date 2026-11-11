@@ -200,7 +200,10 @@ export default function AboutPageConfig({ settings }: Props) {
                             />
                         </SettingsField>
                         <div className="grid gap-4 sm:grid-cols-2">
-                            <SettingsField label="Title (first line)">
+                            <SettingsField
+                                label="Title (first line)"
+                                hint="Shown before the highlighted line"
+                            >
                                 <input
                                     className={settingsInputClass}
                                     value={data.about_hero_title}

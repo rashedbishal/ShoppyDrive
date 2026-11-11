@@ -40,7 +40,7 @@ export default function DisplayOrderSettings({
     return (
         <>
             <Head title="Display Order Settings — Admin" />
-            <div className="max-w-2xl space-y-5">
+            <div className="w-full space-y-5">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900">
                         Display Order
