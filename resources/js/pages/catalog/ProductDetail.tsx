@@ -68,6 +68,23 @@ export default function ProductDetail({
     >;
     const [reviewRating, setReviewRating] = useState(0);
     const [reviewSubmitting, setReviewSubmitting] = useState(false);
+    // The server sends the newest reviews first (capped at 50); this only
+    // re-orders those already on the page.
+    const [reviewSort, setReviewSort] = useState<
+        'newest' | 'highest' | 'lowest'
+    >('newest');
+    const sortedReviews = useMemo(() => {
+        if (reviewSort === 'newest') {
+            return reviews;
+        }
+
+        // Array.prototype.sort is stable, so equal ratings stay newest first.
+        return [...reviews].sort((a, b) =>
+            reviewSort === 'highest'
+                ? b.rating - a.rating
+                : a.rating - b.rating,
+        );
+    }, [reviews, reviewSort]);
 
     const submitReview = (e: React.FormEvent) => {
         e.preventDefault();
@@ -1213,18 +1230,22 @@ export default function ProductDetail({
                                                     aria-label="Sort reviews"
                                                     containerClassName="min-w-36"
                                                     selectClassName="h-9 rounded-full px-3.5 text-sm font-bold"
+                                                    value={reviewSort}
+                                                    onChange={(e) =>
+                                                        setReviewSort(
+                                                            e.target
+                                                                .value as typeof reviewSort,
+                                                        )
+                                                    }
                                                 >
-                                                    <option>
+                                                    <option value="newest">
                                                         Newest First
                                                     </option>
-                                                    <option>
+                                                    <option value="highest">
                                                         Highest Rated
                                                     </option>
-                                                    <option>
+                                                    <option value="lowest">
                                                         Lowest Rated
-                                                    </option>
-                                                    <option>
-                                                        Most Helpful
                                                     </option>
                                                 </Select>
                                             </div>
@@ -1232,7 +1253,7 @@ export default function ProductDetail({
 
                                         {reviews.length > 0 ? (
                                             <div className="space-y-2">
-                                                {reviews.map((review) => (
+                                                {sortedReviews.map((review) => (
                                                     <ReviewCard
                                                         key={review.id}
                                                         review={review}
