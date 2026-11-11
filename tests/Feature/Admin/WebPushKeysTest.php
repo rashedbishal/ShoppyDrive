@@ -56,6 +56,10 @@ test('regenerating replaces the keys and removes the subscriptions made with the
     actingAs($mother, 'admin')->post(route('admin.settings.sms-forwarder.push-keys.generate'))
         ->assertSessionHas('success', fn (string $message) => str_contains($message, '2 browser(s)'));
 
+    // With nothing to reset it must not talk about "0 browser(s)".
+    actingAs($mother, 'admin')->post(route('admin.settings.sms-forwarder.push-keys.generate'))
+        ->assertSessionHas('success', fn (string $message) => str_contains($message, 'No browser had notifications on yet') && ! str_contains($message, '0 browser'));
+
     expect(WebPushConfig::publicKey())->not->toBe($firstPublic)
         ->and(PushSubscription::count())->toBe(0);
 });

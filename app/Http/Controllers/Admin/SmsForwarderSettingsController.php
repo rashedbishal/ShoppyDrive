@@ -77,8 +77,10 @@ class SmsForwarderSettingsController extends Controller
         return redirect()->route('admin.settings.sms-forwarder.index')->with(
             'success',
             $hadKeys
-                ? "New notification keys created. {$removed} browser(s) must press \"Enable\" again."
-                : 'Notification keys created. Reload the page and press "Enable" in the bottom-right banner, then allow notifications in the browser.',
+                ? ($removed > 0
+                    ? "New notification keys created. {$removed} browser(s) that had notifications on were reset: each must press \"Enable notifications on this browser\" again."
+                    : 'New notification keys created. No browser had notifications on yet. Now press "Enable notifications on this browser" below.')
+                : 'Notification keys created. Now press "Enable notifications on this browser" below and allow notifications in the browser.',
         );
     }
 
