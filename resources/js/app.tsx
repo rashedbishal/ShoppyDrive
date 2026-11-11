@@ -86,6 +86,30 @@ function readInitialUserId(): number | null {
     return null;
 }
 
+/**
+ * FE-005: whether the server-rendered page carried shared props at all. A
+ * 500/503 error page doesn't (AppServiceProvider::configureErrorPages()
+ * flushes them), so there `auth` is absent rather than `{ user: null }`, and
+ * absent must never be read as "the customer logged out". Unreadable page
+ * data still counts as carrying auth, which keeps the previous behaviour
+ * for that case.
+ */
+function initialPageCarriesAuth(): boolean {
+    try {
+        const raw = document.getElementById('app')?.dataset.page;
+
+        if (raw) {
+            const props = JSON.parse(raw)?.props;
+
+            return !(props && typeof props === 'object' && !('auth' in props));
+        }
+    } catch {
+        // Missing or malformed page data: fall through to the default below.
+    }
+
+    return true;
+}
+
 function readInitialCart(): Cart | null {
     try {
         const raw = document.getElementById('app')?.dataset.page;
@@ -338,29 +362,35 @@ if (typeof window !== 'undefined') {
     // to the module and never attaches it to `window`.
     window.React = React;
 
-    const initialUserId = readInitialUserId();
-    const initialCart = readInitialCart();
-    useCartStore.getState().setBundleRecipes(readInitialBundleRecipes());
-    const storedLastUser = localStorage.getItem(LAST_USER_KEY);
+    // FE-005: a full page load that lands on a 500/503 error page has no
+    // shared props, so it says nothing about who is logged in. Leave the
+    // cart, wishlist and login marker exactly as they were, like the
+    // navigate handler below does for the same page rendered via a visit.
+    if (initialPageCarriesAuth()) {
+        const initialUserId = readInitialUserId();
+        const initialCart = readInitialCart();
+        useCartStore.getState().setBundleRecipes(readInitialBundleRecipes());
+        const storedLastUser = localStorage.getItem(LAST_USER_KEY);
 
-    if (storedLastUser !== null && initialUserId === null) {
-        applyLogout();
-    } else if (initialUserId !== null) {
-        // FE-008: Google/Facebook login returns as a full page load, not an
-        // Inertia visit, so the navigate handler's guest-to-login merge below
-        // never ran and the guest's cart and wishlist were overwritten.
-        // No account active in this browser before this load (logout clears
-        // LAST_USER_KEY together with the cart) means whatever is in the
-        // local cart and wishlist belongs to a guest who just logged in.
-        // A logged-in reload keeps LAST_USER_KEY, so it never merges, which
-        // matters because the server merge adds quantities together.
-        const guestJustLoggedIn = storedLastUser === null;
+        if (storedLastUser !== null && initialUserId === null) {
+            applyLogout();
+        } else if (initialUserId !== null) {
+            // FE-008: Google/Facebook login returns as a full page load, not an
+            // Inertia visit, so the navigate handler's guest-to-login merge below
+            // never ran and the guest's cart and wishlist were overwritten.
+            // No account active in this browser before this load (logout clears
+            // LAST_USER_KEY together with the cart) means whatever is in the
+            // local cart and wishlist belongs to a guest who just logged in.
+            // A logged-in reload keeps LAST_USER_KEY, so it never merges, which
+            // matters because the server merge adds quantities together.
+            const guestJustLoggedIn = storedLastUser === null;
 
-        if (guestJustLoggedIn) {
-            snapshotGuestWishlistForMerge();
+            if (guestJustLoggedIn) {
+                snapshotGuestWishlistForMerge();
+            }
+
+            applyLogin(initialUserId, initialCart, guestJustLoggedIn);
         }
-
-        applyLogin(initialUserId, initialCart, guestJustLoggedIn);
     }
 }
 

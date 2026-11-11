@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 11 / 99** · Live, ready to retest: 18 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
+**Done: 11 / 99** · Live, ready to retest: 18 · Fixed, not live yet: 6 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -62,7 +62,7 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
 ## Frontend
 
-- [ ] FE-005 — A server error empties a logged-in customer's cart
+- [~] FE-005 — A server error empties a logged-in customer's cart — tester skipped it (2026-11-11, couldn't test: needs a real 500 with APP_DEBUG off). Re-checked the code: the in-site-navigation case was already fixed (`6dbf2ba`, deployed 2026-11-05), but the same "missing auth = logout" mistake was still on the full-page-load path (typing the URL, refresh, plain link landing on a 500 page), which wiped the local cart, wishlist and login marker. Fixed locally in `resources/js/app.tsx` (not pushed yet): a page with no shared props now leaves all of that untouched. To retest after deploy: log in, add an item, open a page that errors (500, APP_DEBUG off) by typing its URL, then go home — the cart must still be there
 - [ ] FE-006 — Product pages have no search or share tags in the HTML
 - [ ] FE-001 — Customers cannot page through order history
 - [~] FE-002 — Cart drawer and checkout estimates disagree with the server — tester failed it (checkout showed "Enter address" instead of "Free" above the threshold when no address picked yet); fix pushed 2026-11-09 (commit `9dd80c8`), deploy run outcome not yet confirmed
