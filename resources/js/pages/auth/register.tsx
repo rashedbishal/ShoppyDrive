@@ -14,6 +14,7 @@ import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
 import PasswordRequirements from '@/components/password-requirements';
+import { passwordMismatchMessage, passwordsMatch } from '@/lib/password-match';
 import type { SharedPageProps } from '@/types';
 
 export default function Register({
@@ -36,8 +37,20 @@ export default function Register({
         referral_code: referralCode ?? '',
     });
 
+    const confirmationError = passwordMismatchMessage(
+        data.password,
+        data.password_confirmation,
+    );
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!passwordsMatch(data.password, data.password_confirmation)) {
+            document.getElementById('password_confirmation')?.focus();
+
+            return;
+        }
+
         post(route('register'));
     };
 
@@ -455,7 +468,10 @@ export default function Register({
                                     </button>
                                 </div>
                                 <InputError
-                                    message={errors.password_confirmation}
+                                    message={
+                                        confirmationError ??
+                                        errors.password_confirmation
+                                    }
                                 />
                             </div>
 

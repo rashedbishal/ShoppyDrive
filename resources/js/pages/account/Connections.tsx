@@ -1,5 +1,6 @@
 import { Form, Head, usePage } from '@inertiajs/react';
 import { Check, KeyRound } from 'lucide-react';
+import { useState } from 'react';
 import ConnectionsController from '@/actions/App/Http/Controllers/Settings/ConnectionsController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -8,6 +9,7 @@ import PasswordInput from '@/components/password-input';
 import PasswordRequirements from '@/components/password-requirements';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { passwordMismatchMessage, passwordsMatch } from '@/lib/password-match';
 
 type Connection = {
     id: number;
@@ -57,6 +59,14 @@ const PROVIDERS: {
 ];
 
 export default function Connections({ hasPassword, connections }: Props) {
+    // Kept in state (the form is otherwise uncontrolled) so a mismatch shows as
+    // the customer types, before anything is sent to the server.
+    const [newPassword, setNewPassword] = useState('');
+    const [newPasswordConfirmation, setNewPasswordConfirmation] = useState('');
+    const confirmationError = passwordMismatchMessage(
+        newPassword,
+        newPasswordConfirmation,
+    );
     const { props } = usePage<any>();
     const settings = props.settings as {
         google_login_enabled: boolean;
@@ -197,6 +207,17 @@ export default function Connections({ hasPassword, connections }: Props) {
                         <Form
                             {...ConnectionsController.setPassword.form()}
                             options={{ preserveScroll: true }}
+                            // A mismatch is shown inline; do not send it.
+                            onBefore={() =>
+                                passwordsMatch(
+                                    newPassword,
+                                    newPasswordConfirmation,
+                                )
+                            }
+                            onSuccess={() => {
+                                setNewPassword('');
+                                setNewPasswordConfirmation('');
+                            }}
                             resetOnSuccess
                             className="space-y-6"
                         >
@@ -211,6 +232,10 @@ export default function Connections({ hasPassword, connections }: Props) {
                                             name="password"
                                             autoComplete="new-password"
                                             placeholder="New password"
+                                            value={newPassword}
+                                            onChange={(e) =>
+                                                setNewPassword(e.target.value)
+                                            }
                                         />
                                         <PasswordRequirements
                                             requirements={passwordRequirements}
@@ -229,9 +254,16 @@ export default function Connections({ hasPassword, connections }: Props) {
                                             name="password_confirmation"
                                             autoComplete="new-password"
                                             placeholder="Confirm password"
+                                            value={newPasswordConfirmation}
+                                            onChange={(e) =>
+                                                setNewPasswordConfirmation(
+                                                    e.target.value,
+                                                )
+                                            }
                                         />
                                         <InputError
                                             message={
+                                                confirmationError ??
                                                 formErrors.password_confirmation
                                             }
                                         />

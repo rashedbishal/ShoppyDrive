@@ -13,6 +13,7 @@ import AccountLayout from '@/components/layout/AccountLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { passwordMismatchMessage, passwordsMatch } from '@/lib/password-match';
 
 export default function ChangePassword(): React.JSX.Element {
     const [showPassword, setShowPassword] = useState(false);
@@ -23,8 +24,22 @@ export default function ChangePassword(): React.JSX.Element {
         password_confirmation: '',
     });
 
+    const confirmationError = passwordMismatchMessage(
+        form.data.password,
+        form.data.password_confirmation,
+    );
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (
+            !passwordsMatch(form.data.password, form.data.password_confirmation)
+        ) {
+            document.getElementById('password_confirmation')?.focus();
+
+            return;
+        }
+
         form.put(route('account.password.update'), {
             onSuccess: () => form.reset(),
         });
@@ -280,9 +295,12 @@ export default function ChangePassword(): React.JSX.Element {
                                             className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
                                         />
                                     </div>
-                                    {form.errors.password_confirmation && (
+                                    {(confirmationError ??
+                                        form.errors.password_confirmation) && (
                                         <p className="text-xs font-bold text-[var(--color-error)]">
-                                            {form.errors.password_confirmation}
+                                            {confirmationError ??
+                                                form.errors
+                                                    .password_confirmation}
                                         </p>
                                     )}
                                 </div>

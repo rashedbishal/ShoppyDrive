@@ -4,6 +4,7 @@ import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
 import PasswordRequirements from '@/components/password-requirements';
+import { passwordMismatchMessage, passwordsMatch } from '@/lib/password-match';
 import type { SharedPageProps } from '@/types';
 
 export default function ResetPassword({
@@ -91,6 +92,20 @@ export default function ResetPassword({
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();
+
+                            if (
+                                !passwordsMatch(
+                                    data.password,
+                                    data.password_confirmation,
+                                )
+                            ) {
+                                document
+                                    .getElementById('password_confirmation')
+                                    ?.focus();
+
+                                return;
+                            }
+
                             post(route('password.update'));
                         }}
                         className="space-y-4"
@@ -193,7 +208,12 @@ export default function ResetPassword({
                                 </button>
                             </div>
                             <InputError
-                                message={errors.password_confirmation}
+                                message={
+                                    passwordMismatchMessage(
+                                        data.password,
+                                        data.password_confirmation,
+                                    ) ?? errors.password_confirmation
+                                }
                             />
                         </div>
 
