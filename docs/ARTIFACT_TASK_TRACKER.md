@@ -2,7 +2,7 @@
 
 Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 
-**Done: 11 / 99** · Live, ready to retest: 22 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
+**Done: 11 / 99** · Live, ready to retest: 24 · Fixed, not live yet: 5 · Failed: 0 · Skipped: 1
 
 `[ ]` not done · `[x]` done · `[>]` live, ready to retest · `[~]` fixed, not live yet · `[!]` failed · `[-]` skipped
 
@@ -72,8 +72,8 @@ Source: https://claude.ai/artifact/DMM83dRHtY9RkYAWCrEdhj
 - [ ] FE-011 — Failed cart sync is silent and the item later vanishes
 - [ ] FE-012 — Phone rules differ, and Bangla digits are dropped at checkout
 - [ ] FE-003 — Review "Helpful" buttons do nothing
-- [ ] FE-004 — Lost-parcel action has no screen
-- [ ] FE-013 — Cookie banner offers choices that control nothing
+- [>] FE-004 — Lost-parcel action has no screen — tester marked it Fail (2026-11-11) after searching `resources/js` for the route. The screen exists (`components/admin/LostParcelDialog.tsx`, used in `pages/admin/orders/show.tsx`; shipped `7083f65`, deployed 2026-11-07); it calls the route by name (`route('admin.orders.confirmLostParcel', …)`), which a plain text search for the URL misses. It is shown only to the main (mother) admin, inside the amber "Courier report needs investigation" banner, which appears only for a non-final order whose courier status is not recognised. Verified in real Chrome with exactly that setup (scratch database, main admin login): banner shows, the "Confirm parcel lost" button opens a dialog titled "Confirm parcel lost" with a labelled note box, a labelled password box, Cancel and Confirm lost. No code change. To retest on the live site: you need a main-admin login and an order whose Steadfast/Pathao status is an unrecognised one; the server also requires a verified not-delivered courier outcome first
+- [>] FE-013 — Cookie banner offers choices that control nothing — tester marked it Fail (2026-11-11): "toggles do not control anything — cookies are set unconditionally". The toggles no longer exist: `f4800f6` (deployed 2026-11-07) replaced them with an honest notice. Checked again today in real Chrome on the current build: the notice reads "We use cookies to keep your cart and login working, count visits, and note how you found us. We also use tracking tools to measure and improve our ads.", has 0 toggles/checkboxes, shows only "Got it" and "Privacy policy", "Got it" hides it and stores the choice, and it does not return on the next visit. Cookies are still set on first load (session, XSRF, `sd_traffic_source`, `sd_traffic_referrer`, `sd_last_seen`) by the owner's 2026-11-08 decision ("fire for everyone, no consent gate"), and the notice says so; Google Fonts still loads from Google (known, recorded). No code change; if the tester's browser still shows switches it is an old cached copy — hard-refresh and retest
 - [ ] FE-014 — Inconsistent money format and small accessibility gaps
 
 ## Infrastructure
