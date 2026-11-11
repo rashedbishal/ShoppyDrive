@@ -43,6 +43,8 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
     return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 }
 
+export type EnableResult = { ok: true } | { ok: false; message: string };
+
 export type PushPermissionState =
     | 'unsupported'
     | 'default'
@@ -134,48 +136,87 @@ export function useWebPushSms(vapidPublicKey: string | null) {
         };
     }, [permission, vapidPublicKey]);
 
-    /** Must be called from a user gesture (a button click) — browsers refuse the permission prompt otherwise. */
-    const enableNotifications = useCallback(async () => {
+    /**
+     * Must be called from a user gesture (a button click) — browsers refuse
+     * the permission prompt otherwise. Resolves with the reason when it did
+     * not work, so the caller can show it instead of failing silently.
+     */
+    const enableNotifications = useCallback(async (): Promise<EnableResult> => {
         if (permission === 'unsupported' || !vapidPublicKey) {
-            return;
+            return {
+                ok: false,
+                message:
+                    'This browser does not support notifications, or the notification keys are not set up.',
+            };
         }
 
-        const result = await Notification.requestPermission();
-        setPermission(result as PushPermissionState);
+        try {
+            const result = await Notification.requestPermission();
+            setPermission(result as PushPermissionState);
 
-        if (result !== 'granted') {
-            return;
-        }
+            if (result !== 'granted') {
+                return {
+                    ok: false,
+                    message:
+                        'Notifications were not allowed. Click the lock or bell icon next to the address bar, set Notifications to Allow, then press the button again.',
+                };
+            }
 
-        const registration = await navigator.serviceWorker.register(
-            '/admin-push-sw.js',
-            {
+            await navigator.serviceWorker.register('/admin-push-sw.js', {
                 scope: '/admin/',
-            },
-        );
-        const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            // TS's DOM lib types Uint8Array generically over ArrayBufferLike,
-            // which it won't narrow to the plain BufferSource this API wants —
-            // the value itself is a perfectly normal Uint8Array at runtime.
-            applicationServerKey: urlBase64ToUint8Array(
-                vapidPublicKey,
-            ) as BufferSource,
-        });
+            });
+            // subscribe() needs an active service worker, which a first-time
+            // registration does not have yet.
+            const registration = await navigator.serviceWorker.ready;
 
-        await fetch(pushSubscriptions.store.url(), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-XSRF-TOKEN': getXsrfToken(),
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify(subscription.toJSON()),
-        });
+            // A sign-up made with an older key pair (e.g. before "Create new
+            // keys") makes subscribe() throw, so drop it first.
+            const stale = await registration.pushManager.getSubscription();
 
-        setIsSubscribed(true);
+            if (stale) {
+                await stale.unsubscribe();
+            }
+
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                // TS's DOM lib types Uint8Array generically over ArrayBufferLike,
+                // which it won't narrow to the plain BufferSource this API wants —
+                // the value itself is a perfectly normal Uint8Array at runtime.
+                applicationServerKey: urlBase64ToUint8Array(
+                    vapidPublicKey,
+                ) as BufferSource,
+            });
+
+            const response = await fetch(pushSubscriptions.store.url(), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-XSRF-TOKEN': getXsrfToken(),
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(subscription.toJSON()),
+            });
+
+            if (!response.ok) {
+                await subscription.unsubscribe();
+
+                return {
+                    ok: false,
+                    message: `The server did not accept this browser (HTTP ${response.status}). Reload the page and try again.`,
+                };
+            }
+
+            setIsSubscribed(true);
+
+            return { ok: true };
+        } catch (error) {
+            return {
+                ok: false,
+                message: `Could not turn notifications on: ${error instanceof Error ? error.message : String(error)}`,
+            };
+        }
     }, [permission, vapidPublicKey]);
 
     const disableNotifications = useCallback(async () => {

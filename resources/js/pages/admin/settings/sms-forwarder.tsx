@@ -17,6 +17,13 @@ type PushStatus = {
     configured: boolean;
     subscribed_browsers: number;
     can_manage: boolean;
+    last_result: {
+        kind: string;
+        at: string;
+        sent: number;
+        expired: number;
+        failed: string[];
+    } | null;
 };
 
 type Props = {
@@ -96,10 +103,35 @@ function SmsNotificationsCard({ status }: { status: PushStatus }) {
         router.post(route('admin.settings.sms-forwarder.push-keys.generate'));
     };
 
+    const [enableMessage, setEnableMessage] = useState<string | null>(null);
+    const [enabling, setEnabling] = useState(false);
+
     const handleEnable = async () => {
-        await enableNotifications();
-        window.location.reload();
+        setEnabling(true);
+        setEnableMessage(null);
+
+        const result = await enableNotifications();
+
+        setEnabling(false);
+
+        if (result.ok) {
+            window.location.reload();
+
+            return;
+        }
+
+        setEnableMessage(result.message);
     };
+
+    const handleTest = () => {
+        router.post(
+            route('admin.settings.sms-forwarder.push-test'),
+            {},
+            { preserveScroll: true },
+        );
+    };
+
+    const last = status.last_result;
 
     return (
         <Card className="shadow-sm">
@@ -184,11 +216,42 @@ function SmsNotificationsCard({ status }: { status: PushStatus }) {
                             <Button
                                 type="button"
                                 size="sm"
+                                disabled={enabling}
                                 onClick={() => void handleEnable()}
                             >
-                                Enable notifications on this browser
+                                {enabling
+                                    ? 'Enabling…'
+                                    : 'Enable notifications on this browser'}
                             </Button>
                         )}
+                        {enableMessage && (
+                            <p className="text-xs font-medium text-red-600">
+                                {enableMessage}
+                            </p>
+                        )}
+                        <div className="pt-1">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleTest}
+                            >
+                                Send test notification
+                            </Button>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                            {last === null
+                                ? 'No push has been sent yet.'
+                                : `Last push (${last.kind === 'test' ? 'test' : 'SMS'}, ${new Date(last.at).toLocaleString()}): ${
+                                      last.failed.length > 0
+                                          ? `FAILED - ${last.failed[0]}`
+                                          : last.sent > 0
+                                            ? `delivered to ${last.sent} browser(s)`
+                                            : last.expired > 0
+                                              ? 'the browser sign-up had expired'
+                                              : 'no browser to send to'
+                                  }`}
+                        </p>
                     </div>
                 )}
             </CardContent>

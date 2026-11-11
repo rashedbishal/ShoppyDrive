@@ -6,6 +6,8 @@ namespace App\Support;
 
 use App\Models\PushSubscription;
 use App\Models\Setting;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Minishlink\WebPush\VAPID;
 
@@ -63,6 +65,45 @@ class WebPushConfig
 
             return PushSubscription::query()->delete();
         });
+    }
+
+    /**
+     * The outcome of the most recent push attempt, shown on Admin > SMS
+     * Forwarder. Kept in the durable limiter store (like the phone heartbeat)
+     * so a deploy's `cache:clear` doesn't wipe it.
+     *
+     * @param  'sms'|'test'  $kind
+     * @param  array{sent: int, expired: int, failed: list<string>}  $result
+     */
+    public static function recordResult(string $kind, array $result): void
+    {
+        Cache::store(config('cache.limiter') ?: config('cache.default'))->forever('webpush_last_result', [
+            'kind' => $kind,
+            'at' => now()->getTimestamp(),
+            'sent' => $result['sent'],
+            'expired' => $result['expired'],
+            'failed' => array_slice($result['failed'], 0, 3),
+        ]);
+    }
+
+    /**
+     * @return array{kind: string, at: string, sent: int, expired: int, failed: list<string>}|null
+     */
+    public static function lastResult(): ?array
+    {
+        $value = Cache::store(config('cache.limiter') ?: config('cache.default'))->get('webpush_last_result');
+
+        if (! is_array($value) || ! is_int($value['at'] ?? null)) {
+            return null;
+        }
+
+        return [
+            'kind' => (string) ($value['kind'] ?? 'sms'),
+            'at' => Carbon::createFromTimestamp($value['at'])->toIso8601String(),
+            'sent' => (int) ($value['sent'] ?? 0),
+            'expired' => (int) ($value['expired'] ?? 0),
+            'failed' => array_values(array_map('strval', (array) ($value['failed'] ?? []))),
+        ];
     }
 
     private static function stored(string $key): ?string

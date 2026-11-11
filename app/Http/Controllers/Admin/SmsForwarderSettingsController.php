@@ -9,6 +9,7 @@ use App\Models\PushSubscription;
 use App\Support\SmsForwarderHeartbeat;
 use App\Support\SmsForwarderToken;
 use App\Support\WebPushConfig;
+use App\Support\WebPushSender;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -30,6 +31,7 @@ class SmsForwarderSettingsController extends Controller
             'pushStatus' => [
                 'configured' => WebPushConfig::isConfigured(),
                 'subscribed_browsers' => PushSubscription::count(),
+                'last_result' => WebPushConfig::lastResult(),
                 'can_manage' => (bool) $request->user('admin')?->is_mother,
             ],
         ];
@@ -78,6 +80,41 @@ class SmsForwarderSettingsController extends Controller
                 ? "New notification keys created. {$removed} browser(s) must press \"Enable\" again."
                 : 'Notification keys created. Reload the page and press "Enable" in the bottom-right banner, then allow notifications in the browser.',
         );
+    }
+
+    /**
+     * Sends one real push to the signed-in admin's own enabled browsers and
+     * says what happened, so a broken setup shows its reason here instead of
+     * as silence.
+     */
+    public function sendTestPush(Request $request): RedirectResponse
+    {
+        $admin = $request->user('admin');
+
+        if (! WebPushConfig::isConfigured()) {
+            return back()->with('error', 'Notification keys are not set up yet. Generate them first.');
+        }
+
+        if ($admin->pushSubscriptions()->doesntExist()) {
+            return back()->with('error', 'This account has no browser with notifications enabled. Press "Enable notifications on this browser" first.');
+        }
+
+        $result = WebPushSender::send($admin, [
+            'title' => 'Test notification',
+            'body' => 'If you can see this, SMS notifications work on this browser.',
+            'url' => route('admin.settings.sms-forwarder.index'),
+            'data' => ['type' => 'test'],
+        ], 'test');
+
+        if ($result['sent'] > 0 && $result['failed'] === []) {
+            return back()->with('success', "Test notification sent to {$result['sent']} browser(s). If nothing appeared, check this computer's notification settings (Do Not Disturb) and the browser's site settings.");
+        }
+
+        if ($result['sent'] === 0 && $result['expired'] > 0 && $result['failed'] === []) {
+            return back()->with('error', 'The browser sign-up had expired and was removed. Press "Enable notifications on this browser" again.');
+        }
+
+        return back()->with('error', 'Test notification failed: '.($result['failed'][0] ?? 'unknown error'));
     }
 
     private function maskToken(string $token): string

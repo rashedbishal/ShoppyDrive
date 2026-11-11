@@ -228,6 +228,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::get('settings/sms-forwarder', [SmsForwarderSettingsController::class, 'index'])->name('settings.sms-forwarder.index')->middleware(AdminSections::middleware('sms_forwarder', 'view'));
     Route::post('settings/sms-forwarder/regenerate', [SmsForwarderSettingsController::class, 'regenerate'])->name('settings.sms-forwarder.regenerate')->middleware(AdminSections::middleware('sms_forwarder', 'update'));
     // Mother-only like the other credentials; creating the key pair signs every admin's browser out of notifications.
+    Route::post('settings/sms-forwarder/push-test', [SmsForwarderSettingsController::class, 'sendTestPush'])->name('settings.sms-forwarder.push-test')->middleware([AdminSections::middleware('sms_forwarder', 'update'), 'throttle:mother-actions']);
     Route::post('settings/sms-forwarder/push-keys', [SmsForwarderSettingsController::class, 'generatePushKeys'])->name('settings.sms-forwarder.push-keys.generate')->middleware(['admin.mother', 'throttle:mother-actions']);
     Route::get('settings/ai-assistant', [AiAssistantSettingsController::class, 'index'])->name('settings.ai-assistant.index')->middleware(AdminSections::middleware('ai_assistant', 'view'));
     Route::post('settings/ai-assistant', [AiAssistantSettingsController::class, 'update'])->name('settings.ai-assistant.update')->middleware(AdminSections::middleware('ai_assistant', 'update'));
