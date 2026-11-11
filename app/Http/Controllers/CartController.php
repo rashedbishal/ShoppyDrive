@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\CartVersionConflictException;
 use App\Http\Requests\AddToCartRequest;
 use App\Http\Requests\SyncCartRequest;
+use App\Models\Wishlist;
 use App\Support\CartManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -70,16 +71,19 @@ class CartController extends Controller
     }
 
     /**
-     * Polled by the storefront so a cart changed on another device shows up
-     * without a page load. Sends the cart only when its version differs
-     * from the one the device already has.
+     * Polled by the storefront so a cart or wishlist changed on another
+     * device shows up without a page load. Sends the cart only when its
+     * version differs from the one the device already has; the wishlist is
+     * just product ids (at most a few hundred), so those always come back.
      */
     public function state(Request $request): JsonResponse
     {
-        $version = $this->cartManager->versionForUser($request->user());
+        $user = $request->user();
+        $version = $this->cartManager->versionForUser($user);
+        $wishlistIds = Wishlist::where('user_id', $user->id)->pluck('product_id')->all();
 
         if ($request->query('version') === $version) {
-            return response()->json(['changed' => false, 'version' => $version]);
+            return response()->json(['changed' => false, 'version' => $version, 'wishlist_ids' => $wishlistIds]);
         }
 
         $cart = $this->cartManager->serializeForRequest($request);
@@ -88,6 +92,7 @@ class CartController extends Controller
             'changed' => true,
             'version' => $cart['version'] ?? CartManager::EMPTY_VERSION,
             'cart' => $cart,
+            'wishlist_ids' => $wishlistIds,
         ]);
     }
 }

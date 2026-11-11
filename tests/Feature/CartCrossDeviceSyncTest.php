@@ -154,7 +154,7 @@ test('the cart state poll sends nothing when the device\'s version is current', 
 
     $this->actingAs($user)->getJson(route('cart.state', ['version' => $version]))
         ->assertOk()
-        ->assertExactJson(['changed' => false, 'version' => $version]);
+        ->assertExactJson(['changed' => false, 'version' => $version, 'wishlist_ids' => []]);
 });
 
 test('the cart state poll sends the current cart when the device\'s version is older', function (): void {
@@ -175,7 +175,7 @@ test('the cart state poll reports an empty version when the customer has no cart
     $this->actingAs(User::factory()->create())
         ->getJson(route('cart.state', ['version' => CartManager::EMPTY_VERSION]))
         ->assertOk()
-        ->assertExactJson(['changed' => false, 'version' => CartManager::EMPTY_VERSION]);
+        ->assertExactJson(['changed' => false, 'version' => CartManager::EMPTY_VERSION, 'wishlist_ids' => []]);
 });
 
 test('the cart state poll only ever returns the logged-in customer\'s own cart', function (): void {

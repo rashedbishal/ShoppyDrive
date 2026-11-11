@@ -18,7 +18,10 @@ import { takePurchasedLines } from '@/lib/purchased-cart-lines';
 import type { PurchasedCartLine } from '@/lib/purchased-cart-lines';
 import { formatCurrency } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
-import { useWishlistStore } from '@/stores/wishlistStore';
+import {
+    useWishlistStore,
+    wishlistLocalChangeState,
+} from '@/stores/wishlistStore';
 import type { BundleRecipe, Cart, CartItem, SharedPageProps } from '@/types';
 import { Ziggy as ziggyConfig } from './ziggy';
 
@@ -415,25 +418,69 @@ function isCartPollingPaused(component: string | null): boolean {
     );
 }
 
+function sameProductIds(a: number[], b: number[]): boolean {
+    const set = new Set(a);
+
+    return set.size === new Set(b).size && b.every((id) => set.has(id));
+}
+
 /**
- * Picks up a change made to this customer's cart on another device. Never
- * overwrites a change made here that is unsaved or being saved: that save
- * carries its base version, and a conflict is merged instead.
+ * The account Wishlist page lists full product cards from its own `wishlist`
+ * prop, not the store's ids, so a change from elsewhere reloads that list.
+ * `cart` and `wishlist_ids` come back fresh too, so the navigate handler
+ * that runs after the reload re-applies current data, not this page's
+ * older copy.
  */
-async function pollCartState(): Promise<void> {
+function refreshWishlistPageIfOpen(): void {
+    if (currentPageComponent === 'account/Wishlist') {
+        router.reload({ only: ['wishlist', 'wishlist_ids', 'cart'] });
+    }
+}
+
+/**
+ * Applies the account's wishlist ids from a poll, unless a heart click
+ * happened here since the poll left or is still being saved (that click
+ * wins; its own save answer carries the server's ids).
+ */
+function applyWishlistFromElsewhere(
+    productIds: number[],
+    changeSeqBefore: number,
+): void {
+    const local = wishlistLocalChangeState();
+
+    if (local.writesInFlight > 0 || local.changeSeq !== changeSeqBefore) {
+        return;
+    }
+
+    if (sameProductIds(useWishlistStore.getState().productIds, productIds)) {
+        return;
+    }
+
+    useWishlistStore.getState().setWishlist(productIds);
+    refreshWishlistPageIfOpen();
+}
+
+/**
+ * Picks up a change made to this customer's cart or wishlist on another
+ * device. Never overwrites a change made here that is unsaved or being
+ * saved: a cart save carries its base version (a conflict is merged
+ * instead), and a wishlist click wins over any poll answer that left
+ * before it.
+ */
+async function pollAccountSyncState(): Promise<void> {
     if (
         activeAuthUserId === null ||
         document.visibilityState !== 'visible' ||
         isCartPollingPaused(currentPageComponent) ||
-        cartPollInFlight ||
-        cartSyncInFlight ||
-        cartSyncDirty
+        cartPollInFlight
     ) {
         return;
     }
 
     const userId = activeAuthUserId;
+    const cartBusyBefore = cartSyncInFlight || cartSyncDirty;
     const versionBefore = useCartStore.getState().serverVersion;
+    const wishlistSeqBefore = wishlistLocalChangeState().changeSeq;
     cartPollInFlight = true;
 
     try {
@@ -458,21 +505,30 @@ async function pollCartState(): Promise<void> {
         const payload = (await response.json()) as {
             changed: boolean;
             cart?: Cart | null;
+            wishlist_ids?: number[];
         };
 
-        // Anything that happened here while waiting wins over this answer.
         if (
-            !payload.changed ||
             activeAuthUserId !== userId ||
-            cartSyncInFlight ||
-            cartSyncDirty ||
-            isCartPollingPaused(currentPageComponent) ||
-            useCartStore.getState().serverVersion !== versionBefore
+            isCartPollingPaused(currentPageComponent)
         ) {
             return;
         }
 
-        hydrateCartFromElsewhere(payload.cart ?? null);
+        if (Array.isArray(payload.wishlist_ids)) {
+            applyWishlistFromElsewhere(payload.wishlist_ids, wishlistSeqBefore);
+        }
+
+        // Anything that happened to the cart here while waiting wins.
+        if (
+            payload.changed &&
+            !cartBusyBefore &&
+            !cartSyncInFlight &&
+            !cartSyncDirty &&
+            useCartStore.getState().serverVersion === versionBefore
+        ) {
+            hydrateCartFromElsewhere(payload.cart ?? null);
+        }
     } catch {
         // Offline or similar: the next check tries again.
     } finally {
@@ -690,11 +746,11 @@ function removeItemsBoughtByOrder(
 // visible, and straight away when the customer comes back to the tab.
 if (typeof window !== 'undefined') {
     currentPageComponent = readInitialComponent();
-    setInterval(() => void pollCartState(), CART_POLL_INTERVAL_MS);
-    window.addEventListener('focus', () => void pollCartState());
+    setInterval(() => void pollAccountSyncState(), CART_POLL_INTERVAL_MS);
+    window.addEventListener('focus', () => void pollAccountSyncState());
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
-            void pollCartState();
+            void pollAccountSyncState();
         }
     });
 }
@@ -703,6 +759,27 @@ if (typeof window !== 'undefined') {
 // the server from this tab, because the tab that changed it already did.
 if (typeof window !== 'undefined') {
     window.addEventListener('storage', (event) => {
+        // Another tab changed the wishlist: show the same one here, like the
+        // cart below. Never re-saved from this tab.
+        if (event.key === STORAGE_KEYS.wishlist && event.newValue !== null) {
+            const before = useWishlistStore.getState().productIds;
+
+            void Promise.resolve(useWishlistStore.persist.rehydrate()).then(
+                () => {
+                    if (
+                        !sameProductIds(
+                            before,
+                            useWishlistStore.getState().productIds,
+                        )
+                    ) {
+                        refreshWishlistPageIfOpen();
+                    }
+                },
+            );
+
+            return;
+        }
+
         if (event.key !== STORAGE_KEYS.cart || event.newValue === null) {
             return;
         }

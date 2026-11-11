@@ -49,6 +49,25 @@ function normalizeProductIds(productIds: number[]): number[] {
     return Array.from(new Set(productIds));
 }
 
+/**
+ * Cross-device sync (app.tsx polls the account's wishlist ids): a change made
+ * here must never be undone by a poll answer that left before it reached the
+ * server. `changeSeq` counts heart clicks; `writesInFlight` counts saves not
+ * yet answered. A poll answer is applied only if neither moved meanwhile.
+ */
+let wishlistWritesInFlight = 0;
+let wishlistChangeSeq = 0;
+
+export function wishlistLocalChangeState(): {
+    writesInFlight: number;
+    changeSeq: number;
+} {
+    return {
+        writesInFlight: wishlistWritesInFlight,
+        changeSeq: wishlistChangeSeq,
+    };
+}
+
 function getXsrfToken(): string {
     const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
 
@@ -76,6 +95,9 @@ export const useWishlistStore = create<WishlistStoreState>()(
                     ]);
                 };
 
+                wishlistChangeSeq += 1;
+                wishlistWritesInFlight += 1;
+
                 // Optimistic update
                 set((state) => ({
                     productIds: isSelected
@@ -93,7 +115,13 @@ export const useWishlistStore = create<WishlistStoreState>()(
                         'X-XSRF-TOKEN': getXsrfToken(),
                         'X-Requested-With': 'XMLHttpRequest',
                     },
-                    body: JSON.stringify({ product_id: productId }),
+                    // The state chosen on this screen, not "flip it": a device
+                    // showing an older wishlist can't add back a product
+                    // another device already removed (or the reverse).
+                    body: JSON.stringify({
+                        product_id: productId,
+                        wishlisted: !isSelected,
+                    }),
                 })
                     .then((res) => {
                         if (res.ok) {
@@ -123,6 +151,9 @@ export const useWishlistStore = create<WishlistStoreState>()(
                     .catch(() => {
                         // Guest or network error — local state stays
                         reportAdded();
+                    })
+                    .finally(() => {
+                        wishlistWritesInFlight -= 1;
                     });
             },
             addWishlist: (productId) => {

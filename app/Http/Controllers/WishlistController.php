@@ -11,6 +11,7 @@ use App\Models\Wishlist;
 use App\Support\CartManager;
 use App\Support\DisplayOrderSettings;
 use App\Support\ProductCardData;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -91,23 +92,34 @@ class WishlistController extends Controller
         return response()->json(['wishlist_ids' => $wishlistIds]);
     }
 
+    /**
+     * `wishlisted` is the state the customer chose on their screen. Sending it
+     * makes the request idempotent, so a device showing an older wishlist
+     * (changed on another device since) can't flip a product the wrong way:
+     * "remove" on a product already removed elsewhere stays removed instead
+     * of being added back. Without it this is a plain toggle, as before.
+     */
     public function toggle(Request $request): JsonResponse
     {
         $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],
+            'wishlisted' => ['sometimes', 'boolean'],
         ]);
 
         $userId = $request->user()->id;
         $productId = $request->integer('product_id');
 
         $existing = Wishlist::where('user_id', $userId)->where('product_id', $productId)->first();
+        $wishlisted = $request->has('wishlisted') ? $request->boolean('wishlisted') : $existing === null;
 
-        if ($existing) {
-            $existing->delete();
-            $wishlisted = false;
-        } else {
-            Wishlist::create(['user_id' => $userId, 'product_id' => $productId]);
-            $wishlisted = true;
+        if (! $wishlisted) {
+            $existing?->delete();
+        } elseif ($existing === null) {
+            try {
+                Wishlist::create(['user_id' => $userId, 'product_id' => $productId]);
+            } catch (UniqueConstraintViolationException) {
+                // A simultaneous request (double click, another device) already saved it.
+            }
         }
 
         $wishlistIds = Wishlist::where('user_id', $userId)->pluck('product_id')->toArray();
