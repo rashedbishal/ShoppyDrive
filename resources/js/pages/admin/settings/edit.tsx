@@ -96,7 +96,7 @@ export default function SettingsEdit({ settings }: Props) {
                                 </SettingsField>
                                 <SettingsField label="Currency Symbol">
                                     <input
-                                        className={`${settingsInputClass} max-w-[120px]`}
+                                        className={settingsInputClass}
                                         value={data.currency_symbol}
                                         onChange={(e) =>
                                             setData(
