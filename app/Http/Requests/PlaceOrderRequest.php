@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use App\Concerns\NormalizesBangladeshiPhone;
 use App\Http\Middleware\EnsureCheckoutAccess;
+use App\Models\Product;
 use App\Rules\VariantBelongsToProduct;
 use App\Support\BangladeshDistricts;
 use App\Support\SmsForwarderHeartbeat;
@@ -89,6 +90,45 @@ class PlaceOrderRequest extends FormRequest
             // display text only, never read for price/identity/stock.
             'items.*.product_name' => ['nullable', 'string', 'max:255'],
         ];
+    }
+
+    /**
+     * A permanently deleted product takes its variant rows with it (and a
+     * guest's or stale tab's submission still carries that variant_id), so
+     * the variant rules below would fail on a line CheckoutController::store()
+     * is about to refuse anyway — as a silent `items.N.variant_id` field
+     * error the checkout page never shows. Clearing the variant for a
+     * line whose product no longer exists lets that named, customer-facing
+     * "no longer available" cart issue through instead; the whole checkout
+     * is refused before the variant is ever read, and every line whose
+     * product does exist is validated exactly as before.
+     */
+    protected function prepareForValidation(): void
+    {
+        $items = $this->input('items');
+
+        if (! is_array($items)) {
+            return;
+        }
+
+        $productIds = collect($items)
+            ->map(fn ($item) => is_array($item) ? ($item['product_id'] ?? null) : null)
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id): int => (int) $id)
+            ->unique();
+
+        $existingIds = Product::query()->whereIn('id', $productIds)->pluck('id')->all();
+
+        foreach ($items as $index => $item) {
+            if (is_array($item)
+                && is_numeric($item['product_id'] ?? null)
+                && ! in_array((int) $item['product_id'], $existingIds, true)
+            ) {
+                $items[$index]['variant_id'] = null;
+            }
+        }
+
+        $this->merge(['items' => $items]);
     }
 
     public function messages(): array

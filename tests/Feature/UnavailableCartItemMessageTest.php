@@ -12,6 +12,7 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\CartManager;
@@ -169,5 +170,27 @@ test('a force-deleted product in a logged-in customer\'s saved cart survives and
 
     $this->actingAs($user)->post(route('checkout.store'), $payload)
         ->assertSessionHas('cartIssues', ['Leather Wallet is no longer available. Please remove it from your cart to continue.']);
+    expect(Order::count())->toBe(0);
+});
+
+/*
+ * A deleted product that had variants takes its variant rows with it, so the
+ * submitted variant_id used to fail `exists:product_variants,id` — a silent
+ * field error the checkout page never shows (the page just reloaded).
+ */
+test('a force-deleted product that had variants is named in the cart issues, not a silent validation error', function () {
+    $product = Product::factory()->create(['name' => 'Denim Jacket', 'price' => 100]);
+    $variant = ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 5]);
+
+    $items = [[
+        'product_id' => $product->id, 'variant_id' => $variant->id, 'quantity' => 1, 'price' => 100, 'product_name' => 'Denim Jacket',
+    ]];
+
+    $product->forceDelete();
+
+    $this->post(route('checkout.store'), unavailableItemPayload($items))
+        ->assertSessionDoesntHaveErrors(['items.0.variant_id'])
+        ->assertSessionHasErrors(['items'])
+        ->assertSessionHas('cartIssues', ['Denim Jacket is no longer available. Please remove it from your cart to continue.']);
     expect(Order::count())->toBe(0);
 });
