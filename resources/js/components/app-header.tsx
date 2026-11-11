@@ -52,7 +52,10 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
     const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
 
-    const cartCount = useCartStore((state) => state.getItemCount());
+    // From `state`, not getItemCount() (reads live state): hydration-safe.
+    const cartCount = useCartStore((state) =>
+        state.items.reduce((total, item) => total + item.quantity, 0),
+    );
     const wishlistCount = useWishlistStore((state) => state.productIds.length);
     const openCart = useUiStore((state) => state.openCart);
 

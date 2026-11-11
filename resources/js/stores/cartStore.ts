@@ -60,6 +60,13 @@ type CartStoreState = {
     setShippingEstimate: (amount: number) => void;
     setTax: (amount: number) => void;
     hydrateCart: (cart: Cart) => void;
+    /*
+     * The getters below read live state through `get()`. Use them in event
+     * handlers or on pages that skip SSR (cart, checkout), never in a render
+     * selector of a server-rendered page: during hydration zustand passes
+     * selectors the initial state, which `get()` bypasses (hydration
+     * mismatch). Compute from the selector's `state` argument instead.
+     */
     /** Records which server cart version the current items are based on. */
     setServerSnapshot: (version: string | null, items: CartItem[]) => void;
     getItemCount: () => number;

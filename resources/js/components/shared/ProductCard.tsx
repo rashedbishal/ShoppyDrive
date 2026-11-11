@@ -53,8 +53,11 @@ export function ProductCard({
     const openCart = useUiStore((state) => state.openCart);
     const addToast = useUiStore((state) => state.addToast);
     const toggleWishlist = useWishlistStore((state) => state.toggleWishlist);
+    // Read from `state`, not a store method: during hydration zustand passes
+    // the store's initial (empty) state, so the first render matches the
+    // server's, which can't see the browser's saved wishlist.
     const isWishlisted = useWishlistStore((state) =>
-        state.isWishlisted(product.id),
+        state.productIds.includes(product.id),
     );
 
     const imageSet = Array.isArray(product.images) ? product.images : [];

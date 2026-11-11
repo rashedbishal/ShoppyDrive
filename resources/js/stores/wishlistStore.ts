@@ -5,6 +5,13 @@ import { trackMetaProductEvent } from '@/lib/meta-tracking';
 
 type WishlistTrackedProduct = { name: string; price: number };
 
+/**
+ * In a render selector, read `state.productIds` directly (e.g.
+ * `(state) => state.productIds.includes(id)`), never a method that calls
+ * `get()`: during hydration zustand hands selectors the store's initial
+ * state so the first render matches the server's, and `get()` would read
+ * the browser's saved wishlist instead (hydration mismatch).
+ */
 type WishlistStoreState = {
     productIds: number[];
     /** `product` is only used to report AddToWishlist to Meta when this toggle adds it. */
@@ -16,7 +23,6 @@ type WishlistStoreState = {
     removeWishlist: (productId: number) => void;
     clearWishlist: () => void;
     setWishlist: (productIds: number[]) => void;
-    isWishlisted: (productId: number) => boolean;
 };
 
 type WishlistPersistedState = Pick<WishlistStoreState, 'productIds'>;
@@ -176,9 +182,6 @@ export const useWishlistStore = create<WishlistStoreState>()(
             },
             setWishlist: (productIds) => {
                 set({ productIds: normalizeProductIds(productIds) });
-            },
-            isWishlisted: (productId) => {
-                return get().productIds.includes(productId);
             },
         }),
         {
