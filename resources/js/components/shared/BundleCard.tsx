@@ -2,6 +2,7 @@ import { Equal, Minus, Package, Plus, ShoppingBag, Truck } from 'lucide-react';
 import { Fragment, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { trackMetaProductEvent } from '@/lib/meta-tracking';
 import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -114,8 +115,21 @@ export function BundleCard({
                 price: proratedUnitPrice(bundle, item),
                 bundleId: bundle.id,
                 bundleUnitQuantity: item.quantity,
+                skipMetaTracking: true,
             });
         });
+
+        trackMetaProductEvent(
+            'AddToCart',
+            bundle.items.map((item) => ({
+                productId: Number(item.product.id),
+                variantId: item.variant ? Number(item.variant.id) : null,
+                bundleId: Number(bundle.id),
+                name: item.product.name,
+                price: proratedUnitPrice(bundle, item),
+                quantity: item.quantity * multiplier,
+            })),
+        );
 
         openCart();
         addToast({

@@ -42,6 +42,7 @@ import { groupCartItems } from '@/lib/cart-bundles';
 import { getCouponDiscount, toCouponPreviewItems } from '@/lib/coupon';
 import { getXsrfToken } from '@/lib/csrf';
 import { isDeliveryFree } from '@/lib/delivery';
+import { trackMetaInitiateCheckout } from '@/lib/meta-tracking';
 import { normalizeBdPhoneInput } from '@/lib/phone';
 import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
@@ -389,6 +390,29 @@ export default function Checkout({
         if (items.length === 0) {
             router.visit(route('home'), { replace: true });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Meta InitiateCheckout: once when the customer actually arrives at
+    // checkout with something to buy (not again on a failed submit, which
+    // keeps this same page mounted). The server re-prices every line itself.
+    useEffect(() => {
+        if (items.length === 0) {
+            return;
+        }
+
+        trackMetaInitiateCheckout(
+            items.map((item) => ({
+                productId: Number(item.product.id),
+                variantId: item.variant ? Number(item.variant.id) : null,
+                bundleId:
+                    item.bundle_id != null ? Number(item.bundle_id) : null,
+                name: item.product.name,
+                price: item.price,
+                quantity: item.quantity,
+            })),
+            buyNowItem ? null : (storeCoupon?.code ?? null),
+        );
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 

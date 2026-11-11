@@ -47,6 +47,15 @@ return [
         'redirect' => env('FACEBOOK_REDIRECT_URI'),
     ],
 
+    // Meta (Facebook) Conversions API. The pixel id, access token and test
+    // event code are NOT configured here or in .env: they are stored as
+    // Settings from Admin > Marketing (see FacebookConversionsApiConfig).
+    // Only the Graph API version lives here, so it can be bumped without a
+    // code change when Meta retires one.
+    'meta_conversions_api' => [
+        'api_version' => env('META_CAPI_API_VERSION', 'v26.0'),
+    ],
+
     // The VAPID key pair is NOT configured here or in .env: it is created
     // from Admin > SMS Forwarder and stored as a Setting (see WebPushConfig).
     'webpush' => [

@@ -5,16 +5,17 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Models\Order;
-use App\Services\FacebookConversionsApiService;
+use App\Services\MetaEventRecorder;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
 /**
- * Dispatched from Order::booted()'s single `created` choke point (fires for
- * every order-creation path), after the enclosing transaction commits.
- * Queued rather than sent inline because this is a third-party HTTP call —
- * exactly the kind of transient-failure-prone operation `$tries`/`$backoff`
- * exist for, same as SendNewsletterChunk.
+ * Superseded by MetaEventRecorder + SendMetaTrackingEventJob, which nothing
+ * dispatches this any more. Kept only so a job of this class that was
+ * already waiting in the production `jobs` table when that change deployed
+ * still runs: it records the order's Purchase through the new outbox
+ * (a no-op if the order already has one) instead of failing with a
+ * missing class. Safe to delete once no such job can be left.
  */
 class SendFacebookPurchaseEventJob implements ShouldQueue
 {
@@ -28,7 +29,7 @@ class SendFacebookPurchaseEventJob implements ShouldQueue
         public readonly int $orderId,
     ) {}
 
-    public function handle(FacebookConversionsApiService $service): void
+    public function handle(MetaEventRecorder $recorder): void
     {
         $order = Order::find($this->orderId);
 
@@ -36,6 +37,6 @@ class SendFacebookPurchaseEventJob implements ShouldQueue
             return;
         }
 
-        $service->sendPurchaseEvent($order);
+        $recorder->recordPurchase($order, null);
     }
 }

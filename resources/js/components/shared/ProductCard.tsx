@@ -141,7 +141,10 @@ export function ProductCard({
         event.preventDefault();
         event.stopPropagation();
 
-        toggleWishlist(product.id);
+        toggleWishlist(product.id, {
+            name: product.name,
+            price: product.flash_sale_price ?? product.price,
+        });
         addToast({
             type: isWishlisted ? 'info' : 'success',
             title: isWishlisted ? 'Removed from wishlist' : 'Saved to wishlist',

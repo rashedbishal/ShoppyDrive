@@ -202,6 +202,11 @@ class AppServiceProvider extends ServiceProvider
         // the whole site, so this protects that quota from one visitor (or
         // a script) rather than any per-customer business rule — hardcoded
         // like 'client-errors', not in Admin > Security.
+        // Meta tracking events from the storefront: hardcoded like
+        // ai-assistant (protects the outbox table, not a business rule).
+        // Generous enough for fast browsing; one product page is one event.
+        RateLimiter::for('meta-tracking', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?? 'ip:'.$request->ip()));
+
         RateLimiter::for('ai-assistant', fn (Request $request) => Limit::perHour(20)->by($request->user()?->id ?? 'ip:'.$request->ip()));
 
         // The bKash/Nagad SMS-forwarder phone: only requests with a wrong

@@ -25,6 +25,7 @@ import { Select } from '@/components/ui/select';
 import { SIDEBAR_LAYOUT_CLASS } from '@/lib/constants';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import { usePriceRangeCommit } from '@/lib/hooks/usePriceRangeCommit';
+import { trackMetaSearch } from '@/lib/meta-tracking';
 import { cn } from '@/lib/utils';
 import type { Brand, Category, PaginatedData, Product } from '@/types';
 
@@ -337,6 +338,21 @@ export default function SearchResults({
         setDraft(filters);
         setIsLoading(false);
     }, [filters]);
+
+    // Meta Search: once per submitted search text, with the products found
+    // on this page. Changing filters, sort or page keeps the same text and
+    // so doesn't repeat it; searching again for something else does.
+    useEffect(() => {
+        if (query.trim() === '') {
+            return;
+        }
+
+        trackMetaSearch(
+            query,
+            products.data.map((product) => Number(product.id)),
+        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [query]);
 
     const submitFilters = (next: SearchFilters): void => {
         setIsLoading(true);

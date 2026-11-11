@@ -5,6 +5,7 @@ use App\Http\Controllers\AiAssistantController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\IncompleteOrderController;
+use App\Http\Controllers\MetaTrackingController;
 use App\Http\Controllers\MobilePaymentController;
 use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\WishlistController;
@@ -137,6 +138,13 @@ Route::post('/coupon/validate', function (Request $request) {
 })->middleware('throttle:coupon-check')->name('coupon.validate');
 
 Route::get('/wishlist', [WishlistController::class, 'entry'])->name('wishlist.index');
+
+// Meta Conversions API: the storefront reports ViewContent, AddToCart,
+// RemoveFromCart, AddToWishlist, InitiateCheckout and Search with the same
+// event id it pushed to GTM (see MetaTrackingController). Open to guests.
+Route::post('/tracking/meta', MetaTrackingController::class)
+    ->middleware('throttle:meta-tracking')
+    ->name('tracking.meta');
 
 // AI assistant widget: open to guests (limited — see AiAssistantTools::lookupOrder())
 // and logged-in customers alike. auth.session is deliberately not required.

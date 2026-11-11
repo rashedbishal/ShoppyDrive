@@ -33,6 +33,7 @@ import { Select } from '@/components/ui/select';
 import { StarRating } from '@/components/ui/star-rating';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
+import { trackMetaProductEvent } from '@/lib/meta-tracking';
 import { formatCurrency, getDiscountPercent } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -258,6 +259,21 @@ export default function ProductDetail({
             ...recentlyViewed.filter((p) => p.id !== product.id),
         ].slice(0, 10);
         setRecentlyViewed(updatedRecentlyViewed);
+    }, [product.id]);
+
+    // Meta ViewContent: once per visit to this product (keyed on its id,
+    // so re-renders and variant changes don't repeat it, but opening
+    // another product — or coming back to this one later — does).
+    useEffect(() => {
+        trackMetaProductEvent('ViewContent', [
+            {
+                productId: product.id,
+                name: product.name,
+                price: product.flash_sale_price ?? product.price,
+                quantity: 1,
+            },
+        ]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- once per product, not per price/name change
     }, [product.id]);
 
     // Jump the main image to the selected variant's own photo (if it has
@@ -924,7 +940,12 @@ export default function ProductDetail({
                                         <Button
                                             variant="outline"
                                             onClick={() =>
-                                                toggleWishlist(product.id)
+                                                toggleWishlist(product.id, {
+                                                    name: product.name,
+                                                    price:
+                                                        product.flash_sale_price ??
+                                                        product.price,
+                                                })
                                             }
                                             className={`flex h-12 gap-2 rounded-xl font-semibold ${isWishlisted ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]' : ''}`}
                                         >

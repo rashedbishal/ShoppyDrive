@@ -58,6 +58,10 @@ Schedule::command('sitemap:generate')->dailyAt('04:00')->timezone('Asia/Dhaka')-
 // can't leave a parcel's order stuck.
 Schedule::command('steadfast:sync-statuses')->everyThirtyMinutes()->withoutOverlapping(30, false);
 
+// Meta Conversions API outbox sweeper: re-queues events whose delivery job
+// was lost, and gives up on ones too old for Meta to accept.
+Schedule::command('meta:dispatch-pending')->everyTenMinutes()->withoutOverlapping(30, false);
+
 // Hostinger shared hosting can't keep a worker process alive, and its
 // disabled pcntl_signal() crashes `queue:work`'s daemon mode, so the
 // every-minute cron that drives this scheduler drains the database queue

@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Models\Cart;
 use App\Models\IncompleteOrder;
+use App\Models\MetaTrackingEvent;
 use App\Models\ReceivedSms;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Attributes\Description;
@@ -30,7 +31,7 @@ use Illuminate\Support\Facades\Storage;
  * evidence; order deletion is still blocked by the Payment record itself.
  */
 #[Signature('data:prune')]
-#[Description('Delete unfinished checkouts, guest carts and received SMS past their retention period.')]
+#[Description('Delete unfinished checkouts, guest carts, received SMS and Meta tracking events past their retention period.')]
 class PruneOldDataCommand extends Command
 {
     public const INCOMPLETE_ORDER_DAYS = 60;
@@ -40,6 +41,9 @@ class PruneOldDataCommand extends Command
     public const UNMATCHED_SMS_DAYS = 90;
 
     public const MATCHED_SMS_DAYS = 365;
+
+    /** Meta only accepts events up to 7 days old; the rest is a delivery log holding IP addresses. */
+    public const META_TRACKING_EVENT_DAYS = 30;
 
     /** Small batches, so a large first run doesn't hold locks on shared hosting. */
     private const BATCH_SIZE = 500;
@@ -51,6 +55,7 @@ class PruneOldDataCommand extends Command
             'guest_carts' => $this->deleteInBatches(Cart::query()->whereNull('user_id')->where('updated_at', '<', $this->daysAgo(self::GUEST_CART_DAYS))),
             'unmatched_sms' => $this->deleteInBatches(ReceivedSms::query()->where('is_matched', false)->where('created_at', '<', $this->daysAgo(self::UNMATCHED_SMS_DAYS))),
             'matched_sms' => $this->deleteInBatches(ReceivedSms::query()->where('is_matched', true)->where('created_at', '<', $this->daysAgo(self::MATCHED_SMS_DAYS))),
+            'meta_tracking_events' => $this->deleteInBatches(MetaTrackingEvent::query()->where('created_at', '<', $this->daysAgo(self::META_TRACKING_EVENT_DAYS))),
         ];
 
         $deleted['abandoned_restore_uploads'] = $this->deleteAbandonedRestoreUploads();

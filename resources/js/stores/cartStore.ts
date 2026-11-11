@@ -5,6 +5,8 @@ import type { CartItemAddedDetail } from '@/lib/add-to-cart-feedback';
 import { autoAssembleBundles } from '@/lib/cart-bundles';
 import { STORAGE_KEYS } from '@/lib/constants';
 import { getCouponEligibleSubtotal } from '@/lib/coupon';
+import { trackMetaProductEvent } from '@/lib/meta-tracking';
+import type { MetaTrackedItem } from '@/lib/meta-tracking';
 import { formatCurrency } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
 import type {
@@ -23,6 +25,8 @@ type CartPayload = {
     price?: number;
     bundleId?: number | null;
     bundleUnitQuantity?: number | null;
+    /** The caller reports AddToCart itself (BundleCard: one event for the whole bundle). */
+    skipMetaTracking?: boolean;
 };
 
 type CartStoreState = {
@@ -91,6 +95,18 @@ function createItemKey(
 
 function createItemId(): number {
     return Date.now() + Math.floor(Math.random() * 1000000);
+}
+
+/** A cart line as reported to Meta (RemoveFromCart). */
+function metaItemFromCartItem(item: CartItem): MetaTrackedItem {
+    return {
+        productId: Number(item.product.id),
+        variantId: item.variant ? Number(item.variant.id) : null,
+        bundleId: item.bundle_id != null ? Number(item.bundle_id) : null,
+        name: item.product.name,
+        price: item.price,
+        quantity: item.quantity,
+    };
 }
 
 function getItemPrice(
@@ -253,6 +269,21 @@ export const useCartStore = create<CartStoreState>()(
                     return { items: nextItems };
                 });
 
+                if (!payload.skipMetaTracking) {
+                    trackMetaProductEvent('AddToCart', [
+                        {
+                            productId: Number(payload.product.id),
+                            variantId: payload.variant
+                                ? Number(payload.variant.id)
+                                : null,
+                            bundleId: payload.bundleId ?? null,
+                            name: payload.product.name,
+                            price,
+                            quantity,
+                        },
+                    ]);
+                }
+
                 // Let UI feedback (fly-to-cart animation) react without the store knowing about it.
                 if (typeof window !== 'undefined') {
                     window.dispatchEvent(
@@ -270,11 +301,20 @@ export const useCartStore = create<CartStoreState>()(
                 }
             },
             removeItem: (itemKey) => {
+                const removed = get().items.filter(
+                    (item) => item.item_key === itemKey,
+                );
+
                 set((state) => ({
                     items: state.items.filter(
                         (item) => item.item_key !== itemKey,
                     ),
                 }));
+
+                trackMetaProductEvent(
+                    'RemoveFromCart',
+                    removed.map(metaItemFromCartItem),
+                );
             },
             updateQuantity: (itemKey, quantity) => {
                 if (quantity <= 0) {
@@ -332,11 +372,20 @@ export const useCartStore = create<CartStoreState>()(
                 }));
             },
             removeBundle: (bundleId) => {
+                const removed = get().items.filter(
+                    (item) => item.bundle_id === bundleId,
+                );
+
                 set((state) => ({
                     items: state.items.filter(
                         (item) => item.bundle_id !== bundleId,
                     ),
                 }));
+
+                trackMetaProductEvent(
+                    'RemoveFromCart',
+                    removed.map(metaItemFromCartItem),
+                );
             },
             clearCart: () => {
                 set({

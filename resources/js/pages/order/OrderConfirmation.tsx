@@ -12,6 +12,7 @@ import React, { useEffect } from 'react';
 
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
 import { Button } from '@/components/ui/button';
+import { trackMetaPurchase } from '@/lib/meta-tracking';
 import { formatCurrency } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import type { Order } from '@/types';
@@ -90,6 +91,15 @@ export default function OrderConfirmation({
         } catch {
             // window.dataLayer is a plain array; nothing here should ever
             // throw, but a tracking push must never break this page if it does.
+        }
+
+        // Meta Purchase (browser half), same `order-<number>` event id the
+        // server sends; not for an order that has since been cancelled.
+        if (order.status !== 'cancelled') {
+            trackMetaPurchase({
+                orderNumber: order.order_number,
+                value: order.total,
+            });
         }
     }, []);
 

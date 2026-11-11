@@ -76,7 +76,10 @@ return Application::configure(basePath: dirname(__DIR__))
         }
         $middleware->prepend(SecurityHeaders::class);
         $middleware->api(prepend: [RefuseInsecureApi::class]);
-        $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+        // _fbp/_fbc are written by the Meta Pixel in the browser, never by
+        // Laravel, so they are never encrypted; without this they'd read as
+        // null and the Conversions API could never send them.
+        $middleware->encryptCookies(except: ['appearance', 'sidebar_state', '_fbp', '_fbc']);
 
         // SEC-011: only APP_URL's host (and its subdomains, so www still
         // reaches RedirectToCanonicalDomain) may be used. Every absolute

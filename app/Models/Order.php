@@ -7,7 +7,6 @@ namespace App\Models;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
-use App\Jobs\SendFacebookPurchaseEventJob;
 use App\Mail\CancelledOrderAlertMail;
 use App\Mail\NewOrderAlertMail;
 use App\Mail\OrderCancelledMail;
@@ -18,7 +17,7 @@ use App\Mail\ShippedWithTrackingMail;
 use App\Services\CouponService;
 use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
-use App\Support\FacebookConversionsApiConfig;
+use App\Services\MetaEventRecorder;
 use App\Support\OrderNotificationRecipients;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -244,11 +243,10 @@ class Order extends Model
             static::dispatchMail(OrderPlacedMail::class, $order);
             static::dispatchAdminMail(NewOrderAlertMail::class, $order, OrderNotificationRecipients::newOrder());
 
-            // Guarded here (not just inside the job) so a misconfigured or
-            // disabled integration never even queues a pointless job.
-            if (FacebookConversionsApiConfig::isAvailable()) {
-                SendFacebookPurchaseEventJob::dispatch($order->id)->afterCommit();
-            }
+            // Meta Conversions API Purchase: recorded in this same
+            // transaction (an order that rolls back leaves no Purchase) and
+            // sent after commit. A no-op when the integration is off.
+            app(MetaEventRecorder::class)->recordPurchase($order, app()->bound('request') ? request() : null);
         });
 
         // DB-001: every trash / restore / permanent delete is in the audit

@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { CheckCircle, Download, ShoppingBag } from 'lucide-react';
 import { useEffect } from 'react';
+import { trackMetaPurchase } from '@/lib/meta-tracking';
 
 type OrderItem = {
     id: number;
@@ -40,6 +41,18 @@ export default function LandingConfirmation({
     const address = order.shipping_address;
     const isPaid = order.payment_status === 'paid';
     const invoiceUrl = route('lp.invoice', guestToken);
+
+    // Meta Purchase (browser half) for a landing-page order: same
+    // `order-<number>` event id the server sends from the order itself.
+    useEffect(() => {
+        if (order.status !== 'cancelled') {
+            trackMetaPurchase({
+                orderNumber: order.order_number,
+                value: order.total,
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Auto-download invoice when online payment is confirmed
     useEffect(() => {

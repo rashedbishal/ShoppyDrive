@@ -1,10 +1,17 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { STORAGE_KEYS } from '@/lib/constants';
+import { trackMetaProductEvent } from '@/lib/meta-tracking';
+
+type WishlistTrackedProduct = { name: string; price: number };
 
 type WishlistStoreState = {
     productIds: number[];
-    toggleWishlist: (productId: number) => void;
+    /** `product` is only used to report AddToWishlist to Meta when this toggle adds it. */
+    toggleWishlist: (
+        productId: number,
+        product?: WishlistTrackedProduct,
+    ) => void;
     addWishlist: (productId: number) => void;
     removeWishlist: (productId: number) => void;
     clearWishlist: () => void;
@@ -52,8 +59,22 @@ export const useWishlistStore = create<WishlistStoreState>()(
     persist<WishlistStoreState, [], [], WishlistPersistedState>(
         (set, get) => ({
             productIds: [],
-            toggleWishlist: (productId) => {
+            toggleWishlist: (productId, product) => {
                 const isSelected = get().productIds.includes(productId);
+                const reportAdded = (): void => {
+                    if (isSelected || !product) {
+                        return;
+                    }
+
+                    trackMetaProductEvent('AddToWishlist', [
+                        {
+                            productId,
+                            name: product.name,
+                            price: product.price,
+                            quantity: 1,
+                        },
+                    ]);
+                };
 
                 // Optimistic update
                 set((state) => ({
@@ -87,9 +108,21 @@ export const useWishlistStore = create<WishlistStoreState>()(
                                 ),
                             });
                         }
+
+                        // Reported once the add has stuck: confirmed by the
+                        // server, or kept locally (guest wishlist).
+                        if (
+                            !data?.wishlist_ids ||
+                            normalizeProductIds(data.wishlist_ids).includes(
+                                productId,
+                            )
+                        ) {
+                            reportAdded();
+                        }
                     })
                     .catch(() => {
                         // Guest or network error — local state stays
+                        reportAdded();
                     });
             },
             addWishlist: (productId) => {
