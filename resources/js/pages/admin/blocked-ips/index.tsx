@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { maxLength, required, validate } from '@/lib/validate';
 
 type BlockedIp = {
@@ -22,6 +23,8 @@ const inputClass =
 
 export default function BlockedIpsIndex({ blockedIps }: Props) {
     const [formOpen, setFormOpen] = useState(false);
+    const [unblockTarget, setUnblockTarget] = useState<BlockedIp | null>(null);
+    const [unblocking, setUnblocking] = useState(false);
 
     const {
         data,
@@ -65,12 +68,18 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
         });
     };
 
-    const handleUnblock = (blockedIp: BlockedIp) => {
-        if (!confirm(`Unblock ${blockedIp.ip_address}?`)) {
+    const confirmUnblock = () => {
+        if (!unblockTarget) {
             return;
         }
 
-        router.delete(route('admin.blocked-ips.destroy', blockedIp.id));
+        setUnblocking(true);
+        router.delete(route('admin.blocked-ips.destroy', unblockTarget.id), {
+            onFinish: () => {
+                setUnblocking(false);
+                setUnblockTarget(null);
+            },
+        });
     };
 
     return (
@@ -233,7 +242,7 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => handleUnblock(blockedIp)}
+                                        onClick={() => setUnblockTarget(blockedIp)}
                                         className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
                                     >
                                         <Trash2 className="size-3.5" />
@@ -244,6 +253,20 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                     )}
                 </Card>
             </div>
+            <ConfirmDialog
+                open={unblockTarget !== null}
+                onOpenChange={(open) => !open && setUnblockTarget(null)}
+                title="Unblock IP address?"
+                description={
+                    unblockTarget
+                        ? `Allow ${unblockTarget.ip_address} to place orders again?`
+                        : undefined
+                }
+                confirmLabel="Unblock"
+                processingLabel="Unblocking…"
+                onConfirm={confirmUnblock}
+                processing={unblocking}
+            />
         </>
     );
 }

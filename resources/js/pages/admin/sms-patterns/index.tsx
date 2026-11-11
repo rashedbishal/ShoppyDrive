@@ -53,6 +53,8 @@ export default function SmsPatternsIndex({ patterns }: Props) {
     const [editingId, setEditingId] = useState<number | 'new' | null>(null);
     const [bulkDeleting, setBulkDeleting] = useState(false);
     const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     const bulk = useBulkSelect(patterns.map((p) => p.id));
 
@@ -143,12 +145,18 @@ export default function SmsPatternsIndex({ patterns }: Props) {
         }
     };
 
-    const handleDelete = (id: number) => {
-        if (!confirm('Delete this pattern?')) {
+    const confirmDelete = () => {
+        if (deleteTarget === null) {
             return;
         }
 
-        router.delete(route('admin.sms-patterns.destroy', id));
+        setDeleting(true);
+        router.delete(route('admin.sms-patterns.destroy', deleteTarget), {
+            onFinish: () => {
+                setDeleting(false);
+                setDeleteTarget(null);
+            },
+        });
     };
 
     return (
@@ -561,7 +569,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    handleDelete(p.id)
+                                                    setDeleteTarget(p.id)
                                                 }
                                                 className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
                                             >
@@ -583,6 +591,14 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                 description={`This will permanently delete ${bulk.selected.length} pattern(s). This cannot be undone.`}
                 onConfirm={confirmBulkDelete}
                 processing={bulkDeleting}
+            />
+            <ConfirmDialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => !open && setDeleteTarget(null)}
+                title="Delete SMS pattern?"
+                description="This pattern will no longer be used to process incoming SMS messages."
+                onConfirm={confirmDelete}
+                processing={deleting}
             />
         </>
     );

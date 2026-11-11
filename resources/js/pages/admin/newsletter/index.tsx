@@ -3,6 +3,7 @@ import { Mail, Search, Trash2, Users } from 'lucide-react';
 import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Card } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
 
 type Subscriber = {
@@ -35,6 +36,8 @@ export default function NewsletterIndex({
 }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [status, setStatus] = useState(filters.status ?? '');
+    const [deleteTarget, setDeleteTarget] = useState<Subscriber | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     const applyFilters = (overrides: Record<string, string> = {}) => {
         const params: Record<string, string> = {};
@@ -72,13 +75,18 @@ export default function NewsletterIndex({
         );
     };
 
-    const handleDelete = (id: number, email: string) => {
-        if (!confirm(`Remove ${email} from the subscriber list?`)) {
+    const confirmDelete = () => {
+        if (!deleteTarget) {
             return;
         }
 
-        router.delete(route('admin.newsletter.destroy', id), {
+        setDeleting(true);
+        router.delete(route('admin.newsletter.destroy', deleteTarget.id), {
             preserveScroll: true,
+            onFinish: () => {
+                setDeleting(false);
+                setDeleteTarget(null);
+            },
         });
     };
 
@@ -230,10 +238,7 @@ export default function NewsletterIndex({
                                     <button
                                         type="button"
                                         onClick={() =>
-                                            handleDelete(
-                                                subscriber.id,
-                                                subscriber.email,
-                                            )
+                                            setDeleteTarget(subscriber)
                                         }
                                         className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
                                         aria-label={`Delete ${subscriber.email}`}
@@ -280,6 +285,20 @@ export default function NewsletterIndex({
                     )}
                 </Card>
             </div>
+            <ConfirmDialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => !open && setDeleteTarget(null)}
+                title="Remove subscriber?"
+                description={
+                    deleteTarget
+                        ? `Remove ${deleteTarget.email} from the subscriber list?`
+                        : undefined
+                }
+                confirmLabel="Remove"
+                processingLabel="Removing…"
+                onConfirm={confirmDelete}
+                processing={deleting}
+            />
         </>
     );
 }

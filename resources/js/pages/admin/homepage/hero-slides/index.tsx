@@ -1,7 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Plus, Pencil, Trash2, ArrowLeft, Film } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { clickableRow } from '@/lib/clickable-row';
 import { isVideoUrl } from '@/lib/utils';
 import type { HeroSlide } from '@/types';
@@ -10,10 +12,21 @@ type Props = {
 };
 
 export default function HeroSlidesIndex({ slides }: Props) {
-    const handleDelete = (id: number) => {
-        if (confirm('Are you sure you want to delete this slide?')) {
-            router.delete(route('admin.hero-slides.destroy', id));
+    const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const confirmDelete = () => {
+        if (deleteTarget === null) {
+            return;
         }
+
+        setDeleting(true);
+        router.delete(route('admin.hero-slides.destroy', deleteTarget), {
+            onFinish: () => {
+                setDeleting(false);
+                setDeleteTarget(null);
+            },
+        });
     };
 
     return (
@@ -135,7 +148,7 @@ export default function HeroSlidesIndex({ slides }: Props) {
                                                 size="sm"
                                                 className="border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600"
                                                 onClick={() =>
-                                                    handleDelete(slide.id)
+                                                    setDeleteTarget(slide.id)
                                                 }
                                             >
                                                 <Trash2 className="mr-2 size-3.5" />
@@ -149,6 +162,14 @@ export default function HeroSlidesIndex({ slides }: Props) {
                     )}
                 </div>
             </div>
+            <ConfirmDialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => !open && setDeleteTarget(null)}
+                title="Delete hero slide?"
+                description="This will permanently remove the slide from your homepage."
+                onConfirm={confirmDelete}
+                processing={deleting}
+            />
         </>
     );
 }

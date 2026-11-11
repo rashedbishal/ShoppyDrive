@@ -3,6 +3,7 @@ import { Mail, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Card } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 type ContactMessageRow = {
     id: number;
@@ -28,6 +29,9 @@ type Props = {
 
 export default function ContactMessagesIndex({ messages, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
+    const [deleteTarget, setDeleteTarget] = useState<ContactMessageRow | null>(null);
+    const [clearAllOpen, setClearAllOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     const applyFilters = () => {
         if (search === (filters.search ?? '')) {
@@ -50,27 +54,29 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
         );
     };
 
-    const handleDelete = (id: number, subject: string) => {
-        if (!confirm(`Delete the message "${subject}"?`)) {
+    const confirmDelete = () => {
+        if (!deleteTarget) {
             return;
         }
 
-        router.delete(route('admin.contact-messages.destroy', id), {
+        setDeleting(true);
+        router.delete(route('admin.contact-messages.destroy', deleteTarget.id), {
             preserveScroll: true,
+            onFinish: () => {
+                setDeleting(false);
+                setDeleteTarget(null);
+            },
         });
     };
 
-    const handleClearAll = () => {
-        if (
-            !confirm(
-                `Erase all ${messages.total} contact messages? This can't be undone.`,
-            )
-        ) {
-            return;
-        }
-
+    const confirmClearAll = () => {
+        setDeleting(true);
         router.delete(route('admin.contact-messages.clear'), {
             preserveScroll: true,
+            onFinish: () => {
+                setDeleting(false);
+                setClearAllOpen(false);
+            },
         });
     };
 
@@ -92,7 +98,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                     {messages.total > 0 && (
                         <button
                             type="button"
-                            onClick={handleClearAll}
+                            onClick={() => setClearAllOpen(true)}
                             className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 sm:w-auto"
                         >
                             <Trash2 className="size-4" />
@@ -176,10 +182,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                                     <button
                                         type="button"
                                         onClick={() =>
-                                            handleDelete(
-                                                message.id,
-                                                message.subject,
-                                            )
+                                            setDeleteTarget(message)
                                         }
                                         className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
                                         aria-label={`Delete message from ${message.name}`}
@@ -225,6 +228,28 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                     )}
                 </Card>
             </div>
+            <ConfirmDialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => !open && setDeleteTarget(null)}
+                title="Delete contact message?"
+                description={
+                    deleteTarget
+                        ? `Delete the message “${deleteTarget.subject}”?`
+                        : undefined
+                }
+                onConfirm={confirmDelete}
+                processing={deleting}
+            />
+            <ConfirmDialog
+                open={clearAllOpen}
+                onOpenChange={setClearAllOpen}
+                title="Erase all contact messages?"
+                description={`This permanently removes all ${messages.total} contact messages and cannot be undone.`}
+                confirmLabel="Erase all"
+                processingLabel="Erasing…"
+                onConfirm={confirmClearAll}
+                processing={deleting}
+            />
         </>
     );
 }

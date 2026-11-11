@@ -5,6 +5,7 @@ import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { ImageLightbox } from '@/components/shared/ImageLightbox';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
 
 type Review = {
@@ -66,6 +67,8 @@ function ReviewPhotos({ images }: { images: string[] }) {
 
 export default function ReviewsIndex({ reviews, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
+    const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     const applyFilters = (overrides: Record<string, string>) => {
         const params = { ...filters, search, ...overrides };
@@ -96,17 +99,18 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
         router.patch(route('admin.reviews.approve', id));
     const handleReject = (id: number) =>
         router.patch(route('admin.reviews.reject', id));
-    const handleDelete = (id: number, photoCount = 0) => {
-        const message =
-            photoCount > 0
-                ? `Delete this review? Its ${photoCount} ${photoCount === 1 ? 'photo' : 'photos'} will also be permanently deleted.`
-                : 'Delete this review?';
-
-        if (!confirm(message)) {
+    const confirmDelete = () => {
+        if (deleteTarget === null) {
             return;
         }
 
-        router.delete(route('admin.reviews.destroy', id));
+        setDeleting(true);
+        router.delete(route('admin.reviews.destroy', deleteTarget), {
+            onFinish: () => {
+                setDeleting(false);
+                setDeleteTarget(null);
+            },
+        });
     };
 
     const Stars = ({ rating }: { rating: number }) => (
@@ -249,11 +253,7 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    handleDelete(
-                                                        review.id,
-                                                        review.images?.length ??
-                                                            0,
-                                                    )
+                                                setDeleteTarget(review.id)
                                                 }
                                                 className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
                                             >
@@ -299,6 +299,14 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
                     )}
                 </Card>
             </div>
+            <ConfirmDialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => !open && setDeleteTarget(null)}
+                title="Delete review?"
+                description="This review will be permanently removed."
+                onConfirm={confirmDelete}
+                processing={deleting}
+            />
         </>
     );
 }
