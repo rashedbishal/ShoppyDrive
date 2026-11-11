@@ -52,7 +52,7 @@ class WebPushSender
                     'publicKey' => (string) WebPushConfig::publicKey(),
                     'privateKey' => (string) WebPushConfig::privateKey(),
                 ],
-            ], [], $client);
+            ], [], $client, logger: new WebPushLogger);
             $encodedPayload = (string) json_encode($payload);
 
             foreach ($subscriptions as $subscription) {

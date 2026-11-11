@@ -12,6 +12,7 @@ use App\Models\Admin;
 use App\Models\PushSubscription;
 use App\Models\Setting;
 use App\Support\WebPushConfig;
+use App\Support\WebPushLogger;
 use App\Support\WebPushSender;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
@@ -20,6 +21,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 
 use function Pest\Laravel\actingAs;
 
@@ -125,4 +127,16 @@ test('an admin who can only view the SMS forwarder cannot use the test button', 
     $viewer = Admin::create(['name' => 'Viewer', 'email' => 'viewer-push@example.com', 'password' => 'password', 'permissions' => ['sms_forwarder' => ['view']]]);
 
     actingAs($viewer, 'admin')->post(route('admin.settings.sms-forwarder.push-test'))->assertForbidden();
+});
+
+// ── Hosts without GMP/BCMath ─────────────────────────────────────────────────
+
+test('the push library\'s "install GMP or BCMath" advisory is dropped, but real warnings are logged', function () {
+    Log::spy();
+    $logger = new WebPushLogger;
+
+    $logger->notice('It is highly recommended to install the GMP or BCMath extension to speed up calculations.');
+    $logger->warning('[WebPush] curl extension is not loaded but is required.');
+
+    Log::shouldHaveReceived('log')->once()->with('warning', Mockery::on(fn (string $m) => str_contains($m, 'curl extension')), Mockery::any());
 });
