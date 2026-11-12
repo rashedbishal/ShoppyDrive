@@ -7,7 +7,6 @@ namespace App\Http\Requests;
 use App\Concerns\NormalizesBangladeshiPhone;
 use App\Support\BangladeshiPhone;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class ProfileUpdateRequest extends FormRequest
 {
@@ -22,7 +21,6 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'string', 'email', 'max:150', Rule::unique('users')->ignore($this->user()->id)],
             'phone' => ['nullable', 'string', 'regex:'.BangladeshiPhone::PATTERN],
             'avatar' => ['nullable', 'image', 'mimes:webp,jpeg,png', 'max:2048'],
             'remove_avatar' => ['nullable', 'boolean'],

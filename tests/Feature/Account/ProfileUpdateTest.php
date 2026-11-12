@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 test('a customer can update their name and phone', function () {
@@ -97,3 +98,21 @@ test('uploading a non-image avatar is rejected', function () {
     $response->assertSessionHasErrors('avatar');
     expect($user->refresh()->avatar)->toBeNull();
 });
+
+test('the profile form never changes the email address, whatever it is sent', function (bool $verified) {
+    Mail::fake();
+    $user = $verified
+        ? User::factory()->create(['email' => 'original@example.com'])
+        : User::factory()->unverified()->create(['email' => 'original@example.com']);
+
+    $this->actingAs($user)->post(route('account.profile.update'), [
+        'name' => 'New Name',
+        'email' => 'someone-else@example.com',
+    ])->assertSessionHasNoErrors();
+
+    expect($user->refresh()->email)->toBe('original@example.com')
+        ->and($user->name)->toBe('New Name')
+        ->and(session('pending_email_change'))->toBeNull();
+    Mail::assertNothingSent();
+    Mail::assertNothingQueued();
+})->with([true, false]);
