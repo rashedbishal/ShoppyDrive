@@ -264,6 +264,16 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * The owner's rule: an account connected to Google or Facebook keeps the
+     * email it has; only an account with no social login connected can change
+     * its email (with code verification, see AccountProfileController).
+     */
+    public function canChangeEmail(): bool
+    {
+        return ! $this->socialAccounts()->exists();
+    }
+
+    /**
      * The existing customer whose referral link this user signed up through, if any.
      */
     public function referrer(): BelongsTo

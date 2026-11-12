@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Mail\EmailChangeCodeMail;
+use App\Models\SocialAccount;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
@@ -99,20 +101,94 @@ test('uploading a non-image avatar is rejected', function () {
     expect($user->refresh()->avatar)->toBeNull();
 });
 
-test('the profile form never changes the email address, whatever it is sent', function (bool $verified) {
+/** Connects the account to Google or Facebook, as social login does. */
+function connectSocialLogin(User $user, string $provider = 'google'): void
+{
+    SocialAccount::create(['user_id' => $user->id, 'provider' => $provider, 'provider_id' => 'social-'.$user->id]);
+}
+
+test('an account connected to Google or Facebook cannot change its email', function (bool $verified, string $provider) {
     Mail::fake();
     $user = $verified
         ? User::factory()->create(['email' => 'original@example.com'])
         : User::factory()->unverified()->create(['email' => 'original@example.com']);
+    connectSocialLogin($user, $provider);
 
     $this->actingAs($user)->post(route('account.profile.update'), [
         'name' => 'New Name',
         'email' => 'someone-else@example.com',
-    ])->assertSessionHasNoErrors();
+    ])->assertSessionHasErrors(['email' => "Your email comes from your Google or Facebook sign-in, so it can't be changed here."]);
 
     expect($user->refresh()->email)->toBe('original@example.com')
-        ->and($user->name)->toBe('New Name')
         ->and(session('pending_email_change'))->toBeNull();
     Mail::assertNothingSent();
     Mail::assertNothingQueued();
-})->with([true, false]);
+})->with([
+    'verified, Google' => [true, 'google'],
+    'unverified, Google' => [false, 'google'],
+    'verified, Facebook' => [true, 'facebook'],
+]);
+
+test('a connected account can still save the rest of its profile', function (?string $email) {
+    $user = User::factory()->create(['email' => 'original@example.com']);
+    connectSocialLogin($user);
+
+    $this->actingAs($user)->post(route('account.profile.update'), array_filter([
+        'name' => 'New Name',
+        'email' => $email,
+    ], fn ($value) => $value !== null))->assertSessionHasNoErrors();
+
+    expect($user->refresh()->name)->toBe('New Name')
+        ->and($user->email)->toBe('original@example.com');
+})->with([
+    'sending its current email' => ['original@example.com'],
+    'the same email in other capitals' => ['Original@Example.com'],
+    'no email at all' => [null],
+]);
+
+test('an account without social login can change its email with a code', function () {
+    Mail::fake();
+    $user = User::factory()->create(['email' => 'original@example.com']);
+
+    $this->actingAs($user)->post(route('account.profile.update'), [
+        'name' => $user->name,
+        'email' => 'new@example.com',
+    ])->assertSessionHasNoErrors();
+
+    // Not changed yet: it waits for the code sent to the current address.
+    expect($user->refresh()->email)->toBe('original@example.com')
+        ->and(session('pending_email_change.email'))->toBe('new@example.com');
+    Mail::assertSent(EmailChangeCodeMail::class);
+});
+
+test('connecting Google while an email change is pending stops the change', function () {
+    Mail::fake();
+    $user = User::factory()->create(['email' => 'original@example.com']);
+
+    $this->actingAs($user)->post(route('account.profile.update'), ['name' => $user->name, 'email' => 'new@example.com']);
+    $code = null;
+    Mail::assertSent(EmailChangeCodeMail::class, function (EmailChangeCodeMail $mail) use (&$code): bool {
+        $code = $mail->code;
+
+        return true;
+    });
+
+    connectSocialLogin($user);
+
+    $this->post(route('account.profile.email.confirm'), ['code' => $code])
+        ->assertSessionHasErrors('code');
+
+    expect($user->refresh()->email)->toBe('original@example.com')
+        ->and(session('pending_email_change'))->toBeNull();
+});
+
+test('the profile page tells the form whether the email is locked', function () {
+    $free = User::factory()->create();
+    $connected = User::factory()->create();
+    connectSocialLogin($connected, 'facebook');
+
+    $this->actingAs($free)->get(route('account.profile'))
+        ->assertInertia(fn ($page) => $page->where('emailLocked', false));
+    $this->actingAs($connected)->get(route('account.profile'))
+        ->assertInertia(fn ($page) => $page->where('emailLocked', true));
+});

@@ -8,7 +8,7 @@ import {
     ShieldCheck,
     TriangleAlert,
 } from 'lucide-react';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import AccountProfileController from '@/actions/App/Http/Controllers/AccountProfileController';
 import DeleteUser from '@/components/delete-user';
@@ -27,6 +27,8 @@ type ProfileProps = {
     status?: string;
     pendingEmailChange?: { new_email: string; sent_to: string } | null;
     cartRemindersEnabled: boolean;
+    /** Connected to Google/Facebook: the email can't be changed here. */
+    emailLocked: boolean;
 };
 
 export default function Profile({
@@ -34,6 +36,7 @@ export default function Profile({
     status,
     pendingEmailChange,
     cartRemindersEnabled,
+    emailLocked,
 }: ProfileProps): React.JSX.Element {
     const { auth } = usePage<SharedPageProps>().props;
     const user = auth.user as UserType;
@@ -59,10 +62,19 @@ export default function Profile({
 
     const form = useForm({
         name: user.name,
+        email: user.email,
         phone: user.phone || '',
         avatar: null as File | null,
         remove_avatar: false,
     });
+
+    const { setData: setFormData } = form;
+
+    // Keep the field on the saved address after a change is confirmed,
+    // started or cancelled (the page reloads its props, not this form).
+    useEffect(() => {
+        setFormData('email', user.email);
+    }, [user.email, pendingEmailChange?.new_email, setFormData]);
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -216,19 +228,45 @@ export default function Profile({
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Email Address</Label>
                                     <div className="relative">
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            value={user.email}
-                                            disabled
-                                            readOnly
-                                            className="h-12 rounded-xl pl-12"
-                                        />
+                                        {emailLocked ? (
+                                            <Input
+                                                id="email"
+                                                type="email"
+                                                value={user.email}
+                                                disabled
+                                                readOnly
+                                                className="h-12 rounded-xl pl-12"
+                                            />
+                                        ) : (
+                                            <Input
+                                                maxLength={150}
+                                                id="email"
+                                                type="email"
+                                                value={form.data.email}
+                                                onChange={(e) =>
+                                                    form.setData(
+                                                        'email',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                autoComplete="username"
+                                                className="h-12 rounded-xl pl-12"
+                                                required
+                                            />
+                                        )}
                                         <Mail
                                             size={18}
                                             className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
                                         />
                                     </div>
+                                    <InputError message={form.errors.email} />
+                                    <p className="text-[10px] font-medium text-[var(--color-text-muted)] italic">
+                                        {emailLocked
+                                            ? 'Your email comes from your Google or Facebook sign-in, so it can’t be changed here.'
+                                            : isUnverified
+                                              ? 'Your email is not verified yet, so a change takes effect straight away.'
+                                              : 'To change your email we send a 6-digit code to your current address.'}
+                                    </p>
                                 </div>
                             </div>
 

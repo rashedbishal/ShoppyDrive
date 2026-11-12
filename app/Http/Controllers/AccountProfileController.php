@@ -45,12 +45,19 @@ class AccountProfileController extends Controller
             // OPS-006: the column is NOT NULL, default on; `?? true` only
             // covers a user instance created in memory before that default.
             'cartRemindersEnabled' => (bool) ($request->user()->abandoned_cart_reminders_enabled ?? true),
+            // Connected to Google/Facebook: the email can't be changed here.
+            'emailLocked' => ! $request->user()->canChangeEmail(),
         ]);
     }
 
     /**
-     * Persists name/phone/avatar only. The email address is read-only on the
-     * profile form and is never accepted here, whatever the request carries.
+     * Persists name/phone/avatar, then handles an email change — only for an
+     * account with no Google/Facebook login connected (User::canChangeEmail();
+     * ProfileUpdateRequest refuses a different address for a connected one):
+     * a verified account's email only changes after the code sent to the
+     * CURRENT address is entered (SEC-009, confirmEmailChange()); an
+     * unverified one (typically a mistyped address at sign-up) changes
+     * straight away and is verified again.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
@@ -70,6 +77,22 @@ class AccountProfileController extends Controller
         }
 
         $user->update($data);
+
+        if ($user->canChangeEmail()) {
+            $newEmail = (string) $request->validated('email');
+
+            if ($this->emailChange->requiresCode($user, $newEmail)) {
+                $this->emailChange->start($request, $user, $newEmail);
+
+                Inertia::flash('toast', ['type' => 'success', 'message' => __('We sent a 6-digit code to :email. Enter it below to confirm your new email.', ['email' => $user->email])]);
+
+                return to_route('account.profile');
+            }
+
+            if ($newEmail !== $user->email) {
+                $user->changeEmailTo($newEmail);
+            }
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Profile updated.']);
 
@@ -92,6 +115,14 @@ class AccountProfileController extends Controller
         }
 
         $user = $request->user();
+
+        // Google or Facebook was connected while the code was pending: the
+        // account now keeps its email, so the change is dropped.
+        if (! $user->canChangeEmail()) {
+            $this->emailChange->cancel($request);
+
+            return back()->withErrors(['code' => __('Your email comes from your Google or Facebook sign-in, so it can\'t be changed here.')]);
+        }
 
         // The address may have been taken while the code was in transit.
         if (User::where('email', $result['email'])->whereKeyNot($user->id)->exists()) {
