@@ -249,6 +249,7 @@ export default function LandingPageEdit({
                                     max={100}
                                     className="mt-1 block text-right"
                                 />
+
                                 {errors.title && (
                                     <p className="mt-1 text-xs text-red-600">
                                         {errors.title}
@@ -275,6 +276,11 @@ export default function LandingPageEdit({
                                         }
                                     />
                                 </div>
+                                <CharCount
+                                    value={data.slug}
+                                    max={100}
+                                    className="mt-1 block text-right"
+                                />
                                 {errors.slug && (
                                     <p className="mt-1 text-xs text-red-600">
                                         {errors.slug}
@@ -459,6 +465,11 @@ export default function LandingPageEdit({
                                 }
                                 placeholder="Order Now"
                             />
+                            <CharCount
+                                value={sec.hero.cta_text}
+                                max={30}
+                                className="mt-1 block text-right"
+                            />
                         </div>
                         <HeroExtras
                             sec={sec}
@@ -624,6 +635,11 @@ export default function LandingPageEdit({
                                     })
                                 }
                             />
+                            <CharCount
+                                value={sec.gallery.title}
+                                max={60}
+                                className="mt-1 block text-right"
+                            />
                         </div>
                         <p className="text-xs text-slate-400">
                             Images are pulled automatically from the selected
@@ -658,6 +674,11 @@ export default function LandingPageEdit({
                                         },
                                     })
                                 }
+                            />
+                            <CharCount
+                                value={sec.testimonials.title}
+                                max={80}
+                                className="mt-1 block text-right"
                             />
                         </div>
                         <AnimatePresence initial={false}>
@@ -709,6 +730,11 @@ export default function LandingPageEdit({
                                                 });
                                             }}
                                             placeholder="Customer name"
+                                        />
+                                        <CharCount
+                                            value={item.name}
+                                            max={60}
+                                            className="mt-1 block text-right"
                                         />
                                         <Select
                                             selectClassName={inputClass}
@@ -812,6 +838,11 @@ export default function LandingPageEdit({
                                     })
                                 }
                             />
+                            <CharCount
+                                value={sec.faq.title}
+                                max={80}
+                                className="mt-1 block text-right"
+                            />
                         </div>
                         <AnimatePresence initial={false}>
                             {sec.faq.items.map((item, i) => (
@@ -857,6 +888,11 @@ export default function LandingPageEdit({
                                                 });
                                             }}
                                             placeholder="Question"
+                                        />
+                                        <CharCount
+                                            value={item.question}
+                                            max={160}
+                                            className="mt-1 block text-right"
                                         />
                                         <textarea
                                             maxLength={800}

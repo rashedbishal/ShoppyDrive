@@ -26,6 +26,8 @@ type PageHeroProps = {
     media?: ReactNode;
     /** Extra content under the chips, e.g. action buttons. */
     children?: ReactNode;
+    /** Show the whole description instead of clamping it to two or three lines. */
+    fullDescription?: boolean;
 };
 
 /**
@@ -43,6 +45,7 @@ export function PageHero({
     wideAside = false,
     media,
     children,
+    fullDescription = false,
 }: PageHeroProps): React.JSX.Element {
     const BadgeIcon = badge.icon;
     const hasMedia = Boolean(media && aside);
@@ -76,7 +79,14 @@ export function PageHero({
                             {title}
                         </h1>
                         {description ? (
-                            <p className="line-clamp-3 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)] sm:line-clamp-2">
+                            <p
+                                className={cn(
+                                    'max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]',
+                                    fullDescription
+                                        ? 'break-words'
+                                        : 'line-clamp-3 sm:line-clamp-2',
+                                )}
+                            >
                                 {description}
                             </p>
                         ) : null}

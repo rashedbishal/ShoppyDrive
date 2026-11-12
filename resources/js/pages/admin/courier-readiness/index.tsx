@@ -158,6 +158,7 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                         >
                             <Input
                                 maxLength={40}
+                                showCount
                                 label="Deploy run ID (gh run view)"
                                 value={form.data.deploy_run_id}
                                 onChange={(e) =>
@@ -170,6 +171,7 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                             />
                             <Input
                                 maxLength={40}
+                                showCount
                                 label="Deployed commit SHA (40 characters)"
                                 value={form.data.deploy_sha}
                                 onChange={(e) =>
@@ -205,6 +207,7 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                             />
                             <Input
                                 maxLength={64}
+                                showCount
                                 label="Fingerprint computed locally (courier:release-fingerprint --sha=…)"
                                 value={form.data.local_fingerprint}
                                 onChange={(e) =>
@@ -268,6 +271,7 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                             </div>
                             <Input
                                 maxLength={2000}
+                                showCount
                                 label="Note (optional)"
                                 value={form.data.note}
                                 onChange={(e) =>

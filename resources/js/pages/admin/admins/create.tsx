@@ -3,6 +3,7 @@ import { PermissionMatrix } from '@/components/admin/PermissionMatrix';
 import PasswordRequirements from '@/components/password-requirements';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { RouteModal } from '@/components/ui/route-modal';
 import {
     email as emailRule,
@@ -98,6 +99,11 @@ export default function AdminCreate({ sectionCatalog }: Props) {
                                         }
                                         placeholder="Admin name"
                                     />
+                                    <CharCount
+                                        value={data.name}
+                                        max={100}
+                                        className="mt-1 block text-right"
+                                    />
                                     {errors.name && (
                                         <p className="mt-1 text-xs text-red-600">
                                             {errors.name}
@@ -118,6 +124,11 @@ export default function AdminCreate({ sectionCatalog }: Props) {
                                             setData('email', e.target.value)
                                         }
                                         placeholder="admin@example.com"
+                                    />
+                                    <CharCount
+                                        value={data.email}
+                                        max={150}
+                                        className="mt-1 block text-right"
                                     />
                                     {errors.email && (
                                         <p className="mt-1 text-xs text-red-600">

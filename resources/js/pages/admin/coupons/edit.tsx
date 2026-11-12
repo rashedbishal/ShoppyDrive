@@ -157,6 +157,11 @@ export default function CouponEdit({
                                             )
                                         }
                                     />
+                                    <CharCount
+                                        value={data.code}
+                                        max={30}
+                                        className="mt-1 block text-right"
+                                    />
                                 </Field>
                                 <Field label="Name *" error={errors.name}>
                                     <input

@@ -9,6 +9,7 @@ import {
 } from '@/components/admin/settings-field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { IconPicker } from '@/components/ui/icon-picker';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -199,6 +200,11 @@ export default function AboutPageConfig({ settings }: Props) {
                                     )
                                 }
                             />
+                            <CharCount
+                                value={data.about_hero_eyebrow}
+                                max={60}
+                                className="mt-1 block text-right"
+                            />
                         </SettingsField>
                         <div className="grid gap-4 sm:grid-cols-2">
                             <SettingsField
@@ -216,6 +222,11 @@ export default function AboutPageConfig({ settings }: Props) {
                                         )
                                     }
                                 />
+                                <CharCount
+                                    value={data.about_hero_title}
+                                    max={100}
+                                    className="mt-1 block text-right"
+                                />
                             </SettingsField>
                             <SettingsField
                                 label="Title (highlighted line)"
@@ -232,11 +243,16 @@ export default function AboutPageConfig({ settings }: Props) {
                                         )
                                     }
                                 />
+                                <CharCount
+                                    value={data.about_hero_title_highlight}
+                                    max={60}
+                                    className="mt-1 block text-right"
+                                />
                             </SettingsField>
                         </div>
                         <SettingsField label="Description">
                             <Textarea
-                                maxLength={400}
+                                maxLength={200}
                                 showCount
                                 textareaClassName={settingsInputClass}
                                 rows={3}
@@ -270,9 +286,10 @@ export default function AboutPageConfig({ settings }: Props) {
                         <AnimatePresence initial={false}>
                             {data.about_stats.map((stat, index) => (
                                 <AdminReveal key={statRowKeys.keys[index]}>
-                                    <div className="flex items-end gap-2">
+                                    <div className="flex items-start gap-2">
                                         <Input
                                             maxLength={20}
+                                            showCount
                                             containerClassName="flex-1"
                                             placeholder="Value (e.g. 50,000+)"
                                             value={stat.value}
@@ -284,6 +301,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                         />
                                         <Input
                                             maxLength={100}
+                                            showCount
                                             containerClassName="flex-1"
                                             placeholder="Label (e.g. Happy Customers)"
                                             value={stat.label}
@@ -334,6 +352,11 @@ export default function AboutPageConfig({ settings }: Props) {
                                         )
                                     }
                                 />
+                                <CharCount
+                                    value={data.about_mission_eyebrow}
+                                    max={60}
+                                    className="mt-1 block text-right"
+                                />
                             </SettingsField>
                             <SettingsField label="Title">
                                 <input
@@ -347,12 +370,18 @@ export default function AboutPageConfig({ settings }: Props) {
                                         )
                                     }
                                 />
+                                <CharCount
+                                    value={data.about_mission_title}
+                                    max={100}
+                                    className="mt-1 block text-right"
+                                />
                             </SettingsField>
                         </div>
                         <SettingsField label="Body">
                             <RichTextEditor
                                 value={data.about_mission_body}
                                 maxLength={20000}
+                                maxTextLength={400}
                                 onChange={(html) =>
                                     setData('about_mission_body', html)
                                 }
@@ -381,7 +410,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                             <AdminReveal
                                                 key={featureRowKeys.keys[index]}
                                             >
-                                                <div className="flex items-end gap-2">
+                                                <div className="flex items-start gap-2">
                                                     <IconPicker
                                                         className="w-40 shrink-0"
                                                         value={feature.icon}
@@ -396,6 +425,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                                     />
                                                     <Input
                                                         maxLength={60}
+                                                        showCount
                                                         containerClassName="flex-1"
                                                         placeholder="Label (e.g. Nationwide Delivery)"
                                                         value={feature.label}
@@ -456,7 +486,7 @@ export default function AboutPageConfig({ settings }: Props) {
                             {data.about_values.map((value, index) => (
                                 <AdminReveal key={valueRowKeys.keys[index]}>
                                     <div className="space-y-2 rounded-xl border border-slate-200 p-4">
-                                        <div className="flex items-end gap-2">
+                                        <div className="flex items-start gap-2">
                                             <IconPicker
                                                 className="w-40 shrink-0"
                                                 value={value.icon}
@@ -466,6 +496,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                             />
                                             <Input
                                                 maxLength={60}
+                                                showCount
                                                 containerClassName="flex-1"
                                                 placeholder="Title (e.g. Trust & Transparency)"
                                                 value={value.title}
@@ -532,9 +563,10 @@ export default function AboutPageConfig({ settings }: Props) {
                         <AnimatePresence initial={false}>
                             {data.about_team.map((member, index) => (
                                 <AdminReveal key={teamRowKeys.keys[index]}>
-                                    <div className="flex items-end gap-2">
+                                    <div className="flex items-start gap-2">
                                         <Input
                                             maxLength={60}
+                                            showCount
                                             containerClassName="flex-1"
                                             placeholder="Name"
                                             value={member.name}
@@ -546,6 +578,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                         />
                                         <Input
                                             maxLength={60}
+                                            showCount
                                             containerClassName="flex-1"
                                             placeholder="Role"
                                             value={member.role}
@@ -559,6 +592,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                             containerClassName="w-20 shrink-0"
                                             placeholder="RI"
                                             maxLength={4}
+                                            showCount
                                             value={member.initials}
                                             onChange={(e) =>
                                                 updateTeamMember(index, {
@@ -604,6 +638,11 @@ export default function AboutPageConfig({ settings }: Props) {
                                 onChange={(e) =>
                                     setData('about_cta_title', e.target.value)
                                 }
+                            />
+                            <CharCount
+                                value={data.about_cta_title}
+                                max={100}
+                                className="mt-1 block text-right"
                             />
                         </SettingsField>
                         <SettingsField label="Description">

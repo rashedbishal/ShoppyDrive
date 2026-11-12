@@ -259,6 +259,11 @@ export default function ProductCreate({
                                             setData('slug', e.target.value)
                                         }
                                     />
+                                    <CharCount
+                                        value={data.slug}
+                                        max={150}
+                                        className="mt-1 block text-right"
+                                    />
                                 </Field>
                                 <AnimatePresence initial={false}>
                                     {hasVariants ? (
@@ -287,6 +292,11 @@ export default function ProductCreate({
                                                             e.target.value,
                                                         )
                                                     }
+                                                />
+                                                <CharCount
+                                                    value={data.sku}
+                                                    max={50}
+                                                    className="mt-1 block text-right"
                                                 />
                                             </Field>
                                         </AdminReveal>
@@ -594,6 +604,7 @@ export default function ProductCreate({
                                         max={200}
                                         className="mt-1 block text-right"
                                     />
+
                                     <p className="mt-1 text-xs text-slate-500">
                                         If this product's name is in Bangla, add
                                         its English name here (e.g. "shirt,

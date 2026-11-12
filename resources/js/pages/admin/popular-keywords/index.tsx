@@ -6,6 +6,7 @@ import { AdminFade } from '@/components/admin/admin-motion';
 import { BulkActionBar } from '@/components/admin/bulk-action-bar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
@@ -75,18 +76,26 @@ function KeywordRow({
                     >
                         <>
                             <div className="flex-1">
-                                <input
-                                    maxLength={60}
-                                    autoFocus
-                                    className={`${inputClass} w-full`}
-                                    value={data.keyword}
-                                    onChange={(e) =>
-                                        setData('keyword', e.target.value)
-                                    }
-                                    onKeyDown={(e) =>
-                                        e.key === 'Enter' && save()
-                                    }
-                                />
+                                <div className="relative">
+                                    <input
+                                        maxLength={60}
+                                        autoFocus
+                                        className={`${inputClass} w-full`}
+                                        style={{ paddingRight: '3.25rem' }}
+                                        value={data.keyword}
+                                        onChange={(e) =>
+                                            setData('keyword', e.target.value)
+                                        }
+                                        onKeyDown={(e) =>
+                                            e.key === 'Enter' && save()
+                                        }
+                                    />
+                                    <CharCount
+                                        value={data.keyword}
+                                        max={60}
+                                        className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2"
+                                    />
+                                </div>
                                 {errors.keyword && (
                                     <p className="mt-1 text-xs text-red-500">
                                         {errors.keyword}
@@ -335,6 +344,11 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                                                 )
                                             }
                                             placeholder="New keyword…"
+                                        />
+                                        <CharCount
+                                            value={data.keyword}
+                                            max={60}
+                                            className="mt-1 block text-right"
                                         />
                                         {errors.keyword && (
                                             <p className="mt-1 text-xs text-red-500">

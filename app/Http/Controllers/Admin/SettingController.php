@@ -9,6 +9,7 @@ use App\Models\Setting;
 use App\Services\PathaoCourierService;
 use App\Services\SteadfastCourierService;
 use App\Support\ReviewImageSettings;
+use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -180,13 +181,19 @@ class SettingController extends Controller
             'about_hero_eyebrow' => ['nullable', 'string', 'max:60'],
             'about_hero_title' => ['nullable', 'string', 'max:100'],
             'about_hero_title_highlight' => ['nullable', 'string', 'max:60'],
-            'about_hero_description' => ['nullable', 'string', 'max:400'],
+            'about_hero_description' => ['nullable', 'string', 'max:200'],
             'about_stats' => ['nullable', 'array', 'max:8'],
             'about_stats.*.value' => ['nullable', 'string', 'max:20'],
             'about_stats.*.label' => ['nullable', 'string', 'max:100'],
             'about_mission_eyebrow' => ['nullable', 'string', 'max:60'],
             'about_mission_title' => ['nullable', 'string', 'max:100'],
-            'about_mission_body' => ['nullable', 'string', 'max:20000'],
+            // The 400 limit counts the text a visitor reads, not the HTML
+            // markup around it; the 20,000 is a guard on the markup itself.
+            'about_mission_body' => ['nullable', 'string', 'max:20000', function (string $attribute, mixed $value, Closure $fail): void {
+                if (is_string($value) && mb_strlen(html_entity_decode(strip_tags($value))) > 400) {
+                    $fail('The mission text may not be longer than 400 characters.');
+                }
+            }],
             'about_mission_features' => ['nullable', 'array', 'max:8'],
             'about_mission_features.*.icon' => ['nullable', 'string', 'max:100'],
             'about_mission_features.*.label' => ['nullable', 'string', 'max:60'],

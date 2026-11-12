@@ -166,6 +166,11 @@ export function HeroExtras({
                     onChange={(e) => setHero({ badge: e.target.value })}
                     placeholder="Limited stock · Eid special"
                 />
+                <CharCount
+                    value={hero.badge ?? ''}
+                    max={40}
+                    className="mt-1 block text-right"
+                />
             </Field>
             <Field
                 label="Second button text"
@@ -180,6 +185,11 @@ export function HeroExtras({
                     }
                     placeholder="See Details"
                 />
+                <CharCount
+                    value={hero.secondary_cta_text ?? ''}
+                    max={30}
+                    className="mt-1 block text-right"
+                />
             </Field>
 
             <div className="space-y-2 rounded-xl border border-slate-100 p-3">
@@ -191,34 +201,60 @@ export function HeroExtras({
                         key={i}
                         className="grid grid-cols-1 gap-2 sm:grid-cols-2"
                     >
-                        <input
-                            maxLength={60}
-                            className={inputClass}
-                            value={features[i]?.title ?? ''}
-                            onChange={(e) => {
-                                const next = [0, 1, 2].map(
-                                    (j) =>
-                                        features[j] ?? { title: '', text: '' },
-                                );
-                                next[i] = { ...next[i], title: e.target.value };
-                                setHero({ features: next });
-                            }}
-                            placeholder={`Box ${i + 1} title`}
-                        />
-                        <input
-                            maxLength={140}
-                            className={inputClass}
-                            value={features[i]?.text ?? ''}
-                            onChange={(e) => {
-                                const next = [0, 1, 2].map(
-                                    (j) =>
-                                        features[j] ?? { title: '', text: '' },
-                                );
-                                next[i] = { ...next[i], text: e.target.value };
-                                setHero({ features: next });
-                            }}
-                            placeholder={`Box ${i + 1} description`}
-                        />
+                        <div>
+                            <input
+                                maxLength={60}
+                                className={inputClass}
+                                value={features[i]?.title ?? ''}
+                                onChange={(e) => {
+                                    const next = [0, 1, 2].map(
+                                        (j) =>
+                                            features[j] ?? {
+                                                title: '',
+                                                text: '',
+                                            },
+                                    );
+                                    next[i] = {
+                                        ...next[i],
+                                        title: e.target.value,
+                                    };
+                                    setHero({ features: next });
+                                }}
+                                placeholder={`Box ${i + 1} title`}
+                            />
+                            <CharCount
+                                value={features[i]?.title ?? ''}
+                                max={60}
+                                className="mt-1 block text-right"
+                            />
+                        </div>
+                        <div>
+                            <input
+                                maxLength={140}
+                                className={inputClass}
+                                value={features[i]?.text ?? ''}
+                                onChange={(e) => {
+                                    const next = [0, 1, 2].map(
+                                        (j) =>
+                                            features[j] ?? {
+                                                title: '',
+                                                text: '',
+                                            },
+                                    );
+                                    next[i] = {
+                                        ...next[i],
+                                        text: e.target.value,
+                                    };
+                                    setHero({ features: next });
+                                }}
+                                placeholder={`Box ${i + 1} description`}
+                            />
+                            <CharCount
+                                value={features[i]?.text ?? ''}
+                                max={140}
+                                className="mt-1 block text-right"
+                            />
+                        </div>
                     </div>
                 ))}
             </div>
@@ -441,6 +477,11 @@ export function DescriptionExtras({
                     onChange={(e) => set({ badge: e.target.value })}
                     placeholder="Best seller"
                 />
+                <CharCount
+                    value={description.badge ?? ''}
+                    max={40}
+                    className="mt-1 block text-right"
+                />
             </Field>
             <Field label="Option picker title">
                 <input
@@ -449,6 +490,11 @@ export function DescriptionExtras({
                     value={description.selection_title ?? ''}
                     onChange={(e) => set({ selection_title: e.target.value })}
                 />
+                <CharCount
+                    value={description.selection_title ?? ''}
+                    max={60}
+                    className="mt-1 block text-right"
+                />
             </Field>
             <Field label="Option picker hint">
                 <input
@@ -456,6 +502,11 @@ export function DescriptionExtras({
                     className={inputClass}
                     value={description.selection_hint ?? ''}
                     onChange={(e) => set({ selection_hint: e.target.value })}
+                />
+                <CharCount
+                    value={description.selection_hint ?? ''}
+                    max={140}
+                    className="mt-1 block text-right"
                 />
             </Field>
         </>
@@ -541,6 +592,11 @@ export function CombosEditor({
                                     }
                                     placeholder="Couple set"
                                 />
+                                <CharCount
+                                    value={combo.name ?? ''}
+                                    max={50}
+                                    className="mt-1 block text-right"
+                                />
                             </Field>
                             <Field label="Badge (optional)">
                                 <input
@@ -551,6 +607,11 @@ export function CombosEditor({
                                         update(index, { badge: e.target.value })
                                     }
                                     placeholder="Best value"
+                                />
+                                <CharCount
+                                    value={combo.badge ?? ''}
+                                    max={20}
+                                    className="mt-1 block text-right"
                                 />
                             </Field>
                         </div>
@@ -565,6 +626,11 @@ export function CombosEditor({
                                     })
                                 }
                                 placeholder="Bubu + Dudu together"
+                            />
+                            <CharCount
+                                value={combo.description ?? ''}
+                                max={100}
+                                className="mt-1 block text-right"
                             />
                         </Field>
                         <div className="space-y-2">
@@ -739,6 +805,11 @@ export function CombosEditor({
                             })
                         }
                     />
+                    <CharCount
+                        value={selection.title ?? ''}
+                        max={80}
+                        className="mt-1 block text-right"
+                    />
                 </Field>
                 <Field label="Section subtitle">
                     <input
@@ -753,6 +824,11 @@ export function CombosEditor({
                                 },
                             })
                         }
+                    />
+                    <CharCount
+                        value={selection.subtitle ?? ''}
+                        max={160}
+                        className="mt-1 block text-right"
                     />
                 </Field>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -770,6 +846,11 @@ export function CombosEditor({
                                 })
                             }
                         />
+                        <CharCount
+                            value={selection.notes_label ?? ''}
+                            max={40}
+                            className="mt-1 block text-right"
+                        />
                     </Field>
                     <Field label="Notes placeholder">
                         <input
@@ -784,6 +865,11 @@ export function CombosEditor({
                                     },
                                 })
                             }
+                        />
+                        <CharCount
+                            value={selection.notes_placeholder ?? ''}
+                            max={100}
+                            className="mt-1 block text-right"
                         />
                     </Field>
                 </div>
@@ -814,6 +900,11 @@ export function DeliveryEditor({
                     value={delivery.title ?? ''}
                     onChange={(e) => set({ title: e.target.value })}
                 />
+                <CharCount
+                    value={delivery.title ?? ''}
+                    max={80}
+                    className="mt-1 block text-right"
+                />
             </Field>
             <Field label="Text">
                 <textarea
@@ -835,20 +926,27 @@ export function DeliveryEditor({
                 </label>
                 <div className="space-y-2">
                     {areas.map((area, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                            <input
-                                maxLength={40}
-                                className={inputClass}
-                                value={area}
-                                onChange={(e) =>
-                                    set({
-                                        areas: areas.map((a, j) =>
-                                            j === i ? e.target.value : a,
-                                        ),
-                                    })
-                                }
-                                placeholder="Dhaka"
-                            />
+                        <div key={i} className="flex items-start gap-2">
+                            <div className="min-w-0 flex-1">
+                                <input
+                                    maxLength={40}
+                                    className={inputClass}
+                                    value={area}
+                                    onChange={(e) =>
+                                        set({
+                                            areas: areas.map((a, j) =>
+                                                j === i ? e.target.value : a,
+                                            ),
+                                        })
+                                    }
+                                    placeholder="Dhaka"
+                                />
+                                <CharCount
+                                    value={area}
+                                    max={40}
+                                    className="mt-1 block text-right"
+                                />
+                            </div>
                             <button
                                 type="button"
                                 onClick={() =>
@@ -856,7 +954,7 @@ export function DeliveryEditor({
                                         areas: areas.filter((_, j) => j !== i),
                                     })
                                 }
-                                className="shrink-0 text-slate-400 hover:text-red-500"
+                                className="flex h-9 shrink-0 items-center text-slate-400 hover:text-red-500"
                                 aria-label="Remove area"
                             >
                                 <Trash2 className="size-4" />
@@ -881,6 +979,11 @@ export function DeliveryEditor({
                         value={delivery.cta_text ?? ''}
                         onChange={(e) => set({ cta_text: e.target.value })}
                     />
+                    <CharCount
+                        value={delivery.cta_text ?? ''}
+                        max={30}
+                        className="mt-1 block text-right"
+                    />
                 </Field>
                 <Field label="Text above the phone number">
                     <input
@@ -888,6 +991,11 @@ export function DeliveryEditor({
                         className={inputClass}
                         value={delivery.contact_label ?? ''}
                         onChange={(e) => set({ contact_label: e.target.value })}
+                    />
+                    <CharCount
+                        value={delivery.contact_label ?? ''}
+                        max={60}
+                        className="mt-1 block text-right"
                     />
                 </Field>
             </div>
@@ -924,6 +1032,11 @@ export function ContactEditor({
                         }
                         placeholder="01XXXXXXXXX"
                     />
+                    <CharCount
+                        value={contact.phone ?? ''}
+                        max={30}
+                        className="mt-1 block text-right"
+                    />
                 </Field>
                 <Field label="Support email">
                     <input
@@ -936,6 +1049,11 @@ export function ContactEditor({
                             })
                         }
                         placeholder="support@example.com"
+                    />
+                    <CharCount
+                        value={contact.email ?? ''}
+                        max={150}
+                        className="mt-1 block text-right"
                     />
                 </Field>
             </div>

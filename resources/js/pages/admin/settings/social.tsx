@@ -7,6 +7,7 @@ import {
 } from '@/components/admin/settings-field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 
 type Props = {
     settings: Record<string, string | Record<string, string> | null>;
@@ -56,6 +57,11 @@ function GoogleLoginCard({ settings }: Props) {
                             }
                             placeholder="xxxxxxxxxxxx.apps.googleusercontent.com"
                         />
+                        <CharCount
+                            value={data.google_client_id}
+                            max={255}
+                            className="mt-1 block text-right"
+                        />
                     </SettingsField>
                     <SettingsField label="Client Secret">
                         <input
@@ -82,6 +88,11 @@ function GoogleLoginCard({ settings }: Props) {
                                 setData('google_redirect_uri', e.target.value)
                             }
                             placeholder={`${window.location.origin}/auth/google/callback`}
+                        />
+                        <CharCount
+                            value={data.google_redirect_uri}
+                            max={300}
+                            className="mt-1 block text-right"
                         />
                     </SettingsField>
                 </CardContent>
@@ -153,6 +164,11 @@ function FacebookLoginCard({ settings }: Props) {
                             }
                             placeholder="1234567890123456"
                         />
+                        <CharCount
+                            value={data.facebook_client_id}
+                            max={255}
+                            className="mt-1 block text-right"
+                        />
                     </SettingsField>
                     <SettingsField label="App Secret">
                         <input
@@ -182,6 +198,11 @@ function FacebookLoginCard({ settings }: Props) {
                                 setData('facebook_redirect_uri', e.target.value)
                             }
                             placeholder={`${window.location.origin}/auth/facebook/callback`}
+                        />
+                        <CharCount
+                            value={data.facebook_redirect_uri}
+                            max={300}
+                            className="mt-1 block text-right"
                         />
                     </SettingsField>
                 </CardContent>

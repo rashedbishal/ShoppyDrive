@@ -632,6 +632,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                 <Label htmlFor="co-name">Full Name *</Label>
                                 <Input
                                     maxLength={100}
+                                    showCount
                                     id="co-name"
                                     value={form.data.name}
                                     onChange={(e) =>
@@ -654,6 +655,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                         )
                                     }
                                     maxLength={11}
+                                    showCount
                                     error={form.errors.phone}
                                 />
                             </div>
@@ -663,6 +665,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                             <Label htmlFor="co-email">Email</Label>
                             <Input
                                 maxLength={150}
+                                showCount
                                 id="co-email"
                                 type="email"
                                 value={form.data.email}
@@ -679,6 +682,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                             </Label>
                             <Input
                                 maxLength={200}
+                                showCount
                                 id="co-address1"
                                 value={form.data.address_line1}
                                 onChange={(e) =>
@@ -696,6 +700,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                             <Label htmlFor="co-address2">Address Line 2</Label>
                             <Input
                                 maxLength={200}
+                                showCount
                                 id="co-address2"
                                 value={form.data.address_line2}
                                 onChange={(e) =>
@@ -759,6 +764,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                         <AdminFade key="city-b">
                                             <Input
                                                 maxLength={100}
+                                                showCount
                                                 id="co-city"
                                                 value={form.data.city}
                                                 onChange={(e) =>
@@ -781,6 +787,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                 <Label htmlFor="co-postal">Postal Code</Label>
                                 <Input
                                     maxLength={20}
+                                    showCount
                                     id="co-postal"
                                     value={form.data.postal_code}
                                     onChange={(e) =>
@@ -1018,6 +1025,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                                     maxLength={
                                                                         500
                                                                     }
+                                                                    showCount
                                                                     aria-label="Reason for changing the price"
                                                                     placeholder="Reason for changing the price"
                                                                     value={
@@ -1096,6 +1104,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                     form.errors.shipping_override_reason) && (
                                     <Input
                                         maxLength={500}
+                                        showCount
                                         aria-label="Reason for changing shipping"
                                         placeholder={
                                             calculatedShipping === null
@@ -1140,6 +1149,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                     form.errors.discount_override_reason) && (
                                     <Input
                                         maxLength={500}
+                                        showCount
                                         aria-label="Reason for the discount"
                                         placeholder="Reason for the discount"
                                         value={

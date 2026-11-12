@@ -374,6 +374,7 @@ export default function NewsletterCompose({
                                             max={150}
                                             className="mt-1 block text-right"
                                         />
+
                                         {customForm.errors.subject && (
                                             <p className="mt-1 text-xs text-red-600">
                                                 {customForm.errors.subject}
@@ -538,6 +539,7 @@ export default function NewsletterCompose({
                                                 max={150}
                                                 className="mt-1 block text-right"
                                             />
+
                                             {productForm.errors.subject && (
                                                 <p className="mt-1 text-xs text-red-600">
                                                     {productForm.errors.subject}

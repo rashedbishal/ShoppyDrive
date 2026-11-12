@@ -409,6 +409,7 @@ export default function ConvertIncompleteOrder({
                                         </Label>
                                         <Input
                                             maxLength={100}
+                                            showCount
                                             id="name"
                                             value={form.data.name}
                                             onChange={(e) =>
@@ -434,6 +435,7 @@ export default function ConvertIncompleteOrder({
                                                 )
                                             }
                                             maxLength={11}
+                                            showCount
                                             error={form.errors.phone}
                                         />
                                     </div>
@@ -445,6 +447,7 @@ export default function ConvertIncompleteOrder({
                                     </Label>
                                     <Input
                                         maxLength={200}
+                                        showCount
                                         id="address_line1"
                                         value={form.data.address_line1}
                                         onChange={(e) =>
@@ -464,6 +467,7 @@ export default function ConvertIncompleteOrder({
                                     </Label>
                                     <Input
                                         maxLength={200}
+                                        showCount
                                         id="address_line2"
                                         value={form.data.address_line2}
                                         onChange={(e) =>
@@ -535,6 +539,7 @@ export default function ConvertIncompleteOrder({
                                                 <AdminFade key="city-b">
                                                     <Input
                                                         maxLength={100}
+                                                        showCount
                                                         id="city"
                                                         value={form.data.city}
                                                         onChange={(e) =>
@@ -560,6 +565,7 @@ export default function ConvertIncompleteOrder({
                                     </Label>
                                     <Input
                                         maxLength={20}
+                                        showCount
                                         id="postal_code"
                                         value={form.data.postal_code}
                                         onChange={(e) =>

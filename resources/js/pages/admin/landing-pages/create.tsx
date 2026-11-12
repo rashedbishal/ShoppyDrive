@@ -104,6 +104,7 @@ export default function LandingPageCreate({ products }: Props) {
                                     max={100}
                                     className="mt-1 block text-right"
                                 />
+
                                 {errors.title && (
                                     <p className="mt-1 text-xs text-red-600">
                                         {errors.title}
@@ -135,6 +136,11 @@ export default function LandingPageCreate({ products }: Props) {
                                         placeholder="my-product-offer"
                                     />
                                 </div>
+                                <CharCount
+                                    value={data.slug}
+                                    max={100}
+                                    className="mt-1 block text-right"
+                                />
                                 {errors.slug && (
                                     <p className="mt-1 text-xs text-red-600">
                                         {errors.slug}

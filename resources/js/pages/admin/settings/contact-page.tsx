@@ -7,6 +7,7 @@ import {
 } from '@/components/admin/settings-field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { Textarea } from '@/components/ui/textarea';
 
 type Props = {
@@ -112,6 +113,11 @@ export default function ContactPageConfig({ settings }: Props) {
                                     )
                                 }
                             />
+                            <CharCount
+                                value={data.contact_page_hero_eyebrow}
+                                max={60}
+                                className="mt-1 block text-right"
+                            />
                         </SettingsField>
                         <div className="grid gap-4 sm:grid-cols-2">
                             <SettingsField
@@ -128,6 +134,11 @@ export default function ContactPageConfig({ settings }: Props) {
                                             e.target.value,
                                         )
                                     }
+                                />
+                                <CharCount
+                                    value={data.contact_page_hero_title}
+                                    max={100}
+                                    className="mt-1 block text-right"
                                 />
                             </SettingsField>
                             <SettingsField
@@ -146,6 +157,13 @@ export default function ContactPageConfig({ settings }: Props) {
                                             e.target.value,
                                         )
                                     }
+                                />
+                                <CharCount
+                                    value={
+                                        data.contact_page_hero_title_highlight
+                                    }
+                                    max={60}
+                                    className="mt-1 block text-right"
                                 />
                             </SettingsField>
                         </div>
@@ -191,6 +209,11 @@ export default function ContactPageConfig({ settings }: Props) {
                                     }
                                     placeholder="+880 1700-000000"
                                 />
+                                <CharCount
+                                    value={data.contact_phone}
+                                    max={30}
+                                    className="mt-1 block text-right"
+                                />
                             </SettingsField>
                             <SettingsField label="Email">
                                 <input
@@ -202,6 +225,11 @@ export default function ContactPageConfig({ settings }: Props) {
                                         setData('contact_email', e.target.value)
                                     }
                                     placeholder="support@shoppydrive.com"
+                                />
+                                <CharCount
+                                    value={data.contact_email}
+                                    max={150}
+                                    className="mt-1 block text-right"
                                 />
                             </SettingsField>
                         </div>
@@ -219,6 +247,11 @@ export default function ContactPageConfig({ settings }: Props) {
                                     }
                                     placeholder="Dhaka, Bangladesh"
                                 />
+                                <CharCount
+                                    value={data.contact_address}
+                                    max={300}
+                                    className="mt-1 block text-right"
+                                />
                             </SettingsField>
                             <SettingsField label="Support Hours">
                                 <input
@@ -232,6 +265,11 @@ export default function ContactPageConfig({ settings }: Props) {
                                         )
                                     }
                                     placeholder="Every day, 9 AM–9 PM"
+                                />
+                                <CharCount
+                                    value={data.contact_page_support_hours}
+                                    max={60}
+                                    className="mt-1 block text-right"
                                 />
                             </SettingsField>
                         </div>
@@ -250,6 +288,11 @@ export default function ContactPageConfig({ settings }: Props) {
                                     }
                                     placeholder="e.g. Shoppy Drive Enterprise"
                                 />
+                                <CharCount
+                                    value={data.legal_business_name}
+                                    max={150}
+                                    className="mt-1 block text-right"
+                                />
                             </SettingsField>
                             <SettingsField label="Trade Licence Number">
                                 <input
@@ -263,6 +306,11 @@ export default function ContactPageConfig({ settings }: Props) {
                                         )
                                     }
                                     placeholder="e.g. TRAD/DNCC/012345/2025"
+                                />
+                                <CharCount
+                                    value={data.trade_licence_number}
+                                    max={60}
+                                    className="mt-1 block text-right"
                                 />
                             </SettingsField>
                         </div>

@@ -2,6 +2,7 @@ import { Head, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { Select } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
@@ -149,6 +150,11 @@ export default function AiAssistantSettings({
                                                 )
                                             }
                                             autoComplete="off"
+                                        />
+                                        <CharCount
+                                            value={data.api_key}
+                                            max={255}
+                                            className="mt-1 block text-right"
                                         />
                                     </div>
                                 ) : (

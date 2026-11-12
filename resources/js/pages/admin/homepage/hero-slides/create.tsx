@@ -147,6 +147,7 @@ export default function HeroSlideCreate() {
                                             placeholder="e.g. New Arrivals"
                                             error={errors.eyebrow}
                                             maxLength={50}
+                                            showCount
                                             hint={`${data.eyebrow.length}/50`}
                                         />
                                         <Input
@@ -163,6 +164,7 @@ export default function HeroSlideCreate() {
                                             error={errors.title}
                                             required
                                             maxLength={100}
+                                            showCount
                                             hint={`${data.title.length}/100`}
                                         />
                                     </div>
@@ -180,6 +182,7 @@ export default function HeroSlideCreate() {
                                         error={errors.description}
                                         rows={4}
                                         maxLength={200}
+                                        showCount
                                         hint={`${data.description.length}/200`}
                                     />
                                     <div className="space-y-2">
@@ -222,6 +225,7 @@ export default function HeroSlideCreate() {
                                             placeholder="e.g. Shop Now"
                                             error={errors.primary_cta_label}
                                             maxLength={40}
+                                            showCount
                                         />
                                         <Input
                                             label="Link"
@@ -234,6 +238,7 @@ export default function HeroSlideCreate() {
                                             }
                                             placeholder="/category/..."
                                             maxLength={255}
+                                            showCount
                                         />
                                     </div>
                                 </CardContent>
@@ -277,6 +282,7 @@ export default function HeroSlideCreate() {
                                                             }
                                                             placeholder="Label (e.g. Delivery)"
                                                             maxLength={30}
+                                                            showCount
                                                             error={
                                                                 errors[
                                                                     `stats.${index}.label`
@@ -297,6 +303,7 @@ export default function HeroSlideCreate() {
                                                             }
                                                             placeholder="Value (e.g. 24h)"
                                                             maxLength={30}
+                                                            showCount
                                                             error={
                                                                 errors[
                                                                     `stats.${index}.value`

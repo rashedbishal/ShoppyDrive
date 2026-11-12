@@ -151,6 +151,11 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                                                 placeholder="e.g. 203.0.113.5"
                                                 required
                                             />
+                                            <CharCount
+                                                value={data.ip_address}
+                                                max={45}
+                                                className="mt-1 block text-right"
+                                            />
                                             {errors.ip_address && (
                                                 <p className="mt-0.5 text-xs text-red-500">
                                                     {errors.ip_address}
@@ -182,6 +187,7 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                                                 max={200}
                                                 className="mt-1 block text-right"
                                             />
+
                                             {errors.reason && (
                                                 <p className="mt-0.5 text-xs text-red-500">
                                                     {errors.reason}

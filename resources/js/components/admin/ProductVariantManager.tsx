@@ -2,6 +2,7 @@ import { AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Star, Trash2, Wand2 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
+import { CharCount } from '@/components/ui/char-count';
 import { belowCostWarning } from '@/lib/price-warnings';
 import { cn } from '@/lib/utils';
 
@@ -813,6 +814,11 @@ export function ProductVariantManager({
                                                                     },
                                                                 )
                                                             }
+                                                        />
+                                                        <CharCount
+                                                            value={row.sku}
+                                                            max={50}
+                                                            className="mt-1 block text-right"
                                                         />
                                                     </VariantField>
                                                     <VariantField

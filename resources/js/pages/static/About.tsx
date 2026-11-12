@@ -28,6 +28,19 @@ type Props = {
     content: AboutContent;
 };
 
+/** Long figures ("১২,০০০+ orders delivered") step down in size so they stay inside their card. */
+function statValueSize(value: string): string {
+    if (value.length <= 8) {
+        return 'text-3xl sm:text-4xl';
+    }
+
+    if (value.length <= 14) {
+        return 'text-2xl sm:text-3xl';
+    }
+
+    return 'text-xl sm:text-2xl';
+}
+
 function AboutPage({ content }: Props): React.JSX.Element {
     return (
         <>
@@ -50,6 +63,7 @@ function AboutPage({ content }: Props): React.JSX.Element {
                         )
                     }
                     description={content.hero_description}
+                    fullDescription
                 >
                     <div className="flex flex-wrap items-center gap-2">
                         <Link
@@ -72,13 +86,18 @@ function AboutPage({ content }: Props): React.JSX.Element {
             {content.stats.length > 0 && (
                 <section className="border-y border-[var(--color-border)] bg-[var(--color-surface-alt)]">
                     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-                        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-8">
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
                             {content.stats.map(({ value, label }, index) => (
-                                <div key={index} className="text-center">
-                                    <p className="text-3xl font-black text-[var(--color-primary)] sm:text-4xl">
+                                <div
+                                    key={index}
+                                    className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-5 text-center sm:px-4"
+                                >
+                                    <p
+                                        className={`max-w-full font-black [overflow-wrap:anywhere] text-[var(--color-primary)] ${statValueSize(value)} leading-tight`}
+                                    >
                                         {value}
                                     </p>
-                                    <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                                    <p className="mt-1.5 max-w-full text-sm [overflow-wrap:anywhere] text-[var(--color-text-secondary)]">
                                         {label}
                                     </p>
                                 </div>
@@ -91,30 +110,33 @@ function AboutPage({ content }: Props): React.JSX.Element {
             {/* Mission */}
             <section className="py-16 lg:py-24">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-                        <div className="space-y-6">
+                    <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-14">
+                        <div className="min-w-0 space-y-5">
                             {content.mission_eyebrow && (
-                                <p className="text-sm font-semibold tracking-[0.2em] text-[var(--color-primary)] uppercase">
-                                    {content.mission_eyebrow}
+                                <p className="flex items-center gap-3 text-sm font-semibold tracking-[0.2em] text-[var(--color-primary)] uppercase">
+                                    <span className="h-px w-8 bg-[var(--color-primary)]" />
+                                    <span className="min-w-0 [overflow-wrap:anywhere]">
+                                        {content.mission_eyebrow}
+                                    </span>
                                 </p>
                             )}
-                            <h2 className="text-3xl font-bold text-[var(--color-text-primary)] sm:text-4xl">
+                            <h2 className="text-3xl font-bold [overflow-wrap:anywhere] text-[var(--color-text-primary)] sm:text-4xl">
                                 {content.mission_title}
                             </h2>
                             <div
-                                className="prose prose-sm max-w-none text-[var(--color-text-secondary)] md:prose-base prose-p:leading-7"
+                                className="prose prose-sm max-w-none border-l-2 border-[var(--color-primary)]/30 pl-5 [overflow-wrap:anywhere] text-[var(--color-text-secondary)] md:prose-base prose-headings:font-bold prose-headings:text-[var(--color-text-primary)] prose-h1:text-2xl prose-h1:leading-snug prose-h2:text-xl prose-h3:text-lg prose-p:leading-7 prose-a:text-[var(--color-primary)] prose-img:rounded-xl"
                                 dangerouslySetInnerHTML={{
                                     __html: content.mission_body,
                                 }}
                             />
                         </div>
                         {content.mission_features.length > 0 && (
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
                                 {content.mission_features.map(
                                     ({ icon, label }, index) => (
                                         <div
                                             key={index}
-                                            className="flex flex-col items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-6 text-center"
+                                            className="flex min-w-0 flex-col items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-6 text-center"
                                         >
                                             <div className="flex size-12 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
                                                 <LazyCategoryIcon
@@ -122,7 +144,7 @@ function AboutPage({ content }: Props): React.JSX.Element {
                                                     className="size-6 text-[var(--color-primary)]"
                                                 />
                                             </div>
-                                            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                                            <p className="max-w-full text-sm font-semibold [overflow-wrap:anywhere] text-[var(--color-text-primary)]">
                                                 {label}
                                             </p>
                                         </div>
@@ -159,10 +181,10 @@ function AboutPage({ content }: Props): React.JSX.Element {
                                                 className="size-5 text-[var(--color-primary)]"
                                             />
                                         </div>
-                                        <h3 className="font-semibold text-[var(--color-text-primary)]">
+                                        <h3 className="font-semibold [overflow-wrap:anywhere] text-[var(--color-text-primary)]">
                                             {title}
                                         </h3>
-                                        <p className="text-sm leading-7 text-[var(--color-text-secondary)]">
+                                        <p className="text-sm leading-7 [overflow-wrap:anywhere] text-[var(--color-text-secondary)]">
                                             {description}
                                         </p>
                                     </div>
@@ -196,10 +218,10 @@ function AboutPage({ content }: Props): React.JSX.Element {
                                             {initials}
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-[var(--color-text-primary)]">
+                                            <p className="font-semibold [overflow-wrap:anywhere] text-[var(--color-text-primary)]">
                                                 {name}
                                             </p>
-                                            <p className="text-sm text-[var(--color-text-muted)]">
+                                            <p className="text-sm [overflow-wrap:anywhere] text-[var(--color-text-muted)]">
                                                 {role}
                                             </p>
                                         </div>
@@ -214,10 +236,10 @@ function AboutPage({ content }: Props): React.JSX.Element {
             {/* CTA */}
             <section className="border-t border-[var(--color-border)] bg-[var(--color-surface-alt)] py-16">
                 <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-                    <h2 className="text-3xl font-bold text-[var(--color-text-primary)]">
+                    <h2 className="text-3xl font-bold [overflow-wrap:anywhere] text-[var(--color-text-primary)]">
                         {content.cta_title}
                     </h2>
-                    <p className="mx-auto mt-3 max-w-xl text-[var(--color-text-secondary)]">
+                    <p className="mx-auto mt-3 max-w-xl [overflow-wrap:anywhere] text-[var(--color-text-secondary)]">
                         {content.cta_description}
                     </p>
                     <div className="mt-8 flex items-center justify-center gap-4">

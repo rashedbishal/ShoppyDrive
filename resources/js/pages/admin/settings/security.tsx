@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { Activity, Info, Lock, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 
 type LimitField =
     | 'orders_per_network_times'
@@ -363,6 +364,11 @@ function CronMonitoringCard({
                             }
                             placeholder="https://hc-ping.com/your-unique-id"
                             className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/15 focus:outline-none"
+                        />
+                        <CharCount
+                            value={form.data.heartbeat_ping_url}
+                            max={300}
+                            className="mt-1 block text-right"
                         />
                         {form.errors.heartbeat_ping_url && (
                             <p className="text-xs font-medium text-red-600">

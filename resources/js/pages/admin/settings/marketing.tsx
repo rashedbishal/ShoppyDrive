@@ -6,6 +6,7 @@ import {
 } from '@/components/admin/settings-field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -186,6 +187,14 @@ export default function MarketingSettingsEdit({
                                         }
                                         placeholder="G-XXXXXXXXXX"
                                     />
+                                    <CharCount
+                                        value={
+                                            trackingForm.data
+                                                .google_analytics_id
+                                        }
+                                        max={30}
+                                        className="mt-1 block text-right"
+                                    />
                                 </SettingsField>
                                 <SettingsField
                                     label="Facebook Pixel ID"
@@ -204,6 +213,13 @@ export default function MarketingSettingsEdit({
                                             )
                                         }
                                         placeholder="123456789012345"
+                                    />
+                                    <CharCount
+                                        value={
+                                            trackingForm.data.facebook_pixel_id
+                                        }
+                                        max={32}
+                                        className="mt-1 block text-right"
                                     />
                                 </SettingsField>
                             </div>
@@ -255,6 +271,14 @@ export default function MarketingSettingsEdit({
                                         )
                                     }
                                     placeholder="TEST12345"
+                                />
+                                <CharCount
+                                    value={
+                                        trackingForm.data
+                                            .facebook_conversions_api_test_event_code
+                                    }
+                                    max={20}
+                                    className="mt-1 block text-right"
                                 />
                             </SettingsField>
                             <SettingsField

@@ -57,7 +57,10 @@
       "Bash(awk '{print $2,$3}')",
       "Bash(awk '{print $1,$2,$3}')",
       "Bash(sed -i \"/'popular keyword order'/d\" tests/Feature/Admin/AdminFieldLimitsTest.php)",
-      "Bash(php -d auto_prepend_file=/tmp/claude-1000/-media-saadman-data3-Projects-ShoppyDrive/b97891a9-8a15-4416-8f6f-e9c8e67772a9/scratchpad/purifier_stub.php vendor/bin/pest tests/Feature/Admin/AdminFieldLimitsTest.php)"
+      "Bash(php -d auto_prepend_file=/tmp/claude-1000/-media-saadman-data3-Projects-ShoppyDrive/b97891a9-8a15-4416-8f6f-e9c8e67772a9/scratchpad/purifier_stub.php vendor/bin/pest tests/Feature/Admin/AdminFieldLimitsTest.php)",
+      "Bash(vendor/bin/pest --filter=\"AboutPageSettings|BlogTest|ProductDescriptionSanitization|LandingPageCustomContent|ContentSanitization|NewsletterSend|AdminFieldLimits|WebPush|ScheduledDatesTimezone|ProductionTransportSecurity|assertQueuedTimes|CodDuplicate\")",
+      "Bash(python3 /tmp/claude-1000/-media-saadman-data3-Projects-ShoppyDrive/b97891a9-8a15-4416-8f6f-e9c8e67772a9/scratchpad/scan4.py)",
+      "Bash(node /tmp/claude-1000/-media-saadman-data3-Projects-ShoppyDrive/b97891a9-8a15-4416-8f6f-e9c8e67772a9/scratchpad/dups.cjs)"
     ],
     "additionalDirectories": [
       "/media/saadman/data3/Projects/ShoppyDrive/resources/css",
