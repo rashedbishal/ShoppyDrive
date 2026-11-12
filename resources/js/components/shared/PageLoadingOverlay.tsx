@@ -1,44 +1,97 @@
 import { router } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
-import type { SharedPageProps } from '@/types';
+import LoadingLogoSpinner, {
+    LOADING_SCREEN_FIELDS,
+} from '@/components/shared/LoadingLogoSpinner';
+import type { AppSettings, SharedPageProps } from '@/types';
 
-function readInitialLogo(): string | null {
+type LoaderLook = {
+    logo: string | null;
+    seconds: number;
+    ringSize: number;
+    logoSize: number;
+    ringThickness: number;
+};
+
+/** A positive number from the shared settings, else the field's default. */
+function numberSetting(
+    settings: Partial<AppSettings> | undefined,
+    key: keyof typeof LOADING_SCREEN_FIELDS,
+): number {
+    const value = Number(settings?.[key]);
+
+    return Number.isFinite(value) && value > 0
+        ? value
+        : LOADING_SCREEN_FIELDS[key].default;
+}
+
+function lookFrom(settings: Partial<AppSettings> | undefined): LoaderLook {
+    return {
+        logo: settings?.loading_logo || settings?.logo || null,
+        seconds: numberSetting(settings, 'loading_spin_seconds'),
+        ringSize: numberSetting(settings, 'loading_ring_size'),
+        logoSize: numberSetting(settings, 'loading_logo_size'),
+        ringThickness: numberSetting(settings, 'loading_ring_thickness'),
+    };
+}
+
+function readInitialLook(): LoaderLook {
     try {
         const raw = document.getElementById('app')?.dataset.page;
 
         if (raw) {
-            const settings = JSON.parse(raw)?.props?.settings;
-
-            return settings?.loading_logo || settings?.logo || null;
+            return lookFrom(JSON.parse(raw)?.props?.settings);
         }
     } catch {
         // Missing or malformed page data: fall through to the default below.
     }
 
-    return null;
+    return lookFrom(undefined);
 }
 
 /**
- * Replaces Inertia's default top progress bar. Spins the CMS "Loading Logo"
- * (Settings ▸ General), falling back to the brand logo when none is set.
+ * Replaces Inertia's default top progress bar. Shows the CMS "Loading Logo"
+ * (Settings ▸ General, falling back to the brand logo) inside a ring that
+ * turns at the CMS speed, at the CMS sizes on desktop and scaled down on
+ * smaller screens.
  * Visits under ~150ms never show it at all, so fast/cached navigations
  * don't flash the overlay.
  */
 export default function PageLoadingOverlay(): React.JSX.Element {
     const [visible, setVisible] = useState(false);
-    const [logo, setLogo] = useState<string | null>(readInitialLogo);
+    const [look, setLook] = useState<LoaderLook>(readInitialLook);
     const showTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         return router.on('navigate', (event) => {
             const props = event.detail.page.props as SharedPageProps;
-            setLogo(
-                props.settings?.loading_logo || props.settings?.logo || null,
-            );
+            setLook(lookFrom(props.settings));
         });
     }, []);
+
+    // Download and decode the logo once, as soon as the page loads, and keep
+    // that image alive for the whole visit: the overlay is only on screen
+    // during a slow visit — exactly when a first download (or decode) of it
+    // would be slowest — so it must already be ready by then. The ref stops
+    // the browser from discarding the decoded image between visits.
+    const preloadedLogo = useRef<HTMLImageElement | null>(null);
+
+    useEffect(() => {
+        if (!look.logo) {
+            preloadedLogo.current = null;
+
+            return;
+        }
+
+        const image = new Image();
+        image.decoding = 'async';
+        image.src = look.logo;
+        image.decode().catch(() => {
+            // A broken or blocked image: the overlay still shows the ring.
+        });
+        preloadedLogo.current = image;
+    }, [look.logo]);
 
     useEffect(() => {
         const clearPendingShow = () => {
@@ -82,27 +135,13 @@ export default function PageLoadingOverlay(): React.JSX.Element {
                     transition={{ duration: 0.15 }}
                     className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/10 backdrop-blur-xl"
                 >
-                    <motion.span
-                        style={{ perspective: 600 }}
-                        animate={{ rotateY: 360 }}
-                        transition={{
-                            duration: 1.1,
-                            repeat: Infinity,
-                            ease: 'linear',
-                        }}
-                    >
-                        {logo ? (
-                            <img
-                                src={logo}
-                                alt="Loading"
-                                className="h-14 w-auto object-contain drop-shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
-                            />
-                        ) : (
-                            <span className="flex size-16 items-center justify-center rounded-2xl bg-[var(--color-secondary)] text-white shadow-[var(--shadow-modal)]">
-                                <AppLogoIcon className="size-8 fill-current text-white" />
-                            </span>
-                        )}
-                    </motion.span>
+                    <LoadingLogoSpinner
+                        logo={look.logo}
+                        seconds={look.seconds}
+                        ringSize={look.ringSize}
+                        logoSize={look.logoSize}
+                        ringThickness={look.ringThickness}
+                    />
                 </motion.div>
             )}
         </AnimatePresence>

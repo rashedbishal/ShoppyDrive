@@ -74,6 +74,10 @@ export interface AppSettings {
     site_name: string;
     logo?: string | null;
     loading_logo?: string | null;
+    loading_spin_seconds?: number;
+    loading_ring_size?: number;
+    loading_logo_size?: number;
+    loading_ring_thickness?: number;
     currency_symbol: string;
     contact_email: string;
     contact_phone?: string | null;

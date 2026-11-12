@@ -6,8 +6,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\ImageOptimizer;
 use App\Services\PathaoCourierService;
 use App\Services\SteadfastCourierService;
+use App\Support\LoadingScreenSettings;
 use App\Support\ReviewImageSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -74,7 +76,8 @@ class SettingController extends Controller
      * @var list<string>
      */
     private const GENERAL_FIELDS = [
-        'site_name', 'logo', 'loading_logo', 'currency_symbol', 'guest_checkout_enabled',
+        'site_name', 'logo', 'loading_logo', 'loading_spin_seconds', 'loading_ring_size', 'loading_logo_size',
+        'loading_ring_thickness', 'currency_symbol', 'guest_checkout_enabled',
         'review_images_enabled', 'review_images_max',
         'order_notification_email', 'order_cancellation_email',
         'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number', 'social_links',
@@ -148,7 +151,13 @@ class SettingController extends Controller
             'review_images_enabled' => ['nullable', 'boolean'],
             'review_images_max' => ['nullable', 'integer', 'min:1', 'max:'.ReviewImageSettings::MAX_PER_REVIEW_LIMIT],
             'logo' => $request->hasFile('logo') ? ['image', 'max:2048'] : ['nullable'],
-            'loading_logo' => $request->hasFile('loading_logo') ? ['image', 'max:2048'] : ['nullable'],
+            'loading_logo' => $request->hasFile('loading_logo')
+                ? ['image', 'max:2048', 'dimensions:max_width='.LoadingScreenSettings::LOGO_UPLOAD_MAX_SIDE.',max_height='.LoadingScreenSettings::LOGO_UPLOAD_MAX_SIDE]
+                : ['nullable'],
+            ...LoadingScreenSettings::rules(
+                $request,
+                Setting::whereIn('key', array_keys(LoadingScreenSettings::FIELDS))->pluck('value', 'key')->all(),
+            ),
             'social_links' => ['nullable', 'array'],
             'social_links.facebook' => ['nullable', 'string', 'max:300'],
             'social_links.instagram' => ['nullable', 'string', 'max:300'],
@@ -222,7 +231,9 @@ class SettingController extends Controller
             'daily_login_cap_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'points_redeem_value_bdt' => ['nullable', 'numeric', 'min:0', 'max:100000'],
             'points_redeem_max_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
-        ]);
+        ], [
+            'loading_logo.dimensions' => 'The loading logo can be at most '.LoadingScreenSettings::LOGO_UPLOAD_MAX_SIDE.' × '.LoadingScreenSettings::LOGO_UPLOAD_MAX_SIDE.' pixels. Please resize it and upload again.',
+        ], LoadingScreenSettings::attributes());
 
         // Handle logo upload separately
         if ($request->hasFile('logo')) {
@@ -238,6 +249,15 @@ class SettingController extends Controller
         }
 
         $this->saveLoadingLogo($request);
+
+        foreach (array_keys(LoadingScreenSettings::FIELDS) as $key) {
+            if ($request->filled($key)) {
+                Setting::updateOrCreate(
+                    ['key' => $key],
+                    ['value' => LoadingScreenSettings::normalize($key, $request->input($key)), 'group' => 'general'],
+                );
+            }
+        }
 
         // Handled separately (not via the generic loop below): this request
         // is sent as multipart/form-data (because of the logo upload above),
@@ -338,7 +358,9 @@ class SettingController extends Controller
             return;
         }
 
-        $path = $request->file('loading_logo')->store('logos', 'public');
+        // Resized and re-encoded (WebP where it comes out smaller) so the
+        // overlay never has to download and decode an oversized original.
+        $path = app(ImageOptimizer::class)->store($request->file('loading_logo'), 'logos', LoadingScreenSettings::LOGO_STORED_MAX_SIDE);
         Setting::updateOrCreate(['key' => 'loading_logo'], ['value' => '/storage/'.$path, 'group' => 'general']);
     }
 
@@ -410,7 +432,7 @@ class SettingController extends Controller
     private function getGroup(string $key): string
     {
         return match (true) {
-            in_array($key, ['site_name', 'logo', 'loading_logo', 'currency_symbol', 'guest_checkout_enabled']) => 'general',
+            in_array($key, ['site_name', 'logo', 'loading_logo', 'loading_spin_seconds', 'loading_ring_size', 'loading_logo_size', 'loading_ring_thickness', 'currency_symbol', 'guest_checkout_enabled']) => 'general',
             in_array($key, ['order_notification_email', 'order_cancellation_email']) => 'notifications',
             in_array($key, ['contact_email', 'contact_phone', 'contact_address', 'legal_business_name', 'trade_licence_number']) => 'contact',
             in_array($key, ['social_links']) => 'social',

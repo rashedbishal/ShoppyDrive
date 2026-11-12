@@ -1,16 +1,177 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useEffect, useMemo } from 'react';
 import {
     SettingsField,
     settingsInputClass,
 } from '@/components/admin/settings-field';
+import LoadingLogoSpinner, {
+    LOADING_DESKTOP_MIN_WIDTH_PX,
+    LOADING_PHONE_SCALE,
+    LOADING_SCREEN_FIELDS,
+} from '@/components/shared/LoadingLogoSpinner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 
 type Props = {
     settings: Record<string, string | Record<string, string> | null>;
 };
+
+type LoadingScreenKey = keyof typeof LOADING_SCREEN_FIELDS;
+
+/** Largest the CMS preview draws the ring; bigger rings are shown scaled down. */
+const LOADING_PREVIEW_MAX_PX = 180;
+
+const LOADING_FIELD_LABELS: Record<
+    LoadingScreenKey,
+    { name: string; unit: string }
+> = {
+    loading_spin_seconds: { name: 'Speed', unit: 'sec' },
+    loading_ring_size: { name: 'Ring diameter', unit: 'px' },
+    loading_logo_size: { name: 'Logo size', unit: 'px' },
+    loading_ring_thickness: { name: 'Ring thickness', unit: 'px' },
+};
+
+/**
+ * What's wrong with a typed loading-screen value, or null when it's fine.
+ * Mirrors LoadingScreenSettings::rules() on the server.
+ */
+function loadingValueError(
+    key: LoadingScreenKey,
+    raw: string,
+    ringSize: number | null,
+): string | null {
+    const { min, max, step } = LOADING_SCREEN_FIELDS[key];
+    const { name, unit } = LOADING_FIELD_LABELS[key];
+    const text = raw.trim();
+
+    if (text === '') {
+        return `Enter the ${name.toLowerCase()}.`;
+    }
+
+    if (!/^\d+(\.\d+)?$/.test(text)) {
+        return (
+            'Enter a number, like ' + LOADING_SCREEN_FIELDS[key].default + '.'
+        );
+    }
+
+    if (step === 1 && text.includes('.')) {
+        return 'Use a whole number of pixels.';
+    }
+
+    if (step !== 1 && /\.\d{2,}$/.test(text)) {
+        return 'Use at most one decimal place, like 1.5.';
+    }
+
+    const value = Number(text);
+
+    if (value < min || value > max) {
+        return `Must be between ${min} and ${max} ${unit}.`;
+    }
+
+    if (key === 'loading_logo_size' && ringSize !== null && value > ringSize) {
+        return `Can't be larger than the ring diameter (${ringSize} px).`;
+    }
+
+    return null;
+}
+
+/** The typed value when it's valid, else the field's default (for the preview and slider). */
+function usableLoadingValue(
+    key: LoadingScreenKey,
+    raw: string,
+    error: string | null,
+): number {
+    return error === null ? Number(raw) : LOADING_SCREEN_FIELDS[key].default;
+}
+
+/** One loading-screen number: a slider plus an exact-value box. */
+function LoadingScreenSlider({
+    field,
+    value,
+    sliderValue,
+    error,
+    onChange,
+}: {
+    field: LoadingScreenKey;
+    value: string;
+    sliderValue: number;
+    error?: string | null;
+    onChange: (value: string) => void;
+}): React.JSX.Element {
+    const { min, max, step } = LOADING_SCREEN_FIELDS[field];
+    const { name, unit } = LOADING_FIELD_LABELS[field];
+    const errorId = `${field}-error`;
+
+    return (
+        <div>
+            <div className="flex items-center gap-3">
+                <label
+                    htmlFor={field}
+                    className="w-24 shrink-0 text-sm text-slate-600"
+                >
+                    {name}
+                </label>
+                <input
+                    type="range"
+                    aria-label={`${name} slider`}
+                    min={min}
+                    max={max}
+                    step={step}
+                    value={sliderValue}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="min-w-0 flex-1 accent-[#EE5923]"
+                />
+                <input
+                    id={field}
+                    type="number"
+                    inputMode={step === 1 ? 'numeric' : 'decimal'}
+                    min={min}
+                    max={max}
+                    step={step}
+                    value={value}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={error ? errorId : undefined}
+                    onChange={(e) => onChange(e.target.value)}
+                    className={cn(
+                        settingsInputClass,
+                        'w-[4.5rem] shrink-0 px-2 text-right',
+                        error && 'border-red-400 focus:ring-red-500',
+                    )}
+                />
+                <span className="w-6 shrink-0 text-sm text-slate-500">
+                    {unit}
+                </span>
+            </div>
+            {error && (
+                <p id={errorId} className="mt-1 text-xs text-red-600">
+                    {error}
+                </p>
+            )}
+        </div>
+    );
+}
+
+/** A displayable URL for an image field holding a saved URL or a new File. */
+function useImagePreviewUrl(value: File | string | null): string | null {
+    const fileUrl = useMemo(
+        () => (value instanceof File ? URL.createObjectURL(value) : null),
+        [value],
+    );
+
+    useEffect(
+        () => () => {
+            if (fileUrl) {
+                URL.revokeObjectURL(fileUrl);
+            }
+        },
+        [fileUrl],
+    );
+
+    return typeof value === 'string' ? value || null : fileUrl;
+}
 
 export default function SettingsEdit({ settings }: Props) {
     const socialLinks = (settings.social_links ?? {}) as Record<string, string>;
@@ -31,6 +192,24 @@ export default function SettingsEdit({ settings }: Props) {
         loading_logo:
             (settings.loading_logo as string | null) ??
             (null as File | string | null),
+        // Kept as typed text so a half-typed or wrong value can be shown
+        // and explained instead of silently turning into a number.
+        loading_spin_seconds: String(
+            Number(settings.loading_spin_seconds) ||
+                LOADING_SCREEN_FIELDS.loading_spin_seconds.default,
+        ),
+        loading_ring_size: String(
+            Number(settings.loading_ring_size) ||
+                LOADING_SCREEN_FIELDS.loading_ring_size.default,
+        ),
+        loading_logo_size: String(
+            Number(settings.loading_logo_size) ||
+                LOADING_SCREEN_FIELDS.loading_logo_size.default,
+        ),
+        loading_ring_thickness: String(
+            Number(settings.loading_ring_thickness) ||
+                LOADING_SCREEN_FIELDS.loading_ring_thickness.default,
+        ),
         social_links: {
             facebook: socialLinks.facebook ?? '',
             instagram: socialLinks.instagram ?? '',
@@ -44,8 +223,71 @@ export default function SettingsEdit({ settings }: Props) {
         nagad_number: (settings.nagad_number as string) ?? '',
     });
 
+    const loadingLogoPreview = useImagePreviewUrl(data.loading_logo);
+    const brandLogoPreview = useImagePreviewUrl(data.logo);
+    const ringError = loadingValueError(
+        'loading_ring_size',
+        data.loading_ring_size,
+        null,
+    );
+    const previewRingSize = usableLoadingValue(
+        'loading_ring_size',
+        data.loading_ring_size,
+        ringError,
+    );
+    const loadingErrors: Record<LoadingScreenKey, string | null> = {
+        loading_spin_seconds: loadingValueError(
+            'loading_spin_seconds',
+            data.loading_spin_seconds,
+            null,
+        ),
+        loading_ring_size: ringError,
+        loading_logo_size: loadingValueError(
+            'loading_logo_size',
+            data.loading_logo_size,
+            ringError === null ? previewRingSize : null,
+        ),
+        loading_ring_thickness: loadingValueError(
+            'loading_ring_thickness',
+            data.loading_ring_thickness,
+            null,
+        ),
+    };
+    const hasLoadingErrors = Object.values(loadingErrors).some(
+        (error) => error !== null,
+    );
+    const previewSeconds = usableLoadingValue(
+        'loading_spin_seconds',
+        data.loading_spin_seconds,
+        loadingErrors.loading_spin_seconds,
+    );
+    const previewLogoSize = usableLoadingValue(
+        'loading_logo_size',
+        data.loading_logo_size,
+        loadingErrors.loading_logo_size,
+    );
+    const previewRingThickness = usableLoadingValue(
+        'loading_ring_thickness',
+        data.loading_ring_thickness,
+        loadingErrors.loading_ring_thickness,
+    );
+    const previewScale = Math.min(1, LOADING_PREVIEW_MAX_PX / previewRingSize);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (hasLoadingErrors) {
+            document
+                .getElementById(
+                    Object.keys(loadingErrors).find(
+                        (key) => loadingErrors[key as LoadingScreenKey],
+                    ) ?? '',
+                )
+                ?.focus();
+
+            return;
+        }
+
         post(route('admin.settings.update'), { forceFormData: true });
     };
 
@@ -125,7 +367,7 @@ export default function SettingsEdit({ settings }: Props) {
                             </SettingsField>
                             <SettingsField
                                 label="Loading Logo"
-                                hint="Spins in the middle of the screen while a page is loading. Leave empty to use the Brand Logo. A square image with a transparent background (PNG or WEBP) looks best — max 2 MB."
+                                hint="Shown in the middle of the screen while a page is loading, inside a turning ring. Leave empty to use the Brand Logo. A square image with a transparent background (PNG or WEBP) looks best — max 2 MB and 4096 × 4096 px. It's resized automatically so it loads fast."
                             >
                                 <ImageUpload
                                     value={data.loading_logo}
@@ -134,6 +376,104 @@ export default function SettingsEdit({ settings }: Props) {
                                     }
                                     previewClassName="h-32"
                                 />
+                            </SettingsField>
+                            <SettingsField
+                                label="Loading Screen"
+                                hint={`Speed is seconds for one full turn of the ring — smaller is faster. Sizes are for desktop screens (${LOADING_DESKTOP_MIN_WIDTH_PX}px wide and up); on smaller screens the ring, logo and thickness shrink together, down to ${LOADING_PHONE_SCALE * 100}% on phones.`}
+                            >
+                                <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                                    <div className="flex flex-1 flex-col gap-3">
+                                        <LoadingScreenSlider
+                                            field="loading_spin_seconds"
+                                            value={data.loading_spin_seconds}
+                                            sliderValue={previewSeconds}
+                                            error={
+                                                loadingErrors.loading_spin_seconds ??
+                                                errors.loading_spin_seconds
+                                            }
+                                            onChange={(value) =>
+                                                setData(
+                                                    'loading_spin_seconds',
+                                                    value,
+                                                )
+                                            }
+                                        />
+                                        <LoadingScreenSlider
+                                            field="loading_ring_size"
+                                            value={data.loading_ring_size}
+                                            sliderValue={previewRingSize}
+                                            error={
+                                                loadingErrors.loading_ring_size ??
+                                                errors.loading_ring_size
+                                            }
+                                            onChange={(value) =>
+                                                setData(
+                                                    'loading_ring_size',
+                                                    value,
+                                                )
+                                            }
+                                        />
+                                        <LoadingScreenSlider
+                                            field="loading_logo_size"
+                                            value={data.loading_logo_size}
+                                            sliderValue={previewLogoSize}
+                                            error={
+                                                loadingErrors.loading_logo_size ??
+                                                errors.loading_logo_size
+                                            }
+                                            onChange={(value) =>
+                                                setData(
+                                                    'loading_logo_size',
+                                                    value,
+                                                )
+                                            }
+                                        />
+                                        <LoadingScreenSlider
+                                            field="loading_ring_thickness"
+                                            value={data.loading_ring_thickness}
+                                            sliderValue={previewRingThickness}
+                                            error={
+                                                loadingErrors.loading_ring_thickness ??
+                                                errors.loading_ring_thickness
+                                            }
+                                            onChange={(value) =>
+                                                setData(
+                                                    'loading_ring_thickness',
+                                                    value,
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                    <div className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                        <div
+                                            className="flex items-center justify-center"
+                                            style={{
+                                                width: LOADING_PREVIEW_MAX_PX,
+                                                height: LOADING_PREVIEW_MAX_PX,
+                                            }}
+                                        >
+                                            <LoadingLogoSpinner
+                                                logo={
+                                                    loadingLogoPreview ??
+                                                    brandLogoPreview
+                                                }
+                                                seconds={previewSeconds}
+                                                ringSize={previewRingSize}
+                                                logoSize={previewLogoSize}
+                                                ringThickness={
+                                                    previewRingThickness
+                                                }
+                                                responsive={false}
+                                                maxSize={`${LOADING_PREVIEW_MAX_PX}px`}
+                                            />
+                                        </div>
+                                        <span className="text-xs text-slate-500">
+                                            {previewScale < 1
+                                                ? `Preview at ${Math.round(previewScale * 100)}% of real size`
+                                                : 'Preview at real size'}
+                                        </span>
+                                    </div>
+                                </div>
                             </SettingsField>
                             <SettingsField
                                 label="Allow Guest Checkout"
@@ -477,13 +817,20 @@ export default function SettingsEdit({ settings }: Props) {
                         </CardContent>
                     </Card>
 
-                    <Button
-                        type="submit"
-                        disabled={processing}
-                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
-                    >
-                        {processing ? 'Saving…' : 'Save Settings'}
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                        >
+                            {processing ? 'Saving…' : 'Save Settings'}
+                        </Button>
+                        {hasLoadingErrors && (
+                            <p className="text-sm text-red-600">
+                                Fix the Loading Screen values above to save.
+                            </p>
+                        )}
+                    </div>
                 </form>
             </div>
         </>

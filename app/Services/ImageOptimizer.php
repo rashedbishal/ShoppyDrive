@@ -41,11 +41,14 @@ class ImageOptimizer
     /**
      * Store an upload on the public disk and return its path there.
      *
+     * @param  int|null  $maxSide  longest side to fit within; null picks the
+     *                             directory's default (MAX_SIDE / WIDE_MAX_SIDE)
+     *
      * @throws RuntimeException when the file can't be written.
      */
-    public function store(UploadedFile $file, string $directory): string
+    public function store(UploadedFile $file, string $directory, ?int $maxSide = null): string
     {
-        $maxSide = in_array($directory, self::WIDE_DIRECTORIES, true) ? self::WIDE_MAX_SIDE : self::MAX_SIDE;
+        $maxSide ??= in_array($directory, self::WIDE_DIRECTORIES, true) ? self::WIDE_MAX_SIDE : self::MAX_SIDE;
         $path = (string) $file->getRealPath();
         $webp = function_exists('imagewebp') ? $this->encode($path, $maxSide, IMAGETYPE_WEBP) : null;
 

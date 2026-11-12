@@ -12,6 +12,7 @@ use App\Services\BundleService;
 use App\Support\AdminListUrl;
 use App\Support\CartManager;
 use App\Support\LayoutCache;
+use App\Support\LoadingScreenSettings;
 use App\Support\PasswordPolicy;
 use App\Support\SmsForwarderHeartbeat;
 use App\Support\WebPushConfig;
@@ -244,6 +245,8 @@ class HandleInertiaRequests extends Middleware
             'logo' => $db->get('logo'),
             // Shown by the page-loading overlay; null means it uses `logo`.
             'loading_logo' => $db->get('loading_logo'),
+            // The loader's speed and sizes, defaulted and clamped (LoadingScreenSettings).
+            ...LoadingScreenSettings::forFrontend($db->all()),
             'currency_symbol' => $db->get('currency_symbol', '৳'),
             'contact_email' => $db->get('contact_email', 'support@shoppydrive.com'),
             'contact_phone' => $db->get('contact_phone', '+880 1XXX XXXXXX'),

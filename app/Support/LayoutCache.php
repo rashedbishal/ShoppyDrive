@@ -54,7 +54,7 @@ final class LayoutCache
      * default for a missing key, so this fails safe, never a crash.
      */
     private const PUBLIC_SETTING_KEYS = [
-        'site_name', 'logo', 'loading_logo', 'currency_symbol', 'contact_email', 'contact_phone',
+        'site_name', 'logo', 'loading_logo', 'loading_spin_seconds', 'loading_ring_size', 'loading_logo_size', 'loading_ring_thickness', 'currency_symbol', 'contact_email', 'contact_phone',
         'contact_address', 'legal_business_name', 'trade_licence_number', 'contact_page_support_hours',
         'social_links', 'google_analytics_id', 'custom_header_code', 'custom_footer_code',
         'whatsapp_number', 'messenger_link', 'ai_assistant_enabled', 'referral_enabled',
