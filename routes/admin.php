@@ -45,6 +45,7 @@ use App\Http\Controllers\Admin\SecuritySettingsController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SmsForwarderSettingsController;
 use App\Http\Controllers\Admin\SmsPatternController;
+use App\Http\Controllers\Admin\StorageCleanupController;
 use App\Http\Controllers\Admin\SubCategoryController;
 use App\Http\Controllers\Admin\SystemMonitorController;
 use App\Support\AdminSections;
@@ -263,6 +264,15 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
         Route::get('/', [ErrorLogController::class, 'index'])->name('index');
         Route::get('download', [ErrorLogController::class, 'download'])->name('download')->middleware('throttle:mother-actions');
         Route::delete('/', [ErrorLogController::class, 'clear'])->name('clear')->middleware('throttle:mother-actions');
+    });
+
+    // The storage:audit command as a page. Mother admin only, so deliberately
+    // not in AdminSections: it moves and deletes files the whole site serves.
+    Route::middleware('admin.mother')->prefix('storage-cleanup')->name('storage-cleanup.')->group(function () {
+        Route::get('/', [StorageCleanupController::class, 'index'])->name('index');
+        Route::post('quarantine', [StorageCleanupController::class, 'quarantine'])->name('quarantine')->middleware('throttle:mother-actions');
+        Route::post('batches/{batch}/restore', [StorageCleanupController::class, 'restore'])->name('restore')->where('batch', '[0-9_\\-]+')->middleware('throttle:mother-actions');
+        Route::delete('batches/{batch}', [StorageCleanupController::class, 'destroy'])->name('destroy')->where('batch', '[0-9_\\-]+')->middleware('throttle:mother-actions');
     });
 
     // OPS-008: mother admin only, so deliberately not in AdminSections.

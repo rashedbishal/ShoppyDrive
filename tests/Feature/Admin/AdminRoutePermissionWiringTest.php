@@ -119,6 +119,15 @@ const LOW05_EXEMPT_ADMIN_ROUTES = [
     'admin.error-log.download',
     'admin.error-log.clear',
 
+    // Storage Clean-up: the storage:audit command as a page. Mother admin
+    // only, enforced by `admin.mother` on the route group (verified by
+    // StorageCleanupPageTest): it moves and deletes files the whole site
+    // serves, so it's deliberately not a grantable AdminSections entry.
+    'admin.storage-cleanup.index',
+    'admin.storage-cleanup.quarantine',
+    'admin.storage-cleanup.restore',
+    'admin.storage-cleanup.destroy',
+
     // DB-001: permanent order deletion is mother-admin only, confirmed
     // gated only by ['admin.mother', 'throttle:mother-actions'].
     'admin.orders.permanentDelete.confirm',
