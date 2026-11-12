@@ -242,6 +242,8 @@ class HandleInertiaRequests extends Middleware
         return [
             'site_name' => $db->get('site_name', config('app.name', 'ShoppyDrive')),
             'logo' => $db->get('logo'),
+            // Shown by the page-loading overlay; null means it uses `logo`.
+            'loading_logo' => $db->get('loading_logo'),
             'currency_symbol' => $db->get('currency_symbol', '৳'),
             'contact_email' => $db->get('contact_email', 'support@shoppydrive.com'),
             'contact_phone' => $db->get('contact_phone', '+880 1XXX XXXXXX'),

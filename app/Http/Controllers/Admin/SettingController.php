@@ -74,7 +74,7 @@ class SettingController extends Controller
      * @var list<string>
      */
     private const GENERAL_FIELDS = [
-        'site_name', 'logo', 'currency_symbol', 'guest_checkout_enabled',
+        'site_name', 'logo', 'loading_logo', 'currency_symbol', 'guest_checkout_enabled',
         'review_images_enabled', 'review_images_max',
         'order_notification_email', 'order_cancellation_email',
         'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number', 'social_links',
@@ -148,6 +148,7 @@ class SettingController extends Controller
             'review_images_enabled' => ['nullable', 'boolean'],
             'review_images_max' => ['nullable', 'integer', 'min:1', 'max:'.ReviewImageSettings::MAX_PER_REVIEW_LIMIT],
             'logo' => $request->hasFile('logo') ? ['image', 'max:2048'] : ['nullable'],
+            'loading_logo' => $request->hasFile('loading_logo') ? ['image', 'max:2048'] : ['nullable'],
             'social_links' => ['nullable', 'array'],
             'social_links.facebook' => ['nullable', 'string', 'max:500'],
             'social_links.instagram' => ['nullable', 'string', 'max:500'],
@@ -236,6 +237,8 @@ class SettingController extends Controller
             Setting::updateOrCreate(['key' => 'logo'], ['value' => '/storage/'.$path, 'group' => 'general']);
         }
 
+        $this->saveLoadingLogo($request);
+
         // Handled separately (not via the generic loop below): this request
         // is sent as multipart/form-data (because of the logo upload above),
         // which stringifies booleans — $request->input() would store the
@@ -308,6 +311,38 @@ class SettingController extends Controller
     }
 
     /**
+     * The image the storefront's page-loading overlay spins
+     * (PageLoadingOverlay.tsx). A new upload replaces the old file; an
+     * explicitly emptied field removes it, so the overlay falls back to the
+     * brand logo again. Any other submitted value (the current URL echoed
+     * back by the form) leaves it untouched and is never stored.
+     */
+    private function saveLoadingLogo(Request $request): void
+    {
+        $isUpload = $request->hasFile('loading_logo');
+        $isRemoval = ! $isUpload && $request->has('loading_logo') && $request->input('loading_logo') === null;
+
+        if (! $isUpload && ! $isRemoval) {
+            return;
+        }
+
+        $existing = Setting::where('key', 'loading_logo')->first();
+
+        if ($existing?->value && str_starts_with((string) $existing->value, '/storage/')) {
+            Storage::disk('public')->delete(substr((string) $existing->value, strlen('/storage/')));
+        }
+
+        if ($isRemoval) {
+            $existing?->delete();
+
+            return;
+        }
+
+        $path = $request->file('loading_logo')->store('logos', 'public');
+        Setting::updateOrCreate(['key' => 'loading_logo'], ['value' => '/storage/'.$path, 'group' => 'general']);
+    }
+
+    /**
      * Checks that the admin has `update` on every section whose fields are
      * actually present in this request — anything not listed in
      * FIELD_GROUPS belongs to the main `settings` section.
@@ -375,7 +410,7 @@ class SettingController extends Controller
     private function getGroup(string $key): string
     {
         return match (true) {
-            in_array($key, ['site_name', 'logo', 'currency_symbol', 'guest_checkout_enabled']) => 'general',
+            in_array($key, ['site_name', 'logo', 'loading_logo', 'currency_symbol', 'guest_checkout_enabled']) => 'general',
             in_array($key, ['order_notification_email', 'order_cancellation_email']) => 'notifications',
             in_array($key, ['contact_email', 'contact_phone', 'contact_address', 'legal_business_name', 'trade_licence_number']) => 'contact',
             in_array($key, ['social_links']) => 'social',

@@ -73,6 +73,7 @@ export interface Auth {
 export interface AppSettings {
     site_name: string;
     logo?: string | null;
+    loading_logo?: string | null;
     currency_symbol: string;
     contact_email: string;
     contact_phone?: string | null;

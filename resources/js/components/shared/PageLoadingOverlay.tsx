@@ -9,7 +9,9 @@ function readInitialLogo(): string | null {
         const raw = document.getElementById('app')?.dataset.page;
 
         if (raw) {
-            return JSON.parse(raw)?.props?.settings?.logo ?? null;
+            const settings = JSON.parse(raw)?.props?.settings;
+
+            return settings?.loading_logo || settings?.logo || null;
         }
     } catch {
         // Missing or malformed page data: fall through to the default below.
@@ -19,8 +21,10 @@ function readInitialLogo(): string | null {
 }
 
 /**
- * Replaces Inertia's default top progress bar. Visits under ~150ms never
- * show it at all, so fast/cached navigations don't flash the overlay.
+ * Replaces Inertia's default top progress bar. Spins the CMS "Loading Logo"
+ * (Settings ▸ General), falling back to the brand logo when none is set.
+ * Visits under ~150ms never show it at all, so fast/cached navigations
+ * don't flash the overlay.
  */
 export default function PageLoadingOverlay(): React.JSX.Element {
     const [visible, setVisible] = useState(false);
@@ -30,7 +34,9 @@ export default function PageLoadingOverlay(): React.JSX.Element {
     useEffect(() => {
         return router.on('navigate', (event) => {
             const props = event.detail.page.props as SharedPageProps;
-            setLogo(props.settings?.logo ?? null);
+            setLogo(
+                props.settings?.loading_logo || props.settings?.logo || null,
+            );
         });
     }, []);
 

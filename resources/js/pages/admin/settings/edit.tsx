@@ -28,6 +28,9 @@ export default function SettingsEdit({ settings }: Props) {
             (settings.order_cancellation_email as string) ?? '',
         logo:
             (settings.logo as string | null) ?? (null as File | string | null),
+        loading_logo:
+            (settings.loading_logo as string | null) ??
+            (null as File | string | null),
         social_links: {
             facebook: socialLinks.facebook ?? '',
             instagram: socialLinks.instagram ?? '',
@@ -115,6 +118,18 @@ export default function SettingsEdit({ settings }: Props) {
                                 <ImageUpload
                                     value={data.logo}
                                     onChange={(file) => setData('logo', file)}
+                                    previewClassName="h-32"
+                                />
+                            </SettingsField>
+                            <SettingsField
+                                label="Loading Logo"
+                                hint="Spins in the middle of the screen while a page is loading. Leave empty to use the Brand Logo. A square image with a transparent background (PNG or WEBP) looks best — max 2 MB."
+                            >
+                                <ImageUpload
+                                    value={data.loading_logo}
+                                    onChange={(file) =>
+                                        setData('loading_logo', file)
+                                    }
                                     previewClassName="h-32"
                                 />
                             </SettingsField>
