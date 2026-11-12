@@ -435,15 +435,29 @@ export default function ProductDetail({
             return;
         }
 
-        addItem({
+        const added = addItem({
             product,
             quantity,
             variant: selectedVariant,
         });
+
+        if (added === 0) {
+            addToast({
+                type: 'warning',
+                title: 'No more stock',
+                message: `Your cart already has all available ${product.name}.`,
+            });
+
+            return;
+        }
+
         addToast({
-            type: 'success',
+            type: added < quantity ? 'info' : 'success',
             title: 'Added to cart',
-            message: `${product.name} added to your cart.`,
+            message:
+                added < quantity
+                    ? `Only ${added} more ${product.name} could be added — your cart now has all available stock.`
+                    : `${product.name} added to your cart.`,
         });
     };
 

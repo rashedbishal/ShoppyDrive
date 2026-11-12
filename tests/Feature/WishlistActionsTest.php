@@ -351,3 +351,22 @@ test('a wishlist of only out-of-stock products adds nothing and says so', functi
     expect(Cart::where('user_id', $user->id)->exists())->toBeFalse();
     expect(Wishlist::where('user_id', $user->id)->count())->toBe(2);
 });
+
+test('add all to cart never takes a cart line above the product stock', function () {
+    $user = User::factory()->create();
+    $full = Product::factory()->create(['stock_quantity' => 20, 'is_active' => true, 'published_at' => now()->subDay()]);
+    $partial = Product::factory()->create(['stock_quantity' => 20, 'is_active' => true, 'published_at' => now()->subDay()]);
+    $cart = Cart::create(['user_id' => $user->id]);
+    $cart->items()->create(['product_id' => $full->id, 'variant_id' => null, 'quantity' => 20, 'price' => $full->price]);
+    $cart->items()->create(['product_id' => $partial->id, 'variant_id' => null, 'quantity' => 19, 'price' => $partial->price]);
+    Wishlist::create(['user_id' => $user->id, 'product_id' => $full->id]);
+    Wishlist::create(['user_id' => $user->id, 'product_id' => $partial->id]);
+
+    actingAs($user)->postJson(route('wishlist.add-all-to-cart'))
+        ->assertOk()
+        ->assertJson(['added' => 1, 'skipped_already_in_cart' => 1])
+        ->assertJsonPath('message', '1 item added to your cart. 1 item is already in your cart with all available stock, so it stayed on your wishlist.');
+
+    expect($cart->items()->pluck('quantity', 'product_id')->all())->toBe([$full->id => 20, $partial->id => 20]);
+    expect(Wishlist::where('user_id', $user->id)->pluck('product_id')->all())->toBe([$full->id]);
+});

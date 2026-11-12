@@ -127,7 +127,21 @@ export function ProductCard({
             return;
         }
 
-        addItem({ product, quantity: 1, variant: defaultVariant });
+        const added = addItem({
+            product,
+            quantity: 1,
+            variant: defaultVariant,
+        });
+
+        if (added === 0) {
+            addToast({
+                type: 'warning',
+                title: 'No more stock',
+                message: `Your cart already has all available ${product.name}.`,
+            });
+
+            return;
+        }
 
         if (openCartOnAdd) {
             openCart();

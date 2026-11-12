@@ -98,3 +98,18 @@ test('authenticated cart is restored from the database after logout and login', 
             ->where('cart.items.0.quantity', 2)
         );
 });
+
+test('adding to a cart line never takes it above stock, and never shrinks what it held', function () {
+    $user = User::factory()->create();
+    $product = Product::factory()->create(['stock_quantity' => 20, 'is_active' => true, 'published_at' => now()->subDay()]);
+    $soldOut = Product::factory()->create(['stock_quantity' => 0, 'is_active' => true, 'published_at' => now()->subDay()]);
+    $cart = Cart::create(['user_id' => $user->id]);
+    $cart->items()->create(['product_id' => $product->id, 'variant_id' => null, 'quantity' => 18, 'price' => $product->price]);
+    $cart->items()->create(['product_id' => $soldOut->id, 'variant_id' => null, 'quantity' => 2, 'price' => $soldOut->price]);
+
+    $this->actingAs($user)->post(route('cart.store'), ['product_id' => $product->id, 'quantity' => 5]);
+    $this->actingAs($user)->post(route('cart.store'), ['product_id' => $product->id, 'quantity' => 1]);
+
+    expect($cart->items()->where('product_id', $product->id)->value('quantity'))->toBe(20);
+    expect($cart->items()->where('product_id', $soldOut->id)->value('quantity'))->toBe(2);
+});

@@ -47,7 +47,12 @@ type CartStoreState = {
     /** Active bundle recipes, kept in sync with the `active_bundle_recipes` shared prop by app.tsx — not persisted, it's catalog data, not cart state. */
     bundleRecipes: BundleRecipe[];
     setBundleRecipes: (recipes: BundleRecipe[]) => void;
-    addItem: (payload: CartPayload) => void;
+    /**
+     * Returns how many units were actually added: a plain (non-bundle) line
+     * never goes above its product's or variant's stock, so 0 means the cart
+     * already holds every unit there is.
+     */
+    addItem: (payload: CartPayload) => number;
     removeItem: (itemKey: string) => void;
     updateQuantity: (itemKey: string, quantity: number) => void;
     updateBundleQuantity: (bundleId: number, multiplier: number) => void;
@@ -238,12 +243,35 @@ export const useCartStore = create<CartStoreState>()(
                     payload.variant ?? null,
                     payload.bundleId ?? null,
                 );
-                const quantity = Math.max(1, payload.quantity ?? 1);
+                const requestedQuantity = Math.max(1, payload.quantity ?? 1);
                 const price = getItemPrice(
                     payload.product,
                     payload.variant ?? null,
                     payload.price,
                 );
+                // Tester report: with all 20 in the cart, adding the product
+                // again (from the wishlist page) made it 21. A plain line is
+                // capped at the same stock the cart page's stepper allows.
+                // Bundle lines are left to the bundle's own set limit.
+                const lineStock =
+                    payload.bundleId == null
+                        ? (payload.variant?.stock_quantity ??
+                          payload.product.stock_quantity)
+                        : null;
+                const alreadyInCart =
+                    get().items.find((item) => item.item_key === itemKey)
+                        ?.quantity ?? 0;
+                const quantity =
+                    typeof lineStock === 'number'
+                        ? Math.min(
+                              requestedQuantity,
+                              Math.max(0, lineStock - alreadyInCart),
+                          )
+                        : requestedQuantity;
+
+                if (quantity <= 0) {
+                    return 0;
+                }
 
                 set((state) => {
                     const existingItem = state.items.find(
@@ -333,6 +361,8 @@ export const useCartStore = create<CartStoreState>()(
                         ),
                     );
                 }
+
+                return quantity;
             },
             removeItem: (itemKey) => {
                 const removed = get().items.filter(

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\CartItem;
 use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Models\User;
@@ -142,7 +143,7 @@ class WishlistController extends Controller
     {
         $user = $request->user();
 
-        [$cart, $added, $needsOptions, $outOfStock, $unavailable] = DB::transaction(function () use ($user): array {
+        [$cart, $added, $needsOptions, $outOfStock, $unavailable, $alreadyFull] = DB::transaction(function () use ($user): array {
             User::query()->whereKey($user->id)->lockForUpdate()->first();
 
             $productIds = Wishlist::where('user_id', $user->id)->pluck('product_id');
@@ -152,8 +153,19 @@ class WishlistController extends Controller
             // cart anyway (only to be refused at checkout). It stays on the
             // wishlist instead, like the product card's own Add to Cart. A
             // variant-less product's stock_quantity is its real stock.
-            $addable = $variantLess->filter(fn (Product $product): bool => $product->stock_quantity > 0)->pluck('id');
-            $outOfStock = $variantLess->count() - $addable->count();
+            $inStock = $variantLess->filter(fn (Product $product): bool => $product->stock_quantity > 0);
+            $outOfStock = $variantLess->count() - $inStock->count();
+            // Tester report: with all 20 of a product already in the cart,
+            // adding it from the wishlist made it 21. One whose cart line
+            // already holds all its stock stays on the wishlist instead.
+            $inCart = CartItem::query()
+                ->whereHas('cart', fn ($query) => $query->where('user_id', $user->id))
+                ->whereNull('variant_id')
+                ->whereNull('bundle_id')
+                ->whereIn('product_id', $inStock->pluck('id'))
+                ->pluck('quantity', 'product_id');
+            $addable = $inStock->filter(fn (Product $product): bool => $product->stock_quantity > (int) ($inCart[$product->id] ?? 0))->pluck('id');
+            $alreadyFull = $inStock->count() - $addable->count();
 
             $cart = null;
 
@@ -167,10 +179,10 @@ class WishlistController extends Controller
                 Wishlist::where('user_id', $user->id)->whereIn('product_id', $addable)->delete();
             }
 
-            return [$cart, $addable->count(), $buyable->count() - $variantLess->count(), $outOfStock, $productIds->count() - $buyable->count()];
+            return [$cart, $addable->count(), $buyable->count() - $variantLess->count(), $outOfStock, $productIds->count() - $buyable->count(), $alreadyFull];
         });
 
-        $message = $this->addAllMessage($added, $needsOptions, $outOfStock, $unavailable);
+        $message = $this->addAllMessage($added, $needsOptions, $outOfStock, $unavailable, $alreadyFull);
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -179,20 +191,21 @@ class WishlistController extends Controller
                 'skipped_needs_options' => $needsOptions,
                 'skipped_out_of_stock' => $outOfStock,
                 'skipped_unavailable' => $unavailable,
+                'skipped_already_in_cart' => $alreadyFull,
                 'cart' => $cart === null ? null : $this->cartManager->serialize($cart),
             ]);
         }
 
-        return back()->with($added > 0 && $needsOptions + $outOfStock + $unavailable === 0 ? 'success' : 'info', $message);
+        return back()->with($added > 0 && $needsOptions + $outOfStock + $unavailable + $alreadyFull === 0 ? 'success' : 'info', $message);
     }
 
-    private function addAllMessage(int $added, int $needsOptions, int $outOfStock, int $unavailable): string
+    private function addAllMessage(int $added, int $needsOptions, int $outOfStock, int $unavailable, int $alreadyFull): string
     {
-        if ($added + $needsOptions + $outOfStock + $unavailable === 0) {
+        if ($added + $needsOptions + $outOfStock + $unavailable + $alreadyFull === 0) {
             return 'Your wishlist is empty.';
         }
 
-        if ($needsOptions + $outOfStock + $unavailable === 0) {
+        if ($needsOptions + $outOfStock + $unavailable + $alreadyFull === 0) {
             return 'All items added to cart';
         }
 
@@ -202,6 +215,8 @@ class WishlistController extends Controller
             $needsOptions > 1 ? "{$needsOptions} items need a size or colour chosen on the product page, so they stayed on your wishlist." : null,
             $outOfStock === 1 ? '1 item is out of stock, so it stayed on your wishlist.' : null,
             $outOfStock > 1 ? "{$outOfStock} items are out of stock, so they stayed on your wishlist." : null,
+            $alreadyFull === 1 ? '1 item is already in your cart with all available stock, so it stayed on your wishlist.' : null,
+            $alreadyFull > 1 ? "{$alreadyFull} items are already in your cart with all available stock, so they stayed on your wishlist." : null,
             $unavailable === 1 ? '1 item is no longer available, so it was not added.' : null,
             $unavailable > 1 ? "{$unavailable} items are no longer available, so they were not added." : null,
         ])->filter()->implode(' ');

@@ -193,10 +193,16 @@ test('a cart changed during checkout is refused, and the same token can retry', 
     expect(Cart::where('user_id', $this->user->id)->count())->toBeLessThanOrEqual(1);
 })->with(['cod', 'mobile_banking']);
 
-test('stock is still enforced at checkout, not when adding to the cart', function () {
+test('adding is capped at stock, and checkout still refuses a line stock fell below', function () {
     $this->product->update(['stock_quantity' => 1]);
 
     $this->manager->syncUserCart($this->user, [['product_id' => $this->product->id, 'variant_id' => null, 'quantity' => 2]], merge: true);
+
+    expect(cartRows($this->user)->first()->quantity)->toBe(1);
+
+    $this->product->update(['stock_quantity' => 2]);
+    $this->manager->syncUserCart($this->user, [['product_id' => $this->product->id, 'variant_id' => null, 'quantity' => 1]], merge: true);
+    $this->product->update(['stock_quantity' => 1]);
 
     expect(cartRows($this->user)->first()->quantity)->toBe(2);
 

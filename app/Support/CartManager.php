@@ -564,7 +564,25 @@ class CartManager
                 ->where('bundle_id', $bundleId)
                 ->first();
 
-            $quantity = $payload['quantity'] + ($existingItem?->quantity ?? 0);
+            $existingQuantity = (int) ($existingItem?->quantity ?? 0);
+            $quantity = $payload['quantity'] + $existingQuantity;
+
+            // Tester report: adding a product whose full stock was already in
+            // the cart (from the wishlist) took the line above stock. A plain
+            // line is capped at stock, the same rule as mergeDuplicateRows(),
+            // but never below what the cart already held. Bundle lines are
+            // left to the bundle's own set limit; a sold-out line is kept as
+            // before (not silently dropped) for checkout to report.
+            if ($bundleId === null) {
+                $stock = (int) ($payload['variant_id'] !== null
+                    ? ProductVariant::query()->whereKey($payload['variant_id'])->value('stock_quantity')
+                    : Product::query()->whereKey($payload['product_id'])->value('stock_quantity'));
+
+                if ($stock > 0) {
+                    $quantity = max($existingQuantity, min($quantity, $stock));
+                }
+            }
+
             $price = $this->resolvePrice($payload['product_id'], $payload['variant_id'], $bundleId);
 
             $cart->items()->updateOrCreate(
