@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ReceivedSms;
 use App\Support\AdminListUrl;
+use App\Support\PaidOrderStockFailure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -59,6 +60,11 @@ class ReceivedSmsController extends Controller
 
         return Inertia::render('admin/received-sms/index', [
             'sms' => $sms,
+            // DISC-19: paid checkouts that couldn't become an order, shown
+            // only on their own SMS and only while it is still unmatched.
+            'stockFailures' => (object) PaidOrderStockFailure::forUnmatchedSms(
+                $sms->getCollection()->where('is_matched', false)->pluck('id'),
+            ),
             'filters' => $request->only(['search', 'matched']),
         ]);
     }

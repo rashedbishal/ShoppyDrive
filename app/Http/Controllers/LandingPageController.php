@@ -24,6 +24,7 @@ use App\Support\BangladeshDistricts;
 use App\Support\BangladeshiPhone;
 use App\Support\CartManager;
 use App\Support\OrderNumberGenerator;
+use App\Support\PaidOrderStockFailure;
 use App\Support\SafeLogContext;
 use App\Support\SmsForwarderHeartbeat;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -574,8 +575,11 @@ class LandingPageController extends Controller
         $expectedAmount = (float) $pending->checkout_data['total'];
         $guestToken = $pending->guest_token ?? $pending->checkout_data['guest_token'];
 
+        // DISC-19: see MobilePaymentController::submit().
+        $verifiedSms = null;
+
         try {
-            $order = DB::transaction(function () use ($pending, $provider, $transactionId, $expectedAmount, $guestToken): Order {
+            $order = DB::transaction(function () use ($pending, $provider, $transactionId, $expectedAmount, $guestToken, &$verifiedSms): Order {
                 $freshPending = PendingCheckout::lockForUpdate()->find($pending->id);
 
                 if ($freshPending === null || $freshPending->isExpired()) {
@@ -628,6 +632,8 @@ class LandingPageController extends Controller
                 if (abs($sms->parsed_amount - $expectedAmount) > 1) {
                     throw new \RuntimeException('amount_mismatch:'.$sms->parsed_amount);
                 }
+
+                $verifiedSms = $sms;
 
                 $data = $freshPending->checkout_data;
                 $providerLabel = $provider === 'bkash' ? 'Bkash' : 'Nagad';
@@ -697,6 +703,8 @@ class LandingPageController extends Controller
             session()->flash('lp_pending_payment', $pendingFlash);
 
             return match (true) {
+                $e instanceof InsufficientStockException && $verifiedSms !== null => redirect()->route('lp.show', $slug)
+                    ->withErrors(['transaction_id' => PaidOrderStockFailure::handle($pending, $verifiedSms, $provider, $transactionId, $e)]),
                 $e instanceof InsufficientStockException => redirect()->route('lp.show', $slug)
                     ->withErrors(['transaction_id' => $msg]),
                 $msg === 'not_found' => redirect()->route('lp.show', $slug)

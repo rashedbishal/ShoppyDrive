@@ -8,13 +8,26 @@ use RuntimeException;
 
 class InsufficientStockException extends RuntimeException
 {
+    /**
+     * DISC-19: the product that ran short, when known, so a caller can name
+     * it without parsing the message. Null for a generic placeholder.
+     */
+    public ?string $productName = null;
+
     public static function forProduct(string $productName, int $available): self
     {
         $message = $available > 0
             ? "Only {$available} unit(s) of \"{$productName}\" left in stock."
             : "\"{$productName}\" is out of stock.";
 
-        return new self($message);
+        return self::naming(new self($message), $productName);
+    }
+
+    private static function naming(self $exception, string $productName): self
+    {
+        $exception->productName = $productName === 'this item' ? null : $productName;
+
+        return $exception;
     }
 
     /**
@@ -44,6 +57,6 @@ class InsufficientStockException extends RuntimeException
 
     public static function forFlashSaleLimit(string $productName): self
     {
-        return new self("The flash-sale stock limit for \"{$productName}\" has been reached.");
+        return self::naming(new self("The flash-sale stock limit for \"{$productName}\" has been reached."), $productName);
     }
 }

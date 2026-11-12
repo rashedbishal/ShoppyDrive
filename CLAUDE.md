@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Mandatory Session-Resume Protocol (pre-launch remediation, since 2026-11-13)
+
+Every session, before any ShoppyDrive work:
+
+1. Read this file.
+2. Read the **"PRODUCTION REMEDIATION CONTROL" section at the top of `docs/SHAPPYDRIVE_AUDIT_REMEDIATION_TRACKER.md`**: its mission, current focus, findings register, work history and deferred list.
+3. Check `git status` and the current commit. Compare them with the recorded progress; report and reconcile any discrepancy rather than trusting either side.
+4. Continue from the recorded current focus. Never restart the discovery audit unless the owner asks.
+5. Never implement a finding before presenting it to the owner and receiving explicit approval. One finding per approval; fix only the approved scope.
+6. Update that section immediately after every change.
+
 ## Mandatory ShoppyDrive Session Handoff
 
 Before doing anything on ShoppyDrive, read these files completely, in this order:

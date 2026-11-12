@@ -29,9 +29,19 @@ type ReceivedSms = {
     created_at: string;
 };
 
+type StockFailure = {
+    unavailable_item: string | null;
+    recorded_at: string | null;
+    order_number: string | null;
+    customer_name: string | null;
+    customer_phone: string | null;
+    landing_page: boolean;
+};
+
 type Props = {
     sms: PaginatedData<ReceivedSms>;
     filters: { search?: string; matched?: string };
+    stockFailures: Record<number, StockFailure>;
 };
 
 function DeleteModal({
@@ -153,7 +163,11 @@ function DeleteModal({
     );
 }
 
-export default function ReceivedSmsIndex({ sms, filters }: Props) {
+export default function ReceivedSmsIndex({
+    sms,
+    filters,
+    stockFailures,
+}: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [deletingItem, setDeletingItem] = useState<ReceivedSms | null>(null);
 
@@ -350,6 +364,37 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
                                             <p className="line-clamp-2 text-xs leading-relaxed text-slate-500">
                                                 {item.content}
                                             </p>
+                                            {!item.is_matched &&
+                                                stockFailures[item.id] && (
+                                                    <p className="rounded-md bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">
+                                                        Paid — order not
+                                                        created:{' '}
+                                                        {stockFailures[item.id]
+                                                            .unavailable_item ??
+                                                            'an item'}{' '}
+                                                        unavailable. Customer{' '}
+                                                        {stockFailures[item.id]
+                                                            .customer_name ??
+                                                            'N/A'}{' '}
+                                                        (
+                                                        {stockFailures[item.id]
+                                                            .customer_phone ??
+                                                            'N/A'}
+                                                        ), intended order{' '}
+                                                        {stockFailures[item.id]
+                                                            .order_number ??
+                                                            'N/A'}
+                                                        {stockFailures[item.id]
+                                                            .landing_page
+                                                            ? ' (landing page)'
+                                                            : ''}
+                                                        . Contact the
+                                                        customer. This note
+                                                        clears once the SMS
+                                                        is matched to an
+                                                        order or deleted.
+                                                    </p>
+                                                )}
                                             {item.matched_order && (
                                                 <Link
                                                     href={route(

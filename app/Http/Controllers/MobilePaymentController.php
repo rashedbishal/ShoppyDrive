@@ -20,6 +20,7 @@ use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
 use App\Support\OrderConfirmationAccess;
+use App\Support\PaidOrderStockFailure;
 use App\Support\SafeLogContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -136,8 +137,12 @@ class MobilePaymentController extends Controller
 
         $expectedAmount = (float) $pending->checkout_data['total'];
 
+        // DISC-19: set once the SMS has passed every payment check, so a
+        // stock failure after that point is known to be a paid one.
+        $verifiedSms = null;
+
         try {
-            $order = DB::transaction(function () use ($pending, $provider, $transactionId, $expectedAmount): Order {
+            $order = DB::transaction(function () use ($pending, $provider, $transactionId, $expectedAmount, &$verifiedSms): Order {
                 // The purchaser's lock comes first so this expiry check can't
                 // pass while a concurrent checkout, holding that lock, already
                 // treats the reservation as expired and spends the same points.
@@ -204,6 +209,8 @@ class MobilePaymentController extends Controller
                 if (abs($sms->parsed_amount - $expectedAmount) > 1) {
                     throw new \RuntimeException('amount_mismatch:'.$sms->parsed_amount);
                 }
+
+                $verifiedSms = $sms;
 
                 $data = $freshPending->checkout_data;
                 $providerLabel = $provider === 'bkash' ? 'Bkash' : 'Nagad';
@@ -317,6 +324,10 @@ class MobilePaymentController extends Controller
             $providerLabel = $provider === 'bkash' ? 'Bkash' : 'Nagad';
 
             return match (true) {
+                $e instanceof InsufficientStockException && $verifiedSms !== null => back()->withErrors([
+                    'transaction_id' => PaidOrderStockFailure::handle($pending, $verifiedSms, $provider, $transactionId, $e),
+                ]),
+
                 $e instanceof InsufficientStockException => back()->withErrors([
                     'transaction_id' => $msg,
                 ]),
