@@ -1,7 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { Mail } from 'lucide-react';
 import { useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import { SiteLogo } from '@/components/shared/SiteLogo';
 
 export default function Manage(): React.JSX.Element {
     const { data, setData, post, processing } = useForm({ email: '' });
@@ -20,13 +20,8 @@ export default function Manage(): React.JSX.Element {
 
             <div className="w-full max-w-[440px]">
                 <div className="mb-8 flex justify-center">
-                    <Link href="/" className="inline-flex items-center gap-2.5">
-                        <span className="flex size-9 items-center justify-center rounded-xl bg-[#c8102e]">
-                            <AppLogoIcon className="size-4 fill-current text-white" />
-                        </span>
-                        <span className="text-lg font-bold text-gray-900">
-                            ShoppyDrive
-                        </span>
+                    <Link href="/" className="inline-flex items-center">
+                        <SiteLogo className="h-11" />
                     </Link>
                 </div>
 

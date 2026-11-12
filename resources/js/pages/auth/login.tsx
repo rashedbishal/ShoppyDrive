@@ -11,8 +11,8 @@ import {
     Zap,
 } from 'lucide-react';
 import { useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
+import { SiteLogo } from '@/components/shared/SiteLogo';
 import type { SharedPageProps } from '@/types';
 
 /**
@@ -71,21 +71,12 @@ export default function Login(): React.JSX.Element {
 
                 {/* Logo */}
                 <div className="relative z-10 p-10">
-                    <Link href="/" className="inline-flex items-center gap-3">
-                        {settings.logo ? (
-                            <img
-                                src={settings.logo}
-                                alt={settings.site_name}
-                                className="h-10 w-auto object-contain"
-                            />
-                        ) : (
-                            <span className="flex size-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                                <AppLogoIcon className="size-5 fill-current text-white" />
-                            </span>
-                        )}
-                        <span className="text-xl font-bold text-white">
-                            {settings.site_name}
-                        </span>
+                    <Link href="/" className="inline-flex items-center">
+                        <SiteLogo
+                            plate="always"
+                            tone="onDark"
+                            className="h-11"
+                        />
                     </Link>
                 </div>
 
@@ -147,21 +138,8 @@ export default function Login(): React.JSX.Element {
             <div className="flex min-h-dvh flex-1 flex-col items-center justify-center bg-gray-50 px-4 py-3 sm:px-6 sm:py-5 lg:px-8">
                 {/* Mobile logo */}
                 <div className="mb-3 lg:hidden">
-                    <Link href="/" className="inline-flex items-center gap-3">
-                        {settings.logo ? (
-                            <img
-                                src={settings.logo}
-                                alt={settings.site_name}
-                                className="h-10 w-auto object-contain"
-                            />
-                        ) : (
-                            <span className="flex size-10 items-center justify-center rounded-xl bg-[#c8102e]">
-                                <AppLogoIcon className="size-5 fill-current text-white" />
-                            </span>
-                        )}
-                        <span className="text-xl font-bold text-gray-900">
-                            {settings.site_name}
-                        </span>
+                    <Link href="/" className="inline-flex items-center">
+                        <SiteLogo className="h-11" />
                     </Link>
                 </div>
 

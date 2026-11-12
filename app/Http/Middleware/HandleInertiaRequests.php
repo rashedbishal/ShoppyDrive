@@ -247,6 +247,8 @@ class HandleInertiaRequests extends Middleware
             'loading_logo' => $db->get('loading_logo'),
             // The loader's speed and sizes, defaulted and clamped (LoadingScreenSettings).
             ...LoadingScreenSettings::forFrontend($db->all()),
+            // Browser-tab icon; null means the bundled /favicon.ico.
+            'favicon' => $db->get('favicon'),
             'currency_symbol' => $db->get('currency_symbol', '৳'),
             'contact_email' => $db->get('contact_email', 'support@shoppydrive.com'),
             'contact_phone' => $db->get('contact_phone', '+880 1XXX XXXXXX'),

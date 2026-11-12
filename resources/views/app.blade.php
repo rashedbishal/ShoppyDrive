@@ -42,8 +42,14 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        {{-- Admin › Settings › Favicon, else the bundled files. An .ico can't be a home-screen icon, so apple-touch keeps its bundled PNG then. --}}
+        @php($siteFavicon = \App\Support\LayoutCache::settings()['favicon'] ?? null)
+        @if($siteFavicon)
+            <link rel="icon" href="{{ $siteFavicon }}">
+        @else
+            <link rel="icon" href="/favicon.ico" sizes="any">
+        @endif
+        <link rel="apple-touch-icon" href="{{ $siteFavicon && ! str_ends_with(strtolower($siteFavicon), '.ico') ? $siteFavicon : '/apple-touch-icon.png' }}">
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

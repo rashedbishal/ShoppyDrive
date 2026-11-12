@@ -23,6 +23,7 @@ import GlowButton from '@/components/landing/GlowButton';
 import HeroCarousel from '@/components/landing/HeroCarousel';
 import type { CarouselSettings } from '@/components/landing/HeroCarousel';
 import SocialChatWidget from '@/components/layout/SocialChatWidget';
+import { SiteLogo } from '@/components/shared/SiteLogo';
 import { CharCount } from '@/components/ui/char-count';
 import { Select } from '@/components/ui/select';
 import { cn, formatCurrency } from '@/lib/utils';
@@ -1690,21 +1691,14 @@ export default function LandingPageShow({
                 {/* Header */}
                 <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0b1020]/90 px-4 py-2.5 backdrop-blur-xl">
                     <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
-                        <div className="flex min-w-0 items-center gap-2.5">
-                            {siteLogo ? (
-                                <img
-                                    src={siteLogo}
-                                    alt={siteName}
-                                    className="h-12 w-auto object-contain"
-                                />
-                            ) : (
-                                <span className="flex size-9 items-center justify-center rounded-xl bg-[#c8102e]">
-                                    <ShoppingBag className="size-4 text-white" />
-                                </span>
-                            )}
-                            <span className="truncate text-sm font-bold text-white">
-                                {siteName}
-                            </span>
+                        <div className="flex min-w-0 items-center">
+                            <SiteLogo
+                                src={siteLogo}
+                                name={siteName}
+                                plate="always"
+                                tone="onDark"
+                                className="h-9 sm:h-10"
+                            />
                         </div>
                         <GlowButton href="#order" size="md">
                             {ctaText}
@@ -2220,20 +2214,13 @@ export default function LandingPageShow({
                             <div className="flex flex-col items-center gap-8 sm:flex-row sm:items-start sm:justify-between">
                                 {/* Brand */}
                                 <div className="flex flex-col items-center gap-3 sm:items-start">
-                                    <div className="flex items-center gap-2">
-                                        {siteLogo ? (
-                                            <img
-                                                src={siteLogo}
-                                                alt={siteName}
-                                                className="h-14 w-auto object-contain"
-                                            />
-                                        ) : (
-                                            <ShoppingBag className="size-6 text-white" />
-                                        )}
-                                        <span className="text-base font-bold text-white">
-                                            {siteName}
-                                        </span>
-                                    </div>
+                                    <SiteLogo
+                                        src={siteLogo}
+                                        name={siteName}
+                                        plate="always"
+                                        tone="onDark"
+                                        className="h-12"
+                                    />
                                     {sec.footer.text && (
                                         <p className="max-w-xs text-center text-xs whitespace-pre-line text-slate-400 sm:text-left">
                                             {sec.footer.text}

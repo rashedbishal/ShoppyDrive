@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import { SiteLogo } from '@/components/shared/SiteLogo';
 import type { SharedPageProps } from '@/types';
 
 type ErrorStatus = 403 | 404 | 419 | 429 | 500 | 503;
@@ -124,23 +124,8 @@ export default function ErrorPage({
                 />
 
                 <header className="mx-auto flex w-full max-w-6xl items-center px-4 py-5 sm:px-6">
-                    <a href={homeHref} className="flex items-center gap-2.5">
-                        {settings?.logo ? (
-                            <img
-                                src={settings.logo}
-                                alt={siteName}
-                                className="h-9 w-auto max-w-[10rem] object-contain"
-                            />
-                        ) : (
-                            <>
-                                <span className="flex size-9 items-center justify-center rounded-xl bg-[var(--color-primary)] shadow-sm">
-                                    <AppLogoIcon className="size-5 fill-current text-white" />
-                                </span>
-                                <span className="font-display text-lg font-bold tracking-tight text-[var(--color-text-primary)]">
-                                    {siteName}
-                                </span>
-                            </>
-                        )}
+                    <a href={homeHref} className="flex items-center">
+                        <SiteLogo plate="dark" className="h-11" />
                     </a>
                 </header>
 

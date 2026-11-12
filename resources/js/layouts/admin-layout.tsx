@@ -49,7 +49,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import { SiteLogo } from '@/components/shared/SiteLogo';
 import { useWebPushSms } from '@/hooks/useWebPushSms';
 import type { SmsToast } from '@/hooks/useWebPushSms';
 import { dashboard as adminDashboard } from '@/routes/admin';
@@ -553,26 +553,15 @@ function SidebarContent({
                     onClick={onClose}
                     title={collapsed ? 'ShoppyDrive — Admin Panel' : undefined}
                 >
-                    {logoUrl ? (
-                        <img
-                            src={logoUrl}
-                            alt="Logo"
-                            className="size-8 shrink-0 rounded-xl object-contain"
-                        />
-                    ) : (
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#c8102e]">
-                            <AppLogoIcon className="size-4 fill-current text-white" />
-                        </span>
-                    )}
+                    <SiteLogo
+                        src={logoUrl}
+                        name="ShoppyDrive"
+                        className={collapsed ? 'h-auto w-12' : 'h-9'}
+                    />
                     {!collapsed && (
-                        <div className="leading-none">
-                            <p className="text-[14px] font-bold text-slate-900">
-                                ShoppyDrive
-                            </p>
-                            <p className="text-[11px] text-slate-400">
-                                Admin Panel
-                            </p>
-                        </div>
+                        <p className="text-[11px] text-slate-400">
+                            Admin Panel
+                        </p>
                     )}
                 </Link>
                 {onClose && (
@@ -880,7 +869,6 @@ export default function AdminLayout({
     const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() =>
         readStored(SIDEBAR_COLLAPSED_KEY, false),
     );
-    const [hasMobileLogoError, setHasMobileLogoError] = useState(false);
     const canReceiveSmsPush = canViewSection(
         admin ?? undefined,
         'received_sms',
@@ -1001,18 +989,13 @@ export default function AdminLayout({
                     <Link
                         href={adminDashboard()}
                         aria-label="Admin dashboard home"
-                        className="absolute left-1/2 flex size-9 -translate-x-1/2 items-center justify-center overflow-hidden rounded-xl bg-[#c8102e] shadow-sm"
+                        className="absolute left-1/2 flex -translate-x-1/2 items-center"
                     >
-                        {logoUrl && !hasMobileLogoError ? (
-                            <img
-                                src={logoUrl}
-                                alt="ShoppyDrive"
-                                onError={() => setHasMobileLogoError(true)}
-                                className="h-full w-full bg-white object-contain p-1"
-                            />
-                        ) : (
-                            <AppLogoIcon className="size-5 fill-current text-white" />
-                        )}
+                        <SiteLogo
+                            src={logoUrl}
+                            name="ShoppyDrive"
+                            className="h-8"
+                        />
                     </Link>
 
                     <div className="flex-1" />

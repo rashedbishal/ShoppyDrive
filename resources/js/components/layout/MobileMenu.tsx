@@ -11,8 +11,8 @@ import {
 } from 'lucide-react';
 import { lazy, Suspense } from 'react';
 import { route } from 'ziggy-js';
-import AppLogoIcon from '@/components/app-logo-icon';
 import { primaryLinks } from '@/components/layout/navigation';
+import { SiteLogo } from '@/components/shared/SiteLogo';
 import { Accordion } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -42,8 +42,6 @@ export default function MobileMenu({
     const user = page.props.auth?.user ?? null;
     const navCategories = page.props.navCategories ?? [];
     const { theme, setTheme } = useSiteTheme();
-    const settings = page.props.settings;
-    const siteName = settings?.site_name ?? 'ShoppyDrive';
 
     return (
         <Drawer
@@ -55,22 +53,9 @@ export default function MobileMenu({
                 <Link
                     href="/"
                     onClick={onClose}
-                    className="flex shrink-0 items-center gap-3"
+                    className="flex shrink-0 items-center"
                 >
-                    {settings?.logo ? (
-                        <img
-                            src={settings.logo}
-                            alt={siteName}
-                            className="h-10 w-auto object-contain"
-                        />
-                    ) : (
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-secondary)] text-white shadow-sm">
-                            <AppLogoIcon className="size-5 fill-current text-white" />
-                        </span>
-                    )}
-                    <span className="text-[17px] font-bold tracking-tight text-[var(--color-text-primary)]">
-                        {siteName}
-                    </span>
+                    <SiteLogo plate="dark" className="h-10" />
                 </Link>
             }
             side="left"

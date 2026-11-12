@@ -38,7 +38,7 @@ test('a category or sub-category with blank search text falls back to its name a
 
     expect($html)->toContain('<title>Kitchen - '.config('app.name').'</title>')
         ->toContain('name="description" content="Pots and pans"')
-        ->toContain('property="og:image" content="'.url('/Shoppydrive.jpg').'"');
+        ->toContain('property="og:image" content="'.url('/images/brand/og-image.jpg').'"');
 })->with([
     'category' => fn () => Category::factory()->create([
         'name' => 'Kitchen', 'description' => '<p>Pots and pans</p>', 'image' => '/placeholder.svg', 'is_active' => true,
@@ -79,10 +79,10 @@ test('a brand page and a policy page carry their own tags', function () {
 test('any other public page gets the site defaults, with a share picture that really exists', function () {
     $html = $this->get(route('home'))->assertOk()->getContent();
 
-    expect($html)->toContain('property="og:image" content="'.url('/Shoppydrive.jpg').'"')
+    expect($html)->toContain('property="og:image" content="'.url('/images/brand/og-image.jpg').'"')
         ->toContain('name="description" content="Premium e-commerce')
         ->toContain('rel="canonical" href="'.url('/').'"')
-        ->and(file_exists(public_path('Shoppydrive.jpg')))->toBeTrue();
+        ->and(file_exists(public_path('images/brand/og-image.jpg')))->toBeTrue();
 });
 
 test('long descriptions are cut to what a search result shows', function () {

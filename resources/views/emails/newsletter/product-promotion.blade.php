@@ -16,7 +16,7 @@
   .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .header { background: #1a1a2e; padding: 20px 40px; }
   .header-inner { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; }
-  .header-logo-img { height: 40px; width: auto; object-fit: contain; display: block; }
+  .header-logo-img { height: 40px; width: auto; object-fit: contain; display: block; background: #ffffff; border-radius: 8px; padding: 6px 10px; }
   .header-site-name { color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
   .header-badge { display: block; margin-top: 10px; }
   .badge { display: inline-block; background: rgba(255,255,255,0.12); color: #fff; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 100px; padding: 4px 12px; }
@@ -45,7 +45,9 @@
         @if($logoUrl)
           <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="header-logo-img" />
         @endif
+        @unless($logoUrl)
         <span class="header-site-name">{{ $siteName }}</span>
+        @endunless
       </a>
       <div class="header-badge">
         <span class="badge">Featured Product</span>

@@ -12,13 +12,13 @@ import {
     Youtube,
     Zap,
 } from 'lucide-react';
-import AppLogoIcon from '@/components/app-logo-icon';
 import { TikTokLogo, XLogo } from '@/components/icons/brand-icons';
 import {
     footerCustomerLinks,
     footerQuickLinks,
 } from '@/components/layout/navigation';
 import NewsletterThankYouModal from '@/components/shared/NewsletterThankYouModal';
+import { SiteLogo } from '@/components/shared/SiteLogo';
 import { useNewsletterSubscribe } from '@/hooks/use-newsletter-subscribe';
 import type { SharedPageProps } from '@/types';
 
@@ -131,22 +131,9 @@ export default function Footer(): React.JSX.Element {
                     <div className="space-y-6">
                         <Link
                             href={route('home')}
-                            className="inline-flex items-center gap-3"
+                            className="inline-flex items-center"
                         >
-                            {settings.logo ? (
-                                <img
-                                    src={settings.logo}
-                                    alt={settings.site_name}
-                                    className="h-14 w-auto object-contain"
-                                />
-                            ) : (
-                                <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white">
-                                    <AppLogoIcon className="size-5 fill-current text-white" />
-                                </span>
-                            )}
-                            <span className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">
-                                {settings.site_name}
-                            </span>
+                            <SiteLogo plate="dark" className="h-12" />
                         </Link>
 
                         <p className="max-w-xs text-sm leading-7 text-[var(--color-text-secondary)]">

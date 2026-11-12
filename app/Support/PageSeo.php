@@ -19,7 +19,7 @@ class PageSeo
 {
     private const string DEFAULT_DESCRIPTION = 'Premium e-commerce destination in Bangladesh for electronics, lifestyle, and more.';
 
-    private const string DEFAULT_IMAGE = '/Shoppydrive.jpg';
+    private const string DEFAULT_IMAGE = '/images/brand/og-image.jpg';
 
     private const int MAX_DESCRIPTION_LENGTH = 160;
 

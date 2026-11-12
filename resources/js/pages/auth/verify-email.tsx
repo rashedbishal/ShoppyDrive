@@ -2,7 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { CheckCircle, Mail, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import EmailVerificationCodeController from '@/actions/App/Http/Controllers/Auth/EmailVerificationCodeController';
-import AppLogoIcon from '@/components/app-logo-icon';
+import { SiteLogo } from '@/components/shared/SiteLogo';
 
 type Props = {
     status?: string;
@@ -58,13 +58,8 @@ export default function VerifyEmail({
 
             <div className="w-full max-w-[440px]">
                 <div className="mb-8 flex justify-center">
-                    <Link href="/" className="inline-flex items-center gap-2.5">
-                        <span className="flex size-9 items-center justify-center rounded-xl bg-[#c8102e]">
-                            <AppLogoIcon className="size-4 fill-current text-white" />
-                        </span>
-                        <span className="text-lg font-bold text-gray-900">
-                            ShoppyDrive
-                        </span>
+                    <Link href="/" className="inline-flex items-center">
+                        <SiteLogo className="h-11" />
                     </Link>
                 </div>
 
