@@ -33,9 +33,24 @@ class LandingPageController extends Controller
 
     public function index(): Response
     {
-        $pages = LandingPage::with('product:id,name')
+        $pages = LandingPage::with([
+            'product:id,name',
+            'product.images' => fn ($query) => $query->select(['id', 'product_id', 'path', 'is_primary', 'sort_order'])->orderBy('sort_order'),
+        ])
             ->latest()
-            ->get(['id', 'title', 'slug', 'product_id', 'is_active', 'created_at']);
+            ->get(['id', 'title', 'slug', 'product_id', 'is_active', 'created_at'])
+            ->map(fn (LandingPage $page): array => [
+                'id' => $page->id,
+                'title' => $page->title,
+                'slug' => $page->slug,
+                'is_active' => $page->is_active,
+                'created_at' => $page->created_at,
+                'product' => $page->product === null ? null : [
+                    'id' => $page->product->id,
+                    'name' => $page->product->name,
+                    'image' => $page->product->primaryImagePath(),
+                ],
+            ]);
 
         return Inertia::render('admin/landing-pages/index', ['pages' => $pages]);
     }
@@ -58,7 +73,7 @@ class LandingPageController extends Controller
             'max_order_quantity' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $page = LandingPage::create([
+        LandingPage::create([
             'title' => $request->title,
             'slug' => $request->slug,
             'product_id' => $request->product_id,
@@ -67,8 +82,8 @@ class LandingPageController extends Controller
             'sections' => LandingPage::defaultSections(),
         ]);
 
-        return redirect()->route('admin.landing-pages.edit', $page)
-            ->with('success', 'Landing page created. Now customise the sections below.');
+        return redirect()->route('admin.landing-pages.index')
+            ->with('success', 'Landing page created.');
     }
 
     public function edit(LandingPage $landingPage): Response
@@ -109,7 +124,8 @@ class LandingPageController extends Controller
             'sections' => $request->input('sections', $landingPage->sections),
         ]);
 
-        return back()->with('success', 'Landing page saved.');
+        return redirect()->route('admin.landing-pages.index')
+            ->with('success', 'Landing page saved.');
     }
 
     /**

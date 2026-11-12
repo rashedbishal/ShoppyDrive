@@ -18,11 +18,27 @@ type LandingPage = {
     title: string;
     slug: string;
     is_active: boolean;
-    product: { id: number; name: string } | null;
+    product: { id: number; name: string; image: string | null } | null;
     created_at: string;
 };
 
 type Props = { pages: LandingPage[] };
+
+function StatusPill({
+    active,
+    className = '',
+}: {
+    active: boolean;
+    className?: string;
+}) {
+    return (
+        <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'} ${className}`}
+        >
+            {active ? 'Active' : 'Inactive'}
+        </span>
+    );
+}
 
 export default function LandingPagesIndex({ pages }: Props) {
     const [deleteTarget, setDeleteTarget] = useState<LandingPage | null>(null);
@@ -119,13 +135,21 @@ export default function LandingPagesIndex({ pages }: Props) {
                                             page.id,
                                         ),
                                     )}
-                                    className="flex items-center gap-4 px-4 py-3"
+                                    className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:flex-nowrap sm:gap-4"
                                 >
                                     <Checkbox
                                         checked={bulk.isSelected(page.id)}
                                         onCheckedChange={() =>
                                             bulk.toggle(page.id)
                                         }
+                                    />
+                                    <img
+                                        src={
+                                            page.product?.image ??
+                                            '/placeholder.svg'
+                                        }
+                                        alt=""
+                                        className="size-12 shrink-0 rounded-lg border border-slate-100 object-cover sm:size-10"
                                     />
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -135,26 +159,37 @@ export default function LandingPagesIndex({ pages }: Props) {
                                             >
                                                 {page.title}
                                             </span>
-                                            <span
-                                                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${page.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
-                                            >
-                                                {page.is_active
-                                                    ? 'Active'
-                                                    : 'Inactive'}
-                                            </span>
+                                            <StatusPill
+                                                active={page.is_active}
+                                                className="hidden sm:inline-block"
+                                            />
                                         </div>
                                         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-400">
-                                            <span className="font-mono break-all">
+                                            <span className="hidden font-mono break-all sm:inline">
                                                 /lp/{page.slug}
                                             </span>
                                             {page.product && (
-                                                <span className="break-words">
-                                                    · {page.product.name}
+                                                <span className="truncate break-words">
+                                                    <span className="hidden sm:inline">
+                                                        ·{' '}
+                                                    </span>
+                                                    {page.product.name}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex shrink-0 items-center gap-1">
+                                    <StatusPill
+                                        active={page.is_active}
+                                        className="shrink-0 sm:hidden"
+                                    />
+                                    {/* Phone card: the slug gets the full card width on its own row. */}
+                                    <p
+                                        className="w-full overflow-hidden font-mono text-xs text-ellipsis whitespace-nowrap text-slate-500 sm:hidden"
+                                        title={`/lp/${page.slug}`}
+                                    >
+                                        /lp/{page.slug}
+                                    </p>
+                                    <div className="order-last flex w-full shrink-0 items-center justify-end gap-1 sm:order-none sm:w-auto">
                                         <a
                                             href={`/lp/${page.slug}`}
                                             target="_blank"

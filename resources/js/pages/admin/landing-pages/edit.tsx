@@ -23,6 +23,7 @@ import type {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CharCount } from '@/components/ui/char-count';
+import { ComboboxField } from '@/components/ui/combobox';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
 import { useRowKeys } from '@/hooks/use-row-keys';
@@ -233,8 +234,8 @@ export default function LandingPageEdit({
                                 Settings
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4 pt-3">
-                            <div className="col-span-2">
+                        <CardContent className="grid grid-cols-1 gap-4 pt-3 sm:grid-cols-2">
+                            <div className="sm:col-span-2">
                                 <label className={labelClass}>Page Title</label>
                                 <input
                                     maxLength={100}
@@ -260,7 +261,7 @@ export default function LandingPageEdit({
                                 <label className={labelClass}>URL Slug</label>
                                 <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 focus-within:ring-1 focus-within:ring-[#c8102e]">
                                     <span className="flex h-9 shrink-0 items-center border-r border-slate-200 bg-slate-50 px-2 text-xs text-slate-400">
-                                        /sentinel/
+                                        /lp/
                                     </span>
                                     <input
                                         maxLength={100}
@@ -289,23 +290,22 @@ export default function LandingPageEdit({
                             </div>
                             <div>
                                 <label className={labelClass}>Product</label>
-                                <Select
-                                    selectClassName={inputClass}
+                                <ComboboxField
                                     value={data.product_id}
-                                    onChange={(e) =>
-                                        setData('product_id', e.target.value)
+                                    onChange={(value) =>
+                                        setData('product_id', value)
                                     }
-                                >
-                                    {products.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.name}
-                                            {p.is_active ? '' : ' (inactive)'}
-                                        </option>
-                                    ))}
-                                </Select>
+                                    options={products.map((p) => ({
+                                        value: String(p.id),
+                                        label: `${p.name}${p.is_active ? '' : ' (inactive)'}`,
+                                    }))}
+                                    placeholder="Search and select a product…"
+                                    error={errors.product_id}
+                                    inputClassName="h-9"
+                                />
                             </div>
                             {/* Most units one customer can order at once (all variants together) */}
-                            <div className="col-span-2">
+                            <div className="sm:col-span-2">
                                 <label className="mb-1 block text-sm font-medium text-slate-700">
                                     Most items per order
                                 </label>
@@ -336,7 +336,7 @@ export default function LandingPageEdit({
                                 )}
                             </div>
 
-                            <div className="col-span-2 flex items-center gap-2">
+                            <div className="flex items-center gap-2 sm:col-span-2">
                                 <input
                                     type="checkbox"
                                     id="is_active_edit"

@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CharCount } from '@/components/ui/char-count';
+import { ComboboxField } from '@/components/ui/combobox';
 import { RouteModal } from '@/components/ui/route-modal';
-import { Select } from '@/components/ui/select';
 import { maxLength, pattern, required, validate } from '@/lib/validate';
 
 type Product = {
@@ -118,7 +118,7 @@ export default function LandingPageCreate({ products }: Props) {
                                 </label>
                                 <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 focus-within:ring-1 focus-within:ring-[#c8102e]">
                                     <span className="flex h-9 shrink-0 items-center border-r border-slate-200 bg-slate-50 px-3 text-sm text-slate-400">
-                                        /sentinel/
+                                        /lp/
                                     </span>
                                     <input
                                         maxLength={100}
@@ -156,22 +156,19 @@ export default function LandingPageCreate({ products }: Props) {
                                 <label className="mb-1 block text-sm font-medium text-slate-700">
                                     Product
                                 </label>
-                                <Select
-                                    selectClassName={inputClass}
+                                <ComboboxField
                                     value={data.product_id}
-                                    onChange={(e) =>
-                                        setData('product_id', e.target.value)
+                                    onChange={(value) =>
+                                        setData('product_id', value)
                                     }
-                                >
-                                    <option value="">Select a product…</option>
-                                    {products.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.name} — ৳
-                                            {p.price.toLocaleString()}
-                                            {p.is_active ? '' : ' (inactive)'}
-                                        </option>
-                                    ))}
-                                </Select>
+                                    options={products.map((p) => ({
+                                        value: String(p.id),
+                                        label: `${p.name} — ৳${p.price.toLocaleString()}${p.is_active ? '' : ' (inactive)'}`,
+                                    }))}
+                                    placeholder="Search and select a product…"
+                                    error={errors.product_id}
+                                    inputClassName="h-9"
+                                />
                                 {errors.product_id && (
                                     <p className="mt-1 text-xs text-red-600">
                                         {errors.product_id}
@@ -235,9 +232,7 @@ export default function LandingPageCreate({ products }: Props) {
                                     disabled={processing}
                                     className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
                                 >
-                                    {processing
-                                        ? 'Creating…'
-                                        : 'Create & Edit Sections'}
+                                    {processing ? 'Creating…' : 'Create Page'}
                                 </Button>
                                 <Link href={route('admin.landing-pages.index')}>
                                     <Button type="button" variant="outline">
