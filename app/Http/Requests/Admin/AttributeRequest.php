@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
-use App\Enums\AttributeType;
 use App\Models\Attribute;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 /**
  * Creating or editing an attribute (Color, Size, Set, …) that products can
  * build their variants from. Names are unique ignoring case: variant labels
  * ({"Set": "12pcs"}) are keyed by name, so two "Set"s would collide.
+ *
+ * The display type isn't editable: new attributes are always text options
+ * (AttributeController::store()) and an existing one keeps its type, so the
+ * built-in Color keeps its swatches. A `type` sent anyway is ignored.
  */
 class AttributeRequest extends FormRequest
 {
@@ -40,16 +42,6 @@ class AttributeRequest extends FormRequest
 
                     if ($taken) {
                         $fail('An attribute with this name already exists.');
-                    }
-                },
-            ],
-            // Colour swatches need every value to carry a hex code, so the
-            // type is fixed once the attribute has values.
-            'type' => [
-                'required', Rule::in([AttributeType::SELECT->value, AttributeType::COLOR->value]),
-                function (string $field, mixed $value, Closure $fail) use ($attribute): void {
-                    if ($attribute !== null && $attribute->type->value !== $value && $attribute->values()->exists()) {
-                        $fail("The type can't change once the attribute has values.");
                     }
                 },
             ],

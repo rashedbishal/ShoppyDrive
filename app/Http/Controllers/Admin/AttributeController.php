@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\AttributeType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AttributeRequest;
 use App\Models\Attribute;
@@ -27,16 +28,20 @@ class AttributeController extends Controller
         ]);
     }
 
+    /** New attributes are always text options; only the built-in Color shows swatches. */
     public function store(AttributeRequest $request): RedirectResponse
     {
-        Attribute::create($request->validated());
+        Attribute::create([...$request->validated(), 'type' => AttributeType::SELECT]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Attribute added.']);
 
         return redirect()->route('admin.attributes.index');
     }
 
-    /** A rename rewrites every variant's labels (see Attribute::booted()). */
+    /**
+     * A rename rewrites every variant's labels (see Attribute::booted()).
+     * The type is never changed here, so Color keeps its swatches.
+     */
     public function update(AttributeRequest $request, Attribute $attribute): RedirectResponse
     {
         $attribute->update($request->validated());

@@ -35,39 +35,41 @@ function setAttributeWithValues(array $values = []): Attribute
 
 test('an admin creates an attribute with images per value', function () {
     actingAs($this->admin, 'admin')
-        ->post(route('admin.attributes.store'), ['name' => 'Material', 'type' => 'select', 'has_images' => true])
+        ->post(route('admin.attributes.store'), ['name' => 'Material', 'has_images' => true])
         ->assertRedirect(route('admin.attributes.index'));
 
-    $this->assertDatabaseHas('attributes', ['name' => 'Material', 'type' => 'select', 'has_images' => true]);
+    $this->assertDatabaseHas('attributes', ['name' => 'Material', 'has_images' => true]);
 });
 
 test('an attribute name already in use, in any case, is rejected', function () {
     actingAs($this->admin, 'admin')
-        ->post(route('admin.attributes.store'), ['name' => ' color ', 'type' => 'select', 'has_images' => false])
+        ->post(route('admin.attributes.store'), ['name' => ' color ', 'has_images' => false])
         ->assertSessionHasErrors(['name' => 'An attribute with this name already exists.']);
 
     expect(Attribute::whereRaw('LOWER(name) = ?', ['color'])->count())->toBe(1);
 });
 
-test('an attribute can only be text options or colour swatches', function () {
+test('a new attribute is always text options, even when colour swatches are asked for', function () {
     actingAs($this->admin, 'admin')
-        ->post(route('admin.attributes.store'), ['name' => 'Notes', 'type' => 'text', 'has_images' => false])
-        ->assertSessionHasErrors('type');
+        ->post(route('admin.attributes.store'), ['name' => 'Finish', 'type' => 'color', 'has_images' => false])
+        ->assertSessionHasNoErrors();
+
+    expect(Attribute::firstWhere('name', 'Finish')->type)->toBe(AttributeType::SELECT);
 });
 
-test('the type can change while an attribute has no values, but not after', function () {
-    $empty = Attribute::create(['name' => 'Finish', 'type' => AttributeType::SELECT]);
-    $withValues = setAttributeWithValues(['6pcs']);
+test('editing an attribute never changes its type, so Color keeps its swatches', function () {
+    $color = Attribute::firstWhere('name', 'Color');
+    $set = setAttributeWithValues(['6pcs']);
 
     actingAs($this->admin, 'admin')
-        ->put(route('admin.attributes.update', $empty), ['name' => 'Finish', 'type' => 'color', 'has_images' => false])
+        ->put(route('admin.attributes.update', $color), ['name' => 'Color', 'has_images' => false])
         ->assertSessionHasNoErrors();
-    expect($empty->fresh()->type)->toBe(AttributeType::COLOR);
-
     actingAs($this->admin, 'admin')
-        ->put(route('admin.attributes.update', $withValues), ['name' => 'Set', 'type' => 'color', 'has_images' => false])
-        ->assertSessionHasErrors(['type' => "The type can't change once the attribute has values."]);
-    expect($withValues->fresh()->type)->toBe(AttributeType::SELECT);
+        ->put(route('admin.attributes.update', $set), ['name' => 'Set', 'type' => 'color', 'has_images' => false])
+        ->assertSessionHasNoErrors();
+
+    expect($color->fresh())->type->toBe(AttributeType::COLOR)->has_images->toBeFalse()
+        ->and($set->fresh()->type)->toBe(AttributeType::SELECT);
 });
 
 test('renaming an attribute or a value rewrites the labels of variants using it', function () {
@@ -81,7 +83,7 @@ test('renaming an attribute or a value rewrites the labels of variants using it'
     ]);
 
     actingAs($this->admin, 'admin')
-        ->put(route('admin.attributes.update', $set), ['name' => 'Pack', 'type' => 'select', 'has_images' => false])
+        ->put(route('admin.attributes.update', $set), ['name' => 'Pack', 'has_images' => false])
         ->assertSessionHasNoErrors();
     expect($variant->fresh()->attributes)->toBe(['Pack' => '6pcs']);
 
@@ -149,7 +151,7 @@ test('an admin without attribute permissions cannot create attributes', function
     $staff = createAdmin(['permissions' => ['attributes' => ['view']]]);
 
     actingAs($staff, 'admin')
-        ->post(route('admin.attributes.store'), ['name' => 'Material', 'type' => 'select', 'has_images' => false])
+        ->post(route('admin.attributes.store'), ['name' => 'Material', 'has_images' => false])
         ->assertForbidden();
 
     $this->assertDatabaseMissing('attributes', ['name' => 'Material']);

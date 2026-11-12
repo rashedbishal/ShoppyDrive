@@ -493,14 +493,13 @@ export default function AttributesIndex({ attributes }: Props) {
     const [deletingAttribute, setDeletingAttribute] = useState(false);
     const attributeForm = useForm({
         name: '',
-        type: 'select' as 'select' | 'color',
         has_images: false,
     });
 
     const openAddAttribute = () => {
         setEditingAttribute(null);
         attributeForm.clearErrors();
-        attributeForm.setData({ name: '', type: 'select', has_images: false });
+        attributeForm.setData({ name: '', has_images: false });
         setIsAttributeFormOpen(true);
     };
 
@@ -509,7 +508,6 @@ export default function AttributesIndex({ attributes }: Props) {
         attributeForm.clearErrors();
         attributeForm.setData({
             name: attribute.name,
-            type: attribute.type === 'color' ? 'color' : 'select',
             has_images: attribute.has_images,
         });
         setIsAttributeFormOpen(true);
@@ -556,11 +554,6 @@ export default function AttributesIndex({ attributes }: Props) {
             },
         });
     };
-
-    // A colour swatch needs a hex code on every value, so the type is fixed
-    // once values exist (the server enforces the same).
-    const typeLocked =
-        editingAttribute !== null && editingAttribute.values.length > 0;
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [formAttribute, setFormAttribute] = useState<Attribute | null>(null);
@@ -781,12 +774,12 @@ export default function AttributesIndex({ attributes }: Props) {
                                                             : 'Add'}{' '}
                                                         {isColor
                                                             ? 'color'
-                                                            : 'size'}
+                                                            : `${formAttribute?.name ?? ''} value`}
                                                     </DialogPrimitive.Title>
                                                     <DialogPrimitive.Description className="mt-0.5 truncate text-xs text-slate-500">
                                                         {isColor
                                                             ? 'Shown as a swatch on product pages.'
-                                                            : 'Shown as a size option on product pages.'}
+                                                            : 'Shown as an option on product pages.'}
                                                     </DialogPrimitive.Description>
                                                 </div>
                                                 <DialogPrimitive.Close
@@ -826,7 +819,10 @@ export default function AttributesIndex({ attributes }: Props) {
                                                         placeholder={
                                                             isColor
                                                                 ? 'e.g. Red'
-                                                                : 'e.g. XL'
+                                                                : formAttribute?.name ===
+                                                                    'Size'
+                                                                  ? 'e.g. XL'
+                                                                  : 'e.g. 12pcs'
                                                         }
                                                         maxLength={20}
                                                         className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus:border-[#c8102e] focus:bg-white focus:ring-2 focus:ring-[#c8102e]/15 focus:outline-none"
@@ -1063,37 +1059,6 @@ export default function AttributesIndex({ attributes }: Props) {
                             {attributeForm.errors.name && (
                                 <span className="mt-1 block text-xs text-red-500">
                                     {attributeForm.errors.name}
-                                </span>
-                            )}
-                        </label>
-                        <label className="block">
-                            <span className="mb-1 block text-xs font-medium text-slate-600">
-                                Shown as
-                            </span>
-                            <select
-                                className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none disabled:bg-slate-50 disabled:text-slate-400"
-                                value={attributeForm.data.type}
-                                disabled={typeLocked}
-                                onChange={(e) =>
-                                    attributeForm.setData(
-                                        'type',
-                                        e.target.value as 'select' | 'color',
-                                    )
-                                }
-                            >
-                                <option value="select">
-                                    Text options (e.g. 6pcs, 12pcs)
-                                </option>
-                                <option value="color">Colour swatches</option>
-                            </select>
-                            {typeLocked && (
-                                <span className="mt-1 block text-xs text-slate-400">
-                                    Can't change once it has values.
-                                </span>
-                            )}
-                            {attributeForm.errors.type && (
-                                <span className="mt-1 block text-xs text-red-500">
-                                    {attributeForm.errors.type}
                                 </span>
                             )}
                         </label>
