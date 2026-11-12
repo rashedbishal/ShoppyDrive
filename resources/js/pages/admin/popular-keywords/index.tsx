@@ -1,7 +1,7 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { AnimatePresence } from 'framer-motion';
 import { GripVertical, Info, Plus, Save, Search, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { AdminFade } from '@/components/admin/admin-motion';
 import { BulkActionBar } from '@/components/admin/bulk-action-bar';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import { CharCount } from '@/components/ui/char-count';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { useTouchReorder } from '@/lib/hooks/useTouchReorder';
+import { cn } from '@/lib/utils';
 import { maxLength, required, validate } from '@/lib/validate';
 import {
     destroyMany as bulkDestroyRoute,
@@ -24,16 +26,31 @@ type Keyword = {
 };
 type Props = { keywords: Keyword[] };
 
+type RowReorder = {
+    /** Native drag is allowed (mouse); off while a touch drag runs. */
+    canDrag: boolean;
+    dragging: boolean;
+    /** This row is where the dragged one would land (touch drag). */
+    isTarget: boolean;
+    rowProps: Record<string, unknown>;
+    handleProps: Record<string, unknown>;
+    onDragStart: () => void;
+    onDrop: () => void;
+    onDragEnd: () => void;
+};
+
 function KeywordRow({
     keyword,
     onDelete,
     selected,
     onToggleSelect,
+    reorder,
 }: {
     keyword: Keyword;
     onDelete: (id: number) => void;
     selected: boolean;
     onToggleSelect: () => void;
+    reorder: RowReorder;
 }) {
     const [editing, setEditing] = useState(false);
     const { data, setData, put, processing, errors, setError, clearErrors } =
@@ -60,13 +77,43 @@ function KeywordRow({
         });
     };
 
+    // The form keeps its first values, but a drag-and-drop elsewhere in the list
+    // changes this keyword's order, so refresh them when editing starts.
+    const startEditing = () => {
+        setData({
+            keyword: keyword.keyword,
+            sort_order: keyword.sort_order,
+            is_active: keyword.is_active,
+        });
+        setEditing(true);
+    };
+
     const inputClass =
         'h-8 rounded-lg border border-slate-200 px-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
 
     return (
-        <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50/60">
+        <div
+            draggable={reorder.canDrag && !editing}
+            {...reorder.rowProps}
+            onDragStart={reorder.onDragStart}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={reorder.onDrop}
+            onDragEnd={reorder.onDragEnd}
+            className={cn(
+                'flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50/60',
+                reorder.dragging && 'opacity-40',
+                reorder.isTarget && 'ring-2 ring-[#c8102e]/40 ring-inset',
+            )}
+        >
             <Checkbox checked={selected} onCheckedChange={onToggleSelect} />
-            <GripVertical className="size-4 shrink-0 text-slate-300" />
+            {/* Mouse: drag the row. Touch: hold and drag this handle (it never scrolls the page). */}
+            <span
+                {...reorder.handleProps}
+                aria-label="Drag to reorder"
+                className="-m-2 flex size-8 shrink-0 cursor-grab items-center justify-center rounded-md text-slate-300 active:cursor-grabbing"
+            >
+                <GripVertical className="size-4" />
+            </span>
 
             <AnimatePresence initial={false} mode="wait">
                 {editing ? (
@@ -152,7 +199,7 @@ function KeywordRow({
                         <>
                             <button
                                 type="button"
-                                onClick={() => setEditing(true)}
+                                onClick={startEditing}
                                 className="flex-1 text-left"
                             >
                                 <span
@@ -190,7 +237,50 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
     const [bulkDeleting, setBulkDeleting] = useState(false);
     const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
 
-    const bulk = useBulkSelect(keywords.map((k) => k.id));
+    const [optimisticOrder, setOptimisticOrder] = useState<Keyword[] | null>(
+        null,
+    );
+    const [draggingId, setDraggingId] = useState<number | null>(null);
+    const dragIndexRef = useRef<number | null>(null);
+    const items = optimisticOrder ?? keywords;
+
+    const bulk = useBulkSelect(items.map((k) => k.id));
+
+    const handleDrop = (dropIndex: number) => {
+        const dragIndex = dragIndexRef.current;
+        dragIndexRef.current = null;
+        setDraggingId(null);
+
+        if (dragIndex === null || dragIndex === dropIndex) {
+            return;
+        }
+
+        const reordered = [...items];
+        const [moved] = reordered.splice(dragIndex, 1);
+        reordered.splice(dropIndex, 0, moved);
+
+        setOptimisticOrder(reordered);
+
+        router.post(
+            route('admin.popular-keywords.reorder'),
+            { ids: reordered.map((k) => k.id) },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onFinish: () => setOptimisticOrder(null),
+            },
+        );
+    };
+
+    const touchReorder = useTouchReorder({
+        enabled: true,
+        onStart: (index) => setDraggingId(items[index]?.id ?? null),
+        onDrop: (from, to) => {
+            dragIndexRef.current = from;
+            handleDrop(to);
+        },
+        onEnd: () => setDraggingId(null),
+    });
 
     const confirmBulkDelete = () => {
         setBulkDeleting(true);
@@ -304,7 +394,7 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                             </div>
                         ) : (
                             <div className="divide-y divide-slate-100">
-                                {keywords.map((kw) => (
+                                {items.map((kw, index) => (
                                     <KeywordRow
                                         key={kw.id}
                                         keyword={kw}
@@ -313,6 +403,30 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                                         onToggleSelect={() =>
                                             bulk.toggle(kw.id)
                                         }
+                                        reorder={{
+                                            canDrag:
+                                                touchReorder.touchDraggingIndex ===
+                                                null,
+                                            dragging: draggingId === kw.id,
+                                            isTarget:
+                                                touchReorder.touchOverIndex ===
+                                                    index &&
+                                                touchReorder.touchDraggingIndex !==
+                                                    index,
+                                            rowProps:
+                                                touchReorder.rowProps(index),
+                                            handleProps:
+                                                touchReorder.handleProps(index),
+                                            onDragStart: () => {
+                                                dragIndexRef.current = index;
+                                                setDraggingId(kw.id);
+                                            },
+                                            onDrop: () => handleDrop(index),
+                                            onDragEnd: () => {
+                                                dragIndexRef.current = null;
+                                                setDraggingId(null);
+                                            },
+                                        }}
                                     />
                                 ))}
                             </div>
@@ -380,8 +494,10 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                                         Click any keyword to edit it inline.
                                     </li>
                                     <li>
-                                        Sort order controls the display sequence
-                                        (lower = first).
+                                        Drag the grip handle to reorder — with a
+                                        mouse drag the row, on a phone or tablet
+                                        press and drag the handle. The top
+                                        keyword is shown first.
                                     </li>
                                     <li>
                                         Uncheck &quot;Active&quot; to hide a

@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { ArrowRight, Package, ShoppingCart, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -214,8 +214,15 @@ export default function CartDrawer(): React.JSX.Element {
                         // Same destination as the empty Cart page's button,
                         // and the drawer closes so the products are visible.
                         label: 'Start shopping',
-                        href: route('products.index'),
-                        onClick: closeCart,
+                        // Close the panel first, so it never stays open over the page
+                        // the visitor is already on.
+                        onClick: () => {
+                            closeCart();
+
+                            if (window.location.pathname !== '/products') {
+                                router.visit('/products');
+                            }
+                        },
                     }}
                 />
             ) : (

@@ -167,7 +167,12 @@ class LandingPageController extends Controller
             'sections.testimonials.images.*' => ['string', 'max:500', 'regex:#^/storage/landing-testimonials/#'],
             'sections.testimonials.items' => ['nullable', 'array', 'max:12'],
             'sections.testimonials.items.*.name' => ['nullable', 'string', 'max:60'],
-            'sections.testimonials.items.*.text' => ['nullable', 'string', 'max:400'],
+            // Rich text: up to 2,000 characters of HTML, but at most 400 characters a visitor can read.
+            'sections.testimonials.items.*.text' => ['nullable', 'string', 'max:2000', function (string $attribute, mixed $value, \Closure $fail): void {
+                if (is_string($value) && mb_strlen(html_entity_decode(strip_tags($value))) > 400) {
+                    $fail('The review text can be at most 400 characters, not counting formatting.');
+                }
+            }],
             'sections.testimonials.items.*.rating' => ['nullable', 'integer', 'between:1,5'],
             'sections.faq.title' => ['nullable', 'string', 'max:80'],
             'sections.faq.items' => ['nullable', 'array', 'max:20'],

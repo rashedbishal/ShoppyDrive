@@ -83,9 +83,10 @@ export default function SocialChatWidget(): React.JSX.Element | null {
     const [open, setOpen] = useState(false);
     const [burstKey, setBurstKey] = useState(0);
     const [aiPanelOpen, setAiPanelOpen] = useState(false);
-    // Step aside while the mobile menu or cart panel is open — it would sit on top of them.
+    // Step aside while any side panel (menu, cart, filters…) is open — it would sit on top of them.
     const isPanelOpen = useUiStore(
-        (state) => state.cartOpen || state.mobileMenuOpen,
+        (state) =>
+            state.cartOpen || state.mobileMenuOpen || state.openDrawerCount > 0,
     );
 
     // Below lg the checkout page's fixed Place Order bar fills this corner.

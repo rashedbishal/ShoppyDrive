@@ -13,6 +13,9 @@ type UiStoreState = UiState & {
     cartOpen: boolean;
     mobileMenuOpen: boolean;
     searchOpen: boolean;
+    /** How many side panels (`Drawer`) are open right now — floating buttons step aside while any is. */
+    openDrawerCount: number;
+    registerDrawerOpen: () => () => void;
     toasts: UiStateToast[];
     /** Products listed in the "can't delete, in use by N product(s)" flash toast's modal — kept outside the toast's own lifecycle so the modal survives if the toast auto-dismisses. */
     blockedDeleteProducts: { id: number; name: string; slug: string }[] | null;
@@ -52,6 +55,15 @@ export const useUiStore = create<UiStoreState>()((set, get) => ({
     cartOpen: false,
     mobileMenuOpen: false,
     searchOpen: false,
+    openDrawerCount: 0,
+    registerDrawerOpen: () => {
+        set((state) => ({ openDrawerCount: state.openDrawerCount + 1 }));
+
+        return () =>
+            set((state) => ({
+                openDrawerCount: Math.max(0, state.openDrawerCount - 1),
+            }));
+    },
     toasts: [],
     blockedDeleteProducts: null,
     showBlockedDeleteProducts: (products) => {

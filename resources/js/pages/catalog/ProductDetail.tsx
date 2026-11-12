@@ -639,23 +639,26 @@ export default function ProductDetail({
                 />
             </Head>
 
-            <div className="py-6 lg:py-10">
+            <div className="py-4 lg:py-6">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <Breadcrumb items={breadcrumbItems} className="mb-8" />
+                    <Breadcrumb
+                        items={breadcrumbItems}
+                        className="mb-4 lg:mb-5"
+                    />
 
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-8 xl:gap-12">
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6 xl:gap-8">
                         {/* Left Column: Media Gallery */}
                         <div className="lg:col-span-7 xl:col-span-8">
-                            <div className="flex flex-col gap-4 md:flex-row">
+                            <div className="flex flex-col gap-3 md:flex-row">
                                 {/* Thumbnails - Left on desktop */}
-                                <div className="scrollbar-hide order-2 flex max-h-[600px] gap-3 overflow-x-auto py-1 md:order-1 md:flex-col md:overflow-y-auto">
+                                <div className="scrollbar-hide order-2 flex max-h-[600px] gap-2 overflow-x-auto py-1 md:order-1 md:flex-col md:overflow-y-auto">
                                     {media.map((item, idx) => (
                                         <button
                                             key={item.id}
                                             onClick={() =>
                                                 handleThumbnailSelect(idx)
                                             }
-                                            className={`relative aspect-[4/3] w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                                            className={`relative aspect-[4/3] w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                                                 currentImageIndex === idx
                                                     ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary-light)]'
                                                     : 'border-transparent hover:border-[var(--color-border)]'
@@ -683,7 +686,7 @@ export default function ProductDetail({
                                 </div>
 
                                 {/* Main Media */}
-                                <div className="group relative order-1 aspect-[4/3] flex-1 overflow-hidden rounded-3xl bg-white shadow-sm md:order-2">
+                                <div className="group relative order-1 aspect-[4/3] flex-1 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-sm md:order-2">
                                     <AnimatePresence mode="wait">
                                         {currentMedia ? (
                                             <motion.div
@@ -744,16 +747,16 @@ export default function ProductDetail({
                                     {discountPercent > 0 && (
                                         <Badge
                                             variant="amber"
-                                            className="absolute top-6 left-6 px-4 py-1.5 text-sm font-bold shadow-lg"
+                                            className="absolute top-3 left-3 px-3 py-1 text-xs font-bold shadow-lg sm:top-4 sm:left-4 sm:text-sm"
                                         >
                                             SALE {discountPercent}% OFF
                                         </Badge>
                                     )}
 
                                     {activeFlashSale?.endsAt && (
-                                        <div className="absolute top-6 right-6 z-10">
-                                            <div className="rounded-2xl border border-white/20 bg-black/70 p-3 backdrop-blur-md">
-                                                <p className="mb-2 text-[10px] font-bold tracking-widest text-amber-400 uppercase">
+                                        <div className="absolute top-3 right-3 z-10 sm:top-4 sm:right-4">
+                                            <div className="rounded-xl border border-white/20 bg-black/70 p-2.5 backdrop-blur-md">
+                                                <p className="mb-1.5 text-[10px] font-bold tracking-widest text-amber-400 uppercase">
                                                     ⚡ Flash Sale Ends In
                                                 </p>
                                                 <FlashSaleCountdown
@@ -771,7 +774,7 @@ export default function ProductDetail({
                                                 onClick={() =>
                                                     setIsLightboxOpen(true)
                                                 }
-                                                className="absolute right-6 bottom-6 rounded-full bg-white/90 p-3 text-[var(--color-text-primary)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                                                className="absolute right-4 bottom-4 rounded-full bg-white/90 p-2.5 text-[var(--color-text-primary)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
                                             >
                                                 <Maximize2 size={20} />
                                             </button>
@@ -782,9 +785,9 @@ export default function ProductDetail({
 
                         {/* Right Column: Product Info */}
                         <div className="lg:col-span-5 xl:col-span-4">
-                            <div className="sticky top-24 rounded-3xl border border-[var(--color-border)] bg-white p-6 shadow-sm md:p-8">
+                            <div className="sticky top-24 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm sm:p-5 md:p-6">
                                 {/* Brand & Stats */}
-                                <div className="mb-4 flex items-center justify-between">
+                                <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                                     {/* A product with no brand shows no label. A brand
                                         shown here is always active: a product whose
                                         brand is inactive 404s (isPubliclyVisible). */}
@@ -794,12 +797,12 @@ export default function ProductDetail({
                                                 'brand.show',
                                                 product.brand.slug,
                                             )}
-                                            className="text-sm font-bold tracking-widest text-[var(--color-primary)] uppercase hover:underline"
+                                            className="text-xs font-bold tracking-widest text-[var(--color-primary)] uppercase hover:underline"
                                         >
                                             {product.brand.name}
                                         </Link>
                                     )}
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-3">
                                         {/* A rating is shown only when approved reviews exist — never a made-up default. */}
                                         {(product.reviews_count ?? 0) > 0 &&
                                         product.average_rating != null ? (
@@ -832,36 +835,36 @@ export default function ProductDetail({
                                     </div>
                                 </div>
 
-                                <h1 className="mb-4 font-serif text-3xl leading-tight font-bold text-[var(--color-text-primary)]">
+                                <h1 className="mb-2 font-serif text-2xl leading-tight font-bold text-[var(--color-text-primary)] sm:text-[1.7rem]">
                                     {product.name}
                                 </h1>
 
-                                <div className="mb-6 flex items-baseline gap-4">
-                                    <span className="text-4xl font-bold text-[var(--color-primary)]">
+                                <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                                    <span className="text-3xl font-bold text-[var(--color-primary)]">
                                         {formatCurrency(currentPrice)}
                                     </span>
                                     {hasDiscount && (
-                                        <span className="text-xl text-[var(--color-text-muted)] line-through">
+                                        <span className="text-lg text-[var(--color-text-muted)] line-through">
                                             {formatCurrency(comparePrice!)}
                                         </span>
                                     )}
                                 </div>
 
-                                <p className="mb-8 line-clamp-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                                <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
                                     {product.short_description}
                                 </p>
 
-                                <div className="mb-8 h-px w-full bg-[var(--color-border)]" />
+                                <div className="mb-4 h-px w-full bg-[var(--color-border)]" />
 
                                 {/* Variant Selectors */}
-                                <div className="mb-8 space-y-6">
+                                <div className="mb-4 space-y-4">
                                     {attributes.map((attr) => (
                                         <div
                                             key={attr.id}
-                                            className="space-y-3"
+                                            className="space-y-2"
                                         >
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm font-bold tracking-wide text-[var(--color-text-primary)] uppercase">
+                                                <span className="text-xs font-bold tracking-wide text-[var(--color-text-primary)] uppercase">
                                                     Select {attr.name}
                                                 </span>
                                                 <span className="text-xs font-medium text-[var(--color-text-muted)]">
@@ -902,7 +905,7 @@ export default function ProductDetail({
                                                                     disabled={
                                                                         !isAvailable
                                                                     }
-                                                                    className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${
+                                                                    className={`relative flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all ${
                                                                         isSelected
                                                                             ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary-light)]'
                                                                             : 'border-transparent'
@@ -914,7 +917,7 @@ export default function ProductDetail({
                                                                     }
                                                                 >
                                                                     <span
-                                                                        className="h-7 w-7 rounded-full border border-black/5 shadow-inner"
+                                                                        className="h-6 w-6 rounded-full border border-black/5 shadow-inner"
                                                                         style={{
                                                                             backgroundColor:
                                                                                 val.color_hex ||
@@ -949,7 +952,7 @@ export default function ProductDetail({
                                                                 disabled={
                                                                     !isAvailable
                                                                 }
-                                                                className={`rounded-xl border-2 px-4 py-2 text-sm font-bold transition-all ${
+                                                                className={`rounded-lg border-2 px-3.5 py-1.5 text-sm font-bold transition-all ${
                                                                     isSelected
                                                                         ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]'
                                                                         : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-primary)]'
@@ -971,7 +974,7 @@ export default function ProductDetail({
                                 </div>
 
                                 {/* Stock & Quantity */}
-                                <div className="mb-8 space-y-4">
+                                <div className="mb-4">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <div
@@ -1000,7 +1003,7 @@ export default function ProductDetail({
                                 </div>
 
                                 {/* Actions */}
-                                <div className="relative mb-8 flex flex-col gap-3">
+                                <div className="relative mb-4 flex flex-col gap-2">
                                     <CryBabyEasterEgg
                                         key={product.id}
                                         productId={product.id}
@@ -1009,27 +1012,28 @@ export default function ProductDetail({
                                             !isOutOfStock
                                         }
                                     />
-                                    <Button
-                                        data-cry-baby-target
-                                        onClick={onAddToCartClick}
-                                        disabled={isOutOfStock}
-                                        size="lg"
-                                        className="flex h-14 w-full gap-3 rounded-2xl text-lg font-bold shadow-[var(--color-primary)]/20 shadow-lg"
-                                    >
-                                        <ShoppingCart size={22} />
-                                        Add to Cart
-                                    </Button>
-                                    <Button
-                                        onClick={onBuyNowClick}
-                                        disabled={isOutOfStock}
-                                        variant="secondary"
-                                        size="lg"
-                                        className="h-14 w-full rounded-2xl text-lg font-bold"
-                                    >
-                                        Buy Now
-                                    </Button>
-
-                                    <div className="mt-2 grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Button
+                                            data-cry-baby-target
+                                            onClick={onAddToCartClick}
+                                            disabled={isOutOfStock}
+                                            size="lg"
+                                            className="flex h-12 w-full gap-2 rounded-xl text-base font-bold shadow-[var(--color-primary)]/20 shadow-lg"
+                                        >
+                                            <ShoppingCart size={20} />
+                                            Add to Cart
+                                        </Button>
+                                        <Button
+                                            onClick={onBuyNowClick}
+                                            disabled={isOutOfStock}
+                                            variant="secondary"
+                                            size="lg"
+                                            className="h-12 w-full rounded-xl text-base font-bold"
+                                        >
+                                            Buy Now
+                                        </Button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
                                         <Button
                                             variant="outline"
                                             onClick={() =>
@@ -1040,7 +1044,7 @@ export default function ProductDetail({
                                                         product.price,
                                                 })
                                             }
-                                            className={`flex h-12 gap-2 rounded-xl font-semibold ${isWishlisted ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]' : ''}`}
+                                            className={`flex h-10 gap-2 rounded-xl text-sm font-semibold ${isWishlisted ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]' : ''}`}
                                         >
                                             <Heart
                                                 size={18}
@@ -1057,7 +1061,7 @@ export default function ProductDetail({
                                         <div className="flex gap-2">
                                             <Button
                                                 variant="outline"
-                                                className="flex h-12 w-full gap-2 rounded-xl font-semibold"
+                                                className="flex h-10 w-full gap-2 rounded-xl text-sm font-semibold"
                                                 onClick={() =>
                                                     shareProduct('copy')
                                                 }
@@ -1070,26 +1074,26 @@ export default function ProductDetail({
                                 </div>
 
                                 {/* Trust Badges */}
-                                <div className="grid grid-cols-3 gap-2 border-t border-[var(--color-border)] pt-6">
+                                <div className="grid grid-cols-3 gap-2 border-t border-[var(--color-border)] pt-4">
                                     <div className="flex flex-col items-center gap-1.5 text-center">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                                            <ShieldCheck size={20} />
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                                            <ShieldCheck size={16} />
                                         </div>
                                         <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-primary)] uppercase">
                                             100% Genuine
                                         </span>
                                     </div>
                                     <div className="flex flex-col items-center gap-1.5 text-center">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50 text-green-600">
-                                            <Truck size={20} />
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-50 text-green-600">
+                                            <Truck size={16} />
                                         </div>
                                         <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-primary)] uppercase">
                                             Fast Delivery
                                         </span>
                                     </div>
                                     <div className="flex flex-col items-center gap-1.5 text-center">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600">
-                                            <Undo2 size={20} />
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                                            <Undo2 size={16} />
                                         </div>
                                         <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-primary)] uppercase">
                                             7 Days Return
@@ -1101,14 +1105,14 @@ export default function ProductDetail({
                     </div>
 
                     {/* Tabs Section */}
-                    <div className="mt-10 rounded-3xl border border-[var(--color-border)] bg-white p-4 shadow-sm sm:p-6 md:mt-16 md:p-10">
+                    <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm sm:p-5 md:mt-8 md:p-6">
                         <Tabs defaultValue="description" className="w-full">
                             {/* Phones: three equal columns with short labels. sm+: full labels, left-aligned.
                             The active underline comes from TabsTrigger itself. */}
-                            <TabsList className="mb-6 grid w-full grid-cols-3 border-b border-[var(--color-border)] sm:mb-8 sm:flex sm:justify-start sm:gap-8">
+                            <TabsList className="mb-4 grid w-full grid-cols-3 border-b border-[var(--color-border)] sm:mb-5 sm:flex sm:justify-start sm:gap-6">
                                 <TabsTrigger
                                     value="description"
-                                    className="px-1 py-3 text-sm font-bold sm:px-0 sm:py-4 sm:text-lg"
+                                    className="px-1 py-2.5 text-sm font-bold sm:px-0 sm:py-3 sm:text-base"
                                 >
                                     <span className="sm:hidden">
                                         Description
@@ -1119,7 +1123,7 @@ export default function ProductDetail({
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="reviews"
-                                    className="px-1 py-3 text-sm font-bold sm:px-0 sm:py-4 sm:text-lg"
+                                    className="px-1 py-2.5 text-sm font-bold sm:px-0 sm:py-3 sm:text-base"
                                 >
                                     Reviews
                                     <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--color-surface-alt)] px-1.5 text-xs font-bold text-[var(--color-text-secondary)] sm:text-sm">
@@ -1128,7 +1132,7 @@ export default function ProductDetail({
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="shipping"
-                                    className="px-1 py-3 text-sm font-bold sm:px-0 sm:py-4 sm:text-lg"
+                                    className="px-1 py-2.5 text-sm font-bold sm:px-0 sm:py-3 sm:text-base"
                                 >
                                     <span className="sm:hidden">Shipping</span>
                                     <span className="hidden sm:inline">
@@ -1150,7 +1154,7 @@ export default function ProductDetail({
 
                                 {product.specifications &&
                                     product.specifications.length > 0 && (
-                                        <div className="mt-8 border-t border-[var(--color-border)] pt-8">
+                                        <div className="mt-5 border-t border-[var(--color-border)] pt-5">
                                             <h4 className="mb-4 text-base font-bold text-[var(--color-text-primary)] sm:text-lg">
                                                 Product specifications
                                             </h4>
@@ -1193,12 +1197,12 @@ export default function ProductDetail({
                             </TabsContent>
 
                             <TabsContent value="reviews" className="mt-0">
-                                <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
+                                <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-8">
                                     <div className="min-w-0 lg:col-span-4">
                                         <RatingBreakdown
                                             breakdown={ratingBreakdown}
                                         />
-                                        <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-white p-4 sm:mt-8 sm:p-6">
+                                        <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-white p-4 sm:mt-5 sm:p-5">
                                             <h4 className="mb-1 flex items-center gap-2 font-bold text-[var(--color-text-primary)]">
                                                 <MessageSquare
                                                     size={16}
@@ -1370,8 +1374,8 @@ export default function ProductDetail({
                                         </div>
                                     </div>
                                     <div className="min-w-0 lg:col-span-8">
-                                        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] pb-4 sm:mb-8">
-                                            <h3 className="text-lg font-bold text-[var(--color-text-primary)] sm:text-xl">
+                                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] pb-3 sm:mb-5">
+                                            <h3 className="text-base font-bold text-[var(--color-text-primary)] sm:text-lg">
                                                 User Reviews
                                             </h3>
                                             <div className="flex items-center gap-2">
@@ -1413,7 +1417,7 @@ export default function ProductDetail({
                                                 ))}
                                             </div>
                                         ) : (
-                                            <div className="rounded-3xl bg-[var(--color-surface-alt)] px-4 py-12 text-center sm:py-20">
+                                            <div className="rounded-2xl bg-[var(--color-surface-alt)] px-4 py-8 text-center sm:py-12">
                                                 <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-white text-[var(--color-text-muted)] sm:size-16">
                                                     <MessageSquare className="size-7 sm:size-8" />
                                                 </div>
@@ -1431,9 +1435,9 @@ export default function ProductDetail({
                             </TabsContent>
 
                             <TabsContent value="shipping" className="mt-0">
-                                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12">
+                                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-8">
                                     <div className="min-w-0">
-                                        <h4 className="mb-4 flex items-center gap-2 text-lg font-bold text-[var(--color-text-primary)] sm:mb-6 sm:text-xl">
+                                        <h4 className="mb-3 flex items-center gap-2 text-base font-bold text-[var(--color-text-primary)] sm:mb-4 sm:text-lg">
                                             <Truck className="size-5 shrink-0 text-[var(--color-primary)] sm:size-6" />
                                             Delivery Options
                                         </h4>
@@ -1502,11 +1506,11 @@ export default function ProductDetail({
                                         </div>
                                     </div>
                                     <div className="min-w-0">
-                                        <h4 className="mb-4 flex items-center gap-2 text-lg font-bold text-[var(--color-text-primary)] sm:mb-6 sm:text-xl">
+                                        <h4 className="mb-3 flex items-center gap-2 text-base font-bold text-[var(--color-text-primary)] sm:mb-4 sm:text-lg">
                                             <Undo2 className="size-5 shrink-0 text-[var(--color-primary)] sm:size-6" />
                                             Return Policy
                                         </h4>
-                                        <div className="space-y-5 text-sm text-[var(--color-text-secondary)] sm:space-y-6">
+                                        <div className="space-y-3 text-sm text-[var(--color-text-secondary)] sm:space-y-4">
                                             <p>
                                                 You can return the item within{' '}
                                                 <strong>7 days</strong> of
@@ -1559,7 +1563,7 @@ export default function ProductDetail({
                 <ProductCarousel
                     title="You May Also Like"
                     products={relatedProducts}
-                    className="mt-16"
+                    className="mt-8"
                 />
 
                 {recentlyViewed.length > 1 && (
@@ -1568,7 +1572,7 @@ export default function ProductDetail({
                         products={recentlyViewed.filter(
                             (p) => p.id !== product.id,
                         )}
-                        className="mt-8"
+                        className="mt-5"
                     />
                 )}
             </div>

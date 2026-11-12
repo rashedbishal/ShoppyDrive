@@ -7,7 +7,7 @@ import {
     LogOut,
     Palette,
     ShoppingBag,
-    UserCircle2,
+    UserRound,
 } from 'lucide-react';
 import { lazy, Suspense } from 'react';
 import { route } from 'ziggy-js';
@@ -62,28 +62,54 @@ export default function MobileMenu({
             size="md"
         >
             <div className="flex h-full flex-col gap-5">
-                <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-4">
-                    <Avatar className="size-12 border border-[var(--color-border)]">
-                        <AvatarImage
-                            src={user?.avatar ?? undefined}
-                            alt={user?.name ?? 'Guest user'}
-                        />
-                        <AvatarFallback className="bg-[var(--color-secondary)] text-white">
-                            {getInitials(user?.name ?? 'Guest')}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
-                            {user?.name ?? 'Guest shopper'}
-                        </p>
-                        <p className="truncate text-sm text-[var(--color-text-secondary)]">
-                            {user?.email ??
-                                'Sign in to sync your cart and wishlist'}
-                        </p>
+                <div className="rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-primary-light)] to-[var(--color-surface)] p-4 shadow-[var(--shadow-card)]">
+                    <div className="flex items-center gap-3.5">
+                        {/* The avatar is the way to the account page. */}
+                        <Link
+                            href="/account"
+                            onClick={onClose}
+                            aria-label="Open my account"
+                            className="shrink-0 rounded-full ring-2 ring-[var(--color-primary)]/30 ring-offset-2 ring-offset-[var(--color-surface)] transition active:scale-95"
+                        >
+                            <Avatar className="size-14 border border-[var(--color-border)]">
+                                <AvatarImage
+                                    src={user?.avatar ?? undefined}
+                                    alt={user?.name ?? 'Shopper'}
+                                />
+                                <AvatarFallback className="bg-[var(--color-secondary)] text-white">
+                                    {user ? (
+                                        getInitials(user.name)
+                                    ) : (
+                                        <UserRound className="size-6" />
+                                    )}
+                                </AvatarFallback>
+                            </Avatar>
+                        </Link>
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-base font-bold text-[var(--color-text-primary)]">
+                                {user?.name ?? 'Shopper'}
+                            </p>
+                            <p className="mt-0.5 text-sm leading-snug [overflow-wrap:anywhere] text-[var(--color-text-secondary)]">
+                                {user?.email ??
+                                    'Sign in to sync your cart and wishlist'}
+                            </p>
+                        </div>
                     </div>
+                    {!user && (
+                        <Button
+                            asChild
+                            fullWidth
+                            className="mt-3.5"
+                            leftIcon={<LogIn className="size-4" />}
+                        >
+                            <Link href={route('login')} onClick={onClose}>
+                                Log in
+                            </Link>
+                        </Button>
+                    )}
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                     <Link
                         href={route('home')}
                         onClick={onClose}
@@ -99,14 +125,6 @@ export default function MobileMenu({
                     >
                         <ShoppingBag className="mb-2 size-5 text-[var(--color-primary)]" />
                         Cart
-                    </Link>
-                    <Link
-                        href="/account"
-                        onClick={onClose}
-                        className="flex flex-col items-center justify-center rounded-2xl border border-[var(--color-border)] bg-surface p-3 text-center text-sm font-medium text-[var(--color-text-primary)] shadow-[var(--shadow-card)]"
-                    >
-                        <UserCircle2 className="mb-2 size-5 text-[var(--color-primary)]" />
-                        Account
                     </Link>
                 </div>
 
@@ -224,8 +242,8 @@ export default function MobileMenu({
                     </div>
                 </div>
 
-                <div className="mt-auto space-y-3 border-t border-[var(--color-border)] pt-4">
-                    {user ? (
+                {user && (
+                    <div className="mt-auto space-y-3 border-t border-[var(--color-border)] pt-4">
                         <Button
                             type="button"
                             variant="outline"
@@ -238,20 +256,8 @@ export default function MobileMenu({
                         >
                             Log out
                         </Button>
-                    ) : (
-                        <div>
-                            <Button
-                                asChild
-                                fullWidth
-                                leftIcon={<LogIn className="size-4" />}
-                            >
-                                <Link href={route('login')} onClick={onClose}>
-                                    Log in
-                                </Link>
-                            </Button>
-                        </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
         </Drawer>
     );

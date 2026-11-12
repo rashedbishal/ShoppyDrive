@@ -1,9 +1,10 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { useUiStore } from "@/stores/uiStore";
 
 type DrawerSide = "left" | "right";
 type DrawerSize = "sm" | "md" | "lg";
@@ -43,6 +44,12 @@ function Drawer({
     closeLabel = "Close drawer",
     header,
 }: DrawerProps) {
+    const registerDrawerOpen = useUiStore((state) => state.registerDrawerOpen);
+
+    // Tell the rest of the page a panel is open, so floating buttons (the chat
+    // button) hide instead of sitting on top of the panel's own buttons.
+    useEffect(() => (isOpen ? registerDrawerOpen() : undefined), [isOpen, registerDrawerOpen]);
+
     return (
         <AnimatePresence>
             {isOpen ? (

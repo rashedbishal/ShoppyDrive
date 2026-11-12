@@ -2160,9 +2160,15 @@ export default function LandingPageShow({
                                                         <StarRating
                                                             rating={item.rating}
                                                         />
-                                                        <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                                                            "{item.text}"
-                                                        </p>
+                                                        {/* Rich text from the CMS (purified on save); older plain-text reviews render the same. */}
+                                                        <div
+                                                            className="prose prose-sm mt-2 max-w-none [overflow-wrap:anywhere] text-slate-600 prose-p:my-1.5 prose-p:leading-relaxed prose-ol:my-1.5 prose-ul:my-1.5"
+                                                            dangerouslySetInnerHTML={{
+                                                                __html:
+                                                                    item.text ??
+                                                                    '',
+                                                            }}
+                                                        />
                                                         <p className="mt-3 text-xs font-semibold text-slate-800">
                                                             — {item.name}
                                                         </p>
