@@ -24,7 +24,19 @@
       "Bash(grep -rn \"route\\(\\\\s*$\\\\|route\\('admin\\\\.[a-z-]*\\\\.edit'\" --include=index.tsx .)",
       "Bash(python3 - *)",
       "Bash(sed -i \"22a import { useTouchReorder } from '@/lib/hooks/useTouchReorder';\" resources/js/pages/admin/categories/index.tsx)",
-      "Bash(sed -i \"s|^                    . Drag the handle on the left to reorder|&|\" resources/js/pages/admin/categories/index.tsx)"
+      "Bash(sed -i \"s|^                    . Drag the handle on the left to reorder|&|\" resources/js/pages/admin/categories/index.tsx)",
+      "Bash(php -l app/Http/Controllers/LandingPageController.php)",
+      "Bash(php -l app/Http/Controllers/Admin/LandingPageController.php)",
+      "Bash(mkdir -p /tmp/claude-1000/-media-saadman-data3-Projects-ShoppyDrive/b97891a9-8a15-4416-8f6f-e9c8e67772a9/scratchpad)",
+      "Bash(cp LandingPage.tsx /tmp/claude-1000/-media-saadman-data3-Projects-ShoppyDrive/b97891a9-8a15-4416-8f6f-e9c8e67772a9/scratchpad/LandingPage.old.tsx)",
+      "Bash(sed -i \"1s/.*/import { Head, router, useForm, usePage } from '@inertiajs\\\\/react';/\" resources/js/pages/landing/LandingPage.tsx)",
+      "Bash(sed -i \"0,/^ Check,/s// ArrowLeft,\\\\n Check,/\" resources/js/pages/landing/LandingPage.tsx)",
+      "Bash(composer install *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(php -d auto_prepend_file=/tmp/claude-1000/-media-saadman-data3-Projects-ShoppyDrive/b97891a9-8a15-4416-8f6f-e9c8e67772a9/scratchpad/purifier_stub.php vendor/bin/pest --filter=\"LandingPage\")",
+      "Bash(sed -i \"s/Setting::updateOrCreate\\(\\\\['key' => 'contact_phone'\\\\], \\\\['value' => '01900000000'\\\\]\\);/Setting::updateOrCreate\\(['key' => 'contact_phone'], ['value' => '01900000000', 'group' => 'general']\\);/\" tests/Feature/LandingPageComboOrderTest.php)",
+      "Bash(php -d auto_prepend_file=/tmp/claude-1000/-media-saadman-data3-Projects-ShoppyDrive/b97891a9-8a15-4416-8f6f-e9c8e67772a9/scratchpad/purifier_stub.php vendor/bin/pest --filter=\"LandingPageComboOrder|LandingPageVariantOrder\")",
+      "mcp__laravel-boost__get-absolute-url"
     ],
     "additionalDirectories": [
       "/media/saadman/data3/Projects/ShoppyDrive/resources/css",

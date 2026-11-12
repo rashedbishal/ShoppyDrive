@@ -17,6 +17,7 @@ use App\Models\Product;
 use App\Models\ReceivedSms;
 use App\Models\Setting;
 use App\Services\InventoryService;
+use App\Services\LandingComboService;
 use App\Services\PendingCodLimit;
 use App\Services\ShippingCostCalculator;
 use App\Support\BangladeshDistricts;
@@ -47,6 +48,7 @@ class LandingPageController extends Controller
         private readonly CartManager $cartManager,
         private readonly ShippingCostCalculator $shippingCalculator,
         private readonly PendingCodLimit $pendingCodLimit,
+        private readonly LandingComboService $combos,
     ) {}
 
     public function show(string $slug): Response|RedirectResponse
@@ -76,7 +78,12 @@ class LandingPageController extends Controller
                 'sections' => $page->getSections(),
                 'max_order_quantity' => (int) $page->max_order_quantity,
             ],
-            'product' => $this->serializeProduct($page->product),
+            'product' => $product = $this->serializeProduct($page->product),
+            'combos' => $this->combos->forDisplay(
+                $page,
+                $page->product,
+                collect($product['variants'])->mapWithKeys(fn (array $variant): array => [$variant['id'] => (float) $variant['price']])->all(),
+            ),
             'bkashNumber' => Setting::find('bkash_number')?->value,
             'nagadNumber' => Setting::find('nagad_number')?->value,
             'siteName' => Setting::find('site_name')?->value ?? config('app.name'),
@@ -126,18 +133,25 @@ class LandingPageController extends Controller
         }
 
         return [
-            'items' => ['required', 'array', 'min:1', 'max:'.$product->variants->count()],
+            'items' => ['nullable', 'array', 'max:'.$product->variants->count()],
             'items.*.variant_id' => ['required', 'integer', 'distinct', Rule::in($product->variants->pluck('id')->all())],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:'.$max],
+            // A combo (Admin > Landing pages) is a set of this product's own
+            // variants sold together; it is expanded into ordinary variant lines.
+            'combos' => ['nullable', 'array', 'max:'.max(1, count($this->combos->definitions($page, $product)))],
+            'combos.*.combo_id' => ['required', 'string', 'distinct', Rule::in(array_keys($this->combos->definitions($page, $product)))],
+            'combos.*.quantity' => ['required', 'integer', 'min:1', 'max:'.$max],
         ];
     }
 
     /**
      * The validated order as lines of variant id (null for a product without
      * variants) and quantity, in variant-id order so concurrent orders take
-     * their stock locks in the same order. Total units are capped here.
+     * their stock locks in the same order. Total units are capped here. A
+     * combo contributes one line per component variant, tagged with the combo
+     * it came from so completeLandingPageOrder() can price it as a set.
      *
-     * @return list<array{variant_id: int|null, quantity: int}>
+     * @return list<array{variant_id: int|null, quantity: int, combo?: array{key: string, id: string, name: string, price: float|null, quantity: int}}>
      */
     private function orderLines(Request $request, LandingPage $page, Product $product): array
     {
@@ -146,9 +160,28 @@ class LandingPageController extends Controller
         } else {
             $lines = collect($request->input('items', []))
                 ->map(fn ($item): array => ['variant_id' => (int) $item['variant_id'], 'quantity' => (int) $item['quantity']])
-                ->sortBy('variant_id')
-                ->values()
                 ->all();
+
+            $definitions = $this->combos->definitions($page, $product);
+
+            foreach ($request->input('combos', []) as $index => $chosen) {
+                $combo = $definitions[(string) $chosen['combo_id']];
+                $comboQuantity = (int) $chosen['quantity'];
+
+                foreach ($combo['items'] as $component) {
+                    $lines[] = [
+                        'variant_id' => $component['variant_id'],
+                        'quantity' => $component['quantity'] * $comboQuantity,
+                        'combo' => ['key' => "{$combo['id']}#{$index}", 'id' => $combo['id'], 'name' => $combo['name'], 'price' => $combo['price'], 'quantity' => $comboQuantity],
+                    ];
+                }
+            }
+
+            if ($lines === []) {
+                throw ValidationException::withMessages(['items' => 'Choose at least one option and quantity.']);
+            }
+
+            usort($lines, fn (array $a, array $b): int => $a['variant_id'] <=> $b['variant_id']);
         }
 
         $max = max(1, (int) $page->max_order_quantity);
@@ -191,6 +224,7 @@ class LandingPageController extends Controller
             'city' => ['required', 'string', 'max:255'],
             'state' => ['required', 'string', 'max:255', Rule::in(BangladeshDistricts::ALL)],
             'postal_code' => ['nullable', 'string', 'max:20'],
+            'notes' => ['nullable', 'string', 'max:500'],
             ...$this->quantityRules($page, $product),
             'payment_method' => ['required', 'in:cod,mobile_banking'],
             'provider' => ['required_if:payment_method,mobile_banking', 'nullable', 'in:bkash,nagad'],
@@ -301,12 +335,13 @@ class LandingPageController extends Controller
         $primaryImage = $product->media->where('is_primary', true)->first()?->path ?? $product->media->first()?->path;
 
         $itemsData = [];
+        $comboGroups = [];
 
-        foreach ($lines as $line) {
+        foreach ($lines as $index => $line) {
             $variant = $line['variant_id'] !== null ? $product->variants->firstWhere('id', $line['variant_id']) : null;
             $price = $this->cartManager->resolvePrice($product->id, $line['variant_id']);
 
-            $itemsData[] = [
+            $itemsData[$index] = [
                 'product_id' => $product->id,
                 'variant_id' => $line['variant_id'],
                 'product_name' => $product->name,
@@ -321,9 +356,32 @@ class LandingPageController extends Controller
                     'price' => $price,
                     'image' => $variant?->image ?? $primaryImage,
                     'variant_attributes' => $variant?->attributes,
+                    ...(isset($line['combo']) ? ['combo' => ['id' => $line['combo']['id'], 'name' => $line['combo']['name']]] : []),
                 ],
             ];
+
+            if (isset($line['combo'])) {
+                $comboGroups[$line['combo']['key']]['combo'] = $line['combo'];
+                $comboGroups[$line['combo']['key']]['indexes'][] = $index;
+            }
         }
+
+        // A combo with a fixed price: its component lines share that price.
+        foreach ($comboGroups as $group) {
+            $allocation = $this->combos->allocate(
+                $group['combo']['price'],
+                $group['combo']['quantity'],
+                array_map(fn (int $index): array => ['base_price' => (float) $itemsData[$index]['price'], 'quantity' => $itemsData[$index]['quantity']], $group['indexes']),
+            );
+
+            foreach ($group['indexes'] as $position => $index) {
+                $itemsData[$index]['price'] = $allocation[$position]['price'];
+                $itemsData[$index]['subtotal'] = $allocation[$position]['subtotal'];
+                $itemsData[$index]['product_snapshot']['price'] = $allocation[$position]['price'];
+            }
+        }
+
+        $itemsData = array_values($itemsData);
 
         $qty = array_sum(array_column($lines, 'quantity'));
         $subtotal = round(array_sum(array_column($itemsData, 'subtotal')), 2);
@@ -346,12 +404,14 @@ class LandingPageController extends Controller
             'country' => 'Bangladesh',
         ];
 
+        $customerNotes = filled($request->input('notes')) ? trim((string) $request->input('notes')) : null;
+
         if ($request->payment_method === 'cod') {
             $guestToken = Str::random(40);
             $orderNumber = OrderNumberGenerator::generate();
 
             try {
-                $order = DB::transaction(function () use ($request, $page, $product, $qty, $shippingAddress, $itemsData, $subtotal, $shippingCost, $total, $guestToken, $orderNumber) {
+                $order = DB::transaction(function () use ($request, $page, $product, $qty, $shippingAddress, $itemsData, $subtotal, $shippingCost, $total, $guestToken, $orderNumber, $customerNotes) {
                     // BIZ-011: before any stock is taken.
                     $this->pendingCodLimit->assertWithinLimit($shippingAddress['phone'], [$product->id => $qty]);
 
@@ -371,6 +431,7 @@ class LandingPageController extends Controller
                         'total' => $total,
                         'shipping_address' => $shippingAddress,
                         'billing_address' => $shippingAddress,
+                        'notes' => $customerNotes,
                     ]);
 
                     $order->statusHistories()->create(['status' => 'pending', 'notes' => 'Order placed via landing page.']);
@@ -434,6 +495,7 @@ class LandingPageController extends Controller
                 'provider' => $request->provider,
                 'landing_page_id' => $page->id,
                 'guest_token' => $guestToken,
+                'notes' => $customerNotes,
             ],
             'expires_at' => now()->addHours(2),
         ]);
@@ -587,6 +649,7 @@ class LandingPageController extends Controller
                     'total' => $data['total'],
                     'shipping_address' => $data['shipping_address'],
                     'billing_address' => $data['shipping_address'],
+                    'notes' => $data['notes'] ?? null,
                 ]);
 
                 $order->statusHistories()->create([
@@ -692,15 +755,35 @@ class LandingPageController extends Controller
                     // e.g. "Color: Red, Size: M" for a variant line.
                     'variant_label' => collect($item->product_snapshot['variant_attributes'] ?? [])
                         ->map(fn ($value, $name) => "{$name}: {$value}")->implode(', ') ?: null,
+                    'combo_name' => $item->product_snapshot['combo']['name'] ?? null,
                     'price' => (float) $item->price,
                     'quantity' => $item->quantity,
                     'subtotal' => (float) $item->subtotal,
                 ])->values()->all(),
             ],
+            'support' => $this->supportContact($order),
             'guestToken' => $guestToken,
             'siteName' => Setting::find('site_name')?->value ?? config('app.name'),
             'siteLogo' => Setting::find('logo')?->value,
         ]);
+    }
+
+    /**
+     * The phone and email shown on the success page: the landing page's own
+     * contact fields, falling back to the site-wide contact details.
+     *
+     * @return array{phone: string|null, email: string|null}
+     */
+    private function supportContact(Order $order): array
+    {
+        $contact = $order->landing_page_id !== null
+            ? (LandingPage::find($order->landing_page_id)?->getSections()['contact'] ?? [])
+            : [];
+
+        return [
+            'phone' => filled($contact['phone'] ?? null) ? (string) $contact['phone'] : (Setting::find('contact_phone')?->value ?: null),
+            'email' => filled($contact['email'] ?? null) ? (string) $contact['email'] : (Setting::find('contact_email')?->value ?: null),
+        ];
     }
 
     public function downloadInvoice(string $guestToken): HttpResponse

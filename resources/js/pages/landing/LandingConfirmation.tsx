@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { CheckCircle, Download, ShoppingBag } from 'lucide-react';
+import { CheckCircle, Download, Mail, Phone, ShoppingBag } from 'lucide-react';
 import { useEffect } from 'react';
 import { trackMetaPurchase } from '@/lib/meta-tracking';
 
@@ -7,6 +7,7 @@ type OrderItem = {
     id: number;
     product_name: string;
     variant_label?: string | null;
+    combo_name?: string | null;
     price: number;
     quantity: number;
     subtotal: number;
@@ -28,6 +29,7 @@ type Order = {
 type Props = {
     order: Order;
     guestToken: string;
+    support?: { phone: string | null; email: string | null };
     siteName: string;
     siteLogo: string | null;
 };
@@ -35,6 +37,7 @@ type Props = {
 export default function LandingConfirmation({
     order,
     guestToken,
+    support,
     siteName,
     siteLogo,
 }: Props) {
@@ -128,6 +131,11 @@ export default function LandingConfirmation({
                                         className="flex items-center justify-between text-sm"
                                     >
                                         <span className="text-slate-700">
+                                            {item.combo_name && (
+                                                <span className="mr-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                                                    {item.combo_name}
+                                                </span>
+                                            )}
                                             {item.product_name}
                                             {item.variant_label && (
                                                 <span className="text-slate-500">
@@ -189,6 +197,35 @@ export default function LandingConfirmation({
                                 <p>Bangladesh</p>
                             </div>
                         </div>
+
+                        {/* Support contact */}
+                        {(support?.phone || support?.email) && (
+                            <div className="space-y-3 rounded-2xl bg-[#0b1020] p-5 text-center text-white">
+                                <h2 className="text-sm font-bold">
+                                    Need help with your order?
+                                </h2>
+                                <div className="flex flex-col items-center gap-2 text-sm sm:flex-row sm:justify-center sm:gap-6">
+                                    {support.phone && (
+                                        <a
+                                            href={`tel:${support.phone}`}
+                                            className="inline-flex items-center gap-2 font-semibold text-amber-300 hover:text-amber-200"
+                                        >
+                                            <Phone className="size-4" />
+                                            {support.phone}
+                                        </a>
+                                    )}
+                                    {support.email && (
+                                        <a
+                                            href={`mailto:${support.email}`}
+                                            className="inline-flex items-center gap-2 text-white/80 hover:text-white"
+                                        >
+                                            <Mail className="size-4" />
+                                            {support.email}
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Invoice download — only for completed online payments */}
                         {isPaid && (

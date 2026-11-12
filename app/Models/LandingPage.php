@@ -66,10 +66,28 @@ class LandingPage extends Model
         return [
             'hero' => [
                 'enabled' => true,
+                'badge' => '',
                 'headline' => '',
                 'subheadline' => '',
                 'cta_text' => 'Order Now',
-                'bg_color' => '#0f172a',
+                'secondary_cta_text' => 'See Details',
+                'bg_color' => '#0b1020',
+                'features' => [
+                    ['title' => 'Fast delivery', 'text' => 'Delivered to your door across Bangladesh'],
+                    ['title' => '100% genuine', 'text' => 'Quality checked before it ships'],
+                    ['title' => 'Easy returns', 'text' => 'Hassle-free if anything is wrong'],
+                ],
+                'carousel' => [
+                    'use_product_images' => true,
+                    'hidden_media_ids' => [],
+                    'extra_slides' => [],
+                    'animation' => 'fade',
+                    'autoplay' => true,
+                    'interval_seconds' => 4,
+                    'transition_ms' => 800,
+                    'show_dots' => true,
+                    'show_progress' => true,
+                ],
             ],
             'benefits' => [
                 'enabled' => true,
@@ -78,13 +96,36 @@ class LandingPage extends Model
             ],
             'description' => [
                 'enabled' => true,
+                'badge' => '',
                 'title' => 'Product Details',
                 'use_product_description' => true,
                 'custom_content' => '',
+                'selection_title' => 'Choose your set',
+                'selection_hint' => 'Pick one or more options, then continue to order.',
             ],
             'gallery' => [
                 'enabled' => true,
                 'title' => 'Product Images',
+            ],
+            'combos' => [],
+            'delivery' => [
+                'enabled' => true,
+                'title' => 'Where we deliver',
+                'text' => 'We deliver all over Bangladesh. Inside Dhaka usually takes 1-2 days; elsewhere 2-5 days.',
+                'areas' => ['Dhaka', 'Chattogram', 'Sylhet', 'Rajshahi', 'Khulna', 'All other districts'],
+                'cta_text' => 'Order Now',
+                'contact_label' => 'Questions? Call us',
+            ],
+            'selection' => [
+                'title' => 'Select your order',
+                'subtitle' => 'Choose what you want, then tell us where to send it.',
+                'show_single_options' => true,
+                'notes_label' => 'Order notes',
+                'notes_placeholder' => 'Anything we should know? (optional)',
+            ],
+            'contact' => [
+                'phone' => '',
+                'email' => '',
             ],
             'testimonials' => [
                 'enabled' => false,
@@ -112,6 +153,53 @@ class LandingPage extends Model
         $defaults = self::defaultSections();
         $saved = $this->sections ?? [];
 
-        return array_replace_recursive($defaults, $saved);
+        // Lists are replaced wholesale, never merged index-by-index with the
+        // defaults (array_replace_recursive would otherwise resurrect default
+        // rows the admin deleted, or splice into an admin's shorter list).
+        $listKeys = [
+            ['hero', 'features'],
+            ['hero', 'carousel', 'hidden_media_ids'],
+            ['hero', 'carousel', 'extra_slides'],
+            ['delivery', 'areas'],
+            ['benefits', 'items'],
+            ['testimonials', 'items'],
+            ['faq', 'items'],
+        ];
+
+        $merged = array_replace_recursive($defaults, $saved);
+
+        foreach ($listKeys as $path) {
+            $value = $saved;
+
+            foreach ($path as $key) {
+                $value = is_array($value) && array_key_exists($key, $value) ? $value[$key] : null;
+            }
+
+            if (is_array($value)) {
+                $target = &$merged;
+
+                foreach (array_slice($path, 0, -1) as $key) {
+                    $target = &$target[$key];
+                }
+
+                $target[end($path)] = array_values($value);
+                unset($target);
+            }
+        }
+
+        $merged['combos'] = array_values($saved['combos'] ?? []);
+
+        // Pages saved before the hero got its own three feature boxes: reuse
+        // their old "Benefits" list so nothing the admin wrote disappears.
+        if (! isset($saved['hero']['features']) && ! empty($saved['benefits']['items'])) {
+            $merged['hero']['features'] = collect($saved['benefits']['items'])
+                ->filter(fn ($item) => is_string($item) && trim($item) !== '')
+                ->take(3)
+                ->map(fn (string $item): array => ['title' => $item, 'text' => ''])
+                ->values()
+                ->all();
+        }
+
+        return $merged;
     }
 }

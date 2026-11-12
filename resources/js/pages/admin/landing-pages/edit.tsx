@@ -9,6 +9,17 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
+import {
+    CombosEditor,
+    ContactEditor,
+    DeliveryEditor,
+    DescriptionExtras,
+    HeroExtras,
+} from '@/components/admin/landing-builder-fields';
+import type {
+    BuilderMedia,
+    BuilderVariant,
+} from '@/components/admin/landing-builder-fields';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RouteModal } from '@/components/ui/route-modal';
@@ -30,8 +41,11 @@ type Sections = {
         subheadline: string;
         cta_text: string;
         bg_color: string;
+        [key: string]: any;
     };
     benefits: { enabled: boolean; title: string; items: string[] };
+    delivery: { enabled: boolean; [key: string]: any };
+    [key: string]: any;
     description: {
         enabled: boolean;
         title: string;
@@ -63,6 +77,8 @@ type Props = {
     };
     sections: Sections;
     products: Product[];
+    productMedia: BuilderMedia[];
+    productVariants: BuilderVariant[];
 };
 
 function SectionWrap({
@@ -73,7 +89,8 @@ function SectionWrap({
 }: {
     title: string;
     enabled: boolean;
-    onToggle: () => void;
+    /** Omit for a section that is always shown (no on/off switch). */
+    onToggle?: () => void;
     children: React.ReactNode;
 }) {
     const [open, setOpen] = useState(false);
@@ -82,12 +99,14 @@ function SectionWrap({
         <Card className="shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                 <div className="flex items-center gap-3">
-                    <input
-                        type="checkbox"
-                        checked={enabled}
-                        onChange={onToggle}
-                        className="rounded border-slate-300"
-                    />
+                    {onToggle && (
+                        <input
+                            type="checkbox"
+                            checked={enabled}
+                            onChange={onToggle}
+                            className="rounded border-slate-300"
+                        />
+                    )}
                     <span className="text-sm font-semibold text-slate-700">
                         {title}
                     </span>
@@ -136,6 +155,8 @@ export default function LandingPageEdit({
     page,
     sections: initialSections,
     products,
+    productMedia,
+    productVariants,
 }: Props) {
     const inputClass =
         'h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
@@ -154,7 +175,6 @@ export default function LandingPageEdit({
         });
 
     const sec = data.sections;
-    const benefitRowKeys = useRowKeys(sec.benefits.items.length);
     const testimonialRowKeys = useRowKeys(sec.testimonials.items.length);
     const faqRowKeys = useRowKeys(sec.faq.items.length);
     const setSec = (patch: Partial<Sections>) =>
@@ -418,107 +438,42 @@ export default function LandingPageEdit({
                                 placeholder="Order Now"
                             />
                         </div>
+                        <HeroExtras
+                            sec={sec}
+                            setSec={setSec}
+                            pageId={page.id}
+                            media={productMedia}
+                        />
                     </SectionWrap>
 
-                    {/* Benefits */}
+                    {/* Variant combos + order section texts */}
+                    <SectionWrap title="Combos & Order Options" enabled>
+                        <CombosEditor
+                            sec={sec}
+                            setSec={setSec}
+                            variants={productVariants}
+                        />
+                    </SectionWrap>
+
+                    {/* Delivery */}
                     <SectionWrap
-                        title="Benefits / Features"
-                        enabled={sec.benefits.enabled}
+                        title="Delivery Info"
+                        enabled={sec.delivery.enabled}
                         onToggle={() =>
                             setSec({
-                                benefits: {
-                                    ...sec.benefits,
-                                    enabled: !sec.benefits.enabled,
+                                delivery: {
+                                    ...sec.delivery,
+                                    enabled: !sec.delivery.enabled,
                                 },
                             })
                         }
                     >
-                        <div>
-                            <label className={labelClass}>Section Title</label>
-                            <input
-                                className={inputClass}
-                                value={sec.benefits.title}
-                                onChange={(e) =>
-                                    setSec({
-                                        benefits: {
-                                            ...sec.benefits,
-                                            title: e.target.value,
-                                        },
-                                    })
-                                }
-                            />
-                        </div>
-                        <div>
-                            <label className={labelClass}>Bullet Points</label>
-                            <div className="space-y-2">
-                                <AnimatePresence initial={false}>
-                                    {sec.benefits.items.map((item, i) => (
-                                        <AdminReveal
-                                            key={benefitRowKeys.keys[i]}
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    className={inputClass}
-                                                    value={item}
-                                                    onChange={(e) => {
-                                                        const items = [
-                                                            ...sec.benefits
-                                                                .items,
-                                                        ];
-                                                        items[i] =
-                                                            e.target.value;
-                                                        setSec({
-                                                            benefits: {
-                                                                ...sec.benefits,
-                                                                items,
-                                                            },
-                                                        });
-                                                    }}
-                                                    placeholder={`Benefit ${i + 1}`}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        benefitRowKeys.removeKey(
-                                                            i,
-                                                        );
-                                                        setSec({
-                                                            benefits: {
-                                                                ...sec.benefits,
-                                                                items: sec.benefits.items.filter(
-                                                                    (_, j) =>
-                                                                        j !== i,
-                                                                ),
-                                                            },
-                                                        });
-                                                    }}
-                                                    className="shrink-0 text-slate-400 hover:text-red-500"
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </button>
-                                            </div>
-                                        </AdminReveal>
-                                    ))}
-                                </AnimatePresence>
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        setSec({
-                                            benefits: {
-                                                ...sec.benefits,
-                                                items: [
-                                                    ...sec.benefits.items,
-                                                    '',
-                                                ],
-                                            },
-                                        })
-                                    }
-                                    className="flex items-center gap-1 text-xs text-[#c8102e] hover:underline"
-                                >
-                                    <Plus className="size-3.5" /> Add bullet
-                                </button>
-                            </div>
-                        </div>
+                        <DeliveryEditor sec={sec} setSec={setSec} />
+                    </SectionWrap>
+
+                    {/* Contact */}
+                    <SectionWrap title="Contact Details" enabled>
+                        <ContactEditor sec={sec} setSec={setSec} />
                     </SectionWrap>
 
                     {/* Description */}
@@ -602,6 +557,7 @@ export default function LandingPageEdit({
                                 </AdminReveal>
                             )}
                         </AnimatePresence>
+                        <DescriptionExtras sec={sec} setSec={setSec} />
                     </SectionWrap>
 
                     {/* Gallery */}
