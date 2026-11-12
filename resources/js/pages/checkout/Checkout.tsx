@@ -16,7 +16,8 @@ import {
     LogIn,
     TriangleAlert,
 } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 import HoneypotField from '@/components/honeypot-field';
 import CheckoutLayout from '@/components/layout/CheckoutLayout';
@@ -395,16 +396,6 @@ export default function Checkout({
         [buyNowItem, cartItems],
     );
 
-    // The server can't see a guest's cart, so an empty one is caught here. Only
-    // on arrival: the cart also empties when an order is placed, and that visit
-    // must carry on to the confirmation page.
-    useEffect(() => {
-        if (items.length === 0) {
-            router.visit(route('home'), { replace: true });
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     // Meta InitiateCheckout: once when the customer actually arrives at
     // checkout with something to buy (not again on a failed submit, which
     // keeps this same page mounted). The server re-prices every line itself.
@@ -546,6 +537,38 @@ export default function Checkout({
     };
 
     const [submitting, setSubmitting] = useState(false);
+
+    // Set once the server has accepted the order and moved on to another
+    // page (confirmation or bKash/Nagad payment). The cart lines it bought are
+    // removed on that visit, which must not be mistaken for the customer
+    // emptying the cart here.
+    const orderPlacedRef = useRef(false);
+    // Whether this page has shown anything to buy, so an empty cart on
+    // arrival leaves silently and one emptied later explains why.
+    const hadItemsRef = useRef(false);
+
+    // Nothing left to buy: leave checkout instead of showing an empty order
+    // that can't be placed. On arrival (the server can't see a guest's cart)
+    // silently; later — the cart emptied from the header cart, another tab or
+    // another device while this page was open — with a short note why. Never
+    // while an order is being submitted or once one was placed.
+    useEffect(() => {
+        if (items.length > 0) {
+            hadItemsRef.current = true;
+
+            return;
+        }
+
+        if (submitting || orderPlacedRef.current) {
+            return;
+        }
+
+        if (hadItemsRef.current) {
+            toast.info('Your cart is empty, so there is nothing to check out.');
+        }
+
+        router.visit(route('home'), { replace: true });
+    }, [items.length, submitting]);
 
     // ── Incomplete-order tracking ───────────────────────────────────────────
     // Lets admins follow up on abandoned checkouts: once a valid phone number
@@ -786,7 +809,13 @@ export default function Checkout({
 
                     setSubmitting(false);
                 },
-                onSuccess: () => {
+                onSuccess: (page) => {
+                    // A refusal (changed price, cart issue) comes back to this
+                    // same page; anything else means the order went through.
+                    if (page.component !== 'checkout/Checkout') {
+                        orderPlacedRef.current = true;
+                    }
+
                     setSubmitting(false);
                     sessionStorage.removeItem('shoppydrive.checkout_attempt');
                 },

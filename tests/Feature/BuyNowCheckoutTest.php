@@ -318,6 +318,6 @@ test('checkout with no items and no existing cart is rejected', function () {
         'email' => $user->email,
     ]));
 
-    $response->assertStatus(422);
+    $response->assertRedirect()->assertSessionHasErrors('items');
     expect(Order::query()->count())->toBe(0);
 });

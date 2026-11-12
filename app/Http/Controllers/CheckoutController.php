@@ -43,6 +43,8 @@ class CheckoutController extends Controller
 {
     private const string FREE_ORDER_MESSAGE = 'This order total is ৳0, so there is nothing to pay by bKash or Nagad. Please choose Cash on Delivery.';
 
+    private const string EMPTY_CART_MESSAGE = 'Your cart is empty. Add a product to your cart before placing an order.';
+
     /** BIZ-024: the phone+address a referral discount was refused for in this session. */
     private const REFERRAL_REFUSED_SESSION_KEY = 'checkout.referral_refused_phone';
 
@@ -285,7 +287,9 @@ class CheckoutController extends Controller
 
         $cart = $isBuyNow ? $buyNowCart : $this->cartManager->getCurrentCart($request);
 
-        abort_if(! $cart || $cart->items->isEmpty(), 422, 'Your cart is empty.');
+        if (! $cart || $cart->items->isEmpty()) {
+            return $this->emptyCartResponse();
+        }
 
         $cart = $this->cartManager->withoutDuplicateRows($cart);
 
@@ -319,7 +323,9 @@ class CheckoutController extends Controller
         // the check above, so this should never actually drop anything.
         $cart->setRelation('items', $this->cartManager->validItems($cart));
 
-        abort_if($cart->items->isEmpty(), 422, 'Your cart is empty.');
+        if ($cart->items->isEmpty()) {
+            return $this->emptyCartResponse();
+        }
 
         // A cart item's price is a snapshot frozen at the last add/sync
         // — it can go stale (a flash sale started, ended, or sold out)
@@ -908,6 +914,20 @@ class CheckoutController extends Controller
     /**
      * @param  list<string>  $issues
      */
+    /**
+     * Nothing to order — e.g. the cart was emptied (in the header cart,
+     * another tab or another device) while the checkout page stayed open.
+     * Answered like any other refusal instead of a bare 422 error page: the
+     * checkout page shows the message, and a logged-in customer's reload of
+     * /checkout with an empty cart goes on to the home page (index()).
+     */
+    private function emptyCartResponse(): RedirectResponse
+    {
+        return back()
+            ->with('error', self::EMPTY_CART_MESSAGE)
+            ->withErrors(['items' => self::EMPTY_CART_MESSAGE]);
+    }
+
     private function blockedByCartIssues(array $issues): RedirectResponse
     {
         return back()
