@@ -35,6 +35,9 @@ class ProductRequest extends FormRequest
     /** Largest value the signed 32-bit integer stock columns can hold. */
     private const MAX_INTEGER = 2147483647;
 
+    /** Most units of stock one product or variant can hold (7 digits fit every stock column and list). */
+    private const MAX_STOCK = 9999999;
+
     /** Attributes one product can build variants from (each multiplies the combinations). */
     private const MAX_VARIANT_ATTRIBUTES = 5;
 
@@ -53,20 +56,20 @@ class ProductRequest extends FormRequest
             || $this->boolean('has_size_variant');
 
         return [
-            'stock_token' => [$productId !== null ? 'required' : 'prohibited', 'string'],
-            'name' => ['required', 'string', 'max:255'],
+            'stock_token' => [$productId !== null ? 'required' : 'prohibited', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:150'],
             'slug' => [
                 'required',
                 'string',
-                'max:255',
+                'max:150',
                 'unique:products,slug,'.($productId ?? 'NULL').',id,deleted_at,NULL',
             ],
-            'sku' => ['nullable', 'string', 'max:100'],
-            'short_description' => ['nullable', 'string', 'max:500'],
-            'description' => ['nullable', 'string'],
+            'sku' => ['nullable', 'string', 'max:50'],
+            'short_description' => ['nullable', 'string', 'max:300'],
+            'description' => ['nullable', 'string', 'max:20000'],
             'specifications' => ['nullable', 'array', 'max:'.self::MAX_SPECIFICATIONS],
-            'specifications.*.key' => ['required_with:specifications', 'string', 'max:100'],
-            'specifications.*.value' => ['required_with:specifications', 'string', 'max:255'],
+            'specifications.*.key' => ['required_with:specifications', 'string', 'max:60'],
+            'specifications.*.value' => ['required_with:specifications', 'string', 'max:200'],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'sub_category_id' => ['required', 'integer', 'exists:sub_categories,id'],
             'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
@@ -74,12 +77,12 @@ class ProductRequest extends FormRequest
             'price' => [Rule::requiredIf(! $hasVariants), 'nullable', 'numeric', $hasVariants ? 'min:0' : 'gt:0', 'max:'.self::MAX_MONEY],
             'compare_price' => ['nullable', 'numeric', 'min:0', 'max:'.self::MAX_MONEY],
             'cost_price' => ['nullable', 'numeric', 'min:0', 'max:'.self::MAX_MONEY],
-            'stock_quantity' => [Rule::requiredIf(! $hasVariants), 'nullable', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
-            'low_stock_threshold' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
+            'stock_quantity' => [Rule::requiredIf(! $hasVariants), 'nullable', 'integer', 'min:0', 'max:'.self::MAX_STOCK],
+            'low_stock_threshold' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_STOCK],
             'is_active' => ['boolean'],
             'is_featured' => ['boolean'],
             'free_delivery' => ['boolean'],
-            'free_delivery_min_qty' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_INTEGER],
+            'free_delivery_min_qty' => ['nullable', 'integer', 'min:1', 'max:9999'],
             'has_color_variant' => ['boolean'],
             'has_size_variant' => ['boolean'],
             // The attributes this product's variants are built from, in the
@@ -92,12 +95,12 @@ class ProductRequest extends FormRequest
             'variants.*.value_ids.*' => ['integer', 'exists:attribute_values,id'],
             'variants.*.color_value_id' => ['nullable', 'integer', 'exists:attribute_values,id'],
             'variants.*.size_value_id' => ['nullable', 'integer', 'exists:attribute_values,id'],
-            'variants.*.sku' => ['nullable', 'string', 'max:100'],
+            'variants.*.sku' => ['nullable', 'string', 'max:50'],
             'variants.*.price' => ['required_with:variants', 'numeric', 'gt:0', 'max:'.self::MAX_MONEY],
             'variants.*.compare_price' => ['nullable', 'numeric', 'min:0', 'max:'.self::MAX_MONEY],
             'variants.*.cost_price' => ['nullable', 'numeric', 'min:0', 'max:'.self::MAX_MONEY],
-            'variants.*.stock_quantity' => ['required_with:variants', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
-            'variants.*.low_stock_threshold' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
+            'variants.*.stock_quantity' => ['required_with:variants', 'integer', 'min:0', 'max:'.self::MAX_STOCK],
+            'variants.*.low_stock_threshold' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_STOCK],
             'variants.*.is_default' => ['boolean'],
             'cry_baby_enabled' => ['boolean'],
             // FSA-20: counts only newly uploaded files (UploadedFile
@@ -156,14 +159,14 @@ class ProductRequest extends FormRequest
                 }
             }],
             'media_tags' => ['nullable', 'array'],
-            'media_tags.*' => ['nullable', 'string'],
+            'media_tags.*' => ['nullable', 'string', 'max:50'],
             'primary_image_index' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
             'hover_image_index' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_INTEGER],
-            'meta_title' => ['nullable', 'string', 'max:255'],
-            'meta_description' => ['nullable', 'string', 'max:500'],
+            'meta_title' => ['nullable', 'string', 'max:70'],
+            'meta_description' => ['nullable', 'string', 'max:160'],
             // Admin-entered English equivalent(s) for a product named in
             // Bangla (e.g. "shirt, t-shirt" on শার্ট) — see ProductSearchQuery.
-            'meta_keywords' => ['nullable', 'string', 'max:255'],
+            'meta_keywords' => ['nullable', 'string', 'max:200'],
         ];
     }
 

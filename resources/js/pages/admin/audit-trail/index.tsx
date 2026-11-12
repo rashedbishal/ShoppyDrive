@@ -109,6 +109,7 @@ function ClearLogsModal({ onClose }: { onClose: () => void }) {
                         Your Password
                     </label>
                     <input
+                        maxLength={255}
                         type="password"
                         autoFocus
                         value={password}
@@ -275,10 +276,10 @@ export default function AuditTrailIndex({
                                             {item.event ?? 'event'}
                                         </Badge>
                                         <div className="min-w-0 flex-1">
-                                            <p className="text-sm text-slate-700">
+                                            <p className="text-sm break-words text-slate-700">
                                                 {item.description}
                                             </p>
-                                            <p className="mt-0.5 text-xs text-slate-400">
+                                            <p className="mt-0.5 text-xs break-words text-slate-400">
                                                 {item.causer.name}
                                                 {item.causer.type !==
                                                     'System' &&

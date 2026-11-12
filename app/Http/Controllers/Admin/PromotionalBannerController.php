@@ -48,7 +48,7 @@ class PromotionalBannerController extends Controller
             'badge' => ['nullable', 'string', 'max:'.self::BADGE_MAX_LENGTH],
             'accent' => ['nullable', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
-            'sort_order' => ['required', 'integer'],
+            'sort_order' => ['required', 'integer', 'between:-9999,9999'],
         ]);
 
         if ($request->hasFile('image')) {
@@ -80,7 +80,7 @@ class PromotionalBannerController extends Controller
             'badge' => ['nullable', 'string', 'max:'.self::BADGE_MAX_LENGTH],
             'accent' => ['nullable', 'string', 'max:255'],
             'is_active' => ['required', 'boolean'],
-            'sort_order' => ['required', 'integer'],
+            'sort_order' => ['required', 'integer', 'between:-9999,9999'],
             'products' => ['nullable', 'array'],
             'products.*' => ['integer', 'exists:products,id'],
         ]);

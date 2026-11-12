@@ -112,8 +112,8 @@ class NewsletterController extends Controller
 
         if ($type === 'custom') {
             $data = $request->validate([
-                'subject' => ['required', 'string', 'max:255'],
-                'body' => ['required', 'string'],
+                'subject' => ['required', 'string', 'max:150'],
+                'body' => ['required', 'string', 'max:20000'],
                 'attachments' => ['nullable', 'array'],
                 'attachments.*' => ['file', 'max:10240'],
             ]);
@@ -131,9 +131,9 @@ class NewsletterController extends Controller
             ];
         } else {
             $data = $request->validate([
-                'subject' => ['required', 'string', 'max:255'],
+                'subject' => ['required', 'string', 'max:150'],
                 'product_id' => ['required', 'exists:products,id'],
-                'selected_image' => ['nullable', 'string'],
+                'selected_image' => ['nullable', 'string', 'max:500'],
             ]);
 
             $newsletter = [

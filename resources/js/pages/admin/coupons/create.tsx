@@ -3,6 +3,7 @@ import { CouponTargetsCard } from '@/components/admin/CouponTargetsCard';
 import type { CouponTargetProduct } from '@/components/admin/CouponTargetsCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
@@ -61,8 +62,8 @@ export default function CouponCreate({
 
         clearErrors();
         const clientErrors: Record<string, string> = validate(data, {
-            code: [required(), maxLength(50)],
-            name: [required(), maxLength(255)],
+            code: [required(), maxLength(30)],
+            name: [required(), maxLength(100)],
             value: [required(), minValue(0)],
             min_order_amount: [minValue(0)],
             max_uses: [minValue(1)],
@@ -119,6 +120,7 @@ export default function CouponCreate({
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <Field label="Code *" error={errors.code}>
                                     <input
+                                        maxLength={30}
                                         className={`${inputClass(errors.code)} font-mono uppercase`}
                                         value={data.code}
                                         onChange={(e) =>
@@ -132,12 +134,18 @@ export default function CouponCreate({
                                 </Field>
                                 <Field label="Name *" error={errors.name}>
                                     <input
+                                        maxLength={100}
                                         className={inputClass(errors.name)}
                                         value={data.name}
                                         onChange={(e) =>
                                             setData('name', e.target.value)
                                         }
                                         placeholder="e.g. 20% Off All Items"
+                                    />
+                                    <CharCount
+                                        value={data.name}
+                                        max={100}
+                                        className="mt-1 block text-right"
                                     />
                                 </Field>
                             </div>
@@ -173,6 +181,11 @@ export default function CouponCreate({
                                     error={errors.value}
                                 >
                                     <input
+                                        max={
+                                            data.type === 'percent'
+                                                ? 100
+                                                : 99999999.99
+                                        }
                                         type="number"
                                         min="0"
                                         step="0.01"
@@ -191,6 +204,7 @@ export default function CouponCreate({
                                     error={errors.min_order_amount}
                                 >
                                     <input
+                                        max={99999999.99}
                                         type="number"
                                         min="0"
                                         className={inputClass(
@@ -207,6 +221,7 @@ export default function CouponCreate({
                                 </Field>
                                 <Field label="Max Uses" error={errors.max_uses}>
                                     <input
+                                        max={9999999}
                                         type="number"
                                         min="1"
                                         className={inputClass(errors.max_uses)}
@@ -225,6 +240,7 @@ export default function CouponCreate({
                                     error={errors.per_user_limit}
                                 >
                                     <input
+                                        max={1000}
                                         type="number"
                                         min="1"
                                         className={inputClass(

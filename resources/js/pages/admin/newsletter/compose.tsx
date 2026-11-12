@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { AdminReveal } from '@/components/admin/admin-motion';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Card } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { Select } from '@/components/ui/select';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import { useRowKeys } from '@/hooks/use-row-keys';
@@ -101,7 +102,7 @@ export default function NewsletterCompose({
         if (emailType === 'custom') {
             customForm.clearErrors();
             const clientErrors = validate(customForm.data, {
-                subject: [required(), maxLength(255)],
+                subject: [required(), maxLength(150)],
                 body: [required()],
             });
 
@@ -113,7 +114,7 @@ export default function NewsletterCompose({
         } else {
             productForm.clearErrors();
             const clientErrors = validate(productForm.data, {
-                subject: [required(), maxLength(255)],
+                subject: [required(), maxLength(150)],
                 product_id: [required()],
             });
 
@@ -356,6 +357,7 @@ export default function NewsletterCompose({
                                             Subject
                                         </label>
                                         <input
+                                            maxLength={150}
                                             type="text"
                                             placeholder="Enter email subject…"
                                             value={customForm.data.subject}
@@ -366,6 +368,11 @@ export default function NewsletterCompose({
                                                 )
                                             }
                                             className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                        />
+                                        <CharCount
+                                            value={customForm.data.subject}
+                                            max={150}
+                                            className="mt-1 block text-right"
                                         />
                                         {customForm.errors.subject && (
                                             <p className="mt-1 text-xs text-red-600">
@@ -381,6 +388,7 @@ export default function NewsletterCompose({
                                         </label>
                                         <RichTextEditor
                                             value={customForm.data.body}
+                                            maxLength={20000}
                                             onChange={(html) =>
                                                 customForm.setData('body', html)
                                             }
@@ -513,6 +521,7 @@ export default function NewsletterCompose({
                                                 Email Subject
                                             </label>
                                             <input
+                                                maxLength={150}
                                                 type="text"
                                                 placeholder="e.g. Check out our latest product!"
                                                 value={productForm.data.subject}
@@ -523,6 +532,11 @@ export default function NewsletterCompose({
                                                     )
                                                 }
                                                 className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-[#c8102e] focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                            />
+                                            <CharCount
+                                                value={productForm.data.subject}
+                                                max={150}
+                                                className="mt-1 block text-right"
                                             />
                                             {productForm.errors.subject && (
                                                 <p className="mt-1 text-xs text-red-600">

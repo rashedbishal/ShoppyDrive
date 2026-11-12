@@ -55,7 +55,7 @@ class CustomerController extends Controller
     public function destroy(Request $request, User $user): RedirectResponse
     {
         $request->validate([
-            'mother_password' => ['required', 'string'],
+            'mother_password' => ['required', 'string', 'max:255'],
         ]);
 
         $mother = Admin::where('is_mother', true)->first();
@@ -89,7 +89,7 @@ class CustomerController extends Controller
     public function restore(Request $request, User $user): RedirectResponse
     {
         $request->validate([
-            'mother_password' => ['required', 'string'],
+            'mother_password' => ['required', 'string', 'max:255'],
         ]);
 
         $mother = Admin::where('is_mother', true)->first();

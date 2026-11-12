@@ -20,11 +20,11 @@ class ProductBundleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'name' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:300'],
             'image' => ['nullable', new RasterImageOrUrl],
             'discount_type' => ['required', 'string', 'in:fixed_price,free_delivery'],
-            'bundle_price' => ['required_if:discount_type,fixed_price', 'nullable', 'numeric', $this->input('discount_type') === 'fixed_price' ? 'gt:0' : 'min:0'],
+            'bundle_price' => ['required_if:discount_type,fixed_price', 'nullable', 'numeric', $this->input('discount_type') === 'fixed_price' ? 'gt:0' : 'min:0', 'max:99999999.99'],
             'is_active' => ['boolean'],
             'items' => [
                 'required',
@@ -65,6 +65,7 @@ class ProductBundleRequest extends FormRequest
                 'required',
                 'integer',
                 'min:1',
+                'max:1000',
                 // BIZ-002 (tester retest, 2026-11-09): this is how many units
                 // of the component one bundle set needs, with no per-unit
                 // quantity picker anywhere a customer could add less — so a

@@ -454,7 +454,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
 
         form.clearErrors();
         const clientErrors: Record<string, string> = validate(form.data, {
-            name: [required(), maxLength(255)],
+            name: [required(), maxLength(100)],
             phone: [
                 required(),
                 pattern(
@@ -463,10 +463,10 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                 ),
             ],
             email: [email()],
-            address_line1: [required(), maxLength(255)],
-            address_line2: [maxLength(255)],
-            city: [required(), maxLength(255)],
-            state: [required(), maxLength(255)],
+            address_line1: [required(), maxLength(200)],
+            address_line2: [maxLength(200)],
+            city: [required(), maxLength(100)],
+            state: [required(), maxLength(100)],
             postal_code: [maxLength(20)],
         });
 
@@ -564,6 +564,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                             <div className="relative">
                                                 <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                                 <input
+                                                    maxLength={100}
                                                     type="text"
                                                     placeholder="Search an existing customer by name, email or phone (optional)…"
                                                     value={customerQuery}
@@ -630,6 +631,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                             <div className="space-y-1.5">
                                 <Label htmlFor="co-name">Full Name *</Label>
                                 <Input
+                                    maxLength={100}
                                     id="co-name"
                                     value={form.data.name}
                                     onChange={(e) =>
@@ -660,6 +662,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                         <div className="space-y-1.5">
                             <Label htmlFor="co-email">Email</Label>
                             <Input
+                                maxLength={150}
                                 id="co-email"
                                 type="email"
                                 value={form.data.email}
@@ -675,6 +678,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                 Address Line 1 *
                             </Label>
                             <Input
+                                maxLength={200}
                                 id="co-address1"
                                 value={form.data.address_line1}
                                 onChange={(e) =>
@@ -691,6 +695,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                         <div className="space-y-1.5">
                             <Label htmlFor="co-address2">Address Line 2</Label>
                             <Input
+                                maxLength={200}
                                 id="co-address2"
                                 value={form.data.address_line2}
                                 onChange={(e) =>
@@ -753,6 +758,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                     ) : (
                                         <AdminFade key="city-b">
                                             <Input
+                                                maxLength={100}
                                                 id="co-city"
                                                 value={form.data.city}
                                                 onChange={(e) =>
@@ -774,6 +780,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                             <div className="space-y-1.5">
                                 <Label htmlFor="co-postal">Postal Code</Label>
                                 <Input
+                                    maxLength={20}
                                     id="co-postal"
                                     value={form.data.postal_code}
                                     onChange={(e) =>
@@ -819,6 +826,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                 <div className="relative">
                                     <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                     <input
+                                        maxLength={100}
                                         type="text"
                                         placeholder="Search products to add…"
                                         value={productQuery}
@@ -964,6 +972,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                             </p>
                                                         )}
                                                         <input
+                                                            max={99999999.99}
                                                             type="number"
                                                             min={0}
                                                             step="0.01"
@@ -1006,6 +1015,9 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                                     </p>
                                                                 )}
                                                                 <Input
+                                                                    maxLength={
+                                                                        500
+                                                                    }
                                                                     aria-label="Reason for changing the price"
                                                                     placeholder="Reason for changing the price"
                                                                     value={
@@ -1065,6 +1077,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                     Shipping Cost (৳)
                                 </Label>
                                 <Input
+                                    max={99999999.99}
                                     id="co-shipping"
                                     type="number"
                                     min={0}
@@ -1082,6 +1095,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                 {(shippingOverridden ||
                                     form.errors.shipping_override_reason) && (
                                     <Input
+                                        maxLength={500}
                                         aria-label="Reason for changing shipping"
                                         placeholder={
                                             calculatedShipping === null
@@ -1108,6 +1122,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                     Discount (৳)
                                 </Label>
                                 <Input
+                                    max={99999999.99}
                                     id="co-discount"
                                     type="number"
                                     min={0}
@@ -1124,6 +1139,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                 {(discountOverridden ||
                                     form.errors.discount_override_reason) && (
                                     <Input
+                                        maxLength={500}
                                         aria-label="Reason for the discount"
                                         placeholder="Reason for the discount"
                                         value={
@@ -1146,6 +1162,8 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                         <div className="space-y-1.5">
                             <Label htmlFor="co-notes">Order Notes</Label>
                             <Textarea
+                                maxLength={1000}
+                                showCount
                                 id="co-notes"
                                 rows={2}
                                 value={form.data.notes}

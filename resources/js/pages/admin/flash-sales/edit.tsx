@@ -4,6 +4,7 @@ import { FlashSaleProductsCard } from '@/components/admin/flash-sale-products-ca
 import type { FlashSaleItemData } from '@/components/admin/flash-sale-products-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import { maxLength, required, validate } from '@/lib/validate';
 
@@ -108,7 +109,7 @@ export default function FlashSaleEdit({ flashSale }: Props) {
 
     const getClientErrors = (): Record<string, string> => {
         const clientErrors: Record<string, string> = validate(data, {
-            name: [required(), maxLength(255)],
+            name: [required(), maxLength(100)],
             starts_at: [required()],
             ends_at: [required()],
         });
@@ -206,11 +207,17 @@ export default function FlashSaleEdit({ flashSale }: Props) {
                                 <CardContent className="space-y-4 pt-3">
                                     <Field label="Name *" error={errors.name}>
                                         <input
+                                            maxLength={100}
                                             className={inputClass(errors.name)}
                                             value={data.name}
                                             onChange={(e) =>
                                                 setData('name', e.target.value)
                                             }
+                                        />
+                                        <CharCount
+                                            value={data.name}
+                                            max={100}
+                                            className="mt-1 block text-right"
                                         />
                                     </Field>
                                     <Field

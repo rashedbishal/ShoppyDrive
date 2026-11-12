@@ -129,7 +129,10 @@ export default function LandingPagesIndex({ pages }: Props) {
                                     />
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                            <span className="text-sm font-semibold text-slate-800">
+                                            <span
+                                                className="block max-w-full truncate text-sm font-semibold text-slate-800"
+                                                title={page.title}
+                                            >
                                                 {page.title}
                                             </span>
                                             <span
@@ -141,11 +144,11 @@ export default function LandingPagesIndex({ pages }: Props) {
                                             </span>
                                         </div>
                                         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-400">
-                                            <span className="font-mono">
+                                            <span className="font-mono break-all">
                                                 /lp/{page.slug}
                                             </span>
                                             {page.product && (
-                                                <span>
+                                                <span className="break-words">
                                                     · {page.product.name}
                                                 </span>
                                             )}

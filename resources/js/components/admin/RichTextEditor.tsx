@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { CharCount } from '@/components/ui/char-count';
 import {
     Dialog,
     DialogContent,
@@ -108,6 +109,7 @@ function InsertImageDialog({
                             Image URL
                         </label>
                         <input
+                            maxLength={500}
                             type="url"
                             value={urlInput}
                             onChange={(e) => {
@@ -151,10 +153,17 @@ export function RichTextEditor({
     value,
     onChange,
     minHeight = 240,
+    maxLength,
 }: {
     value: string;
     onChange: (html: string) => void;
     minHeight?: number;
+    /**
+     * Largest size of the saved HTML (markup included, as the server counts
+     * it). Typing or pasting past it is undone, and a counter shows how much
+     * is left.
+     */
+    maxLength?: number;
 }) {
     const editorRef = useRef<HTMLDivElement>(null);
     const isInitialized = useRef(false);
@@ -397,12 +406,26 @@ export function RichTextEditor({
                     suppressContentEditableWarning
                     onInput={() => {
                         if (editorRef.current) {
+                            if (
+                                maxLength !== undefined &&
+                                editorRef.current.innerHTML.length > maxLength
+                            ) {
+                                document.execCommand('undo');
+
+                                return;
+                            }
+
                             onChange(editorRef.current.innerHTML);
                         }
                     }}
                     style={{ minHeight }}
                     className="p-4 text-sm text-slate-800 focus:outline-none [&_a]:text-[#c8102e] [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:text-slate-500 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_img]:max-w-full [&_img]:rounded [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
                 />
+                {maxLength !== undefined && (
+                    <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-3 py-1">
+                        <CharCount value={value} max={maxLength} />
+                    </div>
+                )}
             </div>
 
             <InsertImageDialog

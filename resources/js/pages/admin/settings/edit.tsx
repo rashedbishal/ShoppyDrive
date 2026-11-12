@@ -86,6 +86,7 @@ export default function SettingsEdit({ settings }: Props) {
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <SettingsField label="Site Name">
                                     <input
+                                        maxLength={60}
                                         className={settingsInputClass}
                                         value={data.site_name}
                                         onChange={(e) =>
@@ -96,6 +97,7 @@ export default function SettingsEdit({ settings }: Props) {
                                 </SettingsField>
                                 <SettingsField label="Currency Symbol">
                                     <input
+                                        maxLength={5}
                                         className={settingsInputClass}
                                         value={data.currency_symbol}
                                         onChange={(e) =>
@@ -238,6 +240,7 @@ export default function SettingsEdit({ settings }: Props) {
                                     hint="Receives an email every time a new order is placed."
                                 >
                                     <input
+                                        maxLength={150}
                                         type="email"
                                         className={settingsInputClass}
                                         value={data.order_notification_email}
@@ -260,6 +263,7 @@ export default function SettingsEdit({ settings }: Props) {
                                     hint="Receives an email every time an order is cancelled."
                                 >
                                     <input
+                                        maxLength={150}
                                         type="email"
                                         className={settingsInputClass}
                                         value={data.order_cancellation_email}
@@ -291,6 +295,7 @@ export default function SettingsEdit({ settings }: Props) {
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <SettingsField label="Facebook">
                                     <input
+                                        maxLength={300}
                                         className={settingsInputClass}
                                         value={data.social_links.facebook}
                                         onChange={(e) =>
@@ -304,6 +309,7 @@ export default function SettingsEdit({ settings }: Props) {
                                 </SettingsField>
                                 <SettingsField label="Instagram">
                                     <input
+                                        maxLength={300}
                                         className={settingsInputClass}
                                         value={data.social_links.instagram}
                                         onChange={(e) =>
@@ -317,6 +323,7 @@ export default function SettingsEdit({ settings }: Props) {
                                 </SettingsField>
                                 <SettingsField label="Twitter / X">
                                     <input
+                                        maxLength={300}
                                         className={settingsInputClass}
                                         value={data.social_links.twitter}
                                         onChange={(e) =>
@@ -330,6 +337,7 @@ export default function SettingsEdit({ settings }: Props) {
                                 </SettingsField>
                                 <SettingsField label="YouTube">
                                     <input
+                                        maxLength={300}
                                         className={settingsInputClass}
                                         value={data.social_links.youtube}
                                         onChange={(e) =>
@@ -343,6 +351,7 @@ export default function SettingsEdit({ settings }: Props) {
                                 </SettingsField>
                                 <SettingsField label="TikTok">
                                     <input
+                                        maxLength={300}
                                         className={settingsInputClass}
                                         value={data.social_links.tiktok}
                                         onChange={(e) =>
@@ -371,6 +380,7 @@ export default function SettingsEdit({ settings }: Props) {
                                     hint="Phone number with country code, e.g. +8801700000000"
                                 >
                                     <input
+                                        maxLength={20}
                                         type="tel"
                                         className={settingsInputClass}
                                         value={data.whatsapp_number}
@@ -388,6 +398,7 @@ export default function SettingsEdit({ settings }: Props) {
                                     hint="Your Facebook page username or full m.me URL, e.g. shoppydrive"
                                 >
                                     <input
+                                        maxLength={300}
                                         className={settingsInputClass}
                                         value={data.messenger_link}
                                         onChange={(e) =>
@@ -416,6 +427,7 @@ export default function SettingsEdit({ settings }: Props) {
                                     hint="Owner's Bkash number customers will send money to"
                                 >
                                     <input
+                                        maxLength={15}
                                         type="tel"
                                         className={settingsInputClass}
                                         value={data.bkash_number}
@@ -433,6 +445,7 @@ export default function SettingsEdit({ settings }: Props) {
                                     hint="Owner's Nagad number customers will send money to"
                                 >
                                     <input
+                                        maxLength={15}
                                         type="tel"
                                         className={settingsInputClass}
                                         value={data.nagad_number}

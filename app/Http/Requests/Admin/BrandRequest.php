@@ -20,13 +20,13 @@ class BrandRequest extends FormRequest
         $brandId = $this->route('brand')?->id;
 
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', 'unique:brands,slug,'.($brandId ?? 'NULL').',id'],
+            'name' => ['required', 'string', 'max:80'],
+            'slug' => ['required', 'string', 'max:100', 'unique:brands,slug,'.($brandId ?? 'NULL').',id'],
             // max:1024 (KB) only applies to a fresh upload — when the field is
             // the existing stored path string, `max` would instead check its
             // character length.
             'logo' => ['nullable', new RasterImageOrUrl, Rule::when($this->hasFile('logo'), ['max:1024'])],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'is_active' => ['boolean'],
         ];
     }

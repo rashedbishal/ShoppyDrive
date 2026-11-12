@@ -117,6 +117,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                             <input
+                                maxLength={100}
                                 type="text"
                                 placeholder="Search by name, email, or subject…"
                                 value={search}
@@ -159,7 +160,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-baseline gap-2">
-                                            <p className="text-sm font-semibold text-slate-800">
+                                            <p className="text-sm font-semibold break-words text-slate-800">
                                                 {message.name}
                                             </p>
                                             <a
@@ -177,10 +178,10 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                                                 ).toLocaleString()}
                                             </p>
                                         </div>
-                                        <p className="mt-1 text-sm font-medium text-slate-700">
+                                        <p className="mt-1 text-sm font-medium break-words text-slate-700">
                                             {message.subject}
                                         </p>
-                                        <p className="mt-1 text-sm text-slate-500">
+                                        <p className="mt-1 text-sm break-words whitespace-pre-line text-slate-500">
                                             {message.message}
                                         </p>
                                     </div>

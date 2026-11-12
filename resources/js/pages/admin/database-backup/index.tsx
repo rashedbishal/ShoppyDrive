@@ -275,6 +275,7 @@ function PendingRestore({ report }: { report: RestoreReport }) {
                         Enter your password to restore
                     </label>
                     <input
+                        maxLength={255}
                         id="restore-password"
                         type="password"
                         autoComplete="current-password"
@@ -435,6 +436,7 @@ export default function DatabaseBackupIndex({
                                 Enter your password to download
                             </label>
                             <input
+                                maxLength={255}
                                 id="download-password"
                                 type="password"
                                 name="password"

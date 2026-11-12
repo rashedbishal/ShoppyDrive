@@ -1,6 +1,7 @@
 import * as React from "react";
 import { forwardRef, type InputHTMLAttributes, useId, type ReactNode } from "react";
 
+import { CharCount } from "@/components/ui/char-count";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +15,8 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
     containerClassName?: string;
     labelClassName?: string;
     inputClassName?: string;
+    /** Shows a live "length/maxLength" counter under the field. Needs `maxLength` and a controlled `value`. */
+    showCount?: boolean;
 };
 
 const inputBaseClassName =
@@ -33,6 +36,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     containerClassName,
     labelClassName,
     inputClassName,
+    showCount = false,
     ...props
 }: InputProps,
 ref,
@@ -83,10 +87,19 @@ ref,
                     </span>
                 ) : null}
             </div>
-            {hint ? (
-                <p id={hintId} className="text-xs text-text-secondary">
-                    {hint}
-                </p>
+            {hint || (showCount && props.maxLength) ? (
+                <div className="flex items-start justify-between gap-3">
+                    {hint ? (
+                        <p id={hintId} className="text-xs text-text-secondary">
+                            {hint}
+                        </p>
+                    ) : (
+                        <span />
+                    )}
+                    {showCount && props.maxLength ? (
+                        <CharCount value={props.value as string} max={props.maxLength} />
+                    ) : null}
+                </div>
             ) : null}
             {error ? (
                 <p id={errorId} className="text-xs text-destructive">

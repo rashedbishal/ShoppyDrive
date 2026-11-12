@@ -102,6 +102,7 @@ export default function ContactPageConfig({ settings }: Props) {
                     <CardContent className="space-y-4 pt-3">
                         <SettingsField label="Eyebrow badge">
                             <input
+                                maxLength={60}
                                 className={settingsInputClass}
                                 value={data.contact_page_hero_eyebrow}
                                 onChange={(e) =>
@@ -118,6 +119,7 @@ export default function ContactPageConfig({ settings }: Props) {
                                 hint='e.g. "We&apos;re here to"'
                             >
                                 <input
+                                    maxLength={100}
                                     className={settingsInputClass}
                                     value={data.contact_page_hero_title}
                                     onChange={(e) =>
@@ -133,6 +135,7 @@ export default function ContactPageConfig({ settings }: Props) {
                                 hint="Shown right after the title, in the brand color"
                             >
                                 <input
+                                    maxLength={60}
                                     className={settingsInputClass}
                                     value={
                                         data.contact_page_hero_title_highlight
@@ -148,6 +151,8 @@ export default function ContactPageConfig({ settings }: Props) {
                         </div>
                         <SettingsField label="Description">
                             <Textarea
+                                maxLength={500}
+                                showCount
                                 textareaClassName={settingsInputClass}
                                 rows={2}
                                 value={data.contact_page_hero_description}
@@ -178,6 +183,7 @@ export default function ContactPageConfig({ settings }: Props) {
                         <div className="grid gap-4 sm:grid-cols-2">
                             <SettingsField label="Phone">
                                 <input
+                                    maxLength={30}
                                     className={settingsInputClass}
                                     value={data.contact_phone}
                                     onChange={(e) =>
@@ -188,6 +194,7 @@ export default function ContactPageConfig({ settings }: Props) {
                             </SettingsField>
                             <SettingsField label="Email">
                                 <input
+                                    maxLength={150}
                                     type="email"
                                     className={settingsInputClass}
                                     value={data.contact_email}
@@ -201,6 +208,7 @@ export default function ContactPageConfig({ settings }: Props) {
                         <div className="grid gap-4 sm:grid-cols-2">
                             <SettingsField label="Address / Location">
                                 <input
+                                    maxLength={300}
                                     className={settingsInputClass}
                                     value={data.contact_address}
                                     onChange={(e) =>
@@ -214,6 +222,7 @@ export default function ContactPageConfig({ settings }: Props) {
                             </SettingsField>
                             <SettingsField label="Support Hours">
                                 <input
+                                    maxLength={60}
                                     className={settingsInputClass}
                                     value={data.contact_page_support_hours}
                                     onChange={(e) =>
@@ -230,6 +239,7 @@ export default function ContactPageConfig({ settings }: Props) {
                         <div className="grid gap-4 sm:grid-cols-2">
                             <SettingsField label="Legal Business Name">
                                 <input
+                                    maxLength={150}
                                     className={settingsInputClass}
                                     value={data.legal_business_name}
                                     onChange={(e) =>
@@ -243,6 +253,7 @@ export default function ContactPageConfig({ settings }: Props) {
                             </SettingsField>
                             <SettingsField label="Trade Licence Number">
                                 <input
+                                    maxLength={60}
                                     className={settingsInputClass}
                                     value={data.trade_licence_number}
                                     onChange={(e) =>

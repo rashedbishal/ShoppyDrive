@@ -21,11 +21,11 @@ class SubCategoryRequest extends FormRequest
         $subCategoryId = $subCategory?->id;
 
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:80'],
             'slug' => [
                 'required',
                 'string',
-                'max:255',
+                'max:100',
                 'unique:sub_categories,slug,'.($subCategoryId ?? 'NULL').',id,deleted_at,NULL',
             ],
             // A sub-category must not be (re-)created under an inactive
@@ -40,12 +40,12 @@ class SubCategoryRequest extends FormRequest
                     ->where('is_active', true)
                     ->when($subCategory?->category_id, fn ($query, $currentId) => $query->orWhere('id', $currentId))),
             ],
-            'description' => ['nullable', 'string'],
-            'meta_title' => ['nullable', 'string', 'max:255'],
-            'meta_description' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'meta_title' => ['nullable', 'string', 'max:70'],
+            'meta_description' => ['nullable', 'string', 'max:160'],
             'image' => ['nullable', new RasterImageOrUrl],
             'is_active' => ['boolean'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
         ];
     }
 }

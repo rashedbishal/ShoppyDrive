@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { PackageX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CharCount } from '@/components/ui/char-count';
 import {
     Dialog,
     DialogContent,
@@ -72,6 +73,7 @@ export default function LostParcelDialog({
                             What did the courier confirm?
                         </label>
                         <textarea
+                            maxLength={1000}
                             id="lost-note"
                             rows={3}
                             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
@@ -79,6 +81,11 @@ export default function LostParcelDialog({
                             onChange={(event) =>
                                 form.setData('note', event.target.value)
                             }
+                        />
+                        <CharCount
+                            value={form.data.note}
+                            max={1000}
+                            className="mt-1 block text-right"
                         />
                         {form.errors.note && (
                             <p className="mt-1 text-xs text-red-500">
@@ -94,6 +101,7 @@ export default function LostParcelDialog({
                             Your password
                         </label>
                         <Input
+                            maxLength={255}
                             id="lost-password"
                             type="password"
                             autoComplete="current-password"

@@ -189,6 +189,7 @@ export default function AboutPageConfig({ settings }: Props) {
                     <CardContent className="space-y-4 pt-3">
                         <SettingsField label="Eyebrow badge">
                             <input
+                                maxLength={60}
                                 className={settingsInputClass}
                                 value={data.about_hero_eyebrow}
                                 onChange={(e) =>
@@ -205,6 +206,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                 hint="Shown before the highlighted line"
                             >
                                 <input
+                                    maxLength={100}
                                     className={settingsInputClass}
                                     value={data.about_hero_title}
                                     onChange={(e) =>
@@ -220,6 +222,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                 hint="Shown on its own line, in the brand color"
                             >
                                 <input
+                                    maxLength={60}
                                     className={settingsInputClass}
                                     value={data.about_hero_title_highlight}
                                     onChange={(e) =>
@@ -233,6 +236,8 @@ export default function AboutPageConfig({ settings }: Props) {
                         </div>
                         <SettingsField label="Description">
                             <Textarea
+                                maxLength={400}
+                                showCount
                                 textareaClassName={settingsInputClass}
                                 rows={3}
                                 value={data.about_hero_description}
@@ -267,6 +272,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                 <AdminReveal key={statRowKeys.keys[index]}>
                                     <div className="flex items-end gap-2">
                                         <Input
+                                            maxLength={20}
                                             containerClassName="flex-1"
                                             placeholder="Value (e.g. 50,000+)"
                                             value={stat.value}
@@ -277,6 +283,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                             }
                                         />
                                         <Input
+                                            maxLength={100}
                                             containerClassName="flex-1"
                                             placeholder="Label (e.g. Happy Customers)"
                                             value={stat.label}
@@ -317,6 +324,7 @@ export default function AboutPageConfig({ settings }: Props) {
                         <div className="grid gap-4 sm:grid-cols-2">
                             <SettingsField label="Eyebrow">
                                 <input
+                                    maxLength={60}
                                     className={settingsInputClass}
                                     value={data.about_mission_eyebrow}
                                     onChange={(e) =>
@@ -329,6 +337,7 @@ export default function AboutPageConfig({ settings }: Props) {
                             </SettingsField>
                             <SettingsField label="Title">
                                 <input
+                                    maxLength={100}
                                     className={settingsInputClass}
                                     value={data.about_mission_title}
                                     onChange={(e) =>
@@ -343,6 +352,7 @@ export default function AboutPageConfig({ settings }: Props) {
                         <SettingsField label="Body">
                             <RichTextEditor
                                 value={data.about_mission_body}
+                                maxLength={20000}
                                 onChange={(html) =>
                                     setData('about_mission_body', html)
                                 }
@@ -385,6 +395,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                                         }
                                                     />
                                                     <Input
+                                                        maxLength={60}
                                                         containerClassName="flex-1"
                                                         placeholder="Label (e.g. Nationwide Delivery)"
                                                         value={feature.label}
@@ -454,6 +465,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                                 }
                                             />
                                             <Input
+                                                maxLength={60}
                                                 containerClassName="flex-1"
                                                 placeholder="Title (e.g. Trust & Transparency)"
                                                 value={value.title}
@@ -476,6 +488,8 @@ export default function AboutPageConfig({ settings }: Props) {
                                             </Button>
                                         </div>
                                         <Textarea
+                                            maxLength={250}
+                                            showCount
                                             textareaClassName={
                                                 settingsInputClass
                                             }
@@ -520,6 +534,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                 <AdminReveal key={teamRowKeys.keys[index]}>
                                     <div className="flex items-end gap-2">
                                         <Input
+                                            maxLength={60}
                                             containerClassName="flex-1"
                                             placeholder="Name"
                                             value={member.name}
@@ -530,6 +545,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                             }
                                         />
                                         <Input
+                                            maxLength={60}
                                             containerClassName="flex-1"
                                             placeholder="Role"
                                             value={member.role}
@@ -582,6 +598,7 @@ export default function AboutPageConfig({ settings }: Props) {
                     <CardContent className="space-y-4 pt-3">
                         <SettingsField label="Title">
                             <input
+                                maxLength={100}
                                 className={settingsInputClass}
                                 value={data.about_cta_title}
                                 onChange={(e) =>
@@ -591,6 +608,8 @@ export default function AboutPageConfig({ settings }: Props) {
                         </SettingsField>
                         <SettingsField label="Description">
                             <Textarea
+                                maxLength={250}
+                                showCount
                                 textareaClassName={settingsInputClass}
                                 rows={2}
                                 value={data.about_cta_description}

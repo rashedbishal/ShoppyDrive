@@ -108,7 +108,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
         clearErrors();
         const clientErrors: Record<string, string> = validate(data, {
             name: [required(), maxLength(100)],
-            identifier: [required(), maxLength(255)],
+            identifier: [required(), maxLength(100)],
             txn_id_regex: [required(), maxLength(255)],
             amount_regex: [required(), maxLength(255)],
         });
@@ -243,6 +243,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                     Pattern Name *
                                                 </label>
                                                 <input
+                                                    maxLength={100}
                                                     className={inputClass}
                                                     value={data.name}
                                                     onChange={(e) =>
@@ -271,6 +272,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                 </span>
                                             </label>
                                             <input
+                                                maxLength={100}
                                                 className={inputClass}
                                                 value={data.identifier}
                                                 onChange={(e) =>
@@ -300,6 +302,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                 </span>
                                             </label>
                                             <input
+                                                maxLength={255}
                                                 className={`${inputClass} font-mono text-xs`}
                                                 value={data.sender_regex ?? ''}
                                                 onChange={(e) =>
@@ -326,6 +329,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                     </span>
                                                 </label>
                                                 <input
+                                                    maxLength={255}
                                                     className={`${inputClass} font-mono text-xs`}
                                                     value={data.txn_id_regex}
                                                     onChange={(e) =>
@@ -351,6 +355,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                     </span>
                                                 </label>
                                                 <input
+                                                    maxLength={255}
                                                     className={`${inputClass} font-mono text-xs`}
                                                     value={data.amount_regex}
                                                     onChange={(e) =>
@@ -376,6 +381,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                     Sort Order
                                                 </label>
                                                 <input
+                                                    max={9999}
                                                     type="number"
                                                     min={0}
                                                     className={inputClass}
@@ -504,7 +510,10 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                         ? 'Bkash'
                                                         : 'Nagad'}
                                                 </span>
-                                                <span className="text-sm font-semibold text-slate-800">
+                                                <span
+                                                    className="truncate text-sm font-semibold text-slate-800"
+                                                    title={p.name}
+                                                >
                                                     {p.name}
                                                 </span>
                                                 {!p.is_active && (
@@ -520,7 +529,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                 <span className="font-medium text-slate-600">
                                                     Identifier:
                                                 </span>{' '}
-                                                <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px]">
+                                                <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px] break-all">
                                                     {p.identifier}
                                                 </code>
                                             </p>

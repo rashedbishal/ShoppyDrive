@@ -356,6 +356,8 @@ export default function HeroSlideCreate() {
                                             Sort Order
                                         </label>
                                         <Input
+                                            max={9999}
+                                            min={-9999}
                                             type="number"
                                             value={data.sort_order}
                                             onChange={(e) => {

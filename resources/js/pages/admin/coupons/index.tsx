@@ -126,6 +126,7 @@ export default function CouponsIndex({ coupons, filters }: Props) {
                         <div className="relative flex-1">
                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                             <input
+                                maxLength={100}
                                 type="text"
                                 placeholder="Search by code or name…"
                                 value={search}
@@ -185,10 +186,16 @@ export default function CouponsIndex({ coupons, filters }: Props) {
                                         }
                                     />
                                     <div className="min-w-0 flex-1">
-                                        <p className="font-mono text-sm font-bold text-slate-800">
+                                        <p
+                                            className="truncate font-mono text-sm font-bold text-slate-800"
+                                            title={coupon.code}
+                                        >
                                             {coupon.code}
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p
+                                            className="truncate text-xs text-slate-400"
+                                            title={coupon.name}
+                                        >
                                             {coupon.name}
                                         </p>
                                     </div>

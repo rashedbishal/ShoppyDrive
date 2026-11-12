@@ -306,6 +306,8 @@ export default function HomepageEdit({
                                     </CardHeader>
                                     <CardContent className="space-y-4 pt-3">
                                         <Input
+                                            maxLength={120}
+                                            showCount
                                             label="Announcement Message"
                                             value={data.title}
                                             onChange={(e) =>
@@ -316,6 +318,7 @@ export default function HomepageEdit({
                                         />
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Input
+                                                maxLength={30}
                                                 label="Phone Number"
                                                 value={
                                                     data.metadata.phone ?? ''
@@ -337,6 +340,7 @@ export default function HomepageEdit({
                                                 }
                                             />
                                             <Input
+                                                maxLength={150}
                                                 label="Email Address"
                                                 type="email"
                                                 value={
@@ -362,6 +366,8 @@ export default function HomepageEdit({
                                         <Input
                                             label="Free Delivery Minimum Amount (৳)"
                                             type="number"
+                                            min={0}
+                                            max={99999999.99}
                                             value={String(
                                                 data.metadata
                                                     .free_delivery_amount ?? '',
@@ -477,6 +483,7 @@ export default function HomepageEdit({
                                     <CardContent className="space-y-4 pt-3">
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Input
+                                                maxLength={60}
                                                 label="Eyebrow (optional)"
                                                 value={data.eyebrow}
                                                 onChange={(e) =>
@@ -489,6 +496,8 @@ export default function HomepageEdit({
                                                 error={errors.eyebrow}
                                             />
                                             <Input
+                                                maxLength={120}
+                                                showCount
                                                 label="Title"
                                                 value={data.title}
                                                 onChange={(e) =>
@@ -503,6 +512,8 @@ export default function HomepageEdit({
                                         </div>
                                         {!isFlashSale && (
                                             <Textarea
+                                                maxLength={300}
+                                                showCount
                                                 label="Description (optional)"
                                                 value={data.description}
                                                 onChange={(e) =>
@@ -518,6 +529,7 @@ export default function HomepageEdit({
                                         )}
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Input
+                                                maxLength={40}
                                                 label="Action Button Label"
                                                 value={data.action_label}
                                                 onChange={(e) =>
@@ -530,6 +542,7 @@ export default function HomepageEdit({
                                                 error={errors.action_label}
                                             />
                                             <Input
+                                                maxLength={255}
                                                 label="Action Button Link"
                                                 value={data.action_href}
                                                 onChange={(e) =>
@@ -559,6 +572,7 @@ export default function HomepageEdit({
                                         >
                                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                             <Input
+                                                maxLength={100}
                                                 placeholder="Search products..."
                                                 className="h-9 pl-9"
                                                 value={searchQuery}
@@ -730,6 +744,7 @@ export default function HomepageEdit({
                                         >
                                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                             <Input
+                                                maxLength={100}
                                                 placeholder="Search products..."
                                                 className="h-9 pl-9"
                                                 value={searchQuery}
@@ -894,6 +909,7 @@ export default function HomepageEdit({
                                         >
                                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                             <Input
+                                                maxLength={100}
                                                 placeholder="Search brands..."
                                                 className="h-9 pl-9"
                                                 value={brandQuery}

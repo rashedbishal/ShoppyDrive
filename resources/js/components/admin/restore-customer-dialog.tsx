@@ -68,6 +68,7 @@ export function RestoreCustomerDialog({ customer, onOpenChange }: Props) {
                         Mother admin password
                     </label>
                     <input
+                        maxLength={255}
                         id="restore_mother_password"
                         type="password"
                         autoFocus

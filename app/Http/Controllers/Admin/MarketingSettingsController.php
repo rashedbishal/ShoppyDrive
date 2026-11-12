@@ -86,10 +86,10 @@ class MarketingSettingsController extends Controller
     public function updateFacebookConversionsApi(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'google_analytics_id' => ['nullable', 'string', 'max:100'],
+            'google_analytics_id' => ['nullable', 'string', 'max:30'],
             'facebook_pixel_id' => ['nullable', 'string', 'regex:/^\d+$/', 'max:32'],
             'facebook_conversions_api_token' => ['nullable', 'string', 'max:255'],
-            'facebook_conversions_api_test_event_code' => ['nullable', 'string', 'max:50'],
+            'facebook_conversions_api_test_event_code' => ['nullable', 'string', 'max:20'],
             'facebook_conversions_api_enabled' => ['required', 'boolean'],
         ]);
 

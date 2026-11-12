@@ -123,7 +123,7 @@ export default function PromotionalBannersIndex({ banners }: Props) {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <h3 className="text-lg font-bold text-slate-800">
+                                            <h3 className="line-clamp-2 text-lg font-bold break-words text-slate-800">
                                                 {banner.title}
                                             </h3>
                                             <p className="line-clamp-2 text-sm text-slate-500">

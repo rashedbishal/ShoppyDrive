@@ -18,6 +18,7 @@ import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { ComboboxField } from '@/components/ui/combobox';
 import { MultiMediaUpload } from '@/components/ui/multi-media-upload';
 import { Select } from '@/components/ui/select';
@@ -109,8 +110,8 @@ export default function ProductCreate({
 
         clearErrors();
         const clientErrors: Record<string, string> = validate(data, {
-            name: [required(), maxLength(255)],
-            slug: [required(), maxLength(255)],
+            name: [required(), maxLength(150)],
+            slug: [required(), maxLength(150)],
             category_id: [required()],
             sub_category_id: [required()],
         });
@@ -232,6 +233,7 @@ export default function ProductCreate({
                                     error={errors.name}
                                 >
                                     <input
+                                        maxLength={150}
                                         className={inputClass(errors.name)}
                                         value={data.name}
                                         onChange={(e) => {
@@ -242,9 +244,15 @@ export default function ProductCreate({
                                             }));
                                         }}
                                     />
+                                    <CharCount
+                                        value={data.name}
+                                        max={150}
+                                        className="mt-1 block text-right"
+                                    />
                                 </Field>
                                 <Field label="Slug *" error={errors.slug}>
                                     <input
+                                        maxLength={150}
                                         className={inputClass(errors.slug)}
                                         value={data.slug}
                                         onChange={(e) =>
@@ -268,6 +276,7 @@ export default function ProductCreate({
                                                 error={errors.sku}
                                             >
                                                 <input
+                                                    maxLength={50}
                                                     className={inputClass(
                                                         errors.sku,
                                                     )}
@@ -288,6 +297,7 @@ export default function ProductCreate({
                                     error={errors.short_description}
                                 >
                                     <textarea
+                                        maxLength={300}
                                         rows={2}
                                         className={`w-full rounded-lg border px-3 py-2 text-sm focus:ring-1 focus:outline-none ${errors.short_description ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 focus:ring-[#c8102e]'}`}
                                         value={data.short_description}
@@ -298,6 +308,11 @@ export default function ProductCreate({
                                             )
                                         }
                                     />
+                                    <CharCount
+                                        value={data.short_description}
+                                        max={300}
+                                        className="mt-1 block text-right"
+                                    />
                                 </Field>
                                 <Field
                                     label="Description"
@@ -305,6 +320,7 @@ export default function ProductCreate({
                                 >
                                     <RichTextEditor
                                         value={data.description}
+                                        maxLength={20000}
                                         onChange={(html) =>
                                             setData('description', html)
                                         }
@@ -352,6 +368,7 @@ export default function ProductCreate({
                                                     )}
                                                 >
                                                     <input
+                                                        max={99999999.99}
                                                         type="number"
                                                         min="0"
                                                         step="0.01"
@@ -372,6 +389,7 @@ export default function ProductCreate({
                                                     error={errors.compare_price}
                                                 >
                                                     <input
+                                                        max={99999999.99}
                                                         type="number"
                                                         min="0"
                                                         step="0.01"
@@ -394,6 +412,7 @@ export default function ProductCreate({
                                                     error={errors.cost_price}
                                                 >
                                                     <input
+                                                        max={99999999.99}
                                                         type="number"
                                                         min="0"
                                                         step="0.01"
@@ -416,6 +435,7 @@ export default function ProductCreate({
                                                     }
                                                 >
                                                     <input
+                                                        max={9999999}
                                                         type="number"
                                                         min="0"
                                                         className={inputClass(
@@ -439,6 +459,7 @@ export default function ProductCreate({
                                                     }
                                                 >
                                                     <input
+                                                        max={9999999}
                                                         type="number"
                                                         min="0"
                                                         className={inputClass(
@@ -511,6 +532,7 @@ export default function ProductCreate({
                                     error={errors.meta_title}
                                 >
                                     <input
+                                        maxLength={70}
                                         className={inputClass(
                                             errors.meta_title,
                                         )}
@@ -522,12 +544,18 @@ export default function ProductCreate({
                                             )
                                         }
                                     />
+                                    <CharCount
+                                        value={data.meta_title}
+                                        max={70}
+                                        className="mt-1 block text-right"
+                                    />
                                 </Field>
                                 <Field
                                     label="Meta Description"
                                     error={errors.meta_description}
                                 >
                                     <textarea
+                                        maxLength={160}
                                         rows={2}
                                         className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none`}
                                         value={data.meta_description}
@@ -538,12 +566,18 @@ export default function ProductCreate({
                                             )
                                         }
                                     />
+                                    <CharCount
+                                        value={data.meta_description}
+                                        max={160}
+                                        className="mt-1 block text-right"
+                                    />
                                 </Field>
                                 <Field
                                     label="Search Keywords"
                                     error={errors.meta_keywords}
                                 >
                                     <input
+                                        maxLength={200}
                                         className={inputClass(
                                             errors.meta_keywords,
                                         )}
@@ -554,6 +588,11 @@ export default function ProductCreate({
                                                 e.target.value,
                                             )
                                         }
+                                    />
+                                    <CharCount
+                                        value={data.meta_keywords}
+                                        max={200}
+                                        className="mt-1 block text-right"
                                     />
                                     <p className="mt-1 text-xs text-slate-500">
                                         If this product's name is in Bangla, add

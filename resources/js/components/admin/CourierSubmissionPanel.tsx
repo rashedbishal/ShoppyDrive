@@ -134,18 +134,22 @@ function RecordConsignmentForm({ orderId, submission }: Props) {
                 Found it in the {submission.courier_label} portal
             </p>
             <Input
+                maxLength={100}
                 label="Consignment ID"
                 value={data.consignment_id}
                 onChange={(e) => setData('consignment_id', e.target.value)}
                 error={errors.consignment_id}
             />
             <Input
+                maxLength={100}
                 label="Tracking code (optional)"
                 value={data.tracking_code}
                 onChange={(e) => setData('tracking_code', e.target.value)}
                 error={errors.tracking_code}
             />
             <Textarea
+                maxLength={1000}
+                showCount
                 label="Note"
                 rows={2}
                 placeholder="What you checked in the portal"
@@ -201,6 +205,8 @@ function ConfirmNotCreatedForm({ orderId, submission }: Props) {
                 Not in the {submission.courier_label} portal
             </p>
             <Textarea
+                maxLength={1000}
+                showCount
                 label="Note"
                 rows={2}
                 placeholder="What you checked in the portal"
@@ -295,6 +301,8 @@ function ConfirmReturnedConsignmentForm({ orderId, submission }: Props) {
                 Link the returned consignment
             </p>
             <Textarea
+                maxLength={1000}
+                showCount
                 label="Note"
                 rows={2}
                 placeholder="Why this consignment belongs to this order"

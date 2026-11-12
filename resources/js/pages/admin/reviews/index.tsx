@@ -142,6 +142,7 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
                         <div className="relative min-w-[200px] flex-1">
                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                             <input
+                                maxLength={100}
                                 type="text"
                                 placeholder="Search by product or customer…"
                                 value={search}
@@ -188,7 +189,7 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <Stars rating={review.rating} />
                                                 {review.title && (
-                                                    <span className="text-sm font-semibold text-slate-800">
+                                                    <span className="text-sm font-semibold break-words text-slate-800">
                                                         {review.title}
                                                     </span>
                                                 )}

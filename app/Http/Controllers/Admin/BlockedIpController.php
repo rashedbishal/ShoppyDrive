@@ -26,7 +26,7 @@ class BlockedIpController extends Controller
     {
         $data = $request->validate([
             'ip_address' => ['required', 'ip', 'unique:blocked_ips,ip_address'],
-            'reason' => ['nullable', 'string', 'max:255'],
+            'reason' => ['nullable', 'string', 'max:200'],
         ]);
 
         DB::transaction(fn () => BlockedIp::create($data + ['blocked_by' => Auth::guard('admin')->id()]));

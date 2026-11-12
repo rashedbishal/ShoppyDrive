@@ -287,6 +287,7 @@ export default function PromotionalBannerEdit({
                                     >
                                         <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                         <Input
+                                            maxLength={100}
                                             placeholder="Search products..."
                                             className="h-9 pl-9"
                                             value={searchQuery}
@@ -446,6 +447,7 @@ export default function PromotionalBannerEdit({
                                 <CardContent className="space-y-4 pt-3">
                                     <div className="space-y-1">
                                         <Input
+                                            maxLength={255}
                                             label="Link URL"
                                             value={
                                                 hasProducts
@@ -509,6 +511,8 @@ export default function PromotionalBannerEdit({
                                             Sort Order
                                         </label>
                                         <Input
+                                            max={9999}
+                                            min={-9999}
                                             type="number"
                                             value={data.sort_order}
                                             onChange={(e) => {

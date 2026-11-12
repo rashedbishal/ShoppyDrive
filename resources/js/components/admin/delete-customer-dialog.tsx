@@ -78,6 +78,7 @@ export function DeleteCustomerDialog({ customer, onOpenChange }: Props) {
                         Mother admin password
                     </label>
                     <input
+                        maxLength={255}
                         id="mother_password"
                         type="password"
                         autoFocus

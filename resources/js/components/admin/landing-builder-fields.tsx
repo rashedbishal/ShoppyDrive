@@ -1,5 +1,6 @@
 import { Plus, Trash2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { CharCount } from '@/components/ui/char-count';
 
 /** Loosely typed on purpose: the page builder's `sections` is one free-form JSON blob. */
 type Sections = Record<string, any>;
@@ -159,6 +160,7 @@ export function HeroExtras({
         <>
             <Field label="Badge (small label above the headline)">
                 <input
+                    maxLength={40}
                     className={inputClass}
                     value={hero.badge ?? ''}
                     onChange={(e) => setHero({ badge: e.target.value })}
@@ -170,6 +172,7 @@ export function HeroExtras({
                 hint="Scrolls to the product details. Leave empty to hide it."
             >
                 <input
+                    maxLength={30}
                     className={inputClass}
                     value={hero.secondary_cta_text ?? ''}
                     onChange={(e) =>
@@ -189,6 +192,7 @@ export function HeroExtras({
                         className="grid grid-cols-1 gap-2 sm:grid-cols-2"
                     >
                         <input
+                            maxLength={60}
                             className={inputClass}
                             value={features[i]?.title ?? ''}
                             onChange={(e) => {
@@ -202,6 +206,7 @@ export function HeroExtras({
                             placeholder={`Box ${i + 1} title`}
                         />
                         <input
+                            maxLength={140}
                             className={inputClass}
                             value={features[i]?.text ?? ''}
                             onChange={(e) => {
@@ -430,6 +435,7 @@ export function DescriptionExtras({
         <>
             <Field label="Badge (shown above the title)">
                 <input
+                    maxLength={40}
                     className={inputClass}
                     value={description.badge ?? ''}
                     onChange={(e) => set({ badge: e.target.value })}
@@ -438,6 +444,7 @@ export function DescriptionExtras({
             </Field>
             <Field label="Option picker title">
                 <input
+                    maxLength={60}
                     className={inputClass}
                     value={description.selection_title ?? ''}
                     onChange={(e) => set({ selection_title: e.target.value })}
@@ -445,6 +452,7 @@ export function DescriptionExtras({
             </Field>
             <Field label="Option picker hint">
                 <input
+                    maxLength={140}
                     className={inputClass}
                     value={description.selection_hint ?? ''}
                     onChange={(e) => set({ selection_hint: e.target.value })}
@@ -525,6 +533,7 @@ export function CombosEditor({
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             <Field label="Name">
                                 <input
+                                    maxLength={50}
                                     className={inputClass}
                                     value={combo.name ?? ''}
                                     onChange={(e) =>
@@ -535,6 +544,7 @@ export function CombosEditor({
                             </Field>
                             <Field label="Badge (optional)">
                                 <input
+                                    maxLength={20}
                                     className={inputClass}
                                     value={combo.badge ?? ''}
                                     onChange={(e) =>
@@ -546,6 +556,7 @@ export function CombosEditor({
                         </div>
                         <Field label="Short description (optional)">
                             <input
+                                maxLength={100}
                                 className={inputClass}
                                 value={combo.description ?? ''}
                                 onChange={(e) =>
@@ -658,6 +669,7 @@ export function CombosEditor({
                             hint={`Leave empty to charge the sum of its variants (currently ৳${partsTotal.toLocaleString()}). Set a lower price to offer a discount.`}
                         >
                             <input
+                                max={99999999.99}
                                 type="number"
                                 min={0}
                                 step="0.01"
@@ -715,6 +727,7 @@ export function CombosEditor({
                 />
                 <Field label="Section title">
                     <input
+                        maxLength={80}
                         className={inputClass}
                         value={selection.title ?? ''}
                         onChange={(e) =>
@@ -729,6 +742,7 @@ export function CombosEditor({
                 </Field>
                 <Field label="Section subtitle">
                     <input
+                        maxLength={160}
                         className={inputClass}
                         value={selection.subtitle ?? ''}
                         onChange={(e) =>
@@ -744,6 +758,7 @@ export function CombosEditor({
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <Field label="Notes field label">
                         <input
+                            maxLength={40}
                             className={inputClass}
                             value={selection.notes_label ?? ''}
                             onChange={(e) =>
@@ -758,6 +773,7 @@ export function CombosEditor({
                     </Field>
                     <Field label="Notes placeholder">
                         <input
+                            maxLength={100}
                             className={inputClass}
                             value={selection.notes_placeholder ?? ''}
                             onChange={(e) =>
@@ -793,6 +809,7 @@ export function DeliveryEditor({
         <>
             <Field label="Title">
                 <input
+                    maxLength={80}
                     className={inputClass}
                     value={delivery.title ?? ''}
                     onChange={(e) => set({ title: e.target.value })}
@@ -800,10 +817,16 @@ export function DeliveryEditor({
             </Field>
             <Field label="Text">
                 <textarea
+                    maxLength={400}
                     rows={3}
                     className={textareaClass}
                     value={delivery.text ?? ''}
                     onChange={(e) => set({ text: e.target.value })}
+                />
+                <CharCount
+                    value={delivery.text ?? ''}
+                    max={400}
+                    className="mt-1 block text-right"
                 />
             </Field>
             <div>
@@ -814,6 +837,7 @@ export function DeliveryEditor({
                     {areas.map((area, i) => (
                         <div key={i} className="flex items-center gap-2">
                             <input
+                                maxLength={40}
                                 className={inputClass}
                                 value={area}
                                 onChange={(e) =>
@@ -852,6 +876,7 @@ export function DeliveryEditor({
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Field label="Order button text">
                     <input
+                        maxLength={30}
                         className={inputClass}
                         value={delivery.cta_text ?? ''}
                         onChange={(e) => set({ cta_text: e.target.value })}
@@ -859,6 +884,7 @@ export function DeliveryEditor({
                 </Field>
                 <Field label="Text above the phone number">
                     <input
+                        maxLength={60}
                         className={inputClass}
                         value={delivery.contact_label ?? ''}
                         onChange={(e) => set({ contact_label: e.target.value })}
@@ -888,6 +914,7 @@ export function ContactEditor({
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Field label="Contact phone">
                     <input
+                        maxLength={30}
                         className={inputClass}
                         value={contact.phone ?? ''}
                         onChange={(e) =>
@@ -900,6 +927,7 @@ export function ContactEditor({
                 </Field>
                 <Field label="Support email">
                     <input
+                        maxLength={150}
                         className={inputClass}
                         value={contact.email ?? ''}
                         onChange={(e) =>

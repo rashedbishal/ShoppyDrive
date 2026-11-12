@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
@@ -61,12 +62,12 @@ export default function BlogEdit({ blog }: Props) {
 
         clearErrors();
         const clientErrors = validate(data, {
-            title: [required(), maxLength(255)],
-            slug: [required(), maxLength(255)],
-            excerpt: [maxLength(500)],
+            title: [required(), maxLength(150)],
+            slug: [required(), maxLength(150)],
+            excerpt: [maxLength(400)],
             content: [required()],
-            meta_title: [maxLength(255)],
-            meta_description: [maxLength(500)],
+            meta_title: [maxLength(70)],
+            meta_description: [maxLength(160)],
         });
 
         if (Object.keys(clientErrors).length > 0) {
@@ -97,11 +98,17 @@ export default function BlogEdit({ blog }: Props) {
                             <div className="grid grid-cols-2 gap-4">
                                 <Field label="Title *" error={errors.title}>
                                     <input
+                                        maxLength={150}
                                         className={inputClass(errors.title)}
                                         value={data.title}
                                         onChange={(e) =>
                                             setData('title', e.target.value)
                                         }
+                                    />
+                                    <CharCount
+                                        value={data.title}
+                                        max={150}
+                                        className="mt-1 block text-right"
                                     />
                                 </Field>
 
@@ -111,6 +118,7 @@ export default function BlogEdit({ blog }: Props) {
                                     error={errors.slug}
                                 >
                                     <input
+                                        maxLength={150}
                                         className={inputClass(errors.slug)}
                                         value={data.slug}
                                         onChange={(e) =>
@@ -125,6 +133,7 @@ export default function BlogEdit({ blog }: Props) {
                                 error={errors.author_name}
                             >
                                 <input
+                                    maxLength={80}
                                     className={inputClass(errors.author_name)}
                                     value={data.author_name}
                                     onChange={(e) =>
@@ -139,12 +148,18 @@ export default function BlogEdit({ blog }: Props) {
                                 error={errors.excerpt}
                             >
                                 <textarea
+                                    maxLength={400}
                                     rows={2}
                                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                     value={data.excerpt}
                                     onChange={(e) =>
                                         setData('excerpt', e.target.value)
                                     }
+                                />
+                                <CharCount
+                                    value={data.excerpt}
+                                    max={400}
+                                    className="mt-1 block text-right"
                                 />
                             </Field>
 
@@ -166,6 +181,7 @@ export default function BlogEdit({ blog }: Props) {
                             <Field label="Content *" error={errors.content}>
                                 <RichTextEditor
                                     value={data.content}
+                                    maxLength={50000}
                                     onChange={(html) =>
                                         setData('content', html)
                                     }
@@ -179,6 +195,7 @@ export default function BlogEdit({ blog }: Props) {
                                     error={errors.meta_title}
                                 >
                                     <input
+                                        maxLength={70}
                                         className={inputClass(
                                             errors.meta_title,
                                         )}
@@ -189,6 +206,11 @@ export default function BlogEdit({ blog }: Props) {
                                                 e.target.value,
                                             )
                                         }
+                                    />
+                                    <CharCount
+                                        value={data.meta_title}
+                                        max={70}
+                                        className="mt-1 block text-right"
                                     />
                                 </Field>
                                 <Field
@@ -218,6 +240,7 @@ export default function BlogEdit({ blog }: Props) {
                                 error={errors.meta_description}
                             >
                                 <textarea
+                                    maxLength={160}
                                     rows={2}
                                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                     value={data.meta_description}
@@ -227,6 +250,11 @@ export default function BlogEdit({ blog }: Props) {
                                             e.target.value,
                                         )
                                     }
+                                />
+                                <CharCount
+                                    value={data.meta_description}
+                                    max={160}
+                                    className="mt-1 block text-right"
                                 />
                             </Field>
 

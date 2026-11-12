@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
@@ -54,8 +55,8 @@ export default function BrandEdit({ brand }: Props) {
 
         clearErrors();
         const clientErrors = validate(data, {
-            name: [required(), maxLength(255)],
-            slug: [required(), maxLength(255)],
+            name: [required(), maxLength(80)],
+            slug: [required(), maxLength(100)],
         });
 
         if (Object.keys(clientErrors).length > 0) {
@@ -91,15 +92,22 @@ export default function BrandEdit({ brand }: Props) {
                         <CardContent className="space-y-4 pt-3">
                             <Field label="Name *" error={errors.name}>
                                 <input
+                                    maxLength={80}
                                     className={inputClass(errors.name)}
                                     value={data.name}
                                     onChange={(e) =>
                                         setData('name', e.target.value)
                                     }
                                 />
+                                <CharCount
+                                    value={data.name}
+                                    max={80}
+                                    className="mt-1 block text-right"
+                                />
                             </Field>
                             <Field label="Slug *" error={errors.slug}>
                                 <input
+                                    maxLength={100}
                                     className={inputClass(errors.slug)}
                                     value={data.slug}
                                     onChange={(e) =>
@@ -122,12 +130,18 @@ export default function BrandEdit({ brand }: Props) {
                                 error={errors.description}
                             >
                                 <textarea
+                                    maxLength={2000}
                                     rows={3}
                                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                     value={data.description}
                                     onChange={(e) =>
                                         setData('description', e.target.value)
                                     }
+                                />
+                                <CharCount
+                                    value={data.description}
+                                    max={2000}
+                                    className="mt-1 block text-right"
                                 />
                             </Field>
                             <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">

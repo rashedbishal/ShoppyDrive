@@ -63,7 +63,7 @@ class SecuritySettingsController extends Controller
         }
 
         $validated = $request->validate([
-            'heartbeat_ping_url' => ['nullable', 'url:http,https', 'max:500'],
+            'heartbeat_ping_url' => ['nullable', 'url:http,https', 'max:300'],
         ], [
             'heartbeat_ping_url.url' => 'Enter the full ping URL from your monitoring service, starting with https://',
             'heartbeat_ping_url.max' => 'This URL is too long.',

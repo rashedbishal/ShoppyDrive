@@ -22,6 +22,7 @@ import type {
 } from '@/components/admin/landing-builder-fields';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
 import { useRowKeys } from '@/hooks/use-row-keys';
@@ -203,10 +204,10 @@ export default function LandingPageEdit({
 
                         clearErrors();
                         const clientErrors = validate(data, {
-                            title: [required(), maxLength(255)],
+                            title: [required(), maxLength(100)],
                             slug: [
                                 required(),
-                                maxLength(255),
+                                maxLength(100),
                                 pattern(
                                     /^[a-z0-9-]+$/,
                                     'Only lowercase letters, numbers, and hyphens are allowed.',
@@ -236,11 +237,17 @@ export default function LandingPageEdit({
                             <div className="col-span-2">
                                 <label className={labelClass}>Page Title</label>
                                 <input
+                                    maxLength={100}
                                     className={inputClass}
                                     value={data.title}
                                     onChange={(e) =>
                                         setData('title', e.target.value)
                                     }
+                                />
+                                <CharCount
+                                    value={data.title}
+                                    max={100}
+                                    className="mt-1 block text-right"
                                 />
                                 {errors.title && (
                                     <p className="mt-1 text-xs text-red-600">
@@ -255,6 +262,7 @@ export default function LandingPageEdit({
                                         /sentinel/
                                     </span>
                                     <input
+                                        maxLength={100}
                                         className="h-9 flex-1 px-2 font-mono text-sm focus:outline-none"
                                         value={data.slug}
                                         onChange={(e) =>
@@ -374,6 +382,7 @@ export default function LandingPageEdit({
                                     className="h-9 w-12 cursor-pointer rounded-lg border border-slate-200 p-1"
                                 />
                                 <input
+                                    maxLength={7}
                                     className={inputClass}
                                     value={sec.hero.bg_color}
                                     onChange={(e) =>
@@ -391,6 +400,7 @@ export default function LandingPageEdit({
                         <div>
                             <label className={labelClass}>Headline</label>
                             <input
+                                maxLength={120}
                                 className={inputClass}
                                 value={sec.hero.headline}
                                 onChange={(e) =>
@@ -403,10 +413,16 @@ export default function LandingPageEdit({
                                 }
                                 placeholder="Get the best deal on this product!"
                             />
+                            <CharCount
+                                value={sec.hero.headline}
+                                max={120}
+                                className="mt-1 block text-right"
+                            />
                         </div>
                         <div>
                             <label className={labelClass}>Sub-headline</label>
                             <input
+                                maxLength={250}
                                 className={inputClass}
                                 value={sec.hero.subheadline}
                                 onChange={(e) =>
@@ -419,12 +435,18 @@ export default function LandingPageEdit({
                                 }
                                 placeholder="Limited time offer. Order now!"
                             />
+                            <CharCount
+                                value={sec.hero.subheadline}
+                                max={250}
+                                className="mt-1 block text-right"
+                            />
                         </div>
                         <div>
                             <label className={labelClass}>
                                 CTA Button Text
                             </label>
                             <input
+                                maxLength={30}
                                 className={inputClass}
                                 value={sec.hero.cta_text}
                                 onChange={(e) =>
@@ -492,6 +514,7 @@ export default function LandingPageEdit({
                         <div>
                             <label className={labelClass}>Section Title</label>
                             <textarea
+                                maxLength={120}
                                 rows={6}
                                 className={textareaClass}
                                 value={sec.description.title}
@@ -503,6 +526,11 @@ export default function LandingPageEdit({
                                         },
                                     })
                                 }
+                            />
+                            <CharCount
+                                value={sec.description.title}
+                                max={120}
+                                className="mt-1 block text-right"
                             />
                         </div>
                         <div className="flex items-center gap-2">
@@ -538,6 +566,7 @@ export default function LandingPageEdit({
                                             Custom Content (HTML allowed)
                                         </label>
                                         <textarea
+                                            maxLength={20000}
                                             rows={6}
                                             className={textareaClass}
                                             value={
@@ -552,6 +581,13 @@ export default function LandingPageEdit({
                                                     },
                                                 })
                                             }
+                                        />
+                                        <CharCount
+                                            value={
+                                                sec.description.custom_content
+                                            }
+                                            max={20000}
+                                            className="mt-1 block text-right"
                                         />
                                     </div>
                                 </AdminReveal>
@@ -576,6 +612,7 @@ export default function LandingPageEdit({
                         <div>
                             <label className={labelClass}>Section Title</label>
                             <input
+                                maxLength={60}
                                 className={inputClass}
                                 value={sec.gallery.title}
                                 onChange={(e) =>
@@ -610,6 +647,7 @@ export default function LandingPageEdit({
                         <div>
                             <label className={labelClass}>Section Title</label>
                             <input
+                                maxLength={80}
                                 className={inputClass}
                                 value={sec.testimonials.title}
                                 onChange={(e) =>
@@ -652,6 +690,7 @@ export default function LandingPageEdit({
                                             </button>
                                         </div>
                                         <input
+                                            maxLength={60}
                                             className={inputClass}
                                             value={item.name}
                                             onChange={(e) => {
@@ -699,6 +738,7 @@ export default function LandingPageEdit({
                                             ))}
                                         </Select>
                                         <textarea
+                                            maxLength={400}
                                             rows={2}
                                             className={textareaClass}
                                             value={item.text}
@@ -718,6 +758,11 @@ export default function LandingPageEdit({
                                                 });
                                             }}
                                             placeholder="Review text…"
+                                        />
+                                        <CharCount
+                                            value={item.text}
+                                            max={400}
+                                            className="mt-1 block text-right"
                                         />
                                     </div>
                                 </AdminReveal>
@@ -755,6 +800,7 @@ export default function LandingPageEdit({
                         <div>
                             <label className={labelClass}>Section Title</label>
                             <input
+                                maxLength={80}
                                 className={inputClass}
                                 value={sec.faq.title}
                                 onChange={(e) =>
@@ -795,6 +841,7 @@ export default function LandingPageEdit({
                                             </button>
                                         </div>
                                         <input
+                                            maxLength={160}
                                             className={inputClass}
                                             value={item.question}
                                             onChange={(e) => {
@@ -812,6 +859,7 @@ export default function LandingPageEdit({
                                             placeholder="Question"
                                         />
                                         <textarea
+                                            maxLength={800}
                                             rows={2}
                                             className={textareaClass}
                                             value={item.answer}
@@ -828,6 +876,11 @@ export default function LandingPageEdit({
                                                 });
                                             }}
                                             placeholder="Answer"
+                                        />
+                                        <CharCount
+                                            value={item.answer}
+                                            max={800}
+                                            className="mt-1 block text-right"
                                         />
                                     </div>
                                 </AdminReveal>
@@ -870,6 +923,7 @@ export default function LandingPageEdit({
                                 Footer Text (contact info, copyright, etc.)
                             </label>
                             <textarea
+                                maxLength={400}
                                 rows={3}
                                 className={textareaClass}
                                 value={sec.footer.text}
@@ -882,6 +936,11 @@ export default function LandingPageEdit({
                                     })
                                 }
                                 placeholder="© 2025 ShoppyDrive · support@shoppydrive.com"
+                            />
+                            <CharCount
+                                value={sec.footer.text}
+                                max={400}
+                                className="mt-1 block text-right"
                             />
                         </div>
                     </SectionWrap>

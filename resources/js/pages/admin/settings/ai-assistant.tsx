@@ -98,6 +98,7 @@ export default function AiAssistantSettings({
                                         </label>
                                         <div className="flex items-center gap-2">
                                             <input
+                                                maxLength={255}
                                                 readOnly
                                                 className={inputClass}
                                                 value={
@@ -133,6 +134,7 @@ export default function AiAssistantSettings({
                                                 : 'Paste Your API Key'}
                                         </label>
                                         <input
+                                            maxLength={255}
                                             className={inputClass}
                                             placeholder={
                                                 hasKey

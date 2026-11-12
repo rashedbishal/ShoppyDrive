@@ -20,16 +20,17 @@ class HomepageSectionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'eyebrow' => ['nullable', 'string', 'max:255'],
-            'action_label' => ['nullable', 'string', 'max:255'],
+            'title' => ['nullable', 'string', 'max:120'],
+            'description' => ['nullable', 'string', 'max:300'],
+            'eyebrow' => ['nullable', 'string', 'max:60'],
+            'action_label' => ['nullable', 'string', 'max:40'],
             'action_href' => ['nullable', 'string', 'max:255'],
             'is_visible' => ['required', 'boolean'],
 
             'metadata' => ['nullable', 'array'],
-            'metadata.phone' => ['nullable', 'string', 'max:50'],
-            'metadata.email' => ['nullable', 'email', 'max:255'],
+            'metadata.phone' => ['nullable', 'string', 'max:30'],
+            'metadata.free_delivery_amount' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'metadata.email' => ['nullable', 'email', 'max:150'],
             'metadata.autoplay_seconds' => ['nullable', 'integer', 'min:2', 'max:30'],
 
             // Featured products fields

@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { Input } from '@/components/ui/input';
 
 type Props = {
@@ -156,6 +157,7 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                             }}
                         >
                             <Input
+                                maxLength={40}
                                 label="Deploy run ID (gh run view)"
                                 value={form.data.deploy_run_id}
                                 onChange={(e) =>
@@ -167,6 +169,7 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                                 error={errors.deploy_run_id}
                             />
                             <Input
+                                maxLength={40}
                                 label="Deployed commit SHA (40 characters)"
                                 value={form.data.deploy_sha}
                                 onChange={(e) =>
@@ -201,6 +204,7 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                                 error={errors.deploy_run_completed_at}
                             />
                             <Input
+                                maxLength={64}
                                 label="Fingerprint computed locally (courier:release-fingerprint --sha=…)"
                                 value={form.data.local_fingerprint}
                                 onChange={(e) =>
@@ -231,6 +235,7 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                                     'artisan|lsphp|php-fpm'
                                 </code>
                                 <textarea
+                                    maxLength={20000}
                                     rows={5}
                                     className="mt-1 w-full rounded-md border border-slate-300 p-2 font-mono text-xs"
                                     value={form.data.process_list}
@@ -240,6 +245,11 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                                             e.target.value,
                                         )
                                     }
+                                />
+                                <CharCount
+                                    value={form.data.process_list}
+                                    max={20000}
+                                    className="mt-1 block text-right"
                                 />
                             </label>
                             <div className="space-y-2 md:col-span-2">
@@ -257,6 +267,7 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                                 )}
                             </div>
                             <Input
+                                maxLength={2000}
                                 label="Note (optional)"
                                 value={form.data.note}
                                 onChange={(e) =>
@@ -265,6 +276,7 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                                 error={errors.note}
                             />
                             <Input
+                                maxLength={255}
                                 type="password"
                                 label="Your password"
                                 autoComplete="current-password"
