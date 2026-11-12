@@ -37,6 +37,9 @@ class CustomerErasureController extends Controller
                 ->orWhere('phone', 'like', $like)
                 ->orWhere('id', ctype_digit($term) ? (int) $term : 0)))
             ->withCount(['orders' => fn ($query) => $query->withTrashed()])
+            // A typed customer number lists that customer first, ahead of
+            // others whose phone or email merely contains the digits.
+            ->when(ctype_digit($term), fn ($query) => $query->orderByRaw('id = ? desc', [(int) $term]))
             ->latest('id')
             ->limit(self::SEARCH_LIMIT)
             ->get(['id', 'name', 'email', 'phone', 'anonymized_at', 'deleted_at'])
