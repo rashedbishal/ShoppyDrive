@@ -43,13 +43,13 @@ export default function LandingPageCreate({ products }: Props) {
                 returnTo={route('admin.landing-pages.index')}
                 className="sm:max-w-lg"
             >
-                <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100">
+                <Card className="gap-3 py-3 shadow-sm">
+                    <CardHeader className="border-b border-slate-100 pb-2.5">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Basic Info
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-3">
+                    <CardContent className="space-y-3 pt-0">
                         <form
                             onSubmit={(e) => {
                                 e.preventDefault();
@@ -76,7 +76,7 @@ export default function LandingPageCreate({ products }: Props) {
 
                                 post(route('admin.landing-pages.store'));
                             }}
-                            className="space-y-4"
+                            className="space-y-3"
                         >
                             <div>
                                 <label className="mb-1 block text-sm font-medium text-slate-700">
@@ -102,7 +102,7 @@ export default function LandingPageCreate({ products }: Props) {
                                 <CharCount
                                     value={data.title}
                                     max={100}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
 
                                 {errors.title && (
@@ -139,7 +139,7 @@ export default function LandingPageCreate({ products }: Props) {
                                 <CharCount
                                     value={data.slug}
                                     max={100}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
                                 {errors.slug && (
                                     <p className="mt-1 text-xs text-red-600">

@@ -98,8 +98,8 @@ function SectionWrap({
     const [open, setOpen] = useState(false);
 
     return (
-        <Card className="shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+        <Card className="gap-0 py-0 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
                 <div className="flex items-center gap-3">
                     {onToggle && (
                         <input
@@ -143,7 +143,7 @@ function SectionWrap({
             <AnimatePresence initial={false}>
                 {enabled && open && (
                     <AdminReveal key="section-body">
-                        <CardContent className="space-y-3 pt-3">
+                        <CardContent className="space-y-2.5 py-3">
                             {children}
                         </CardContent>
                     </AdminReveal>
@@ -225,16 +225,16 @@ export default function LandingPageEdit({
 
                         put(route('admin.landing-pages.update', page.id));
                     }}
-                    className="space-y-4"
+                    className="space-y-3"
                 >
                     {/* Basic settings */}
-                    <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100">
+                    <Card className="gap-3 py-3 shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-2.5">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Settings
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-1 gap-4 pt-3 sm:grid-cols-2">
+                        <CardContent className="grid grid-cols-1 gap-3 pt-0 sm:grid-cols-2">
                             <div className="sm:col-span-2">
                                 <label className={labelClass}>Page Title</label>
                                 <input
@@ -248,7 +248,7 @@ export default function LandingPageEdit({
                                 <CharCount
                                     value={data.title}
                                     max={100}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
 
                                 {errors.title && (
@@ -280,7 +280,7 @@ export default function LandingPageEdit({
                                 <CharCount
                                     value={data.slug}
                                     max={100}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
                                 {errors.slug && (
                                     <p className="mt-1 text-xs text-red-600">
@@ -422,7 +422,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.hero.headline}
                                 max={120}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                         <div>
@@ -444,7 +444,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.hero.subheadline}
                                 max={250}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                         <div>
@@ -468,7 +468,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.hero.cta_text}
                                 max={30}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                         <HeroExtras
@@ -541,7 +541,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.description.title}
                                 max={120}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                         <div className="flex items-center gap-2">
@@ -598,7 +598,7 @@ export default function LandingPageEdit({
                                                 sec.description.custom_content
                                             }
                                             max={20000}
-                                            className="mt-1 block text-right"
+                                            className="mt-0.5 block text-right text-[11px] leading-none"
                                         />
                                     </div>
                                 </AdminReveal>
@@ -638,7 +638,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.gallery.title}
                                 max={60}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                         <p className="text-xs text-slate-400">
@@ -678,7 +678,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.testimonials.title}
                                 max={80}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                         <AnimatePresence initial={false}>
@@ -734,7 +734,7 @@ export default function LandingPageEdit({
                                         <CharCount
                                             value={item.name}
                                             max={60}
-                                            className="mt-1 block text-right"
+                                            className="mt-0.5 block text-right text-[11px] leading-none"
                                         />
                                         <Select
                                             selectClassName={inputClass}
@@ -788,7 +788,7 @@ export default function LandingPageEdit({
                                         <CharCount
                                             value={item.text}
                                             max={400}
-                                            className="mt-1 block text-right"
+                                            className="mt-0.5 block text-right text-[11px] leading-none"
                                         />
                                     </div>
                                 </AdminReveal>
@@ -841,7 +841,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.faq.title}
                                 max={80}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                         <AnimatePresence initial={false}>
@@ -892,7 +892,7 @@ export default function LandingPageEdit({
                                         <CharCount
                                             value={item.question}
                                             max={160}
-                                            className="mt-1 block text-right"
+                                            className="mt-0.5 block text-right text-[11px] leading-none"
                                         />
                                         <textarea
                                             maxLength={800}
@@ -916,7 +916,7 @@ export default function LandingPageEdit({
                                         <CharCount
                                             value={item.answer}
                                             max={800}
-                                            className="mt-1 block text-right"
+                                            className="mt-0.5 block text-right text-[11px] leading-none"
                                         />
                                     </div>
                                 </AdminReveal>
@@ -976,7 +976,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.footer.text}
                                 max={400}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                     </SectionWrap>
