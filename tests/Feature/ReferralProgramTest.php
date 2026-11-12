@@ -106,7 +106,10 @@ test('registering with a valid referral code links the new user to the referrer'
     expect($newUser->referred_by_id)->toBe($referrer->id);
 });
 
-test('registering with an unknown referral code does not fail registration', function () {
+test('registering with a typed unknown referral code is refused with a field error (DISC-12)', function () {
+    // DISC-12 (owner, 2026-11-13): previously a typed unknown code was silently
+    // ignored and the account created without a referrer; now the customer is
+    // told, so they don't lose the welcome discount unknowingly.
     enableReferralProgram();
 
     $response = $this->post(route('register'), [
@@ -117,9 +120,86 @@ test('registering with an unknown referral code does not fail registration', fun
         'referral_code' => 'NOTAREALCODE',
     ]);
 
-    $response->assertRedirect();
-    $newUser = User::where('email', 'unknown-ref@example.com')->firstOrFail();
-    expect($newUser->referred_by_id)->toBeNull();
+    $response->assertSessionHasErrors(['referral_code' => App\Actions\Fortify\CreateNewUser::REFERRAL_CODE_INVALID_MESSAGE]);
+    expect(User::where('email', 'unknown-ref@example.com')->exists())->toBeFalse();
+    $this->assertGuest();
+});
+
+function disc12Register(string $email, ?string $code): Illuminate\Testing\TestResponse
+{
+    return test()->post(route('register'), array_filter([
+        'name' => 'New Customer',
+        'email' => $email,
+        'password' => 'password123',
+        'password_confirmation' => 'password123',
+        'referral_code' => $code,
+    ], fn ($value) => $value !== null));
+}
+
+test('DISC-12: the exact field error wording', function () {
+    expect(App\Actions\Fortify\CreateNewUser::REFERRAL_CODE_INVALID_MESSAGE)
+        ->toBe("This referral code isn't valid. Check it, or leave the field empty.");
+});
+
+test('DISC-12: a typed valid code in lowercase links the right referrer', function () {
+    enableReferralProgram();
+    $referrer = User::factory()->create();
+    User::factory()->create(); // another customer who must not be linked
+
+    disc12Register('lowercase-ref@example.com', strtolower($referrer->referral_code))->assertSessionHasNoErrors()->assertRedirect();
+
+    expect(User::where('email', 'lowercase-ref@example.com')->firstOrFail()->referred_by_id)->toBe($referrer->id);
+});
+
+test('DISC-12: an empty referral field registers normally without a referrer', function (?string $code) {
+    enableReferralProgram();
+
+    disc12Register('empty-ref@example.com', $code)->assertSessionHasNoErrors()->assertRedirect();
+
+    expect(User::where('email', 'empty-ref@example.com')->firstOrFail()->referred_by_id)->toBeNull();
+})->with(['empty string' => '', 'spaces only' => '   ', 'field absent' => null]);
+
+test('DISC-12: while the program is off a typed unknown code is ignored and registration succeeds', function () {
+    // referral_enabled not set: the program is off and the field isn't shown.
+    disc12Register('off-ref@example.com', 'NOTAREALCODE')->assertSessionHasNoErrors()->assertRedirect();
+
+    expect(User::where('email', 'off-ref@example.com')->firstOrFail()->referred_by_id)->toBeNull();
+});
+
+test('DISC-12: an invalid ?ref= link still lets the visitor register without a referral', function () {
+    enableReferralProgram();
+
+    // The page still flags the link as invalid (this drives the warning banner)...
+    $this->get(route('register', ['ref' => 'NOTAREALCODE']))
+        ->assertInertia(fn ($page) => $page->where('referralCode', 'NOTAREALCODE')->where('referralCodeValid', false));
+
+    // ...and the form, which no longer pre-fills an invalid code, submits an empty field.
+    disc12Register('bad-link@example.com', '')->assertSessionHasNoErrors()->assertRedirect();
+
+    expect(User::where('email', 'bad-link@example.com')->firstOrFail()->referred_by_id)->toBeNull();
+});
+
+test('DISC-12: a valid ?ref= link still pre-fills and links the referrer', function () {
+    enableReferralProgram();
+    $referrer = User::factory()->create();
+
+    $this->get(route('register', ['ref' => $referrer->referral_code]))
+        ->assertInertia(fn ($page) => $page->where('referralCode', $referrer->referral_code)->where('referralCodeValid', true));
+
+    disc12Register('good-link@example.com', $referrer->referral_code)->assertSessionHasNoErrors()->assertRedirect();
+
+    expect(User::where('email', 'good-link@example.com')->firstOrFail()->referred_by_id)->toBe($referrer->id);
+});
+
+test('DISC-12: the form pre-fills only a valid link code and keeps the invalid-link warning banner', function () {
+    // Source-level check of register.tsx (this project has no JavaScript test runner).
+    $text = (string) preg_replace('/\s+/', ' ', (string) file_get_contents(resource_path('js/pages/auth/register.tsx')));
+
+    expect($text)->toContain("referral_code: referralCodeValid ? (referralCode ?? '') : '',")
+        ->and($text)->not->toContain("referral_code: referralCode ?? '',")
+        ->and($text)->toContain('referralCodeValid === false && (')
+        ->and($text)->toContain('Invalid referral code.')
+        ->and($text)->toContain('you can still create an account without one');
 });
 
 test('referral links create no attribution while the program is disabled', function () {

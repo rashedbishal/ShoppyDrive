@@ -34,7 +34,10 @@ export default function Register({
         phone: '',
         password: '',
         password_confirmation: '',
-        referral_code: referralCode ?? '',
+        // DISC-12: pre-fill only a valid ?ref= code. An invalid link leaves the
+        // field empty (its warning banner still shows), so it never trips the
+        // typed-code validation and sign-up works without a referral as before.
+        referral_code: referralCodeValid ? (referralCode ?? '') : '',
     });
 
     const confirmationError = passwordMismatchMessage(
