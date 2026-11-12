@@ -34,9 +34,25 @@ type Customer = {
     can_restore: boolean;
 };
 
+/** DISC-13: read-only — computed server-side; nothing here changes points. */
+type PointsSummary = {
+    balance: number;
+    spendable: number;
+    history: {
+        id: number;
+        date: string | null;
+        type: string;
+        label: string;
+        points: number;
+        note: string | null;
+        order_number: string | null;
+    }[];
+};
+
 type Props = {
     customer: Customer;
     orders: Order[];
+    points: PointsSummary;
 };
 
 const statusVariant: Record<
@@ -51,7 +67,7 @@ const statusVariant: Record<
     refunded: 'default',
 };
 
-export default function CustomerShow({ customer, orders }: Props) {
+export default function CustomerShow({ customer, orders, points }: Props) {
     const listUrl = useAdminListUrl('admin.customers.index');
     const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
     const [restoreTarget, setRestoreTarget] = useState<Customer | null>(null);
@@ -242,6 +258,88 @@ export default function CustomerShow({ customer, orders }: Props) {
                                                 ),
                                             )}
                                         </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm">
+                            <CardHeader className="border-b border-slate-100">
+                                <CardTitle className="text-sm font-semibold text-slate-700">
+                                    Reward points
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3 pt-3 text-sm">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <p className="text-xs text-slate-400">
+                                            Balance
+                                        </p>
+                                        <p
+                                            className={`text-lg font-bold ${points.balance < 0 ? 'text-red-600' : 'text-slate-800'}`}
+                                        >
+                                            {points.balance}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-400">
+                                            Spendable at checkout
+                                        </p>
+                                        <p className="text-lg font-bold text-slate-800">
+                                            {points.spendable}
+                                        </p>
+                                    </div>
+                                </div>
+                                {points.history.length === 0 ? (
+                                    <p className="text-xs text-slate-400">
+                                        No points activity yet.
+                                    </p>
+                                ) : (
+                                    <div className="divide-y divide-slate-100">
+                                        <p className="pb-1 text-xs text-slate-400">
+                                            Latest {points.history.length}{' '}
+                                            entries
+                                        </p>
+                                        {points.history.map((row) => (
+                                            <div
+                                                key={row.id}
+                                                className="flex items-start justify-between gap-2 py-2"
+                                            >
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-semibold text-slate-700">
+                                                        {row.label}
+                                                        {row.order_number &&
+                                                            ` · ${row.order_number}`}
+                                                    </p>
+                                                    {row.note && (
+                                                        <p className="text-xs break-words text-slate-500">
+                                                            {row.note}
+                                                        </p>
+                                                    )}
+                                                    {row.date && (
+                                                        <p className="text-[11px] text-slate-400">
+                                                            {new Date(
+                                                                row.date,
+                                                            ).toLocaleString(
+                                                                'en-BD',
+                                                                {
+                                                                    dateStyle:
+                                                                        'medium',
+                                                                    timeStyle:
+                                                                        'short',
+                                                                },
+                                                            )}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <span
+                                                    className={`shrink-0 text-xs font-bold ${row.points >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                                                >
+                                                    {row.points >= 0 ? '+' : ''}
+                                                    {row.points}
+                                                </span>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </CardContent>

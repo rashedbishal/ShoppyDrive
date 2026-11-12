@@ -758,3 +758,18 @@ test('DISC-11: checkout offers zero points and cannot spend a zero or negative b
         ->and($customer->refresh()->points_balance)->toBe($balance)
         ->and(ReferralPointTransaction::where('user_id', $customer->id)->where('type', PointTransactionType::REDEEM)->exists())->toBeFalse();
 })->with(['zero balance' => 0, 'negative balance' => -30]);
+
+/*
+ * DISC-11 wording (owner, 2026-11-13): a negative balance can come from a
+ * reversed referral reward or reversed order points, so the note is generic.
+ * Source-level check: this project has no JavaScript test runner.
+ */
+test('DISC-11: the Rewards page note covers any reversal, shows only below zero, and the checkout value is never negative', function () {
+    $source = (string) file_get_contents(resource_path('js/pages/account/Referral.tsx'));
+    $text = (string) preg_replace('/\s+/', ' ', $source);
+
+    expect($text)->toContain('Your balance is below zero because points were reversed after an order was cancelled or refunded. New points you earn will bring it back up first.')
+        ->and($text)->not->toContain('because a referral reward was reversed after the order was cancelled')
+        ->and($text)->toContain('{pointsBalance < 0 && (')
+        ->and($text)->toContain('Math.max(0, pointsBalance) * pointsValue');
+});

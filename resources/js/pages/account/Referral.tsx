@@ -272,12 +272,12 @@ export default function Referral({
                     </div>
                 )}
 
-                {/* DISC-11: a reversed referral reward can leave the balance below zero. */}
+                {/* DISC-11: a reversed referral reward or reversed order points can leave the balance below zero. */}
                 {pointsBalance < 0 && (
                     <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                        Your balance is below zero because a referral reward
-                        was reversed after the order was cancelled. New points
-                        you earn will bring it back up first.
+                        Your balance is below zero because points were reversed
+                        after an order was cancelled or refunded. New points you
+                        earn will bring it back up first.
                     </div>
                 )}
 

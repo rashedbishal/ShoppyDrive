@@ -7,7 +7,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\Order;
+use App\Models\ReferralPointTransaction;
 use App\Models\User;
+use App\Services\LoyaltyPointsService;
 use App\Support\AdminListUrl;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -88,7 +90,7 @@ class CustomerController extends Controller
         $query->whereDoesntHave('orders', $recentOrder)->where('created_at', '<', $recentlyJoined);
     }
 
-    public function show(User $user): Response
+    public function show(User $user, LoyaltyPointsService $loyalty): Response
     {
         return Inertia::render('admin/customers/show', [
             'customer' => [
@@ -99,8 +101,55 @@ class CustomerController extends Controller
                 'can_restore' => $user->anonymized_at !== null && $user->anonymization_snapshot !== null,
             ],
             'orders' => Order::where('user_id', $user->id)->latest()->limit(10)->get(['id', 'order_number', 'status', 'total', 'created_at']),
+            'points' => $this->pointsSummary($user, $loyalty),
         ]);
     }
+
+    /**
+     * DISC-13: read-only reward points for support staff. The spendable
+     * figure is the same LoyaltyPointsService::availablePoints() checkout
+     * uses; nothing here changes points.
+     *
+     * @return array{balance: int, spendable: int, history: list<array{id: int, date: string|null, type: string, label: string, points: int, note: string|null, order_number: string|null}>}
+     */
+    private function pointsSummary(User $user, LoyaltyPointsService $loyalty): array
+    {
+        $history = $user->pointTransactions()
+            ->with(['order' => fn ($query) => $query->withTrashed()->select(['id', 'order_number'])])
+            ->latest('id')
+            ->limit(20)
+            ->get()
+            ->map(fn (ReferralPointTransaction $row): array => [
+                'id' => $row->id,
+                'date' => $row->created_at?->toIso8601String(),
+                'type' => $row->type->value,
+                'label' => self::POINT_TYPE_LABELS[$row->type->value] ?? $row->type->value,
+                'points' => (int) $row->points,
+                'note' => $row->note,
+                'order_number' => $row->order?->order_number,
+            ])
+            ->all();
+
+        return [
+            'balance' => (int) $user->points_balance,
+            'spendable' => $loyalty->availablePoints($user),
+            'history' => $history,
+        ];
+    }
+
+    /** @var array<string, string> */
+    private const POINT_TYPE_LABELS = [
+        'earn_order' => 'Earned from order',
+        'earn_referral' => 'Referral reward',
+        'earn_registration' => 'Signup bonus',
+        'earn_review' => 'Review bonus',
+        'earn_daily_login' => 'Daily login',
+        'redeem' => 'Redeemed at checkout',
+        'revoke' => 'Referral reward reversed',
+        'refund' => 'Redeemed points refunded',
+        'revoke_order' => 'Order points reversed (refund)',
+        'refund_partial' => 'Redeemed points refunded (partial return)',
+    ];
 
     public function destroy(Request $request, User $user): RedirectResponse
     {
