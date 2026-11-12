@@ -7,6 +7,7 @@ import { ColorPicker } from '@/components/ui/color-picker';
 import { IconPicker } from '@/components/ui/icon-picker';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
+import { scrollToFirstFormError } from '@/lib/form-error-scroll';
 import { maxLength, required, validate } from '@/lib/validate';
 
 type Category = {
@@ -44,7 +45,11 @@ function Field({
             </label>
             {hint && <p className="mb-1.5 text-xs text-slate-400">{hint}</p>}
             {children}
-            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+            {error && (
+                <p data-form-error className="mt-1 text-xs text-red-500">
+                    {error}
+                </p>
+            )}
         </div>
     );
 }
@@ -75,6 +80,7 @@ export default function CategoryEdit({ category }: Props) {
 
         if (Object.keys(clientErrors).length > 0) {
             setError(clientErrors);
+            scrollToFirstFormError();
 
             return;
         }
