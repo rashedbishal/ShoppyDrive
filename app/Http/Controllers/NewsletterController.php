@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Mail\NewsletterUnsubscribeLinkMail;
+use App\Mail\NewsletterWelcomeMail;
 use App\Models\NewsletterSubscriber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,7 +55,7 @@ class NewsletterController extends Controller
 
             Inertia::flash('newsletter', ['status' => 'resubscribed']);
         } else {
-            NewsletterSubscriber::create([
+            $subscriber = NewsletterSubscriber::create([
                 'email' => $request->email,
                 'token' => Str::random(64),
                 'is_active' => true,
@@ -64,7 +65,27 @@ class NewsletterController extends Controller
             Inertia::flash('newsletter', ['status' => 'subscribed']);
         }
 
+        $this->sendWelcomeEmail($subscriber);
+
         return back()->with('newsletter_status', 'subscribed');
+    }
+
+    /**
+     * The welcome email with the subscriber's own unsubscribe link. A
+     * queue/mail outage must never turn a successful subscription into an
+     * error page, so a failure is logged (without the email or token) and
+     * the subscription stands.
+     */
+    private function sendWelcomeEmail(NewsletterSubscriber $subscriber): void
+    {
+        try {
+            Mail::to($subscriber->email)
+                ->queue((new NewsletterWelcomeMail($subscriber->email, $subscriber->token))->afterCommit());
+        } catch (Throwable $e) {
+            Log::error('[Newsletter] Failed to queue a welcome email.', [
+                'exception' => $e::class,
+            ]);
+        }
     }
 
     /**
@@ -74,8 +95,12 @@ class NewsletterController extends Controller
      * A missing/wrong/unmatched (email, token) pair and a nonexistent email
      * render the same generic "invalid link" state, so this never confirms
      * whether an arbitrary email is even in the newsletter list.
+     *
+     * After a successful unsubscribe the same URL shows the success state
+     * once (session flag set by unsubscribe()); any later visit with that
+     * valid link — a reused email link or a refresh — goes to the home page.
      */
-    public function unsubscribeConfirm(Request $request): Response
+    public function unsubscribeConfirm(Request $request): Response|RedirectResponse
     {
         $email = (string) $request->query('email', '');
         $token = (string) $request->query('token', '');
@@ -89,10 +114,19 @@ class NewsletterController extends Controller
         }
 
         if (! $subscriber->is_active) {
-            return Inertia::render('newsletter/Unsubscribe', [
-                'status' => 'already_unsubscribed',
-                'email' => $subscriber->email,
-            ]);
+            // Straight after the confirm POST below: the one-time success page.
+            if ($request->session()->get('newsletter_unsubscribed') === $subscriber->email) {
+                return Inertia::render('newsletter/Unsubscribe', [
+                    'status' => 'unsubscribed',
+                    'email' => $subscriber->email,
+                ]);
+            }
+
+            // The link reused (or the success page refreshed) later on:
+            // there's nothing left to do here, so send them shopping.
+            Inertia::flash('toast', ['type' => 'info', 'message' => "You're already unsubscribed from our newsletter."]);
+
+            return redirect()->route('home');
         }
 
         return Inertia::render('newsletter/Unsubscribe', [
@@ -114,7 +148,7 @@ class NewsletterController extends Controller
             'token' => ['required', 'string', 'max:255'],
         ]);
 
-        NewsletterSubscriber::where('email', $data['email'])
+        $unsubscribed = NewsletterSubscriber::where('email', $data['email'])
             ->where('token', $data['token'])
             ->where('is_active', true)
             ->update([
@@ -122,10 +156,13 @@ class NewsletterController extends Controller
                 'unsubscribed_at' => now(),
             ]);
 
-        return redirect()->route('newsletter.unsubscribe.confirm', [
+        $redirect = redirect()->route('newsletter.unsubscribe.confirm', [
             'email' => $data['email'],
             'token' => $data['token'],
         ]);
+
+        // Lets the confirmation page show its success state exactly once.
+        return $unsubscribed > 0 ? $redirect->with('newsletter_unsubscribed', $data['email']) : $redirect;
     }
 
     /**

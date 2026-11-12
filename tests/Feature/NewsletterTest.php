@@ -161,16 +161,63 @@ test('confirming with the correct email and token unsubscribes the subscriber', 
         'subscribed_at' => now(),
     ]);
 
+    $link = route('newsletter.unsubscribe.confirm', ['email' => $subscriber->email, 'token' => $subscriber->token]);
+
     $this->post('/newsletter/unsubscribe', ['email' => $subscriber->email, 'token' => $subscriber->token])
-        ->assertRedirect(route('newsletter.unsubscribe.confirm', ['email' => $subscriber->email, 'token' => $subscriber->token]));
+        ->assertRedirect($link);
 
     expect($subscriber->refresh()->is_active)->toBeFalse();
 
-    // Revisiting the same link afterwards shows "already unsubscribed", not the confirm form again.
+    // Straight after confirming, the same link shows the success page once.
+    $this->get($link)->assertInertia(fn (Assert $page) => $page
+        ->component('newsletter/Unsubscribe')
+        ->where('status', 'unsubscribed')
+        ->where('email', $subscriber->email));
+
+    // Reusing the link later (or refreshing that page) leads to the home page.
+    $this->get($link)
+        ->assertRedirect(route('home'))
+        ->assertInertiaFlash('toast.message', "You're already unsubscribed from our newsletter.");
+});
+
+test('an unsubscribed email link opened later, without confirming first, leads to the home page', function (): void {
+    $subscriber = NewsletterSubscriber::create([
+        'email' => 'gone@example.com',
+        'token' => Str::random(64),
+        'is_active' => false,
+        'subscribed_at' => now()->subMonth(),
+        'unsubscribed_at' => now()->subWeek(),
+    ]);
+
     $this->get(route('newsletter.unsubscribe.confirm', ['email' => $subscriber->email, 'token' => $subscriber->token]))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('status', 'already_unsubscribed')
-            ->where('email', $subscriber->email));
+        ->assertRedirect(route('home'));
+});
+
+test('a repeated confirm for an already unsubscribed address does not show the success page again', function (): void {
+    $subscriber = NewsletterSubscriber::create([
+        'email' => 'twice@example.com',
+        'token' => Str::random(64),
+        'is_active' => false,
+        'subscribed_at' => now()->subMonth(),
+        'unsubscribed_at' => now(),
+    ]);
+
+    $this->post('/newsletter/unsubscribe', ['email' => $subscriber->email, 'token' => $subscriber->token])
+        ->assertSessionMissing('newsletter_unsubscribed');
+});
+
+test('a success flag for one address cannot show another address as unsubscribed', function (): void {
+    $other = NewsletterSubscriber::create([
+        'email' => 'other@example.com',
+        'token' => Str::random(64),
+        'is_active' => false,
+        'subscribed_at' => now()->subMonth(),
+        'unsubscribed_at' => now(),
+    ]);
+
+    $this->withSession(['newsletter_unsubscribed' => 'someone-else@example.com'])
+        ->get(route('newsletter.unsubscribe.confirm', ['email' => $other->email, 'token' => $other->token]))
+        ->assertRedirect(route('home'));
 });
 
 test('a wrong token on unsubscribe leaves the subscriber active', function (): void {
@@ -285,4 +332,24 @@ test('an invalid email gets a validation error and no thank-you', function (): v
         ->assertInertiaFlashMissing('newsletter');
 
     $this->assertDatabaseCount('newsletter_subscribers', 0);
+});
+
+test('unsubscribing still works after the sign-up limit is used up on the same network', function (): void {
+    foreach (range(1, 10) as $attempt) {
+        $this->post(route('newsletter.subscribe'), ['email' => "signup{$attempt}@example.com"]);
+    }
+    $this->post(route('newsletter.subscribe'), ['email' => 'one-more@example.com'])
+        ->assertSessionHasErrors('rate_limit');
+
+    $subscriber = NewsletterSubscriber::create([
+        'email' => 'leaving@example.com',
+        'token' => Str::random(64),
+        'is_active' => true,
+        'subscribed_at' => now(),
+    ]);
+
+    $this->post(route('newsletter.unsubscribe'), ['email' => $subscriber->email, 'token' => $subscriber->token])
+        ->assertSessionHasNoErrors();
+
+    expect($subscriber->refresh()->is_active)->toBeFalse();
 });
