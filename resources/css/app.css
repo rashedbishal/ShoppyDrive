@@ -1232,6 +1232,228 @@ html body [data-sonner-toaster][data-sonner-theme] {
 }
 
 /*
+ * Storefront toasts (components/ui/sonner.tsx renders them unstyled with these
+ * classes on every non-admin page). Solid light colours for the same reason
+ * as above. Sonner still owns positioning, stacking, hover-pause and swipe;
+ * only its entrance/exit states and timing are restyled: the toast drops in
+ * from above while scaling up out of a blur, settling with a slight spring,
+ * and lifts away into a blur when it leaves.
+ */
+.sd-toaster {
+    --width: 380px;
+}
+
+.sd-toaster .sd-toast {
+    --sd-accent: #1a1a2e;
+    --sd-accent-soft: rgba(26, 26, 46, 0.08);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: var(--width);
+    padding: 14px 44px 14px 14px;
+    border-radius: 18px;
+    /* A soft wash of the status colour behind the icon, and a thin accent
+       edge — on the card itself, since sonner uses its ::before/::after. */
+    background:
+        radial-gradient(
+            140px 90px at 0% 0%,
+            var(--sd-accent-soft),
+            transparent 70%
+        ),
+        linear-gradient(var(--sd-accent), var(--sd-accent)) left / 3px 100%
+            no-repeat,
+        #ffffff;
+    color: #1a1a2e;
+    border: 1px solid rgba(17, 24, 39, 0.07);
+    box-shadow:
+        0 1px 2px rgba(16, 24, 40, 0.05),
+        0 4px 10px -4px rgba(16, 24, 40, 0.08),
+        0 18px 40px -12px rgba(16, 24, 40, 0.24);
+    font-family: inherit;
+    overflow: hidden;
+}
+
+.sd-toaster .sd-toast[data-type='success'] {
+    --sd-accent: #16a34a;
+    --sd-accent-soft: rgba(22, 163, 74, 0.12);
+}
+
+.sd-toaster .sd-toast[data-type='error'] {
+    --sd-accent: #dc2626;
+    --sd-accent-soft: rgba(220, 38, 38, 0.11);
+}
+
+.sd-toaster .sd-toast[data-type='warning'] {
+    --sd-accent: #d97706;
+    --sd-accent-soft: rgba(217, 119, 6, 0.13);
+}
+
+.sd-toaster .sd-toast[data-type='info'],
+.sd-toaster .sd-toast[data-type='loading'] {
+    --sd-accent: #2563eb;
+    --sd-accent-soft: rgba(37, 99, 235, 0.11);
+}
+
+.sd-toaster .sd-toast-icon {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 34px;
+    height: 34px;
+    margin-left: 4px;
+    border-radius: 11px;
+    background: var(--sd-accent-soft);
+    color: var(--sd-accent);
+}
+
+.sd-toaster .sd-toast-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.sd-toaster .sd-toast-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding-top: 1px;
+}
+
+.sd-toaster .sd-toast-title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #1a1a2e;
+}
+
+/* A toast without an icon (plain toast()) still lines up with the accent edge. */
+.sd-toaster .sd-toast:not(:has(.sd-toast-icon)) {
+    padding-left: 18px;
+}
+
+.sd-toaster .sd-toast-description {
+    font-size: 13px;
+    line-height: 1.45;
+    color: #6b7280;
+}
+
+.sd-toaster .sd-toast-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 9999px;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    opacity: 0;
+    transition:
+        opacity 200ms ease,
+        background-color 200ms ease,
+        color 200ms ease;
+}
+
+.sd-toaster .sd-toast-close svg {
+    width: 13px;
+    height: 13px;
+}
+
+.sd-toaster .sd-toast:hover .sd-toast-close,
+.sd-toaster .sd-toast-close:focus-visible {
+    opacity: 1;
+}
+
+.sd-toaster .sd-toast-close:hover {
+    background: #f3f4f6;
+    color: #1a1a2e;
+}
+
+/* Touch screens have no hover: keep the close button visible. */
+@media (hover: none) {
+    .sd-toaster .sd-toast-close {
+        opacity: 1;
+    }
+}
+
+.sd-toaster .sd-toast-action,
+.sd-toaster .sd-toast-cancel {
+    position: relative;
+    z-index: 1;
+    flex: none;
+    align-self: center;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.sd-toaster .sd-toast-action {
+    background: var(--sd-accent);
+    color: #ffffff;
+}
+
+.sd-toaster .sd-toast-cancel {
+    background: #f3f4f6;
+    color: #1a1a2e;
+}
+
+/* ── Motion ── */
+.sd-toaster [data-sonner-toast]:not([data-swiping='true']) {
+    transition:
+        transform 700ms cubic-bezier(0.2, 1.25, 0.35, 1),
+        opacity 380ms ease,
+        filter 480ms ease,
+        height 420ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 200ms ease;
+}
+
+/* Before it appears: above its place, smaller and out of focus. */
+.sd-toaster [data-sonner-toast][data-mounted='false'] {
+    --y: translateY(-60%) scale(0.88);
+    filter: blur(8px);
+}
+
+/* Leaving: lifts and shrinks into a blur, quicker than it arrived. */
+.sd-toaster
+    [data-sonner-toast][data-removed='true'][data-front='true'][data-swipe-out='false'] {
+    --y: translateY(-35%) scale(0.92);
+    filter: blur(6px);
+}
+
+.sd-toaster
+    [data-sonner-toast][data-removed='true']:not([data-swiping='true']) {
+    transition:
+        transform 420ms cubic-bezier(0.4, 0, 0.9, 0.6),
+        opacity 300ms ease,
+        filter 360ms ease,
+        height 420ms ease;
+}
+
+/* Stacked behind the newest toast: show only the card edge, like sonner's own. */
+.sd-toaster [data-sonner-toast][data-expanded='false'][data-front='false'] > * {
+    opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sd-toaster [data-sonner-toast] {
+        filter: none !important;
+    }
+}
+
+/*
  * Phone-only card treatment for admin list rows (orders, products, customers,
  * …). Above `sm` the rows keep their flat, divided look. Unlayered on purpose:
  * it has to beat the row's own `px-4 py-3` and the parent's `divide-y`.
