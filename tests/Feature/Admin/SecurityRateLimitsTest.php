@@ -202,7 +202,7 @@ test('each protected route has its limiter attached', function (string $routeNam
 })->with([
     ['contact.store', 'throttle:contact-message'],
     ['newsletter.subscribe', 'throttle:newsletter-signup'],
-    ['newsletter.unsubscribe', 'throttle:newsletter-signup'],
+    ['newsletter.unsubscribe', 'throttle:newsletter-check'],
     ['newsletter.unsubscribe.confirm', 'throttle:newsletter-check'],
     ['newsletter.manage', 'throttle:newsletter-check'],
     ['newsletter.manage.send', 'throttle:newsletter-manage'],

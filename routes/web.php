@@ -84,7 +84,11 @@ Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])
 // confirmation page; the actual unsubscribe happens on the POST below, so
 // an email client/scanner that auto-opens the link can't unsubscribe anyone.
 Route::get('/newsletter/unsubscribe', [NewsletterController::class, 'unsubscribeConfirm'])->middleware('throttle:newsletter-check')->name('newsletter.unsubscribe.confirm');
-Route::post('/newsletter/unsubscribe', [NewsletterController::class, 'unsubscribe'])->middleware('throttle:newsletter-signup')->name('newsletter.unsubscribe');
+// The confirm POST needs the subscriber's own 64-character token, so there's
+// nothing to guess: it shares the confirmation page's lenient limit rather than
+// the strict sign-up one, so other people's sign-ups on a shared mobile-network
+// IP can never stop someone from unsubscribing.
+Route::post('/newsletter/unsubscribe', [NewsletterController::class, 'unsubscribe'])->middleware('throttle:newsletter-check')->name('newsletter.unsubscribe');
 // FSA-14: the generic link in newsletter emails (FSA-13's shared BCC body
 // can't carry a per-recipient token) — a visitor submits an email here and,
 // if it's an active subscriber, a separate personalized email containing

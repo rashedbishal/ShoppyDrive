@@ -185,13 +185,13 @@ const EXTRA_SECTIONS: LimitSection[] = [
         why: 'Stops spam sign-ups, and stops someone from removing lots of other people from your list.',
         rules: [
             {
-                label: 'Joining or leaving, for the same shopper',
+                label: 'Joining the newsletter, for the same shopper',
                 noun: 'requests',
                 times: 'newsletter_signups_times',
                 minutes: 'newsletter_signups_minutes',
             },
             {
-                label: 'Opening an unsubscribe confirmation link',
+                label: 'Opening or confirming an unsubscribe link',
                 noun: 'opens',
                 times: 'newsletter_checks_times',
                 minutes: 'newsletter_checks_minutes',
