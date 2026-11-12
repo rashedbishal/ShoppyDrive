@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { CSSProperties } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 
@@ -20,13 +20,19 @@ export const LOADING_DESKTOP_MIN_WIDTH_PX = 1024;
 /** The smallest the loader gets on narrow screens, as a share of the desktop size. */
 export const LOADING_PHONE_SCALE = 0.6;
 
+/** How long one draw-in/draw-out of the arc takes, per "seconds" of speed. */
+const LOADING_DRAW_FACTOR = 1.35;
+
+/** How long one full turn of the ring takes, per "seconds" of speed. */
+const LOADING_TURN_FACTOR = 1.8;
+
 export const DEFAULT_LOADING_SPIN_SECONDS =
     LOADING_SCREEN_FIELDS.loading_spin_seconds.default;
 
 type Props = {
     /** Image shown, still, in the middle; the built-in icon when null. */
     logo: string | null;
-    /** Seconds for one full turn of the ring. */
+    /** The loader's pace: smaller is faster (see LOADING_DRAW_FACTOR). */
     seconds: number;
     /** Outer diameter of the ring, in pixels. */
     ringSize?: number;
@@ -50,7 +56,8 @@ type Props = {
 
 /**
  * The loading mark: the logo sits still in the centre while an orange
- * gradient ring turns around it on the Y axis. Shared by the page-loading
+ * gradient arc sweeps around it, drawing itself in and back out as it
+ * turns, over a faint track. Shared by the page-loading
  * overlay and its live preview in Settings ▸ General. The ring, logo and
  * line thickness scale together, so their proportions hold at every size.
  */
@@ -73,8 +80,18 @@ export default function LoadingLogoSpinner({
     // at once; if it isn't yet, it fades in rather than painting in pieces.
     const [loadedLogo, setLoadedLogo] = useState<string | null>(null);
     const logoReady = loadedLogo === logo;
-    const ringWidth = `max(1px, calc(var(--spinner-size) * ${ringThickness / ringSize}))`;
-    const ringMask = `radial-gradient(farthest-side, transparent calc(100% - ${ringWidth}), #000 calc(100% - ${ringWidth} + 1px))`;
+    // The ring is drawn in an SVG whose units are the CMS desktop pixels,
+    // so the arc, its track and its thickness scale together with it.
+    const strokeWidth = ringThickness;
+    const radius = (ringSize - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const gradientId = `loading-ring-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+    // One "seconds" sets the whole rhythm: the arc draws itself in and
+    // back out over a little more than that, while the ring as a whole
+    // turns a little slower, so the two never line up into a loop you
+    // can spot (the classic indeterminate loader).
+    const drawSeconds = seconds * LOADING_DRAW_FACTOR;
+    const turnSeconds = seconds * LOADING_TURN_FACTOR;
 
     return (
         <span
@@ -84,27 +101,75 @@ export default function LoadingLogoSpinner({
                     '--spinner-size': ringDiameter,
                     width: 'var(--spinner-size)',
                     height: 'var(--spinner-size)',
-                    perspective: 900,
                 } as CSSProperties
             }
         >
-            <motion.span
+            <motion.svg
                 key={seconds}
                 aria-hidden="true"
-                className="absolute inset-0 rounded-full drop-shadow-[0_6px_18px_rgba(238,89,35,0.35)]"
-                style={{
-                    background:
-                        'linear-gradient(135deg, #F58120 0%, #EE5923 100%)',
-                    WebkitMask: ringMask,
-                    mask: ringMask,
-                }}
-                animate={{ rotateY: 360 }}
+                viewBox={`0 0 ${ringSize} ${ringSize}`}
+                className="absolute inset-0 size-full drop-shadow-[0_6px_18px_rgba(238,89,35,0.35)]"
+                animate={{ rotate: 360 }}
                 transition={{
-                    duration: seconds,
+                    duration: turnSeconds,
                     repeat: Infinity,
                     ease: 'linear',
                 }}
-            />
+            >
+                <defs>
+                    <linearGradient
+                        id={gradientId}
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
+                        y2="100%"
+                    >
+                        <stop offset="0%" stopColor="#F58120" />
+                        <stop offset="100%" stopColor="#EE5923" />
+                    </linearGradient>
+                </defs>
+                <circle
+                    cx={ringSize / 2}
+                    cy={ringSize / 2}
+                    r={radius}
+                    fill="none"
+                    stroke="#EE5923"
+                    strokeOpacity={0.12}
+                    strokeWidth={strokeWidth}
+                />
+                <motion.circle
+                    cx={ringSize / 2}
+                    cy={ringSize / 2}
+                    r={radius}
+                    fill="none"
+                    stroke={`url(#${gradientId})`}
+                    strokeWidth={strokeWidth}
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${ringSize / 2} ${ringSize / 2})`}
+                    initial={{
+                        strokeDasharray: `${circumference * 0.01} ${circumference}`,
+                        strokeDashoffset: 0,
+                    }}
+                    animate={{
+                        strokeDasharray: [
+                            `${circumference * 0.01} ${circumference}`,
+                            `${circumference * 0.7} ${circumference}`,
+                            `${circumference * 0.7} ${circumference}`,
+                        ],
+                        strokeDashoffset: [
+                            0,
+                            -circumference * 0.25,
+                            -circumference * 0.99,
+                        ],
+                    }}
+                    transition={{
+                        duration: drawSeconds,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                        times: [0, 0.5, 1],
+                    }}
+                />
+            </motion.svg>
             {logo ? (
                 <img
                     src={logo}

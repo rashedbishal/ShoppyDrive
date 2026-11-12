@@ -393,7 +393,7 @@ export default function SettingsEdit({ settings }: Props) {
                             </SettingsField>
                             <SettingsField
                                 label="Loading Screen"
-                                hint={`Speed is seconds for one full turn of the ring — smaller is faster. Sizes are for desktop screens (${LOADING_DESKTOP_MIN_WIDTH_PX}px wide and up); on smaller screens the ring, logo and thickness shrink together, down to ${LOADING_PHONE_SCALE * 100}% on phones.`}
+                                hint={`Speed sets the pace of the loading ring (roughly seconds per sweep) — smaller is faster. Sizes are for desktop screens (${LOADING_DESKTOP_MIN_WIDTH_PX}px wide and up); on smaller screens the ring, logo and thickness shrink together, down to ${LOADING_PHONE_SCALE * 100}% on phones.`}
                             >
                                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
                                     <div className="flex flex-1 flex-col gap-3">

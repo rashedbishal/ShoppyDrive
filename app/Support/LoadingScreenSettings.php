@@ -35,7 +35,7 @@ class LoadingScreenSettings
      * @var array<string, array{0: int|float, 1: int|float, 2: int|float, 3: int}>
      */
     public const FIELDS = [
-        // Seconds for one full turn of the ring (1.1 = the original speed).
+        // Pace of the loading ring's sweep; smaller is faster (1.1 = default).
         'loading_spin_seconds' => [1.1, 0.3, 10, 1],
         // Outer diameter of the ring, in pixels.
         'loading_ring_size' => [340, 80, 600, 0],
