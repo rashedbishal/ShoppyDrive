@@ -56,7 +56,12 @@ class SendMetaTrackingEventJob implements ShouldQueue
             return;
         }
 
-        $event = MetaTrackingEvent::query()->findOrFail($this->metaTrackingEventId);
+        $event = MetaTrackingEvent::query()->find($this->metaTrackingEventId);
+
+        // Cleared from Admin > Pixel & CAPI Log between the claim and here.
+        if ($event === null) {
+            return;
+        }
 
         // Switched off in Admin after the event was recorded: nothing to
         // retry, and not an error worth a Failed Jobs entry.

@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\HomepageController;
 use App\Http\Controllers\Admin\IncompleteOrderController;
 use App\Http\Controllers\Admin\LandingPageController as AdminLandingPageController;
 use App\Http\Controllers\Admin\MarketingSettingsController;
+use App\Http\Controllers\Admin\MetaTrackingLogController;
 use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\OrderCourierController;
@@ -211,6 +212,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::get('settings/marketing', [MarketingSettingsController::class, 'edit'])->name('settings.marketing.edit')->middleware(AdminSections::middleware('marketing_tracking', 'view'));
     Route::put('settings/marketing/custom-code', [MarketingSettingsController::class, 'updateCustomCode'])->name('settings.marketing.custom-code.update');
     Route::put('settings/marketing/facebook-conversions-api', [MarketingSettingsController::class, 'updateFacebookConversionsApi'])->name('settings.marketing.facebook-conversions-api.update')->middleware(AdminSections::middleware('marketing_tracking', 'update'));
+    Route::get('pixel-capi-log', [MetaTrackingLogController::class, 'index'])->name('pixel-capi-log.index')->middleware(AdminSections::middleware('pixel_capi_log', 'view'));
+    Route::delete('pixel-capi-log', [MetaTrackingLogController::class, 'destroy'])->name('pixel-capi-log.destroy')->middleware([AdminSections::middleware('pixel_capi_log', 'delete'), 'throttle:10,1']);
 
     Route::get('settings/social', [SettingController::class, 'socialConfig'])->name('settings.social')->middleware(AdminSections::middleware('social_config', 'view'));
     Route::get('settings/courier', [SettingController::class, 'courierConfig'])->name('settings.courier')->middleware(AdminSections::middleware('courier_config', 'view'));

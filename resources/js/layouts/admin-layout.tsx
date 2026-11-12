@@ -29,6 +29,7 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     PhoneMissed,
+    Radar,
     Search,
     Settings,
     Share2,
@@ -396,6 +397,14 @@ const navSections: NavSection[] = [
                 exact: false,
                 extraMatches: [] as string[],
                 section: 'marketing_tracking',
+            },
+            {
+                label: 'Pixel & CAPI Log',
+                href: '/admin/pixel-capi-log',
+                icon: Radar,
+                exact: false,
+                extraMatches: [] as string[],
+                section: 'pixel_capi_log',
             },
             {
                 label: 'Security',

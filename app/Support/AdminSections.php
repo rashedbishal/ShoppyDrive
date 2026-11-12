@@ -67,6 +67,9 @@ final class AdminSections
         // halves share one `view`/`update` grant here; the harder gate is
         // enforced only on the custom-code save itself.
         'marketing_tracking' => ['label' => 'Marketing & Tracking', 'group' => 'Marketing', 'abilities' => ['update']],
+        // `delete` empties the whole Conversions API event log
+        // (MetaTrackingLogController::destroy()), undelivered events included.
+        'pixel_capi_log' => ['label' => 'Pixel & CAPI Log', 'group' => 'Marketing', 'abilities' => ['delete']],
 
         // System
         'blocked_ips' => ['label' => 'Blocked IPs', 'group' => 'System', 'abilities' => ['create', 'delete']],
