@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Actions\Fortify\CreateNewUser;
 use App\Enums\OrderStatus;
 use App\Enums\PointTransactionType;
 use App\Models\Admin;
@@ -14,8 +15,11 @@ use App\Models\ReceivedSms;
 use App\Models\ReferralPointTransaction;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\LoyaltyPointsService;
 use App\Services\ReferralService;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\artisan;
@@ -120,12 +124,12 @@ test('registering with a typed unknown referral code is refused with a field err
         'referral_code' => 'NOTAREALCODE',
     ]);
 
-    $response->assertSessionHasErrors(['referral_code' => App\Actions\Fortify\CreateNewUser::REFERRAL_CODE_INVALID_MESSAGE]);
+    $response->assertSessionHasErrors(['referral_code' => CreateNewUser::REFERRAL_CODE_INVALID_MESSAGE]);
     expect(User::where('email', 'unknown-ref@example.com')->exists())->toBeFalse();
     $this->assertGuest();
 });
 
-function disc12Register(string $email, ?string $code): Illuminate\Testing\TestResponse
+function disc12Register(string $email, ?string $code): TestResponse
 {
     return test()->post(route('register'), array_filter([
         'name' => 'New Customer',
@@ -137,7 +141,7 @@ function disc12Register(string $email, ?string $code): Illuminate\Testing\TestRe
 }
 
 test('DISC-12: the exact field error wording', function () {
-    expect(App\Actions\Fortify\CreateNewUser::REFERRAL_CODE_INVALID_MESSAGE)
+    expect(CreateNewUser::REFERRAL_CODE_INVALID_MESSAGE)
         ->toBe("This referral code isn't valid. Check it, or leave the field empty.");
 });
 
@@ -809,7 +813,7 @@ test('DISC-11: newly earned points offset a negative balance first', function ()
     $order->update(['status' => OrderStatus::CANCELLED]);
     Setting::updateOrCreate(['key' => 'daily_login_base_points'], ['value' => 10, 'group' => 'referral']);
 
-    $result = app(App\Services\LoyaltyPointsService::class)->claimDailyLogin($referrer);
+    $result = app(LoyaltyPointsService::class)->claimDailyLogin($referrer);
 
     expect($result['awarded'])->toBeTrue()
         ->and($referrer->refresh()->points_balance)->toBe(-20);
@@ -823,7 +827,7 @@ test('DISC-11: checkout offers zero points and cannot spend a zero or negative b
 
     $this->actingAs($customer)
         ->get(route('checkout.index', ['buy_now_product' => $product->id]))
-        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->where('pointsBalance', 0));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pointsBalance', 0));
 
     $this->actingAs($customer)->post(route('checkout.store'), codPayload([
         'email' => $customer->email,

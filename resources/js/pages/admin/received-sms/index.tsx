@@ -388,10 +388,9 @@ export default function ReceivedSmsIndex({
                                                             .landing_page
                                                             ? ' (landing page)'
                                                             : ''}
-                                                        . Contact the
-                                                        customer. This note
-                                                        clears once the SMS
-                                                        is matched to an
+                                                        . Contact the customer.
+                                                        This note clears once
+                                                        the SMS is matched to an
                                                         order or deleted.
                                                     </p>
                                                 )}

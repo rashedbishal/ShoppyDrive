@@ -27,8 +27,8 @@ export default function PagesIndex({ pages }: Props) {
                         Policy &amp; Info Pages
                     </h1>
                     <p className="text-sm text-slate-500">
-                        Edit the text of your legal and information pages.
-                        Their web addresses are fixed.
+                        Edit the text of your legal and information pages. Their
+                        web addresses are fixed.
                     </p>
                 </div>
 

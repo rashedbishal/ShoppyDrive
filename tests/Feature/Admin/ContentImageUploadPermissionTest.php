@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 
 use function Pest\Laravel\actingAs;
 
@@ -14,7 +15,7 @@ use function Pest\Laravel\actingAs;
  * gets 403 and nothing is stored.
  */
 
-function disc06Upload(): Illuminate\Testing\TestResponse
+function disc06Upload(): TestResponse
 {
     return test()->post(route('admin.content-images.store'), [
         'image' => UploadedFile::fake()->image('inline.jpg', 400, 300),

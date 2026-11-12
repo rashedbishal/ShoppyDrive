@@ -2,8 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Models\Order;
+use App\Models\PendingCheckout;
+use App\Models\ReferralPointTransaction;
 use App\Models\SocialAccount;
 use App\Models\User;
+use App\Services\LoyaltyPointsService;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
 
@@ -42,9 +48,9 @@ test('SEC-004: a customer\'s OAuth tokens never reach the admin customer page', 
  * spendable figure checkout uses, and the latest 20 ledger rows, newest first.
  */
 
-function disc13Ledger(User $user, string $type, int $points, ?int $orderId = null, ?string $note = null): App\Models\ReferralPointTransaction
+function disc13Ledger(User $user, string $type, int $points, ?int $orderId = null, ?string $note = null): ReferralPointTransaction
 {
-    return App\Models\ReferralPointTransaction::create([
+    return ReferralPointTransaction::create([
         'user_id' => $user->id, 'type' => $type, 'points' => $points, 'order_id' => $orderId, 'note' => $note,
     ]);
 }
@@ -52,9 +58,9 @@ function disc13Ledger(User $user, string $type, int $points, ?int $orderId = nul
 test('DISC-13: the customer page shows the balance, the checkout spendable figure and the latest 20 points rows, newest first', function () {
     actingAs(createAdmin(), 'admin');
     $user = User::factory()->create(['points_balance' => 100]);
-    Illuminate\Support\Facades\Mail::fake();
+    Mail::fake();
     $address = ['name' => 'C', 'phone' => '01700000000', 'address_line1' => 'H1', 'city' => 'Dhaka', 'state' => 'Dhaka', 'country' => 'Bangladesh'];
-    $order = App\Models\Order::create([
+    $order = Order::create([
         'order_number' => 'SD-DISC13-1', 'user_id' => $user->id, 'status' => 'cancelled', 'payment_status' => 'unpaid',
         'payment_method' => 'cod', 'subtotal' => 100, 'shipping_cost' => 0, 'discount' => 0, 'tax' => 0, 'total' => 100,
         'shipping_address' => $address, 'billing_address' => $address,
@@ -67,11 +73,11 @@ test('DISC-13: the customer page shows the balance, the checkout spendable figur
     $latest = disc13Ledger($user, 'refund_partial', 7, $order->id, 'Partial return.');
 
     // A live bKash/Nagad checkout holds 30 points, exactly as checkout sees it.
-    App\Models\PendingCheckout::create([
-        'token' => (string) Illuminate\Support\Str::uuid(), 'user_id' => $user->id, 'points_reserved' => 30,
+    PendingCheckout::create([
+        'token' => (string) Str::uuid(), 'user_id' => $user->id, 'points_reserved' => 30,
         'checkout_data' => ['total' => 100], 'expires_at' => now()->addHour(),
     ]);
-    $checkoutFigure = app(App\Services\LoyaltyPointsService::class)->availablePoints($user->fresh());
+    $checkoutFigure = app(LoyaltyPointsService::class)->availablePoints($user->fresh());
 
     $this->get(route('admin.customers.show', $user))
         ->assertOk()
@@ -117,5 +123,5 @@ test('DISC-13: viewing the card never changes points', function () {
     $this->get(route('admin.customers.show', $user))->assertOk();
 
     expect($user->fresh()->points_balance)->toBe(12)
-        ->and(App\Models\ReferralPointTransaction::where('user_id', $user->id)->count())->toBe(1);
+        ->and(ReferralPointTransaction::where('user_id', $user->id)->count())->toBe(1);
 });

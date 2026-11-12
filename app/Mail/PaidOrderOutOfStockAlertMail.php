@@ -37,7 +37,7 @@ class PaidOrderOutOfStockAlertMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: "Action needed — paid but not ordered: ৳".number_format($this->amount, 2)." (TrxID {$this->transactionId})");
+        return new Envelope(subject: 'Action needed — paid but not ordered: ৳'.number_format($this->amount, 2)." (TrxID {$this->transactionId})");
     }
 
     public function content(): Content
