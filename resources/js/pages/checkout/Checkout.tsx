@@ -156,8 +156,11 @@ const OrderSummary = React.memo(function OrderSummary({
     );
 
     return (
-        <div className="lg:col-span-5">
-            <div className="sticky top-24 space-y-5 rounded-2xl border border-[var(--color-border)] bg-white p-6">
+        // The grid above aligns its items to the start, which would make this
+        // column only as tall as the card and leave the card nowhere to stick;
+        // stretching it to the form's full height lets the card follow the page.
+        <div className="lg:col-span-5 lg:self-stretch">
+            <div className="space-y-5 rounded-2xl border border-[var(--color-border)] bg-white p-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
                 <h3 className="text-base font-bold text-[var(--color-text-primary)]">
                     Order Summary
                 </h3>
