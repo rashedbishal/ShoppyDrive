@@ -19,9 +19,11 @@ use Symfony\Component\HttpFoundation\Response;
  * Uploads and build assets are served by the web server without reaching PHP,
  * so these don't apply to them.
  *
- * SEC-013, production only: HSTS for one day on the main domain (deliberately
- * short: browsers can't be told to forget it, so it can be lengthened once
- * proven, and no includeSubDomains), and an enforced Content Security Policy.
+ * SEC-013, production only: HSTS on the main domain (started deliberately
+ * short because browsers can't be told to forget it; raised from one day to
+ * 30 days in DISC-15 once HTTPS and Hostinger SSL auto-renewal were confirmed,
+ * with a review toward one year planned; still no includeSubDomains and no
+ * preload), and an enforced Content Security Policy.
  * Only scripts carrying this request's nonce run, and 'strict-dynamic' lets
  * those load others, which is how Tag Manager adds vendors without a deploy.
  * Styles keep 'unsafe-inline': they can't run code, and rich-text content and
@@ -37,7 +39,7 @@ class SecurityHeaders
         'Permissions-Policy' => 'camera=(), microphone=(), geolocation=(), payment=()',
     ];
 
-    private const HSTS = 'max-age=86400';
+    private const HSTS = 'max-age=2592000';
 
     /**
      * 'self' and https: only matter to old browsers without 'strict-dynamic';

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * SEC-013: production sends HSTS (one day, HTTPS responses only) and an
+ * SEC-013: production sends HSTS (30 days since DISC-15, HTTPS responses only) and an
  * enforced CSP, every response limits browser features, and /api/*
  * refuses plain HTTP so a misconfigured caller can't send its token
  * unencrypted. CSP reports are logged once per distinct violation a day.
@@ -31,13 +31,15 @@ test('every response limits browser features', function () {
     $this->get('/up')->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
 });
 
-test('production HTTPS responses carry one-day HSTS for the main domain', function () {
+test('production HTTPS responses carry 30-day HSTS for the main domain, without subdomains or preload', function () {
+    // DISC-15 (owner, 2026-11-13): raised from one day (86400) to 30 days.
     asProduction();
 
     $response = $this->get('https://localhost/up');
 
-    $response->assertHeader('Strict-Transport-Security', 'max-age=86400');
-    expect($response->headers->get('Strict-Transport-Security'))->not->toContain('includeSubDomains');
+    expect($response->headers->get('Strict-Transport-Security'))->toBe('max-age=2592000');
+    expect($response->headers->get('Strict-Transport-Security'))->not->toContain('includeSubDomains')
+        ->and($response->headers->get('Strict-Transport-Security'))->not->toContain('preload');
 });
 
 test('SEC-013: production enforces a CSP where scripts need a nonce and inline scripts are not trusted', function () {
