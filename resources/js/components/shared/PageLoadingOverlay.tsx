@@ -36,12 +36,28 @@ function lookFrom(settings: Partial<AppSettings> | undefined): LoaderLook {
     };
 }
 
+/**
+ * The brand the loader draws. `brand` is shared under its own key because
+ * several admin pages send a page prop called `settings` that replaces the
+ * shared one (and has no logo), which made the loader fall back to the
+ * generic mark there; `settings` is only a fallback for older page data.
+ */
+function brandOf(
+    props: Partial<SharedPageProps> | undefined,
+): Partial<AppSettings> | undefined {
+    return props?.brand ?? props?.settings;
+}
+
 function readInitialLook(): LoaderLook {
     try {
-        const raw = document.getElementById('app')?.dataset.page;
+        // Inertia v3 puts the first page's data in a <script data-page>
+        // element; older versions used the root element's data-page attribute.
+        const raw =
+            document.querySelector('script[data-page]')?.textContent ||
+            document.getElementById('app')?.dataset.page;
 
         if (raw) {
-            return lookFrom(JSON.parse(raw)?.props?.settings);
+            return lookFrom(brandOf(JSON.parse(raw)?.props));
         }
     } catch {
         // Missing or malformed page data: fall through to the default below.
@@ -65,8 +81,17 @@ export default function PageLoadingOverlay(): React.JSX.Element {
 
     useEffect(() => {
         return router.on('navigate', (event) => {
-            const props = event.detail.page.props as SharedPageProps;
-            setLook(lookFrom(props.settings));
+            const brand = brandOf(
+                event.detail.page.props as Partial<SharedPageProps>,
+            );
+
+            // A page without brand data keeps the logo already known.
+            if (
+                brand?.logo !== undefined ||
+                brand?.loading_logo !== undefined
+            ) {
+                setLook(lookFrom(brand));
+            }
         });
     }, []);
 

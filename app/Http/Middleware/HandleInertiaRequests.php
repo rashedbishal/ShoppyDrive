@@ -117,6 +117,10 @@ class HandleInertiaRequests extends Middleware
         $homepageSettings = LayoutCache::homepageSettings();
         $announcementBar = ['announcement_bar' => $homepageSettings['announcement_bar'] ?? null];
         $settingsData = $this->resolveSettings($homepageSettings);
+        $brand = array_intersect_key($settingsData, array_flip([
+            'site_name', 'logo', 'loading_logo',
+            ...array_keys(LoadingScreenSettings::FIELDS),
+        ]));
         $popularKeywords = LayoutCache::popularKeywords();
         $passwordRequirements = PasswordPolicy::requirements();
 
@@ -141,6 +145,12 @@ class HandleInertiaRequests extends Middleware
             // onceKey() for why this is exact rather than time-based.
             'navCategories' => Inertia::once(fn () => $navCategories)->as($this->onceKey('navCategories', $navCategories)),
             'settings' => Inertia::once(fn () => $settingsData)->as($this->onceKey('settings', $settingsData)),
+            // The brand (name, logo, page-loading screen) under its own key:
+            // several admin pages send a page prop also called `settings`
+            // (the form's values), which replaces the shared one above, so
+            // the site logo and the loader read this instead and never fall
+            // back to the generic mark on those pages.
+            'brand' => Inertia::once(fn () => $brand)->as($this->onceKey('brand', $brand)),
             'popular_keywords' => Inertia::once(fn () => $popularKeywords)->as($this->onceKey('popular_keywords', $popularKeywords)),
             // A tester found the registration page's password hint ("8+
             // characters") actively wrong — the real policy is far

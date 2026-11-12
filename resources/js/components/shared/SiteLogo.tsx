@@ -34,7 +34,13 @@ export function SiteLogo({
     plate,
     tone = 'default',
 }: SiteLogoProps): React.JSX.Element {
-    const settings = usePage().props.settings as AppSettings | undefined;
+    // `brand` first: admin pages that send their own `settings` prop replace
+    // the shared one, which has the logo (see HandleInertiaRequests).
+    const props = usePage().props as {
+        brand?: Partial<AppSettings>;
+        settings?: AppSettings;
+    };
+    const settings = (props.brand ?? props.settings) as AppSettings | undefined;
     const logo = src === undefined ? settings?.logo : src;
     const siteName = name ?? settings?.site_name ?? 'ShoppyDrive';
 

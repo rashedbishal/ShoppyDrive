@@ -704,6 +704,21 @@ export interface SharedPageProps {
     locale: string;
     currencySymbol: string;
     settings: AppSettings;
+    /**
+     * The brand under its own key (HandleInertiaRequests): admin pages that
+     * send their own `settings` prop replace the shared one, so the site
+     * logo and the page loader read this instead.
+     */
+    brand: Pick<
+        AppSettings,
+        | 'site_name'
+        | 'logo'
+        | 'loading_logo'
+        | 'loading_spin_seconds'
+        | 'loading_ring_size'
+        | 'loading_logo_size'
+        | 'loading_ring_thickness'
+    >;
     navCategories: NavCategory[];
     /** Every page gets just `{ announcement_bar }`; Home overrides with the full section-config object (see HomeController). */
     homepage_settings: Record<string, HomepageSetting>;
