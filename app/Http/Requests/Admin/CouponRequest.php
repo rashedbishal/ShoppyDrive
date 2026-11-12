@@ -7,6 +7,7 @@ namespace App\Http\Requests\Admin;
 use App\Enums\CouponAppliesTo;
 use App\Models\ProductVariant;
 use App\Models\SubCategory;
+use App\Rules\StorableDateTime;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -30,8 +31,8 @@ class CouponRequest extends FormRequest
             'min_order_amount' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
             'max_uses' => ['nullable', 'integer', 'min:1', 'max:9999999'],
             'per_user_limit' => ['nullable', 'integer', 'min:1', 'max:1000'],
-            'starts_at' => ['nullable', 'date'],
-            'expires_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
+            'starts_at' => ['nullable', 'date', new StorableDateTime],
+            'expires_at' => ['nullable', 'date', new StorableDateTime, 'after_or_equal:starts_at'],
             'is_active' => ['boolean'],
             'applies_to' => ['sometimes', Rule::enum(CouponAppliesTo::class)],
             'target_category_ids' => ['nullable', 'array'],

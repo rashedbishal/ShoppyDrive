@@ -7,6 +7,10 @@ import { CharCount } from '@/components/ui/char-count';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
+import {
+    STORABLE_DATETIME_MAX,
+    STORABLE_DATETIME_MIN,
+} from '@/lib/storable-date';
 import { maxLength, minValue, required, validate } from '@/lib/validate';
 
 function Field({
@@ -270,6 +274,8 @@ export default function CouponCreate({
                                 >
                                     <input
                                         type="datetime-local"
+                                        min={STORABLE_DATETIME_MIN}
+                                        max={STORABLE_DATETIME_MAX}
                                         className={inputClass(errors.starts_at)}
                                         value={data.starts_at}
                                         onChange={(e) =>
@@ -283,6 +289,8 @@ export default function CouponCreate({
                                 >
                                     <input
                                         type="datetime-local"
+                                        min={STORABLE_DATETIME_MIN}
+                                        max={STORABLE_DATETIME_MAX}
                                         className={inputClass(
                                             errors.expires_at,
                                         )}

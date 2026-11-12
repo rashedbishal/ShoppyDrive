@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Rules\StorableDateTime;
 use Illuminate\Foundation\Http\FormRequest;
 
 class BlogRequest extends FormRequest
@@ -27,7 +28,7 @@ class BlogRequest extends FormRequest
             'meta_title' => ['nullable', 'string', 'max:70'],
             'meta_description' => ['nullable', 'string', 'max:160'],
             'is_published' => ['boolean'],
-            'published_at' => ['nullable', 'date'],
+            'published_at' => ['nullable', 'date', new StorableDateTime],
         ];
     }
 }

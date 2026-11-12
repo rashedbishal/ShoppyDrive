@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Admin;
 
 use App\Models\Product;
+use App\Rules\StorableDateTime;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -19,8 +20,8 @@ class FlashSaleRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:100'],
-            'starts_at' => ['required', 'date'],
-            'ends_at' => ['required', 'date', 'after:starts_at'],
+            'starts_at' => ['required', 'date', new StorableDateTime],
+            'ends_at' => ['required', 'date', new StorableDateTime, 'after:starts_at'],
             'is_active' => ['boolean'],
             'items' => ['nullable', 'array'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],

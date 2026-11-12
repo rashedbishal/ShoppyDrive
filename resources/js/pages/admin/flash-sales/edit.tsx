@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CharCount } from '@/components/ui/char-count';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
+import {
+    STORABLE_DATETIME_MAX,
+    STORABLE_DATETIME_MIN,
+} from '@/lib/storable-date';
 import { maxLength, required, validate } from '@/lib/validate';
 
 type FlashSaleItemProduct = {
@@ -226,6 +230,8 @@ export default function FlashSaleEdit({ flashSale }: Props) {
                                     >
                                         <input
                                             type="datetime-local"
+                                            min={STORABLE_DATETIME_MIN}
+                                            max={STORABLE_DATETIME_MAX}
                                             className={inputClass(
                                                 errors.starts_at,
                                             )}
@@ -244,6 +250,8 @@ export default function FlashSaleEdit({ flashSale }: Props) {
                                     >
                                         <input
                                             type="datetime-local"
+                                            min={STORABLE_DATETIME_MIN}
+                                            max={STORABLE_DATETIME_MAX}
                                             className={inputClass(
                                                 errors.ends_at,
                                             )}

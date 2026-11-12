@@ -6,6 +6,10 @@ import { CharCount } from '@/components/ui/char-count';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
+import {
+    STORABLE_DATETIME_MAX,
+    STORABLE_DATETIME_MIN,
+} from '@/lib/storable-date';
 import { maxLength, required, validate } from '@/lib/validate';
 
 function Field({
@@ -239,6 +243,8 @@ export default function BlogCreate() {
                                 >
                                     <input
                                         type="datetime-local"
+                                        min={STORABLE_DATETIME_MIN}
+                                        max={STORABLE_DATETIME_MAX}
                                         className={inputClass(
                                             errors.published_at,
                                         )}
