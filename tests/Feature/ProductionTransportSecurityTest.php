@@ -56,6 +56,14 @@ test('SEC-013: production enforces a CSP where scripts need a nonce and inline s
         ->and($policy)->toContain('report-uri /api/csp-report');
 });
 
+test('forms may only submit to this site and to the Meta Pixel endpoint', function () {
+    asProduction();
+
+    preg_match('/form-action ([^;]+);/', (string) $this->get('https://localhost/up')->headers->get('Content-Security-Policy'), $formAction);
+
+    expect($formAction[1])->toBe("'self' https://www.facebook.com");
+});
+
 test('SEC-013: every request gets its own nonce', function () {
     asProduction();
 

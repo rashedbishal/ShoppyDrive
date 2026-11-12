@@ -57,7 +57,9 @@ class SecurityHeaders
             ."object-src 'none'; "
             ."frame-ancestors 'self'; "
             ."base-uri 'self'; "
-            ."form-action 'self'; "
+            // The Meta Pixel sends larger events (e.g. Purchase) by submitting
+            // a hidden form to facebook.com/tr; only that host is added.
+            ."form-action 'self' https://www.facebook.com; "
             .'report-uri /api/csp-report';
     }
 
