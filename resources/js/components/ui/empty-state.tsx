@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 type EmptyStateAction = {
     label: string;
     href?: string;
+    /** Runs on click; with `href` it runs as the link is followed (e.g. to close a drawer). */
     onClick?: () => void;
 };
 
@@ -31,6 +32,7 @@ function EmptyState({ icon: Icon, title, description, action, className }: Empty
                     {action.href ? (
                         <Link
                             href={action.href}
+                            onClick={action.onClick}
                             className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-6 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
                             {action.label}

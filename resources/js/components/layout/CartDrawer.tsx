@@ -211,8 +211,11 @@ export default function CartDrawer(): React.JSX.Element {
                     title="Your cart is empty"
                     description="Add products to see them here and continue to checkout."
                     action={{
+                        // Same destination as the empty Cart page's button,
+                        // and the drawer closes so the products are visible.
                         label: 'Start shopping',
-                        href: '/',
+                        href: route('products.index'),
+                        onClick: closeCart,
                     }}
                 />
             ) : (
