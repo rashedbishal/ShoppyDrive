@@ -69,7 +69,10 @@
       "Bash(sed -i \"s#'/Shoppydrive.jpg'#'/images/brand/og-image.jpg'#\" app/Support/PageSeo.php tests/Feature/PageSeoTagsTest.php)",
       "Bash(sed -i \"s#public_path\\('Shoppydrive.jpg'\\)#public_path\\('images/brand/og-image.jpg'\\)#\" tests/Feature/PageSeoTagsTest.php)",
       "Bash(git add *)",
-      "Bash(GIT_EDITOR=true git rebase --continue)"
+      "Bash(GIT_EDITOR=true git rebase --continue)",
+      "Bash(awk 'NR>=1130 && NR<=1700 && /\\(space-y-[6-9]|space-y-1[0-9]|mb-[6-9]|mb-1[0-9]|mt-[6-9]|mt-1[0-9]|p-[6-9]|p-1[0-9]|py-[6-9]|py-1[0-9]|gap-[6-9]|gap-1[0-9]|pt-[6-9]|pb-[6-9]|rounded-3xl|text-[34]xl\\)/{print NR\": \"$0}' resources/js/pages/catalog/ProductDetail.tsx)",
+      "Bash(sed -i '1017s/h-14 w-full rounded-2xl text-lg font-bold/h-12 w-full rounded-xl text-base font-bold/' resources/js/pages/catalog/ProductDetail.tsx)",
+      "Bash(sed -i '1364s/text-lg font-bold text-\\\\[var\\(--color-text-primary\\)\\\\] sm:text-xl/text-base font-bold text-[var\\(--color-text-primary\\)] sm:text-lg/' resources/js/pages/catalog/ProductDetail.tsx)"
     ],
     "additionalDirectories": [
       "/media/saadman/data3/Projects/ShoppyDrive/resources/css",
