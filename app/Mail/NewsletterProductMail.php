@@ -38,7 +38,23 @@ class NewsletterProductMail extends Mailable
 
     public function content(): Content
     {
-        return new Content(view: 'emails.newsletter.product-promotion');
+        return new Content(
+            view: 'emails.newsletter.product-promotion',
+            with: [
+                // Full addresses: an email has no site to resolve "/storage/…" against.
+                'imageUrl' => $this->absoluteUrl($this->selectedImage ?? $this->product->primaryImagePath()),
+                'productUrl' => route('product.show', $this->product),
+            ],
+        );
+    }
+
+    private function absoluteUrl(?string $path): ?string
+    {
+        if ($path === null || $path === '') {
+            return null;
+        }
+
+        return preg_match('#^https?://#i', $path) === 1 ? $path : url($path);
     }
 
     /** @return array<int, never> */

@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SendNewsletterChunk;
 use App\Models\NewsletterSubscriber;
 use App\Models\Product;
+use App\Services\ImageOptimizer;
 use App\Support\AdminListUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Mews\Purifier\Facades\Purifier;
@@ -33,6 +35,9 @@ class NewsletterController extends Controller
 
     /** OPS-004: 50 recipients every 5 minutes is 600 emails an hour. */
     private const MINUTES_BETWEEN_CHUNKS = 5;
+
+    /** The email is 600px wide; this keeps its product image sharp on 2x screens. */
+    private const EMAIL_IMAGE_MAX_SIDE = 1200;
 
     /**
      * Each send's uploads live in their own `{ATTACHMENT_ROOT}/{sendId}`
@@ -78,9 +83,37 @@ class NewsletterController extends Controller
         return back()->with('success', 'Subscriber removed.');
     }
 
+    /**
+     * The address of an email-safe copy of a product image (JPEG, white
+     * background, at most EMAIL_IMAGE_MAX_SIDE), made once per send so every
+     * chunk shares it, and kept afterwards since people open emails later.
+     * Falls back to the original image if the copy can't be made; an image
+     * hosted elsewhere is used as it is.
+     */
+    private function emailImagePath(?string $path): ?string
+    {
+        if ($path === null || ! str_starts_with($path, '/storage/')) {
+            return $path;
+        }
+
+        $bytes = app(ImageOptimizer::class)->emailJpeg(
+            Storage::disk('public')->path(substr($path, strlen('/storage/'))),
+            self::EMAIL_IMAGE_MAX_SIDE,
+        );
+
+        if ($bytes === null) {
+            return $path;
+        }
+
+        $copy = 'newsletter-images/'.Str::random(40).'.jpg';
+
+        return Storage::disk('public')->put($copy, $bytes) ? '/storage/'.$copy : $path;
+    }
+
     public function compose(): Response
     {
-        $products = Product::with(['media' => fn ($q) => $q->orderBy('is_primary', 'desc')->orderBy('sort_order')])
+        // Images only: the email shows one picture, and a video can't be one.
+        $products = Product::with(['media' => fn ($q) => $q->where('type', 'image')->orderBy('is_primary', 'desc')->orderBy('sort_order')])
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name', 'slug', 'price', 'compare_price', 'short_description']);
@@ -136,11 +169,22 @@ class NewsletterController extends Controller
                 'selected_image' => ['nullable', 'string', 'max:500'],
             ]);
 
+            $product = Product::with('images')->findOrFail($data['product_id']);
+            $imagePaths = $product->images->pluck('path')->all();
+
+            // Only one of this product's own images: never a video, and
+            // never an arbitrary address typed into the request.
+            if (isset($data['selected_image']) && ! in_array($data['selected_image'], $imagePaths, true)) {
+                throw ValidationException::withMessages([
+                    'selected_image' => 'Choose one of this product\'s images.',
+                ]);
+            }
+
             $newsletter = [
                 'type' => 'product_promotion',
                 'subject' => $data['subject'],
-                'product_id' => (int) $data['product_id'],
-                'selected_image' => $data['selected_image'] ?? null,
+                'product_id' => $product->id,
+                'selected_image' => $this->emailImagePath($data['selected_image'] ?? $product->primaryImagePath()),
             ];
         }
 

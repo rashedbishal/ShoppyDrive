@@ -86,7 +86,7 @@ class SendNewsletterChunk implements ShouldQueue
             );
         }
 
-        $product = Product::with(['media', 'brand:id,name', 'category:id,name'])->find($this->newsletter['product_id']);
+        $product = Product::with(['images', 'brand:id,name', 'category:id,name'])->find($this->newsletter['product_id']);
 
         if ($product === null) {
             throw new RuntimeException("Newsletter product #{$this->newsletter['product_id']} no longer exists; not sending this chunk.");

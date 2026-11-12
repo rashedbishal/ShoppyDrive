@@ -53,10 +53,8 @@
     </div>
 
     <!-- Product Image -->
-    @if($selectedImage)
-    <img src="{{ $selectedImage }}" alt="{{ $product->name }}" class="product-image" />
-    @elseif($product->media && $product->media->isNotEmpty())
-    <img src="{{ $product->media->first()->path }}" alt="{{ $product->name }}" class="product-image" />
+    @if($imageUrl)
+    <a href="{{ $productUrl }}"><img src="{{ $imageUrl }}" alt="{{ $product->name }}" class="product-image" /></a>
     @endif
 
     <!-- Body -->
@@ -81,7 +79,7 @@
         @endif
       </div>
 
-      <a href="{{ config('app.url') }}/products/{{ $product->slug }}" class="cta-btn">
+      <a href="{{ $productUrl }}" class="cta-btn">
         View Product
       </a>
     </div>

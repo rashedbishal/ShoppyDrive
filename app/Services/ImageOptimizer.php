@@ -82,6 +82,34 @@ class ImageOptimizer
         return $type === null ? null : $this->encode($absolutePath, $maxSide, $type);
     }
 
+    /**
+     * A copy every email app can show: JPEG (Outlook on desktop can't show
+     * WebP), transparent areas filled white, longest side at most $maxSide.
+     * Null when the image can't be safely decoded.
+     */
+    public function emailJpeg(string $absolutePath, int $maxSide): ?string
+    {
+        try {
+            $image = $this->load($absolutePath);
+
+            if ($image === null) {
+                return null;
+            }
+
+            $image = $this->fitWithin($image, $maxSide);
+            $canvas = imagecreatetruecolor(imagesx($image), imagesy($image));
+            imagefill($canvas, 0, 0, (int) imagecolorallocate($canvas, 255, 255, 255));
+            imagealphablending($canvas, true);
+            imagecopy($canvas, $image, 0, 0, 0, 0, imagesx($image), imagesy($image));
+
+            return $this->toBytes($canvas, IMAGETYPE_JPEG);
+        } catch (Throwable $exception) {
+            Log::warning('[Images] Could not make an email copy of an image', ['message' => $exception->getMessage()]);
+
+            return null;
+        }
+    }
+
     private function encode(string $absolutePath, int $maxSide, int $outputType): ?string
     {
         try {
