@@ -131,6 +131,17 @@ function scrollToFirstError(errorKeys: string[]): void {
     }
 }
 
+/**
+ * For validation done in the browser, which never reaches the server and so
+ * never fires the visit events above: call right after the errors are set and
+ * the first error on screen (inside a modal too) is scrolled into view.
+ */
+export function scrollToFirstFormError(): void {
+    requestAnimationFrame(() =>
+        requestAnimationFrame(() => scrollToFirstError([])),
+    );
+}
+
 /** Call once at start-up; returns a function that removes the listeners. */
 export function registerFormErrorScroll(): () => void {
     let isSubmission = false;

@@ -65,8 +65,16 @@ class ProductRequest extends FormRequest
                 'unique:products,slug,'.($productId ?? 'NULL').',id,deleted_at,NULL',
             ],
             'sku' => ['nullable', 'string', 'max:50'],
-            'short_description' => ['nullable', 'string', 'max:300'],
-            'description' => ['nullable', 'string', 'max:20000'],
+            'short_description' => ['required', 'string', 'max:300'],
+            'description' => ['required', 'string', 'max:20000', function ($attribute, $value, $fail) {
+                // The rich-text editor leaves markup such as <p><br></p> behind
+                // when emptied, so "required" must look at the visible text.
+                $text = trim(str_replace("\u{00A0}", ' ', html_entity_decode(strip_tags((string) $value))));
+
+                if ($text === '') {
+                    $fail('The description field is required.');
+                }
+            }],
             'specifications' => ['nullable', 'array', 'max:'.self::MAX_SPECIFICATIONS],
             'specifications.*.key' => ['required_with:specifications', 'string', 'max:60'],
             'specifications.*.value' => ['required_with:specifications', 'string', 'max:200'],
@@ -108,7 +116,9 @@ class ProductRequest extends FormRequest
             // path being kept as-is, never counted, so a product that
             // already has more than MAX_NEW_UPLOADS media items is never
             // blocked from being edited when no new file is added.
-            'images' => ['nullable', 'array', function ($attribute, $value, $fail) {
+            // A new product needs a picture; an update that sends no `images` leaves
+            // the existing media alone, so it only has to keep at least one if it sends any.
+            'images' => [$productId === null ? 'required' : 'sometimes', 'array', 'min:1', function ($attribute, $value, $fail) {
                 $newUploadCount = count(array_filter(
                     is_array($value) ? $value : [],
                     fn ($item) => $item instanceof UploadedFile,
@@ -212,6 +222,36 @@ class ProductRequest extends FormRequest
                 ], fn ($id) => $id !== null && $id !== '')),
             ] : $variant, $variants)]);
         }
+    }
+
+    /**
+     * Friendly field names, so the messages shown above the form say which
+     * field they are about.
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'name' => 'product name',
+            'short_description' => 'short description',
+            'description' => 'description',
+            'images' => 'product image',
+            'category_id' => 'category',
+            'sub_category_id' => 'sub-category',
+            'stock_quantity' => 'stock quantity',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'images.required' => 'Add at least one product image.',
+            'images.min' => 'Add at least one product image.',
+        ];
     }
 
     public function withValidator(ValidatorContract $validator): void

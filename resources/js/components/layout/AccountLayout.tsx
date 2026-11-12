@@ -1,4 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
+import { motion } from 'framer-motion';
 import {
     ChevronRight,
     Gift,
@@ -11,6 +12,7 @@ import {
     Package,
     User,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SIDEBAR_LAYOUT_CLASS } from '@/lib/constants';
 import { cn, getInitials } from '@/lib/utils';
@@ -35,6 +37,22 @@ export default function AccountLayout({
     const page = usePage<SharedPageProps>();
     const { auth, account_stats } = page.props;
     const currentPath = page.url.split('?')[0];
+    const [loading, setLoading] = useState(false);
+
+    // The sidebar stays put while a tab loads; only the content dims.
+    useEffect(() => {
+        const offStart = router.on('start', (event) =>
+            setLoading(
+                event.detail.visit.url.pathname !== window.location.pathname,
+            ),
+        );
+        const offFinish = router.on('finish', () => setLoading(false));
+
+        return () => {
+            offStart();
+            offFinish();
+        };
+    }, []);
 
     return (
         <div className="min-h-screen bg-[var(--color-surface)] py-8 lg:py-12">
@@ -147,7 +165,21 @@ export default function AccountLayout({
                     </aside>
 
                     {/* Main content */}
-                    <main className="min-w-0 lg:col-span-3">{children}</main>
+                    <main
+                        className={cn(
+                            'min-w-0 transition-opacity duration-150 lg:col-span-3',
+                            loading && 'opacity-60',
+                        )}
+                    >
+                        <motion.div
+                            key={currentPath}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2, ease: 'easeOut' }}
+                        >
+                            {children}
+                        </motion.div>
+                    </main>
                 </div>
             </div>
         </div>

@@ -4,6 +4,7 @@ import React from 'react';
 import { toast } from 'sonner';
 import { route as ziggyRoute } from 'ziggy-js';
 import ErrorBoundary from '@/components/error-boundary';
+import AccountLayout from '@/components/layout/AccountLayout';
 import PageLoadingOverlay from '@/components/shared/PageLoadingOverlay';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -11,6 +12,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
 import { initializeSiteTheme } from '@/hooks/use-theme';
 import AppLayout from '@/layouts/app-layout';
+
 import { initAddToCartFeedback } from '@/lib/add-to-cart-feedback';
 import { APP_NAME } from '@/lib/constants';
 import { STORAGE_KEYS } from '@/lib/constants';
@@ -28,6 +30,18 @@ import {
 } from '@/stores/wishlistStore';
 import type { BundleRecipe, Cart, CartItem, SharedPageProps } from '@/types';
 import { Ziggy as ziggyConfig } from './ziggy';
+
+const ACCOUNT_PAGES = new Set([
+    'account/Dashboard',
+    'account/Orders',
+    'account/OrderDetail',
+    'account/Wishlist',
+    'account/Referral',
+    'account/Addresses',
+    'account/Profile',
+    'account/ChangePassword',
+    'account/Connections',
+]);
 
 declare global {
     var route: typeof ziggyRoute;
@@ -909,6 +923,10 @@ createInertiaApp({
             case name.startsWith('admin/'):
                 // Set on the page itself by resolveAdminPage().
                 return null;
+            case ACCOUNT_PAGES.has(name):
+                // Persistent nested layout: the account sidebar stays mounted
+                // while switching tabs, so only the content swaps.
+                return [AppLayout, AccountLayout];
             default:
                 return AppLayout;
         }

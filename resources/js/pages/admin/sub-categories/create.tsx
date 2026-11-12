@@ -6,6 +6,7 @@ import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
+import { scrollToFirstFormError } from '@/lib/form-error-scroll';
 import {
     maxLength,
     minValue,
@@ -36,7 +37,11 @@ function Field({
             </label>
             {hint && <p className="mb-1.5 text-xs text-slate-400">{hint}</p>}
             {children}
-            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+            {error && (
+                <p data-form-error className="mt-1 text-xs text-red-500">
+                    {error}
+                </p>
+            )}
         </div>
     );
 }
@@ -75,6 +80,7 @@ export default function SubCategoryCreate({ categories }: Props) {
 
         if (Object.keys(clientErrors).length > 0) {
             setError(clientErrors);
+            scrollToFirstFormError();
 
             return;
         }

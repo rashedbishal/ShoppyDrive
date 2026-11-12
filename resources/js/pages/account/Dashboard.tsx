@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import React from 'react';
 
-import AccountLayout from '@/components/layout/AccountLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -67,7 +66,7 @@ export default function Dashboard({
     ];
 
     return (
-        <AccountLayout>
+        <>
             <Head title="My Dashboard" />
 
             <div className="space-y-8">
@@ -289,6 +288,6 @@ export default function Dashboard({
                     </div>
                 </div>
             </div>
-        </AccountLayout>
+        </>
     );
 }

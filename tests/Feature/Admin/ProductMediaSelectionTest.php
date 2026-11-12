@@ -31,6 +31,8 @@ function mediaProductPayload(array $overrides = []): array
     return array_merge([
         'name' => 'Media Product',
         'slug' => 'media-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => test()->category->id,
         'sub_category_id' => test()->subCategory->id,
         'price' => 500,

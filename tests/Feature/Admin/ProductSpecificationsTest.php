@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\SubCategory;
 use App\Support\ProductStockToken;
+use Illuminate\Http\UploadedFile;
 
 use function Pest\Laravel\actingAs;
 
@@ -25,6 +26,9 @@ function specProductPayload(array $overrides = []): array
     return array_merge([
         'name' => 'Spec Product',
         'slug' => 'spec-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
+        'images' => [UploadedFile::fake()->image('product.jpg', 400, 400)],
         'category_id' => test()->category->id,
         'sub_category_id' => test()->subCategory->id,
         'price' => 500,

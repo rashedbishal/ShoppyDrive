@@ -1,7 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { Calendar, Check, Copy, Gift, Lock, Users } from 'lucide-react';
 import React, { useState } from 'react';
-import AccountLayout from '@/components/layout/AccountLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getXsrfToken } from '@/lib/csrf';
@@ -141,7 +140,7 @@ export default function Referral({
             : `${formatCurrency(referralDiscountValue)} off`;
 
     return (
-        <AccountLayout>
+        <>
             <Head title="Referral & Points" />
 
             <div className="space-y-8">
@@ -361,6 +360,6 @@ export default function Referral({
                     )}
                 </div>
             </div>
-        </AccountLayout>
+        </>
     );
 }

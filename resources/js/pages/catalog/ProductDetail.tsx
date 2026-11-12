@@ -627,7 +627,7 @@ export default function ProductDetail({
     ];
 
     return (
-        <div className="min-h-screen bg-[var(--color-surface-alt)] pb-20">
+        <div className="min-h-screen bg-[var(--color-surface-alt)] pb-6">
             <Head title={product.meta_title || product.name}>
                 <meta
                     name="description"
@@ -1563,7 +1563,7 @@ export default function ProductDetail({
                 <ProductCarousel
                     title="You May Also Like"
                     products={relatedProducts}
-                    className="mt-8"
+                    className="mt-4"
                 />
 
                 {recentlyViewed.length > 1 && (
@@ -1572,7 +1572,7 @@ export default function ProductDetail({
                         products={recentlyViewed.filter(
                             (p) => p.id !== product.id,
                         )}
-                        className="mt-5"
+                        className="mt-0"
                     />
                 )}
             </div>

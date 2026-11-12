@@ -35,6 +35,9 @@ import { useUiStore } from '@/stores/uiStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import type { SharedPageProps } from '@/types';
 
+/** Duration of the navbar collapse/expand animation (matches the duration-500 classes). */
+const NAV_ANIMATION_MS = 500;
+
 const supportItems = [
     { label: 'Track Order', href: '/order/track' },
     { label: 'Help Center', href: '/faq' },
@@ -162,45 +165,74 @@ export default function Header(): React.JSX.Element {
         const HIDE_AFTER_PX = 140;
         const SHOW_BEFORE_PX = 60;
         const DIRECTION_DELTA_PX = 10;
-        // Collapsing the bar changes the page height and can itself fire scroll
-        // events (notably at the very bottom), so changes are debounced briefly.
-        const SETTLE_MS = 350;
+        // Scrolling up must travel this far before the bar comes back, so a
+        // small browser scroll correction can never be mistaken for a scroll up.
+        const SHOW_AFTER_UP_PX = 40;
+        // Collapsing or expanding the bar changes the page height; the browser
+        // then corrects the scroll position (scroll anchoring), which looks like
+        // a scroll in the opposite direction. Everything is ignored while the
+        // collapse animation runs plus a short settle, and the reference
+        // position is re-based on every event in that window.
+        const SETTLE_MS = NAV_ANIMATION_MS + 250;
 
         let lastY = window.scrollY;
-        let lastToggleAt = 0;
+        let lockedUntil = 0;
+        let upTravel = 0;
+
+        const toggle = (hidden: boolean): void => {
+            lockedUntil = performance.now() + SETTLE_MS;
+            upTravel = 0;
+            setIsNavHidden(hidden);
+        };
 
         const handleScroll = (): void => {
             const y = window.scrollY;
             const delta = y - lastY;
 
-            if (y < SHOW_BEFORE_PX) {
+            if (performance.now() < lockedUntil) {
                 lastY = y;
-                setIsNavHidden(false);
 
                 return;
             }
 
-            if (
-                Math.abs(delta) < DIRECTION_DELTA_PX ||
-                performance.now() - lastToggleAt < SETTLE_MS
-            ) {
+            if (y < SHOW_BEFORE_PX) {
+                lastY = y;
+                upTravel = 0;
+                setIsNavHidden((hidden) => {
+                    if (hidden) {
+                        lockedUntil = performance.now() + SETTLE_MS;
+                    }
+
+                    return false;
+                });
+
+                return;
+            }
+
+            if (Math.abs(delta) < DIRECTION_DELTA_PX) {
                 return;
             }
 
             lastY = y;
 
-            if (delta > 0 && y > HIDE_AFTER_PX) {
-                lastToggleAt = performance.now();
-                setIsNavHidden(true);
-            } else if (delta < 0) {
-                const atBottom =
-                    y + window.innerHeight >=
-                    document.documentElement.scrollHeight - 4;
+            if (delta > 0) {
+                upTravel = 0;
 
-                if (!atBottom) {
-                    lastToggleAt = performance.now();
-                    setIsNavHidden(false);
+                if (y > HIDE_AFTER_PX) {
+                    toggle(true);
                 }
+
+                return;
+            }
+
+            upTravel += -delta;
+
+            const atBottom =
+                y + window.innerHeight >=
+                document.documentElement.scrollHeight - 4;
+
+            if (upTravel >= SHOW_AFTER_UP_PX && !atBottom) {
+                toggle(false);
             }
         };
 
@@ -238,7 +270,9 @@ export default function Header(): React.JSX.Element {
         <>
             <header
                 className={cn(
-                    'sticky top-0 z-50 w-full transition-shadow duration-300',
+                    // -top-px: on some screens/zoom levels fractional pixel rounding leaves
+                    // a hairline above a `top-0` sticky header; overlapping by 1px hides it.
+                    'sticky -top-px z-50 w-full transition-shadow duration-500',
                     isScrolled ? 'shadow-[var(--shadow-card-hover)]' : '',
                 )}
             >
@@ -246,7 +280,7 @@ export default function Header(): React.JSX.Element {
                 {announcementBar?.is_visible !== false && (
                     <div
                         className={cn(
-                            'hidden grid-rows-[1fr] bg-[var(--color-secondary)] text-white transition-[grid-template-rows,opacity] duration-300 ease-out lg:grid',
+                            'hidden grid-rows-[1fr] bg-[var(--color-secondary)] text-white shadow-[0_-2px_0_var(--color-secondary)] transition-[grid-template-rows,opacity] duration-500 ease-in-out lg:grid',
                             shouldHideNav &&
                                 'pointer-events-none grid-rows-[0fr] opacity-0',
                         )}
@@ -299,7 +333,7 @@ export default function Header(): React.JSX.Element {
                 <div className="relative z-20 border-b border-[var(--color-border)] bg-white/95 lg:backdrop-blur-xl">
                     <div
                         className={cn(
-                            'relative mx-auto flex max-w-7xl items-center gap-4 px-4 transition-[padding] duration-300 sm:px-6 lg:px-8',
+                            'relative mx-auto flex max-w-7xl items-center gap-4 px-4 transition-[padding] duration-500 ease-in-out sm:px-6 lg:px-8',
                             isScrolled ? 'py-3' : 'py-4',
                         )}
                     >
@@ -552,7 +586,7 @@ export default function Header(): React.JSX.Element {
                 {/* Navigation bar */}
                 <div
                     className={cn(
-                        'relative z-10 hidden grid-rows-[1fr] transition-[grid-template-rows,opacity] duration-300 ease-out lg:grid',
+                        'relative z-10 hidden grid-rows-[1fr] transition-[grid-template-rows,opacity] duration-500 ease-in-out lg:grid',
                         shouldHideNav &&
                             'pointer-events-none grid-rows-[0fr] opacity-0',
                     )}
@@ -561,7 +595,7 @@ export default function Header(): React.JSX.Element {
                 >
                     <div
                         className={cn(
-                            'min-h-0 border-b border-[var(--color-border)] bg-white/95 transition-[border-color] duration-300',
+                            'min-h-0 border-b border-[var(--color-border)] bg-white/95 transition-[border-color] duration-500',
                             shouldHideNav &&
                                 'overflow-hidden border-transparent',
                         )}

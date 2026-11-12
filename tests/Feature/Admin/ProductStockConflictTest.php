@@ -37,6 +37,8 @@ function flatStockProduct(int $stock = 10): Product
 {
     return Product::factory()->create([
         'name' => 'Flat Original', 'slug' => 'flat-original', 'price' => 100, 'stock_quantity' => $stock,
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => test()->category->id, 'sub_category_id' => test()->subCategory->id, 'is_active' => true,
     ]);
 }
@@ -61,6 +63,8 @@ function flatSavePayload(Product $product, string $token, array $overrides = [])
         'stock_token' => $token,
         'name' => 'Changed Name',
         'slug' => $product->slug,
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $product->category_id,
         'sub_category_id' => $product->sub_category_id,
         'price' => 250,

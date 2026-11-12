@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import React, { useState } from 'react';
 
-import AccountLayout from '@/components/layout/AccountLayout';
 import {
     OrderStatusBadge,
     PaymentStatusBadge,
@@ -70,7 +69,7 @@ export default function Orders({
     };
 
     return (
-        <AccountLayout>
+        <>
             <Head title="My Orders" />
 
             <div className="space-y-8">
@@ -245,22 +244,27 @@ export default function Orders({
                                                     View Details
                                                 </Link>
                                             </Button>
-                                            <Button
-                                                asChild
-                                                className="flex-1 rounded-xl bg-[var(--color-secondary)] font-bold text-white hover:bg-[#2A2A4E] sm:flex-none"
-                                            >
-                                                <Link
-                                                    href={route('order.track', {
-                                                        order: order.order_number,
-                                                    })}
+                                            {order.status !== 'cancelled' && (
+                                                <Button
+                                                    asChild
+                                                    className="flex-1 rounded-xl bg-[var(--color-secondary)] font-bold text-white hover:bg-[#2A2A4E] sm:flex-none"
                                                 >
-                                                    Track Order
-                                                    <ArrowRight
-                                                        size={16}
-                                                        className="ml-2"
-                                                    />
-                                                </Link>
-                                            </Button>
+                                                    <Link
+                                                        href={route(
+                                                            'order.track',
+                                                            {
+                                                                order: order.order_number,
+                                                            },
+                                                        )}
+                                                    >
+                                                        Track Order
+                                                        <ArrowRight
+                                                            size={16}
+                                                            className="ml-2"
+                                                        />
+                                                    </Link>
+                                                </Button>
+                                            )}
                                             {order.status === 'pending' && (
                                                 <Button
                                                     variant="outline"
@@ -324,6 +328,6 @@ export default function Orders({
                     </div>
                 )}
             </div>
-        </AccountLayout>
+        </>
     );
 }
