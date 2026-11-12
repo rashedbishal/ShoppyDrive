@@ -4,6 +4,7 @@ use App\Models\Brand;
 use App\Models\Product;
 use App\Support\ProductStockToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -23,6 +24,8 @@ function listPositionProductPayload(Product $product): array
         'stock_token' => ProductStockToken::for($product),
         'name' => $product->name.' renamed',
         'slug' => $product->slug,
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $product->category_id,
         'sub_category_id' => $product->sub_category_id,
         'price' => $product->price,
@@ -105,6 +108,9 @@ test('creating a product still opens the first page, where the new product is li
         ->post(route('admin.products.store'), [
             'name' => 'Brand new product',
             'slug' => 'brand-new-product',
+            'short_description' => 'A short description.',
+            'description' => '<p>A full description.</p>',
+            'images' => [UploadedFile::fake()->image('product.jpg', 400, 400)],
             'category_id' => $template->category_id,
             'sub_category_id' => $template->sub_category_id,
             'price' => 100,

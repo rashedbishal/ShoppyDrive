@@ -168,6 +168,8 @@ function stockRaceForm(Product $product): array
     return [
         'name' => $product->name,
         'slug' => $product->slug,
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $product->category_id,
         'sub_category_id' => $product->sub_category_id,
         'price' => 100,

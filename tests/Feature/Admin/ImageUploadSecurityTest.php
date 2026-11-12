@@ -263,6 +263,8 @@ test('a product image upload accepts a valid JPEG and still accepts a genuine vi
 
     $response = $this->post(route('admin.products.store'), [
         'name' => 'Good Product', 'slug' => 'good-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
         'price' => 100, 'stock_quantity' => 10,
         'images' => [
@@ -283,6 +285,8 @@ test('a product image upload rejects an SVG disguised with a .jpg extension', fu
 
     $response = $this->post(route('admin.products.store'), [
         'name' => 'Evil Product', 'slug' => 'evil-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
         'price' => 100, 'stock_quantity' => 10,
         'images' => [
@@ -311,6 +315,8 @@ test('a product image upload of exactly 5MB is accepted', function () {
 
     $response = $this->post(route('admin.products.store'), [
         'name' => 'Exact Image', 'slug' => 'exact-image',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
         'price' => 100, 'stock_quantity' => 10,
         'images' => [UploadedFile::fake()->image('product.jpg')->size(5120)],
@@ -325,6 +331,8 @@ test('a product image upload larger than 5MB is rejected', function () {
 
     $response = $this->post(route('admin.products.store'), [
         'name' => 'Oversized Image', 'slug' => 'oversized-image',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
         'price' => 100, 'stock_quantity' => 10,
         'images' => [UploadedFile::fake()->image('product.jpg')->size(5121)],
@@ -339,6 +347,8 @@ test('a product video upload of exactly 50MB is accepted', function () {
 
     $response = $this->post(route('admin.products.store'), [
         'name' => 'Exact Video', 'slug' => 'exact-video',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
         'price' => 100, 'stock_quantity' => 10,
         'images' => [UploadedFile::fake()->create('clip.mp4', 51200, 'video/mp4')],
@@ -353,6 +363,8 @@ test('a product video upload larger than 50MB is rejected', function () {
 
     $response = $this->post(route('admin.products.store'), [
         'name' => 'Oversized Video', 'slug' => 'oversized-video',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
         'price' => 100, 'stock_quantity' => 10,
         'images' => [UploadedFile::fake()->create('clip.mp4', 51201, 'video/mp4')],
@@ -367,6 +379,8 @@ test('exactly 10 newly uploaded media files are accepted', function () {
 
     $response = $this->post(route('admin.products.store'), [
         'name' => 'Ten Files', 'slug' => 'ten-files',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
         'price' => 100, 'stock_quantity' => 10,
         'images' => array_map(fn (int $i) => UploadedFile::fake()->image("product-{$i}.jpg"), range(1, 10)),
@@ -383,6 +397,8 @@ test('11 newly uploaded media files are rejected in one submission', function ()
 
     $response = $this->post(route('admin.products.store'), [
         'name' => 'Eleven Files', 'slug' => 'eleven-files',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
         'price' => 100, 'stock_quantity' => 10,
         'images' => array_map(fn (int $i) => UploadedFile::fake()->image("product-{$i}.jpg"), range(1, 11)),
@@ -406,6 +422,8 @@ test('a product with more than 10 existing media items can still be edited witho
     $response = $this->put(route('admin.products.update', $product), [
         'stock_token' => ProductStockToken::for($product),
         'name' => 'Updated Name', 'slug' => $product->slug,
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
         'price' => 100, 'stock_quantity' => 10,
     ]);
@@ -427,6 +445,8 @@ test('existing media kept as plain string paths continue to work when updating a
     $response = $this->put(route('admin.products.update', $product), [
         'stock_token' => ProductStockToken::for($product),
         'name' => $product->name, 'slug' => $product->slug,
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
         'price' => 100, 'stock_quantity' => 10,
         'images' => ['/storage/products/existing-1.jpg', '/storage/products/existing-2.jpg'],
@@ -443,6 +463,8 @@ test('a mixed batch containing one oversized file is rejected without storing an
 
     $response = $this->post(route('admin.products.store'), [
         'name' => 'Mixed Batch', 'slug' => 'mixed-batch',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $category->id, 'sub_category_id' => $subCategory->id,
         'price' => 100, 'stock_quantity' => 10,
         'images' => [

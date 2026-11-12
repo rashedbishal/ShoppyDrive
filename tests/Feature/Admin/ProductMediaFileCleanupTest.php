@@ -29,6 +29,8 @@ function cleanupProductPayload(array $overrides = []): array
     return array_merge([
         'name' => 'Cleanup Product',
         'slug' => 'cleanup-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => test()->category->id,
         'sub_category_id' => test()->subCategory->id,
         'price' => 500,
@@ -143,10 +145,14 @@ test('permanently deleting a product removes its photo and video files', functio
         ->and(array_map(fileExists(...), $paths))->toBe([false, false]);
 });
 
-test('the placeholder a product without photos gets is never touched', function () {
+test('a product can no longer be saved with all of its photos removed', function () {
     $product = productWithUploadedPhotos(1);
+    $before = photoPaths($product);
 
-    updateProductMedia($product, []);
+    test()->put(route('admin.products.update', $product), cleanupProductPayload([
+        'images' => [],
+        'stock_token' => ProductStockToken::for($product->fresh()),
+    ]));
 
-    expect(photoPaths($product))->toBe(['/placeholder.svg']);
+    expect(photoPaths($product))->toBe($before);
 });

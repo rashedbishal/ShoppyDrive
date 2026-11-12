@@ -5,6 +5,7 @@ use App\Models\Product;
 use App\Models\SubCategory;
 use App\Support\ProductStockToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
@@ -27,6 +28,8 @@ function cryBabyProductPayload(Product $product, array $overrides = []): array
     return array_merge([
         'name' => $product->name,
         'slug' => $product->slug,
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $product->category_id,
         'sub_category_id' => $product->sub_category_id,
         'price' => $product->price,
@@ -108,6 +111,9 @@ test('admin can create a product with the cry baby easter egg enabled', function
         ->post(route('admin.products.store'), [
             'name' => 'Crying Toy',
             'slug' => 'crying-toy',
+            'short_description' => 'A short description.',
+            'description' => '<p>A full description.</p>',
+            'images' => [UploadedFile::fake()->image('product.jpg', 400, 400)],
             'category_id' => $category->id,
             'sub_category_id' => $subCategory->id,
             'price' => 500,

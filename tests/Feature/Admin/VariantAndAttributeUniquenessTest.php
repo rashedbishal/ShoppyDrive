@@ -15,6 +15,7 @@ use App\Support\ProductStockToken;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -49,6 +50,8 @@ function variantFormPayload(array $rows, array $overrides = []): array
     return array_merge([
         'name' => 'Unique Shirt',
         'slug' => 'unique-shirt',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => test()->category->id,
         'sub_category_id' => test()->subCategory->id,
         'has_color_variant' => true,
@@ -61,7 +64,7 @@ function variantFormPayload(array $rows, array $overrides = []): array
 
 function productWithSkus(array $rows): Product
 {
-    test()->post(route('admin.products.store'), variantFormPayload($rows))->assertSessionHasNoErrors();
+    test()->post(route('admin.products.store'), variantFormPayload($rows, ['images' => [UploadedFile::fake()->image('product.jpg', 400, 400)]]))->assertSessionHasNoErrors();
 
     return Product::where('slug', 'unique-shirt')->firstOrFail();
 }
@@ -147,7 +150,7 @@ test('a save that loses a race for a SKU gets a friendly error and leaves nothin
         }
     });
 
-    $this->post(route('admin.products.store'), variantFormPayload([[$this->red, 'RACED-1']]))->assertSessionHasErrors('variants');
+    $this->post(route('admin.products.store'), variantFormPayload([[$this->red, 'RACED-1']], ['images' => [UploadedFile::fake()->image('product.jpg', 400, 400)]]))->assertSessionHasErrors('variants');
 
     expect(Product::where('slug', 'unique-shirt')->exists())->toBeFalse();
 });
@@ -157,7 +160,7 @@ test('other unique failures are not reported as a SKU problem', function () {
 
     $this->withoutExceptionHandling();
 
-    expect(fn () => $this->post(route('admin.products.store'), variantFormPayload([[$this->red, 'OTHER-1']])))->toThrow(UniqueConstraintViolationException::class);
+    expect(fn () => $this->post(route('admin.products.store'), variantFormPayload([[$this->red, 'OTHER-1']], ['images' => [UploadedFile::fake()->image('product.jpg', 400, 400)]])))->toThrow(UniqueConstraintViolationException::class);
 });
 
 test('an attribute value that loses a race gets a friendly error', function () {

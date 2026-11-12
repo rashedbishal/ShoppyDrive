@@ -14,6 +14,7 @@ use App\Models\SubCategory;
 use App\Models\User;
 use App\Support\ProductStockToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -50,6 +51,9 @@ function customVariantPayload(array $attributeIds, array $variants, array $overr
 {
     return [
         'name' => 'Steel Spoon', 'slug' => 'steel-spoon', 'is_active' => true,
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
+        'images' => [UploadedFile::fake()->image('product.jpg', 400, 400)],
         'category_id' => test()->category->id, 'sub_category_id' => test()->subCategory->id,
         'variant_attribute_ids' => $attributeIds,
         'variants' => $variants,

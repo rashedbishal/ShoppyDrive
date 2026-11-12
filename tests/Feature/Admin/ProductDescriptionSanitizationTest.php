@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\SubCategory;
 use App\Support\ProductStockToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 
 use function Pest\Laravel\actingAs;
 
@@ -24,6 +25,9 @@ test('creating a product strips malicious HTML from description', function () {
     $response = $this->post(route('admin.products.store'), [
         'name' => 'Test Product',
         'slug' => 'test-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
+        'images' => [UploadedFile::fake()->image('product.jpg', 400, 400)],
         'category_id' => $this->category->id,
         'sub_category_id' => $this->subCategory->id,
         'price' => '1000',
@@ -52,6 +56,8 @@ test('updating a product preserves legitimate formatting in description', functi
     $response = $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + [
         'name' => $product->name,
         'slug' => $product->slug,
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $this->category->id,
         'sub_category_id' => $this->subCategory->id,
         'price' => '1000',
@@ -73,11 +79,14 @@ test('a relative uploaded image URL in description survives sanitization', funct
     $response = $this->post(route('admin.products.store'), [
         'name' => 'Test Product',
         'slug' => 'test-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $this->category->id,
         'sub_category_id' => $this->subCategory->id,
         'price' => '1000',
         'stock_quantity' => '10',
         'is_active' => true,
+        'images' => [UploadedFile::fake()->image('product.jpg', 400, 400)],
         'description' => '<p>See the image below.</p><img src="/storage/content-images/sample.webp" alt="sample">',
     ]);
 

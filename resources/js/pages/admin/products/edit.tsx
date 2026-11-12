@@ -427,7 +427,7 @@ export default function ProductEdit({
                                     )}
                                 </AnimatePresence>
                                 <Field
-                                    label="Short Description"
+                                    label="Short Description *"
                                     error={errors.short_description}
                                 >
                                     <textarea
@@ -449,7 +449,7 @@ export default function ProductEdit({
                                     />
                                 </Field>
                                 <Field
-                                    label="Description"
+                                    label="Description *"
                                     error={errors.description}
                                 >
                                     <RichTextEditor

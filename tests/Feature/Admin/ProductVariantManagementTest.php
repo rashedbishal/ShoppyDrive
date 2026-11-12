@@ -13,6 +13,7 @@ use App\Models\ProductVariant;
 use App\Models\SubCategory;
 use App\Support\ProductStockToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 
 use function Pest\Laravel\actingAs;
 
@@ -42,6 +43,9 @@ function baseProductPayload(array $overrides = []): array
     $payload = array_merge([
         'name' => 'Test Product',
         'slug' => 'test-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
+        'images' => [UploadedFile::fake()->image('product.jpg', 400, 400)],
         'category_id' => null,
         'sub_category_id' => null,
         'price' => '1000',
@@ -79,6 +83,9 @@ test('creating a product with a name/slug already in use returns a slug validati
     Product::create([
         'name' => 'Existing Product',
         'slug' => 'existing-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
+        'images' => [UploadedFile::fake()->image('product.jpg', 400, 400)],
         'category_id' => $this->category->id,
         'sub_category_id' => $this->subCategory->id,
         'price' => 1000,
@@ -88,6 +95,9 @@ test('creating a product with a name/slug already in use returns a slug validati
     $response = $this->post(route('admin.products.store'), baseProductPayload([
         'name' => 'Existing Product',
         'slug' => 'existing-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
+        'images' => [UploadedFile::fake()->image('product.jpg', 400, 400)],
         'category_id' => $this->category->id,
         'sub_category_id' => $this->subCategory->id,
     ]));
@@ -345,6 +355,8 @@ test('a product can resubmit its own existing variant SKU without self-conflicti
 
     $product = Product::create([
         'name' => 'Self Sku Product', 'slug' => 'self-sku-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $this->category->id, 'sub_category_id' => $this->subCategory->id,
         'price' => 1000, 'stock_quantity' => 10, 'has_color_variant' => true,
     ]);
@@ -361,6 +373,8 @@ test('a product can resubmit its own existing variant SKU without self-conflicti
         'price' => null,
         'stock_quantity' => null,
         'slug' => 'self-sku-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'variants' => [
             ['color_value_id' => $this->red->id, 'sku' => 'KEEP-MINE', 'price' => 1100, 'stock_quantity' => 6, 'is_default' => true],
         ],
@@ -394,6 +408,8 @@ test('removing a variant combo referenced by a live cart item freezes it instead
     $product = Product::create([
         'name' => 'Frozen Variant Product',
         'slug' => 'frozen-variant-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $this->category->id,
         'sub_category_id' => $this->subCategory->id,
         'price' => 1000,
@@ -438,6 +454,8 @@ test('removing a variant combo referenced by a live cart item freezes it instead
         'price' => null,
         'stock_quantity' => null,
         'slug' => 'frozen-variant-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'variants' => [
             ['color_value_id' => $this->red->id, 'price' => 1000, 'stock_quantity' => 5, 'is_default' => true],
         ],
@@ -459,6 +477,8 @@ test('turning off a size variant that has an order-frozen combo detaches it from
     $product = Product::create([
         'name' => 'Korra Product',
         'slug' => 'korra-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'category_id' => $this->category->id,
         'sub_category_id' => $this->subCategory->id,
         'price' => 1000,
@@ -511,6 +531,8 @@ test('turning off a size variant that has an order-frozen combo detaches it from
         'price' => null,
         'stock_quantity' => null,
         'slug' => 'korra-product',
+        'short_description' => 'A short description.',
+        'description' => '<p>A full description.</p>',
         'variants' => [
             // A stale row still carrying size_value_id, as a desynced variant
             // manager could submit — the backend must ignore it regardless.

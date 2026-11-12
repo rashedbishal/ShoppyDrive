@@ -36,6 +36,62 @@ type Props = {
     variantAttributes: VariantAttributeOption[];
 };
 
+const FIELD_LABELS: Record<string, string> = {
+    name: 'Product name',
+    slug: 'Slug',
+    sku: 'SKU',
+    short_description: 'Short description',
+    description: 'Description',
+    category_id: 'Category',
+    sub_category_id: 'Sub-category',
+    brand_id: 'Brand',
+    price: 'Price',
+    compare_price: 'Compare price',
+    cost_price: 'Cost price',
+    stock_quantity: 'Stock quantity',
+    low_stock_threshold: 'Low stock threshold',
+    images: 'Media',
+    variants: 'Variants',
+    meta_title: 'Meta title',
+    meta_description: 'Meta description',
+    meta_keywords: 'Meta keywords',
+    free_delivery_min_qty: 'Free delivery minimum quantity',
+};
+
+/** A human name for an error key such as `variants.0.price` or `images.1`. */
+function errorFieldLabel(field: string): string {
+    if (FIELD_LABELS[field]) {
+        return FIELD_LABELS[field];
+    }
+
+    const [group, index, key] = field.split('.');
+    const row = Number(index) + 1;
+
+    if (group === 'images') {
+        return 'Media';
+    }
+
+    if (group === 'variants' && key) {
+        return `Variant ${row} ${key.replace(/_/g, ' ')}`;
+    }
+
+    if (group === 'specifications') {
+        return `Specification ${row} ${key ?? ''}`.trim();
+    }
+
+    return FIELD_LABELS[group] ?? field.replace(/[._]/g, ' ');
+}
+
+/** The editor leaves markup like <p><br></p> when emptied, so look at the visible text. */
+function isRichTextEmpty(html: string): boolean {
+    return (
+        html
+            .replace(/<[^>]*>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .trim() === ''
+    );
+}
+
 export default function ProductCreate({
     categories,
     subCategories,
@@ -93,7 +149,13 @@ export default function ProductCreate({
             .replace(/(^-|-$)/g, '');
 
     const errorSummaryRef = useRef<HTMLDivElement>(null);
-    const errorMessages = Object.values(errors).filter(Boolean);
+    const errorMessages = Object.entries(errors)
+        .filter(([, message]) => Boolean(message))
+        .map(([field, message]) => ({
+            field,
+            label: errorFieldLabel(field),
+            message: String(message),
+        }));
 
     useEffect(() => {
         if (errorMessages.length > 0) {
@@ -110,11 +172,23 @@ export default function ProductCreate({
 
         clearErrors();
         const clientErrors: Record<string, string> = validate(data, {
-            name: [required(), maxLength(150)],
-            slug: [required(), maxLength(150)],
-            category_id: [required()],
-            sub_category_id: [required()],
+            name: [required('The product name is required.'), maxLength(150)],
+            slug: [required('The slug is required.'), maxLength(150)],
+            category_id: [required('Choose a category.')],
+            sub_category_id: [required('Choose a sub-category.')],
+            short_description: [
+                required('The short description is required.'),
+                maxLength(300),
+            ],
         });
+
+        if (isRichTextEmpty(data.description)) {
+            clientErrors.description = 'The description is required.';
+        }
+
+        if (data.images.length === 0) {
+            clientErrors.images = 'Add at least one product image.';
+        }
 
         data.specifications.forEach((row, index) => {
             if (!row.key.trim()) {
@@ -132,8 +206,11 @@ export default function ProductCreate({
             Object.assign(
                 clientErrors,
                 validate(data, {
-                    price: [required(), minValue(0)],
-                    stock_quantity: [required(), minValue(0)],
+                    price: [required('The price is required.'), minValue(0)],
+                    stock_quantity: [
+                        required('The stock quantity is required.'),
+                        minValue(0),
+                    ],
                 }),
             );
         } else if (data.variants.length === 0) {
@@ -175,7 +252,7 @@ export default function ProductCreate({
     return (
         <>
             <Head title="Add Product — Admin" />
-            <div className="space-y-5">
+            <div className="space-y-3">
                 <FormPageHeader
                     title="Add Product"
                     description="Fill in the details below"
@@ -184,7 +261,7 @@ export default function ProductCreate({
                 />
                 <form
                     onSubmit={handleSubmit}
-                    className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]"
+                    className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,1fr)_340px]"
                 >
                     <AnimatePresence initial={false}>
                         {errorMessages.length > 0 && (
@@ -210,7 +287,10 @@ export default function ProductCreate({
                                                 {errorMessages.map(
                                                     (message, i) => (
                                                         <li key={i}>
-                                                            {message}
+                                                            <strong>
+                                                                {message.label}
+                                                            </strong>
+                                                            : {message.message}
                                                         </li>
                                                     ),
                                                 )}
@@ -221,14 +301,14 @@ export default function ProductCreate({
                             </AdminReveal>
                         )}
                     </AnimatePresence>
-                    <div className="min-w-0 space-y-5">
+                    <div className="min-w-0 space-y-3">
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
                                     Basic Info
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4 pt-3">
+                            <CardContent className="space-y-2.5 pt-3">
                                 <Field
                                     label="Product Name *"
                                     error={errors.name}
@@ -304,7 +384,7 @@ export default function ProductCreate({
                                     )}
                                 </AnimatePresence>
                                 <Field
-                                    label="Short Description"
+                                    label="Short Description *"
                                     error={errors.short_description}
                                 >
                                     <textarea
@@ -326,7 +406,7 @@ export default function ProductCreate({
                                     />
                                 </Field>
                                 <Field
-                                    label="Description"
+                                    label="Description *"
                                     error={errors.description}
                                 >
                                     <RichTextEditor
@@ -364,7 +444,7 @@ export default function ProductCreate({
                                     Pricing & Stock
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4 pt-3">
+                            <CardContent className="space-y-2.5 pt-3">
                                 <AnimatePresence initial={false}>
                                     {(!hasVariants ||
                                         data.variants.length === 0) && (
@@ -537,7 +617,7 @@ export default function ProductCreate({
                                     SEO
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4 pt-3">
+                            <CardContent className="space-y-2.5 pt-3">
                                 <Field
                                     label="Meta Title"
                                     error={errors.meta_title}
@@ -617,11 +697,11 @@ export default function ProductCreate({
                         </Card>
                     </div>
 
-                    <div className="min-w-0 space-y-5">
+                    <div className="min-w-0 space-y-3">
                         <Card className="shadow-sm">
                             <CardHeader className="border-b border-slate-100">
                                 <CardTitle className="text-sm font-semibold text-slate-700">
-                                    Media
+                                    Media *
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-3">
@@ -683,7 +763,7 @@ export default function ProductCreate({
                                     Organisation
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4 pt-3">
+                            <CardContent className="space-y-2.5 pt-3">
                                 <Field
                                     label="Category *"
                                     error={errors.category_id}
