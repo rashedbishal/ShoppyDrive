@@ -26,11 +26,11 @@ class LandingPage extends Model
     }
 
     /**
-     * Purifies only `sections.description.custom_content` in place — every
-     * other key in this same JSON blob (hero, benefits, gallery,
-     * testimonials, faq, footer, and the rest of `description` itself)
-     * must survive untouched, since they're unrelated fields sharing one
-     * column with this one rich-text value.
+     * Purifies only the rich-text values in `sections` in place —
+     * `description.custom_content` and each written testimonial's `text` —
+     * every other key in this same JSON blob (hero, benefits, gallery, faq,
+     * footer, and the rest of `description` itself) must survive untouched,
+     * since they're unrelated fields sharing one column with them.
      */
     protected static function booted(): void
     {
@@ -40,6 +40,18 @@ class LandingPage extends Model
 
             if (is_array($sections) && is_string($customContent)) {
                 $sections['description']['custom_content'] = Purifier::clean($customContent);
+                $landingPage->sections = $sections;
+            }
+
+            $sections = $landingPage->sections;
+
+            if (is_array($sections) && is_array($sections['testimonials']['items'] ?? null)) {
+                foreach ($sections['testimonials']['items'] as $index => $item) {
+                    if (is_array($item) && is_string($item['text'] ?? null)) {
+                        $sections['testimonials']['items'][$index]['text'] = Purifier::clean($item['text']);
+                    }
+                }
+
                 $landingPage->sections = $sections;
             }
         });

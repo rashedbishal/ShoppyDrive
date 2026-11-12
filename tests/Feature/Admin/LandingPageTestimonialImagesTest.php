@@ -80,3 +80,20 @@ test('a testimonial image path outside the testimonial folder, or an unknown mod
     saveTestimonials(['mode' => 'image', 'images' => array_fill(0, 13, '/storage/landing-testimonials/a.webp')])
         ->assertSessionHasErrors('sections.testimonials.images');
 });
+
+test('a written review is rich text: markup is not counted towards 400 visible characters', function () {
+    saveTestimonials(['items' => [['name' => 'Rafi', 'rating' => 5, 'text' => '<p><strong>'.str_repeat('a', 400).'</strong></p>']]])
+        ->assertSessionHasNoErrors();
+
+    saveTestimonials(['items' => [['name' => 'Rafi', 'rating' => 5, 'text' => '<p>'.str_repeat('a', 401).'</p>']]])
+        ->assertSessionHasErrors('sections.testimonials.items.0.text');
+});
+
+test('a written review is purified before it is saved', function () {
+    saveTestimonials(['items' => [['name' => 'Rafi', 'rating' => 5, 'text' => '<p>Great <em>quality</em></p><script>alert(1)</script>']]])
+        ->assertSessionHasNoErrors();
+
+    $text = $this->page->fresh()->getSections()['testimonials']['items'][0]['text'];
+
+    expect($text)->toContain('<em>quality</em>')->and($text)->not->toContain('<script');
+});

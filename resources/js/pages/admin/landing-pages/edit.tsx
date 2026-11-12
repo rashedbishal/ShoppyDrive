@@ -21,6 +21,7 @@ import type {
     BuilderMedia,
     BuilderVariant,
 } from '@/components/admin/landing-builder-fields';
+import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CharCount } from '@/components/ui/char-count';
@@ -787,20 +788,19 @@ export default function LandingPageEdit({
                                                         ),
                                                     )}
                                                 </Select>
-                                                <textarea
-                                                    maxLength={400}
-                                                    rows={2}
-                                                    className={textareaClass}
+                                                <RichTextEditor
                                                     value={item.text}
-                                                    onChange={(e) => {
+                                                    minHeight={110}
+                                                    maxLength={2000}
+                                                    maxTextLength={400}
+                                                    onChange={(html) => {
                                                         const items = [
                                                             ...sec.testimonials
                                                                 .items,
                                                         ];
                                                         items[i] = {
                                                             ...items[i],
-                                                            text: e.target
-                                                                .value,
+                                                            text: html,
                                                         };
                                                         setSec({
                                                             testimonials: {
@@ -809,12 +809,6 @@ export default function LandingPageEdit({
                                                             },
                                                         });
                                                     }}
-                                                    placeholder="Review text…"
-                                                />
-                                                <CharCount
-                                                    value={item.text}
-                                                    max={400}
-                                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                                 />
                                             </div>
                                         </AdminReveal>
