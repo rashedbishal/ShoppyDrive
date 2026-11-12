@@ -20,6 +20,7 @@ beforeEach(function () {
     // below compare against a value that was never going to survive
     // regardless of this feature — irrelevant to what's being tested here.
     $sections = LandingPage::defaultSections();
+    $sections['hero']['badge'] = 'Original Badge';
     $sections['hero']['headline'] = 'Original Headline';
     $sections['hero']['subheadline'] = 'Original Subheadline';
     $sections['footer']['text'] = 'Original Footer Text';
