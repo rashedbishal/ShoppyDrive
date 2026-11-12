@@ -520,27 +520,74 @@ function OptionCard({
                 }}
                 aria-pressed={selected}
                 className={cn(
-                    'relative flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3 pr-12 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50',
+                    'group relative flex flex-col overflow-hidden rounded-2xl border-2 bg-white text-left transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50',
                     selected
-                        ? 'border-[#c8102e] shadow-[0_10px_30px_-12px_rgba(200,16,46,0.5)]'
-                        : 'border-slate-200 hover:border-slate-300',
+                        ? 'border-[#c8102e] shadow-[0_14px_34px_-14px_rgba(200,16,46,0.55)]'
+                        : 'border-slate-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md',
                 )}
             >
-                {body}
-                <span
-                    className={cn(
-                        'absolute top-1/2 right-3 flex size-7 -translate-y-1/2 items-center justify-center rounded-full border-2 transition-colors',
-                        selected
-                            ? 'border-[#c8102e] bg-[#c8102e] text-white'
-                            : 'border-slate-300 text-transparent',
-                    )}
-                >
-                    {qty > 1 ? (
-                        <span className="text-[11px] font-bold">{qty}</span>
+                <div className="relative aspect-square w-full bg-slate-100">
+                    {option.image ? (
+                        <img
+                            src={option.image}
+                            alt={option.name}
+                            className="size-full object-cover transition duration-300 group-hover:scale-105"
+                        />
                     ) : (
-                        <Check className="size-4" />
+                        <div className="flex size-full items-center justify-center text-slate-300">
+                            <ShoppingBag className="size-10" />
+                        </div>
                     )}
-                </span>
+                    {(option.badge || option.kind === 'combo') && (
+                        <span className="absolute top-2 left-2 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold tracking-wide text-slate-900 uppercase shadow">
+                            {option.badge || 'Combo'}
+                        </span>
+                    )}
+                    <span
+                        className={cn(
+                            'absolute top-2 right-2 flex size-7 items-center justify-center rounded-full border-2 shadow transition-colors',
+                            selected
+                                ? 'border-[#c8102e] bg-[#c8102e] text-white'
+                                : 'border-white bg-white/80 text-transparent',
+                        )}
+                    >
+                        {qty > 1 ? (
+                            <span className="text-[11px] font-bold">{qty}</span>
+                        ) : (
+                            <Check className="size-4" />
+                        )}
+                    </span>
+                    {soldOut && (
+                        <span className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-center text-[11px] font-bold text-white">
+                            Out of stock
+                        </span>
+                    )}
+                </div>
+                <div className="space-y-0.5 p-3">
+                    <p className="truncate text-sm font-bold text-slate-900">
+                        {option.name}
+                    </p>
+                    {option.detail && (
+                        <p className="line-clamp-1 text-[11px] text-slate-500">
+                            {option.detail}
+                        </p>
+                    )}
+                    <p className="flex flex-wrap items-baseline gap-x-1.5">
+                        <span className="text-sm font-extrabold text-[#c8102e]">
+                            {formatCurrency(option.price)}
+                        </span>
+                        {option.compare && option.compare > option.price && (
+                            <span className="text-[11px] text-slate-400 line-through">
+                                {formatCurrency(option.compare)}
+                            </span>
+                        )}
+                    </p>
+                    {!soldOut && option.stock <= 5 && (
+                        <p className="text-[11px] font-semibold text-amber-600">
+                            Only {option.stock} left
+                        </p>
+                    )}
+                </div>
             </button>
         );
     }
@@ -631,7 +678,7 @@ function SectionHeading({
 }
 
 const fieldClass =
-    'h-12 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-[#c8102e] focus:ring-4 focus:ring-[#c8102e]/10 focus:outline-none';
+    'h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-[#c8102e] focus:ring-4 focus:ring-[#c8102e]/10 focus:outline-none';
 
 function OrderSection({
     product,
@@ -991,9 +1038,9 @@ function OrderSection({
                             </div>
 
                             <div
-                                className={cn(cardBase, 'space-y-5 p-5 sm:p-7')}
+                                className={cn(cardBase, 'space-y-3 p-4 sm:p-5')}
                             >
-                                <h3 className="text-lg font-extrabold text-slate-900">
+                                <h3 className="text-base font-extrabold text-slate-900">
                                     Delivery details
                                 </h3>
                                 <HoneypotField
@@ -1003,56 +1050,54 @@ function OrderSection({
                                     }
                                 />
 
-                                <div>
-                                    <FieldLabel
-                                        htmlFor={`${fieldId}-name`}
-                                        required
-                                    >
-                                        Full Name
-                                    </FieldLabel>
-                                    <input
-                                        id={`${fieldId}-name`}
-                                        className={fieldClass}
-                                        placeholder="Your full name"
-                                        value={data.name}
-                                        onChange={(e) =>
-                                            setData('name', e.target.value)
-                                        }
-                                    />
-                                    {errors.name && (
-                                        <p className="mt-1 text-xs text-red-500">
-                                            {errors.name}
-                                        </p>
-                                    )}
-                                </div>
-                                <div>
-                                    <FieldLabel
-                                        htmlFor={`${fieldId}-phone`}
-                                        required
-                                    >
-                                        Phone Number
-                                    </FieldLabel>
-                                    <input
-                                        id={`${fieldId}-phone`}
-                                        type="tel"
-                                        inputMode="tel"
-                                        maxLength={20}
-                                        className={fieldClass}
-                                        placeholder="017XXXXXXXX"
-                                        value={data.phone}
-                                        onChange={(e) =>
-                                            setData('phone', e.target.value)
-                                        }
-                                    />
-                                    <p className="mt-1 text-xs text-slate-400">
-                                        Enter your mobile number (e.g.
-                                        017XXXXXXXX or +88017XXXXXXXX)
-                                    </p>
-                                    {errors.phone && (
-                                        <p className="mt-1 text-xs text-red-500">
-                                            {errors.phone}
-                                        </p>
-                                    )}
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <FieldLabel
+                                            htmlFor={`${fieldId}-name`}
+                                            required
+                                        >
+                                            Full Name
+                                        </FieldLabel>
+                                        <input
+                                            id={`${fieldId}-name`}
+                                            className={fieldClass}
+                                            placeholder="Your full name"
+                                            value={data.name}
+                                            onChange={(e) =>
+                                                setData('name', e.target.value)
+                                            }
+                                        />
+                                        {errors.name && (
+                                            <p className="mt-1 text-xs text-red-500">
+                                                {errors.name}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <FieldLabel
+                                            htmlFor={`${fieldId}-phone`}
+                                            required
+                                        >
+                                            Phone Number
+                                        </FieldLabel>
+                                        <input
+                                            id={`${fieldId}-phone`}
+                                            type="tel"
+                                            inputMode="tel"
+                                            maxLength={20}
+                                            className={fieldClass}
+                                            placeholder="017XXXXXXXX"
+                                            value={data.phone}
+                                            onChange={(e) =>
+                                                setData('phone', e.target.value)
+                                            }
+                                        />
+                                        {errors.phone && (
+                                            <p className="mt-1 text-xs text-red-500">
+                                                {errors.phone}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <FieldLabel htmlFor={`${fieldId}-email`}>
@@ -1186,9 +1231,9 @@ function OrderSection({
                                     </FieldLabel>
                                     <textarea
                                         id={`${fieldId}-notes`}
-                                        rows={3}
+                                        rows={2}
                                         maxLength={500}
-                                        className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-[#c8102e] focus:ring-4 focus:ring-[#c8102e]/10 focus:outline-none"
+                                        className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-[#c8102e] focus:ring-4 focus:ring-[#c8102e]/10 focus:outline-none"
                                         placeholder={
                                             sel.notes_placeholder ||
                                             'Anything we should know? (optional)'
@@ -1210,39 +1255,11 @@ function OrderSection({
                                     <p className="text-sm font-medium text-slate-700">
                                         Payment Method
                                     </p>
-                                    <label
-                                        className={cn(
-                                            'flex cursor-pointer items-center gap-3 rounded-xl border-2 p-3.5 transition',
-                                            data.payment_method === 'cod'
-                                                ? 'border-[#c8102e] bg-[#c8102e]/5'
-                                                : 'border-slate-200 hover:border-slate-300',
-                                        )}
-                                    >
-                                        <input
-                                            type="radio"
-                                            name="pm"
-                                            value="cod"
-                                            checked={
-                                                data.payment_method === 'cod'
-                                            }
-                                            onChange={() =>
-                                                setData('payment_method', 'cod')
-                                            }
-                                            className="accent-[#c8102e]"
-                                        />
-                                        <span className="text-sm font-semibold">
-                                            Cash on Delivery
-                                        </span>
-                                    </label>
-                                    {(bkashNumber || nagadNumber) && (
+                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                         <label
                                             className={cn(
-                                                'flex items-center gap-3 rounded-xl border-2 p-3.5 transition',
-                                                mobileBankingAvailable
-                                                    ? 'cursor-pointer'
-                                                    : 'cursor-not-allowed opacity-50',
-                                                data.payment_method ===
-                                                    'mobile_banking'
+                                                'flex cursor-pointer items-center gap-3 rounded-xl border-2 p-2.5 transition',
+                                                data.payment_method === 'cod'
                                                     ? 'border-[#c8102e] bg-[#c8102e]/5'
                                                     : 'border-slate-200 hover:border-slate-300',
                                             )}
@@ -1250,33 +1267,68 @@ function OrderSection({
                                             <input
                                                 type="radio"
                                                 name="pm"
-                                                value="mobile_banking"
-                                                disabled={
-                                                    !mobileBankingAvailable
-                                                }
+                                                value="cod"
                                                 checked={
                                                     data.payment_method ===
-                                                    'mobile_banking'
+                                                    'cod'
                                                 }
                                                 onChange={() =>
                                                     setData(
                                                         'payment_method',
-                                                        'mobile_banking',
+                                                        'cod',
                                                     )
                                                 }
                                                 className="accent-[#c8102e]"
                                             />
                                             <span className="text-sm font-semibold">
-                                                Mobile Banking (Bkash / Nagad)
-                                                {!mobileBankingAvailable && (
-                                                    <span className="ml-1 font-normal text-slate-500">
-                                                        — temporarily
-                                                        unavailable
-                                                    </span>
-                                                )}
+                                                Cash on Delivery
                                             </span>
                                         </label>
-                                    )}
+                                        {(bkashNumber || nagadNumber) && (
+                                            <label
+                                                className={cn(
+                                                    'flex items-center gap-3 rounded-xl border-2 p-2.5 transition',
+                                                    mobileBankingAvailable
+                                                        ? 'cursor-pointer'
+                                                        : 'cursor-not-allowed opacity-50',
+                                                    data.payment_method ===
+                                                        'mobile_banking'
+                                                        ? 'border-[#c8102e] bg-[#c8102e]/5'
+                                                        : 'border-slate-200 hover:border-slate-300',
+                                                )}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="pm"
+                                                    value="mobile_banking"
+                                                    disabled={
+                                                        !mobileBankingAvailable
+                                                    }
+                                                    checked={
+                                                        data.payment_method ===
+                                                        'mobile_banking'
+                                                    }
+                                                    onChange={() =>
+                                                        setData(
+                                                            'payment_method',
+                                                            'mobile_banking',
+                                                        )
+                                                    }
+                                                    className="accent-[#c8102e]"
+                                                />
+                                                <span className="text-sm font-semibold">
+                                                    Mobile Banking (Bkash /
+                                                    Nagad)
+                                                    {!mobileBankingAvailable && (
+                                                        <span className="ml-1 font-normal text-slate-500">
+                                                            — temporarily
+                                                            unavailable
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            </label>
+                                        )}
+                                    </div>
                                     {data.payment_method ===
                                         'mobile_banking' && (
                                         <div className="flex gap-4 pl-2">
@@ -1338,7 +1390,7 @@ function OrderSection({
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="lp-glow relative flex h-16 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-b from-[#ff3a55] to-[#c8102e] text-lg font-extrabold tracking-wide text-white ring-1 ring-white/25 transition-transform ring-inset hover:scale-[1.02] active:scale-[0.99] disabled:opacity-60"
+                                    className="lp-glow relative flex h-14 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-b from-[#ff3a55] to-[#c8102e] text-lg font-extrabold tracking-wide text-white ring-1 ring-white/25 transition-transform ring-inset hover:scale-[1.02] active:scale-[0.99] disabled:opacity-60"
                                 >
                                     <span
                                         aria-hidden
@@ -1739,21 +1791,27 @@ export default function LandingPageShow({
                                         return (
                                             <div
                                                 key={i}
-                                                className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.06] p-5 backdrop-blur-md"
+                                                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.11] to-white/[0.03] p-6 backdrop-blur-md transition duration-300 hover:-translate-y-1.5 hover:border-amber-300/40 hover:shadow-[0_24px_60px_-20px_rgba(245,166,35,0.4)]"
                                             >
-                                                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-300 to-amber-500 text-slate-900">
-                                                    <Icon className="size-5" />
-                                                </span>
-                                                <div>
-                                                    <p className="font-bold">
-                                                        {feature.title}
-                                                    </p>
-                                                    {feature.text && (
-                                                        <p className="mt-0.5 text-sm text-white/65">
-                                                            {feature.text}
-                                                        </p>
+                                                <span className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent" />
+                                                <span className="pointer-events-none absolute -top-12 -right-12 size-36 rounded-full bg-amber-400/15 blur-2xl transition duration-300 group-hover:bg-amber-400/35" />
+                                                <span className="absolute top-3 right-5 text-6xl leading-none font-black text-white/[0.06] select-none">
+                                                    {String(i + 1).padStart(
+                                                        2,
+                                                        '0',
                                                     )}
-                                                </div>
+                                                </span>
+                                                <span className="relative flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-200 via-amber-300 to-amber-500 text-slate-900 shadow-[0_12px_30px_-8px_rgba(245,166,35,0.75)] ring-4 ring-amber-300/15 transition duration-300 group-hover:scale-110 group-hover:-rotate-6">
+                                                    <Icon className="size-6" />
+                                                </span>
+                                                <p className="relative mt-5 text-lg font-extrabold tracking-tight">
+                                                    {feature.title}
+                                                </p>
+                                                {feature.text && (
+                                                    <p className="relative mt-1.5 text-sm leading-relaxed text-white/65">
+                                                        {feature.text}
+                                                    </p>
+                                                )}
                                             </div>
                                         );
                                     })}
@@ -1916,7 +1974,7 @@ export default function LandingPageShow({
                                                 </p>
                                             )}
                                         </div>
-                                        <div className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                                             {options.map((option) => (
                                                 <OptionCard
                                                     key={option.key}
