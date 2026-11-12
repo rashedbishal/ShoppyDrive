@@ -8,6 +8,7 @@ use App\Concerns\Auditable;
 use App\Concerns\FlushesCatalogFilters;
 use App\Concerns\FlushesSearchSuggestions;
 use App\Services\ReviewImageStorage;
+use App\Support\UnusedUploadRemover;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -108,6 +109,9 @@ class Product extends Model
         );
     }
 
+    /** @var list<string> Media file paths a permanent delete collects for removal once it's done. */
+    private array $mediaPathsToRemove = [];
+
     protected static function booted(): void
     {
         static::deleting(function (Product $product) {
@@ -133,7 +137,17 @@ class Product extends Model
                 if ($photos !== []) {
                     DB::afterCommit(fn () => app(ReviewImageStorage::class)->delete($photos));
                 }
+
+                // Its media rows go with it at the database level (cascade),
+                // so their paths are read now, while the rows still exist.
+                $product->mediaPathsToRemove = $product->media()->pluck('path')->all();
             }
+        });
+
+        // Only after the row is gone can "is anything else still using this
+        // file?" give the right answer; an ordered product never gets here.
+        static::forceDeleted(function (Product $product): void {
+            app(UnusedUploadRemover::class)->removeIfUnused(...$product->mediaPathsToRemove);
         });
     }
 

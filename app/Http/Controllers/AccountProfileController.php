@@ -9,6 +9,7 @@ use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Models\User;
 use App\Services\EmailChangeConfirmation;
 use App\Services\ImageOptimizer;
+use App\Support\UnusedUploadRemover;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -158,9 +159,14 @@ class AccountProfileController extends Controller
         Auth::logout();
 
         if ($user->hasRetainedHistory()) {
+            // The avatar stays: anonymize() keeps it in the snapshot an admin
+            // can restore the account from.
             $user->anonymize();
         } else {
+            $avatar = $user->avatar;
             $user->forceDelete();
+            // A social-login avatar is an outside address and is left alone.
+            app(UnusedUploadRemover::class)->removeIfUnused($avatar);
         }
 
         $request->session()->invalidate();

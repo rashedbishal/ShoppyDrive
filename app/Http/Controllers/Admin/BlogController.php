@@ -119,7 +119,9 @@ class BlogController extends Controller
             'ids.*' => ['integer', 'distinct', 'exists:blogs,id'],
         ])['ids'];
 
-        Blog::whereIn('id', $ids)->delete();
+        // One at a time, so each post's featured image leaves the disk too
+        // (CleansUpReplacedFiles) and each delete is audited.
+        Blog::whereIn('id', $ids)->get()->each(fn (Blog $blog) => $blog->delete());
 
         return AdminListUrl::redirect('admin.blogs.index')->with('success', count($ids).' blog post(s) deleted.');
     }

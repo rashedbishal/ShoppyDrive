@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Concerns\Auditable;
+use App\Concerns\CleansUpReplacedFiles;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,10 @@ use Mews\Purifier\Facades\Purifier;
 
 class Blog extends Model
 {
-    use Auditable, HasFactory;
+    use Auditable, CleansUpReplacedFiles, HasFactory;
+
+    /** Uploaded files removed from disk when replaced or permanently deleted (CleansUpReplacedFiles). */
+    public const PUBLIC_FILE_COLUMNS = ['featured_image'];
 
     protected $fillable = [
         'title',

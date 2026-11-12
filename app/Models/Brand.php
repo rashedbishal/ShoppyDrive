@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Concerns\Auditable;
+use App\Concerns\CleansUpReplacedFiles;
 use App\Concerns\FlushesCatalogFilters;
 use App\Concerns\FlushesSearchSuggestions;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Brand extends Model
 {
-    use Auditable, FlushesCatalogFilters, FlushesSearchSuggestions, HasFactory;
+    use Auditable, CleansUpReplacedFiles, FlushesCatalogFilters, FlushesSearchSuggestions, HasFactory;
+
+    /** Uploaded files removed from disk when replaced or permanently deleted (CleansUpReplacedFiles). */
+    public const PUBLIC_FILE_COLUMNS = ['logo'];
 
     /** Any change affects the product-listing filter options (see FlushesCatalogFilters). */
     public const CATALOG_FILTER_FIELDS = null;

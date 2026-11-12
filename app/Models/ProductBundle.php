@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Concerns\Auditable;
+use App\Concerns\CleansUpReplacedFiles;
 use App\Enums\BundleDiscountType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductBundle extends Model
 {
-    use Auditable, HasFactory;
+    use Auditable, CleansUpReplacedFiles, HasFactory;
+
+    /** Uploaded files removed from disk when replaced or permanently deleted (CleansUpReplacedFiles). */
+    public const PUBLIC_FILE_COLUMNS = ['image'];
 
     protected $fillable = [
         'name',

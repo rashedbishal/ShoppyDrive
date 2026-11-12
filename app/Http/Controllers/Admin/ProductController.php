@@ -22,6 +22,7 @@ use App\Support\AdminListUrl;
 use App\Support\CatalogFilterCache;
 use App\Support\ProductStockToken;
 use App\Support\SearchSuggestionCache;
+use App\Support\UnusedUploadRemover;
 use App\Support\VariantAttributeLabels;
 use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -268,8 +269,10 @@ class ProductController extends Controller
      * MED-07: a product, its variants, attribute values and media commit
      * together. Files can't roll back, so uploads are stored first, holding no
      * database locks, and removed again if anything fails. Files of media the
-     * save replaces are deliberately left on disk: order lines keep their path
-     * in `product_snapshot.image`, and a failed save must never lose them.
+     * save replaces are removed only after it commits, and only when nothing
+     * still uses them — order lines keep their path in
+     * `product_snapshot.image`, so an ordered product's old photo stays
+     * (see syncMedia()).
      *
      * Not retried on deadlock: a retry would reuse a model that already
      * believes the rolled-back attributes are saved, and skip writing them.
@@ -565,6 +568,16 @@ class ProductController extends Controller
      */
     private function syncMedia(Product $product, array $media, array $mediaTags, array $variantsByKey, ?int $primaryIndex = null, ?int $hoverIndex = null): void
     {
+        // Files this save drops (replaced or removed) leave the disk once it
+        // commits — unless an old order, a checkout in progress or another
+        // product still shows them (UnusedUploadRemover). A save that rolls
+        // back deletes nothing.
+        $droppedPaths = array_diff(
+            $product->media()->pluck('path')->all(),
+            array_filter(array_column($media, 'path')),
+        );
+        app(UnusedUploadRemover::class)->removeIfUnused(...array_values($droppedPaths));
+
         $product->media()->delete();
 
         if (empty($media)) {

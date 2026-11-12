@@ -13,6 +13,7 @@ use App\Services\ReferralService;
 use App\Support\OrderNumberGenerator;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
@@ -355,5 +356,36 @@ describe('audit trail', function () {
 
         $this->delete(route('admin.audit-trail.destroy'), ['password' => 'password'])
             ->assertSessionHasErrors(['password' => 'Too many incorrect password attempts. Try again in 15 minute(s).']);
+    });
+});
+
+describe('avatar file on account deletion', function () {
+    test('a customer with no history who deletes their account takes their uploaded avatar with them', function () {
+        Storage::disk('public')->put('avatars/me.webp', 'x');
+        $customer = User::factory()->create(['avatar' => '/storage/avatars/me.webp']);
+
+        actingAs($customer)->delete(route('account.profile.destroy'), ['password' => 'password'])->assertRedirect(route('home'));
+
+        expect(User::withTrashed()->find($customer->id))->toBeNull()
+            ->and(Storage::disk('public')->exists('avatars/me.webp'))->toBeFalse();
+    });
+
+    test('an anonymized customer keeps their avatar file, so an admin can restore the account', function () {
+        Storage::disk('public')->put('avatars/kept.webp', 'x');
+        $customer = User::factory()->create(['avatar' => '/storage/avatars/kept.webp']);
+        historyOrder(['user_id' => $customer->id]);
+
+        actingAs($customer)->delete(route('account.profile.destroy'), ['password' => 'password'])->assertRedirect(route('home'));
+
+        expect(User::find($customer->id)?->anonymized_at)->not->toBeNull()
+            ->and(Storage::disk('public')->exists('avatars/kept.webp'))->toBeTrue();
+    });
+
+    test('a social-login avatar address is left alone', function () {
+        $customer = User::factory()->create(['avatar' => 'https://lh3.googleusercontent.com/a/photo']);
+
+        actingAs($customer)->delete(route('account.profile.destroy'), ['password' => 'password'])->assertRedirect(route('home'));
+
+        expect(User::withTrashed()->find($customer->id))->toBeNull();
     });
 });

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Concerns\Auditable;
+use App\Concerns\CleansUpReplacedFiles;
 use App\Concerns\FlushesCatalogFilters;
 use App\Concerns\FlushesLayoutCache;
 use App\Concerns\FlushesSearchSuggestions;
@@ -16,7 +17,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Category extends Model
 {
-    use Auditable, FlushesCatalogFilters, FlushesLayoutCache, FlushesSearchSuggestions, HasFactory, SoftDeletes;
+    use Auditable, CleansUpReplacedFiles, FlushesCatalogFilters, FlushesLayoutCache, FlushesSearchSuggestions, HasFactory, SoftDeletes;
+
+    /** Uploaded files removed from disk when replaced or permanently deleted (CleansUpReplacedFiles). */
+    public const PUBLIC_FILE_COLUMNS = ['image'];
 
     /** Any change affects the product-listing filter options (see FlushesCatalogFilters). */
     public const CATALOG_FILTER_FIELDS = null;
