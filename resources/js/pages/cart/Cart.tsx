@@ -1,21 +1,17 @@
 import { Head, Link } from '@inertiajs/react';
 import {
-    AlertCircle,
     ArrowLeft,
     ArrowRight,
     Package,
     ShoppingBag,
+    Tag,
     Trash2,
-    X,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { groupCartItems } from '@/lib/cart-bundles';
-import { toCouponPreviewItems } from '@/lib/coupon';
-import { getXsrfToken } from '@/lib/csrf';
 import { formatCurrency, getPrimaryImagePath } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import type { CartItem as CartItemType } from '@/types';
@@ -28,61 +24,14 @@ export default function Cart(): React.JSX.Element {
         updateBundleQuantity,
         removeBundle,
         getSubtotal,
-        getDiscount,
-        getTotal,
-        coupon,
-        applyCoupon,
         shippingEstimate,
+        tax,
     } = useCartStore();
 
-    const [couponCode, setCouponCode] = useState('');
-    const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
-    const [couponError, setCouponError] = useState('');
-
-    const handleApplyCoupon = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!couponCode.trim()) {
-            return;
-        }
-
-        setIsApplyingCoupon(true);
-        setCouponError('');
-
-        try {
-            const response = await fetch(route('coupon.validate'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                    'X-XSRF-TOKEN': getXsrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: JSON.stringify({
-                    code: couponCode,
-                    subtotal: getSubtotal(),
-                    items: toCouponPreviewItems(items),
-                }),
-            });
-            const data = await response.json();
-
-            if (response.ok) {
-                applyCoupon(data.coupon);
-                setCouponCode('');
-            } else {
-                setCouponError(data.error || 'Invalid coupon.');
-            }
-        } catch (error) {
-            console.error('Coupon error:', error);
-            setCouponError('Could not apply coupon. Please try again.');
-        } finally {
-            setIsApplyingCoupon(false);
-        }
-    };
-
+    // Coupons are applied at checkout only (that's where the order is
+    // priced), so this estimate deliberately leaves any coupon out.
     const subtotal = getSubtotal();
-    const discount = getDiscount();
-    const total = getTotal();
+    const total = Math.max(0, subtotal + shippingEstimate + tax);
 
     if (items.length === 0) {
         return (
@@ -247,76 +196,15 @@ export default function Cart(): React.JSX.Element {
                             </div>
 
                             <div className="space-y-6 border-t border-[var(--color-border)] px-6 py-6">
-                                {/* Coupon */}
-                                <div>
-                                    <p className="mb-2.5 text-[11px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
-                                        Promo Code
-                                    </p>
-                                    {!coupon ? (
-                                        <div className="space-y-2">
-                                            <form
-                                                onSubmit={handleApplyCoupon}
-                                                className="flex gap-2"
-                                            >
-                                                <Input
-                                                    maxLength={50}
-                                                    placeholder="Enter code"
-                                                    value={couponCode}
-                                                    onChange={(e) => {
-                                                        setCouponCode(
-                                                            e.target.value.toUpperCase(),
-                                                        );
-                                                        setCouponError('');
-                                                    }}
-                                                    className="h-11 rounded-xl uppercase"
-                                                />
-                                                <Button
-                                                    type="submit"
-                                                    variant="secondary"
-                                                    disabled={
-                                                        isApplyingCoupon ||
-                                                        !couponCode.trim()
-                                                    }
-                                                    className="h-11 shrink-0 rounded-xl px-5 font-bold"
-                                                >
-                                                    {isApplyingCoupon
-                                                        ? 'Applying…'
-                                                        : 'Apply'}
-                                                </Button>
-                                            </form>
-                                            {couponError && (
-                                                <p className="flex items-center gap-1.5 text-xs text-[var(--color-error)]">
-                                                    <AlertCircle size={12} />
-                                                    {couponError}
-                                                </p>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center justify-between rounded-xl border border-[var(--color-primary)]/10 bg-[var(--color-primary-light)] p-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[var(--color-primary)] shadow-sm">
-                                                    <ShoppingBag size={16} />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] leading-none font-bold tracking-widest text-[var(--color-primary)] uppercase">
-                                                        Coupon Active
-                                                    </span>
-                                                    <span className="text-sm font-bold text-[var(--color-text-primary)]">
-                                                        {coupon.code}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() =>
-                                                    applyCoupon(null)
-                                                }
-                                                className="rounded-lg p-1.5 text-[var(--color-error)] transition-colors hover:bg-white"
-                                            >
-                                                <X size={16} />
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
+                                {/* Coupons are entered at checkout, where the order is priced. */}
+                                <p className="flex items-center gap-2 rounded-xl bg-[var(--color-surface-alt)] px-3 py-2.5 text-xs text-[var(--color-text-secondary)]">
+                                    <Tag
+                                        size={14}
+                                        className="shrink-0 text-[var(--color-primary)]"
+                                    />
+                                    Have a promo code? You can apply it at
+                                    checkout.
+                                </p>
 
                                 {/* Totals */}
                                 <div className="space-y-2.5 text-sm">
@@ -328,16 +216,6 @@ export default function Cart(): React.JSX.Element {
                                             {formatCurrency(subtotal)}
                                         </span>
                                     </div>
-                                    {discount > 0 && (
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[var(--color-text-secondary)]">
-                                                Discount
-                                            </span>
-                                            <span className="font-semibold text-[var(--color-success)]">
-                                                -{formatCurrency(discount)}
-                                            </span>
-                                        </div>
-                                    )}
                                     <div className="flex items-center justify-between">
                                         <span className="text-[var(--color-text-secondary)]">
                                             Shipping
