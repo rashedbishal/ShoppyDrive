@@ -29,9 +29,10 @@ class OrderTrackingController extends Controller
 
         // BE-001: a list (e.g. `phone[]=x`) instead of text used to crash the
         // match below; anything that isn't text is treated as not given.
-        $orderNumber = SecurityRateLimits::textInput($request, 'order_number') ?: null;
-        $email = SecurityRateLimits::textInput($request, 'email') ?: null;
-        $phone = SecurityRateLimits::textInput($request, 'phone') ?: null;
+        // Over-long input can never match a real order, so it counts as not given.
+        $orderNumber = $this->boundedInput($request, 'order_number', 40) ?: null;
+        $email = $this->boundedInput($request, 'email', 150) ?: null;
+        $phone = $this->boundedInput($request, 'phone', 20) ?: null;
 
         if ($orderNumber && ($email || $phone)) {
             $found = Order::where('order_number', $orderNumber)
@@ -101,7 +102,7 @@ class OrderTrackingController extends Controller
      */
     public function checkRequirements(Request $request): JsonResponse
     {
-        $orderNumber = SecurityRateLimits::textInput($request, 'order_number'); // BE-001
+        $orderNumber = $this->boundedInput($request, 'order_number', 40); // BE-001
 
         if ($orderNumber === '') {
             return response()->json(['found' => false]);
@@ -148,5 +149,15 @@ class OrderTrackingController extends Controller
         $digits = preg_replace('/\D+/', '', (string) BangladeshiPhone::normalize($phone)) ?? '';
 
         return substr($digits, -10);
+    }
+
+    /**
+     * Text input of at most $max characters; longer values are treated as empty.
+     */
+    private function boundedInput(Request $request, string $key, int $max): string
+    {
+        $value = SecurityRateLimits::textInput($request, $key);
+
+        return mb_strlen($value) > $max ? '' : $value;
     }
 }

@@ -20,13 +20,13 @@ class ConvertIncompleteOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:100'],
             'phone' => ['required', 'string', 'regex:/^01[3-9][0-9]{8}$/'],
-            'address_line1' => ['required', 'string', 'max:255'],
-            'address_line2' => ['nullable', 'string', 'max:255'],
-            'city' => ['required', 'string', 'max:255'],
-            'state' => ['required', 'string', 'max:255'],
-            'postal_code' => ['nullable', 'string', 'max:20'],
+            'address_line1' => ['required', 'string', 'max:200'],
+            'address_line2' => ['nullable', 'string', 'max:200'],
+            'city' => ['required', 'string', 'max:60'],
+            'state' => ['required', 'string', 'max:60'],
+            'postal_code' => ['nullable', 'string', 'max:10'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id', new VariantBelongsToProduct],

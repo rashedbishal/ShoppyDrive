@@ -58,6 +58,7 @@ function BrandListingContent({
                             <div className="relative">
                                 <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
                                 <Input
+                                    maxLength={64}
                                     type="search"
                                     placeholder="Search brands..."
                                     value={search}

@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { AdminFade } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
     Dialog,
@@ -830,6 +831,11 @@ export default function AttributesIndex({ attributes }: Props) {
                                                         maxLength={20}
                                                         className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus:border-[#c8102e] focus:bg-white focus:ring-2 focus:ring-[#c8102e]/15 focus:outline-none"
                                                     />
+                                                    <CharCount
+                                                        value={form.data.value}
+                                                        max={20}
+                                                        className="mt-1 block text-right"
+                                                    />
                                                 </motion.div>
 
                                                 {isColor && (
@@ -1058,6 +1064,11 @@ export default function AttributesIndex({ attributes }: Props) {
                                         e.target.value,
                                     )
                                 }
+                            />
+                            <CharCount
+                                value={attributeForm.data.name}
+                                max={40}
+                                className="mt-1 block text-right"
                             />
                             {attributeForm.errors.name && (
                                 <span className="mt-1 block text-xs text-red-500">

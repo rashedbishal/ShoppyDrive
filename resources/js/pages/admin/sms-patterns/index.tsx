@@ -7,6 +7,7 @@ import { BulkActionBar } from '@/components/admin/bulk-action-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
@@ -255,6 +256,11 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                     placeholder="e.g. Bkash Money Received"
                                                     required
                                                 />
+                                                <CharCount
+                                                    value={data.name}
+                                                    max={100}
+                                                    className="mt-1 block text-right"
+                                                />
                                                 {errors.name && (
                                                     <p className="mt-0.5 text-xs text-red-500">
                                                         {errors.name}
@@ -283,6 +289,11 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                 }
                                                 placeholder='e.g. "TrxID" or "Cash In Received."'
                                                 required
+                                            />
+                                            <CharCount
+                                                value={data.identifier}
+                                                max={100}
+                                                className="mt-1 block text-right"
                                             />
                                             {errors.identifier && (
                                                 <p className="mt-0.5 text-xs text-red-500">
@@ -313,6 +324,11 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                 }
                                                 placeholder="e.g. (bKash) — leave blank for unrestricted"
                                             />
+                                            <CharCount
+                                                value={data.sender_regex ?? ''}
+                                                max={255}
+                                                className="mt-1 block text-right"
+                                            />
                                             {errors.sender_regex && (
                                                 <p className="mt-0.5 text-xs text-red-500">
                                                     {errors.sender_regex}
@@ -341,6 +357,11 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                     placeholder="TrxID\s+([A-Z0-9]+)"
                                                     required
                                                 />
+                                                <CharCount
+                                                    value={data.txn_id_regex}
+                                                    max={255}
+                                                    className="mt-1 block text-right"
+                                                />
                                                 {errors.txn_id_regex && (
                                                     <p className="mt-0.5 text-xs text-red-500">
                                                         {errors.txn_id_regex}
@@ -366,6 +387,11 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                     }
                                                     placeholder="received Tk\s+([\d,]+(?:\.\d+)?)"
                                                     required
+                                                />
+                                                <CharCount
+                                                    value={data.amount_regex}
+                                                    max={255}
+                                                    className="mt-1 block text-right"
                                                 />
                                                 {errors.amount_regex && (
                                                     <p className="mt-0.5 text-xs text-red-500">

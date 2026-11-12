@@ -183,6 +183,7 @@ export default function ErrorPage({
                                 <div className="relative flex-1">
                                     <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
                                     <input
+                                        maxLength={64}
                                         id="error-search"
                                         type="search"
                                         name="q"

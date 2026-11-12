@@ -171,6 +171,8 @@ function RequestReturnDialog({
                     <Label htmlFor="return-reason">Reason for return *</Label>
                     <Textarea
                         id="return-reason"
+                        maxLength={1000}
+                        showCount
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         placeholder="Tell us what went wrong…"

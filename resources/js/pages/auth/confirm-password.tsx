@@ -64,6 +64,7 @@ export default function ConfirmPassword(): React.JSX.Element {
                             <div className="relative">
                                 <Lock className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
                                 <input
+                                    maxLength={128}
                                     id="password"
                                     type={showPassword ? 'text' : 'password'}
                                     autoComplete="current-password"

@@ -114,6 +114,11 @@ export default function BrandEdit({ brand }: Props) {
                                         setData('slug', e.target.value)
                                     }
                                 />
+                                <CharCount
+                                    value={data.slug}
+                                    max={100}
+                                    className="mt-1 block text-right"
+                                />
                             </Field>
                             <Field label="Logo">
                                 <ImageUpload

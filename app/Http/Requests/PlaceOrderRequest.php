@@ -38,23 +38,23 @@ class PlaceOrderRequest extends FormRequest
         $guestCheckoutRelaxed = $isGuest && EnsureCheckoutAccess::guestCheckoutEnabled();
 
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => [$guestCheckoutRelaxed ? 'nullable' : 'required', 'email', 'max:255'],
+            'name' => ['required', 'string', 'max:100'],
+            'email' => [$guestCheckoutRelaxed ? 'nullable' : 'required', 'email', 'max:150'],
             'phone' => ['required', 'string', 'regex:/^01[3-9][0-9]{8}$/'],
             // BIZ-011: honeypot. Hidden from real customers, so anything in
             // it means a bot filled every field.
             'sd_confirm_ref' => ['prohibited'],
             'address_id' => $isGuest ? ['prohibited'] : ['nullable', 'integer'],
-            'address_line1' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:255'],
-            'address_line2' => ['nullable', 'string', 'max:255'],
-            'city' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:255'],
-            'state' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:255', Rule::in(BangladeshDistricts::ALL)],
-            'postal_code' => ['nullable', 'string', 'max:20'],
-            'country' => ['nullable', 'string', 'max:100'],
+            'address_line1' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:200'],
+            'address_line2' => ['nullable', 'string', 'max:200'],
+            'city' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:60'],
+            'state' => [$usingSaved ? 'nullable' : 'required', 'string', 'max:60', Rule::in(BangladeshDistricts::ALL)],
+            'postal_code' => ['nullable', 'string', 'max:10'],
+            'country' => ['nullable', 'string', 'max:60'],
             'save_address' => ['boolean'],
             'coupon_code' => ['nullable', 'string', 'max:50'],
             'redeem_points' => ['nullable', 'boolean'],
-            'points_to_redeem' => ['nullable', 'integer', 'min:1', 'required_if:redeem_points,true'],
+            'points_to_redeem' => ['nullable', 'integer', 'min:1', 'max:1000000', 'required_if:redeem_points,true'],
             // FSA-23: 'zinipay' deliberately removed. The ZiniPay gateway
             // was retired entirely (BIZ-026: callback/webhook routes and
             // ZiniPayService deleted), so a new

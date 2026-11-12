@@ -29,7 +29,9 @@ class CreateNewUser implements CreatesNewUsers
     {
         Validator::make($input, [
             'name' => $this->nameRules(),
-            'email' => ['required', 'string', 'email', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:150'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'referral_code' => ['nullable', 'string', 'max:20'],
             'password' => $this->passwordRules(),
         ])->after(function (ValidatorInstance $validator) use ($input): void {
             $this->guardAgainstDuplicateEmail($validator, $input['email'] ?? null);

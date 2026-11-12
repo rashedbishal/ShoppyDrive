@@ -945,6 +945,7 @@ function NewsletterForm(): React.JSX.Element {
 
                 <form className="space-y-4" onSubmit={handleSubmit}>
                     <Input
+                        maxLength={150}
                         id="newsletter-home-email"
                         type="email"
                         label="Email address"

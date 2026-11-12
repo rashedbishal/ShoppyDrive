@@ -23,6 +23,7 @@ import GlowButton from '@/components/landing/GlowButton';
 import HeroCarousel from '@/components/landing/HeroCarousel';
 import type { CarouselSettings } from '@/components/landing/HeroCarousel';
 import SocialChatWidget from '@/components/layout/SocialChatWidget';
+import { CharCount } from '@/components/ui/char-count';
 import { Select } from '@/components/ui/select';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { SharedPageProps } from '@/types';
@@ -372,6 +373,7 @@ function InlinePayment({
                         Transaction ID
                     </label>
                     <input
+                        maxLength={40}
                         id="lp-transaction-id"
                         className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 font-mono text-sm tracking-wider uppercase focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/30 focus:outline-none"
                         value={data.transaction_id}
@@ -1059,6 +1061,7 @@ function OrderSection({
                                             Full Name
                                         </FieldLabel>
                                         <input
+                                            maxLength={100}
                                             id={`${fieldId}-name`}
                                             className={fieldClass}
                                             placeholder="Your full name"
@@ -1107,6 +1110,7 @@ function OrderSection({
                                         </span>
                                     </FieldLabel>
                                     <input
+                                        maxLength={150}
                                         id={`${fieldId}-email`}
                                         className={fieldClass}
                                         placeholder="you@example.com"
@@ -1124,6 +1128,7 @@ function OrderSection({
                                         Address
                                     </FieldLabel>
                                     <input
+                                        maxLength={200}
                                         id={`${fieldId}-address`}
                                         className={fieldClass}
                                         placeholder="House, road, area"
@@ -1202,6 +1207,7 @@ function OrderSection({
                                                     City / Upazila
                                                 </FieldLabel>
                                                 <input
+                                                    maxLength={60}
                                                     id={`${fieldId}-city`}
                                                     className={fieldClass}
                                                     placeholder="City or upazila"
@@ -1242,6 +1248,11 @@ function OrderSection({
                                         onChange={(e) =>
                                             setData('notes', e.target.value)
                                         }
+                                    />
+                                    <CharCount
+                                        value={data.notes}
+                                        max={500}
+                                        className="mt-0.5 block text-right"
                                     />
                                     {errors.notes && (
                                         <p className="mt-1 text-xs text-red-500">

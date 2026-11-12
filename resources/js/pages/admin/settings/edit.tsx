@@ -11,6 +11,7 @@ import LoadingLogoSpinner, {
 } from '@/components/shared/LoadingLogoSpinner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
@@ -339,6 +340,11 @@ export default function SettingsEdit({ settings }: Props) {
                                         }
                                         placeholder="ShoppyDrive"
                                     />
+                                    <CharCount
+                                        value={data.site_name}
+                                        max={60}
+                                        className="mt-1 block text-right"
+                                    />
                                 </SettingsField>
                                 <SettingsField label="Currency Symbol">
                                     <input
@@ -352,6 +358,11 @@ export default function SettingsEdit({ settings }: Props) {
                                             )
                                         }
                                         placeholder="৳"
+                                    />
+                                    <CharCount
+                                        value={data.currency_symbol}
+                                        max={5}
+                                        className="mt-1 block text-right"
                                     />
                                 </SettingsField>
                             </div>
@@ -607,6 +618,11 @@ export default function SettingsEdit({ settings }: Props) {
                                         }
                                         placeholder="orders@yourshop.com"
                                     />
+                                    <CharCount
+                                        value={data.order_notification_email}
+                                        max={150}
+                                        className="mt-1 block text-right"
+                                    />
                                     {errors.order_notification_email && (
                                         <p className="mt-1 text-xs font-medium text-red-600">
                                             {errors.order_notification_email}
@@ -629,6 +645,11 @@ export default function SettingsEdit({ settings }: Props) {
                                             )
                                         }
                                         placeholder="cancellations@yourshop.com"
+                                    />
+                                    <CharCount
+                                        value={data.order_cancellation_email}
+                                        max={150}
+                                        className="mt-1 block text-right"
                                     />
                                     {errors.order_cancellation_email && (
                                         <p className="mt-1 text-xs font-medium text-red-600">
@@ -661,6 +682,11 @@ export default function SettingsEdit({ settings }: Props) {
                                         }
                                         placeholder="https://facebook.com/..."
                                     />
+                                    <CharCount
+                                        value={data.social_links.facebook}
+                                        max={300}
+                                        className="mt-1 block text-right"
+                                    />
                                 </SettingsField>
                                 <SettingsField label="Instagram">
                                     <input
@@ -674,6 +700,11 @@ export default function SettingsEdit({ settings }: Props) {
                                             })
                                         }
                                         placeholder="https://instagram.com/..."
+                                    />
+                                    <CharCount
+                                        value={data.social_links.instagram}
+                                        max={300}
+                                        className="mt-1 block text-right"
                                     />
                                 </SettingsField>
                                 <SettingsField label="Twitter / X">
@@ -689,6 +720,11 @@ export default function SettingsEdit({ settings }: Props) {
                                         }
                                         placeholder="https://x.com/..."
                                     />
+                                    <CharCount
+                                        value={data.social_links.twitter}
+                                        max={300}
+                                        className="mt-1 block text-right"
+                                    />
                                 </SettingsField>
                                 <SettingsField label="YouTube">
                                     <input
@@ -703,6 +739,11 @@ export default function SettingsEdit({ settings }: Props) {
                                         }
                                         placeholder="https://youtube.com/@..."
                                     />
+                                    <CharCount
+                                        value={data.social_links.youtube}
+                                        max={300}
+                                        className="mt-1 block text-right"
+                                    />
                                 </SettingsField>
                                 <SettingsField label="TikTok">
                                     <input
@@ -716,6 +757,11 @@ export default function SettingsEdit({ settings }: Props) {
                                             })
                                         }
                                         placeholder="https://tiktok.com/@..."
+                                    />
+                                    <CharCount
+                                        value={data.social_links.tiktok}
+                                        max={300}
+                                        className="mt-1 block text-right"
                                     />
                                 </SettingsField>
                             </div>
@@ -747,6 +793,11 @@ export default function SettingsEdit({ settings }: Props) {
                                         }
                                         placeholder="+8801700000000"
                                     />
+                                    <CharCount
+                                        value={data.whatsapp_number}
+                                        max={20}
+                                        className="mt-1 block text-right"
+                                    />
                                 </SettingsField>
                                 <SettingsField
                                     label="Facebook Messenger"
@@ -763,6 +814,11 @@ export default function SettingsEdit({ settings }: Props) {
                                             )
                                         }
                                         placeholder="shoppydrive or https://m.me/shoppydrive"
+                                    />
+                                    <CharCount
+                                        value={data.messenger_link}
+                                        max={300}
+                                        className="mt-1 block text-right"
                                     />
                                 </SettingsField>
                             </div>
@@ -794,6 +850,11 @@ export default function SettingsEdit({ settings }: Props) {
                                         }
                                         placeholder="01700000000"
                                     />
+                                    <CharCount
+                                        value={data.bkash_number}
+                                        max={15}
+                                        className="mt-1 block text-right"
+                                    />
                                 </SettingsField>
                                 <SettingsField
                                     label="Nagad Number"
@@ -811,6 +872,11 @@ export default function SettingsEdit({ settings }: Props) {
                                             )
                                         }
                                         placeholder="01700000000"
+                                    />
+                                    <CharCount
+                                        value={data.nagad_number}
+                                        max={15}
+                                        className="mt-1 block text-right"
                                     />
                                 </SettingsField>
                             </div>

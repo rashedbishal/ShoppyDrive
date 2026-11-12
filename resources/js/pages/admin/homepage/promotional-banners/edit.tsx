@@ -216,6 +216,7 @@ export default function PromotionalBannerEdit({
                                             placeholder="e.g. New arrivals"
                                             error={errors.badge}
                                             maxLength={40}
+                                            showCount
                                             hint={`${data.badge.length}/40`}
                                         />
                                         <Input
@@ -232,6 +233,7 @@ export default function PromotionalBannerEdit({
                                             error={errors.title}
                                             required
                                             maxLength={80}
+                                            showCount
                                             hint={`${data.title.length}/80`}
                                         />
                                     </div>
@@ -249,6 +251,7 @@ export default function PromotionalBannerEdit({
                                         error={errors.description}
                                         rows={4}
                                         maxLength={150}
+                                        showCount
                                         hint={`${data.description.length}/150`}
                                     />
                                     <div className="space-y-2">
@@ -448,6 +451,7 @@ export default function PromotionalBannerEdit({
                                     <div className="space-y-1">
                                         <Input
                                             maxLength={255}
+                                            showCount
                                             label="Link URL"
                                             value={
                                                 hasProducts

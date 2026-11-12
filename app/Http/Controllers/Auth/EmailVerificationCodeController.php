@@ -24,7 +24,7 @@ class EmailVerificationCodeController extends Controller
         }
 
         $request->validate([
-            'code' => ['required', 'string'],
+            'code' => ['required', 'string', 'max:6'],
         ]);
 
         if (! $user->consumeEmailVerificationCode($request->string('code')->toString())) {

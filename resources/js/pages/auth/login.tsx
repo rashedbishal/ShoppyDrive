@@ -253,6 +253,7 @@ export default function Login(): React.JSX.Element {
                                 <div className="relative">
                                     <Mail className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
                                     <input
+                                        maxLength={150}
                                         id="email"
                                         type="email"
                                         autoComplete="email"
@@ -286,6 +287,7 @@ export default function Login(): React.JSX.Element {
                                 <div className="relative">
                                     <Lock className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
                                     <input
+                                        maxLength={128}
                                         id="password"
                                         type={
                                             showPassword ? 'text' : 'password'

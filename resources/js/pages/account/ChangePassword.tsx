@@ -110,6 +110,7 @@ export default function ChangePassword(): React.JSX.Element {
                                     </Label>
                                     <div className="relative">
                                         <Input
+                                            maxLength={128}
                                             id="current_password"
                                             type={
                                                 showPassword
@@ -160,6 +161,7 @@ export default function ChangePassword(): React.JSX.Element {
                                         </Label>
                                         <div className="relative">
                                             <Input
+                                                maxLength={128}
                                                 id="password"
                                                 type={
                                                     showPassword
@@ -272,6 +274,7 @@ export default function ChangePassword(): React.JSX.Element {
                                     </Label>
                                     <div className="relative">
                                         <Input
+                                            maxLength={128}
                                             id="password_confirmation"
                                             type={
                                                 showPassword

@@ -62,6 +62,7 @@ export default function Manage(): React.JSX.Element {
                                     Email address
                                 </label>
                                 <input
+                                    maxLength={150}
                                     id="email"
                                     type="email"
                                     autoComplete="email"

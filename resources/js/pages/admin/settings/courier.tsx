@@ -8,6 +8,7 @@ import {
 } from '@/components/admin/settings-field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { Select } from '@/components/ui/select';
 
 type Props = {
@@ -135,6 +136,11 @@ function PathaoCourierCard({ settings }: Props) {
                             }
                             placeholder="Pathao Client ID"
                         />
+                        <CharCount
+                            value={data.pathao_client_id}
+                            max={100}
+                            className="mt-1 block text-right"
+                        />
                     </SettingsField>
                     <SettingsField label="Client Secret">
                         <input
@@ -162,6 +168,11 @@ function PathaoCourierCard({ settings }: Props) {
                                 setData('pathao_username', e.target.value)
                             }
                             placeholder="merchant@example.com"
+                        />
+                        <CharCount
+                            value={data.pathao_username}
+                            max={150}
+                            className="mt-1 block text-right"
                         />
                     </SettingsField>
                     <SettingsField
@@ -409,6 +420,11 @@ function SteadfastCourierCard({ settings }: Props) {
                             }
                             placeholder="Steadfast Api Key"
                         />
+                        <CharCount
+                            value={data.steadfast_api_key}
+                            max={255}
+                            className="mt-1 block text-right"
+                        />
                     </SettingsField>
                     <SettingsField label="Secret Key">
                         <input
@@ -454,6 +470,11 @@ function SteadfastCourierCard({ settings }: Props) {
                             }
                             onFocus={(e) => e.target.select()}
                             placeholder={`${window.location.origin}/api/steadfast/webhook`}
+                        />
+                        <CharCount
+                            value={data.steadfast_webhook_url}
+                            max={300}
+                            className="mt-1 block text-right"
                         />
                     </SettingsField>
                     <div className="space-y-2">

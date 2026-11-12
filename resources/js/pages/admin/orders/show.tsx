@@ -653,6 +653,7 @@ export default function OrderShow({
                                                     </div>
                                                     <Input
                                                         maxLength={11}
+                                                        showCount
                                                         label="Phone"
                                                         value={
                                                             addressData.phone
@@ -669,6 +670,7 @@ export default function OrderShow({
                                                     />
                                                     <Input
                                                         maxLength={200}
+                                                        showCount
                                                         label="Address line 1"
                                                         value={
                                                             addressData.address_line1
@@ -685,6 +687,7 @@ export default function OrderShow({
                                                     />
                                                     <Input
                                                         maxLength={200}
+                                                        showCount
                                                         label="Address line 2"
                                                         value={
                                                             addressData.address_line2
@@ -702,6 +705,7 @@ export default function OrderShow({
                                                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                                         <Input
                                                             maxLength={100}
+                                                            showCount
                                                             label="City"
                                                             value={
                                                                 addressData.city
@@ -719,6 +723,7 @@ export default function OrderShow({
                                                         />
                                                         <Input
                                                             maxLength={100}
+                                                            showCount
                                                             label="District / State"
                                                             value={
                                                                 addressData.state
@@ -738,6 +743,7 @@ export default function OrderShow({
                                                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                                         <Input
                                                             maxLength={20}
+                                                            showCount
                                                             label="Postal code"
                                                             value={
                                                                 addressData.postal_code
@@ -755,6 +761,7 @@ export default function OrderShow({
                                                         />
                                                         <Input
                                                             maxLength={100}
+                                                            showCount
                                                             label="Country"
                                                             value={
                                                                 addressData.country
@@ -1415,6 +1422,7 @@ export default function OrderShow({
                                                 max={500}
                                                 className="mt-1 block text-right"
                                             />
+
                                             <Button
                                                 type="submit"
                                                 disabled={

@@ -254,6 +254,7 @@ export default function Footer(): React.JSX.Element {
                         <form onSubmit={handleSubmit} className="space-y-3">
                             <div className="flex overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] focus-within:border-[var(--color-primary)] focus-within:ring-1 focus-within:ring-[var(--color-primary)]">
                                 <input
+                                    maxLength={150}
                                     type="email"
                                     autoComplete="email"
                                     placeholder="your@email.com"

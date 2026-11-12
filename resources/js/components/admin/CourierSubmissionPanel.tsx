@@ -135,6 +135,7 @@ function RecordConsignmentForm({ orderId, submission }: Props) {
             </p>
             <Input
                 maxLength={100}
+                showCount
                 label="Consignment ID"
                 value={data.consignment_id}
                 onChange={(e) => setData('consignment_id', e.target.value)}
@@ -142,6 +143,7 @@ function RecordConsignmentForm({ orderId, submission }: Props) {
             />
             <Input
                 maxLength={100}
+                showCount
                 label="Tracking code (optional)"
                 value={data.tracking_code}
                 onChange={(e) => setData('tracking_code', e.target.value)}

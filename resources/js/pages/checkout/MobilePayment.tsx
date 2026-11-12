@@ -299,6 +299,7 @@ export default function MobilePayment({
                                         {selectedProvider.txnLabel}
                                     </Label>
                                     <Input
+                                        maxLength={40}
                                         id="transaction_id"
                                         value={transactionId}
                                         onChange={(e) =>

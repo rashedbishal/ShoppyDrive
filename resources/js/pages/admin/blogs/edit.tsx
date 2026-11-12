@@ -125,6 +125,11 @@ export default function BlogEdit({ blog }: Props) {
                                             setData('slug', e.target.value)
                                         }
                                     />
+                                    <CharCount
+                                        value={data.slug}
+                                        max={150}
+                                        className="mt-1 block text-right"
+                                    />
                                 </Field>
                             </div>
 
@@ -139,6 +144,11 @@ export default function BlogEdit({ blog }: Props) {
                                     onChange={(e) =>
                                         setData('author_name', e.target.value)
                                     }
+                                />
+                                <CharCount
+                                    value={data.author_name}
+                                    max={80}
+                                    className="mt-1 block text-right"
                                 />
                             </Field>
 

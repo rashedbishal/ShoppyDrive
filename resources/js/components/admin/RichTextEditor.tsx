@@ -32,6 +32,14 @@ const TOOLBAR_ACTIONS = [
     { label: 'Strikethrough', icon: Strikethrough, command: 'strikeThrough' },
 ] as const;
 
+/** The text a visitor would read, without the HTML markup. */
+function visibleText(html: string): string {
+    return (
+        new DOMParser().parseFromString(html, 'text/html').body.textContent ??
+        ''
+    );
+}
+
 function InsertImageDialog({
     open,
     onOpenChange,
@@ -154,6 +162,7 @@ export function RichTextEditor({
     onChange,
     minHeight = 240,
     maxLength,
+    maxTextLength,
 }: {
     value: string;
     onChange: (html: string) => void;
@@ -164,6 +173,11 @@ export function RichTextEditor({
      * is left.
      */
     maxLength?: number;
+    /**
+     * Largest number of visible characters (markup not counted), for short
+     * rich text such as a section blurb. Typing or pasting past it is undone.
+     */
+    maxTextLength?: number;
 }) {
     const editorRef = useRef<HTMLDivElement>(null);
     const isInitialized = useRef(false);
@@ -415,17 +429,34 @@ export function RichTextEditor({
                                 return;
                             }
 
+                            if (
+                                maxTextLength !== undefined &&
+                                (editorRef.current.textContent ?? '').length >
+                                    maxTextLength
+                            ) {
+                                document.execCommand('undo');
+
+                                return;
+                            }
+
                             onChange(editorRef.current.innerHTML);
                         }
                     }}
                     style={{ minHeight }}
                     className="p-4 text-sm text-slate-800 focus:outline-none [&_a]:text-[#c8102e] [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:text-slate-500 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_img]:max-w-full [&_img]:rounded [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
                 />
-                {maxLength !== undefined && (
+                {maxTextLength !== undefined ? (
+                    <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-3 py-1">
+                        <CharCount
+                            value={visibleText(value)}
+                            max={maxTextLength}
+                        />
+                    </div>
+                ) : maxLength !== undefined ? (
                     <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-3 py-1">
                         <CharCount value={value} max={maxLength} />
                     </div>
-                )}
+                ) : null}
             </div>
 
             <InsertImageDialog

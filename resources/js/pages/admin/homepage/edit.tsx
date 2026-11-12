@@ -319,6 +319,7 @@ export default function HomepageEdit({
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Input
                                                 maxLength={30}
+                                                showCount
                                                 label="Phone Number"
                                                 value={
                                                     data.metadata.phone ?? ''
@@ -341,6 +342,7 @@ export default function HomepageEdit({
                                             />
                                             <Input
                                                 maxLength={150}
+                                                showCount
                                                 label="Email Address"
                                                 type="email"
                                                 value={
@@ -484,6 +486,7 @@ export default function HomepageEdit({
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Input
                                                 maxLength={60}
+                                                showCount
                                                 label="Eyebrow (optional)"
                                                 value={data.eyebrow}
                                                 onChange={(e) =>
@@ -530,6 +533,7 @@ export default function HomepageEdit({
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Input
                                                 maxLength={40}
+                                                showCount
                                                 label="Action Button Label"
                                                 value={data.action_label}
                                                 onChange={(e) =>
@@ -543,6 +547,7 @@ export default function HomepageEdit({
                                             />
                                             <Input
                                                 maxLength={255}
+                                                showCount
                                                 label="Action Button Link"
                                                 value={data.action_href}
                                                 onChange={(e) =>

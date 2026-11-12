@@ -9,6 +9,7 @@ import {
 } from '@/components/admin/settings-field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { IconPicker } from '@/components/ui/icon-picker';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -155,7 +156,7 @@ export default function AboutPageConfig({ settings }: Props) {
     return (
         <>
             <Head title="About Page — Admin" />
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="flex items-center justify-between">
                     <h1 className="text-xl font-bold text-slate-900">
                         About Page
@@ -180,27 +181,34 @@ export default function AboutPageConfig({ settings }: Props) {
                     </div>
                 </div>
 
-                <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100">
+                <Card className="gap-3 py-4 shadow-sm">
+                    <CardHeader className="border-b border-slate-100 pb-3">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Hero
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-3">
-                        <SettingsField label="Eyebrow badge">
-                            <input
-                                maxLength={60}
-                                className={settingsInputClass}
-                                value={data.about_hero_eyebrow}
-                                onChange={(e) =>
-                                    setData(
-                                        'about_hero_eyebrow',
-                                        e.target.value,
-                                    )
-                                }
-                            />
-                        </SettingsField>
-                        <div className="grid gap-4 sm:grid-cols-2">
+                    <CardContent className="space-y-2 pt-0">
+                        <div className="sm:w-1/2">
+                            <SettingsField label="Eyebrow badge">
+                                <input
+                                    maxLength={60}
+                                    className={settingsInputClass}
+                                    value={data.about_hero_eyebrow}
+                                    onChange={(e) =>
+                                        setData(
+                                            'about_hero_eyebrow',
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                                <CharCount
+                                    value={data.about_hero_eyebrow}
+                                    max={60}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                />
+                            </SettingsField>
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
                             <SettingsField
                                 label="Title (first line)"
                                 hint="Shown before the highlighted line"
@@ -215,6 +223,11 @@ export default function AboutPageConfig({ settings }: Props) {
                                             e.target.value,
                                         )
                                     }
+                                />
+                                <CharCount
+                                    value={data.about_hero_title}
+                                    max={100}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
                             </SettingsField>
                             <SettingsField
@@ -232,11 +245,16 @@ export default function AboutPageConfig({ settings }: Props) {
                                         )
                                     }
                                 />
+                                <CharCount
+                                    value={data.about_hero_title_highlight}
+                                    max={60}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                />
                             </SettingsField>
                         </div>
                         <SettingsField label="Description">
                             <Textarea
-                                maxLength={400}
+                                maxLength={200}
                                 showCount
                                 textareaClassName={settingsInputClass}
                                 rows={3}
@@ -252,8 +270,8 @@ export default function AboutPageConfig({ settings }: Props) {
                     </CardContent>
                 </Card>
 
-                <Card className="shadow-sm">
-                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100">
+                <Card className="gap-3 py-4 shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-3">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Stats Strip
                         </CardTitle>
@@ -266,13 +284,14 @@ export default function AboutPageConfig({ settings }: Props) {
                             <Plus className="mr-1 size-3.5" /> Add Stat
                         </Button>
                     </CardHeader>
-                    <CardContent className="space-y-3 pt-3">
+                    <CardContent className="space-y-2.5 pt-0">
                         <AnimatePresence initial={false}>
                             {data.about_stats.map((stat, index) => (
                                 <AdminReveal key={statRowKeys.keys[index]}>
-                                    <div className="flex items-end gap-2">
+                                    <div className="flex items-start gap-2">
                                         <Input
                                             maxLength={20}
+                                            showCount
                                             containerClassName="flex-1"
                                             placeholder="Value (e.g. 50,000+)"
                                             value={stat.value}
@@ -284,6 +303,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                         />
                                         <Input
                                             maxLength={100}
+                                            showCount
                                             containerClassName="flex-1"
                                             placeholder="Label (e.g. Happy Customers)"
                                             value={stat.label}
@@ -314,14 +334,14 @@ export default function AboutPageConfig({ settings }: Props) {
                     </CardContent>
                 </Card>
 
-                <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100">
+                <Card className="gap-3 py-4 shadow-sm">
+                    <CardHeader className="border-b border-slate-100 pb-3">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Mission
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-3">
-                        <div className="grid gap-4 sm:grid-cols-2">
+                    <CardContent className="space-y-2 pt-0">
+                        <div className="grid gap-2 sm:grid-cols-2">
                             <SettingsField label="Eyebrow">
                                 <input
                                     maxLength={60}
@@ -333,6 +353,11 @@ export default function AboutPageConfig({ settings }: Props) {
                                             e.target.value,
                                         )
                                     }
+                                />
+                                <CharCount
+                                    value={data.about_mission_eyebrow}
+                                    max={60}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
                             </SettingsField>
                             <SettingsField label="Title">
@@ -347,12 +372,18 @@ export default function AboutPageConfig({ settings }: Props) {
                                         )
                                     }
                                 />
+                                <CharCount
+                                    value={data.about_mission_title}
+                                    max={100}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                />
                             </SettingsField>
                         </div>
                         <SettingsField label="Body">
                             <RichTextEditor
                                 value={data.about_mission_body}
                                 maxLength={20000}
+                                maxTextLength={400}
                                 onChange={(html) =>
                                     setData('about_mission_body', html)
                                 }
@@ -381,7 +412,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                             <AdminReveal
                                                 key={featureRowKeys.keys[index]}
                                             >
-                                                <div className="flex items-end gap-2">
+                                                <div className="flex items-start gap-2">
                                                     <IconPicker
                                                         className="w-40 shrink-0"
                                                         value={feature.icon}
@@ -396,6 +427,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                                     />
                                                     <Input
                                                         maxLength={60}
+                                                        showCount
                                                         containerClassName="flex-1"
                                                         placeholder="Label (e.g. Nationwide Delivery)"
                                                         value={feature.label}
@@ -437,8 +469,8 @@ export default function AboutPageConfig({ settings }: Props) {
                     </CardContent>
                 </Card>
 
-                <Card className="shadow-sm">
-                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100">
+                <Card className="gap-3 py-4 shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-3">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Core Values
                         </CardTitle>
@@ -451,12 +483,12 @@ export default function AboutPageConfig({ settings }: Props) {
                             <Plus className="mr-1 size-3.5" /> Add Value
                         </Button>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-3">
+                    <CardContent className="space-y-2 pt-0">
                         <AnimatePresence initial={false}>
                             {data.about_values.map((value, index) => (
                                 <AdminReveal key={valueRowKeys.keys[index]}>
                                     <div className="space-y-2 rounded-xl border border-slate-200 p-4">
-                                        <div className="flex items-end gap-2">
+                                        <div className="flex items-start gap-2">
                                             <IconPicker
                                                 className="w-40 shrink-0"
                                                 value={value.icon}
@@ -466,6 +498,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                             />
                                             <Input
                                                 maxLength={60}
+                                                showCount
                                                 containerClassName="flex-1"
                                                 placeholder="Title (e.g. Trust & Transparency)"
                                                 value={value.title}
@@ -514,8 +547,8 @@ export default function AboutPageConfig({ settings }: Props) {
                     </CardContent>
                 </Card>
 
-                <Card className="shadow-sm">
-                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100">
+                <Card className="gap-3 py-4 shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-3">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Team
                         </CardTitle>
@@ -528,13 +561,14 @@ export default function AboutPageConfig({ settings }: Props) {
                             <Plus className="mr-1 size-3.5" /> Add Member
                         </Button>
                     </CardHeader>
-                    <CardContent className="space-y-3 pt-3">
+                    <CardContent className="space-y-2.5 pt-0">
                         <AnimatePresence initial={false}>
                             {data.about_team.map((member, index) => (
                                 <AdminReveal key={teamRowKeys.keys[index]}>
-                                    <div className="flex items-end gap-2">
+                                    <div className="flex items-start gap-2">
                                         <Input
                                             maxLength={60}
+                                            showCount
                                             containerClassName="flex-1"
                                             placeholder="Name"
                                             value={member.name}
@@ -546,6 +580,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                         />
                                         <Input
                                             maxLength={60}
+                                            showCount
                                             containerClassName="flex-1"
                                             placeholder="Role"
                                             value={member.role}
@@ -559,6 +594,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                             containerClassName="w-20 shrink-0"
                                             placeholder="RI"
                                             maxLength={4}
+                                            showCount
                                             value={member.initials}
                                             onChange={(e) =>
                                                 updateTeamMember(index, {
@@ -589,13 +625,13 @@ export default function AboutPageConfig({ settings }: Props) {
                     </CardContent>
                 </Card>
 
-                <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100">
+                <Card className="gap-3 py-4 shadow-sm">
+                    <CardHeader className="border-b border-slate-100 pb-3">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Closing Call-to-Action
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-3">
+                    <CardContent className="space-y-2 pt-0">
                         <SettingsField label="Title">
                             <input
                                 maxLength={100}
@@ -604,6 +640,11 @@ export default function AboutPageConfig({ settings }: Props) {
                                 onChange={(e) =>
                                     setData('about_cta_title', e.target.value)
                                 }
+                            />
+                            <CharCount
+                                value={data.about_cta_title}
+                                max={100}
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </SettingsField>
                         <SettingsField label="Description">

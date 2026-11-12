@@ -28,6 +28,7 @@ import { VariantSelectionModal } from '@/components/shared/VariantSelectionModal
 import { Badge } from '@/components/ui/badge';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
+import { CharCount } from '@/components/ui/char-count';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { Select } from '@/components/ui/select';
 import { StarRating } from '@/components/ui/star-rating';
@@ -1267,7 +1268,7 @@ export default function ProductDetail({
                                                                 )
                                                             }
                                                             placeholder="Summarise your experience"
-                                                            maxLength={255}
+                                                            maxLength={100}
                                                             className="h-10 w-full rounded-xl border border-[var(--color-border)] px-3 text-sm focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:outline-none"
                                                         />
                                                     </div>
@@ -1292,6 +1293,14 @@ export default function ProductDetail({
                                                             rows={4}
                                                             maxLength={2000}
                                                             className="w-full resize-none rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:outline-none"
+                                                        />
+                                                        <CharCount
+                                                            value={
+                                                                reviewForm.data
+                                                                    .body
+                                                            }
+                                                            max={2000}
+                                                            className="block text-right"
                                                         />
                                                         {reviewForm.errors
                                                             .body && (

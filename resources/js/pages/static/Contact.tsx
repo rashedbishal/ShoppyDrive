@@ -13,6 +13,7 @@ import {
 import { TikTokLogo, XLogo } from '@/components/icons/brand-icons';
 import InputError from '@/components/input-error';
 import { PageHero } from '@/components/shared/PageHero';
+import { CharCount } from '@/components/ui/char-count';
 
 type ContactContentProps = {
     hero_eyebrow: string;
@@ -133,6 +134,7 @@ function ContactContent({ content }: Props): React.JSX.Element {
                         )
                     }
                     description={content.hero_description}
+                    fullDescription
                 />
             </div>
 
@@ -236,6 +238,7 @@ function ContactContent({ content }: Props): React.JSX.Element {
                                                     Full name
                                                 </label>
                                                 <input
+                                                    maxLength={100}
                                                     type="text"
                                                     value={data.name}
                                                     onChange={(e) =>
@@ -257,6 +260,7 @@ function ContactContent({ content }: Props): React.JSX.Element {
                                                     Email
                                                 </label>
                                                 <input
+                                                    maxLength={150}
                                                     type="email"
                                                     value={data.email}
                                                     onChange={(e) =>
@@ -280,6 +284,7 @@ function ContactContent({ content }: Props): React.JSX.Element {
                                                 Subject
                                             </label>
                                             <input
+                                                maxLength={150}
                                                 type="text"
                                                 value={data.subject}
                                                 onChange={(e) =>
@@ -302,6 +307,7 @@ function ContactContent({ content }: Props): React.JSX.Element {
                                                 Message
                                             </label>
                                             <textarea
+                                                maxLength={2000}
                                                 value={data.message}
                                                 onChange={(e) =>
                                                     setData(
@@ -313,6 +319,11 @@ function ContactContent({ content }: Props): React.JSX.Element {
                                                 placeholder="Tell us more about your question or concern..."
                                                 className="w-full resize-none rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-primary)] transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none"
                                                 required
+                                            />
+                                            <CharCount
+                                                value={data.message}
+                                                max={2000}
+                                                className="block text-right"
                                             />
                                             <InputError
                                                 message={errors.message}

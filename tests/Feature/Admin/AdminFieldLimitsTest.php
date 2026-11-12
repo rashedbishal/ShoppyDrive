@@ -76,3 +76,31 @@ it('limits the landing page builder texts', function () {
     $update(['testimonials' => ['items' => [['name' => 'A', 'rating' => 9, 'text' => 'ok']]]])->assertSessionHasErrors('sections.testimonials.items.0.rating');
     $update(['hero' => ['bg_color' => 'red']])->assertSessionHasErrors('sections.hero.bg_color');
 });
+
+it('limits the About page hero description to 200 characters', function () {
+    actingAs($this->admin, 'admin')
+        ->put(route('admin.settings.update'), ['about_hero_description' => str_repeat('a', 201)])
+        ->assertSessionHasErrors('about_hero_description');
+
+    actingAs($this->admin, 'admin')
+        ->put(route('admin.settings.update'), ['about_hero_description' => str_repeat('a', 200)])
+        ->assertSessionDoesntHaveErrors('about_hero_description');
+});
+
+it('limits the Contact page hero description to 400 characters', function () {
+    actingAs($this->admin, 'admin')
+        ->put(route('admin.settings.update'), ['contact_page_hero_description' => str_repeat('a', 401)])
+        ->assertSessionHasErrors('contact_page_hero_description');
+
+    actingAs($this->admin, 'admin')
+        ->put(route('admin.settings.update'), ['contact_page_hero_description' => str_repeat('a', 400)])
+        ->assertSessionDoesntHaveErrors('contact_page_hero_description');
+});
+
+it('limits the About page mission text to 400 visible characters, not counting markup', function () {
+    $save = fn (string $body) => actingAs($this->admin, 'admin')
+        ->put(route('admin.settings.update'), ['about_mission_body' => $body]);
+
+    $save('<p>'.str_repeat('a', 401).'</p>')->assertSessionHasErrors('about_mission_body');
+    $save('<p><strong>'.str_repeat('a', 400).'</strong></p><p></p>')->assertSessionDoesntHaveErrors('about_mission_body');
+});

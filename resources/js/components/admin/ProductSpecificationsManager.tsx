@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { AdminReveal } from '@/components/admin/admin-motion';
 import { productInputClass } from '@/components/admin/product-form-field';
 import { Button } from '@/components/ui/button';
+import { CharCount } from '@/components/ui/char-count';
 import { useRowKeys } from '@/hooks/use-row-keys';
 
 // Matches ProductRequest's `specifications` cap (app/Http/Requests/Admin/ProductRequest.php).
@@ -103,6 +104,11 @@ export function ProductSpecificationsManager({
                                         placeholder="Key (e.g. Brand)"
                                         maxLength={60}
                                     />
+                                    <CharCount
+                                        value={row.key}
+                                        max={60}
+                                        className="mt-1 block text-right"
+                                    />
                                     {errors[`specifications.${index}.key`] && (
                                         <p className="mt-1 text-xs text-red-500">
                                             {
@@ -130,6 +136,11 @@ export function ProductSpecificationsManager({
                                         }
                                         placeholder="Value (e.g. Languo)"
                                         maxLength={200}
+                                    />
+                                    <CharCount
+                                        value={row.value}
+                                        max={200}
+                                        className="mt-1 block text-right"
                                     />
                                     {errors[
                                         `specifications.${index}.value`

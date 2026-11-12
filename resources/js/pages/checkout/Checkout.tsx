@@ -1002,6 +1002,7 @@ export default function Checkout({
                                             Full Name *
                                         </Label>
                                         <Input
+                                            maxLength={100}
                                             id="name"
                                             value={form.data.name}
                                             onChange={(e) =>
@@ -1031,6 +1032,7 @@ export default function Checkout({
                                             )}
                                         </Label>
                                         <Input
+                                            maxLength={150}
                                             id="email"
                                             type="email"
                                             value={form.data.email}
@@ -1215,6 +1217,7 @@ export default function Checkout({
                                             Address Line 1 *
                                         </Label>
                                         <Input
+                                            maxLength={200}
                                             id="address_line1"
                                             value={form.data.address_line1}
                                             onChange={(e) =>
@@ -1285,6 +1288,7 @@ export default function Checkout({
                                                 </Select>
                                             ) : (
                                                 <Input
+                                                    maxLength={60}
                                                     id="city"
                                                     value={form.data.city}
                                                     onChange={(e) =>
@@ -1312,6 +1316,7 @@ export default function Checkout({
                                             Postal Code
                                         </Label>
                                         <Input
+                                            maxLength={10}
                                             id="postal_code"
                                             value={form.data.postal_code}
                                             onChange={(e) =>
@@ -1396,6 +1401,7 @@ export default function Checkout({
                                 <div className="space-y-2">
                                     <div className="flex gap-2">
                                         <Input
+                                            maxLength={50}
                                             value={couponInput}
                                             onChange={(e) => {
                                                 setCouponInput(

@@ -168,6 +168,7 @@ export default function PermanentOrderDeleteDialog({
                                 />
                                 <Input
                                     maxLength={40}
+                                    showCount
                                     label={`Type the order number (${order.order_number})`}
                                     autoComplete="off"
                                     value={step2.data.order_number}
