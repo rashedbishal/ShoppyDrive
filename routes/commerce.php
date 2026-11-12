@@ -69,9 +69,9 @@ Route::get('/order/{order:order_number}/confirmation', function (Request $reques
 
 Route::post('/coupon/validate', function (Request $request) {
     $request->validate([
-        'code' => ['required', 'string'],
+        'code' => ['required', 'string', 'max:50'],
         'subtotal' => ['required', 'numeric', 'min:0'],
-        'phone' => ['nullable', 'string'],
+        'phone' => ['nullable', 'string', 'max:20'],
         'items' => ['nullable', 'array'],
         'items.*.product_id' => ['required', 'integer'],
         'items.*.variant_id' => ['nullable', 'integer'],

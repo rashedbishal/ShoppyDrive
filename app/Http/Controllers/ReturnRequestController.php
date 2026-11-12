@@ -24,7 +24,7 @@ class ReturnRequestController extends Controller
         }
 
         $validated = $request->validate([
-            'reason' => ['required', 'string', 'max:2000'],
+            'reason' => ['required', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.order_item_id' => [
                 'required',
@@ -33,7 +33,7 @@ class ReturnRequestController extends Controller
                 Rule::in($order->items()->pluck('id')->all()),
             ],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.reason' => ['nullable', 'string', 'max:500'],
+            'items.*.reason' => ['nullable', 'string', 'max:300'],
         ]);
 
         try {

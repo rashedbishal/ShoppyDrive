@@ -91,15 +91,15 @@ class AddressController extends Controller
         }
 
         return $request->validate([
-            'label' => ['nullable', 'string', 'max:100'],
-            'name' => ['required', 'string', 'max:255'],
+            'label' => ['nullable', 'string', 'max:30'],
+            'name' => ['required', 'string', 'max:100'],
             'phone' => ['required', 'string', 'regex:'.BangladeshiPhone::PATTERN],
-            'address_line1' => ['required', 'string', 'max:255'],
-            'address_line2' => ['nullable', 'string', 'max:255'],
-            'city' => ['required', 'string', 'max:255'],
-            'state' => ['required', 'string', 'max:255', Rule::in(BangladeshDistricts::ALL)],
-            'postal_code' => ['nullable', 'string', 'max:20'],
-            'country' => ['required', 'string', 'max:100'],
+            'address_line1' => ['required', 'string', 'max:200'],
+            'address_line2' => ['nullable', 'string', 'max:200'],
+            'city' => ['required', 'string', 'max:60'],
+            'state' => ['required', 'string', 'max:60', Rule::in(BangladeshDistricts::ALL)],
+            'postal_code' => ['nullable', 'string', 'max:10'],
+            'country' => ['required', 'string', 'max:60'],
             'is_default' => ['boolean'],
         ], [
             'phone.regex' => BangladeshiPhone::INVALID_MESSAGE,

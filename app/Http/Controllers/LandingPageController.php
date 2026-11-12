@@ -216,14 +216,14 @@ class LandingPageController extends Controller
         $request->merge(['phone' => BangladeshiPhone::normalize($request->string('phone')->toString())]);
 
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:100'],
             'phone' => ['required', 'string', 'regex:/^01[3-9][0-9]{8}$/'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'address_line1' => ['required', 'string', 'max:255'],
-            'address_line2' => ['nullable', 'string', 'max:255'],
-            'city' => ['required', 'string', 'max:255'],
-            'state' => ['required', 'string', 'max:255', Rule::in(BangladeshDistricts::ALL)],
-            'postal_code' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:150'],
+            'address_line1' => ['required', 'string', 'max:200'],
+            'address_line2' => ['nullable', 'string', 'max:200'],
+            'city' => ['required', 'string', 'max:60'],
+            'state' => ['required', 'string', 'max:60', Rule::in(BangladeshDistricts::ALL)],
+            'postal_code' => ['nullable', 'string', 'max:10'],
             'notes' => ['nullable', 'string', 'max:500'],
             ...$this->quantityRules($page, $product),
             'payment_method' => ['required', 'in:cod,mobile_banking'],

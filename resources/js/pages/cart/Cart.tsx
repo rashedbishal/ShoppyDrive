@@ -259,6 +259,7 @@ export default function Cart(): React.JSX.Element {
                                                 className="flex gap-2"
                                             >
                                                 <Input
+                                                    maxLength={50}
                                                     placeholder="Enter code"
                                                     value={couponCode}
                                                     onChange={(e) => {

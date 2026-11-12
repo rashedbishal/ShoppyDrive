@@ -29,7 +29,7 @@ class ReviewController extends Controller
     {
         $validated = $request->validate([
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'title' => ['nullable', 'string', 'max:255'],
+            'title' => ['nullable', 'string', 'max:100'],
             'body' => ['required', 'string', 'min:10', 'max:2000'],
             ...$this->imageRules(),
         ], $this->imageMessages());

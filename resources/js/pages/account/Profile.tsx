@@ -208,6 +208,7 @@ export default function Profile({
                                     <Label htmlFor="name">Full Name</Label>
                                     <div className="relative">
                                         <Input
+                                            maxLength={100}
                                             id="name"
                                             value={form.data.name}
                                             onChange={(e) =>
@@ -234,6 +235,7 @@ export default function Profile({
                                     <Label htmlFor="email">Email Address</Label>
                                     <div className="relative">
                                         <Input
+                                            maxLength={150}
                                             id="email"
                                             type="email"
                                             value={form.data.email}
@@ -268,6 +270,7 @@ export default function Profile({
                                         +880
                                     </span>
                                     <Input
+                                        maxLength={20}
                                         id="phone"
                                         value={form.data.phone}
                                         onChange={(e) =>

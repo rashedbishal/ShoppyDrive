@@ -21,7 +21,7 @@ class NewsletterController extends Controller
     {
         // RFC 5321: an address is at most 254 characters, 64 of them before the @.
         $request->validate([
-            'email' => ['required', 'email', 'max:254', 'regex:/^[^@]{1,64}@/'],
+            'email' => ['required', 'email', 'max:150', 'regex:/^[^@]{1,64}@/'],
         ], [
             'email.max' => 'That email address is too long.',
             'email.regex' => 'That email address is too long.',
@@ -99,7 +99,7 @@ class NewsletterController extends Controller
     public function unsubscribe(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'email' => ['required', 'email', 'max:255'],
+            'email' => ['required', 'email', 'max:150'],
             'token' => ['required', 'string', 'max:255'],
         ]);
 
@@ -141,7 +141,7 @@ class NewsletterController extends Controller
      */
     public function manageSubmit(Request $request): RedirectResponse
     {
-        $data = $request->validate(['email' => ['required', 'email', 'max:255']]);
+        $data = $request->validate(['email' => ['required', 'email', 'max:150']]);
 
         $subscriber = NewsletterSubscriber::where('email', $data['email'])
             ->where('is_active', true)

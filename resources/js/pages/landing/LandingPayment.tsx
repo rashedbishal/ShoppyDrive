@@ -163,6 +163,7 @@ export default function LandingPayment({
                                         Transaction ID
                                     </label>
                                     <input
+                                        maxLength={40}
                                         className="h-10 w-full rounded-xl border border-slate-200 px-3 font-mono text-sm uppercase focus:border-[#c8102e] focus:ring-2 focus:ring-[#c8102e]/30 focus:outline-none"
                                         value={data.transaction_id}
                                         onChange={(e) =>

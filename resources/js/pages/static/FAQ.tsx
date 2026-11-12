@@ -192,6 +192,7 @@ export default function FAQ({ page }: PageProps): React.JSX.Element {
                         <div className="relative">
                             <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
                             <input
+                                maxLength={100}
                                 type="text"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}

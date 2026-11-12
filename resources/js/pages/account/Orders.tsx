@@ -94,6 +94,7 @@ export default function Orders({
                         className="relative w-full max-w-sm"
                     >
                         <Input
+                            maxLength={40}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search by order ID..."

@@ -21,7 +21,7 @@ class TrackIncompleteOrderRequest extends FormRequest
         return [
             'attempt_token' => ['required', 'string', 'max:64'],
             'phone' => ['required', 'string', 'regex:/^01[3-9][0-9]{8}$/'],
-            'name' => ['nullable', 'string', 'max:255'],
+            'name' => ['nullable', 'string', 'max:100'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],

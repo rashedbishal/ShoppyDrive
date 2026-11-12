@@ -196,6 +196,7 @@ export default function TrackOrder({
                             <Label htmlFor="order_number">Order Number</Label>
                             <div className="relative">
                                 <Input
+                                    maxLength={40}
                                     id="order_number"
                                     value={form.data.order_number}
                                     onChange={(e) =>
@@ -239,6 +240,7 @@ export default function TrackOrder({
                                                 </Label>
                                                 <div className="relative">
                                                     <Input
+                                                        maxLength={150}
                                                         id="email"
                                                         type="email"
                                                         value={form.data.email}
@@ -265,6 +267,7 @@ export default function TrackOrder({
                                                 </Label>
                                                 <div className="relative">
                                                     <Input
+                                                        maxLength={20}
                                                         id="phone"
                                                         value={form.data.phone}
                                                         onChange={(e) =>

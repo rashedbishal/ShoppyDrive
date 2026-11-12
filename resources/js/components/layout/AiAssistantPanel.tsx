@@ -355,6 +355,7 @@ export default function AiAssistantPanel({
                         className="flex items-center gap-2 border-t border-slate-200 bg-white p-3"
                     >
                         <input
+                            maxLength={1000}
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Ask about a product or order…"

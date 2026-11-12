@@ -260,6 +260,7 @@ export default function Addresses({
                                 Address Label (e.g. Home, Office)
                             </Label>
                             <Input
+                                maxLength={30}
                                 id="label"
                                 value={form.data.label}
                                 onChange={(e) =>
@@ -272,6 +273,7 @@ export default function Addresses({
                         <div className="space-y-2">
                             <Label htmlFor="name">Receiver's Name</Label>
                             <Input
+                                maxLength={100}
                                 id="name"
                                 value={form.data.name}
                                 onChange={(e) =>
@@ -291,6 +293,7 @@ export default function Addresses({
                                 +880
                             </span>
                             <Input
+                                maxLength={20}
                                 id="phone"
                                 value={form.data.phone}
                                 onChange={(e) =>
@@ -311,6 +314,7 @@ export default function Addresses({
                     <div className="space-y-2">
                         <Label htmlFor="address">Address Line 1</Label>
                         <Input
+                            maxLength={200}
                             id="address"
                             value={form.data.address_line1}
                             onChange={(e) =>
@@ -369,6 +373,7 @@ export default function Addresses({
                                 </Select>
                             ) : (
                                 <Input
+                                    maxLength={60}
                                     id="city"
                                     value={form.data.city}
                                     onChange={(e) =>
@@ -392,6 +397,7 @@ export default function Addresses({
                         <div className="space-y-2">
                             <Label htmlFor="postal">Postal Code</Label>
                             <Input
+                                maxLength={10}
                                 id="postal"
                                 value={form.data.postal_code}
                                 onChange={(e) =>
@@ -404,6 +410,7 @@ export default function Addresses({
                         <div className="space-y-2">
                             <Label htmlFor="country">Country</Label>
                             <Input
+                                maxLength={60}
                                 id="country"
                                 value={form.data.country}
                                 readOnly

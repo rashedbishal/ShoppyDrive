@@ -283,6 +283,7 @@ export default function Register({
                                 <div className="relative">
                                     <User className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
                                     <input
+                                        maxLength={100}
                                         id="name"
                                         type="text"
                                         autoComplete="name"
@@ -309,6 +310,7 @@ export default function Register({
                                 <div className="relative">
                                     <Mail className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
                                     <input
+                                        maxLength={150}
                                         id="email"
                                         type="email"
                                         autoComplete="email"
@@ -338,6 +340,7 @@ export default function Register({
                                 <div className="relative">
                                     <Phone className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
                                     <input
+                                        maxLength={20}
                                         id="phone"
                                         type="tel"
                                         autoComplete="tel"
@@ -365,6 +368,7 @@ export default function Register({
                                     <div className="relative">
                                         <Gift className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
                                         <input
+                                            maxLength={20}
                                             id="referral_code"
                                             type="text"
                                             value={data.referral_code}
@@ -395,6 +399,7 @@ export default function Register({
                                 <div className="relative">
                                     <Lock className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
                                     <input
+                                        maxLength={128}
                                         id="password"
                                         type={
                                             showPassword ? 'text' : 'password'
@@ -439,6 +444,7 @@ export default function Register({
                                 <div className="relative">
                                     <Lock className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
                                     <input
+                                        maxLength={128}
                                         id="password_confirmation"
                                         type={showConfirm ? 'text' : 'password'}
                                         autoComplete="new-password"
