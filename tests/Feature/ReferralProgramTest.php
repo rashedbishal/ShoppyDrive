@@ -423,7 +423,7 @@ test('cancelling a qualifying order after its reward was already granted revokes
     ]);
 
     // A second transition through a cancelled/refunded status must not
-    // revoke a second time (there's nothing left to revoke, floor at 0).
+    // revoke a second time (the reward is reversed exactly once).
     $order->update(['status' => OrderStatus::REFUNDED]);
     $referrer->refresh();
     expect($referrer->points_balance)->toBe(0);
@@ -661,8 +661,10 @@ test('admin can update referral and loyalty settings', function () {
 });
 
 test('revoking a referral reward never increases a referrer\'s negative points balance', function () {
-    // PAY-RETURN-001: balances may now be negative (order-earned points
-    // reversed after being spent); the referral revoke must still never add points.
+    // PAY-RETURN-001: balances may be negative (order-earned points reversed
+    // after being spent); the referral revoke must still never add points.
+    // DISC-11 (owner rule, 2026-11-13): the full reward is now reversed even
+    // from an already-negative balance, so -30 becomes -80 (was: left at -30).
     enableReferralProgram();
     $referrer = User::factory()->create(['points_balance' => 0]);
     $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
@@ -675,5 +677,84 @@ test('revoking a referral reward never increases a referrer\'s negative points b
     $referrer->forceFill(['points_balance' => -30])->save();
     $order->update(['status' => OrderStatus::CANCELLED]);
 
-    expect($referrer->refresh()->points_balance)->toBe(-30);
+    expect($referrer->refresh()->points_balance)->toBe(-80);
 });
+
+/** DISC-11: a referrer who earned the 50-point reward and spent 30 of it (balance 20). */
+function disc11SpentReward(): array
+{
+    enableReferralProgram();
+    $referrer = User::factory()->create(['points_balance' => 0]);
+    $referred = User::factory()->create(['referred_by_id' => $referrer->id]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
+
+    $order = placeAndDeliverQualifyingOrder($referred, $product, daysAgo: 1);
+    artisan('rewards:grant-due');
+    expect($referrer->refresh()->points_balance)->toBe(50);
+
+    // Spent 30 of the 50 reward points elsewhere.
+    $referrer->decrement('points_balance', 30);
+    ReferralPointTransaction::create(['user_id' => $referrer->id, 'type' => PointTransactionType::REDEEM, 'points' => -30, 'note' => 'Spent.']);
+
+    return [$referrer->refresh(), $referred, $order, $product];
+}
+
+test('DISC-11: cancelling after the referrer spent the reward reverses it in full and the balance goes negative', function () {
+    [$referrer, , $order] = disc11SpentReward();
+    expect($referrer->points_balance)->toBe(20);
+
+    $order->update(['status' => OrderStatus::CANCELLED]);
+
+    expect($referrer->refresh()->points_balance)->toBe(-30);
+    $revokes = ReferralPointTransaction::where('order_id', $order->id)->where('type', PointTransactionType::REVOKE)->get();
+    expect($revokes)->toHaveCount(1)
+        ->and($revokes->first()->points)->toBe(-50)
+        ->and((int) ReferralPointTransaction::where('user_id', $referrer->id)->sum('points'))->toBe(-30);
+});
+
+test('DISC-11: repeated cancel/refund processing never reverses the same reward twice', function () {
+    [$referrer, $referred, $order] = disc11SpentReward();
+
+    $order->update(['status' => OrderStatus::CANCELLED]);
+    $order->update(['status' => OrderStatus::REFUNDED]);
+    app(ReferralService::class)->handleOrderCancelledOrRefunded($order->fresh());
+    app(ReferralService::class)->handleOrderCancelledOrRefunded(Order::find($order->id));
+
+    expect($referrer->refresh()->points_balance)->toBe(-30)
+        ->and(ReferralPointTransaction::where('order_id', $order->id)->where('type', PointTransactionType::REVOKE)->count())->toBe(1);
+});
+
+test('DISC-11: newly earned points offset a negative balance first', function () {
+    [$referrer, , $order] = disc11SpentReward();
+    $order->update(['status' => OrderStatus::CANCELLED]);
+    Setting::updateOrCreate(['key' => 'daily_login_base_points'], ['value' => 10, 'group' => 'referral']);
+
+    $result = app(App\Services\LoyaltyPointsService::class)->claimDailyLogin($referrer);
+
+    expect($result['awarded'])->toBeTrue()
+        ->and($referrer->refresh()->points_balance)->toBe(-20);
+});
+
+test('DISC-11: checkout offers zero points and cannot spend a zero or negative balance', function (int $balance) {
+    enableReferralProgram();
+    $customer = User::factory()->create(['points_balance' => $balance]);
+    $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 10]);
+    Cart::query()->where('user_id', $customer->id)->delete();
+
+    $this->actingAs($customer)
+        ->get(route('checkout.index', ['buy_now_product' => $product->id]))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->where('pointsBalance', 0));
+
+    $this->actingAs($customer)->post(route('checkout.store'), codPayload([
+        'email' => $customer->email,
+        'redeem_points' => true,
+        'points_to_redeem' => 50,
+        'items' => [['product_id' => $product->id, 'variant_id' => null, 'quantity' => 1]],
+    ]));
+
+    $order = Order::where('user_id', $customer->id)->firstOrFail();
+    expect($order->points_redeemed)->toBeNull()
+        ->and((float) $order->discount)->toBe(0.0)
+        ->and($customer->refresh()->points_balance)->toBe($balance)
+        ->and(ReferralPointTransaction::where('user_id', $customer->id)->where('type', PointTransactionType::REDEEM)->exists())->toBeFalse();
+})->with(['zero balance' => 0, 'negative balance' => -30]);

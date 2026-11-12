@@ -508,16 +508,27 @@ class ReferralService
                 return;
             }
 
-            $earned = ReferralPointTransaction::where('order_id', $lockedOrder->id)
+            $earned = (int) ReferralPointTransaction::where('order_id', $lockedOrder->id)
                 ->where('type', PointTransactionType::EARN_REFERRAL)
                 ->sum('points');
 
-            if ($earned <= 0) {
+            // DISC-11 (owner rule, 2026-11-13): the full reward is reversed even
+            // if the referrer already spent it, so the balance may go negative;
+            // later earnings offset it first and a negative balance is never
+            // spendable (LoyaltyPointsService::availablePoints()). Anything
+            // already reversed for this order is subtracted, so the ledger
+            // itself also makes the reversal exactly-once.
+            $alreadyRevoked = -1 * (int) ReferralPointTransaction::where('order_id', $lockedOrder->id)
+                ->where('user_id', $referrer->id)
+                ->where('type', PointTransactionType::REVOKE)
+                ->sum('points');
+
+            $toRevoke = $earned - $alreadyRevoked;
+
+            if ($toRevoke <= 0) {
                 return;
             }
 
-            // PAY-RETURN-001: points_balance can now be negative; never "revoke" a negative amount (which would add points).
-            $toRevoke = max(0, min($earned, $referrer->points_balance));
             $referrer->decrement('points_balance', $toRevoke);
 
             ReferralPointTransaction::create([

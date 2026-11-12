@@ -272,6 +272,15 @@ export default function Referral({
                     </div>
                 )}
 
+                {/* DISC-11: a reversed referral reward can leave the balance below zero. */}
+                {pointsBalance < 0 && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                        Your balance is below zero because a referral reward
+                        was reversed after the order was cancelled. New points
+                        you earn will bring it back up first.
+                    </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                     <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
                         <div className="mb-2 flex size-10 items-center justify-center rounded-xl bg-amber-50">
@@ -301,7 +310,9 @@ export default function Referral({
                                 <Check className="size-5 text-green-600" />
                             </div>
                             <p className="text-2xl font-bold text-[var(--color-text-primary)]">
-                                {formatCurrency(pointsBalance * pointsValue)}
+                                {formatCurrency(
+                                    Math.max(0, pointsBalance) * pointsValue,
+                                )}
                             </p>
                             <p className="text-sm text-[var(--color-text-secondary)]">
                                 Worth at checkout
