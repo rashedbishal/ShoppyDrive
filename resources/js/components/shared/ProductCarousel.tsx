@@ -56,10 +56,10 @@ export function ProductCarousel({
     }
 
     return (
-        <section className={`py-12 ${className}`}>
-            <div className="mb-8 flex items-center justify-between">
+        <section className={`py-4 ${className ?? ''}`}>
+            <div className="mb-3 flex items-center justify-between">
                 {title && (
-                    <h2 className="font-serif text-2xl font-bold text-[var(--color-text-primary)] md:text-3xl">
+                    <h2 className="font-serif text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">
                         {title}
                     </h2>
                 )}
@@ -70,7 +70,7 @@ export function ProductCarousel({
                         size="icon"
                         onClick={() => scroll('left')}
                         disabled={!canScrollLeft}
-                        className="h-10 w-10 rounded-full border-[var(--color-border)] disabled:opacity-30"
+                        className="h-9 w-9 rounded-full border-[var(--color-border)] disabled:opacity-30"
                         aria-label="Scroll left"
                     >
                         <ChevronLeft size={20} />
@@ -80,7 +80,7 @@ export function ProductCarousel({
                         size="icon"
                         onClick={() => scroll('right')}
                         disabled={!canScrollRight}
-                        className="h-10 w-10 rounded-full border-[var(--color-border)] disabled:opacity-30"
+                        className="h-9 w-9 rounded-full border-[var(--color-border)] disabled:opacity-30"
                         aria-label="Scroll right"
                     >
                         <ChevronRight size={20} />
@@ -91,7 +91,7 @@ export function ProductCarousel({
             <div
                 ref={scrollContainerRef}
                 onScroll={checkScroll}
-                className="scrollbar-hide flex snap-x snap-mandatory gap-3 overflow-x-auto pb-4 md:gap-4"
+                className="scrollbar-hide flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:gap-4"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {/* 2 cards per view on mobile, 3 on tablet, 4 on desktop — same sizing as other product rows */}
