@@ -130,6 +130,9 @@ class LandingPage extends Model
             'testimonials' => [
                 'enabled' => false,
                 'title' => 'What Customers Say',
+                // 'text' shows the written reviews below; 'image' shows `images` (phone screenshots, photos) as a carousel.
+                'mode' => 'text',
+                'images' => [],
                 'items' => [
                     ['name' => '', 'rating' => 5, 'text' => ''],
                 ],
@@ -163,6 +166,7 @@ class LandingPage extends Model
             ['delivery', 'areas'],
             ['benefits', 'items'],
             ['testimonials', 'items'],
+            ['testimonials', 'images'],
             ['faq', 'items'],
         ];
 

@@ -1,4 +1,4 @@
-import { Plus, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, Trash2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { CharCount } from '@/components/ui/char-count';
 
@@ -1058,5 +1058,249 @@ export function ContactEditor({
                 </Field>
             </div>
         </>
+    );
+}
+
+const TESTIMONIAL_IMAGE_LIMIT = 12;
+/** Largest testimonial image the server accepts (KB); ideally half of it. */
+const TESTIMONIAL_IMAGE_MAX_KB = 100;
+
+/**
+ * The testimonial section's "Text reviews / Pictures" switch and, for
+ * pictures, the uploader (phone screenshots, product or customer photos).
+ * Both kinds of content are kept when the admin switches, so nothing is lost.
+ */
+export function TestimonialImagesEditor({
+    sec,
+    setSec,
+    pageId,
+}: {
+    sec: Sections;
+    setSec: SetSec;
+    pageId: number;
+}) {
+    const testimonials = sec.testimonials;
+    const images: string[] = testimonials.images ?? [];
+    const fileRef = useRef<HTMLInputElement>(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const setImages = (next: string[]) =>
+        setSec({ testimonials: { ...testimonials, images: next } });
+
+    const upload = async (files: File[]) => {
+        setUploading(true);
+        setUploadError(null);
+        const added: string[] = [];
+
+        try {
+            for (const file of files.slice(
+                0,
+                TESTIMONIAL_IMAGE_LIMIT - images.length,
+            )) {
+                const body = new FormData();
+                body.append('image', file);
+                const response = await fetch(
+                    route(
+                        'admin.landing-pages.testimonial-images.store',
+                        pageId,
+                    ),
+                    {
+                        method: 'POST',
+                        headers: {
+                            Accept: 'application/json',
+                            'X-XSRF-TOKEN': getXsrfToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body,
+                    },
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                        `"${file.name}" could not be uploaded. Use a JPG, PNG or WebP under ${TESTIMONIAL_IMAGE_MAX_KB} KB.`,
+                    );
+                }
+
+                added.push(((await response.json()) as { path: string }).path);
+            }
+        } catch (error) {
+            setUploadError(
+                error instanceof Error ? error.message : 'Upload failed.',
+            );
+        } finally {
+            if (added.length > 0) {
+                setImages([...images, ...added]);
+            }
+
+            setUploading(false);
+        }
+    };
+
+    const move = (from: number, to: number) => {
+        const next = [...images];
+        [next[from], next[to]] = [next[to], next[from]];
+        setImages(next);
+    };
+
+    return (
+        <div className="space-y-2.5">
+            <div>
+                <label className={labelClass}>Show testimonials as</label>
+                <div className="grid grid-cols-2 gap-2">
+                    {(
+                        [
+                            ['text', 'Text reviews'],
+                            ['image', 'Pictures (carousel)'],
+                        ] as const
+                    ).map(([value, label]) => (
+                        <button
+                            key={value}
+                            type="button"
+                            onClick={() =>
+                                setSec({
+                                    testimonials: {
+                                        ...testimonials,
+                                        mode: value,
+                                    },
+                                })
+                            }
+                            aria-pressed={
+                                (testimonials.mode ?? 'text') === value
+                            }
+                            className={`h-9 rounded-lg border text-sm font-medium transition ${
+                                (testimonials.mode ?? 'text') === value
+                                    ? 'border-[#c8102e] bg-red-50 text-[#c8102e]'
+                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {testimonials.mode === 'image' && (
+                <div className="space-y-2.5">
+                    <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500">
+                        <p className="mb-1 text-xs font-semibold text-slate-600">
+                            Suggested image sizes
+                        </p>
+                        <ul className="list-disc space-y-0.5 pl-4">
+                            <li>
+                                <strong>
+                                    File size: 50 KB is ideal, 100 KB is the
+                                    maximum
+                                </strong>{' '}
+                                per image. Export as WebP or JPG at medium
+                                quality to get there.
+                            </li>
+                            <li>
+                                <strong>Phone screenshots</strong> (chats,
+                                reviews, order proof): any phone size works; 720
+                                × 1600 or 1080 × 1920 (tall, about 9:16 to 9:20)
+                                fits in 100 KB as WebP.
+                            </li>
+                            <li>
+                                <strong>Product or customer photos</strong>: 800
+                                × 800 (square) or 1000 × 750 (4:3 landscape).
+                            </li>
+                            <li>
+                                At least 600 px on the shorter side so text
+                                stays readable. JPG, PNG or WebP, up to{' '}
+                                {TESTIMONIAL_IMAGE_LIMIT} images.
+                            </li>
+                            <li>
+                                Nothing is cropped: each image shows whole at
+                                the same height, so mixed sizes are fine.
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                        {images.map((path, i) => (
+                            <div
+                                key={path}
+                                className="group relative h-28 w-20 overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
+                            >
+                                <img
+                                    src={path}
+                                    alt=""
+                                    className="size-full object-contain"
+                                />
+                                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-black/60 px-1 py-0.5 text-white">
+                                    <button
+                                        type="button"
+                                        disabled={i === 0}
+                                        onClick={() => move(i, i - 1)}
+                                        className="rounded p-0.5 hover:bg-white/20 disabled:opacity-30"
+                                        aria-label="Move earlier"
+                                    >
+                                        <ArrowLeft className="size-3" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setImages(
+                                                images.filter(
+                                                    (_, j) => j !== i,
+                                                ),
+                                            )
+                                        }
+                                        className="rounded p-0.5 hover:bg-red-500"
+                                        aria-label="Remove image"
+                                    >
+                                        <Trash2 className="size-3" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={i === images.length - 1}
+                                        onClick={() => move(i, i + 1)}
+                                        className="rounded p-0.5 hover:bg-white/20 disabled:opacity-30"
+                                        aria-label="Move later"
+                                    >
+                                        <ArrowRight className="size-3" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        <button
+                            type="button"
+                            disabled={
+                                uploading ||
+                                images.length >= TESTIMONIAL_IMAGE_LIMIT
+                            }
+                            onClick={() => fileRef.current?.click()}
+                            className="flex h-28 w-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 text-[10px] text-slate-500 hover:border-[#c8102e] hover:text-[#c8102e] disabled:opacity-50"
+                        >
+                            <Upload className="size-4" />
+                            {uploading ? 'Uploading…' : 'Add images'}
+                        </button>
+                        <input
+                            ref={fileRef}
+                            type="file"
+                            multiple
+                            accept="image/jpeg,image/png,image/webp"
+                            className="hidden"
+                            onChange={(e) => {
+                                const files = Array.from(e.target.files ?? []);
+
+                                if (files.length > 0) {
+                                    void upload(files);
+                                }
+
+                                e.target.value = '';
+                            }}
+                        />
+                    </div>
+                    <p className={hintClass}>
+                        {images.length} of {TESTIMONIAL_IMAGE_LIMIT} images.
+                        They appear in this order, as a swipeable carousel.
+                    </p>
+                    {uploadError && (
+                        <p className="text-xs text-red-600">{uploadError}</p>
+                    )}
+                </div>
+            )}
+        </div>
     );
 }

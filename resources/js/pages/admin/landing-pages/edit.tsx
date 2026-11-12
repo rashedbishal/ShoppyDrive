@@ -15,6 +15,7 @@ import {
     DeliveryEditor,
     DescriptionExtras,
     HeroExtras,
+    TestimonialImagesEditor,
 } from '@/components/admin/landing-builder-fields';
 import type {
     BuilderMedia,
@@ -58,6 +59,8 @@ type Sections = {
     testimonials: {
         enabled: boolean;
         title: string;
+        mode?: 'text' | 'image';
+        images?: string[];
         items: { name: string; rating: number; text: string }[];
     };
     faq: {
@@ -681,136 +684,165 @@ export default function LandingPageEdit({
                                 className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
-                        <AnimatePresence initial={false}>
-                            {sec.testimonials.items.map((item, i) => (
-                                <AdminReveal key={testimonialRowKeys.keys[i]}>
-                                    <div className="space-y-2 rounded-lg border border-slate-100 p-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-semibold text-slate-600">
-                                                Review #{i + 1}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    testimonialRowKeys.removeKey(
-                                                        i,
-                                                    );
-                                                    setSec({
-                                                        testimonials: {
-                                                            ...sec.testimonials,
-                                                            items: sec.testimonials.items.filter(
-                                                                (_, j) =>
-                                                                    j !== i,
-                                                            ),
-                                                        },
-                                                    });
-                                                }}
-                                                className="text-slate-400 hover:text-red-500"
-                                            >
-                                                <Trash2 className="size-3.5" />
-                                            </button>
-                                        </div>
-                                        <input
-                                            maxLength={60}
-                                            className={inputClass}
-                                            value={item.name}
-                                            onChange={(e) => {
-                                                const items = [
-                                                    ...sec.testimonials.items,
-                                                ];
-                                                items[i] = {
-                                                    ...items[i],
-                                                    name: e.target.value,
-                                                };
-                                                setSec({
-                                                    testimonials: {
-                                                        ...sec.testimonials,
-                                                        items,
-                                                    },
-                                                });
-                                            }}
-                                            placeholder="Customer name"
-                                        />
-                                        <CharCount
-                                            value={item.name}
-                                            max={60}
-                                            className="mt-0.5 block text-right text-[11px] leading-none"
-                                        />
-                                        <Select
-                                            selectClassName={inputClass}
-                                            value={item.rating}
-                                            onChange={(e) => {
-                                                const items = [
-                                                    ...sec.testimonials.items,
-                                                ];
-                                                items[i] = {
-                                                    ...items[i],
-                                                    rating: Number(
-                                                        e.target.value,
-                                                    ),
-                                                };
-                                                setSec({
-                                                    testimonials: {
-                                                        ...sec.testimonials,
-                                                        items,
-                                                    },
-                                                });
-                                            }}
+                        <TestimonialImagesEditor
+                            sec={sec}
+                            setSec={setSec}
+                            pageId={page.id}
+                        />
+                        {(sec.testimonials.mode ?? 'text') === 'text' && (
+                            <>
+                                <AnimatePresence initial={false}>
+                                    {sec.testimonials.items.map((item, i) => (
+                                        <AdminReveal
+                                            key={testimonialRowKeys.keys[i]}
                                         >
-                                            {[5, 4, 3, 2, 1].map((r) => (
-                                                <option key={r} value={r}>
-                                                    {r} Stars
-                                                </option>
-                                            ))}
-                                        </Select>
-                                        <textarea
-                                            maxLength={400}
-                                            rows={2}
-                                            className={textareaClass}
-                                            value={item.text}
-                                            onChange={(e) => {
-                                                const items = [
+                                            <div className="space-y-2 rounded-lg border border-slate-100 p-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-semibold text-slate-600">
+                                                        Review #{i + 1}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            testimonialRowKeys.removeKey(
+                                                                i,
+                                                            );
+                                                            setSec({
+                                                                testimonials: {
+                                                                    ...sec.testimonials,
+                                                                    items: sec.testimonials.items.filter(
+                                                                        (
+                                                                            _,
+                                                                            j,
+                                                                        ) =>
+                                                                            j !==
+                                                                            i,
+                                                                    ),
+                                                                },
+                                                            });
+                                                        }}
+                                                        className="text-slate-400 hover:text-red-500"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                                <input
+                                                    maxLength={60}
+                                                    className={inputClass}
+                                                    value={item.name}
+                                                    onChange={(e) => {
+                                                        const items = [
+                                                            ...sec.testimonials
+                                                                .items,
+                                                        ];
+                                                        items[i] = {
+                                                            ...items[i],
+                                                            name: e.target
+                                                                .value,
+                                                        };
+                                                        setSec({
+                                                            testimonials: {
+                                                                ...sec.testimonials,
+                                                                items,
+                                                            },
+                                                        });
+                                                    }}
+                                                    placeholder="Customer name"
+                                                />
+                                                <CharCount
+                                                    value={item.name}
+                                                    max={60}
+                                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                                />
+                                                <Select
+                                                    selectClassName={inputClass}
+                                                    value={item.rating}
+                                                    onChange={(e) => {
+                                                        const items = [
+                                                            ...sec.testimonials
+                                                                .items,
+                                                        ];
+                                                        items[i] = {
+                                                            ...items[i],
+                                                            rating: Number(
+                                                                e.target.value,
+                                                            ),
+                                                        };
+                                                        setSec({
+                                                            testimonials: {
+                                                                ...sec.testimonials,
+                                                                items,
+                                                            },
+                                                        });
+                                                    }}
+                                                >
+                                                    {[5, 4, 3, 2, 1].map(
+                                                        (r) => (
+                                                            <option
+                                                                key={r}
+                                                                value={r}
+                                                            >
+                                                                {r} Stars
+                                                            </option>
+                                                        ),
+                                                    )}
+                                                </Select>
+                                                <textarea
+                                                    maxLength={400}
+                                                    rows={2}
+                                                    className={textareaClass}
+                                                    value={item.text}
+                                                    onChange={(e) => {
+                                                        const items = [
+                                                            ...sec.testimonials
+                                                                .items,
+                                                        ];
+                                                        items[i] = {
+                                                            ...items[i],
+                                                            text: e.target
+                                                                .value,
+                                                        };
+                                                        setSec({
+                                                            testimonials: {
+                                                                ...sec.testimonials,
+                                                                items,
+                                                            },
+                                                        });
+                                                    }}
+                                                    placeholder="Review text…"
+                                                />
+                                                <CharCount
+                                                    value={item.text}
+                                                    max={400}
+                                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                                />
+                                            </div>
+                                        </AdminReveal>
+                                    ))}
+                                </AnimatePresence>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setSec({
+                                            testimonials: {
+                                                ...sec.testimonials,
+                                                items: [
                                                     ...sec.testimonials.items,
-                                                ];
-                                                items[i] = {
-                                                    ...items[i],
-                                                    text: e.target.value,
-                                                };
-                                                setSec({
-                                                    testimonials: {
-                                                        ...sec.testimonials,
-                                                        items,
+                                                    {
+                                                        name: '',
+                                                        rating: 5,
+                                                        text: '',
                                                     },
-                                                });
-                                            }}
-                                            placeholder="Review text…"
-                                        />
-                                        <CharCount
-                                            value={item.text}
-                                            max={400}
-                                            className="mt-0.5 block text-right text-[11px] leading-none"
-                                        />
-                                    </div>
-                                </AdminReveal>
-                            ))}
-                        </AnimatePresence>
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setSec({
-                                    testimonials: {
-                                        ...sec.testimonials,
-                                        items: [
-                                            ...sec.testimonials.items,
-                                            { name: '', rating: 5, text: '' },
-                                        ],
-                                    },
-                                })
-                            }
-                            className="flex items-center gap-1 text-xs text-[#c8102e] hover:underline"
-                        >
-                            <Plus className="size-3.5" /> Add review
-                        </button>
+                                                ],
+                                            },
+                                        })
+                                    }
+                                    className="flex items-center gap-1 text-xs text-[#c8102e] hover:underline"
+                                >
+                                    <Plus className="size-3.5" /> Add review
+                                </button>
+                            </>
+                        )}
                     </SectionWrap>
 
                     {/* FAQ */}

@@ -271,6 +271,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::patch('landing-pages/bulk-status', [AdminLandingPageController::class, 'updateStatusMany'])->name('landing-pages.updateStatusMany')->middleware(AdminSections::middleware('landing_pages', 'update'));
     Route::delete('landing-pages/bulk-delete', [AdminLandingPageController::class, 'destroyMany'])->name('landing-pages.destroyMany')->middleware(AdminSections::middleware('landing_pages', 'delete'));
     Route::post('landing-pages/{landingPage}/slides', [AdminLandingPageController::class, 'uploadSlide'])->name('landing-pages.slides.store')->middleware(AdminSections::middleware('landing_pages', 'update'));
+    Route::post('landing-pages/{landingPage}/testimonial-images', [AdminLandingPageController::class, 'uploadTestimonialImage'])->name('landing-pages.testimonial-images.store')->middleware(AdminSections::middleware('landing_pages', 'update'));
     $guardResource(Route::resource('landing-pages', AdminLandingPageController::class)->except(['show'])->parameters(['landing-pages' => 'landingPage']), 'landing_pages');
 
     Route::get('received-sms', [ReceivedSmsController::class, 'index'])->name('received-sms.index')->middleware(AdminSections::middleware('received_sms', 'view'));
