@@ -73,6 +73,7 @@ export default function Header(): React.JSX.Element {
     const wishlistCount = useWishlistStore((state) => state.productIds.length);
     const cartItems = useCartStore((state) => state.items);
     const [isScrolled, setIsScrolled] = useState(false);
+    const [isNavHidden, setIsNavHidden] = useState(false);
     const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [hoveredNavKey, setHoveredNavKey] = useState<string | null>(null);
@@ -156,6 +157,60 @@ export default function Header(): React.JSX.Element {
     }, []);
 
     useEffect(() => {
+        // Hide the category/page-link bar while scrolling down and bring it back on
+        // a scroll up, reclaiming vertical space. Small deltas are ignored, and the
+        // bar is pinned open near the top of the page.
+        const HIDE_AFTER_PX = 140;
+        const SHOW_BEFORE_PX = 60;
+        const DIRECTION_DELTA_PX = 10;
+        // Collapsing the bar changes the page height and can itself fire scroll
+        // events (notably at the very bottom), so changes are debounced briefly.
+        const SETTLE_MS = 350;
+
+        let lastY = window.scrollY;
+        let lastToggleAt = 0;
+
+        const handleScroll = (): void => {
+            const y = window.scrollY;
+            const delta = y - lastY;
+
+            if (y < SHOW_BEFORE_PX) {
+                lastY = y;
+                setIsNavHidden(false);
+
+                return;
+            }
+
+            if (
+                Math.abs(delta) < DIRECTION_DELTA_PX ||
+                performance.now() - lastToggleAt < SETTLE_MS
+            ) {
+                return;
+            }
+
+            lastY = y;
+
+            if (delta > 0 && y > HIDE_AFTER_PX) {
+                lastToggleAt = performance.now();
+                setIsNavHidden(true);
+            } else if (delta < 0) {
+                const atBottom =
+                    y + window.innerHeight >=
+                    document.documentElement.scrollHeight - 4;
+
+                if (!atBottom) {
+                    lastToggleAt = performance.now();
+                    setIsNavHidden(false);
+                }
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
         setMobileSearchOpen(false);
     }, [page.url]);
@@ -175,6 +230,9 @@ export default function Header(): React.JSX.Element {
         return () => document.removeEventListener('keydown', onKey);
     }, [mobileSearchOpen]);
 
+    // Never collapse the bar while its mega menu is open.
+    const shouldHideNav = isNavHidden && !isMegaMenuOpen;
+
     const siteName = settings?.site_name ?? 'ShoppyDrive';
     const announcementBar = page.props.homepage_settings?.['announcement_bar'];
 
@@ -188,42 +246,52 @@ export default function Header(): React.JSX.Element {
             >
                 {/* Top utility bar */}
                 {announcementBar?.is_visible !== false && (
-                    <div className="hidden bg-[var(--color-secondary)] text-white lg:block">
-                        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 text-xs sm:px-6 lg:px-8">
-                            <div className="flex items-center gap-5">
-                                {announcementBar?.title ? (
-                                    <span className="flex items-center gap-1.5 text-white/70">
-                                        <Package className="size-3.5" />
-                                        {announcementBar.title}
-                                    </span>
-                                ) : null}
-                                {announcementBar?.metadata?.phone ? (
-                                    <a
-                                        href={`tel:${announcementBar.metadata.phone}`}
-                                        className="text-white/70 transition hover:text-[var(--color-accent)]"
-                                    >
-                                        {announcementBar.metadata.phone}
-                                    </a>
-                                ) : null}
-                            </div>
-                            <div className="flex items-center gap-5">
-                                {supportItems.map((item) => (
-                                    <Link
-                                        key={item.label}
-                                        href={item.href}
-                                        className="text-white/70 transition hover:text-white"
-                                    >
-                                        {item.label}
-                                    </Link>
-                                ))}
-                                {announcementBar?.metadata?.email ? (
-                                    <a
-                                        href={`mailto:${announcementBar.metadata.email}`}
-                                        className="text-white/70 transition hover:text-white"
-                                    >
-                                        {announcementBar.metadata.email}
-                                    </a>
-                                ) : null}
+                    <div
+                        className={cn(
+                            'hidden grid-rows-[1fr] bg-[var(--color-secondary)] text-white transition-[grid-template-rows,opacity] duration-300 ease-out lg:grid',
+                            shouldHideNav &&
+                                'pointer-events-none grid-rows-[0fr] opacity-0',
+                        )}
+                        aria-hidden={shouldHideNav || undefined}
+                        inert={shouldHideNav || undefined}
+                    >
+                        <div className="min-h-0 overflow-hidden">
+                            <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 text-xs sm:px-6 lg:px-8">
+                                <div className="flex items-center gap-5">
+                                    {announcementBar?.title ? (
+                                        <span className="flex items-center gap-1.5 text-white/70">
+                                            <Package className="size-3.5" />
+                                            {announcementBar.title}
+                                        </span>
+                                    ) : null}
+                                    {announcementBar?.metadata?.phone ? (
+                                        <a
+                                            href={`tel:${announcementBar.metadata.phone}`}
+                                            className="text-white/70 transition hover:text-[var(--color-accent)]"
+                                        >
+                                            {announcementBar.metadata.phone}
+                                        </a>
+                                    ) : null}
+                                </div>
+                                <div className="flex items-center gap-5">
+                                    {supportItems.map((item) => (
+                                        <Link
+                                            key={item.label}
+                                            href={item.href}
+                                            className="text-white/70 transition hover:text-white"
+                                        >
+                                            {item.label}
+                                        </Link>
+                                    ))}
+                                    {announcementBar?.metadata?.email ? (
+                                        <a
+                                            href={`mailto:${announcementBar.metadata.email}`}
+                                            className="text-white/70 transition hover:text-white"
+                                        >
+                                            {announcementBar.metadata.email}
+                                        </a>
+                                    ) : null}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -400,7 +468,7 @@ export default function Header(): React.JSX.Element {
 
                             {/* Auth */}
                             {user ? (
-                                <DropdownMenu>
+                                <DropdownMenu modal={false}>
                                     <DropdownMenuTrigger asChild>
                                         <button
                                             type="button"
@@ -499,91 +567,109 @@ export default function Header(): React.JSX.Element {
                 </div>
 
                 {/* Navigation bar */}
-                <div className="relative z-10 hidden border-b border-[var(--color-border)] bg-white/95 lg:block">
-                    <nav
-                        className="mx-auto flex h-12 max-w-7xl items-center gap-1 px-4 sm:px-6 lg:px-8"
-                        onMouseLeave={() => setHoveredNavKey(null)}
+                <div
+                    className={cn(
+                        'relative z-10 hidden grid-rows-[1fr] transition-[grid-template-rows,opacity] duration-300 ease-out lg:grid',
+                        shouldHideNav &&
+                            'pointer-events-none grid-rows-[0fr] opacity-0',
+                    )}
+                    aria-hidden={shouldHideNav || undefined}
+                    inert={shouldHideNav || undefined}
+                >
+                    <div
+                        className={cn(
+                            'min-h-0 border-b border-[var(--color-border)] bg-white/95 transition-[border-color] duration-300',
+                            shouldHideNav &&
+                                'overflow-hidden border-transparent',
+                        )}
                     >
-                        <div
-                            className="relative"
-                            onMouseEnter={() => {
-                                setHoveredNavKey('categories');
-                                openMegaMenu();
-                            }}
-                            onMouseLeave={scheduleMegaMenuClose}
+                        <nav
+                            className="mx-auto flex h-12 max-w-7xl items-center gap-1 px-4 sm:px-6 lg:px-8"
+                            onMouseLeave={() => setHoveredNavKey(null)}
                         >
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setIsMegaMenuOpen((prev) => !prev)
-                                }
-                                aria-expanded={isMegaMenuOpen}
-                                className={cn(
-                                    'relative flex h-9 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors duration-200',
-                                    navPillKey === 'categories'
-                                        ? 'text-[var(--color-primary)]'
-                                        : 'text-[var(--color-text-primary)]',
-                                )}
+                            <div
+                                className="relative"
+                                onMouseEnter={() => {
+                                    setHoveredNavKey('categories');
+                                    openMegaMenu();
+                                }}
+                                onMouseLeave={scheduleMegaMenuClose}
                             >
-                                {navPillKey === 'categories' && (
-                                    <NavHoverPill />
-                                )}
-                                <Menu
-                                    className={cn(
-                                        'relative z-10 size-4 transition-transform duration-300',
-                                        isMegaMenuOpen && 'rotate-90',
-                                    )}
-                                />
-                                <span className="relative z-10">
-                                    All Categories
-                                </span>
-                            </button>
-                            <MegaMenu
-                                isOpen={isMegaMenuOpen}
-                                onClose={() => setIsMegaMenuOpen(false)}
-                            />
-                        </div>
-                        <div className="mx-2 h-5 w-px bg-[var(--color-border)]" />
-                        {primaryNavLinks.map((item) => {
-                            const isActive = isNavLinkActive(item.href);
-
-                            return (
-                                <Link
-                                    key={item.label}
-                                    href={item.href}
-                                    onMouseEnter={() =>
-                                        setHoveredNavKey(item.href)
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setIsMegaMenuOpen((prev) => !prev)
                                     }
-                                    onFocus={() => setHoveredNavKey(item.href)}
-                                    onBlur={() => setHoveredNavKey(null)}
+                                    aria-expanded={isMegaMenuOpen}
                                     className={cn(
-                                        'relative flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors duration-200',
-                                        isActive || navPillKey === item.href
+                                        'relative flex h-9 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors duration-200',
+                                        navPillKey === 'categories'
                                             ? 'text-[var(--color-primary)]'
-                                            : 'text-[var(--color-text-secondary)]',
+                                            : 'text-[var(--color-text-primary)]',
                                     )}
                                 >
-                                    {navPillKey === item.href && (
+                                    {navPillKey === 'categories' && (
                                         <NavHoverPill />
                                     )}
+                                    <Menu
+                                        className={cn(
+                                            'relative z-10 size-4 transition-transform duration-300',
+                                            isMegaMenuOpen && 'rotate-90',
+                                        )}
+                                    />
                                     <span className="relative z-10">
-                                        {item.label}
+                                        All Categories
                                     </span>
-                                    {isActive && (
-                                        <motion.span
-                                            layoutId="nav-active-indicator"
-                                            className="absolute inset-x-4 -bottom-[7px] h-0.5 rounded-full bg-[var(--color-primary)]"
-                                            transition={{
-                                                type: 'spring',
-                                                stiffness: 500,
-                                                damping: 40,
-                                            }}
-                                        />
-                                    )}
-                                </Link>
-                            );
-                        })}
-                    </nav>
+                                </button>
+                                <MegaMenu
+                                    isOpen={isMegaMenuOpen}
+                                    onClose={() => setIsMegaMenuOpen(false)}
+                                />
+                            </div>
+                            <div className="mx-2 h-5 w-px bg-[var(--color-border)]" />
+                            {primaryNavLinks.map((item) => {
+                                const isActive = isNavLinkActive(item.href);
+
+                                return (
+                                    <Link
+                                        key={item.label}
+                                        href={item.href}
+                                        onMouseEnter={() =>
+                                            setHoveredNavKey(item.href)
+                                        }
+                                        onFocus={() =>
+                                            setHoveredNavKey(item.href)
+                                        }
+                                        onBlur={() => setHoveredNavKey(null)}
+                                        className={cn(
+                                            'relative flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors duration-200',
+                                            isActive || navPillKey === item.href
+                                                ? 'text-[var(--color-primary)]'
+                                                : 'text-[var(--color-text-secondary)]',
+                                        )}
+                                    >
+                                        {navPillKey === item.href && (
+                                            <NavHoverPill />
+                                        )}
+                                        <span className="relative z-10">
+                                            {item.label}
+                                        </span>
+                                        {isActive && (
+                                            <motion.span
+                                                layoutId="nav-active-indicator"
+                                                className="absolute inset-x-4 -bottom-[7px] h-0.5 rounded-full bg-[var(--color-primary)]"
+                                                transition={{
+                                                    type: 'spring',
+                                                    stiffness: 500,
+                                                    damping: 40,
+                                                }}
+                                            />
+                                        )}
+                                    </Link>
+                                );
+                            })}
+                        </nav>
+                    </div>
                 </div>
             </header>
 

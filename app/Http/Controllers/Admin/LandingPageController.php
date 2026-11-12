@@ -8,6 +8,8 @@ use App\Concerns\UpdatesStatusInBulk;
 use App\Http\Controllers\Controller;
 use App\Models\LandingPage;
 use App\Models\Product;
+use App\Services\ImageOptimizer;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -78,6 +80,10 @@ class LandingPageController extends Controller
             'page' => $landingPage->load('product:id,name,price,free_delivery'),
             'sections' => $landingPage->getSections(),
             'products' => $products,
+            // The page's saved product: its images feed the hero carousel and
+            // its variants feed the combo builder.
+            'productMedia' => $landingPage->product?->media()->get(['id', 'path', 'type'])->values() ?? [],
+            'productVariants' => $landingPage->product?->variants()->get(['id', 'sku', 'price', 'stock_quantity', 'attributes'])->values() ?? [],
         ]);
     }
 
@@ -91,6 +97,7 @@ class LandingPageController extends Controller
             'max_order_quantity' => ['nullable', 'integer', 'min:1', 'max:100'],
             'sections' => ['nullable', 'array'],
             'sections.description.custom_content' => ['nullable', 'string', 'max:20000'],
+            ...$this->sectionRules((int) $request->input('product_id')),
         ]);
 
         $landingPage->update([
@@ -103,6 +110,53 @@ class LandingPageController extends Controller
         ]);
 
         return back()->with('success', 'Landing page saved.');
+    }
+
+    /**
+     * Rules for the structured parts of the page builder. Everything else in
+     * `sections` stays free-form text, as before.
+     *
+     * @return array<string, mixed>
+     */
+    private function sectionRules(int $productId): array
+    {
+        $variantExists = Rule::exists('product_variants', 'id')->where('product_id', $productId);
+
+        return [
+            'sections.hero.features' => ['nullable', 'array', 'max:3'],
+            'sections.hero.features.*.title' => ['nullable', 'string', 'max:80'],
+            'sections.hero.features.*.text' => ['nullable', 'string', 'max:200'],
+            'sections.hero.carousel.animation' => ['nullable', Rule::in(['fade', 'slide', 'zoom', 'flip', 'blur'])],
+            'sections.hero.carousel.interval_seconds' => ['nullable', 'numeric', 'min:2', 'max:20'],
+            'sections.hero.carousel.transition_ms' => ['nullable', 'integer', 'min:200', 'max:3000'],
+            'sections.hero.carousel.hidden_media_ids' => ['nullable', 'array', 'max:50'],
+            'sections.hero.carousel.hidden_media_ids.*' => ['integer'],
+            'sections.hero.carousel.extra_slides' => ['nullable', 'array', 'max:12'],
+            'sections.hero.carousel.extra_slides.*' => ['string', 'max:500', 'regex:#^/storage/landing-slides/#'],
+            'sections.delivery.areas' => ['nullable', 'array', 'max:30'],
+            'sections.delivery.areas.*' => ['nullable', 'string', 'max:60'],
+            'sections.contact.phone' => ['nullable', 'string', 'max:40'],
+            'sections.contact.email' => ['nullable', 'email', 'max:255'],
+            'sections.combos' => ['nullable', 'array', 'max:12'],
+            'sections.combos.*.id' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9_-]+$/', 'distinct'],
+            'sections.combos.*.name' => ['required', 'string', 'max:80'],
+            'sections.combos.*.description' => ['nullable', 'string', 'max:200'],
+            'sections.combos.*.badge' => ['nullable', 'string', 'max:30'],
+            'sections.combos.*.price' => ['nullable', 'numeric', 'min:0', 'max:10000000'],
+            'sections.combos.*.items' => ['required', 'array', 'min:1', 'max:10'],
+            'sections.combos.*.items.*.variant_id' => ['required', 'integer', $variantExists],
+            'sections.combos.*.items.*.quantity' => ['required', 'integer', 'min:1', 'max:10'],
+        ];
+    }
+
+    /** Stores one extra hero-carousel image and returns its public path for the page builder to save. */
+    public function uploadSlide(Request $request, LandingPage $landingPage): JsonResponse
+    {
+        $request->validate(['image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:8192']]);
+
+        return response()->json([
+            'path' => '/storage/'.app(ImageOptimizer::class)->store($request->file('image'), 'landing-slides'),
+        ]);
     }
 
     public function destroy(LandingPage $landingPage): RedirectResponse

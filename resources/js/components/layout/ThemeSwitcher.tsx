@@ -14,7 +14,7 @@ export default function ThemeSwitcher(): React.JSX.Element {
     const { theme, setTheme } = useSiteTheme();
 
     return (
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
                 <button
                     type="button"
