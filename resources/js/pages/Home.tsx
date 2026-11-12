@@ -1,4 +1,4 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { PanInfo } from 'framer-motion';
 import {
@@ -21,12 +21,12 @@ import {
     useState,
     useSyncExternalStore,
 } from 'react';
-import type { FormEvent } from 'react';
 import { BrandCard } from '@/components/shared/BrandCard';
 import type { BrandCardData } from '@/components/shared/BrandCard';
 import { BundleCard } from '@/components/shared/BundleCard';
 import type { ProductBundle } from '@/components/shared/BundleCard';
 import { LazyCategoryIcon } from '@/components/shared/LazyCategoryIcon';
+import NewsletterThankYouModal from '@/components/shared/NewsletterThankYouModal';
 import {
     ProductCard,
     ProductCardSkeleton,
@@ -36,6 +36,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
+import { useNewsletterSubscribe } from '@/hooks/use-newsletter-subscribe';
 import { resolveCategoryColor } from '@/lib/category-colors';
 import {
     MOTION,
@@ -917,20 +918,12 @@ function FlashSaleCountdown({
 }
 
 function NewsletterForm(): React.JSX.Element {
-    const form = useForm<{ email: string }>({ email: '' });
-    const [statusMessage, setStatusMessage] = useState('');
-
-    const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
-        event.preventDefault();
-
-        form.post('/newsletter/subscribe', {
-            preserveScroll: true,
-            onSuccess: () => {
-                setStatusMessage('Thanks! You are now subscribed.');
-                form.reset('email');
-            },
-        });
-    };
+    const {
+        form,
+        submit: handleSubmit,
+        thankYou,
+        closeThankYou,
+    } = useNewsletterSubscribe();
 
     return (
         <Card className="selection-light overflow-hidden border-[var(--color-border)] bg-[var(--color-secondary)] text-white shadow-[var(--shadow-card-hover)]">
@@ -977,18 +970,17 @@ function NewsletterForm(): React.JSX.Element {
                         Subscribe
                     </Button>
 
-                    <p
-                        className={cn(
-                            'min-h-5 text-sm text-white/75',
-                            statusMessage ? 'text-emerald-300' : '',
-                        )}
-                        aria-live="polite"
-                    >
-                        {statusMessage ||
-                            'Unsubscribe anytime via the link in our emails. No spam, only useful updates.'}
+                    <p className="min-h-5 text-sm text-white/75">
+                        Unsubscribe anytime via the link in our emails. No spam,
+                        only useful updates.
                     </p>
                 </form>
             </CardContent>
+            <NewsletterThankYouModal
+                status={thankYou?.status ?? null}
+                email={thankYou?.email ?? ''}
+                onClose={closeThankYou}
+            />
         </Card>
     );
 }

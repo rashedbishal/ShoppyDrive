@@ -17,6 +17,11 @@ use Throwable;
 
 class NewsletterController extends Controller
 {
+    /**
+     * Also flashes `newsletter.status` (subscribed / resubscribed /
+     * already_subscribed) to the page, where the storefront's newsletter
+     * forms show the matching thank-you modal (NewsletterThankYouModal).
+     */
     public function subscribe(Request $request): RedirectResponse
     {
         // RFC 5321: an address is at most 254 characters, 64 of them before the @.
@@ -31,6 +36,8 @@ class NewsletterController extends Controller
 
         if ($subscriber) {
             if ($subscriber->is_active) {
+                Inertia::flash('newsletter', ['status' => 'already_subscribed']);
+
                 return back()->with('newsletter_status', 'already_subscribed');
             }
 
@@ -44,6 +51,8 @@ class NewsletterController extends Controller
                 'unsubscribed_at' => null,
                 'token' => Str::random(64),
             ]);
+
+            Inertia::flash('newsletter', ['status' => 'resubscribed']);
         } else {
             NewsletterSubscriber::create([
                 'email' => $request->email,
@@ -51,6 +60,8 @@ class NewsletterController extends Controller
                 'is_active' => true,
                 'subscribed_at' => now(),
             ]);
+
+            Inertia::flash('newsletter', ['status' => 'subscribed']);
         }
 
         return back()->with('newsletter_status', 'subscribed');

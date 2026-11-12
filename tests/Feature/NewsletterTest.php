@@ -12,6 +12,8 @@ test('user can subscribe with a new email', function (): void {
     $response = $this->post('/newsletter/subscribe', ['email' => 'test@example.com']);
 
     $response->assertRedirect();
+    // The page shows the "Thank you for subscribing" modal from this.
+    $response->assertInertiaFlash('newsletter.status', 'subscribed');
     $this->assertDatabaseHas('newsletter_subscribers', [
         'email' => 'test@example.com',
         'is_active' => true,
@@ -30,6 +32,7 @@ test('subscribing with an existing active email returns already_subscribed statu
 
     $response->assertRedirect();
     $response->assertSessionHas('newsletter_status', 'already_subscribed');
+    $response->assertInertiaFlash('newsletter.status', 'already_subscribed');
     $this->assertDatabaseCount('newsletter_subscribers', 1);
 });
 
@@ -42,7 +45,8 @@ test('resubscribing an inactive email reactivates it', function (): void {
         'unsubscribed_at' => now(),
     ]);
 
-    $this->post('/newsletter/subscribe', ['email' => 'test@example.com']);
+    $this->post('/newsletter/subscribe', ['email' => 'test@example.com'])
+        ->assertInertiaFlash('newsletter.status', 'resubscribed');
 
     $this->assertDatabaseHas('newsletter_subscribers', [
         'email' => 'test@example.com',
@@ -273,4 +277,12 @@ test('an email with a 64 character local part is still accepted', function (): v
     $this->post('/newsletter/subscribe', ['email' => $email])->assertSessionHasNoErrors();
 
     $this->assertDatabaseHas('newsletter_subscribers', ['email' => $email]);
+});
+
+test('an invalid email gets a validation error and no thank-you', function (): void {
+    $this->post('/newsletter/subscribe', ['email' => 'not-an-email'])
+        ->assertSessionHasErrors('email')
+        ->assertInertiaFlashMissing('newsletter');
+
+    $this->assertDatabaseCount('newsletter_subscribers', 0);
 });

@@ -1,4 +1,4 @@
-import { Link, usePage, useForm } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
     Facebook,
@@ -12,16 +12,15 @@ import {
     Youtube,
     Zap,
 } from 'lucide-react';
-import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { TikTokLogo, XLogo } from '@/components/icons/brand-icons';
 import {
     footerCustomerLinks,
     footerQuickLinks,
 } from '@/components/layout/navigation';
+import NewsletterThankYouModal from '@/components/shared/NewsletterThankYouModal';
+import { useNewsletterSubscribe } from '@/hooks/use-newsletter-subscribe';
 import type { SharedPageProps } from '@/types';
-
-type NewsletterFormData = { email: string };
 
 /**
  * BIZ-032: the delivery and support badges come from the real settings
@@ -64,8 +63,12 @@ const policyLinks = [
 
 export default function Footer(): React.JSX.Element {
     const { settings } = usePage<SharedPageProps>().props;
-    const form = useForm<NewsletterFormData>({ email: '' });
-    const [statusMsg, setStatusMsg] = useState('');
+    const {
+        form,
+        submit: handleSubmit,
+        thankYou,
+        closeThankYou,
+    } = useNewsletterSubscribe();
 
     const socialLinks = [
         {
@@ -90,18 +93,6 @@ export default function Footer(): React.JSX.Element {
             Icon: TikTokLogo,
         },
     ].filter((s) => typeof s.href === 'string' && s.href.length > 0);
-
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
-        e.preventDefault();
-
-        form.post('/newsletter/subscribe', {
-            preserveScroll: true,
-            onSuccess: () => {
-                setStatusMsg("You're subscribed!");
-                form.reset('email');
-            },
-        });
-    };
 
     return (
         <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface)]">
@@ -272,6 +263,10 @@ export default function Footer(): React.JSX.Element {
                                     }
                                     className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none"
                                     required
+                                    aria-label="Email address"
+                                    aria-invalid={
+                                        form.errors.email ? true : undefined
+                                    }
                                 />
                                 <button
                                     type="submit"
@@ -283,9 +278,12 @@ export default function Footer(): React.JSX.Element {
                                         : 'Subscribe'}
                                 </button>
                             </div>
-                            {statusMsg ? (
-                                <p className="text-xs font-medium text-[var(--color-success)]">
-                                    {statusMsg}
+                            {form.errors.email ? (
+                                <p
+                                    className="text-xs font-medium text-[var(--color-error)]"
+                                    role="alert"
+                                >
+                                    {form.errors.email}
                                 </p>
                             ) : (
                                 <p className="text-xs text-[var(--color-text-muted)]">
@@ -356,6 +354,12 @@ export default function Footer(): React.JSX.Element {
                     </div>
                 </div>
             </div>
+
+            <NewsletterThankYouModal
+                status={thankYou?.status ?? null}
+                email={thankYou?.email ?? ''}
+                onClose={closeThankYou}
+            />
         </footer>
     );
 }
