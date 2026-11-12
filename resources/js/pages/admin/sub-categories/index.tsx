@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { useLiveSearch } from '@/hooks/use-live-search';
 import { clickableRow } from '@/lib/clickable-row';
 import {
     destroyMany as bulkDestroyRoute,
@@ -72,7 +73,7 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
         router.get(
             route('admin.sub-categories.index'),
             { ...filters, search, ...overrides },
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -81,7 +82,7 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
         router.get(
             route('admin.sub-categories.index'),
             {},
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -102,6 +103,9 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
             },
         });
     };
+
+    // Results follow the search box as you type (Enter / the Search button still apply at once).
+    useLiveSearch(search, filters.search ?? '', () => applyFilters({}));
 
     return (
         <>

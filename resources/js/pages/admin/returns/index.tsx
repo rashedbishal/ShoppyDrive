@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
+import { useLiveSearch } from '@/hooks/use-live-search';
 
 type ReturnStatus = 'pending' | 'approved' | 'rejected' | 'refunded';
 
@@ -58,7 +59,7 @@ export default function ReturnsIndex({ returns, filters }: Props) {
         router.get(
             route('admin.returns.index'),
             { ...filters, search, ...overrides },
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -117,6 +118,9 @@ export default function ReturnsIndex({ returns, filters }: Props) {
             refund_method,
         });
     };
+
+    // Results follow the search box as you type (Enter / the Search button still apply at once).
+    useLiveSearch(search, filters.search ?? '', () => applyFilters({}));
 
     return (
         <>

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
+import { useLiveSearch } from '@/hooks/use-live-search';
 
 type Review = {
     id: number;
@@ -82,6 +83,7 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
 
         router.get(route('admin.reviews.index'), params, {
             preserveState: true,
+            preserveScroll: true,
             replace: true,
         });
     };
@@ -91,7 +93,7 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
         router.get(
             route('admin.reviews.index'),
             {},
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -123,6 +125,9 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
             ))}
         </div>
     );
+
+    // Results follow the search box as you type (Enter / the Search button still apply at once).
+    useLiveSearch(search, filters.search ?? '', () => applyFilters({}));
 
     return (
         <>

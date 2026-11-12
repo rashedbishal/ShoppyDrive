@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useLiveSearch } from '@/hooks/use-live-search';
 
 type IncompleteOrderItem = {
     product_id: number;
@@ -60,7 +61,7 @@ export default function IncompleteOrdersIndex({
         router.get(
             route('admin.orders.incomplete.index'),
             { search },
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -69,7 +70,7 @@ export default function IncompleteOrdersIndex({
         router.get(
             route('admin.orders.incomplete.index'),
             {},
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -99,6 +100,9 @@ export default function IncompleteOrdersIndex({
             },
         });
     };
+
+    // Results follow the search box as you type (Enter / the Search button still apply at once).
+    useLiveSearch(search, filters.search ?? '', () => applySearch());
 
     return (
         <>

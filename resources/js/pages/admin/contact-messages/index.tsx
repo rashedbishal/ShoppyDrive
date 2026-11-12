@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useLiveSearch } from '@/hooks/use-live-search';
 
 type ContactMessageRow = {
     id: number;
@@ -43,7 +44,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
         router.get(
             route('admin.contact-messages.index'),
             search ? { search } : {},
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -52,7 +53,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
         router.get(
             route('admin.contact-messages.index'),
             {},
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -84,6 +85,9 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
             },
         });
     };
+
+    // Results follow the search box as you type (Enter / the Search button still apply at once).
+    useLiveSearch(search, filters.search ?? '', () => applyFilters());
 
     return (
         <>

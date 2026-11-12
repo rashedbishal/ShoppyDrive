@@ -6,6 +6,7 @@ import PermanentOrderDeleteDialog from '@/components/admin/PermanentOrderDeleteD
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
+import { useLiveSearch } from '@/hooks/use-live-search';
 
 type Order = {
     id: number;
@@ -53,7 +54,7 @@ export default function TrashedOrders({
         router.get(
             route('admin.orders.trashed'),
             { search },
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -62,7 +63,7 @@ export default function TrashedOrders({
         router.get(
             route('admin.orders.trashed'),
             {},
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -76,6 +77,9 @@ export default function TrashedOrders({
             },
         );
     };
+
+    // Results follow the search box as you type (Enter / the Search button still apply at once).
+    useLiveSearch(search, filters.search ?? '', () => applySearch());
 
     return (
         <>
