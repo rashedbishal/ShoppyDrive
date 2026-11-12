@@ -27,6 +27,7 @@ import LostParcelDialog from '@/components/admin/LostParcelDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -485,7 +486,7 @@ export default function OrderShow({
                                                 className="size-12 shrink-0 rounded-lg border border-slate-100 object-cover"
                                             />
                                             <div className="min-w-0 flex-1">
-                                                <p className="text-sm font-medium text-slate-800">
+                                                <p className="text-sm font-medium break-words text-slate-800">
                                                     {item.product_name}
                                                 </p>
                                                 {orderedOptions(item) && (
@@ -567,10 +568,10 @@ export default function OrderShow({
                                 <CardContent className="space-y-1 pt-3 text-sm text-slate-700">
                                     {order.user ? (
                                         <>
-                                            <p className="font-semibold">
+                                            <p className="font-semibold break-words">
                                                 {order.user.name}
                                             </p>
-                                            <p className="text-slate-500">
+                                            <p className="break-all text-slate-500">
                                                 {order.user.email}
                                             </p>
                                             {order.user.phone && (
@@ -651,6 +652,7 @@ export default function OrderShow({
                                                         </p>
                                                     </div>
                                                     <Input
+                                                        maxLength={11}
                                                         label="Phone"
                                                         value={
                                                             addressData.phone
@@ -666,6 +668,7 @@ export default function OrderShow({
                                                         }
                                                     />
                                                     <Input
+                                                        maxLength={200}
                                                         label="Address line 1"
                                                         value={
                                                             addressData.address_line1
@@ -681,6 +684,7 @@ export default function OrderShow({
                                                         }
                                                     />
                                                     <Input
+                                                        maxLength={200}
                                                         label="Address line 2"
                                                         value={
                                                             addressData.address_line2
@@ -697,6 +701,7 @@ export default function OrderShow({
                                                     />
                                                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                                         <Input
+                                                            maxLength={100}
                                                             label="City"
                                                             value={
                                                                 addressData.city
@@ -713,6 +718,7 @@ export default function OrderShow({
                                                             }
                                                         />
                                                         <Input
+                                                            maxLength={100}
                                                             label="District / State"
                                                             value={
                                                                 addressData.state
@@ -731,6 +737,7 @@ export default function OrderShow({
                                                     </div>
                                                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                                         <Input
+                                                            maxLength={20}
                                                             label="Postal code"
                                                             value={
                                                                 addressData.postal_code
@@ -747,6 +754,7 @@ export default function OrderShow({
                                                             }
                                                         />
                                                         <Input
+                                                            maxLength={100}
                                                             label="Country"
                                                             value={
                                                                 addressData.country
@@ -1390,6 +1398,7 @@ export default function OrderShow({
                                             className="space-y-3"
                                         >
                                             <textarea
+                                                maxLength={500}
                                                 rows={2}
                                                 placeholder="Reason (optional)"
                                                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-red-400 focus:outline-none"
@@ -1400,6 +1409,11 @@ export default function OrderShow({
                                                         e.target.value,
                                                     )
                                                 }
+                                            />
+                                            <CharCount
+                                                value={cancelData.reason}
+                                                max={500}
+                                                className="mt-1 block text-right"
                                             />
                                             <Button
                                                 type="submit"

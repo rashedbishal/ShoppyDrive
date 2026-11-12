@@ -26,13 +26,13 @@ class CreateOrderRequest extends FormRequest
     {
         return [
             'customer_id' => ['nullable', 'integer', 'exists:users,id'],
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:100'],
             'phone' => ['required', 'string', 'regex:/^01[3-9][0-9]{8}$/'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'address_line1' => ['required', 'string', 'max:255'],
-            'address_line2' => ['nullable', 'string', 'max:255'],
-            'city' => ['required', 'string', 'max:255'],
-            'state' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:150'],
+            'address_line1' => ['required', 'string', 'max:200'],
+            'address_line2' => ['nullable', 'string', 'max:200'],
+            'city' => ['required', 'string', 'max:100'],
+            'state' => ['required', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'payment_method' => ['required', 'in:cod,mobile_banking'],
             'shipping_cost' => ['required', 'decimal:0,2', 'min:0', 'max:99999999.99'],
@@ -43,7 +43,7 @@ class CreateOrderRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:1000'],
             'items.*.price' => ['required', 'decimal:0,2', 'min:0', 'max:99999999.99'],
             'items.*.price_override_reason' => ['nullable', 'string', 'min:3', 'max:500'],
         ];

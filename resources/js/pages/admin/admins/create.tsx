@@ -46,8 +46,8 @@ export default function AdminCreate({ sectionCatalog }: Props) {
         // else is left to the server's real error instead of a client
         // guess that could pass a password the server then rejects.
         const clientErrors: Record<string, string> = validate(data, {
-            name: [required(), maxLength(255)],
-            email: [required(), maxLength(255), emailRule()],
+            name: [required(), maxLength(100)],
+            email: [required(), maxLength(150), emailRule()],
             password: [required()],
         });
 
@@ -90,6 +90,7 @@ export default function AdminCreate({ sectionCatalog }: Props) {
                                         Full Name
                                     </label>
                                     <input
+                                        maxLength={100}
                                         className={inputClass}
                                         value={data.name}
                                         onChange={(e) =>
@@ -109,6 +110,7 @@ export default function AdminCreate({ sectionCatalog }: Props) {
                                         Email Address
                                     </label>
                                     <input
+                                        maxLength={150}
                                         type="email"
                                         className={inputClass}
                                         value={data.email}
@@ -131,6 +133,7 @@ export default function AdminCreate({ sectionCatalog }: Props) {
                                         Password
                                     </label>
                                     <input
+                                        maxLength={255}
                                         type="password"
                                         className={inputClass}
                                         value={data.password}
@@ -156,6 +159,7 @@ export default function AdminCreate({ sectionCatalog }: Props) {
                                         Confirm Password
                                     </label>
                                     <input
+                                        maxLength={255}
                                         type="password"
                                         className={inputClass}
                                         value={data.password_confirmation}

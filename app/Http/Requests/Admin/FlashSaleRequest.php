@@ -18,7 +18,7 @@ class FlashSaleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:100'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after:starts_at'],
             'is_active' => ['boolean'],
@@ -30,7 +30,7 @@ class FlashSaleRequest extends FormRequest
             // which already prefers an exact variant match over a
             // product-wide one at pricing/stock-enforcement time).
             'items.*.variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
-            'items.*.sale_price' => ['required', 'numeric', 'gt:0'],
+            'items.*.sale_price' => ['required', 'numeric', 'gt:0', 'max:99999999.99'],
         ];
     }
 

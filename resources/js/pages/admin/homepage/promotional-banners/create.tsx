@@ -159,6 +159,7 @@ export default function PromotionalBannerCreate() {
                                 </CardHeader>
                                 <CardContent className="space-y-4 pt-3">
                                     <Input
+                                        maxLength={255}
                                         label="Link URL"
                                         value={data.href}
                                         onChange={(e) => {
@@ -204,6 +205,8 @@ export default function PromotionalBannerCreate() {
                                             Sort Order
                                         </label>
                                         <Input
+                                            max={9999}
+                                            min={-9999}
                                             type="number"
                                             value={data.sort_order}
                                             onChange={(e) => {

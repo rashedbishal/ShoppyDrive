@@ -249,7 +249,7 @@ export default function ProductBundleCreate() {
         clearErrors();
 
         const clientErrors = validate(data, {
-            name: [required(), maxLength(255)],
+            name: [required(), maxLength(100)],
         });
 
         if (data.discount_type === 'fixed_price' && !data.bundle_price) {
@@ -320,6 +320,8 @@ export default function ProductBundleCreate() {
                                 </CardHeader>
                                 <CardContent className="space-y-4 pt-3">
                                     <Input
+                                        maxLength={100}
+                                        showCount
                                         label="Name"
                                         value={data.name}
                                         onChange={(e) => {
@@ -331,6 +333,8 @@ export default function ProductBundleCreate() {
                                         required
                                     />
                                     <Textarea
+                                        maxLength={300}
+                                        showCount
                                         label="Description"
                                         value={data.description}
                                         onChange={(e) => {
@@ -392,6 +396,7 @@ export default function ProductBundleCreate() {
                                                 'fixed_price' && (
                                                 <AdminReveal key="fixed-price">
                                                     <Input
+                                                        max={99999999.99}
                                                         type="number"
                                                         min="0"
                                                         step="0.01"
@@ -432,6 +437,7 @@ export default function ProductBundleCreate() {
                                     >
                                         <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                         <Input
+                                            maxLength={100}
                                             placeholder="Search products..."
                                             className="h-9 pl-9"
                                             value={searchQuery}

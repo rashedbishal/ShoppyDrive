@@ -82,7 +82,7 @@ export default function CustomerShow({ customer, orders }: Props) {
                             )}
                             <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                    <h1 className="text-xl font-bold text-slate-900">
+                                    <h1 className="text-xl font-bold break-words text-slate-900">
                                         {customer.name}
                                     </h1>
                                     {customer.anonymized_at && (
@@ -94,7 +94,7 @@ export default function CustomerShow({ customer, orders }: Props) {
                                         </Badge>
                                     )}
                                 </div>
-                                <p className="truncate text-sm text-slate-500">
+                                <p className="truncate text-sm break-all text-slate-500">
                                     {customer.email}
                                 </p>
                             </div>

@@ -116,6 +116,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     }
                                 >
                                     <input
+                                        max={99999999.99}
                                         type="number"
                                         min={0}
                                         step="0.01"
@@ -134,6 +135,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     hint="The referred customer's order must reach this subtotal (৳) for the discount to apply. Below it, no discount — and their one-time eligibility is not spent, so a later qualifying order can still use it."
                                 >
                                     <input
+                                        max={99999999.99}
                                         type="number"
                                         min={0}
                                         step="0.01"
@@ -152,6 +154,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     hint="Points credited to the referrer once their referred customer's qualifying order has been delivered for the reward delay below, and is still delivered (not cancelled/returned)."
                                 >
                                     <input
+                                        max={1000000}
                                         type="number"
                                         min={0}
                                         step="1"
@@ -170,6 +173,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     hint="Days after delivery before the referrer's points post — gives a cancellation/return time to cancel the reward."
                                 >
                                     <input
+                                        max={365}
                                         type="number"
                                         min={0}
                                         step="1"
@@ -188,6 +192,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     hint="A customer must have this many of their own delivered orders before their invite link/code is shown."
                                 >
                                     <input
+                                        max={1000}
                                         type="number"
                                         min={0}
                                         step="1"
@@ -206,6 +211,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     hint="Maximum ৳ value a referrer can earn from referrals per cap period below. A referral that would exceed it is held and granted once the next period starts, not forfeited."
                                 >
                                     <input
+                                        max={99999999.99}
                                         type="number"
                                         min={0}
                                         step="0.01"
@@ -254,6 +260,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     hint="1 point earned per this many ৳ of product spend (excludes delivery charge and any discount) on a delivered order."
                                 >
                                     <input
+                                        max={10000}
                                         type="number"
                                         min={0.01}
                                         step="0.01"
@@ -274,6 +281,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     hint="Days after delivery before order-spend points post — same reasoning as the referral reward delay."
                                 >
                                     <input
+                                        max={365}
                                         type="number"
                                         min={0}
                                         step="1"
@@ -292,6 +300,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     hint="Points granted once, right after registration."
                                 >
                                     <input
+                                        max={1000000}
                                         type="number"
                                         min={0}
                                         step="1"
@@ -310,6 +319,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     hint="Points granted per approved review that's linked to a delivered order for that product (a verified purchase)."
                                 >
                                     <input
+                                        max={1000000}
                                         type="number"
                                         min={0}
                                         step="1"
@@ -340,6 +350,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     hint="Streak day N earns N × this, up to the cap below. E.g. with a base of 2: day 1 = 2, day 2 = 4, day 3 = 6."
                                 >
                                     <input
+                                        max={1000000}
                                         type="number"
                                         min={0}
                                         step="1"
@@ -358,6 +369,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     hint="The per-day reward stops growing past this streak day, though the streak itself can keep counting beyond it. Missing a day resets the streak to day 1."
                                 >
                                     <input
+                                        max={365}
                                         type="number"
                                         min={1}
                                         step="1"
@@ -388,6 +400,7 @@ export default function ReferralConfig({ settings }: Props) {
                                     hint="Currency value of 1 point when redeemed at checkout, e.g. 1 for ৳1 per point."
                                 >
                                     <input
+                                        max={100000}
                                         type="number"
                                         min={0}
                                         step="0.01"

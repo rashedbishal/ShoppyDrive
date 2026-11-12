@@ -71,8 +71,8 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
         // left to the server's real error instead of a client guess that
         // could pass a password the server then rejects.
         const clientErrors: Record<string, string> = validate(data, {
-            name: [required(), maxLength(255)],
-            email: [required(), maxLength(255), emailRule()],
+            name: [required(), maxLength(100)],
+            email: [required(), maxLength(150), emailRule()],
         });
 
         if (data.password && data.password !== data.password_confirmation) {
@@ -125,6 +125,7 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
                                         Full Name
                                     </label>
                                     <input
+                                        maxLength={100}
                                         className={inputClass}
                                         value={data.name}
                                         onChange={(e) =>
@@ -143,6 +144,7 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
                                         Email Address
                                     </label>
                                     <input
+                                        maxLength={150}
                                         type="email"
                                         className={inputClass}
                                         value={data.email}
@@ -164,6 +166,7 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
                                         Current Password
                                     </label>
                                     <input
+                                        maxLength={255}
                                         type="password"
                                         className={inputClass}
                                         value={data.current_password}
@@ -190,6 +193,7 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
                                         New Password
                                     </label>
                                     <input
+                                        maxLength={255}
                                         type="password"
                                         className={inputClass}
                                         value={data.password}
@@ -215,6 +219,7 @@ export default function AdminEdit({ adminUser, sectionCatalog }: Props) {
                                         Confirm Password
                                     </label>
                                     <input
+                                        maxLength={255}
                                         type="password"
                                         className={inputClass}
                                         value={data.password_confirmation}

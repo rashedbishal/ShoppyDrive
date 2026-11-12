@@ -328,7 +328,10 @@ function AttributeCard({
                 </span>
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
-                        <h2 className="text-sm font-bold text-slate-800">
+                        <h2
+                            className="truncate text-sm font-bold text-slate-800"
+                            title={attribute.name}
+                        >
                             {attribute.name}
                         </h2>
                         {attribute.has_images && (

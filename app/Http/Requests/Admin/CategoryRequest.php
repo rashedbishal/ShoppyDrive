@@ -59,16 +59,16 @@ class CategoryRequest extends FormRequest
         $categoryId = $this->route('category')?->id;
 
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:80'],
             'slug' => [
                 'required',
                 'string',
-                'max:255',
+                'max:100',
                 'unique:categories,slug,'.($categoryId ?? 'NULL').',id,deleted_at,NULL',
             ],
-            'description' => ['nullable', 'string'],
-            'meta_title' => ['nullable', 'string', 'max:255'],
-            'meta_description' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'meta_title' => ['nullable', 'string', 'max:70'],
+            'meta_description' => ['nullable', 'string', 'max:160'],
             'image' => ['nullable', new RasterImageOrUrl],
             'icon' => ['nullable', 'string', 'max:50', 'regex:'.self::ICON_PATTERN],
             'color' => ['nullable', 'string', 'max:20', function ($attribute, $value, $fail) {

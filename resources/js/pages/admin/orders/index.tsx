@@ -114,6 +114,7 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
                         <div className="relative w-full flex-none sm:w-auto sm:min-w-[200px] sm:flex-1">
                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                             <input
+                                maxLength={100}
                                 type="text"
                                 placeholder="Search order number…"
                                 value={search}

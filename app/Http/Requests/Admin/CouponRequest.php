@@ -23,13 +23,13 @@ class CouponRequest extends FormRequest
         $couponId = $this->route('coupon')?->id;
 
         return [
-            'code' => ['required', 'string', 'max:50', 'unique:coupons,code,'.($couponId ?? 'NULL').',id'],
-            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:30', 'unique:coupons,code,'.($couponId ?? 'NULL').',id'],
+            'name' => ['required', 'string', 'max:100'],
             'type' => ['required', 'in:percent,fixed'],
-            'value' => ['required', 'numeric', 'gt:0', Rule::when($this->input('type') === 'percent', ['max:100'])],
-            'min_order_amount' => ['nullable', 'numeric', 'min:0'],
-            'max_uses' => ['nullable', 'integer', 'min:1'],
-            'per_user_limit' => ['nullable', 'integer', 'min:1'],
+            'value' => ['required', 'numeric', 'gt:0', Rule::when($this->input('type') === 'percent', ['max:100'], ['max:99999999.99'])],
+            'min_order_amount' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+            'max_uses' => ['nullable', 'integer', 'min:1', 'max:9999999'],
+            'per_user_limit' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'starts_at' => ['nullable', 'date'],
             'expires_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
             'is_active' => ['boolean'],

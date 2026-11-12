@@ -22,12 +22,12 @@ class UpdateOrderShippingAddressRequest extends FormRequest
             // The recipient name is deliberately not editable here — see
             // Admin\OrderController::updateShippingAddress().
             'phone' => ['required', 'string', 'regex:/^01[3-9][0-9]{8}$/'],
-            'address_line1' => ['required', 'string', 'max:255'],
-            'address_line2' => ['nullable', 'string', 'max:255'],
-            'city' => ['required', 'string', 'max:255'],
-            'state' => ['required', 'string', 'max:255'],
+            'address_line1' => ['required', 'string', 'max:200'],
+            'address_line2' => ['nullable', 'string', 'max:200'],
+            'city' => ['required', 'string', 'max:100'],
+            'state' => ['required', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:20'],
-            'country' => ['required', 'string', 'max:255'],
+            'country' => ['required', 'string', 'max:100'],
         ];
     }
 

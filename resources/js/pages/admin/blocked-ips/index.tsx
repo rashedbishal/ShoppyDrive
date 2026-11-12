@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { maxLength, required, validate } from '@/lib/validate';
 
@@ -51,7 +52,7 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
         clearErrors();
         const clientErrors = validate(data, {
             ip_address: [required(), maxLength(45)],
-            reason: [maxLength(255)],
+            reason: [maxLength(200)],
         });
 
         if (Object.keys(clientErrors).length > 0) {
@@ -138,6 +139,7 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                                                 IP Address *
                                             </label>
                                             <input
+                                                maxLength={45}
                                                 className={`${inputClass} font-mono`}
                                                 value={data.ip_address}
                                                 onChange={(e) =>
@@ -164,6 +166,7 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                                                 </span>
                                             </label>
                                             <input
+                                                maxLength={200}
                                                 className={inputClass}
                                                 value={data.reason}
                                                 onChange={(e) =>
@@ -173,6 +176,11 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                                                     )
                                                 }
                                                 placeholder="e.g. Repeated fake COD orders"
+                                            />
+                                            <CharCount
+                                                value={data.reason}
+                                                max={200}
+                                                className="mt-1 block text-right"
                                             />
                                             {errors.reason && (
                                                 <p className="mt-0.5 text-xs text-red-500">
@@ -227,7 +235,7 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                                             {blockedIp.ip_address}
                                         </p>
                                         {blockedIp.reason && (
-                                            <p className="text-xs text-slate-500">
+                                            <p className="text-xs break-words text-slate-500">
                                                 {blockedIp.reason}
                                             </p>
                                         )}

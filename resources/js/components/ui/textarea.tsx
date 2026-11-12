@@ -1,6 +1,7 @@
 import * as React from "react";
 import { type TextareaHTMLAttributes, useId, type ReactNode } from "react";
 
+import { CharCount } from "@/components/ui/char-count";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,8 @@ type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
     containerClassName?: string;
     labelClassName?: string;
     textareaClassName?: string;
+    /** Shows a live "length/maxLength" counter under the field. Needs `maxLength` and a controlled `value`. */
+    showCount?: boolean;
 };
 
 function Textarea({
@@ -25,6 +28,7 @@ function Textarea({
     labelClassName,
     textareaClassName,
     rows = 5,
+    showCount = false,
     ...props
 }: TextareaProps) {
     const generatedId = useId();
@@ -57,10 +61,19 @@ function Textarea({
                 )}
                 {...props}
             />
-            {hint ? (
-                <p id={hintId} className="text-xs text-text-secondary">
-                    {hint}
-                </p>
+            {hint || (showCount && props.maxLength) ? (
+                <div className="flex items-start justify-between gap-3">
+                    {hint ? (
+                        <p id={hintId} className="text-xs text-text-secondary">
+                            {hint}
+                        </p>
+                    ) : (
+                        <span />
+                    )}
+                    {showCount && props.maxLength ? (
+                        <CharCount value={props.value as string} max={props.maxLength} />
+                    ) : null}
+                </div>
             ) : null}
             {error ? (
                 <p id={errorId} className="text-xs text-destructive">

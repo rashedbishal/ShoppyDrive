@@ -43,7 +43,7 @@ class CourierVerificationReadinessController extends Controller
     public function store(Request $request, CourierVerificationReadinessService $readiness): RedirectResponse
     {
         $validated = $request->validate([
-            'password' => ['required', 'string'],
+            'password' => ['required', 'string', 'max:255'],
             'deploy_run_id' => ['required', 'string', 'max:40'],
             'deploy_sha' => ['required', 'string', 'max:40'],
             'deploy_run_started_at' => ['required', 'date'],

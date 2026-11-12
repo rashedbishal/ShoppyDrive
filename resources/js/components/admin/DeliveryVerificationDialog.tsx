@@ -199,6 +199,7 @@ export default function DeliveryVerificationDialog({
                                 </select>
                             </label>
                             <Input
+                                maxLength={100}
                                 label="Type the consignment ID exactly"
                                 autoComplete="off"
                                 value={form.data.consignment_id}
@@ -233,6 +234,8 @@ export default function DeliveryVerificationDialog({
                                     form.data.outcome === 'full_delivery' && (
                                         <AdminReveal key="cod-amount">
                                             <Input
+                                                max={99999999.99}
+                                                maxLength={14}
                                                 label={`COD amount the courier collected (must be ৳${Math.round(order.total)})`}
                                                 inputMode="decimal"
                                                 value={
@@ -305,12 +308,14 @@ export default function DeliveryVerificationDialog({
                     )}
 
                     <Input
+                        maxLength={2000}
                         label="What you verified (portal, date, details)"
                         value={form.data.note}
                         onChange={(e) => form.setData('note', e.target.value)}
                         error={errors.note}
                     />
                     <Input
+                        maxLength={255}
                         type="password"
                         label="Your password"
                         autoComplete="current-password"

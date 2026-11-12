@@ -30,7 +30,7 @@ class PopularKeywordController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'keyword' => ['required', 'string', 'max:100'],
+            'keyword' => ['required', 'string', 'max:60'],
         ]);
 
         $maxOrder = PopularKeyword::max('sort_order') ?? 0;
@@ -48,8 +48,8 @@ class PopularKeywordController extends Controller
     public function update(Request $request, PopularKeyword $popularKeyword): RedirectResponse
     {
         $request->validate([
-            'keyword' => ['required', 'string', 'max:100'],
-            'sort_order' => ['required', 'integer', 'min:0'],
+            'keyword' => ['required', 'string', 'max:60'],
+            'sort_order' => ['required', 'integer', 'min:0', 'max:9999'],
             'is_active' => ['boolean'],
         ]);
 

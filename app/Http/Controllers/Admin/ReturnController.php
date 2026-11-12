@@ -179,8 +179,8 @@ class ReturnController extends Controller
         // order's shared refund ledger), payment collection and courier
         // verification are all checked under the order lock by RefundService.
         $validated = $request->validate([
-            'refund_amount' => ['required', 'numeric', 'min:0'],
-            'refund_method' => ['required', 'string', 'max:100'],
+            'refund_amount' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
+            'refund_method' => ['required', 'string', 'max:60'],
         ]);
 
         try {

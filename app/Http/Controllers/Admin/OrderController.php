@@ -331,7 +331,7 @@ class OrderController extends Controller
     public function confirmLostParcel(Request $request, Order $order, OrderLostParcelService $lostParcels): RedirectResponse
     {
         $validated = $request->validate([
-            'password' => ['required', 'string'],
+            'password' => ['required', 'string', 'max:255'],
             'note' => ['required', 'string', 'min:10', 'max:2000'],
         ]);
 
@@ -354,8 +354,8 @@ class OrderController extends Controller
     public function markRefunded(Request $request, Order $order, RefundService $refunds): RedirectResponse
     {
         $validated = $request->validate([
-            'refund_amount' => ['required', 'numeric', 'gt:0'],
-            'refund_method' => ['required', 'string', 'max:100'],
+            'refund_amount' => ['required', 'numeric', 'gt:0', 'max:99999999.99'],
+            'refund_method' => ['required', 'string', 'max:60'],
             // BIZ-012: only consulted for shipped/delivered orders.
             'goods_returned' => ['sometimes', 'boolean'],
         ]);

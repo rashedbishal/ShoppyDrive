@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
 import { maxLength, pattern, required, validate } from '@/lib/validate';
@@ -55,10 +56,10 @@ export default function LandingPageCreate({ products }: Props) {
 
                                 clearErrors();
                                 const clientErrors = validate(data, {
-                                    title: [required(), maxLength(255)],
+                                    title: [required(), maxLength(100)],
                                     slug: [
                                         required(),
-                                        maxLength(255),
+                                        maxLength(100),
                                         pattern(
                                             /^[a-z0-9-]+$/,
                                             'Only lowercase letters, numbers, and hyphens are allowed.',
@@ -82,6 +83,7 @@ export default function LandingPageCreate({ products }: Props) {
                                     Page Title
                                 </label>
                                 <input
+                                    maxLength={100}
                                     className={inputClass}
                                     value={data.title}
                                     onChange={(e) => {
@@ -96,6 +98,11 @@ export default function LandingPageCreate({ products }: Props) {
                                         }));
                                     }}
                                     placeholder="e.g. Special Offer on Product X"
+                                />
+                                <CharCount
+                                    value={data.title}
+                                    max={100}
+                                    className="mt-1 block text-right"
                                 />
                                 {errors.title && (
                                     <p className="mt-1 text-xs text-red-600">
@@ -113,6 +120,7 @@ export default function LandingPageCreate({ products }: Props) {
                                         /sentinel/
                                     </span>
                                     <input
+                                        maxLength={100}
                                         className="h-9 flex-1 px-3 font-mono text-sm focus:outline-none"
                                         value={data.slug}
                                         onChange={(e) => {

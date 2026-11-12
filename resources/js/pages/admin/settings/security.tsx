@@ -352,6 +352,7 @@ function CronMonitoringCard({
                 {canEdit ? (
                     <form onSubmit={handleSubmit} className="space-y-3">
                         <input
+                            maxLength={300}
                             type="url"
                             value={form.data.heartbeat_ping_url}
                             onChange={(e) =>

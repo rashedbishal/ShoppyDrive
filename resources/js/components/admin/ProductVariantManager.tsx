@@ -674,6 +674,12 @@ export function ProductVariantManager({
                                 ).map(([field, label, step]) => (
                                     <VariantField key={field} label={label}>
                                         <input
+                                            max={
+                                                field === 'stock_quantity' ||
+                                                field === 'low_stock_threshold'
+                                                    ? 9999999
+                                                    : 99999999.99
+                                            }
                                             type="number"
                                             min="0"
                                             step={step}
@@ -792,6 +798,7 @@ export function ProductVariantManager({
                                                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                                                     <VariantField label="SKU">
                                                         <input
+                                                            maxLength={50}
                                                             className={
                                                                 fieldInputClass
                                                             }
@@ -816,6 +823,7 @@ export function ProductVariantManager({
                                                         )}
                                                     >
                                                         <input
+                                                            max={99999999.99}
                                                             type="number"
                                                             min="0"
                                                             step="0.01"
@@ -837,6 +845,7 @@ export function ProductVariantManager({
                                                     </VariantField>
                                                     <VariantField label="Compare price (৳)">
                                                         <input
+                                                            max={99999999.99}
                                                             type="number"
                                                             min="0"
                                                             step="0.01"
@@ -861,6 +870,7 @@ export function ProductVariantManager({
                                                     </VariantField>
                                                     <VariantField label="Cost price (৳)">
                                                         <input
+                                                            max={99999999.99}
                                                             type="number"
                                                             min="0"
                                                             step="0.01"
@@ -885,6 +895,7 @@ export function ProductVariantManager({
                                                     </VariantField>
                                                     <VariantField label="Stock qty">
                                                         <input
+                                                            max={9999999}
                                                             type="number"
                                                             min="0"
                                                             className={
@@ -908,6 +919,7 @@ export function ProductVariantManager({
                                                     </VariantField>
                                                     <VariantField label="Low stock alert">
                                                         <input
+                                                            max={9999999}
                                                             type="number"
                                                             min="0"
                                                             className={

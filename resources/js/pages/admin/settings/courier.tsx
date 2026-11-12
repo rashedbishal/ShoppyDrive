@@ -127,6 +127,7 @@ function PathaoCourierCard({ settings }: Props) {
                     </SettingsField>
                     <SettingsField label="Client ID">
                         <input
+                            maxLength={100}
                             className={settingsInputClass}
                             value={data.pathao_client_id}
                             onChange={(e) =>
@@ -137,6 +138,7 @@ function PathaoCourierCard({ settings }: Props) {
                     </SettingsField>
                     <SettingsField label="Client Secret">
                         <input
+                            maxLength={255}
                             type="password"
                             autoComplete="off"
                             className={settingsInputClass}
@@ -152,6 +154,7 @@ function PathaoCourierCard({ settings }: Props) {
                         hint="Your Pathao Merchant login email"
                     >
                         <input
+                            maxLength={150}
                             type="email"
                             className={settingsInputClass}
                             value={data.pathao_username}
@@ -166,6 +169,7 @@ function PathaoCourierCard({ settings }: Props) {
                         hint="Your Pathao Merchant login password"
                     >
                         <input
+                            maxLength={255}
                             type="password"
                             autoComplete="off"
                             className={settingsInputClass}
@@ -297,6 +301,7 @@ function ShippingRateCard({
                 <CardContent className="space-y-4 pt-3">
                     <SettingsField label="Delivery Charge (৳)" hint={hint}>
                         <input
+                            max={100000}
                             type="number"
                             min={0}
                             step="0.01"
@@ -396,6 +401,7 @@ function SteadfastCourierCard({ settings }: Props) {
                     </p>
                     <SettingsField label="Api Key">
                         <input
+                            maxLength={255}
                             className={settingsInputClass}
                             value={data.steadfast_api_key}
                             onChange={(e) =>
@@ -406,6 +412,7 @@ function SteadfastCourierCard({ settings }: Props) {
                     </SettingsField>
                     <SettingsField label="Secret Key">
                         <input
+                            maxLength={255}
                             type="password"
                             autoComplete="off"
                             className={settingsInputClass}
@@ -421,6 +428,7 @@ function SteadfastCourierCard({ settings }: Props) {
                         hint="Paste the same value into Steadfast's webhook settings so delivery status updates can be verified. Leave blank to accept unverified webhooks."
                     >
                         <input
+                            maxLength={255}
                             type="password"
                             autoComplete="off"
                             className={settingsInputClass}
@@ -438,6 +446,7 @@ function SteadfastCourierCard({ settings }: Props) {
                         hint="Set this as the callback URL in Steadfast's webhook settings. Leave blank to use this domain by default — the backend endpoint itself is always /api/steadfast/webhook regardless of what's saved here."
                     >
                         <input
+                            maxLength={300}
                             className={settingsInputClass}
                             value={data.steadfast_webhook_url}
                             onChange={(e) =>

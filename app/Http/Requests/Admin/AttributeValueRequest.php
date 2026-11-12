@@ -63,7 +63,7 @@ class AttributeValueRequest extends FormRequest
                     ->ignore($currentValueId),
             ],
             'color_hex' => $colorHexRules,
-            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
         ];
     }
 

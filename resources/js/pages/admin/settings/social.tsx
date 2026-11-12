@@ -48,6 +48,7 @@ function GoogleLoginCard({ settings }: Props) {
                     </p>
                     <SettingsField label="Client ID">
                         <input
+                            maxLength={255}
                             className={settingsInputClass}
                             value={data.google_client_id}
                             onChange={(e) =>
@@ -58,6 +59,7 @@ function GoogleLoginCard({ settings }: Props) {
                     </SettingsField>
                     <SettingsField label="Client Secret">
                         <input
+                            maxLength={255}
                             type="password"
                             autoComplete="off"
                             className={settingsInputClass}
@@ -73,6 +75,7 @@ function GoogleLoginCard({ settings }: Props) {
                         hint="Must match an Authorized redirect URI registered in the Google Cloud Console"
                     >
                         <input
+                            maxLength={300}
                             className={settingsInputClass}
                             value={data.google_redirect_uri}
                             onChange={(e) =>
@@ -142,6 +145,7 @@ function FacebookLoginCard({ settings }: Props) {
                     </p>
                     <SettingsField label="App ID">
                         <input
+                            maxLength={255}
                             className={settingsInputClass}
                             value={data.facebook_client_id}
                             onChange={(e) =>
@@ -152,6 +156,7 @@ function FacebookLoginCard({ settings }: Props) {
                     </SettingsField>
                     <SettingsField label="App Secret">
                         <input
+                            maxLength={255}
                             type="password"
                             autoComplete="off"
                             className={settingsInputClass}
@@ -170,6 +175,7 @@ function FacebookLoginCard({ settings }: Props) {
                         hint="Must match a Valid OAuth Redirect URI registered in Facebook Login settings"
                     >
                         <input
+                            maxLength={300}
                             className={settingsInputClass}
                             value={data.facebook_redirect_uri}
                             onChange={(e) =>

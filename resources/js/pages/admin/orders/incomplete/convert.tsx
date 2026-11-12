@@ -318,7 +318,7 @@ export default function ConvertIncompleteOrder({
 
         form.clearErrors();
         const clientErrors: Record<string, string> = validate(form.data, {
-            name: [required(), maxLength(255)],
+            name: [required(), maxLength(100)],
             phone: [
                 required(),
                 pattern(
@@ -326,10 +326,10 @@ export default function ConvertIncompleteOrder({
                     'Enter a valid 11-digit Bangladeshi phone number (e.g. 01712345678).',
                 ),
             ],
-            address_line1: [required(), maxLength(255)],
-            address_line2: [maxLength(255)],
-            city: [required(), maxLength(255)],
-            state: [required(), maxLength(255)],
+            address_line1: [required(), maxLength(200)],
+            address_line2: [maxLength(200)],
+            city: [required(), maxLength(100)],
+            state: [required(), maxLength(100)],
             postal_code: [maxLength(20)],
         });
 
@@ -408,6 +408,7 @@ export default function ConvertIncompleteOrder({
                                             Full Name *
                                         </Label>
                                         <Input
+                                            maxLength={100}
                                             id="name"
                                             value={form.data.name}
                                             onChange={(e) =>
@@ -443,6 +444,7 @@ export default function ConvertIncompleteOrder({
                                         Address Line 1 *
                                     </Label>
                                     <Input
+                                        maxLength={200}
                                         id="address_line1"
                                         value={form.data.address_line1}
                                         onChange={(e) =>
@@ -461,6 +463,7 @@ export default function ConvertIncompleteOrder({
                                         Address Line 2
                                     </Label>
                                     <Input
+                                        maxLength={200}
                                         id="address_line2"
                                         value={form.data.address_line2}
                                         onChange={(e) =>
@@ -531,6 +534,7 @@ export default function ConvertIncompleteOrder({
                                             ) : (
                                                 <AdminFade key="city-b">
                                                     <Input
+                                                        maxLength={100}
                                                         id="city"
                                                         value={form.data.city}
                                                         onChange={(e) =>
@@ -555,6 +559,7 @@ export default function ConvertIncompleteOrder({
                                         Postal Code
                                     </Label>
                                     <Input
+                                        maxLength={20}
                                         id="postal_code"
                                         value={form.data.postal_code}
                                         onChange={(e) =>
@@ -602,6 +607,7 @@ export default function ConvertIncompleteOrder({
                                     <div className="relative">
                                         <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                         <input
+                                            maxLength={100}
                                             type="text"
                                             placeholder="Search products to add…"
                                             value={query}

@@ -45,7 +45,7 @@ function KeywordRow({
     const save = () => {
         clearErrors();
         const clientErrors = validate(data, {
-            keyword: [required(), maxLength(100)],
+            keyword: [required(), maxLength(60)],
         });
 
         if (Object.keys(clientErrors).length > 0) {
@@ -76,6 +76,7 @@ function KeywordRow({
                         <>
                             <div className="flex-1">
                                 <input
+                                    maxLength={60}
                                     autoFocus
                                     className={`${inputClass} w-full`}
                                     value={data.keyword}
@@ -93,6 +94,7 @@ function KeywordRow({
                                 )}
                             </div>
                             <input
+                                max={9999}
                                 type="number"
                                 min={0}
                                 className={`${inputClass} w-16`}
@@ -145,7 +147,7 @@ function KeywordRow({
                                 className="flex-1 text-left"
                             >
                                 <span
-                                    className={`text-sm font-medium ${data.is_active ? 'text-slate-800' : 'text-slate-400 line-through'}`}
+                                    className={`text-sm font-medium break-words ${data.is_active ? 'text-slate-800' : 'text-slate-400 line-through'}`}
                                 >
                                     {keyword.keyword}
                                 </span>
@@ -210,7 +212,7 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
 
         clearErrors();
         const clientErrors = validate(data, {
-            keyword: [required(), maxLength(100)],
+            keyword: [required(), maxLength(60)],
         });
 
         if (Object.keys(clientErrors).length > 0) {
@@ -323,6 +325,7 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                                 >
                                     <div>
                                         <input
+                                            maxLength={60}
                                             className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                             value={data.keyword}
                                             onChange={(e) =>

@@ -103,6 +103,7 @@ function DeleteModal({
                             Your Password
                         </label>
                         <input
+                            maxLength={255}
                             type="password"
                             autoFocus
                             value={password}
@@ -250,6 +251,7 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
                         <div className="relative min-w-[200px] flex-1">
                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                             <input
+                                maxLength={100}
                                 type="text"
                                 placeholder="Search TrxID or sender…"
                                 value={search}

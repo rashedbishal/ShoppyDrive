@@ -42,9 +42,9 @@ class AdminController extends Controller
         $this->authorizeMotherOnly('create new admin accounts');
 
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:admins,email'],
-            'password' => ['required', 'confirmed', Password::default()],
+            'name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:150', 'unique:admins,email'],
+            'password' => ['required', 'string', 'max:255', 'confirmed', Password::default()],
             'permissions' => ['nullable', 'array'],
         ]);
 
@@ -76,9 +76,9 @@ class AdminController extends Controller
         $isSelfEdit = $currentAdmin->id === $admin->id;
 
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:admins,email,'.$admin->id],
-            'password' => ['nullable', 'confirmed', Password::default()],
+            'name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:150', 'unique:admins,email,'.$admin->id],
+            'password' => ['nullable', 'string', 'max:255', 'confirmed', Password::default()],
             // SEC-010: a left-open or hijacked session could otherwise
             // change its own password with nothing proving it's really
             // the account holder — same requirement the customer-facing

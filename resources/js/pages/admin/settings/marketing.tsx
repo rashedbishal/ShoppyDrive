@@ -88,6 +88,8 @@ export default function MarketingSettingsEdit({
                                 hint="Paste any script here — a Google Tag Manager container snippet, a tracking pixel, anything with <script> tags. Rendered exactly as pasted, just before </head>, on every storefront page."
                             >
                                 <Textarea
+                                    maxLength={20000}
+                                    showCount
                                     textareaClassName={`${settingsInputClass} font-mono text-xs`}
                                     rows={8}
                                     disabled={!canEditCustomCode}
@@ -111,6 +113,8 @@ export default function MarketingSettingsEdit({
                                 hint="Rendered just before </body>. GTM's own noscript fallback is written for right after <body> opens, but it still works correctly here too."
                             >
                                 <Textarea
+                                    maxLength={20000}
+                                    showCount
                                     textareaClassName={`${settingsInputClass} font-mono text-xs`}
                                     rows={6}
                                     disabled={!canEditCustomCode}
@@ -168,6 +172,7 @@ export default function MarketingSettingsEdit({
                                     hint="e.g. G-XXXXXXXX or UA-XXXXXXXX"
                                 >
                                     <input
+                                        maxLength={30}
                                         className={settingsInputClass}
                                         value={
                                             trackingForm.data
@@ -187,6 +192,7 @@ export default function MarketingSettingsEdit({
                                     hint="Numbers only, from Events Manager"
                                 >
                                     <input
+                                        maxLength={32}
                                         className={settingsInputClass}
                                         value={
                                             trackingForm.data.facebook_pixel_id
@@ -210,6 +216,7 @@ export default function MarketingSettingsEdit({
                                 }
                             >
                                 <input
+                                    maxLength={255}
                                     type="password"
                                     autoComplete="off"
                                     className={settingsInputClass}
@@ -235,6 +242,7 @@ export default function MarketingSettingsEdit({
                                 hint="Optional — shows events in Events Manager's Test Events tool instead of counting toward live ad data. Clear it once you've verified the integration works."
                             >
                                 <input
+                                    maxLength={20}
                                     className={settingsInputClass}
                                     value={
                                         trackingForm.data

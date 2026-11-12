@@ -101,7 +101,7 @@ export function ProductSpecificationsManager({
                                             )
                                         }
                                         placeholder="Key (e.g. Brand)"
-                                        maxLength={100}
+                                        maxLength={60}
                                     />
                                     {errors[`specifications.${index}.key`] && (
                                         <p className="mt-1 text-xs text-red-500">
@@ -129,7 +129,7 @@ export function ProductSpecificationsManager({
                                             )
                                         }
                                         placeholder="Value (e.g. Languo)"
-                                        maxLength={255}
+                                        maxLength={200}
                                     />
                                     {errors[
                                         `specifications.${index}.value`

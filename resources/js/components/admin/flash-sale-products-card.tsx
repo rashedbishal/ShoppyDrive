@@ -219,6 +219,7 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                 <div className="relative">
                     <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                     <input
+                        maxLength={100}
                         type="text"
                         placeholder="Search products to add…"
                         value={query}
@@ -371,6 +372,7 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                                                 Sale Price (৳) *
                                             </label>
                                             <input
+                                                max={99999999.99}
                                                 type="number"
                                                 min="0"
                                                 step="0.01"

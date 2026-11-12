@@ -105,6 +105,7 @@ export default function PermanentOrderDeleteDialog({
                                     Step 1 of 2 — confirm your password
                                 </p>
                                 <Input
+                                    maxLength={255}
                                     type="password"
                                     label="Your password"
                                     autoComplete="current-password"
@@ -152,6 +153,7 @@ export default function PermanentOrderDeleteDialog({
                                     Step 2 of 2 — confirm again within 5 minutes
                                 </p>
                                 <Input
+                                    maxLength={255}
                                     type="password"
                                     label="Your password, again"
                                     autoComplete="current-password"
@@ -165,6 +167,7 @@ export default function PermanentOrderDeleteDialog({
                                     error={step2.errors.password}
                                 />
                                 <Input
+                                    maxLength={40}
                                     label={`Type the order number (${order.order_number})`}
                                     autoComplete="off"
                                     value={step2.data.order_number}

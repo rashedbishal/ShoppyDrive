@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CharCount } from '@/components/ui/char-count';
 import { ColorPicker } from '@/components/ui/color-picker';
 import { IconPicker } from '@/components/ui/icon-picker';
 import { ImageUpload } from '@/components/ui/image-upload';
@@ -55,8 +56,8 @@ export default function CategoryCreate() {
 
         clearErrors();
         const clientErrors = validate(data, {
-            name: [required(), maxLength(255)],
-            slug: [required(), maxLength(255)],
+            name: [required(), maxLength(80)],
+            slug: [required(), maxLength(100)],
         });
 
         if (Object.keys(clientErrors).length > 0) {
@@ -90,6 +91,7 @@ export default function CategoryCreate() {
                         <CardContent className="space-y-4 pt-3">
                             <Field label="Name *" error={errors.name}>
                                 <input
+                                    maxLength={80}
                                     className={inputClass(errors.name)}
                                     value={data.name}
                                     placeholder="e.g. Electronics & Gadgets"
@@ -101,6 +103,11 @@ export default function CategoryCreate() {
                                         }));
                                     }}
                                 />
+                                <CharCount
+                                    value={data.name}
+                                    max={80}
+                                    className="mt-1 block text-right"
+                                />
                             </Field>
 
                             <Field
@@ -109,6 +116,7 @@ export default function CategoryCreate() {
                                 error={errors.slug}
                             >
                                 <input
+                                    maxLength={100}
                                     className={inputClass(errors.slug)}
                                     value={data.slug}
                                     placeholder="e.g. electronics-gadgets"
@@ -123,6 +131,7 @@ export default function CategoryCreate() {
                                 error={errors.description}
                             >
                                 <textarea
+                                    maxLength={2000}
                                     rows={3}
                                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                     value={data.description}
@@ -130,6 +139,11 @@ export default function CategoryCreate() {
                                     onChange={(e) =>
                                         setData('description', e.target.value)
                                     }
+                                />
+                                <CharCount
+                                    value={data.description}
+                                    max={2000}
+                                    className="mt-1 block text-right"
                                 />
                             </Field>
 
@@ -139,11 +153,17 @@ export default function CategoryCreate() {
                                 error={errors.meta_title}
                             >
                                 <input
+                                    maxLength={70}
                                     className={inputClass(errors.meta_title)}
                                     value={data.meta_title}
                                     onChange={(e) =>
                                         setData('meta_title', e.target.value)
                                     }
+                                />
+                                <CharCount
+                                    value={data.meta_title}
+                                    max={70}
+                                    className="mt-1 block text-right"
                                 />
                             </Field>
 
@@ -153,6 +173,7 @@ export default function CategoryCreate() {
                                 error={errors.meta_description}
                             >
                                 <textarea
+                                    maxLength={160}
                                     rows={2}
                                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
                                     value={data.meta_description}
@@ -162,6 +183,11 @@ export default function CategoryCreate() {
                                             e.target.value,
                                         )
                                     }
+                                />
+                                <CharCount
+                                    value={data.meta_description}
+                                    max={160}
+                                    className="mt-1 block text-right"
                                 />
                             </Field>
 
