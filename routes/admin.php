@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\ContentImageController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CourierVerificationReadinessController;
 use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\CustomerErasureController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DisplayOrderSettingsController;
@@ -229,6 +230,16 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     // (unchanged) regardless of this matrix; only `view` is gated here.
     Route::get('settings/security', [SecuritySettingsController::class, 'edit'])->name('settings.security.edit')->middleware(AdminSections::middleware('security', 'view'));
     Route::put('settings/security', [SecuritySettingsController::class, 'update'])->name('settings.security.update');
+    // Security › "Permanently delete a customer" (CustomerErasureService).
+    // Mother admin only, so deliberately not in AdminSections; the two
+    // password steps share MotherPasswordGate's lockout and session blocking,
+    // like permanent order deletion.
+    Route::middleware('admin.mother')->prefix('settings/security/customer-erasure')->name('settings.security.customer-erasure.')->group(function () {
+        Route::get('customers', [CustomerErasureController::class, 'search'])->name('search');
+        Route::get('{user}/summary', [CustomerErasureController::class, 'summary'])->name('summary')->whereNumber('user');
+        Route::post('{user}/confirm', [CustomerErasureController::class, 'confirm'])->name('confirm')->whereNumber('user')->middleware('throttle:mother-actions')->block(10, 10);
+        Route::delete('{user}', [CustomerErasureController::class, 'destroy'])->name('destroy')->whereNumber('user')->middleware('throttle:mother-actions')->block(10, 10);
+    });
     // OPS-002: same hardcoded mother-only pattern as settings.security.update.
     Route::put('settings/security/heartbeat', [SecuritySettingsController::class, 'updateHeartbeat'])->name('settings.security.heartbeat.update');
     Route::get('settings/sms-forwarder', [SmsForwarderSettingsController::class, 'index'])->name('settings.sms-forwarder.index')->middleware(AdminSections::middleware('sms_forwarder', 'view'));

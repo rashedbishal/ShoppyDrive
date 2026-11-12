@@ -1,5 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import { Activity, Info, Lock, ShieldCheck } from 'lucide-react';
+import { CustomerErasureCard } from '@/components/admin/CustomerErasureCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CharCount } from '@/components/ui/char-count';
@@ -690,6 +691,15 @@ export default function SecuritySettings({
                         </div>
                     )}
                 </form>
+
+                {canEdit && (
+                    <>
+                        <h2 className="pt-3 text-xs font-bold tracking-wider text-red-700 uppercase">
+                            Database clean-up
+                        </h2>
+                        <CustomerErasureCard />
+                    </>
+                )}
             </div>
         </>
     );

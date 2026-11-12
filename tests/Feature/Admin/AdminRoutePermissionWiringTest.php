@@ -128,6 +128,14 @@ const LOW05_EXEMPT_ADMIN_ROUTES = [
     'admin.storage-cleanup.restore',
     'admin.storage-cleanup.destroy',
 
+    // Security › "Permanently delete a customer": mother admin only, enforced
+    // by `admin.mother` on the route group (verified by CustomerErasureTest),
+    // with two password checks; deliberately not a grantable AdminSections entry.
+    'admin.settings.security.customer-erasure.search',
+    'admin.settings.security.customer-erasure.summary',
+    'admin.settings.security.customer-erasure.confirm',
+    'admin.settings.security.customer-erasure.destroy',
+
     // DB-001: permanent order deletion is mother-admin only, confirmed
     // gated only by ['admin.mother', 'throttle:mother-actions'].
     'admin.orders.permanentDelete.confirm',
