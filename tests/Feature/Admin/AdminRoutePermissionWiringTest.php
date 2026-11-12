@@ -72,8 +72,10 @@ const LOW05_EXEMPT_ADMIN_ROUTES = [
     'admin.settings.marketing.custom-code.update',
 
     // Shared rich-text-editor image upload helper used by several sections
-    // (Blog, About Page, Contact Page, Landing Pages, ...) — not worth
-    // gating to any single one of them. Confirmed no middleware call.
+    // (Blog, Landing Pages, Newsletter, Products, About Page), so no single
+    // admin.can middleware fits. DISC-06: ContentImageController::store()
+    // itself requires create or update on at least one of them
+    // (ContentImageUploadPermissionTest).
     'admin.content-images.store',
 
     // Admin-account management is deliberately excluded from the

@@ -88,8 +88,9 @@ $guardResource = function (PendingResourceRegistration $resource, string $sectio
  * field group inside SettingController itself), `settings.security.update`
  * and `settings.marketing.custom-code.update` (each hardcoded mother-only
  * inside its own controller method), and `content-images.store` (a shared
- * rich-text-editor upload helper used across several sections, not worth
- * gating on its own).
+ * rich-text-editor upload helper used across several sections — DISC-06:
+ * gated inside ContentImageController on create/update for at least one of
+ * them).
  */
 // SEC-021: same history-encryption rationale as routes/account.php — the
 // admin panel's own back-button exposure after logout is at least as
@@ -343,8 +344,9 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::delete('blogs/bulk-delete', [BlogController::class, 'destroyMany'])->name('blogs.destroyMany')->middleware(AdminSections::middleware('blog', 'delete'));
     $guardResource(Route::resource('blogs', BlogController::class)->except(['show']), 'blog');
     // Shared rich-text-editor image upload helper used by several sections
-    // (Blog, About Page, Contact Page, Landing Pages, ...) — deliberately
-    // left to just the `admin` guard rather than any one section.
+    // (Blog, Landing Pages, Newsletter, Products, About Page). No single
+    // admin.can section fits, so DISC-06 checks inside the controller that
+    // the admin has create or update on at least one of them.
     Route::post('content-images', [ContentImageController::class, 'store'])->name('content-images.store');
 
     $guardResource(Route::resource('hero-slides', HeroSlideController::class)->except(['show']), 'homepage');
