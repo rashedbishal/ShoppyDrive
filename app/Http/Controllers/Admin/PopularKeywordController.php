@@ -79,6 +79,26 @@ class PopularKeywordController extends Controller
         return redirect()->route('admin.popular-keywords.index')->with('success', $result['count'].' keyword(s) '.($result['active'] ? 'activated' : 'deactivated').'.');
     }
 
+    /** Saves the order the admin dragged the keywords into: position in the list becomes `sort_order` (1 = first). */
+    public function reorder(Request $request): RedirectResponse
+    {
+        $ids = $request->validate([
+            'ids' => ['required', 'array', 'max:1000'],
+            'ids.*' => ['integer', 'distinct', 'exists:popular_keywords,id'],
+        ])['ids'];
+
+        DB::transaction(function () use ($ids): void {
+            foreach ($ids as $index => $id) {
+                PopularKeyword::whereKey($id)->update(['sort_order' => $index + 1]);
+            }
+        });
+
+        // Bulk update() fires no model events, so the shared layout cache is cleared by hand.
+        $this->flushLayoutCache();
+
+        return back();
+    }
+
     public function destroyMany(Request $request): RedirectResponse
     {
         $ids = $request->validate([

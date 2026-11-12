@@ -286,6 +286,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
 
     Route::patch('popular-keywords/bulk-status', [PopularKeywordController::class, 'updateStatusMany'])->name('popular-keywords.updateStatusMany')->middleware(AdminSections::middleware('search_keywords', 'update'));
     Route::delete('popular-keywords/bulk-delete', [PopularKeywordController::class, 'destroyMany'])->name('popular-keywords.destroyMany')->middleware(AdminSections::middleware('search_keywords', 'delete'));
+    Route::post('popular-keywords/reorder', [PopularKeywordController::class, 'reorder'])->name('popular-keywords.reorder')->middleware(AdminSections::middleware('search_keywords', 'update'));
     $guardResource(Route::resource('popular-keywords', PopularKeywordController::class)->only(['index', 'store', 'update', 'destroy'])->parameters(['popular-keywords' => 'popularKeyword']), 'search_keywords');
 
     Route::patch('landing-pages/bulk-status', [AdminLandingPageController::class, 'updateStatusMany'])->name('landing-pages.updateStatusMany')->middleware(AdminSections::middleware('landing_pages', 'update'));
