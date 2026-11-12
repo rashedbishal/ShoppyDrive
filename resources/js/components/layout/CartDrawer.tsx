@@ -214,13 +214,13 @@ export default function CartDrawer(): React.JSX.Element {
                         // Same destination as the empty Cart page's button,
                         // and the drawer closes so the products are visible.
                         label: 'Start shopping',
-                        // Always close the panel first: on the home page a link to "/"
-                        // goes nowhere, which left the drawer standing open.
+                        // Close the panel first, so it never stays open over the page
+                        // the visitor is already on.
                         onClick: () => {
                             closeCart();
 
-                            if (window.location.pathname !== '/') {
-                                router.visit('/');
+                            if (window.location.pathname !== '/products') {
+                                router.visit('/products');
                             }
                         },
                     }}
