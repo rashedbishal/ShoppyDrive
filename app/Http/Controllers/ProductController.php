@@ -166,12 +166,7 @@ class ProductController extends Controller
                 'name' => $product->name,
                 'description' => $description,
                 'image' => $imageUrl ? [$imageUrl] : [],
-                'offers' => [
-                    '@type' => 'Offer',
-                    'priceCurrency' => 'BDT',
-                    'price' => (string) $product->price,
-                    'availability' => $product->stock_quantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-                ],
+                'offers' => $this->jsonLdOffers($product, $flashSaleItems),
             ],
         ]);
 
@@ -191,5 +186,43 @@ class ProductController extends Controller
             'hasReviewed' => Auth::guard('web')->user()?->hasReviewedProduct($product->id) ?? false,
             'shippingMethods' => [],
         ]);
+    }
+
+    /**
+     * DISC-14: the JSON-LD offer search engines read. Availability uses the
+     * live `available_stock` (the variants' own stock when the product has
+     * variants: orders decrement only those, so the product's stock_quantity
+     * column can be stale). Each price is what the storefront charges: an
+     * active flash-sale price, else the variant's own price, else the product
+     * price. A simple product without a sale keeps exactly the previous Offer.
+     *
+     * @param  array{product: FlashSaleItem|null, variants: array<int, FlashSaleItem>}  $flashSaleItems
+     * @return array<string, mixed>
+     */
+    private function jsonLdOffers(Product $product, array $flashSaleItems): array
+    {
+        $availability = $product->available_stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
+
+        if ($product->variants->isEmpty()) {
+            return [
+                '@type' => 'Offer',
+                'priceCurrency' => 'BDT',
+                'price' => (string) ($flashSaleItems['product']?->sale_price ?? $product->price),
+                'availability' => $availability,
+            ];
+        }
+
+        $prices = $product->variants
+            ->map(fn ($variant): float => (float) (($flashSaleItems['variants'][$variant->id] ?? null)?->sale_price ?? $variant->price ?? $product->price))
+            ->values();
+
+        return [
+            '@type' => 'AggregateOffer',
+            'priceCurrency' => 'BDT',
+            'lowPrice' => number_format($prices->min(), 2, '.', ''),
+            'highPrice' => number_format($prices->max(), 2, '.', ''),
+            'offerCount' => $prices->count(),
+            'availability' => $availability,
+        ];
     }
 }
