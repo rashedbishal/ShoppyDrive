@@ -21,6 +21,7 @@ import {
     useState,
     useSyncExternalStore,
 } from 'react';
+import { AutoSlider } from '@/components/shared/AutoSlider';
 import { BrandCard } from '@/components/shared/BrandCard';
 import type { BrandCardData } from '@/components/shared/BrandCard';
 import { BundleCard } from '@/components/shared/BundleCard';
@@ -517,62 +518,18 @@ type CategoryShowcaseProps = {
     categories: HomeCategoryCard[];
 };
 
-/**
- * Cards start stacked on top of each other at the section's center, then
- * spread out to their real flex-wrap positions once scrolled into view —
- * driven by Framer Motion's `layout` animation (FLIP), which measures the
- * before/after bounding box itself rather than hand-computed offsets that
- * would drift across responsive breakpoints.
- */
+/** Categories as an auto-advancing, swipeable row instead of a big grid. */
 function CategoryShowcase({
     categories,
 }: CategoryShowcaseProps): React.JSX.Element {
-    const prefersReducedMotion = useReducedMotion();
-    const [revealed, setRevealed] = useState(false);
-    const showSpread = revealed || !!prefersReducedMotion;
-    const centerIndex = (categories.length - 1) / 2;
-
     return (
-        <motion.div
-            layout
-            onViewportEnter={() => setRevealed(true)}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ layout: { duration: 0.5, ease: 'easeOut' } }}
-            className={cn(
-                'flex flex-wrap justify-center gap-x-5 gap-y-8 sm:gap-x-8',
-                !showSpread && 'relative min-h-[158px] sm:min-h-[182px]',
-            )}
-        >
-            {categories.map((category, index) => (
-                <motion.div
-                    key={category.slug}
-                    layout
-                    initial={false}
-                    animate={{ opacity: showSpread ? 1 : 0 }}
-                    className={cn(
-                        !showSpread &&
-                            'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
-                    )}
-                    transition={{
-                        layout: {
-                            type: 'spring',
-                            stiffness: 160,
-                            damping: 20,
-                            mass: 0.7,
-                            delay: showSpread
-                                ? Math.min(
-                                      Math.abs(index - centerIndex) * 0.045,
-                                      0.4,
-                                  )
-                                : 0,
-                        },
-                        opacity: { duration: 0.25 },
-                    }}
-                >
+        <AutoSlider label="Shop by category" className="gap-5 py-2 sm:gap-8">
+            {categories.map((category) => (
+                <div key={category.slug} className="shrink-0 snap-start">
                     <CategoryCard category={category} />
-                </motion.div>
+                </div>
             ))}
-        </motion.div>
+        </AutoSlider>
     );
 }
 
@@ -1265,15 +1222,16 @@ function Home(): React.JSX.Element {
             node: getSection('brands')?.is_visible && (
                 <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
                     {renderHeading('brands', 'Our brands')}
-                    <div className="flex gap-4 overflow-x-auto pb-2">
+                    <AutoSlider label="Our brands" className="gap-4 pb-2">
                         {brandCards.map((brand) => (
-                            <BrandCard
-                                key={brand.id}
-                                brand={brand}
-                                className="min-w-[8rem]"
-                            />
+                            <div key={brand.id} className="shrink-0 snap-start">
+                                <BrandCard
+                                    brand={brand}
+                                    className="min-w-[8rem]"
+                                />
+                            </div>
                         ))}
-                    </div>
+                    </AutoSlider>
                 </section>
             ),
         },
