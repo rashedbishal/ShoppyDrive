@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DisplayOrderSettingsController;
+use App\Http\Controllers\Admin\ErrorLogController;
 use App\Http\Controllers\Admin\FailedJobController;
 use App\Http\Controllers\Admin\FlashSaleController;
 use App\Http\Controllers\Admin\HeroSlideController;
@@ -254,6 +255,15 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::delete('failed-jobs/{uuid}', [FailedJobController::class, 'destroy'])->whereUuid('uuid')->name('failed-jobs.destroy')->middleware(AdminSections::middleware('failed_jobs', 'delete'));
     Route::get('audit-trail', [AuditTrailController::class, 'index'])->name('audit-trail.index')->middleware(AdminSections::middleware('audit_trail', 'view'));
     Route::delete('audit-trail', [AuditTrailController::class, 'destroy'])->name('audit-trail.destroy')->middleware(['admin.mother', 'throttle:mother-actions']);
+
+    // Laravel's log files, read straight from storage/logs. Mother admin only,
+    // so deliberately not in AdminSections: log records can hold customer
+    // details, file paths and request data.
+    Route::middleware('admin.mother')->prefix('error-log')->name('error-log.')->group(function () {
+        Route::get('/', [ErrorLogController::class, 'index'])->name('index');
+        Route::get('download', [ErrorLogController::class, 'download'])->name('download')->middleware('throttle:mother-actions');
+        Route::delete('/', [ErrorLogController::class, 'clear'])->name('clear')->middleware('throttle:mother-actions');
+    });
 
     // OPS-008: mother admin only, so deliberately not in AdminSections.
     Route::middleware('admin.mother')->prefix('database-backup')->name('database-backup.')->group(function () {

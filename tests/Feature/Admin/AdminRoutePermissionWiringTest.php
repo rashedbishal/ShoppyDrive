@@ -111,6 +111,14 @@ const LOW05_EXEMPT_ADMIN_ROUTES = [
     'admin.database-backup.apply',
     'admin.database-backup.discard',
 
+    // Error Log: Laravel's log files read straight from storage/logs. Mother
+    // admin only, enforced by `admin.mother` on the route group (verified by
+    // ErrorLogTest): log records can hold customer details, file paths and
+    // request data, so it's deliberately not a grantable AdminSections entry.
+    'admin.error-log.index',
+    'admin.error-log.download',
+    'admin.error-log.clear',
+
     // DB-001: permanent order deletion is mother-admin only, confirmed
     // gated only by ['admin.mother', 'throttle:mother-actions'].
     'admin.orders.permanentDelete.confirm',
