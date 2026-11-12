@@ -12,8 +12,9 @@ class PageSeeder extends Seeder
     /**
      * BIZ-032/BIZ-034: the legal and policy pages. Their HTML lives in
      * database/seeders/pages/{slug}.html so this seeder and the migration
-     * that publishes it to production read exactly the same text. There is
-     * no admin editor for pages, so changing this text needs a new migration.
+     * that publishes it to production read exactly the same text. Since
+     * DISC-05 the live text is edited in Admin › Policy & Info Pages; these
+     * files are only the initial content and are never re-applied on deploy.
      *
      * @return list<array{title: string, slug: string, meta_title: string, meta_description: string, content: string, is_published: bool}>
      */

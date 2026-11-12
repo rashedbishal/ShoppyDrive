@@ -19,7 +19,7 @@ class ContentImageController extends Controller
      * on at least one of them; abilities a section doesn't support (e.g.
      * update on newsletter) are never granted, so checking both is safe.
      */
-    private const EDITOR_SECTIONS = ['blog', 'landing_pages', 'newsletter', 'products', 'about_page'];
+    private const EDITOR_SECTIONS = ['blog', 'landing_pages', 'newsletter', 'products', 'about_page', 'pages'];
 
     /**
      * Upload an image for insertion into a WYSIWYG rich-text field and return its public URL.

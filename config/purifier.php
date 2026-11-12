@@ -46,5 +46,22 @@ return [
             'AutoFormat.AutoParagraph' => true,
             'AutoFormat.RemoveEmpty' => true,
         ],
+
+        // DISC-05: the six admin-editable legal/info pages (Admin › Pages).
+        // The same allow-list as `default`, plus `h3` (FAQ.tsx reads H2 as a
+        // group and H3 as a question) and `a[target|rel]` limited to
+        // `_blank` / `noopener noreferrer` (the seeded Privacy Policy uses
+        // it). Applied only when an admin saves a page, never to existing
+        // rows, and no other section uses this profile.
+        'pages' => [
+            'HTML.Doctype' => 'HTML 4.01 Transitional',
+            'HTML.Allowed' => 'p,br,b,strong,i,em,u,s,strike,h1,h2,h3,blockquote,ul,ol,li,a[href|target|rel],img[src|alt|width|height]',
+            'Attr.AllowedFrameTargets' => ['_blank'],
+            'Attr.AllowedRel' => ['noopener', 'noreferrer'],
+            'CSS.AllowedProperties' => '',
+            'URI.AllowedSchemes' => 'http,https,mailto',
+            'AutoFormat.AutoParagraph' => true,
+            'AutoFormat.RemoveEmpty' => true,
+        ],
     ],
 ];

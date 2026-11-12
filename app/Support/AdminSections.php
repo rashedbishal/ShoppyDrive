@@ -48,6 +48,8 @@ final class AdminSections
         'homepage' => ['label' => 'Homepage', 'group' => 'Content', 'abilities' => ['create', 'update', 'delete']],
         'about_page' => ['label' => 'About Page', 'group' => 'Content', 'abilities' => ['update']],
         'contact_page' => ['label' => 'Contact Page', 'group' => 'Content', 'abilities' => ['update']],
+        // DISC-05: edit-only — the six legal/info pages exist by slug and are never created or deleted here.
+        'pages' => ['label' => 'Policy & Info Pages', 'group' => 'Content', 'abilities' => ['update']],
         'landing_pages' => ['label' => 'Landing Pages', 'group' => 'Content', 'abilities' => ['create', 'update', 'delete']],
         'blog' => ['label' => 'Blog', 'group' => 'Content', 'abilities' => ['create', 'update', 'delete']],
         'search_keywords' => ['label' => 'Search Keywords', 'group' => 'Content', 'abilities' => ['create', 'update', 'delete']],

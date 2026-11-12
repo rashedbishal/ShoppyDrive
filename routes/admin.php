@@ -34,6 +34,7 @@ use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\OrderCourierController;
 use App\Http\Controllers\Admin\OrderDeliveryVerificationController;
+use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PopularKeywordController;
 use App\Http\Controllers\Admin\ProductBundleController;
 use App\Http\Controllers\Admin\ProductController;
@@ -343,10 +344,14 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::patch('blogs/bulk-status', [BlogController::class, 'updateStatusMany'])->name('blogs.updateStatusMany')->middleware(AdminSections::middleware('blog', 'update'));
     Route::delete('blogs/bulk-delete', [BlogController::class, 'destroyMany'])->name('blogs.destroyMany')->middleware(AdminSections::middleware('blog', 'delete'));
     $guardResource(Route::resource('blogs', BlogController::class)->except(['show']), 'blog');
+    // DISC-05: edit-only — the six legal/info pages (Page::ADMIN_EDITABLE_SLUGS); no create or delete routes.
+    Route::get('pages', [PageController::class, 'index'])->name('pages.index')->middleware(AdminSections::middleware('pages', 'view'));
+    Route::get('pages/{page}/edit', [PageController::class, 'edit'])->name('pages.edit')->middleware(AdminSections::middleware('pages', 'update'));
+    Route::put('pages/{page}', [PageController::class, 'update'])->name('pages.update')->middleware(AdminSections::middleware('pages', 'update'));
     // Shared rich-text-editor image upload helper used by several sections
-    // (Blog, Landing Pages, Newsletter, Products, About Page). No single
-    // admin.can section fits, so DISC-06 checks inside the controller that
-    // the admin has create or update on at least one of them.
+    // (Blog, Landing Pages, Newsletter, Products, About Page, Policy & Info
+    // Pages). No single admin.can section fits, so DISC-06 checks inside the
+    // controller that the admin has create or update on at least one of them.
     Route::post('content-images', [ContentImageController::class, 'store'])->name('content-images.store');
 
     $guardResource(Route::resource('hero-slides', HeroSlideController::class)->except(['show']), 'homepage');

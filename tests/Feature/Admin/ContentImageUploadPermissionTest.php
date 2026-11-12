@@ -10,8 +10,8 @@ use function Pest\Laravel\actingAs;
 /*
  * DISC-06: the shared rich-text-editor image upload needs create or update on
  * at least one section that uses the editor (blog, landing_pages, newsletter,
- * products, about_page). The mother admin always passes; anyone else gets 403
- * and nothing is stored.
+ * products, about_page, pages). The mother admin always passes; anyone else
+ * gets 403 and nothing is stored.
  */
 
 function disc06Upload(): Illuminate\Testing\TestResponse
@@ -51,6 +51,7 @@ test('an admin with create or update on any one editor section can upload', func
     'products create' => ['products', 'create'],
     'products update' => ['products', 'update'],
     'about page update' => ['about_page', 'update'],
+    'policy pages update (DISC-05)' => ['pages', 'update'],
 ]);
 
 test('the mother admin can upload', function () {

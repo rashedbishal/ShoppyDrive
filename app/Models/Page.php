@@ -12,6 +12,12 @@ class Page extends Model
 {
     use Auditable, HasFactory;
 
+    /**
+     * DISC-05: the only pages Admin › Pages may edit (never create or
+     * delete) — the legal/info pages with their own fixed storefront URLs.
+     */
+    public const ADMIN_EDITABLE_SLUGS = ['privacy-policy', 'terms', 'faq', 'return-policy', 'refund-policy', 'shipping-policy'];
+
     protected $fillable = [
         'title',
         'slug',

@@ -8,6 +8,7 @@ import {
     Bot,
     ChevronDown,
     DatabaseBackup,
+    FileText,
     Folder,
     FolderTree,
     Gift,
@@ -238,6 +239,14 @@ const navSections: NavSection[] = [
                 exact: false,
                 extraMatches: [] as string[],
                 section: 'blog',
+            },
+            {
+                label: 'Policy & Info Pages',
+                href: '/admin/pages',
+                icon: FileText,
+                exact: false,
+                extraMatches: [] as string[],
+                section: 'pages',
             },
             {
                 label: 'Search Keywords',

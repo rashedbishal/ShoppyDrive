@@ -3,6 +3,7 @@ import {
     Bold,
     Heading1,
     Heading2,
+    Heading3,
     Image,
     Italic,
     Link2,
@@ -332,6 +333,18 @@ export function RichTextEditor({
                     >
                         <Heading2 className="size-3.5" />
                     </button>
+                    {/* DISC-05: needed for the FAQ (H2 = group, H3 = question). Sections whose purifier profile lacks h3 still turn it into a paragraph on save, as before. */}
+                    <button
+                        type="button"
+                        title="Heading 3"
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            execCmd('formatBlock', 'h3');
+                        }}
+                        className="flex size-7 items-center justify-center rounded text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                    >
+                        <Heading3 className="size-3.5" />
+                    </button>
                     <button
                         type="button"
                         title="Quote"
@@ -443,7 +456,7 @@ export function RichTextEditor({
                         }
                     }}
                     style={{ minHeight }}
-                    className="p-4 text-sm text-slate-800 focus:outline-none [&_a]:text-[#c8102e] [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:text-slate-500 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_img]:max-w-full [&_img]:rounded [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                    className="p-4 text-sm text-slate-800 focus:outline-none [&_a]:text-[#c8102e] [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:text-slate-500 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_img]:max-w-full [&_img]:rounded [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
                 />
                 {maxTextLength !== undefined ? (
                     <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-3 py-1">
