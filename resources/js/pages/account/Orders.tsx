@@ -72,7 +72,10 @@ export default function Orders({
                     </div>
                 )}
                 {flash?.error && (
-                    <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">
+                    <div
+                        data-form-error
+                        className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700"
+                    >
                         {flash.error}
                     </div>
                 )}

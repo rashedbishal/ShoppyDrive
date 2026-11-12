@@ -321,6 +321,7 @@ export default function ProductEdit({
                             >
                                 <div
                                     ref={errorSummaryRef}
+                                    data-form-error
                                     className="lg:col-span-2"
                                 >
                                     <Alert variant="error">

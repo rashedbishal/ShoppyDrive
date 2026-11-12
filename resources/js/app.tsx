@@ -14,6 +14,10 @@ import AppLayout from '@/layouts/app-layout';
 import { initAddToCartFeedback } from '@/lib/add-to-cart-feedback';
 import { APP_NAME } from '@/lib/constants';
 import { STORAGE_KEYS } from '@/lib/constants';
+import {
+    preserveScrollOnErrors,
+    registerFormErrorScroll,
+} from '@/lib/form-error-scroll';
 import { takePurchasedLines } from '@/lib/purchased-cart-lines';
 import type { PurchasedCartLine } from '@/lib/purchased-cart-lines';
 import { formatCurrency } from '@/lib/utils';
@@ -868,7 +872,14 @@ const storefrontPages = import.meta.glob<{ default: ResolvedComponent }>([
     '!./pages/admin/**',
 ]);
 
+// A rejected form submission keeps the visitor at (and scrolls to) its error
+// messages instead of jumping to the top of the page — see form-error-scroll.ts.
+registerFormErrorScroll();
+
 createInertiaApp({
+    defaults: {
+        visitOptions: preserveScrollOnErrors,
+    },
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: async (name) => {
         if (name.startsWith('admin/')) {

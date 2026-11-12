@@ -138,7 +138,10 @@ export default function FailedJobsIndex({
                     </div>
                 )}
                 {flash?.error && (
-                    <div className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700">
+                    <div
+                        data-form-error
+                        className="rounded-lg bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700"
+                    >
                         {flash.error}
                     </div>
                 )}

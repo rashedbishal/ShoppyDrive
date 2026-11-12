@@ -194,6 +194,7 @@ export default function ProductCreate({
                             >
                                 <div
                                     ref={errorSummaryRef}
+                                    data-form-error
                                     className="lg:col-span-2"
                                 >
                                     <Alert variant="error">
