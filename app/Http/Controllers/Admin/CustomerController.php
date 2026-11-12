@@ -9,6 +9,7 @@ use App\Models\Admin;
 use App\Models\Order;
 use App\Models\User;
 use App\Support\AdminListUrl;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,10 +21,29 @@ use Throwable;
 
 class CustomerController extends Controller
 {
+    /** A customer who ordered within this many days counts as active. */
+    private const ACTIVE_ORDER_DAYS = 90;
+
+    /** A customer who joined within this many days counts as active even without an order. */
+    private const NEW_ACCOUNT_DAYS = 30;
+
     public function index(Request $request): Response|RedirectResponse
     {
+        $search = trim((string) $request->input('search'));
+        $status = in_array($request->input('status'), ['active', 'inactive', 'deleted'], true) ? $request->input('status') : '';
+        $verified = in_array($request->input('verified'), ['yes', 'no'], true) ? $request->input('verified') : '';
+        $orders = in_array($request->input('orders'), ['with', 'none'], true) ? $request->input('orders') : '';
+
         $customers = User::withCount('orders')
-            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%")->orWhere('email', 'like', "%{$request->search}%"))
+            ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhere('phone', 'like', "%{$search}%")))
+            ->when($status !== '', fn ($q) => $this->applyStatusFilter($q, $status))
+            ->when($verified === 'yes', fn ($q) => $q->whereNotNull('email_verified_at'))
+            ->when($verified === 'no', fn ($q) => $q->whereNull('email_verified_at'))
+            ->when($orders === 'with', fn ($q) => $q->has('orders'))
+            ->when($orders === 'none', fn ($q) => $q->doesntHave('orders'))
             ->latest()->paginate(20)->withQueryString();
 
         $pastLastPage = AdminListUrl::redirectIfPastLastPage($customers, $request);
@@ -34,8 +54,38 @@ class CustomerController extends Controller
 
         return Inertia::render('admin/customers/index', [
             'customers' => $customers,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'status', 'verified', 'orders']),
         ]);
+    }
+
+    /**
+     * Customer status. There is no on/off switch on an account, so it is read
+     * from what the account has done: "deleted" is an anonymized or removed
+     * account; "active" is a live account that ordered in the last 90 days or
+     * joined in the last 30; "inactive" is a live account that did neither.
+     *
+     * @param  Builder<User>  $query
+     */
+    private function applyStatusFilter(Builder $query, string $status): void
+    {
+        if ($status === 'deleted') {
+            $query->withTrashed()->where(fn ($q) => $q->whereNotNull('anonymized_at')->orWhereNotNull('deleted_at'));
+
+            return;
+        }
+
+        $recentlyJoined = now()->subDays(self::NEW_ACCOUNT_DAYS);
+        $recentOrder = fn ($q) => $q->where('created_at', '>=', now()->subDays(self::ACTIVE_ORDER_DAYS));
+
+        $query->whereNull('anonymized_at');
+
+        if ($status === 'active') {
+            $query->where(fn ($q) => $q->whereHas('orders', $recentOrder)->orWhere('created_at', '>=', $recentlyJoined));
+
+            return;
+        }
+
+        $query->whereDoesntHave('orders', $recentOrder)->where('created_at', '<', $recentlyJoined);
     }
 
     public function show(User $user): Response

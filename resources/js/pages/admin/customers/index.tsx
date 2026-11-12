@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { DeleteCustomerDialog } from '@/components/admin/delete-customer-dialog';
 import { Card } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 
 type Customer = {
     id: number;
@@ -13,6 +14,8 @@ type Customer = {
     orders_count: number;
     created_at: string;
     anonymized_at: string | null;
+    deleted_at?: string | null;
+    email_verified_at?: string | null;
 };
 
 type Paginated<T> = {
@@ -25,21 +28,23 @@ type Paginated<T> = {
 
 type Props = {
     customers: Paginated<Customer>;
-    filters: { search?: string };
+    filters: {
+        search?: string;
+        status?: string;
+        verified?: string;
+        orders?: string;
+    };
 };
 
 export default function CustomersIndex({ customers, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
 
-    const applySearch = () => {
-        if (search === (filters.search ?? '')) {
-            return;
-        }
-
+    // Dropdown filters apply at once; the search box applies on the Search button or Enter.
+    const applyFilters = (overrides: Record<string, string> = {}) => {
         router.get(
             route('admin.customers.index'),
-            { search },
+            { ...filters, search, ...overrides },
             { preserveState: true, replace: true },
         );
     };
@@ -52,6 +57,14 @@ export default function CustomersIndex({ customers, filters }: Props) {
             { preserveState: true, replace: true },
         );
     };
+
+    const hasActiveFilters = Boolean(
+        search ||
+        filters.search ||
+        filters.status ||
+        filters.verified ||
+        filters.orders,
+    );
 
     return (
         <>
@@ -67,25 +80,77 @@ export default function CustomersIndex({ customers, filters }: Props) {
                 </div>
 
                 <Card className="overflow-hidden p-0 shadow-sm">
-                    <div className="flex gap-2 border-b border-slate-100 p-4">
-                        <div className="relative flex-1">
-                            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
-                            <input
-                                maxLength={100}
-                                type="text"
-                                placeholder="Search by name or email…"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                onKeyDown={(e) =>
-                                    e.key === 'Enter' && applySearch()
+                    <div className="space-y-2 border-b border-slate-100 p-4">
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                            <div className="relative flex-1">
+                                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    maxLength={100}
+                                    type="text"
+                                    placeholder="Search by name, email or phone…"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    onKeyDown={(e) =>
+                                        e.key === 'Enter' && applyFilters()
+                                    }
+                                    className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => applyFilters()}
+                                className="h-9 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700"
+                            >
+                                Search
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                            <Select
+                                value={filters.status ?? ''}
+                                onChange={(e) =>
+                                    applyFilters({ status: e.target.value })
                                 }
-                                className="h-9 w-full rounded-lg border border-slate-200 pr-3 pl-9 text-sm focus:border-[#c8102e] focus:outline-none"
+                                containerClassName="min-w-0 sm:min-w-44"
+                                selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
+                            >
+                                <option value="">All customers</option>
+                                <option value="active">
+                                    Active (ordered in 90 days / new)
+                                </option>
+                                <option value="inactive">
+                                    Inactive (no order in 90 days)
+                                </option>
+                                <option value="deleted">Deleted</option>
+                            </Select>
+                            <Select
+                                value={filters.verified ?? ''}
+                                onChange={(e) =>
+                                    applyFilters({ verified: e.target.value })
+                                }
+                                containerClassName="min-w-0 sm:min-w-40"
+                                selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
+                            >
+                                <option value="">Any email status</option>
+                                <option value="yes">Email verified</option>
+                                <option value="no">Email not verified</option>
+                            </Select>
+                            <Select
+                                value={filters.orders ?? ''}
+                                onChange={(e) =>
+                                    applyFilters({ orders: e.target.value })
+                                }
+                                containerClassName="min-w-0 sm:min-w-40"
+                                selectClassName="h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none"
+                            >
+                                <option value="">Any orders</option>
+                                <option value="with">Has placed orders</option>
+                                <option value="none">No orders yet</option>
+                            </Select>
+                            <ClearFiltersButton
+                                active={hasActiveFilters}
+                                onClear={clearFilters}
                             />
                         </div>
-                        <ClearFiltersButton
-                            active={Boolean(search || filters.search)}
-                            onClear={clearFilters}
-                        />
                     </div>
 
                     <div className="divide-y divide-slate-50">
@@ -129,8 +194,16 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                             .toUpperCase()}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-semibold text-slate-800">
-                                            {customer.name}
+                                        <p className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                            <span className="truncate">
+                                                {customer.name}
+                                            </span>
+                                            {(customer.anonymized_at ||
+                                                customer.deleted_at) && (
+                                                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                                                    Deleted
+                                                </span>
+                                            )}
                                         </p>
                                         <p className="truncate text-xs text-slate-400">
                                             {customer.email}
