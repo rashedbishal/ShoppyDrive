@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import React, { useState } from 'react';
 
-import AccountLayout from '@/components/layout/AccountLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -81,7 +80,7 @@ export default function ChangePassword(): React.JSX.Element {
     ];
 
     return (
-        <AccountLayout>
+        <>
             <Head title="Change Password" />
 
             <div className="space-y-8">
@@ -358,6 +357,6 @@ export default function ChangePassword(): React.JSX.Element {
                     </div>
                 </div>
             </div>
-        </AccountLayout>
+        </>
     );
 }

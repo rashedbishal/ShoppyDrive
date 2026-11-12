@@ -99,10 +99,16 @@ export default function AppLayout({
                     // re-animate the whole page. The product listing shares
                     // one key across /products and /category/* so switching
                     // category or clearing filters only refreshes the grid.
+                    // The account area shares one key too: its sidebar and summary
+                    // card live in AccountLayout and must stay mounted across
+                    // tabs (AccountLayout animates just the tab's content).
                     key={
                         page.component === 'catalog/ProductListing'
                             ? page.component
-                            : page.url.split('?')[0]
+                            : page.url.split('?')[0] === '/account' ||
+                                page.url.startsWith('/account/')
+                              ? 'account-area'
+                              : page.url.split('?')[0]
                     }
                     className="flex-1"
                     initial={{ opacity: 0, y: MOTION.page?.distance ?? 8 }}

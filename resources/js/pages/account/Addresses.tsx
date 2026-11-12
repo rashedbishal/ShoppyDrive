@@ -2,7 +2,6 @@ import { Head, useForm } from '@inertiajs/react';
 import { Plus, MapPin, AlertCircle } from 'lucide-react';
 import React, { useState } from 'react';
 
-import AccountLayout from '@/components/layout/AccountLayout';
 import { AddressCard } from '@/components/shared/AddressCard';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -172,7 +171,7 @@ export default function Addresses({
     };
 
     return (
-        <AccountLayout>
+        <>
             <Head title="Saved Addresses" />
 
             <div className="space-y-8">
@@ -458,6 +457,6 @@ export default function Addresses({
                     </div>
                 </form>
             </Modal>
-        </AccountLayout>
+        </>
     );
 }

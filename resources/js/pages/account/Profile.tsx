@@ -13,7 +13,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import AccountProfileController from '@/actions/App/Http/Controllers/AccountProfileController';
 import DeleteUser from '@/components/delete-user';
 import InputError from '@/components/input-error';
-import AccountLayout from '@/components/layout/AccountLayout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,7 +111,7 @@ export default function Profile({
     };
 
     return (
-        <AccountLayout>
+        <>
             <Head title="My Profile" />
 
             <div className="space-y-8">
@@ -477,6 +476,6 @@ export default function Profile({
                     </div>
                 </div>
             </div>
-        </AccountLayout>
+        </>
     );
 }

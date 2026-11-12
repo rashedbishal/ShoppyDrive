@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import React from 'react';
 
-import AccountLayout from '@/components/layout/AccountLayout';
 import { ProductCard } from '@/components/shared/ProductCard';
 import { Button } from '@/components/ui/button';
 import { PRODUCT_GRID_BESIDE_SIDEBAR_CLASS } from '@/lib/constants';
@@ -32,7 +31,7 @@ export default function Wishlist({
     const hydrateCart = useCartStore((state) => state.hydrateCart);
 
     return (
-        <AccountLayout>
+        <>
             <Head title="My Wishlist" />
 
             <div className="space-y-8">
@@ -209,6 +208,6 @@ export default function Wishlist({
                     </div>
                 )}
             </div>
-        </AccountLayout>
+        </>
     );
 }

@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import React, { useState } from 'react';
 
-import AccountLayout from '@/components/layout/AccountLayout';
 import {
     OrderStatusBadge,
     PaymentStatusBadge,
@@ -276,7 +275,7 @@ export default function OrderDetail({
     const canRequestReturn = order.status === 'delivered';
 
     return (
-        <AccountLayout>
+        <>
             <Head title={`Order #${order.order_number}`} />
 
             <div className="space-y-8">
@@ -680,7 +679,7 @@ export default function OrderDetail({
                 open={returnDialogOpen}
                 onOpenChange={setReturnDialogOpen}
             />
-        </AccountLayout>
+        </>
     );
 }
 

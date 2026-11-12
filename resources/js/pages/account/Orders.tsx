@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import React, { useState } from 'react';
 
-import AccountLayout from '@/components/layout/AccountLayout';
 import {
     OrderStatusBadge,
     PaymentStatusBadge,
@@ -70,7 +69,7 @@ export default function Orders({
     };
 
     return (
-        <AccountLayout>
+        <>
             <Head title="My Orders" />
 
             <div className="space-y-8">
@@ -324,6 +323,6 @@ export default function Orders({
                     </div>
                 )}
             </div>
-        </AccountLayout>
+        </>
     );
 }

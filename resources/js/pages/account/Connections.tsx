@@ -4,7 +4,6 @@ import { useState } from 'react';
 import ConnectionsController from '@/actions/App/Http/Controllers/Settings/ConnectionsController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
-import AccountLayout from '@/components/layout/AccountLayout';
 import PasswordInput from '@/components/password-input';
 import PasswordRequirements from '@/components/password-requirements';
 import { Button } from '@/components/ui/button';
@@ -81,7 +80,7 @@ export default function Connections({ hasPassword, connections }: Props) {
     };
 
     return (
-        <AccountLayout>
+        <>
             <Head title="Connected accounts" />
 
             <div className="space-y-8">
@@ -278,6 +277,6 @@ export default function Connections({ hasPassword, connections }: Props) {
                     </div>
                 )}
             </div>
-        </AccountLayout>
+        </>
     );
 }

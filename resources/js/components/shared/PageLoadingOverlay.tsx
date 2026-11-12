@@ -109,6 +109,15 @@ export default function PageLoadingOverlay(): React.JSX.Element {
                 return;
             }
 
+            // Moving between account tabs keeps the sidebar and summary card
+            // on screen (AccountLayout dims its own content instead).
+            if (
+                event.detail.visit.url.pathname.startsWith('/account') &&
+                window.location.pathname.startsWith('/account')
+            ) {
+                return;
+            }
+
             clearPendingShow();
             showTimeout.current = setTimeout(() => setVisible(true), 150);
         });
