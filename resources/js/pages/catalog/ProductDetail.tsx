@@ -38,7 +38,23 @@ import { formatCurrency, getDiscountPercent } from '@/lib/utils';
 import { useCartStore } from '@/stores/cartStore';
 import { useUiStore } from '@/stores/uiStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
-import type { Product, Review, AttributeValue, SharedPageProps } from '@/types';
+import type {
+    Product,
+    ProductVariant,
+    Review,
+    AttributeValue,
+    SharedPageProps,
+} from '@/types';
+
+/** A variant's value ids; a variant saved before custom attributes has only Color/Size. */
+function variantValueIds(variant: ProductVariant): number[] {
+    return (
+        variant.attribute_value_ids ??
+        [variant.color_value_id, variant.size_value_id].filter(
+            (id): id is number => id != null,
+        )
+    ).map(Number);
+}
 
 interface ProductDetailProps {
     product: Product;
@@ -281,8 +297,9 @@ export default function ProductDetail({
 
     // Jump the main image to the selected variant's photo without touching
     // the rest of the gallery — the thumbnails for every other image/variant
-    // stay put. Its own photo first (a size, or an older colour/size pick),
-    // otherwise the photo chosen for its colour: Red/XL shows the Red image.
+    // stay put. Its own photo first (an older per-variant pick), otherwise
+    // the photo chosen for one of its values, in attribute order: Red/XL
+    // shows the Red image.
     useEffect(() => {
         if (!selectedVariant) {
             return;
@@ -292,12 +309,17 @@ export default function ProductDetail({
             (m) => m.variant_id === selectedVariant.id,
         );
         const idx =
-            ownIdx !== -1 || selectedVariant.color_value_id == null
+            ownIdx !== -1
                 ? ownIdx
-                : media.findIndex(
-                      (m) =>
-                          m.color_value_id === selectedVariant.color_value_id,
-                  );
+                : (variantValueIds(selectedVariant)
+                      .map((valueId) =>
+                          media.findIndex(
+                              (m) =>
+                                  m.attribute_value_id === valueId &&
+                                  m.type === 'image',
+                          ),
+                      )
+                      .find((found) => found !== -1) ?? -1);
 
         if (idx !== -1) {
             // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
@@ -316,19 +338,26 @@ export default function ProductDetail({
 
         const item = media[idx];
 
-        // A colour image selects that colour, keeping the size already
-        // chosen when that colour comes in it, otherwise the colour's first
-        // variant (the colour's own variant on a colour-only product).
-        if (item?.color_value_id != null) {
-            const ofColor = variants.filter(
-                (v) => v.color_value_id === item.color_value_id,
+        // A value's image (e.g. Red) selects a variant with that value,
+        // keeping as many of the customer's other choices (size, set…) as
+        // that value comes in; otherwise the value's first variant.
+        if (item?.attribute_value_id != null) {
+            const valueId = Number(item.attribute_value_id);
+            const current = new Set(
+                selectedVariant ? variantValueIds(selectedVariant) : [],
             );
-            const keepsSize = ofColor.find(
-                (v) =>
-                    selectedVariant?.size_value_id != null &&
-                    v.size_value_id === selectedVariant.size_value_id,
-            );
-            const variant = keepsSize ?? ofColor[0];
+            const variant = variants
+                .filter((v) => variantValueIds(v).includes(valueId))
+                .reduce<ProductVariant | null>((best, v) => {
+                    const overlap = (candidate: ProductVariant) =>
+                        variantValueIds(candidate).filter((id) =>
+                            current.has(id),
+                        ).length;
+
+                    return best === null || overlap(v) > overlap(best)
+                        ? v
+                        : best;
+                }, null);
 
             if (variant) {
                 setSelectedAttributes(variant.attributes);

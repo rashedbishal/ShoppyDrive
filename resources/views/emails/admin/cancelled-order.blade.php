@@ -18,7 +18,12 @@
         </tr>
         @foreach ($order->items as $item)
             <tr>
-                <td>{{ $item->product_name }}</td>
+                <td>
+                    {{ $item->product_name }}
+                    @if ($item->variantLabel())
+                        <br><span style="color: #64748b; font-size: 12px;">{{ $item->variantLabel() }}</span>
+                    @endif
+                </td>
                 <td>{{ $item->quantity }}</td>
                 <td class="num">৳{{ number_format($item->subtotal, 2) }}</td>
             </tr>

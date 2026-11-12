@@ -591,7 +591,7 @@ test('on a color and size product, one image chosen for a color serves every siz
     $product = saveColorSizeProduct(['/storage/products/red.jpg', '/storage/products/general.jpg'], ["color:{$this->red->id}", null]);
 
     $redMedia = $product->media()->where('path', '/storage/products/red.jpg')->firstOrFail();
-    expect($redMedia->color_value_id)->toBe($this->red->id);
+    expect($redMedia->attribute_value_id)->toBe($this->red->id);
     expect($redMedia->variant_id)->toBeNull();
 
     $images = ProductVariant::where('product_id', $product->id)->get()
@@ -609,7 +609,7 @@ test('a color/size pair tag from a form opened before the change counts as its c
     $product = saveColorSizeProduct(['/storage/products/red.jpg'], ["pair:{$this->red->id}-{$this->sizeM->id}"]);
 
     $media = $product->media()->firstOrFail();
-    expect($media->color_value_id)->toBe($this->red->id);
+    expect($media->attribute_value_id)->toBe($this->red->id);
     expect($media->variant_id)->toBeNull();
     expect(ProductVariant::where('product_id', $product->id)->where('size_value_id', $this->sizeXl->id)->firstOrFail()->image)
         ->toBe('/storage/products/red.jpg');
@@ -622,7 +622,7 @@ test('a color tag for a color the product has no variant of is ignored', functio
     $product = saveColorSizeProduct(['/storage/products/green.jpg'], ["color:{$green->id}"]);
 
     $media = $product->media()->firstOrFail();
-    expect($media->color_value_id)->toBeNull();
+    expect($media->attribute_value_id)->toBeNull();
     expect($media->variant_id)->toBeNull();
 });
 
@@ -643,7 +643,7 @@ test('a color tag on a color-only product records the color as well as its varia
     ]))->assertRedirect(route('admin.products.index'));
 
     $media = Product::where('slug', 'test-product')->firstOrFail()->media()->firstOrFail();
-    expect($media->color_value_id)->toBe($this->red->id);
+    expect($media->attribute_value_id)->toBe($this->red->id);
     expect($media->variant_id)->toBe(ProductVariant::where('color_value_id', $this->red->id)->value('id'));
 });
 

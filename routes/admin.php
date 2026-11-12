@@ -101,6 +101,7 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     $guardResource(Route::resource('products', ProductController::class)->except(['show']), 'products');
 
     Route::get('attributes', [AttributeController::class, 'index'])->name('attributes.index')->middleware(AdminSections::middleware('attributes', 'view'));
+    $guardResource(Route::resource('attributes', AttributeController::class)->only(['store', 'update', 'destroy']), 'attributes');
     Route::post('attribute-values/reorder', [AttributeValueController::class, 'reorder'])->name('attribute-values.reorder')->middleware(AdminSections::middleware('attributes', 'update'));
     $guardResource(Route::resource('attribute-values', AttributeValueController::class)->only(['store', 'update', 'destroy']), 'attributes');
 

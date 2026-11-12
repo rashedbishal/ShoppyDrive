@@ -68,6 +68,8 @@ class ProductController extends Controller
                     'updated_at' => $attribute->updated_at,
                 ];
             })
+            // The product's own attribute order (e.g. Color, then Set).
+            ->sortBy(fn (array $attribute): int => ($position = array_search($attribute['id'], array_map('intval', $product->variant_attribute_ids ?? []), true)) === false ? PHP_INT_MAX : $position)
             ->values();
 
         // FSA-18: a `GROUP BY rating` over every approved review for this

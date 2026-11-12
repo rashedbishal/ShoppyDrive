@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Attribute;
+use App\Models\AttributeValue;
 use App\Models\ProductVariant;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Foundation\Http\FormRequest;
@@ -33,6 +35,9 @@ class ProductRequest extends FormRequest
     /** Largest value the signed 32-bit integer stock columns can hold. */
     private const MAX_INTEGER = 2147483647;
 
+    /** Attributes one product can build variants from (each multiplies the combinations). */
+    private const MAX_VARIANT_ATTRIBUTES = 5;
+
     public function authorize(): bool
     {
         return true;
@@ -41,7 +46,11 @@ class ProductRequest extends FormRequest
     public function rules(): array
     {
         $productId = $this->route('product')?->id;
-        $hasVariants = $this->boolean('has_color_variant') || $this->boolean('has_size_variant');
+        // The older Color/Size flags still count, for callers that check the
+        // rules without the translation in prepareForValidation().
+        $hasVariants = (is_array($this->input('variant_attribute_ids')) && $this->input('variant_attribute_ids') !== [])
+            || $this->boolean('has_color_variant')
+            || $this->boolean('has_size_variant');
 
         return [
             'stock_token' => [$productId !== null ? 'required' : 'prohibited', 'string'],
@@ -73,7 +82,14 @@ class ProductRequest extends FormRequest
             'free_delivery_min_qty' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_INTEGER],
             'has_color_variant' => ['boolean'],
             'has_size_variant' => ['boolean'],
+            // The attributes this product's variants are built from, in the
+            // order shown to customers (e.g. [Color, Set]).
+            'variant_attribute_ids' => ['present', 'array', 'max:'.self::MAX_VARIANT_ATTRIBUTES],
+            'variant_attribute_ids.*' => ['integer', 'distinct', 'exists:attributes,id'],
             'variants' => [Rule::requiredIf($hasVariants), 'array'],
+            // One value per variant attribute, e.g. [Red, 12pcs].
+            'variants.*.value_ids' => [Rule::requiredIf($hasVariants), 'array'],
+            'variants.*.value_ids.*' => ['integer', 'exists:attribute_values,id'],
             'variants.*.color_value_id' => ['nullable', 'integer', 'exists:attribute_values,id'],
             'variants.*.size_value_id' => ['nullable', 'integer', 'exists:attribute_values,id'],
             'variants.*.sku' => ['nullable', 'string', 'max:100'],
@@ -151,6 +167,50 @@ class ProductRequest extends FormRequest
         ];
     }
 
+    /**
+     * A form opened before custom attributes existed (or an older client)
+     * still sends Color/Size as `has_color_variant`/`has_size_variant` plus
+     * `color_value_id`/`size_value_id` per variant. That is translated into
+     * the general shape here; a switched-off dimension's value is ignored, as
+     * before. A form that sends `variant_attribute_ids` is used as is.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('variant_attribute_ids')) {
+            return;
+        }
+
+        $variants = $this->input('variants');
+
+        // The attribute the submitted colour (or size) values belong to;
+        // the one named Color (Size) only when no value was sent.
+        $attributeOf = function (string $column, string $name) use ($variants): ?int {
+            $valueId = collect(is_array($variants) ? $variants : [])
+                ->map(fn ($variant) => is_array($variant) ? ($variant[$column] ?? null) : null)
+                ->first(fn ($id) => $id !== null && $id !== '');
+            $attributeId = $valueId !== null ? AttributeValue::whereKey($valueId)->value('attribute_id') : null;
+
+            return $attributeId ?? Attribute::where('name', $name)->orderBy('id')->value('id');
+        };
+
+        $legacy = array_filter([
+            'color' => $this->boolean('has_color_variant') ? $attributeOf('color_value_id', 'Color') : null,
+            'size' => $this->boolean('has_size_variant') ? $attributeOf('size_value_id', 'Size') : null,
+        ]);
+
+        $this->merge(['variant_attribute_ids' => array_values(array_map('intval', $legacy))]);
+
+        if (is_array($variants)) {
+            $this->merge(['variants' => array_map(fn ($variant) => is_array($variant) ? [
+                ...$variant,
+                'value_ids' => array_values(array_filter([
+                    isset($legacy['color']) ? ($variant['color_value_id'] ?? null) : null,
+                    isset($legacy['size']) ? ($variant['size_value_id'] ?? null) : null,
+                ], fn ($id) => $id !== null && $id !== '')),
+            ] : $variant, $variants)]);
+        }
+    }
+
     public function withValidator(ValidatorContract $validator): void
     {
         $validator->after(function (ValidatorContract $validator) {
@@ -159,6 +219,11 @@ class ProductRequest extends FormRequest
             if (! is_array($variants) || $variants === []) {
                 return;
             }
+
+            $attributeIds = array_map('intval', (array) $this->input('variant_attribute_ids', []));
+            $valueAttributes = AttributeValue::query()
+                ->whereKey(collect($variants)->flatMap(fn ($variant) => is_array($variant['value_ids'] ?? null) ? $variant['value_ids'] : [])->unique()->all())
+                ->pluck('attribute_id', 'id');
 
             $defaultCount = 0;
             $seenCombos = [];
@@ -171,9 +236,22 @@ class ProductRequest extends FormRequest
                     $defaultCount++;
                 }
 
-                $combo = ($variant['color_value_id'] ?? 'null').'-'.($variant['size_value_id'] ?? 'null');
+                // Exactly one value for each of the product's variant
+                // attributes, e.g. a colour and a set — no more, no less.
+                $valueIds = array_map('intval', is_array($variant['value_ids'] ?? null) ? $variant['value_ids'] : []);
+                $coveredAttributes = array_map(fn (int $valueId): int => (int) ($valueAttributes[$valueId] ?? 0), $valueIds);
+                sort($coveredAttributes);
+                $expectedAttributes = $attributeIds;
+                sort($expectedAttributes);
+
+                if ($coveredAttributes !== $expectedAttributes) {
+                    $validator->errors()->add("variants.{$index}", 'Each variant needs exactly one value for every variant attribute.');
+                }
+
+                sort($valueIds);
+                $combo = implode('-', $valueIds);
                 if (isset($seenCombos[$combo])) {
-                    $validator->errors()->add("variants.{$index}", 'Duplicate color/size combination — each pair must be unique.');
+                    $validator->errors()->add("variants.{$index}", 'Duplicate combination — each variant must be a different combination of values.');
                 }
                 $seenCombos[$combo] = true;
 

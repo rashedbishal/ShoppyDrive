@@ -17,8 +17,8 @@ import { maxLength, required, validate } from '@/lib/validate';
 
 type SearchVariant = {
     id: number;
-    color_value: { value: string } | null;
-    size_value: { value: string } | null;
+    /** {"Color": "Red", "Set": "12pcs"} — any attributes, not only colour/size. */
+    attributes: Record<string, string> | null;
     stock_quantity: number;
 };
 
@@ -59,9 +59,7 @@ function remainingCapacity(
 }
 
 function variantLabel(variant: SearchVariant): string {
-    return [variant.color_value?.value, variant.size_value?.value]
-        .filter(Boolean)
-        .join(' / ');
+    return Object.values(variant.attributes ?? {}).join(' / ');
 }
 
 /**
@@ -263,10 +261,7 @@ export default function ProductBundleCreate() {
         }
 
         const needsVariant = selectedItems.some(
-            (item) =>
-                (item.product.has_color_variant ||
-                    item.product.has_size_variant) &&
-                !item.variant_id,
+            (item) => item.product.variants.length > 0 && !item.variant_id,
         );
 
         if (needsVariant) {
@@ -544,10 +539,8 @@ export default function ProductBundleCreate() {
                                             <AnimatePresence initial={false}>
                                                 {selectedItems.map((item) => {
                                                     const needsVariant =
-                                                        item.product
-                                                            .has_color_variant ||
-                                                        item.product
-                                                            .has_size_variant;
+                                                        item.product.variants
+                                                            .length > 0;
                                                     // Variants a sibling row already claimed for this same
                                                     // product can't be picked again — keeps every (product,
                                                     // variant) pair in the bundle unique by construction.

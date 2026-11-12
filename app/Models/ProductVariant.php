@@ -32,6 +32,7 @@ class ProductVariant extends Model
         'is_default',
         'color_value_id',
         'size_value_id',
+        'attribute_value_ids',
     ];
 
     protected $appends = ['image'];
@@ -40,6 +41,7 @@ class ProductVariant extends Model
     {
         return [
             'attributes' => 'array',
+            'attribute_value_ids' => 'array',
             'price' => 'float',
             'compare_price' => 'float',
             'cost_price' => 'float',
@@ -48,19 +50,21 @@ class ProductVariant extends Model
     }
 
     /**
-     * This variant's photo: an image chosen for this exact variant (a size on
-     * a size-only product, or an older colour/size pick), otherwise the image
-     * chosen for its colour — one Red photo serves Red/S, Red/M and Red/L.
-     * A video can't be a thumbnail, so the colour fallback only takes images.
+     * This variant's photo: an image chosen for this exact variant (an older
+     * per-variant pick), otherwise the image chosen for one of its values —
+     * one Red photo serves Red/S, Red/M and Red/L. With several attributes
+     * that allow images, the first in the product's attribute order wins.
+     * A video can't be a thumbnail, so value images are images only.
      */
     public function getImageAttribute(): ?string
     {
-        $own = $this->media->where('variant_id', $this->id);
-        $byColor = $this->color_value_id === null
-            ? collect()
-            : $this->media->where('color_value_id', $this->color_value_id)->where('type', 'image');
+        $candidateSets = [$this->media->where('variant_id', $this->id)];
 
-        foreach ([$own, $byColor] as $candidates) {
+        foreach ($this->valueIds() as $valueId) {
+            $candidateSets[] = $this->media->where('attribute_value_id', $valueId)->where('type', 'image');
+        }
+
+        foreach ($candidateSets as $candidates) {
             $media = $candidates->firstWhere('is_primary', true) ?? $candidates->first();
 
             if ($media !== null) {
@@ -69,6 +73,19 @@ class ProductVariant extends Model
         }
 
         return null;
+    }
+
+    /**
+     * This variant's attribute value ids in the product's attribute order. A
+     * row that predates custom attributes (or was created without them) falls
+     * back to its Color/Size columns.
+     *
+     * @return array<int, int>
+     */
+    public function valueIds(): array
+    {
+        return array_map('intval', $this->attribute_value_ids
+            ?? array_values(array_filter([$this->color_value_id, $this->size_value_id])));
     }
 
     public function product(): BelongsTo

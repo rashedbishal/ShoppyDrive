@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Exceptions\StaleProductStockException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProductRequest;
+use App\Models\Attribute;
 use App\Models\AttributeValue;
 use App\Models\Brand;
 use App\Models\CartItem;
@@ -21,12 +22,14 @@ use App\Support\AdminListUrl;
 use App\Support\CatalogFilterCache;
 use App\Support\ProductStockToken;
 use App\Support\SearchSuggestionCache;
+use App\Support\VariantAttributeLabels;
 use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -102,7 +105,7 @@ class ProductController extends Controller
             'categories' => Category::active()->orderBy('name')->get(['id', 'name']),
             'subCategories' => SubCategory::active()->orderBy('name')->get(['id', 'name', 'category_id']),
             'brands' => Brand::active()->orderBy('name')->get(['id', 'name']),
-            'attributeValues' => $this->attributeValuesForForm(),
+            'variantAttributes' => $this->variantAttributesForForm(),
         ]);
     }
 
@@ -119,11 +122,10 @@ class ProductController extends Controller
         $data['slug'] = Str::slug($data['slug'] ?? $data['name']);
         $data['is_active'] = $data['is_active'] ?? false;
         $data['is_featured'] = $data['is_featured'] ?? false;
-        $data['has_color_variant'] = $data['has_color_variant'] ?? false;
-        $data['has_size_variant'] = $data['has_size_variant'] ?? false;
+        $data = array_merge($data, $this->variantAttributeFields($data['variant_attribute_ids'] ?? []));
         $data['cry_baby_enabled'] = $data['cry_baby_enabled'] ?? false;
 
-        if ($data['has_color_variant'] || $data['has_size_variant']) {
+        if ($data['variant_attribute_ids'] !== []) {
             $data = array_merge($data, $this->computeDenormalizedFields($variants));
         }
 
@@ -162,7 +164,7 @@ class ProductController extends Controller
             'categories' => Category::active()->orderBy('name')->get(['id', 'name']),
             'subCategories' => SubCategory::active()->orderBy('name')->get(['id', 'name', 'category_id']),
             'brands' => Brand::active()->orderBy('name')->get(['id', 'name']),
-            'attributeValues' => $this->attributeValuesForForm(),
+            'variantAttributes' => $this->variantAttributesForForm(),
         ]);
     }
 
@@ -184,11 +186,10 @@ class ProductController extends Controller
         $data['is_active'] = $data['is_active'] ?? false;
         $data['is_featured'] = $data['is_featured'] ?? false;
         $data['free_delivery'] = $data['free_delivery'] ?? false;
-        $data['has_color_variant'] = $data['has_color_variant'] ?? false;
-        $data['has_size_variant'] = $data['has_size_variant'] ?? false;
+        $data = array_merge($data, $this->variantAttributeFields($data['variant_attribute_ids'] ?? []));
         $data['cry_baby_enabled'] = $data['cry_baby_enabled'] ?? false;
 
-        if ($data['has_color_variant'] || $data['has_size_variant']) {
+        if ($data['variant_attribute_ids'] !== []) {
             $data = array_merge($data, $this->computeDenormalizedFields($variants));
         }
 
@@ -327,15 +328,47 @@ class ProductController extends Controller
     }
 
     /**
-     * @return array<string, mixed>
+     * Every attribute a product can build variants from, with its values,
+     * for the product form's variant editor.
+     *
+     * @return array<int, array{id: int, name: string, type: string, has_images: bool, values: array<int, array{id: int, value: string, color_hex: string|null}>}>
      */
-    private function attributeValuesForForm(): array
+    private function variantAttributesForForm(): array
     {
-        $values = AttributeValue::with('attribute')->orderBy('sort_order')->orderBy('value')->get();
+        return Attribute::query()
+            ->with(['values' => fn ($query) => $query->orderBy('sort_order')->orderBy('value')])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Attribute $attribute): array => [
+                'id' => $attribute->id,
+                'name' => $attribute->name,
+                'type' => $attribute->type->value,
+                'has_images' => $attribute->has_images,
+                'values' => $attribute->values->map(fn (AttributeValue $value): array => [
+                    'id' => $value->id,
+                    'value' => $value->value,
+                    'color_hex' => $value->color_hex,
+                ])->all(),
+            ])
+            ->all();
+    }
+
+    /**
+     * The product's variant attributes, plus the older Color/Size flags kept
+     * current for code (and rollbacks) that still read them.
+     *
+     * @param  array<int, int|string>  $attributeIds
+     * @return array{variant_attribute_ids: array<int, int>, has_color_variant: bool, has_size_variant: bool}
+     */
+    private function variantAttributeFields(array $attributeIds): array
+    {
+        $attributeIds = array_values(array_map('intval', $attributeIds));
+        $names = Attribute::query()->whereKey($attributeIds)->pluck('name')->all();
 
         return [
-            'colors' => $values->filter(fn (AttributeValue $value) => $value->attribute->name === 'Color')->values(),
-            'sizes' => $values->filter(fn (AttributeValue $value) => $value->attribute->name === 'Size')->values(),
+            'variant_attribute_ids' => $attributeIds,
+            'has_color_variant' => in_array('Color', $names, true),
+            'has_size_variant' => in_array('Size', $names, true),
         ];
     }
 
@@ -372,79 +405,78 @@ class ProductController extends Controller
     }
 
     /**
-     * Reconciles ProductVariant rows by (color_value_id, size_value_id) — never a
-     * wholesale delete-and-recreate, since cart_items/order_items cascade-delete
-     * on product_variants and a live cart or historical order could reference a
-     * removed combo. Combos no longer submitted are hard-deleted only when
-     * nothing references them; otherwise the row is left frozen and simply
-     * excluded from the attribute-values pivot below, so it becomes unreachable
-     * from the storefront without touching cart/order history.
+     * Reconciles ProductVariant rows by their set of attribute values (e.g.
+     * Red + 12pcs) — never a wholesale delete-and-recreate, since
+     * cart_items/order_items reference product_variants and a live cart or
+     * historical order could reference a removed combination. Combinations no
+     * longer submitted are hard-deleted only when nothing references them;
+     * otherwise the row is left frozen and simply excluded from the
+     * attribute-values pivot below, so it becomes unreachable from the
+     * storefront without touching cart/order history.
+     *
+     * Each variant stores its values in the product's attribute order
+     * (`attribute_value_ids`) and its labels ({"Color": "Red", "Set": "12pcs"}).
+     * The older `color_value_id`/`size_value_id` (kept current for a
+     * rollback) are written only for a product built from Color and/or Size
+     * alone: they are unique per product, so Blue/M/6pcs and Blue/M/12pcs
+     * would collide there, and nothing reads them for other products.
      *
      * @param  array<int, array<string, mixed>>  $variants
-     * @return array<string, ProductVariant> keyed by "{colorId|none}-{sizeId|none}"
+     * @return array<string, ProductVariant> keyed by variantKey()
      */
     private function syncVariants(Product $product, array $variants): array
     {
-        $submittedKeys = [];
+        $attributeIds = array_map('intval', $product->variant_attribute_ids ?? []);
+        $values = AttributeValue::with('attribute')
+            ->whereKey(collect($variants)->flatMap(fn (array $variant) => $variant['value_ids'] ?? [])->map(fn ($id): int => (int) $id)->unique()->all())
+            ->get()
+            ->keyBy('id');
+        $existingByKey = $this->prepareVariantRows($product, $variants);
         $variantsByKey = [];
-
-        $this->prepareVariantRows($product, $variants);
+        $colorAndSizeOnly = Attribute::query()->whereKey($attributeIds)->pluck('name')
+            ->every(fn (string $name): bool => in_array($name, ['Color', 'Size'], true));
 
         foreach ($variants as $variant) {
-            // Force-null a dimension the toggles disabled, no matter what the submitted
-            // row still carries — otherwise a stale frontend state (or a variant row left
-            // over from before a toggle was flipped off) can re-attach a disabled
-            // attribute to the pivot and keep it selectable on the storefront.
-            $colorId = $product->has_color_variant && isset($variant['color_value_id']) ? (int) $variant['color_value_id'] : null;
-            $sizeId = $product->has_size_variant && isset($variant['size_value_id']) ? (int) $variant['size_value_id'] : null;
-            $key = $this->variantKey($colorId, $sizeId);
-            $submittedKeys[] = $key;
+            $valueIds = $this->orderedValueIds($variant['value_ids'] ?? [], $attributeIds, $values);
+            $key = $this->variantKey($valueIds);
+            $legacyValue = fn (string $attributeName): ?int => $colorAndSizeOnly
+                ? collect($valueIds)->first(fn (int $valueId): bool => $values->get($valueId)?->attribute?->name === $attributeName)
+                : null;
 
-            $attributes = [];
-            if ($colorId) {
-                $attributes['Color'] = AttributeValue::find($colorId)?->value;
-            }
-            if ($sizeId) {
-                $attributes['Size'] = AttributeValue::find($sizeId)?->value;
-            }
+            $fields = [
+                // Normalizes a blank/whitespace-only SKU to null, matching
+                // ProductRequest's own validation-time normalization —
+                // otherwise a literal '' saved here would (a) collide with
+                // another blank SKU under the unique index, where multiple
+                // NULLs don't, and (b) break every `$variant?->sku ?? $product->sku`
+                // fallback elsewhere in the app, since `??` only falls back
+                // on null, not on an empty string.
+                'sku' => ($sku = trim((string) ($variant['sku'] ?? ''))) !== '' ? $sku : null,
+                'price' => $variant['price'],
+                'compare_price' => $variant['compare_price'] ?? null,
+                'cost_price' => $variant['cost_price'] ?? null,
+                'stock_quantity' => $variant['stock_quantity'],
+                'low_stock_threshold' => $variant['low_stock_threshold'] ?? 5,
+                'attributes' => VariantAttributeLabels::for($valueIds, $values),
+                'attribute_value_ids' => $valueIds,
+                'color_value_id' => $legacyValue('Color'),
+                'size_value_id' => $legacyValue('Size'),
+                'is_default' => filter_var($variant['is_default'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            ];
 
-            $variantsByKey[$key] = ProductVariant::updateOrCreate(
-                [
-                    'product_id' => $product->id,
-                    'color_value_id' => $colorId,
-                    'size_value_id' => $sizeId,
-                ],
-                [
-                    // Normalizes a blank/whitespace-only SKU to null,
-                    // matching ProductRequest's own validation-time
-                    // normalization — otherwise a literal '' saved here
-                    // would (a) collide with another blank SKU under a
-                    // future unique index, where multiple NULLs don't,
-                    // and (b) break every `$variant?->sku ?? $product->sku`
-                    // fallback elsewhere in the app, since `??` only
-                    // falls back on null, not on an empty string.
-                    'sku' => ($sku = trim((string) ($variant['sku'] ?? ''))) !== '' ? $sku : null,
-                    'price' => $variant['price'],
-                    'compare_price' => $variant['compare_price'] ?? null,
-                    'cost_price' => $variant['cost_price'] ?? null,
-                    'stock_quantity' => $variant['stock_quantity'],
-                    'low_stock_threshold' => $variant['low_stock_threshold'] ?? 5,
-                    'attributes' => $attributes,
-                    'is_default' => filter_var($variant['is_default'] ?? false, FILTER_VALIDATE_BOOLEAN),
-                ],
-            );
+            $existing = $existingByKey[$key] ?? null;
+
+            if ($existing !== null) {
+                $existing->update($fields);
+                $variantsByKey[$key] = $existing;
+            } else {
+                $variantsByKey[$key] = ProductVariant::create(['product_id' => $product->id, ...$fields]);
+            }
         }
 
-        $valueIds = [];
-        foreach ($variantsByKey as $variant) {
-            if ($variant->color_value_id) {
-                $valueIds[] = $variant->color_value_id;
-            }
-            if ($variant->size_value_id) {
-                $valueIds[] = $variant->size_value_id;
-            }
-        }
-        $product->attributeValues()->sync(array_values(array_unique($valueIds)));
+        $product->attributeValues()->sync(
+            collect($variantsByKey)->flatMap(fn (ProductVariant $variant) => $variant->valueIds())->unique()->values()->all(),
+        );
 
         return $variantsByKey;
     }
@@ -456,26 +488,29 @@ class ProductController extends Controller
      * one's. A retired variant still referenced keeps its SKU.
      *
      * @param  array<int, array<string, mixed>>  $variants
+     * @return array<string, ProductVariant> the existing rows the submission keeps, keyed by variantKey()
      */
-    private function prepareVariantRows(Product $product, array $variants): void
+    private function prepareVariantRows(Product $product, array $variants): array
     {
         $submittedSkus = [];
 
         foreach ($variants as $variant) {
-            $colorId = $product->has_color_variant && isset($variant['color_value_id']) ? (int) $variant['color_value_id'] : null;
-            $sizeId = $product->has_size_variant && isset($variant['size_value_id']) ? (int) $variant['size_value_id'] : null;
             $sku = trim((string) ($variant['sku'] ?? ''));
 
-            $submittedSkus[$this->variantKey($colorId, $sizeId)] = $sku !== '' ? $sku : null;
+            $submittedSkus[$this->variantKey(array_map('intval', $variant['value_ids'] ?? []))] = $sku !== '' ? $sku : null;
         }
 
-        foreach ($product->variants()->get() as $existing) {
-            $key = $this->variantKey($existing->color_value_id, $existing->size_value_id);
+        $kept = [];
 
-            if (array_key_exists($key, $submittedSkus)) {
+        foreach ($product->variants()->orderBy('id')->get() as $existing) {
+            $key = $this->variantKey($existing->valueIds());
+
+            if (array_key_exists($key, $submittedSkus) && ! isset($kept[$key])) {
                 if ($existing->sku !== $submittedSkus[$key]) {
                     $existing->update(['sku' => null]);
                 }
+
+                $kept[$key] = $existing;
 
                 continue;
             }
@@ -487,11 +522,40 @@ class ProductController extends Controller
                 $existing->delete();
             }
         }
+
+        return $kept;
     }
 
-    private function variantKey(?int $colorId, ?int $sizeId): string
+    /**
+     * The submitted value ids in the product's attribute order (Color before
+     * Set if the product lists them that way).
+     *
+     * @param  array<int, int|string>  $valueIds
+     * @param  array<int, int>  $attributeIds
+     * @param  Collection<int, AttributeValue>  $values
+     * @return array<int, int>
+     */
+    private function orderedValueIds(array $valueIds, array $attributeIds, $values): array
     {
-        return ($colorId ?? 'none').'-'.($sizeId ?? 'none');
+        $position = array_flip($attributeIds);
+        $valueIds = array_map('intval', $valueIds);
+
+        usort($valueIds, fn (int $a, int $b): int => ($position[(int) $values->get($a)?->attribute_id] ?? PHP_INT_MAX) <=> ($position[(int) $values->get($b)?->attribute_id] ?? PHP_INT_MAX));
+
+        return $valueIds;
+    }
+
+    /**
+     * The same combination always gives the same key, whatever order its
+     * values arrive in.
+     *
+     * @param  array<int, int>  $valueIds
+     */
+    private function variantKey(array $valueIds): string
+    {
+        sort($valueIds);
+
+        return $valueIds === [] ? 'none' : implode('-', $valueIds);
     }
 
     /**
@@ -540,44 +604,41 @@ class ProductController extends Controller
     }
 
     /**
-     * Images are chosen per colour, not per colour/size pair: `color:{id}`
-     * stores the colour, so the image belongs to every variant of it (see
-     * ProductVariant::getImageAttribute()). On a colour-only product it also
-     * links that colour's variant, as before. `size:{id}` (size-only products)
-     * links the size's variant. `pair:{colour}-{size}` is no longer offered;
-     * one sent by a form opened before this change counts as its colour. A
-     * colour or size no variant of this product has is ignored.
+     * Images are chosen per attribute value, not per variant: `value:{id}`
+     * (e.g. Red, or any value of an attribute that allows images) stores the
+     * value, so the image belongs to every variant with it (see
+     * ProductVariant::getImageAttribute()). Forms opened before this change
+     * send `color:{id}`, `size:{id}` or `pair:{colour}-{size}`; those count as
+     * that colour, size, or the pair's colour. On a product with a single
+     * variant attribute the image also links that value's variant, as before.
+     * A value no variant of this product has is ignored.
      *
      * @param  array<string, ProductVariant>  $variantsByKey
-     * @return array{variant_id: int|null, color_value_id: int|null}
+     * @return array{variant_id: int|null, attribute_value_id: int|null}
      */
     private function resolveMediaTag(?string $tag, array $variantsByKey): array
     {
-        $none = ['variant_id' => null, 'color_value_id' => null];
+        $none = ['variant_id' => null, 'attribute_value_id' => null];
 
-        if (! $tag) {
-            return $none;
-        }
-
-        if (str_starts_with($tag, 'size:')) {
-            return ['variant_id' => $variantsByKey[$this->variantKey(null, (int) substr($tag, 5))]->id ?? null, 'color_value_id' => null];
-        }
-
-        $colorId = match (true) {
+        $valueId = match (true) {
+            ! $tag => null,
+            str_starts_with($tag, 'value:') => (int) substr($tag, 6),
             str_starts_with($tag, 'color:') => (int) substr($tag, 6),
+            str_starts_with($tag, 'size:') => (int) substr($tag, 5),
             str_starts_with($tag, 'pair:') => (int) explode('-', substr($tag, 5))[0],
             default => null,
         };
 
-        $colorVariants = array_filter($variantsByKey, fn (ProductVariant $variant): bool => $colorId !== null && (int) $variant->color_value_id === $colorId);
+        $usedByAVariant = $valueId !== null && collect($variantsByKey)
+            ->contains(fn (ProductVariant $variant): bool => in_array($valueId, $variant->valueIds(), true));
 
-        if ($colorVariants === []) {
+        if (! $usedByAVariant) {
             return $none;
         }
 
         return [
-            'variant_id' => $variantsByKey[$this->variantKey($colorId, null)]->id ?? null,
-            'color_value_id' => $colorId,
+            'variant_id' => $variantsByKey[$this->variantKey([$valueId])]->id ?? null,
+            'attribute_value_id' => $valueId,
         ];
     }
 }

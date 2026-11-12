@@ -53,6 +53,25 @@ class OrderItem extends Model
         return $this->belongsTo(ProductVariant::class);
     }
 
+    /**
+     * The options bought, e.g. "Color: Red · Set: 12pcs": the copy taken
+     * when the order was placed (`product_snapshot.variant_attributes`), so
+     * renaming or removing a variant later never changes it; the live
+     * variant only for older lines without that copy. Null for a plain item.
+     */
+    public function variantLabel(): ?string
+    {
+        // getAttribute(), not ->attributes: inside a model, PHP would read the
+        // other model's protected $attributes array instead of the column.
+        $attributes = $this->product_snapshot['variant_attributes'] ?? $this->variant?->getAttribute('attributes');
+
+        if (! is_array($attributes) || $attributes === []) {
+            return null;
+        }
+
+        return collect($attributes)->map(fn ($value, $name): string => "{$name}: {$value}")->implode(' · ');
+    }
+
     public function flashSaleItem(): BelongsTo
     {
         return $this->belongsTo(FlashSaleItem::class);

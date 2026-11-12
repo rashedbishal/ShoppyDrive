@@ -1,56 +1,35 @@
-import type { VariantRow } from '@/components/admin/ProductVariantManager';
-
-type AttributeValueOption = { id: number; value: string };
+import type {
+    VariantAttributeOption,
+    VariantRow,
+} from '@/components/admin/ProductVariantManager';
 
 /**
  * Builds the "relate this media to…" dropdown options for the admin media
- * uploader from the currently configured variant rows. Tag values follow the
- * server's convention: "color:{id}" or "size:{id}". Images are chosen per
- * colour whenever the product has colours (with or without sizes): one Red
- * image serves Red/S, Red/M and Red/L, since size doesn't change the look.
- * Each colour or size is listed once, in variant order.
+ * uploader. Images are chosen per attribute value — one Red photo serves
+ * Red/S, Red/M and Red/L — for every variant attribute of this product that
+ * allows images (Catalog › Attributes › "Images per value"). Only values some
+ * variant actually uses are listed, each once, as "value:{id}".
  */
 export function buildMediaTagOptions(
     variants: VariantRow[],
-    colorValues: AttributeValueOption[],
-    sizeValues: AttributeValueOption[],
-    hasColorVariant: boolean,
-    hasSizeVariant: boolean,
+    attributes: VariantAttributeOption[],
+    selectedAttributeIds: number[],
 ): { value: string; label: string }[] | undefined {
-    if (!hasColorVariant && !hasSizeVariant) {
-        return undefined;
-    }
-
-    const colorLabel = (id: number | null) =>
-        colorValues.find((c) => c.id === id)?.value ?? '—';
-    const sizeLabel = (id: number | null) =>
-        sizeValues.find((s) => s.id === id)?.value ?? '—';
-
-    const uniqueOptions = (
-        options: { value: string; label: string }[],
-    ): { value: string; label: string }[] =>
-        options.filter(
-            (option, index) =>
-                options.findIndex((o) => o.value === option.value) === index,
-        );
-
-    if (hasColorVariant) {
-        return uniqueOptions(
-            variants
-                .filter((v) => v.color_value_id != null)
-                .map((v) => ({
-                    value: `color:${v.color_value_id}`,
-                    label: colorLabel(v.color_value_id),
+    const usedValueIds = new Set(variants.flatMap((row) => row.value_ids));
+    const options = selectedAttributeIds
+        .map((id) => attributes.find((attribute) => attribute.id === id))
+        .filter(
+            (attribute): attribute is VariantAttributeOption =>
+                attribute !== undefined && attribute.has_images,
+        )
+        .flatMap((attribute) =>
+            attribute.values
+                .filter((value) => usedValueIds.has(value.id))
+                .map((value) => ({
+                    value: `value:${value.id}`,
+                    label: `${attribute.name}: ${value.value}`,
                 })),
         );
-    }
 
-    return uniqueOptions(
-        variants
-            .filter((v) => v.size_value_id != null)
-            .map((v) => ({
-                value: `size:${v.size_value_id}`,
-                label: sizeLabel(v.size_value_id),
-            })),
-    );
+    return options.length > 0 ? options : undefined;
 }

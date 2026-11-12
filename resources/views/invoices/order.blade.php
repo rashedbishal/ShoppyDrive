@@ -301,15 +301,8 @@
                     <td style="color: #94a3b8;">{{ $index + 1 }}</td>
                     <td>
                         <div class="prod-name">{{ $item->product_name ?? $item->product->name }}</div>
-                        @if(!empty($item->variant['attributes']))
-                            <div class="prod-meta">
-                                @foreach($item->variant['attributes'] as $key => $value)
-                                    {{ $key }}: {{ $value }}
-                                    @if(!$loop->last)
-                                        &nbsp;|&nbsp;
-                                    @endif
-                                @endforeach
-                            </div>
+                        @if($item->variantLabel())
+                            <div class="prod-meta">{{ $item->variantLabel() }}</div>
                         @endif
                         @if($item->sku)
                             <div class="prod-meta">SKU: {{ $item->sku }}</div>

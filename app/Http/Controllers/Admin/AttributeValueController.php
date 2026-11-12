@@ -65,6 +65,7 @@ class AttributeValueController extends Controller
         $products = $attributeValue->products()->get(['products.id', 'products.name', 'products.slug'])
             ->merge($attributeValue->colorVariants()->with('product:id,name,slug')->get()->pluck('product')->filter())
             ->merge($attributeValue->sizeVariants()->with('product:id,name,slug')->get()->pluck('product')->filter())
+            ->merge(Product::withTrashed()->whereKey($attributeValue->variantsUsingIt()->pluck('product_id')->unique()->all())->get(['id', 'name', 'slug']))
             ->unique('id')
             ->values();
 

@@ -9,7 +9,10 @@ import {
 } from '@/components/admin/product-form-field';
 import type { SpecificationRow } from '@/components/admin/ProductSpecificationsManager';
 import { ProductSpecificationsManager } from '@/components/admin/ProductSpecificationsManager';
-import type { VariantRow } from '@/components/admin/ProductVariantManager';
+import type {
+    VariantAttributeOption,
+    VariantRow,
+} from '@/components/admin/ProductVariantManager';
 import { ProductVariantManager } from '@/components/admin/ProductVariantManager';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -31,12 +34,14 @@ type ProductMedia = {
     is_primary: boolean;
     is_hover: boolean;
     variant_id: number | null;
-    color_value_id: number | null;
+    attribute_value_id: number | null;
 };
 type ProductVariant = {
     id: number;
     color_value_id: number | null;
     size_value_id: number | null;
+    /** Null on a row saved before custom attributes; see variantValueIds(). */
+    attribute_value_ids: number[] | null;
     sku: string | null;
     price: number;
     compare_price: number | null;
@@ -44,11 +49,6 @@ type ProductVariant = {
     stock_quantity: number;
     low_stock_threshold: number | null;
     is_default: boolean;
-};
-type AttributeValueOption = {
-    id: number;
-    value: string;
-    color_hex: string | null;
 };
 type Product = {
     id: number;
@@ -70,8 +70,7 @@ type Product = {
     is_featured: boolean;
     free_delivery: boolean;
     free_delivery_min_qty: number | null;
-    has_color_variant: boolean;
-    has_size_variant: boolean;
+    variant_attribute_ids: number[] | null;
     cry_baby_enabled: boolean;
     meta_title: string | null;
     meta_description: string | null;
@@ -86,27 +85,32 @@ type Props = {
     categories: { id: number; name: string }[];
     subCategories: { id: number; name: string; category_id: number }[];
     brands: { id: number; name: string }[];
-    attributeValues: {
-        colors: AttributeValueOption[];
-        sizes: AttributeValueOption[];
-    };
+    variantAttributes: VariantAttributeOption[];
 };
 
+/** A variant's values; a row saved before custom attributes has only Color/Size. */
+function variantValueIds(variant: ProductVariant): number[] {
+    return (
+        variant.attribute_value_ids ??
+        [variant.color_value_id, variant.size_value_id].filter(
+            (id): id is number => id !== null,
+        )
+    );
+}
+
 /**
- * Images are picked per colour: an image saved for a colour, or an older one
- * saved for a colour/size pair (Red/L), shows as that colour (Red), and
- * saving keeps it for every Red variant.
+ * Images are picked per attribute value: an image saved for a value (Red)
+ * shows as that value; an older one saved for a single variant (Red/L)
+ * shows as that variant's first value that allows images (Red), or its only
+ * value, and saving keeps it for every variant with that value.
  */
 function mediaTagFor(
     media: ProductMedia,
     variants: ProductVariant[],
+    attributes: VariantAttributeOption[],
 ): string | null {
-    if (media.color_value_id != null) {
-        return `color:${media.color_value_id}`;
-    }
-
-    if (media.variant_id == null) {
-        return null;
+    if (media.attribute_value_id != null) {
+        return `value:${media.attribute_value_id}`;
     }
 
     const variant = variants.find((v) => v.id === media.variant_id);
@@ -115,15 +119,18 @@ function mediaTagFor(
         return null;
     }
 
-    if (variant.color_value_id != null) {
-        return `color:${variant.color_value_id}`;
-    }
+    const valueIds = variantValueIds(variant);
+    const imageValueId = valueIds.find((valueId) =>
+        attributes.some(
+            (attribute) =>
+                attribute.has_images &&
+                attribute.values.some((value) => value.id === valueId),
+        ),
+    );
+    const valueId =
+        imageValueId ?? (valueIds.length === 1 ? valueIds[0] : undefined);
 
-    if (variant.size_value_id !== null) {
-        return `size:${variant.size_value_id}`;
-    }
-
-    return null;
+    return valueId === undefined ? null : `value:${valueId}`;
 }
 
 export default function ProductEdit({
@@ -132,7 +139,7 @@ export default function ProductEdit({
     categories,
     subCategories,
     brands,
-    attributeValues,
+    variantAttributes,
 }: Props) {
     const listUrl = useAdminListUrl('admin.products.index');
     const { data, setData, post, processing, errors, setError, clearErrors } =
@@ -165,12 +172,10 @@ export default function ProductEdit({
             free_delivery_min_qty: product.free_delivery_min_qty
                 ? String(product.free_delivery_min_qty)
                 : '',
-            has_color_variant: product.has_color_variant,
-            has_size_variant: product.has_size_variant,
+            variant_attribute_ids: product.variant_attribute_ids ?? [],
             variants: product.variants.map(
                 (v): VariantRow => ({
-                    color_value_id: v.color_value_id,
-                    size_value_id: v.size_value_id,
+                    value_ids: variantValueIds(v),
                     sku: v.sku ?? '',
                     price: String(v.price),
                     compare_price: v.compare_price
@@ -189,7 +194,7 @@ export default function ProductEdit({
                 ? product.media.map((m) => m.path)
                 : ([] as (File | string)[]),
             media_tags: product.media.map((m) =>
-                mediaTagFor(m, product.variants),
+                mediaTagFor(m, product.variants, variantAttributes),
             ) as (string | null)[],
             primary_image_index: mediaFlagIndex(product.media, 'is_primary'),
             hover_image_index: mediaFlagIndex(product.media, 'is_hover'),
@@ -198,7 +203,7 @@ export default function ProductEdit({
             meta_keywords: product.meta_keywords ?? '',
         });
 
-    const hasVariants = data.has_color_variant || data.has_size_variant;
+    const hasVariants = data.variant_attribute_ids.length > 0;
 
     const setImages = (files: (File | string)[]) => {
         setData((prev) => ({ ...prev, ...remapProductMedia(prev, files) }));
@@ -206,10 +211,8 @@ export default function ProductEdit({
 
     const tagOptions = buildMediaTagOptions(
         data.variants,
-        attributeValues.colors,
-        attributeValues.sizes,
-        data.has_color_variant,
-        data.has_size_variant,
+        variantAttributes,
+        data.variant_attribute_ids,
     );
     const minVariantPrice = computeMinVariantPrice(data.variants);
 
@@ -582,22 +585,16 @@ export default function ProductEdit({
 
                                 <div className="border-t border-slate-100 pt-4">
                                     <ProductVariantManager
-                                        colorValues={attributeValues.colors}
-                                        sizeValues={attributeValues.sizes}
-                                        hasColorVariant={data.has_color_variant}
-                                        hasSizeVariant={data.has_size_variant}
-                                        onToggleColor={(enabled) =>
-                                            setData(
-                                                'has_color_variant',
-                                                enabled,
-                                            )
-                                        }
-                                        onToggleSize={(enabled) =>
-                                            setData('has_size_variant', enabled)
+                                        attributes={variantAttributes}
+                                        selectedAttributeIds={
+                                            data.variant_attribute_ids
                                         }
                                         variants={data.variants}
-                                        onVariantsChange={(variants) =>
-                                            setData('variants', variants)
+                                        onChange={(setup) =>
+                                            setData((prev) => ({
+                                                ...prev,
+                                                ...setup,
+                                            }))
                                         }
                                         errors={errors}
                                     />

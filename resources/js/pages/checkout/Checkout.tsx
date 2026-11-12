@@ -320,6 +320,14 @@ function OrderSummaryRow({ item }: { item: CartItem }): React.JSX.Element {
                 <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
                     {item.product.name}
                 </p>
+                {item.variant &&
+                    Object.keys(item.variant.attributes ?? {}).length > 0 && (
+                        <p className="truncate text-xs text-[var(--color-text-secondary)]">
+                            {Object.entries(item.variant.attributes ?? {})
+                                .map(([name, value]) => `${name}: ${value}`)
+                                .join(' · ')}
+                        </p>
+                    )}
                 <p className="text-xs text-[var(--color-text-muted)]">
                     Qty: {item.quantity}
                 </p>

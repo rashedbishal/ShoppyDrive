@@ -41,8 +41,29 @@ type OrderItem = {
     subtotal: number;
     product: { id: number; name: string; slug: string } | null;
     variant: { id: number; attributes: Record<string, string> } | null;
-    product_snapshot: { image?: string | null } | null;
+    product_snapshot: {
+        image?: string | null;
+        /** The options bought, copied when the order was placed. */
+        variant_attributes?: Record<string, string> | null;
+    } | null;
 };
+
+/**
+ * The options bought, e.g. "Color: Red | Set: 12pcs": the copy taken when the
+ * order was placed, so a later rename or removal never changes it; the live
+ * variant only for older orders without that copy.
+ */
+function orderedOptions(item: OrderItem): string | null {
+    const attributes =
+        item.product_snapshot?.variant_attributes ??
+        item.variant?.attributes ??
+        null;
+    const parts = Object.entries(attributes ?? {}).map(
+        ([name, value]) => `${name}: ${value}`,
+    );
+
+    return parts.length > 0 ? parts.join(' | ') : null;
+}
 
 type StatusHistory = {
     id: number;
@@ -467,20 +488,9 @@ export default function OrderShow({
                                                 <p className="text-sm font-medium text-slate-800">
                                                     {item.product_name}
                                                 </p>
-                                                {item.variant && (
+                                                {orderedOptions(item) && (
                                                     <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">
-                                                        {Object.entries(
-                                                            item.variant
-                                                                .attributes,
-                                                        )
-                                                            .map(
-                                                                ([
-                                                                    key,
-                                                                    value,
-                                                                ]) =>
-                                                                    `${key}: ${value}`,
-                                                            )
-                                                            .join(' | ')}
+                                                        {orderedOptions(item)}
                                                     </p>
                                                 )}
                                                 {item.sku && (

@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'framer-motion';
-import { Star, Trash2, Wand2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Trash2, Wand2 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminFade, AdminReveal } from '@/components/admin/admin-motion';
 import { belowCostWarning } from '@/lib/price-warnings';
@@ -21,9 +21,12 @@ const BLANK_BULK_FIELDS: BulkFields = {
     low_stock_threshold: '',
 };
 
+/** Above this, the combination checklist asks the admin to narrow the values. */
+const MAX_LISTED_COMBINATIONS = 200;
+
 export type VariantRow = {
-    color_value_id: number | null;
-    size_value_id: number | null;
+    /** One value per variant attribute (e.g. Red, 12pcs), in any order. */
+    value_ids: number[];
     sku: string;
     price: string;
     compare_price: string;
@@ -33,21 +36,32 @@ export type VariantRow = {
     is_default: boolean;
 };
 
-type AttributeValueOption = {
+export type VariantAttributeValueOption = {
     id: number;
     value: string;
     color_hex: string | null;
 };
 
-type Props = {
-    colorValues: AttributeValueOption[];
-    sizeValues: AttributeValueOption[];
-    hasColorVariant: boolean;
-    hasSizeVariant: boolean;
-    onToggleColor: (enabled: boolean) => void;
-    onToggleSize: (enabled: boolean) => void;
+/** An attribute products can build variants from (Color, Size, Set, …). */
+export type VariantAttributeOption = {
+    id: number;
+    name: string;
+    type: 'select' | 'color' | 'text';
+    has_images: boolean;
+    values: VariantAttributeValueOption[];
+};
+
+export type VariantSetup = {
+    variant_attribute_ids: number[];
     variants: VariantRow[];
-    onVariantsChange: (variants: VariantRow[]) => void;
+};
+
+type Props = {
+    attributes: VariantAttributeOption[];
+    selectedAttributeIds: number[];
+    variants: VariantRow[];
+    /** Attribute list and variants always change together. */
+    onChange: (setup: VariantSetup) => void;
     errors?: Record<string, string>;
 };
 
@@ -76,13 +90,9 @@ function VariantField({
     );
 }
 
-function blankVariant(
-    colorId: number | null,
-    sizeId: number | null,
-): VariantRow {
+function blankVariant(valueIds: number[]): VariantRow {
     return {
-        color_value_id: colorId,
-        size_value_id: sizeId,
+        value_ids: valueIds,
         sku: '',
         price: '',
         compare_price: '',
@@ -93,17 +103,9 @@ function blankVariant(
     };
 }
 
-function uniqueIds(
-    variants: VariantRow[],
-    key: 'color_value_id' | 'size_value_id',
-): number[] {
-    return Array.from(
-        new Set(
-            variants
-                .map((v) => v[key])
-                .filter((id): id is number => id !== null),
-        ),
-    );
+/** The same combination gives the same key whatever order its values are in. */
+export function combinationKey(valueIds: number[]): string {
+    return [...valueIds].sort((a, b) => a - b).join('-');
 }
 
 /** Ensures exactly one row is marked default whenever the set is non-empty,
@@ -116,203 +118,257 @@ function ensureDefault(rows: VariantRow[]): VariantRow[] {
     return rows.map((row, i) => (i === 0 ? { ...row, is_default: true } : row));
 }
 
+/** Keeps the first row of each combination (e.g. after removing an attribute). */
+function dedupe(rows: VariantRow[]): VariantRow[] {
+    const seen = new Set<string>();
+
+    return rows.filter((row) => {
+        const key = combinationKey(row.value_ids);
+
+        if (seen.has(key)) {
+            return false;
+        }
+
+        seen.add(key);
+
+        return true;
+    });
+}
+
+/** Every combination of one value from each list, in list order. */
+function cartesian(lists: number[][]): number[][] {
+    return lists.reduce<number[][]>(
+        (combos, list) =>
+            combos.flatMap((combo) => list.map((id) => [...combo, id])),
+        [[]],
+    );
+}
+
 export function ProductVariantManager({
-    colorValues,
-    sizeValues,
-    hasColorVariant,
-    hasSizeVariant,
-    onToggleColor,
-    onToggleSize,
+    attributes,
+    selectedAttributeIds,
     variants,
-    onVariantsChange,
+    onChange,
     errors,
 }: Props): React.JSX.Element {
-    // Candidate colors/sizes are which values are "in play" for building
-    // combinations — tracked independently of `variants` (rather than derived
-    // from it) so that, in dual mode, picking a color and a size doesn't
-    // force-generate every pairing. Initialized from any variants already
-    // present (e.g. loading the edit page) so pills/matrix start in sync.
-    const [candidateColorIds, setCandidateColorIds] = useState<number[]>(() =>
-        uniqueIds(variants, 'color_value_id'),
+    const attributeById = new Map(attributes.map((a) => [a.id, a]));
+    const selectedAttributes = selectedAttributeIds
+        .map((id) => attributeById.get(id))
+        .filter((a): a is VariantAttributeOption => a !== undefined);
+    const attributeOfValue = new Map<number, VariantAttributeOption>(
+        attributes.flatMap((a) => a.values.map((v) => [v.id, a] as const)),
     );
-    const [candidateSizeIds, setCandidateSizeIds] = useState<number[]>(() =>
-        uniqueIds(variants, 'size_value_id'),
+    const valueById = new Map(
+        attributes.flatMap((a) => a.values.map((v) => [v.id, v] as const)),
     );
-    // Not persisted onto `variants` — purely a scratch pad the admin fills
-    // in once, then applies to every row at once. SKU is deliberately not
-    // part of this: variants need distinct SKUs, so bulk-filling it would
-    // just hand every variant the same (wrong) code.
+
+    // Candidate values are which values are "in play" per attribute. With
+    // two or more attributes, picking values creates no variant by itself:
+    // the admin ticks which combinations exist in the checklist below.
+    const [candidates, setCandidates] = useState<Record<number, number[]>>(() =>
+        Object.fromEntries(
+            selectedAttributeIds.map((attributeId) => [
+                attributeId,
+                Array.from(
+                    new Set(
+                        variants
+                            .map((row) =>
+                                row.value_ids.find(
+                                    (id) =>
+                                        attributeOfValue.get(id)?.id ===
+                                        attributeId,
+                                ),
+                            )
+                            .filter((id): id is number => id !== undefined),
+                    ),
+                ),
+            ]),
+        ),
+    );
     const [bulkFields, setBulkFields] = useState<BulkFields>(BLANK_BULK_FIELDS);
 
-    const dualMode = hasColorVariant && hasSizeVariant;
+    const multiMode = selectedAttributes.length >= 2;
+    const candidatesOf = (attributeId: number): number[] =>
+        candidates[attributeId] ?? [];
 
-    const toggleColorValue = (id: number) => {
-        const isActive = candidateColorIds.includes(id);
-        setCandidateColorIds(
-            isActive
-                ? candidateColorIds.filter((existingId) => existingId !== id)
-                : [...candidateColorIds, id],
+    const emit = (attributeIds: number[], rows: VariantRow[]) =>
+        onChange({
+            variant_attribute_ids: attributeIds,
+            variants: ensureDefault(rows),
+        });
+
+    /** With a single attribute every candidate value is a variant. */
+    const withEveryCandidate = (
+        attributeIds: number[],
+        rows: VariantRow[],
+        nextCandidates: Record<number, number[]>,
+    ): VariantRow[] => {
+        if (attributeIds.length !== 1) {
+            return rows;
+        }
+
+        const existing = new Set(
+            rows.map((row) => combinationKey(row.value_ids)),
         );
 
-        if (!dualMode) {
-            // Single-dimension: the pill directly is the variant.
-            if (isActive) {
-                if (variants.length <= 1) {
-                    return; // can't deselect the only remaining variant this way
-                }
-
-                onVariantsChange(
-                    ensureDefault(
-                        variants.filter((v) => v.color_value_id !== id),
-                    ),
-                );
-            } else {
-                onVariantsChange(
-                    ensureDefault([...variants, blankVariant(id, null)]),
-                );
-            }
-        } else if (isActive) {
-            // Dropping a candidate color drops whatever pairs used it.
-            const remaining = variants.filter((v) => v.color_value_id !== id);
-
-            if (remaining.length === 0 && variants.length > 0) {
-                return; // would empty the last variant(s) — block
-            }
-
-            onVariantsChange(ensureDefault(remaining));
-        }
-        // Adding a candidate color in dual mode creates no variant by
-        // itself — the admin checks specific pairs in the matrix below.
+        return [
+            ...rows,
+            ...(nextCandidates[attributeIds[0]] ?? [])
+                .filter((id) => !existing.has(combinationKey([id])))
+                .map((id) => blankVariant([id])),
+        ];
     };
 
-    const toggleSizeValue = (id: number) => {
-        const isActive = candidateSizeIds.includes(id);
-        setCandidateSizeIds(
-            isActive
-                ? candidateSizeIds.filter((existingId) => existingId !== id)
-                : [...candidateSizeIds, id],
-        );
-
-        if (!dualMode) {
-            if (isActive) {
-                if (variants.length <= 1) {
-                    return;
-                }
-
-                onVariantsChange(
-                    ensureDefault(
-                        variants.filter((v) => v.size_value_id !== id),
-                    ),
-                );
-            } else {
-                onVariantsChange(
-                    ensureDefault([...variants, blankVariant(null, id)]),
-                );
-            }
-        } else if (isActive) {
-            const remaining = variants.filter((v) => v.size_value_id !== id);
-
-            if (remaining.length === 0 && variants.length > 0) {
-                return;
-            }
-
-            onVariantsChange(ensureDefault(remaining));
-        }
-    };
-
-    const togglePair = (colorId: number, sizeId: number) => {
-        const exists = variants.some(
-            (v) => v.color_value_id === colorId && v.size_value_id === sizeId,
-        );
-
-        if (exists) {
-            if (variants.length <= 1) {
-                return; // can't uncheck the only remaining pair this way
-            }
-
-            onVariantsChange(
-                ensureDefault(
-                    variants.filter(
-                        (v) =>
-                            !(
-                                v.color_value_id === colorId &&
-                                v.size_value_id === sizeId
-                            ),
-                    ),
-                ),
+    const toggleAttribute = (attribute: VariantAttributeOption) => {
+        if (selectedAttributeIds.includes(attribute.id)) {
+            // Removing an attribute strips its value from every variant;
+            // variants that become identical are merged (first one kept).
+            const nextIds = selectedAttributeIds.filter(
+                (id) => id !== attribute.id,
             );
-        } else {
-            onVariantsChange(
-                ensureDefault([...variants, blankVariant(colorId, sizeId)]),
-            );
-        }
-    };
+            const nextCandidates = { ...candidates };
+            delete nextCandidates[attribute.id];
+            setCandidates(nextCandidates);
 
-    const handleToggleColor = (enabled: boolean) => {
-        onToggleColor(enabled);
-
-        if (!enabled) {
-            setCandidateColorIds([]);
-            onVariantsChange(
-                ensureDefault(
-                    candidateSizeIds.map((id) => blankVariant(null, id)),
-                ),
-            );
-
-            return;
-        }
-
-        if (candidateColorIds.length === 0 && colorValues.length > 0) {
-            const firstId = colorValues[0].id;
-            setCandidateColorIds([firstId]);
-            onVariantsChange(
-                hasSizeVariant
-                    ? [] // entering dual mode — admin picks pairs in the matrix
-                    : ensureDefault([blankVariant(firstId, null)]),
-            );
-        }
-    };
-
-    const handleToggleSize = (enabled: boolean) => {
-        onToggleSize(enabled);
-
-        if (!enabled) {
-            setCandidateSizeIds([]);
-            onVariantsChange(
-                ensureDefault(
-                    candidateColorIds.map((id) => blankVariant(id, null)),
-                ),
-            );
-
-            return;
-        }
-
-        if (candidateSizeIds.length === 0 && sizeValues.length > 0) {
-            const firstId = sizeValues[0].id;
-            setCandidateSizeIds([firstId]);
-            onVariantsChange(
-                hasColorVariant
+            const stripped =
+                nextIds.length === 0
                     ? []
-                    : ensureDefault([blankVariant(null, firstId)]),
+                    : dedupe(
+                          variants.map((row) => ({
+                              ...row,
+                              value_ids: row.value_ids.filter(
+                                  (id) =>
+                                      attributeOfValue.get(id)?.id !==
+                                      attribute.id,
+                              ),
+                          })),
+                      );
+
+            emit(
+                nextIds,
+                withEveryCandidate(nextIds, stripped, nextCandidates),
             );
+
+            return;
         }
+
+        // Adding an attribute gives every existing variant its first value,
+        // so prices and stock already entered are kept.
+        const firstValue = attribute.values[0]?.id;
+        const nextIds = [...selectedAttributeIds, attribute.id];
+        const nextCandidates = {
+            ...candidates,
+            [attribute.id]: firstValue === undefined ? [] : [firstValue],
+        };
+        setCandidates(nextCandidates);
+
+        const extended =
+            firstValue === undefined
+                ? variants
+                : variants.map((row) => ({
+                      ...row,
+                      value_ids: [...row.value_ids, firstValue],
+                  }));
+
+        emit(nextIds, withEveryCandidate(nextIds, extended, nextCandidates));
     };
+
+    const moveAttribute = (attributeId: number, direction: -1 | 1) => {
+        const index = selectedAttributeIds.indexOf(attributeId);
+        const target = index + direction;
+
+        if (
+            index === -1 ||
+            target < 0 ||
+            target >= selectedAttributeIds.length
+        ) {
+            return;
+        }
+
+        const nextIds = [...selectedAttributeIds];
+        [nextIds[index], nextIds[target]] = [nextIds[target], nextIds[index]];
+        emit(nextIds, variants);
+    };
+
+    const toggleValue = (attributeId: number, valueId: number) => {
+        const current = candidatesOf(attributeId);
+        const isActive = current.includes(valueId);
+        const nextCandidates = {
+            ...candidates,
+            [attributeId]: isActive
+                ? current.filter((id) => id !== valueId)
+                : [...current, valueId],
+        };
+        setCandidates(nextCandidates);
+
+        if (isActive) {
+            // Dropping a value drops every variant using it.
+            emit(
+                selectedAttributeIds,
+                variants.filter((row) => !row.value_ids.includes(valueId)),
+            );
+
+            return;
+        }
+
+        emit(
+            selectedAttributeIds,
+            withEveryCandidate(selectedAttributeIds, variants, nextCandidates),
+        );
+    };
+
+    const combinations = multiMode
+        ? cartesian(selectedAttributes.map((a) => candidatesOf(a.id)))
+        : [];
+    const existingKeys = new Set(
+        variants.map((row) => combinationKey(row.value_ids)),
+    );
+
+    const toggleCombination = (valueIds: number[]) => {
+        const key = combinationKey(valueIds);
+
+        emit(
+            selectedAttributeIds,
+            existingKeys.has(key)
+                ? variants.filter(
+                      (row) => combinationKey(row.value_ids) !== key,
+                  )
+                : [...variants, blankVariant(valueIds)],
+        );
+    };
+
+    const selectAllCombinations = () =>
+        emit(selectedAttributeIds, [
+            ...variants,
+            ...combinations
+                .filter((combo) => !existingKeys.has(combinationKey(combo)))
+                .map((combo) => blankVariant(combo)),
+        ]);
 
     const updateRow = (index: number, patch: Partial<VariantRow>) => {
-        const next = variants.map((row, i) =>
-            i === index ? { ...row, ...patch } : row,
+        emit(
+            selectedAttributeIds,
+            variants.map((row, i) =>
+                i === index ? { ...row, ...patch } : row,
+            ),
         );
-        onVariantsChange(next);
     };
 
     const setDefault = (index: number) => {
-        onVariantsChange(
-            variants.map((row, i) => ({ ...row, is_default: i === index })),
-        );
+        onChange({
+            variant_attribute_ids: selectedAttributeIds,
+            variants: variants.map((row, i) => ({
+                ...row,
+                is_default: i === index,
+            })),
+        });
     };
 
     const removeRow = (index: number) => {
-        onVariantsChange(ensureDefault(variants.filter((_, i) => i !== index)));
+        emit(
+            selectedAttributeIds,
+            variants.filter((_, i) => i !== index),
+        );
     };
 
     /** Only fields actually filled in the bulk panel are applied — a blank
@@ -328,246 +384,256 @@ export function ProductVariantManager({
             return;
         }
 
-        onVariantsChange(variants.map((row) => ({ ...row, ...patch })));
+        emit(
+            selectedAttributeIds,
+            variants.map((row) => ({ ...row, ...patch })),
+        );
     };
 
-    const valueLabel = (id: number | null, options: AttributeValueOption[]) =>
-        options.find((opt) => opt.id === id)?.value ?? '—';
+    /** "Red / 12pcs" in the product's attribute order. */
+    const comboLabel = (valueIds: number[]): string =>
+        selectedAttributes
+            .map((attribute) => {
+                const valueId = valueIds.find(
+                    (id) => attributeOfValue.get(id)?.id === attribute.id,
+                );
 
-    const colorSwatch = (id: number | null) =>
-        colorValues.find((opt) => opt.id === id)?.color_hex;
+                return valueId === undefined
+                    ? '—'
+                    : (valueById.get(valueId)?.value ?? '—');
+            })
+            .join(' / ');
+
+    /** The swatch of a colour-type value in the combination, if any. */
+    const comboSwatch = (valueIds: number[]): string | null => {
+        for (const id of valueIds) {
+            if (attributeOfValue.get(id)?.type === 'color') {
+                return valueById.get(id)?.color_hex ?? null;
+            }
+        }
+
+        return null;
+    };
 
     const fieldInputClass =
         'h-9 w-full rounded-lg border border-slate-200 px-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e]';
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-wrap gap-6">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                    <input
-                        type="checkbox"
-                        checked={hasColorVariant}
-                        onChange={(e) => handleToggleColor(e.target.checked)}
-                        className="size-4 rounded border-slate-300 text-[#c8102e] focus:ring-[#c8102e]"
-                    />
-                    Enable Color
-                </label>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                    <input
-                        type="checkbox"
-                        checked={hasSizeVariant}
-                        onChange={(e) => handleToggleSize(e.target.checked)}
-                        className="size-4 rounded border-slate-300 text-[#c8102e] focus:ring-[#c8102e]"
-                    />
-                    Enable Size
-                </label>
+            <div>
+                <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    Variant attributes
+                </p>
+                <p className="mb-2 text-xs text-slate-400">
+                    Choose what this product comes in (e.g. Color, Size, Set).
+                    Manage attributes and their values under Catalog ›
+                    Attributes.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                    {attributes.map((attribute) => {
+                        const active = selectedAttributeIds.includes(
+                            attribute.id,
+                        );
+
+                        return (
+                            <label
+                                key={attribute.id}
+                                className={cn(
+                                    'flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition',
+                                    active
+                                        ? 'border-[#c8102e] bg-[#c8102e]/5 text-[#c8102e]'
+                                        : 'border-slate-200 text-slate-700 hover:border-slate-300',
+                                    attribute.values.length === 0 &&
+                                        !active &&
+                                        'opacity-50',
+                                )}
+                                title={
+                                    attribute.values.length === 0
+                                        ? 'Add values to this attribute first'
+                                        : undefined
+                                }
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={active}
+                                    disabled={
+                                        !active && attribute.values.length === 0
+                                    }
+                                    onChange={() => toggleAttribute(attribute)}
+                                    className="size-4 rounded border-slate-300 text-[#c8102e] focus:ring-[#c8102e]"
+                                />
+                                {attribute.name}
+                            </label>
+                        );
+                    })}
+                    {attributes.length === 0 && (
+                        <p className="text-xs text-slate-400">
+                            No attributes yet — add some under Catalog ›
+                            Attributes.
+                        </p>
+                    )}
+                </div>
             </div>
 
             <AnimatePresence initial={false}>
-                {hasColorVariant && (
-                    <AdminReveal key="colors">
+                {selectedAttributes.map((attribute, position) => (
+                    <AdminReveal key={`attribute-${attribute.id}`}>
                         <div>
-                            <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                                Colors
-                            </p>
+                            <div className="mb-1.5 flex items-center gap-2">
+                                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                    {attribute.name}
+                                </p>
+                                {selectedAttributes.length > 1 && (
+                                    <span className="flex items-center gap-0.5">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                moveAttribute(attribute.id, -1)
+                                            }
+                                            disabled={position === 0}
+                                            title="Show earlier"
+                                            className="rounded p-0.5 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                                        >
+                                            <ChevronLeft className="size-3.5" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                moveAttribute(attribute.id, 1)
+                                            }
+                                            disabled={
+                                                position ===
+                                                selectedAttributes.length - 1
+                                            }
+                                            title="Show later"
+                                            className="rounded p-0.5 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                                        >
+                                            <ChevronRight className="size-3.5" />
+                                        </button>
+                                    </span>
+                                )}
+                            </div>
                             <div className="flex flex-wrap gap-2">
-                                {colorValues.map((color) => {
-                                    const active = candidateColorIds.includes(
-                                        color.id,
-                                    );
+                                {attribute.values.map((value) => {
+                                    const active = candidatesOf(
+                                        attribute.id,
+                                    ).includes(value.id);
 
                                     return (
                                         <button
-                                            key={color.id}
+                                            key={value.id}
                                             type="button"
                                             onClick={() =>
-                                                toggleColorValue(color.id)
+                                                toggleValue(
+                                                    attribute.id,
+                                                    value.id,
+                                                )
                                             }
                                             className={cn(
-                                                'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition',
+                                                'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition',
                                                 active
-                                                    ? 'border-[#c8102e] bg-[#c8102e]/10 text-[#c8102e]'
+                                                    ? 'border-[#c8102e] bg-[#c8102e]/5 text-[#c8102e]'
                                                     : 'border-slate-200 text-slate-600 hover:border-slate-300',
                                             )}
                                         >
-                                            <span
-                                                className="size-3 rounded-full border border-black/10"
-                                                style={{
-                                                    backgroundColor:
-                                                        color.color_hex ||
-                                                        '#ccc',
-                                                }}
-                                            />
-                                            {color.value}
+                                            {attribute.type === 'color' && (
+                                                <span
+                                                    className="size-3 rounded-full border border-black/10"
+                                                    style={{
+                                                        backgroundColor:
+                                                            value.color_hex ||
+                                                            '#ccc',
+                                                    }}
+                                                />
+                                            )}
+                                            {value.value}
                                         </button>
                                     );
                                 })}
-                                {colorValues.length === 0 && (
-                                    <p className="text-xs text-slate-400">
-                                        No color values yet — add some under
-                                        Admin &gt; Attributes.
-                                    </p>
-                                )}
                             </div>
                         </div>
                     </AdminReveal>
-                )}
+                ))}
             </AnimatePresence>
 
             <AnimatePresence initial={false}>
-                {hasSizeVariant && (
-                    <AdminReveal key="sizes">
+                {multiMode && combinations.length > 0 && (
+                    <AdminReveal key="combinations">
                         <div>
-                            <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                                Sizes
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                {sizeValues.map((size) => {
-                                    const active = candidateSizeIds.includes(
-                                        size.id,
-                                    );
-
-                                    return (
-                                        <button
-                                            key={size.id}
-                                            type="button"
-                                            onClick={() =>
-                                                toggleSizeValue(size.id)
-                                            }
-                                            className={cn(
-                                                'rounded-full border px-3 py-1.5 text-xs font-medium transition',
-                                                active
-                                                    ? 'border-[#c8102e] bg-[#c8102e]/10 text-[#c8102e]'
-                                                    : 'border-slate-200 text-slate-600 hover:border-slate-300',
-                                            )}
-                                        >
-                                            {size.value}
-                                        </button>
-                                    );
-                                })}
-                                {sizeValues.length === 0 && (
-                                    <p className="text-xs text-slate-400">
-                                        No size values yet — add some under
-                                        Admin &gt; Attributes.
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    </AdminReveal>
-                )}
-            </AnimatePresence>
-
-            <AnimatePresence initial={false}>
-                {dualMode &&
-                    candidateColorIds.length > 0 &&
-                    candidateSizeIds.length > 0 && (
-                        <AdminReveal key="combinations">
-                            <div>
-                                <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                            <div className="mb-1 flex items-center justify-between gap-3">
+                                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                                     Combinations
                                 </p>
-                                <p className="mb-2 text-xs text-slate-400">
-                                    Check the color/size pairs you actually
-                                    stock.
-                                </p>
-                                <div className="overflow-x-auto rounded-xl border border-slate-200">
-                                    <table className="w-full text-xs">
-                                        <thead className="bg-slate-50 text-slate-500">
-                                            <tr>
-                                                <th className="px-3 py-2 text-left font-medium">
-                                                    Color \ Size
-                                                </th>
-                                                {candidateSizeIds.map(
-                                                    (sizeId) => (
-                                                        <th
-                                                            key={sizeId}
-                                                            className="px-3 py-2 text-center font-medium"
-                                                        >
-                                                            {valueLabel(
-                                                                sizeId,
-                                                                sizeValues,
-                                                            )}
-                                                        </th>
-                                                    ),
-                                                )}
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {candidateColorIds.map(
-                                                (colorId) => (
-                                                    <tr key={colorId}>
-                                                        <td className="flex items-center gap-1.5 px-3 py-2 font-medium whitespace-nowrap text-slate-700">
-                                                            <span
-                                                                className="size-3 shrink-0 rounded-full border border-black/10"
-                                                                style={{
-                                                                    backgroundColor:
-                                                                        colorSwatch(
-                                                                            colorId,
-                                                                        ) ||
-                                                                        '#ccc',
-                                                                }}
-                                                            />
-                                                            {valueLabel(
-                                                                colorId,
-                                                                colorValues,
-                                                            )}
-                                                        </td>
-                                                        {candidateSizeIds.map(
-                                                            (sizeId) => {
-                                                                const checked =
-                                                                    variants.some(
-                                                                        (v) =>
-                                                                            v.color_value_id ===
-                                                                                colorId &&
-                                                                            v.size_value_id ===
-                                                                                sizeId,
-                                                                    );
-                                                                const locked =
-                                                                    checked &&
-                                                                    variants.length <=
-                                                                        1;
-
-                                                                return (
-                                                                    <td
-                                                                        key={
-                                                                            sizeId
-                                                                        }
-                                                                        className="px-3 py-2 text-center"
-                                                                    >
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={
-                                                                                checked
-                                                                            }
-                                                                            disabled={
-                                                                                locked
-                                                                            }
-                                                                            onChange={() =>
-                                                                                togglePair(
-                                                                                    colorId,
-                                                                                    sizeId,
-                                                                                )
-                                                                            }
-                                                                            title={
-                                                                                locked
-                                                                                    ? "Can't remove the only remaining pair here"
-                                                                                    : undefined
-                                                                            }
-                                                                            className="size-4 rounded border-slate-300 text-[#c8102e] focus:ring-[#c8102e] disabled:opacity-40"
-                                                                        />
-                                                                    </td>
-                                                                );
-                                                            },
-                                                        )}
-                                                    </tr>
-                                                ),
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                {combinations.length <=
+                                    MAX_LISTED_COMBINATIONS && (
+                                    <button
+                                        type="button"
+                                        onClick={selectAllCombinations}
+                                        className="text-xs font-medium text-[#c8102e] hover:underline"
+                                    >
+                                        Select all {combinations.length}
+                                    </button>
+                                )}
                             </div>
-                        </AdminReveal>
-                    )}
+                            <p className="mb-2 text-xs text-slate-400">
+                                Tick the combinations you actually stock.
+                            </p>
+                            {combinations.length > MAX_LISTED_COMBINATIONS ? (
+                                <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                    {combinations.length} combinations — pick
+                                    fewer values above to list them.
+                                </p>
+                            ) : (
+                                <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 p-3">
+                                    {combinations.map((combo) => {
+                                        const key = combinationKey(combo);
+                                        const checked = existingKeys.has(key);
+                                        const locked =
+                                            checked && variants.length <= 1;
+                                        const swatch = comboSwatch(combo);
+
+                                        return (
+                                            <label
+                                                key={key}
+                                                title={
+                                                    locked
+                                                        ? "Can't remove the only remaining combination here"
+                                                        : undefined
+                                                }
+                                                className={cn(
+                                                    'flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition',
+                                                    checked
+                                                        ? 'border-[#c8102e]/40 bg-[#c8102e]/5 text-slate-800'
+                                                        : 'border-slate-200 text-slate-500',
+                                                )}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={checked}
+                                                    disabled={locked}
+                                                    onChange={() =>
+                                                        toggleCombination(combo)
+                                                    }
+                                                    className="size-3.5 rounded border-slate-300 text-[#c8102e] focus:ring-[#c8102e] disabled:opacity-40"
+                                                />
+                                                {swatch && (
+                                                    <span
+                                                        className="size-3 shrink-0 rounded-full border border-black/10"
+                                                        style={{
+                                                            backgroundColor:
+                                                                swatch,
+                                                        }}
+                                                    />
+                                                )}
+                                                {comboLabel(combo)}
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </AdminReveal>
+                )}
             </AnimatePresence>
 
             <AnimatePresence initial={false}>
@@ -585,85 +651,44 @@ export function ProductVariantManager({
                                 since it needs to stay unique per variant.
                             </p>
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                                <VariantField label="Price (৳)">
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        placeholder="Unchanged"
-                                        className={fieldInputClass}
-                                        value={bulkFields.price}
-                                        onChange={(e) =>
-                                            setBulkFields({
-                                                ...bulkFields,
-                                                price: e.target.value,
-                                            })
-                                        }
-                                    />
-                                </VariantField>
-                                <VariantField label="Compare price (৳)">
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        placeholder="Unchanged"
-                                        className={fieldInputClass}
-                                        value={bulkFields.compare_price}
-                                        onChange={(e) =>
-                                            setBulkFields({
-                                                ...bulkFields,
-                                                compare_price: e.target.value,
-                                            })
-                                        }
-                                    />
-                                </VariantField>
-                                <VariantField label="Cost price (৳)">
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        placeholder="Unchanged"
-                                        className={fieldInputClass}
-                                        value={bulkFields.cost_price}
-                                        onChange={(e) =>
-                                            setBulkFields({
-                                                ...bulkFields,
-                                                cost_price: e.target.value,
-                                            })
-                                        }
-                                    />
-                                </VariantField>
-                                <VariantField label="Stock qty">
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        placeholder="Unchanged"
-                                        className={fieldInputClass}
-                                        value={bulkFields.stock_quantity}
-                                        onChange={(e) =>
-                                            setBulkFields({
-                                                ...bulkFields,
-                                                stock_quantity: e.target.value,
-                                            })
-                                        }
-                                    />
-                                </VariantField>
-                                <VariantField label="Low stock alert">
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        placeholder="Unchanged"
-                                        className={fieldInputClass}
-                                        value={bulkFields.low_stock_threshold}
-                                        onChange={(e) =>
-                                            setBulkFields({
-                                                ...bulkFields,
-                                                low_stock_threshold:
-                                                    e.target.value,
-                                            })
-                                        }
-                                    />
-                                </VariantField>
+                                {(
+                                    [
+                                        ['price', 'Price (৳)', '0.01'],
+                                        [
+                                            'compare_price',
+                                            'Compare price (৳)',
+                                            '0.01',
+                                        ],
+                                        [
+                                            'cost_price',
+                                            'Cost price (৳)',
+                                            '0.01',
+                                        ],
+                                        ['stock_quantity', 'Stock qty', '1'],
+                                        [
+                                            'low_stock_threshold',
+                                            'Low stock alert',
+                                            '1',
+                                        ],
+                                    ] as const
+                                ).map(([field, label, step]) => (
+                                    <VariantField key={field} label={label}>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step={step}
+                                            placeholder="Unchanged"
+                                            className={fieldInputClass}
+                                            value={bulkFields[field]}
+                                            onChange={(e) =>
+                                                setBulkFields({
+                                                    ...bulkFields,
+                                                    [field]: e.target.value,
+                                                })
+                                            }
+                                        />
+                                    </VariantField>
+                                ))}
                             </div>
                             <button
                                 type="button"
@@ -683,27 +708,11 @@ export function ProductVariantManager({
                         <div className="space-y-3">
                             <AnimatePresence initial={false}>
                                 {variants.map((row, index) => {
-                                    const label = [
-                                        hasColorVariant &&
-                                            valueLabel(
-                                                row.color_value_id,
-                                                colorValues,
-                                            ),
-                                        hasSizeVariant &&
-                                            valueLabel(
-                                                row.size_value_id,
-                                                sizeValues,
-                                            ),
-                                    ]
-                                        .filter(Boolean)
-                                        .join(' / ');
-                                    const swatch = colorSwatch(
-                                        row.color_value_id,
-                                    );
+                                    const swatch = comboSwatch(row.value_ids);
 
                                     return (
                                         <AdminReveal
-                                            key={`${row.color_value_id}-${row.size_value_id}`}
+                                            key={combinationKey(row.value_ids)}
                                         >
                                             <div
                                                 className={cn(
@@ -725,7 +734,9 @@ export function ProductVariantManager({
                                                             />
                                                         )}
                                                         <span className="text-sm font-semibold text-slate-800">
-                                                            {label}
+                                                            {comboLabel(
+                                                                row.value_ids,
+                                                            )}
                                                         </span>
                                                     </div>
                                                     <div className="flex items-center gap-3">
@@ -930,9 +941,8 @@ export function ProductVariantManager({
                                         <p className="text-xs text-slate-400">
                                             This is the only variant, so it
                                             can't be removed directly — deselect
-                                            its color/size above, or uncheck
-                                            "Enable Color"/"Enable Size", to
-                                            turn variants off.
+                                            its values above, or untick the
+                                            attributes, to turn variants off.
                                         </p>
                                     </AdminReveal>
                                 )}
@@ -945,6 +955,14 @@ export function ProductVariantManager({
             {errors?.variants && (
                 <p className="text-xs text-red-500">{errors.variants}</p>
             )}
+            {errors &&
+                Object.entries(errors)
+                    .filter(([key]) => /^variants\.\d+$/.test(key))
+                    .map(([key, message]) => (
+                        <p key={key} className="text-xs text-red-500">
+                            {message}
+                        </p>
+                    ))}
         </div>
     );
 }

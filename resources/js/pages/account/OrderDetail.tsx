@@ -35,7 +35,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency, formatDate, getPrimaryImagePath } from '@/lib/utils';
-import type { Order, SharedPageProps } from '@/types';
+import type { Order, OrderItem, SharedPageProps } from '@/types';
 
 const RETURN_STATUS_LABEL: Record<string, string> = {
     pending: 'Return requested',
@@ -207,6 +207,26 @@ function RequestReturnDialog({
 
 interface OrderDetailProps {
     order: Order;
+}
+
+/**
+ * The options bought, e.g. "Color: Red | Set: 12pcs": the copy taken when the
+ * order was placed, so a later rename or removal never changes it; the live
+ * variant only for older orders without that copy.
+ */
+function orderedOptions(item: OrderItem): string | null {
+    const attributes =
+        (item.product_snapshot?.variant_attributes as
+            | Record<string, string>
+            | null
+            | undefined) ??
+        item.variant?.attributes ??
+        null;
+    const parts = Object.entries(attributes ?? {}).map(
+        ([name, value]) => `${name}: ${value}`,
+    );
+
+    return parts.length > 0 ? parts.join(' | ') : null;
 }
 
 export default function OrderDetail({
@@ -403,17 +423,9 @@ export default function OrderDetail({
                                                 <p className="line-clamp-2 text-sm font-bold text-[var(--color-text-primary)]">
                                                     {item.product_name}
                                                 </p>
-                                                {item.variant && (
+                                                {orderedOptions(item) && (
                                                     <p className="mt-1 text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
-                                                        {Object.entries(
-                                                            item.variant
-                                                                .attributes,
-                                                        )
-                                                            .map(
-                                                                ([k, v]) =>
-                                                                    `${k}: ${v}`,
-                                                            )
-                                                            .join(' | ')}
+                                                        {orderedOptions(item)}
                                                     </p>
                                                 )}
                                                 <p className="mt-1.5 font-mono text-xs text-[var(--color-text-muted)]">

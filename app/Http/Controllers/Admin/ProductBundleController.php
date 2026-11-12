@@ -77,8 +77,9 @@ class ProductBundleController extends Controller
         return Inertia::render('admin/product-bundles/edit', [
             'bundle' => $productBundle->load([
                 'items.product:id,name,price,sku,has_color_variant,has_size_variant,stock_quantity',
-                'items.product.variants.colorValue',
-                'items.product.variants.sizeValue',
+                // Labels come from each variant's `attributes` (any attribute,
+                // not only colour/size); media feeds its `image`.
+                'items.product.variants.media',
             ]),
         ]);
     }
@@ -145,7 +146,7 @@ class ProductBundleController extends Controller
         $products = Product::active()
             ->published()
             ->when($query !== '', fn ($q) => $q->where('name', 'like', "%{$query}%"))
-            ->with(['variants.colorValue', 'variants.sizeValue'])
+            ->with(['variants.media'])
             ->orderBy('name')
             ->limit(50)
             ->get(['id', 'name', 'price', 'sku', 'has_color_variant', 'has_size_variant', 'stock_quantity']);

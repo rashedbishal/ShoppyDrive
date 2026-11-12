@@ -43,11 +43,17 @@ type Variant = {
     image: string | null;
 };
 
-/** "Red / M" from a variant's attributes (falls back to its SKU). */
+/**
+ * "Color: Red · Set: 12pcs" from a variant's attributes — any attributes, not
+ * only colour and size, each named so "12pcs" is never shown without saying
+ * what it is. Falls back to the SKU.
+ */
 function variantName(variant: Variant): string {
-    const values = Object.values(variant.attributes ?? {});
+    const parts = Object.entries(variant.attributes ?? {}).map(
+        ([name, value]) => `${name}: ${value}`,
+    );
 
-    return values.length > 0 ? values.join(' / ') : (variant.sku ?? 'Option');
+    return parts.length > 0 ? parts.join(' · ') : (variant.sku ?? 'Option');
 }
 
 type Props = {

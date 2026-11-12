@@ -5,7 +5,9 @@ import {
     Check,
     Edit,
     GripVertical,
+    ImageIcon,
     Palette,
+    Pencil,
     Plus,
     Ruler,
     Tags,
@@ -18,6 +20,15 @@ import { AdminFade } from '@/components/admin/admin-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 import {
     dialogItem,
     dialogOverlayMotion,
@@ -39,6 +50,10 @@ type Attribute = {
     id: number;
     name: string;
     type: 'select' | 'color' | 'text';
+    /** Products can attach an image to each value (e.g. one photo per colour). */
+    has_images: boolean;
+    /** A product uses it, so it can't be deleted. */
+    in_use: boolean;
     values: AttributeValue[];
 };
 
@@ -225,11 +240,15 @@ function AttributeCard({
     onAdd,
     onEdit,
     onDelete,
+    onEditAttribute,
+    onDeleteAttribute,
 }: {
     attribute: Attribute;
     onAdd: (attribute: Attribute) => void;
     onEdit: (value: AttributeValue) => void;
     onDelete: (id: number) => void;
+    onEditAttribute: (attribute: Attribute) => void;
+    onDeleteAttribute: (attribute: Attribute) => void;
 }) {
     const isColor = attribute.type === 'color';
     const Icon = isColor ? Palette : Ruler;
@@ -308,9 +327,38 @@ function AttributeCard({
                     <Icon className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
-                    <h2 className="text-sm font-bold text-slate-800">
-                        {attribute.name}
-                    </h2>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        <h2 className="text-sm font-bold text-slate-800">
+                            {attribute.name}
+                        </h2>
+                        {attribute.has_images && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                <ImageIcon className="size-3" />
+                                Images per value
+                            </span>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => onEditAttribute(attribute)}
+                            title="Edit attribute"
+                            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        >
+                            <Pencil className="size-3.5" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => onDeleteAttribute(attribute)}
+                            disabled={attribute.in_use}
+                            title={
+                                attribute.in_use
+                                    ? "Products use this attribute, so it can't be deleted"
+                                    : 'Delete attribute'
+                            }
+                            className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400"
+                        >
+                            <Trash2 className="size-3.5" />
+                        </button>
+                    </div>
                     <p className="text-xs text-slate-400">
                         {attribute.values.length} value(s)
                     </p>
@@ -435,6 +483,85 @@ export default function AttributesIndex({ attributes }: Props) {
     const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
 
+    // The attribute itself (Color, Size, Set…): add, rename, image switch.
+    const [isAttributeFormOpen, setIsAttributeFormOpen] = useState(false);
+    const [editingAttribute, setEditingAttribute] = useState<Attribute | null>(
+        null,
+    );
+    const [attributeToDelete, setAttributeToDelete] =
+        useState<Attribute | null>(null);
+    const [deletingAttribute, setDeletingAttribute] = useState(false);
+    const attributeForm = useForm({
+        name: '',
+        type: 'select' as 'select' | 'color',
+        has_images: false,
+    });
+
+    const openAddAttribute = () => {
+        setEditingAttribute(null);
+        attributeForm.clearErrors();
+        attributeForm.setData({ name: '', type: 'select', has_images: false });
+        setIsAttributeFormOpen(true);
+    };
+
+    const openEditAttribute = (attribute: Attribute) => {
+        setEditingAttribute(attribute);
+        attributeForm.clearErrors();
+        attributeForm.setData({
+            name: attribute.name,
+            type: attribute.type === 'color' ? 'color' : 'select',
+            has_images: attribute.has_images,
+        });
+        setIsAttributeFormOpen(true);
+    };
+
+    const submitAttributeForm = () => {
+        const clientErrors = validate(attributeForm.data, {
+            name: [required(), maxLength(40)],
+        });
+
+        if (Object.keys(clientErrors).length > 0) {
+            toastFirstError(clientErrors);
+
+            return;
+        }
+
+        const options = {
+            preserveScroll: true,
+            onSuccess: () => setIsAttributeFormOpen(false),
+            onError: toastFirstError,
+        };
+
+        if (editingAttribute) {
+            attributeForm.put(
+                route('admin.attributes.update', editingAttribute.id),
+                options,
+            );
+        } else {
+            attributeForm.post(route('admin.attributes.store'), options);
+        }
+    };
+
+    const confirmDeleteAttribute = () => {
+        if (attributeToDelete === null) {
+            return;
+        }
+
+        setDeletingAttribute(true);
+        router.delete(route('admin.attributes.destroy', attributeToDelete.id), {
+            preserveScroll: true,
+            onFinish: () => {
+                setDeletingAttribute(false);
+                setAttributeToDelete(null);
+            },
+        });
+    };
+
+    // A colour swatch needs a hex code on every value, so the type is fixed
+    // once values exist (the server enforces the same).
+    const typeLocked =
+        editingAttribute !== null && editingAttribute.values.length > 0;
+
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [formAttribute, setFormAttribute] = useState<Attribute | null>(null);
     const [editingValue, setEditingValue] = useState<AttributeValue | null>(
@@ -551,7 +678,7 @@ export default function AttributesIndex({ attributes }: Props) {
 
     return (
         <>
-            <Head title="Color & Size Attributes — Admin" />
+            <Head title="Attributes — Admin" />
             <div className="space-y-5">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
@@ -563,27 +690,21 @@ export default function AttributesIndex({ attributes }: Props) {
                                 Attributes
                             </h1>
                             <p className="max-w-md text-sm text-slate-500">
-                                Manage the colors and sizes available for
-                                product variants. Deleting a value that's
-                                already used by a product is blocked.
+                                Attributes (Color, Size, Set, …) and their
+                                values that products build variants from. Turn
+                                on “Images per value” for attributes that change
+                                how the product looks. Anything already used by
+                                a product can't be deleted.
                             </p>
                         </div>
                     </div>
-                    <div className="flex gap-2">
-                        {attributes.map((attribute) => (
-                            <div
-                                key={attribute.id}
-                                className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-center shadow-sm"
-                            >
-                                <p className="text-lg font-bold text-slate-800">
-                                    {attribute.values.length}
-                                </p>
-                                <p className="text-[11px] font-medium tracking-wide text-slate-400 uppercase">
-                                    {attribute.name}(s)
-                                </p>
-                            </div>
-                        ))}
-                    </div>
+                    <Button
+                        onClick={openAddAttribute}
+                        className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                    >
+                        <Plus className="size-4" />
+                        New attribute
+                    </Button>
                 </div>
 
                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
@@ -594,6 +715,8 @@ export default function AttributesIndex({ attributes }: Props) {
                             onAdd={openAdd}
                             onEdit={(value) => openEdit(attribute, value)}
                             onDelete={setDeleteTargetId}
+                            onEditAttribute={openEditAttribute}
+                            onDeleteAttribute={setAttributeToDelete}
                         />
                     ))}
                 </div>
@@ -897,6 +1020,133 @@ export default function AttributesIndex({ attributes }: Props) {
                     )}
                 </AnimatePresence>
             </DialogPrimitive.Root>
+
+            <Dialog
+                open={isAttributeFormOpen}
+                onOpenChange={setIsAttributeFormOpen}
+            >
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {editingAttribute
+                                ? 'Edit attribute'
+                                : 'New attribute'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Products choose which attributes their variants are
+                            built from, e.g. Set: 6pcs, 12pcs.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form
+                        className="space-y-4"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            submitAttributeForm();
+                        }}
+                    >
+                        <label className="block">
+                            <span className="mb-1 block text-xs font-medium text-slate-600">
+                                Name
+                            </span>
+                            <input
+                                className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none"
+                                placeholder="e.g. Set"
+                                maxLength={40}
+                                value={attributeForm.data.name}
+                                onChange={(e) =>
+                                    attributeForm.setData(
+                                        'name',
+                                        e.target.value,
+                                    )
+                                }
+                            />
+                            {attributeForm.errors.name && (
+                                <span className="mt-1 block text-xs text-red-500">
+                                    {attributeForm.errors.name}
+                                </span>
+                            )}
+                        </label>
+                        <label className="block">
+                            <span className="mb-1 block text-xs font-medium text-slate-600">
+                                Shown as
+                            </span>
+                            <select
+                                className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm focus:ring-1 focus:ring-[#c8102e] focus:outline-none disabled:bg-slate-50 disabled:text-slate-400"
+                                value={attributeForm.data.type}
+                                disabled={typeLocked}
+                                onChange={(e) =>
+                                    attributeForm.setData(
+                                        'type',
+                                        e.target.value as 'select' | 'color',
+                                    )
+                                }
+                            >
+                                <option value="select">
+                                    Text options (e.g. 6pcs, 12pcs)
+                                </option>
+                                <option value="color">Colour swatches</option>
+                            </select>
+                            {typeLocked && (
+                                <span className="mt-1 block text-xs text-slate-400">
+                                    Can't change once it has values.
+                                </span>
+                            )}
+                            {attributeForm.errors.type && (
+                                <span className="mt-1 block text-xs text-red-500">
+                                    {attributeForm.errors.type}
+                                </span>
+                            )}
+                        </label>
+                        <div className="flex items-start justify-between gap-4 rounded-lg border border-slate-200 p-3">
+                            <div>
+                                <p
+                                    id="attribute-has-images"
+                                    className="text-sm font-medium text-slate-700"
+                                >
+                                    Images per value
+                                </p>
+                                <p className="text-xs text-slate-400">
+                                    Lets each value have its own product photo
+                                    (like Color). Leave off when the value
+                                    doesn't change the look (like Size).
+                                </p>
+                            </div>
+                            <Switch
+                                checked={attributeForm.data.has_images}
+                                onCheckedChange={(checked) =>
+                                    attributeForm.setData('has_images', checked)
+                                }
+                                aria-labelledby="attribute-has-images"
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsAttributeFormOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={attributeForm.processing}
+                                className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                            >
+                                {editingAttribute ? 'Save' : 'Add attribute'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <ConfirmDialog
+                open={attributeToDelete !== null}
+                onOpenChange={(open) => !open && setAttributeToDelete(null)}
+                title="Delete attribute?"
+                description={`This permanently deletes "${attributeToDelete?.name ?? ''}" and all its values. This cannot be undone.`}
+                onConfirm={confirmDeleteAttribute}
+                processing={deletingAttribute}
+            />
 
             <ConfirmDialog
                 open={deleteTargetId !== null}

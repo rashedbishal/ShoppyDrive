@@ -21,7 +21,7 @@ class ProductMedia extends Model
     protected $fillable = [
         'product_id',
         'variant_id',
-        'color_value_id',
+        'attribute_value_id',
         'path',
         'type',
         'alt',
@@ -48,9 +48,12 @@ class ProductMedia extends Model
         return $this->belongsTo(ProductVariant::class, 'variant_id');
     }
 
-    /** Set on an image chosen for a colour: it belongs to every variant of that colour. */
-    public function colorValue(): BelongsTo
+    /**
+     * Set on an image chosen for an attribute value (a colour, or a value of
+     * any attribute that allows images): it belongs to every variant with it.
+     */
+    public function attributeValue(): BelongsTo
     {
-        return $this->belongsTo(AttributeValue::class, 'color_value_id');
+        return $this->belongsTo(AttributeValue::class, 'attribute_value_id');
     }
 }

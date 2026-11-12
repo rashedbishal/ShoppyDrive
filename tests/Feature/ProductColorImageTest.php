@@ -15,7 +15,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use function Pest\Laravel\actingAs;
 
 /*
- * Product images are chosen per colour: an image with `color_value_id`
+ * Product images are chosen per colour: an image with `attribute_value_id`
  * belongs to every variant of that colour, and a variant's `image` (cart,
  * checkout, orders, landing page) is its own image first, then its colour's.
  */
@@ -46,7 +46,7 @@ function colorImage(Product $product, string $path, int $sortOrder, array $overr
 {
     return ProductMedia::create(array_merge([
         'product_id' => $product->id,
-        'color_value_id' => test()->red->id,
+        'attribute_value_id' => test()->red->id,
         'path' => $path,
         'type' => 'image',
         'is_primary' => false,
@@ -57,7 +57,7 @@ function colorImage(Product $product, string $path, int $sortOrder, array $overr
 test('a variant uses its own image first, otherwise its color\'s image', function () {
     [$product, $redM, $redXl] = colorSizeProduct();
     colorImage($product, '/storage/products/red.jpg', 1);
-    colorImage($product, '/storage/products/red-m-only.jpg', 2, ['variant_id' => $redM->id, 'color_value_id' => null]);
+    colorImage($product, '/storage/products/red-m-only.jpg', 2, ['variant_id' => $redM->id, 'attribute_value_id' => null]);
 
     expect($redM->fresh()->image)->toBe('/storage/products/red-m-only.jpg');
     expect($redXl->fresh()->image)->toBe('/storage/products/red.jpg');
@@ -79,7 +79,7 @@ test('the product page sends each variant its color image without repeating the 
             ->where('product.variants.0.image', '/storage/products/red.jpg')
             ->where('product.variants.1.image', '/storage/products/red.jpg')
             ->missing('product.variants.0.media')
-            ->where('product.media.0.color_value_id', $this->red->id));
+            ->where('product.media.0.attribute_value_id', $this->red->id));
 });
 
 test('a cart line for any size shows its color\'s image', function () {

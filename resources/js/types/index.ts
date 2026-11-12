@@ -163,8 +163,8 @@ export interface ProductMedia extends Timestamped {
     id: Id;
     product_id: Id;
     variant_id?: Id | null;
-    /** Set when the image was chosen for a colour: it belongs to every variant of that colour. */
-    color_value_id?: Id | null;
+    /** Set when the image was chosen for an attribute value (e.g. Red): it belongs to every variant with that value. */
+    attribute_value_id?: Id | null;
     path: string;
     type: 'image' | 'video';
     alt?: string | null;
@@ -185,6 +185,8 @@ export interface ProductVariant extends Timestamped {
     attributes: Record<string, string>;
     is_default: boolean;
     color_value_id?: Id | null;
+    /** One value per variant attribute, in the product's attribute order (e.g. [Red, 12pcs]). */
+    attribute_value_ids?: Id[] | null;
     size_value_id?: Id | null;
     formatted_price?: string;
     image?: string | null;

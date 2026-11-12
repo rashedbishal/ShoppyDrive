@@ -9,7 +9,10 @@ import {
 } from '@/components/admin/product-form-field';
 import type { SpecificationRow } from '@/components/admin/ProductSpecificationsManager';
 import { ProductSpecificationsManager } from '@/components/admin/ProductSpecificationsManager';
-import type { VariantRow } from '@/components/admin/ProductVariantManager';
+import type {
+    VariantAttributeOption,
+    VariantRow,
+} from '@/components/admin/ProductVariantManager';
 import { ProductVariantManager } from '@/components/admin/ProductVariantManager';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -25,27 +28,18 @@ import { maxLength, minValue, required, validate } from '@/lib/validate';
 import { buildMediaTagOptions } from '@/lib/variant-media-tags';
 import { computeMinVariantPrice } from '@/lib/variant-pricing';
 
-type AttributeValueOption = {
-    id: number;
-    value: string;
-    color_hex: string | null;
-};
-
 type Props = {
     categories: { id: number; name: string }[];
     subCategories: { id: number; name: string; category_id: number }[];
     brands: { id: number; name: string }[];
-    attributeValues: {
-        colors: AttributeValueOption[];
-        sizes: AttributeValueOption[];
-    };
+    variantAttributes: VariantAttributeOption[];
 };
 
 export default function ProductCreate({
     categories,
     subCategories,
     brands,
-    attributeValues,
+    variantAttributes,
 }: Props) {
     const listUrl = useAdminListUrl('admin.products.index');
     const { data, setData, post, processing, errors, setError, clearErrors } =
@@ -66,8 +60,7 @@ export default function ProductCreate({
             low_stock_threshold: '5',
             is_active: true,
             is_featured: false,
-            has_color_variant: false,
-            has_size_variant: false,
+            variant_attribute_ids: [] as number[],
             variants: [] as VariantRow[],
             cry_baby_enabled: false,
             images: [] as (File | string)[],
@@ -79,7 +72,7 @@ export default function ProductCreate({
             meta_keywords: '',
         });
 
-    const hasVariants = data.has_color_variant || data.has_size_variant;
+    const hasVariants = data.variant_attribute_ids.length > 0;
 
     const setImages = (files: (File | string)[]) => {
         setData((prev) => ({ ...prev, ...remapProductMedia(prev, files) }));
@@ -87,10 +80,8 @@ export default function ProductCreate({
 
     const tagOptions = buildMediaTagOptions(
         data.variants,
-        attributeValues.colors,
-        attributeValues.sizes,
-        data.has_color_variant,
-        data.has_size_variant,
+        variantAttributes,
+        data.variant_attribute_ids,
     );
     const minVariantPrice = computeMinVariantPrice(data.variants);
 
@@ -471,22 +462,16 @@ export default function ProductCreate({
 
                                 <div className="border-t border-slate-100 pt-4">
                                     <ProductVariantManager
-                                        colorValues={attributeValues.colors}
-                                        sizeValues={attributeValues.sizes}
-                                        hasColorVariant={data.has_color_variant}
-                                        hasSizeVariant={data.has_size_variant}
-                                        onToggleColor={(enabled) =>
-                                            setData(
-                                                'has_color_variant',
-                                                enabled,
-                                            )
-                                        }
-                                        onToggleSize={(enabled) =>
-                                            setData('has_size_variant', enabled)
+                                        attributes={variantAttributes}
+                                        selectedAttributeIds={
+                                            data.variant_attribute_ids
                                         }
                                         variants={data.variants}
-                                        onVariantsChange={(variants) =>
-                                            setData('variants', variants)
+                                        onChange={(setup) =>
+                                            setData((prev) => ({
+                                                ...prev,
+                                                ...setup,
+                                            }))
                                         }
                                         errors={errors}
                                     />
