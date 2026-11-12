@@ -321,3 +321,33 @@ test('out of stock simple products are still left to checkout to refuse', functi
 
     expect(Order::where('user_id', $user->id)->count())->toBe(0);
 });
+
+test('an out-of-stock product stays on the wishlist and never reaches the cart', function () {
+    $user = User::factory()->create();
+    $inStock = Product::factory()->create(['stock_quantity' => 5, 'is_active' => true, 'published_at' => now()->subDay()]);
+    $soldOut = Product::factory()->create(['stock_quantity' => 0, 'is_active' => true, 'published_at' => now()->subDay()]);
+    Wishlist::create(['user_id' => $user->id, 'product_id' => $inStock->id]);
+    Wishlist::create(['user_id' => $user->id, 'product_id' => $soldOut->id]);
+
+    actingAs($user)->postJson(route('wishlist.add-all-to-cart'))
+        ->assertOk()
+        ->assertJson(['added' => 1, 'skipped_needs_options' => 0, 'skipped_out_of_stock' => 1, 'skipped_unavailable' => 0])
+        ->assertJsonPath('message', '1 item added to your cart. 1 item is out of stock, so it stayed on your wishlist.');
+
+    expect(Cart::where('user_id', $user->id)->firstOrFail()->items()->pluck('product_id')->all())->toBe([$inStock->id]);
+    expect(Wishlist::where('user_id', $user->id)->pluck('product_id')->all())->toBe([$soldOut->id]);
+});
+
+test('a wishlist of only out-of-stock products adds nothing and says so', function () {
+    $user = User::factory()->create();
+    foreach (Product::factory()->count(2)->create(['stock_quantity' => 0, 'is_active' => true, 'published_at' => now()->subDay()]) as $product) {
+        Wishlist::create(['user_id' => $user->id, 'product_id' => $product->id]);
+    }
+
+    actingAs($user)->post(route('wishlist.add-all-to-cart'))
+        ->assertRedirect()
+        ->assertSessionHas('info', '2 items are out of stock, so they stayed on your wishlist.');
+
+    expect(Cart::where('user_id', $user->id)->exists())->toBeFalse();
+    expect(Wishlist::where('user_id', $user->id)->count())->toBe(2);
+});
