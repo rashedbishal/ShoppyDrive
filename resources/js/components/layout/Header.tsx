@@ -13,11 +13,11 @@ import {
     X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
 import MegaMenu from '@/components/layout/MegaMenu';
 import MobileMenu from '@/components/layout/MobileMenu';
 import ThemeSwitcher from '@/components/layout/ThemeSwitcher';
 import { SearchBar } from '@/components/shared/SearchBar';
+import { SiteLogo } from '@/components/shared/SiteLogo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     DropdownMenu,
@@ -65,7 +65,6 @@ export default function Header(): React.JSX.Element {
     const page = usePage<SharedPageProps>();
     const getInitials = useInitials();
     const user = page.props.auth?.user ?? null;
-    const settings = page.props.settings;
     const openCart = useUiStore((state) => state.openCart);
     const openMobileMenu = useUiStore((state) => state.openMobileMenu);
     const closeMobileMenu = useUiStore((state) => state.closeMobileMenu);
@@ -233,7 +232,6 @@ export default function Header(): React.JSX.Element {
     // Never collapse the bar while its mega menu is open.
     const shouldHideNav = isNavHidden && !isMegaMenuOpen;
 
-    const siteName = settings?.site_name ?? 'ShoppyDrive';
     const announcementBar = page.props.homepage_settings?.['announcement_bar'];
 
     return (
@@ -388,27 +386,12 @@ export default function Header(): React.JSX.Element {
                         <Link
                             href="/"
                             prefetch
-                            className="flex shrink-0 items-center gap-3"
+                            className="flex shrink-0 items-center"
                         >
-                            {settings?.logo ? (
-                                <img
-                                    src={settings.logo}
-                                    alt={siteName}
-                                    className="hidden h-14 w-auto object-contain lg:block"
-                                />
-                            ) : (
-                                <span className="hidden size-10 items-center justify-center rounded-xl bg-[var(--color-secondary)] text-white shadow-sm lg:flex">
-                                    <AppLogoIcon className="size-5 fill-current text-white" />
-                                </span>
-                            )}
-                            <span className="flex flex-col leading-none">
-                                <span className="text-[17px] font-bold tracking-tight text-[var(--color-text-primary)]">
-                                    {siteName}
-                                </span>
-                                <span className="mt-0.5 text-[11px] font-medium text-[var(--color-text-muted)]">
-                                    Best Deals in Bangladesh
-                                </span>
-                            </span>
+                            <SiteLogo
+                                plate="dark"
+                                className="h-9 sm:h-10 lg:h-12"
+                            />
                         </Link>
 
                         {/* Search bar */}

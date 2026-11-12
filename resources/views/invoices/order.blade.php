@@ -203,8 +203,21 @@
     <table class="top-bar-table">
         <tr>
             <td>
-                @if(file_exists(public_path('Shoppydrive.jpg')))
-                    <img src="data:image/jpeg;base64,{{ base64_encode(file_get_contents(public_path('Shoppydrive.jpg'))) }}" alt="ShoppyDrive" style="max-height: 80px; width: auto;">
+                @php
+                    // The logo uploaded in Admin › Settings when dompdf can read it (PNG/JPG), else the bundled copy.
+                    $invoiceLogo = null;
+                    $cmsLogo = \App\Models\Setting::where('key', 'logo')->value('value');
+                    if (is_string($cmsLogo) && str_starts_with($cmsLogo, '/storage/')) {
+                        $cmsLogoFile = storage_path('app/public/'.substr($cmsLogo, 9));
+                        if (is_file($cmsLogoFile) && in_array(strtolower(pathinfo($cmsLogoFile, PATHINFO_EXTENSION)), ['png', 'jpg', 'jpeg'], true)) {
+                            $invoiceLogo = $cmsLogoFile;
+                        }
+                    }
+                    $invoiceLogo ??= public_path('images/brand/invoice-logo.png');
+                    $invoiceLogoMime = strtolower(pathinfo($invoiceLogo, PATHINFO_EXTENSION)) === 'png' ? 'png' : 'jpeg';
+                @endphp
+                @if(is_file($invoiceLogo))
+                    <img src="data:image/{{ $invoiceLogoMime }};base64,{{ base64_encode(file_get_contents($invoiceLogo)) }}" alt="ShoppyDrive" style="max-height: 56px; width: auto;">
                 @else
                     <div class="brand">ShoppyDrive</div>
                 @endif

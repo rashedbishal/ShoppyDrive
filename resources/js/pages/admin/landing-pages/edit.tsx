@@ -15,6 +15,7 @@ import {
     DeliveryEditor,
     DescriptionExtras,
     HeroExtras,
+    TestimonialImagesEditor,
 } from '@/components/admin/landing-builder-fields';
 import type {
     BuilderMedia,
@@ -23,6 +24,7 @@ import type {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CharCount } from '@/components/ui/char-count';
+import { ComboboxField } from '@/components/ui/combobox';
 import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
 import { useRowKeys } from '@/hooks/use-row-keys';
@@ -57,6 +59,8 @@ type Sections = {
     testimonials: {
         enabled: boolean;
         title: string;
+        mode?: 'text' | 'image';
+        images?: string[];
         items: { name: string; rating: number; text: string }[];
     };
     faq: {
@@ -97,8 +101,8 @@ function SectionWrap({
     const [open, setOpen] = useState(false);
 
     return (
-        <Card className="shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+        <Card className="gap-0 py-0 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
                 <div className="flex items-center gap-3">
                     {onToggle && (
                         <input
@@ -142,7 +146,7 @@ function SectionWrap({
             <AnimatePresence initial={false}>
                 {enabled && open && (
                     <AdminReveal key="section-body">
-                        <CardContent className="space-y-3 pt-3">
+                        <CardContent className="space-y-2.5 py-3">
                             {children}
                         </CardContent>
                     </AdminReveal>
@@ -224,17 +228,17 @@ export default function LandingPageEdit({
 
                         put(route('admin.landing-pages.update', page.id));
                     }}
-                    className="space-y-4"
+                    className="space-y-3"
                 >
                     {/* Basic settings */}
-                    <Card className="shadow-sm">
-                        <CardHeader className="border-b border-slate-100">
+                    <Card className="gap-3 py-3 shadow-sm">
+                        <CardHeader className="border-b border-slate-100 pb-2.5">
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Settings
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4 pt-3">
-                            <div className="col-span-2">
+                        <CardContent className="grid grid-cols-1 gap-3 pt-0 sm:grid-cols-2">
+                            <div className="sm:col-span-2">
                                 <label className={labelClass}>Page Title</label>
                                 <input
                                     maxLength={100}
@@ -247,7 +251,7 @@ export default function LandingPageEdit({
                                 <CharCount
                                     value={data.title}
                                     max={100}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
 
                                 {errors.title && (
@@ -260,7 +264,7 @@ export default function LandingPageEdit({
                                 <label className={labelClass}>URL Slug</label>
                                 <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 focus-within:ring-1 focus-within:ring-[#c8102e]">
                                     <span className="flex h-9 shrink-0 items-center border-r border-slate-200 bg-slate-50 px-2 text-xs text-slate-400">
-                                        /sentinel/
+                                        /lp/
                                     </span>
                                     <input
                                         maxLength={100}
@@ -279,7 +283,7 @@ export default function LandingPageEdit({
                                 <CharCount
                                     value={data.slug}
                                     max={100}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
                                 {errors.slug && (
                                     <p className="mt-1 text-xs text-red-600">
@@ -289,23 +293,22 @@ export default function LandingPageEdit({
                             </div>
                             <div>
                                 <label className={labelClass}>Product</label>
-                                <Select
-                                    selectClassName={inputClass}
+                                <ComboboxField
                                     value={data.product_id}
-                                    onChange={(e) =>
-                                        setData('product_id', e.target.value)
+                                    onChange={(value) =>
+                                        setData('product_id', value)
                                     }
-                                >
-                                    {products.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.name}
-                                            {p.is_active ? '' : ' (inactive)'}
-                                        </option>
-                                    ))}
-                                </Select>
+                                    options={products.map((p) => ({
+                                        value: String(p.id),
+                                        label: `${p.name}${p.is_active ? '' : ' (inactive)'}`,
+                                    }))}
+                                    placeholder="Search and select a product…"
+                                    error={errors.product_id}
+                                    inputClassName="h-9"
+                                />
                             </div>
                             {/* Most units one customer can order at once (all variants together) */}
-                            <div className="col-span-2">
+                            <div className="sm:col-span-2">
                                 <label className="mb-1 block text-sm font-medium text-slate-700">
                                     Most items per order
                                 </label>
@@ -336,7 +339,7 @@ export default function LandingPageEdit({
                                 )}
                             </div>
 
-                            <div className="col-span-2 flex items-center gap-2">
+                            <div className="flex items-center gap-2 sm:col-span-2">
                                 <input
                                     type="checkbox"
                                     id="is_active_edit"
@@ -422,7 +425,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.hero.headline}
                                 max={120}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                         <div>
@@ -444,7 +447,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.hero.subheadline}
                                 max={250}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                         <div>
@@ -468,7 +471,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.hero.cta_text}
                                 max={30}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                         <HeroExtras
@@ -541,7 +544,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.description.title}
                                 max={120}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                         <div className="flex items-center gap-2">
@@ -598,7 +601,7 @@ export default function LandingPageEdit({
                                                 sec.description.custom_content
                                             }
                                             max={20000}
-                                            className="mt-1 block text-right"
+                                            className="mt-0.5 block text-right text-[11px] leading-none"
                                         />
                                     </div>
                                 </AdminReveal>
@@ -638,7 +641,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.gallery.title}
                                 max={60}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                         <p className="text-xs text-slate-400">
@@ -678,139 +681,168 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.testimonials.title}
                                 max={80}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
-                        <AnimatePresence initial={false}>
-                            {sec.testimonials.items.map((item, i) => (
-                                <AdminReveal key={testimonialRowKeys.keys[i]}>
-                                    <div className="space-y-2 rounded-lg border border-slate-100 p-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-semibold text-slate-600">
-                                                Review #{i + 1}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    testimonialRowKeys.removeKey(
-                                                        i,
-                                                    );
-                                                    setSec({
-                                                        testimonials: {
-                                                            ...sec.testimonials,
-                                                            items: sec.testimonials.items.filter(
-                                                                (_, j) =>
-                                                                    j !== i,
-                                                            ),
-                                                        },
-                                                    });
-                                                }}
-                                                className="text-slate-400 hover:text-red-500"
-                                            >
-                                                <Trash2 className="size-3.5" />
-                                            </button>
-                                        </div>
-                                        <input
-                                            maxLength={60}
-                                            className={inputClass}
-                                            value={item.name}
-                                            onChange={(e) => {
-                                                const items = [
-                                                    ...sec.testimonials.items,
-                                                ];
-                                                items[i] = {
-                                                    ...items[i],
-                                                    name: e.target.value,
-                                                };
-                                                setSec({
-                                                    testimonials: {
-                                                        ...sec.testimonials,
-                                                        items,
-                                                    },
-                                                });
-                                            }}
-                                            placeholder="Customer name"
-                                        />
-                                        <CharCount
-                                            value={item.name}
-                                            max={60}
-                                            className="mt-1 block text-right"
-                                        />
-                                        <Select
-                                            selectClassName={inputClass}
-                                            value={item.rating}
-                                            onChange={(e) => {
-                                                const items = [
-                                                    ...sec.testimonials.items,
-                                                ];
-                                                items[i] = {
-                                                    ...items[i],
-                                                    rating: Number(
-                                                        e.target.value,
-                                                    ),
-                                                };
-                                                setSec({
-                                                    testimonials: {
-                                                        ...sec.testimonials,
-                                                        items,
-                                                    },
-                                                });
-                                            }}
+                        <TestimonialImagesEditor
+                            sec={sec}
+                            setSec={setSec}
+                            pageId={page.id}
+                        />
+                        {(sec.testimonials.mode ?? 'text') === 'text' && (
+                            <>
+                                <AnimatePresence initial={false}>
+                                    {sec.testimonials.items.map((item, i) => (
+                                        <AdminReveal
+                                            key={testimonialRowKeys.keys[i]}
                                         >
-                                            {[5, 4, 3, 2, 1].map((r) => (
-                                                <option key={r} value={r}>
-                                                    {r} Stars
-                                                </option>
-                                            ))}
-                                        </Select>
-                                        <textarea
-                                            maxLength={400}
-                                            rows={2}
-                                            className={textareaClass}
-                                            value={item.text}
-                                            onChange={(e) => {
-                                                const items = [
+                                            <div className="space-y-2 rounded-lg border border-slate-100 p-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-semibold text-slate-600">
+                                                        Review #{i + 1}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            testimonialRowKeys.removeKey(
+                                                                i,
+                                                            );
+                                                            setSec({
+                                                                testimonials: {
+                                                                    ...sec.testimonials,
+                                                                    items: sec.testimonials.items.filter(
+                                                                        (
+                                                                            _,
+                                                                            j,
+                                                                        ) =>
+                                                                            j !==
+                                                                            i,
+                                                                    ),
+                                                                },
+                                                            });
+                                                        }}
+                                                        className="text-slate-400 hover:text-red-500"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                                <input
+                                                    maxLength={60}
+                                                    className={inputClass}
+                                                    value={item.name}
+                                                    onChange={(e) => {
+                                                        const items = [
+                                                            ...sec.testimonials
+                                                                .items,
+                                                        ];
+                                                        items[i] = {
+                                                            ...items[i],
+                                                            name: e.target
+                                                                .value,
+                                                        };
+                                                        setSec({
+                                                            testimonials: {
+                                                                ...sec.testimonials,
+                                                                items,
+                                                            },
+                                                        });
+                                                    }}
+                                                    placeholder="Customer name"
+                                                />
+                                                <CharCount
+                                                    value={item.name}
+                                                    max={60}
+                                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                                />
+                                                <Select
+                                                    selectClassName={inputClass}
+                                                    value={item.rating}
+                                                    onChange={(e) => {
+                                                        const items = [
+                                                            ...sec.testimonials
+                                                                .items,
+                                                        ];
+                                                        items[i] = {
+                                                            ...items[i],
+                                                            rating: Number(
+                                                                e.target.value,
+                                                            ),
+                                                        };
+                                                        setSec({
+                                                            testimonials: {
+                                                                ...sec.testimonials,
+                                                                items,
+                                                            },
+                                                        });
+                                                    }}
+                                                >
+                                                    {[5, 4, 3, 2, 1].map(
+                                                        (r) => (
+                                                            <option
+                                                                key={r}
+                                                                value={r}
+                                                            >
+                                                                {r} Stars
+                                                            </option>
+                                                        ),
+                                                    )}
+                                                </Select>
+                                                <textarea
+                                                    maxLength={400}
+                                                    rows={2}
+                                                    className={textareaClass}
+                                                    value={item.text}
+                                                    onChange={(e) => {
+                                                        const items = [
+                                                            ...sec.testimonials
+                                                                .items,
+                                                        ];
+                                                        items[i] = {
+                                                            ...items[i],
+                                                            text: e.target
+                                                                .value,
+                                                        };
+                                                        setSec({
+                                                            testimonials: {
+                                                                ...sec.testimonials,
+                                                                items,
+                                                            },
+                                                        });
+                                                    }}
+                                                    placeholder="Review text…"
+                                                />
+                                                <CharCount
+                                                    value={item.text}
+                                                    max={400}
+                                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                                />
+                                            </div>
+                                        </AdminReveal>
+                                    ))}
+                                </AnimatePresence>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setSec({
+                                            testimonials: {
+                                                ...sec.testimonials,
+                                                items: [
                                                     ...sec.testimonials.items,
-                                                ];
-                                                items[i] = {
-                                                    ...items[i],
-                                                    text: e.target.value,
-                                                };
-                                                setSec({
-                                                    testimonials: {
-                                                        ...sec.testimonials,
-                                                        items,
+                                                    {
+                                                        name: '',
+                                                        rating: 5,
+                                                        text: '',
                                                     },
-                                                });
-                                            }}
-                                            placeholder="Review text…"
-                                        />
-                                        <CharCount
-                                            value={item.text}
-                                            max={400}
-                                            className="mt-1 block text-right"
-                                        />
-                                    </div>
-                                </AdminReveal>
-                            ))}
-                        </AnimatePresence>
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setSec({
-                                    testimonials: {
-                                        ...sec.testimonials,
-                                        items: [
-                                            ...sec.testimonials.items,
-                                            { name: '', rating: 5, text: '' },
-                                        ],
-                                    },
-                                })
-                            }
-                            className="flex items-center gap-1 text-xs text-[#c8102e] hover:underline"
-                        >
-                            <Plus className="size-3.5" /> Add review
-                        </button>
+                                                ],
+                                            },
+                                        })
+                                    }
+                                    className="flex items-center gap-1 text-xs text-[#c8102e] hover:underline"
+                                >
+                                    <Plus className="size-3.5" /> Add review
+                                </button>
+                            </>
+                        )}
                     </SectionWrap>
 
                     {/* FAQ */}
@@ -841,7 +873,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.faq.title}
                                 max={80}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                         <AnimatePresence initial={false}>
@@ -892,7 +924,7 @@ export default function LandingPageEdit({
                                         <CharCount
                                             value={item.question}
                                             max={160}
-                                            className="mt-1 block text-right"
+                                            className="mt-0.5 block text-right text-[11px] leading-none"
                                         />
                                         <textarea
                                             maxLength={800}
@@ -916,7 +948,7 @@ export default function LandingPageEdit({
                                         <CharCount
                                             value={item.answer}
                                             max={800}
-                                            className="mt-1 block text-right"
+                                            className="mt-0.5 block text-right text-[11px] leading-none"
                                         />
                                     </div>
                                 </AdminReveal>
@@ -976,7 +1008,7 @@ export default function LandingPageEdit({
                             <CharCount
                                 value={sec.footer.text}
                                 max={400}
-                                className="mt-1 block text-right"
+                                className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
                     </SectionWrap>

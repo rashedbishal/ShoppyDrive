@@ -16,7 +16,7 @@
   .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .header { background: #1a1a2e; padding: 24px 40px; }
   .header-inner { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-  .header-logo-img { height: 40px; width: auto; object-fit: contain; display: block; }
+  .header-logo-img { height: 40px; width: auto; object-fit: contain; display: block; background: #ffffff; border-radius: 8px; padding: 6px 10px; }
   .header-site-name { color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
   .body { padding: 40px 40px 32px; }
   .body-content { color: #374151; font-size: 15px; line-height: 1.75; }
@@ -41,7 +41,9 @@
         @if($logoUrl)
           <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="header-logo-img" />
         @endif
+        @unless($logoUrl)
         <span class="header-site-name">{{ $siteName }}</span>
+        @endunless
       </a>
     </div>
 

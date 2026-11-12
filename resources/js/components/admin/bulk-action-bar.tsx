@@ -54,17 +54,31 @@ export function BulkActionBar({
         <AnimatePresence initial={false}>
             {count > 0 && (
                 <AdminReveal key="bulk-actions">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-2.5">
-                        <p className="text-sm font-medium text-slate-700">
-                            {count} {label}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2">
+                    {/* Phone: count + Clear on one row, the actions as equal-width buttons under it. From `sm` up everything sits on one row. */}
+                    <div className="flex flex-col gap-2.5 border-b border-slate-100 bg-slate-50 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="min-w-0 text-sm font-medium text-slate-700">
+                                {count} {label}
+                            </p>
                             <Button
                                 type="button"
                                 size="sm"
                                 variant="outline"
                                 onClick={onClear}
                                 disabled={busy}
+                                className="shrink-0 sm:hidden"
+                            >
+                                <X className="mr-1 size-3.5" /> Clear
+                            </Button>
+                        </div>
+                        <div className="grid auto-cols-fr grid-flow-col gap-2 sm:flex sm:flex-wrap sm:items-center">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={onClear}
+                                disabled={busy}
+                                className="hidden sm:inline-flex"
                             >
                                 <X className="mr-1 size-3.5" /> Clear
                             </Button>
@@ -75,24 +89,28 @@ export function BulkActionBar({
                                         size="sm"
                                         disabled={busy}
                                         onClick={() => updateStatus(true)}
-                                        className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                        className="min-w-0 bg-emerald-600 px-2 text-xs whitespace-nowrap text-white hover:bg-emerald-700 sm:px-3 sm:text-sm"
                                     >
-                                        <Eye className="mr-1 size-3.5" />{' '}
-                                        {updatingTo === true
-                                            ? 'Updating…'
-                                            : activateLabel}
+                                        <Eye className="mr-1 size-3 shrink-0 sm:size-3.5" />
+                                        <span className="truncate">
+                                            {updatingTo === true
+                                                ? 'Updating…'
+                                                : activateLabel}
+                                        </span>
                                     </Button>
                                     <Button
                                         type="button"
                                         size="sm"
                                         disabled={busy}
                                         onClick={() => updateStatus(false)}
-                                        className="bg-slate-600 text-white hover:bg-slate-700"
+                                        className="min-w-0 bg-slate-600 px-2 text-xs whitespace-nowrap text-white hover:bg-slate-700 sm:px-3 sm:text-sm"
                                     >
-                                        <EyeOff className="mr-1 size-3.5" />{' '}
-                                        {updatingTo === false
-                                            ? 'Updating…'
-                                            : deactivateLabel}
+                                        <EyeOff className="mr-1 size-3 shrink-0 sm:size-3.5" />
+                                        <span className="truncate">
+                                            {updatingTo === false
+                                                ? 'Updating…'
+                                                : deactivateLabel}
+                                        </span>
                                     </Button>
                                 </>
                             )}
@@ -101,10 +119,12 @@ export function BulkActionBar({
                                 size="sm"
                                 disabled={busy}
                                 onClick={onDelete}
-                                className="bg-red-600 text-white hover:bg-red-700"
+                                className="min-w-0 bg-red-600 px-2 text-xs whitespace-nowrap text-white hover:bg-red-700 sm:px-3 sm:text-sm"
                             >
-                                <Trash2 className="mr-1 size-3.5" />{' '}
-                                {deleting ? 'Deleting…' : 'Delete'}
+                                <Trash2 className="mr-1 size-3 shrink-0 sm:size-3.5" />
+                                <span className="truncate">
+                                    {deleting ? 'Deleting…' : 'Delete'}
+                                </span>
                             </Button>
                         </div>
                     </div>

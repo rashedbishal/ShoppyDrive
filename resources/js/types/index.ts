@@ -78,6 +78,7 @@ export interface AppSettings {
     loading_ring_size?: number;
     loading_logo_size?: number;
     loading_ring_thickness?: number;
+    favicon?: string | null;
     currency_symbol: string;
     contact_email: string;
     contact_phone?: string | null;

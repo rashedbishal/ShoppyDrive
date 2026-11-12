@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
-import { CheckCircle, Download, Mail, Phone, ShoppingBag } from 'lucide-react';
+import { CheckCircle, Download, Mail, Phone } from 'lucide-react';
 import { useEffect } from 'react';
+import { SiteLogo } from '@/components/shared/SiteLogo';
 import { trackMetaPurchase } from '@/lib/meta-tracking';
 
 type OrderItem = {
@@ -75,21 +76,12 @@ export default function LandingConfirmation({
             <Head title={`Order Confirmed — ${siteName}`} />
             <div className="flex min-h-screen flex-col bg-slate-50">
                 <header className="border-b border-slate-100 bg-white px-4 py-3">
-                    <div className="mx-auto flex max-w-lg items-center gap-2">
-                        {siteLogo ? (
-                            <img
-                                src={siteLogo}
-                                alt={siteName}
-                                className="h-8 w-auto object-contain"
-                            />
-                        ) : (
-                            <span className="flex size-8 items-center justify-center rounded-lg bg-[#c8102e]">
-                                <ShoppingBag className="size-4 text-white" />
-                            </span>
-                        )}
-                        <span className="text-sm font-bold text-slate-800">
-                            {siteName}
-                        </span>
+                    <div className="mx-auto flex max-w-lg items-center">
+                        <SiteLogo
+                            src={siteLogo}
+                            name={siteName}
+                            className="h-9"
+                        />
                     </div>
                 </header>
 

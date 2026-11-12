@@ -211,6 +211,9 @@ export default function SettingsEdit({ settings }: Props) {
             Number(settings.loading_ring_thickness) ||
                 LOADING_SCREEN_FIELDS.loading_ring_thickness.default,
         ),
+        favicon:
+            (settings.favicon as string | null) ??
+            (null as File | string | null),
         social_links: {
             facebook: socialLinks.facebook ?? '',
             instagram: socialLinks.instagram ?? '',
@@ -368,7 +371,7 @@ export default function SettingsEdit({ settings }: Props) {
                             </div>
                             <SettingsField
                                 label="Brand Logo"
-                                hint="Displayed in the website header and CMS. JPG, PNG, or WEBP — max 2 MB."
+                                hint="The complete logo (mark, name and motto together), shown in the website header, footer, login pages, error pages, landing pages, CMS, emails and invoices. A wide PNG with a transparent background works best (WebP does not show in some email apps) — max 2 MB."
                             >
                                 <ImageUpload
                                     value={data.logo}
@@ -485,6 +488,19 @@ export default function SettingsEdit({ settings }: Props) {
                                         </span>
                                     </div>
                                 </div>
+                            </SettingsField>
+                            <SettingsField
+                                label="Favicon"
+                                hint="The small icon in the browser tab and on phone home screens. A square PNG (at least 180 × 180) works best; ICO and WEBP also work. Leave empty to use the built-in icon — max 512 KB."
+                            >
+                                <ImageUpload
+                                    value={data.favicon}
+                                    onChange={(file) =>
+                                        setData('favicon', file)
+                                    }
+                                    previewClassName="h-20"
+                                    maxSizeMb={0.5}
+                                />
                             </SettingsField>
                             <SettingsField
                                 label="Allow Guest Checkout"

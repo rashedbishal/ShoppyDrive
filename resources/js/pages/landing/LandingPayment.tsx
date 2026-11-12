@@ -1,5 +1,6 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { ShoppingBag } from 'lucide-react';
+
+import { SiteLogo } from '@/components/shared/SiteLogo';
 
 type Props = {
     token: string;
@@ -45,21 +46,12 @@ export default function LandingPayment({
             <Head title={`Complete Payment — ${siteName}`} />
             <div className="flex min-h-screen flex-col bg-slate-50">
                 <header className="border-b border-slate-100 bg-white px-4 py-3">
-                    <div className="mx-auto flex max-w-lg items-center gap-2">
-                        {siteLogo ? (
-                            <img
-                                src={siteLogo}
-                                alt={siteName}
-                                className="h-8 w-auto object-contain"
-                            />
-                        ) : (
-                            <span className="flex size-8 items-center justify-center rounded-lg bg-[#c8102e]">
-                                <ShoppingBag className="size-4 text-white" />
-                            </span>
-                        )}
-                        <span className="text-sm font-bold text-slate-800">
-                            {siteName}
-                        </span>
+                    <div className="mx-auto flex max-w-lg items-center">
+                        <SiteLogo
+                            src={siteLogo}
+                            name={siteName}
+                            className="h-9"
+                        />
                     </div>
                 </header>
 

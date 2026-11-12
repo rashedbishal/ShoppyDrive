@@ -25,11 +25,11 @@ class ImageOptimizer
 {
     public const int MAX_SIDE = 1600;
 
-    /** Hero slides and banners run edge to edge, so they keep more pixels. */
+    /** Hero slides, banners and testimonial screenshots (tall phone captures whose small text must stay legible) keep more pixels. */
     public const int WIDE_MAX_SIDE = 2400;
 
     /** @var list<string> Public-disk folders holding edge-to-edge images. */
-    public const array WIDE_DIRECTORIES = ['hero-slides', 'promotional-banners'];
+    public const array WIDE_DIRECTORIES = ['hero-slides', 'promotional-banners', 'landing-testimonials'];
 
     private const int WEBP_QUALITY = 80;
 

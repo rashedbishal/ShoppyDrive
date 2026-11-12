@@ -77,7 +77,7 @@ class SettingController extends Controller
      * @var list<string>
      */
     private const GENERAL_FIELDS = [
-        'site_name', 'logo', 'loading_logo', 'loading_spin_seconds', 'loading_ring_size', 'loading_logo_size',
+        'site_name', 'logo', 'loading_logo', 'favicon', 'loading_spin_seconds', 'loading_ring_size', 'loading_logo_size',
         'loading_ring_thickness', 'currency_symbol', 'guest_checkout_enabled',
         'review_images_enabled', 'review_images_max',
         'order_notification_email', 'order_cancellation_email',
@@ -159,6 +159,7 @@ class SettingController extends Controller
                 $request,
                 Setting::whereIn('key', array_keys(LoadingScreenSettings::FIELDS))->pluck('value', 'key')->all(),
             ),
+            'favicon' => $request->hasFile('favicon') ? ['file', 'mimes:png,ico,webp,jpg,jpeg', 'max:512'] : ['nullable'],
             'social_links' => ['nullable', 'array'],
             'social_links.facebook' => ['nullable', 'string', 'max:300'],
             'social_links.instagram' => ['nullable', 'string', 'max:300'],
@@ -256,6 +257,7 @@ class SettingController extends Controller
         }
 
         $this->saveLoadingLogo($request);
+        $this->saveFavicon($request);
 
         foreach (array_keys(LoadingScreenSettings::FIELDS) as $key) {
             if ($request->filled($key)) {
@@ -369,6 +371,37 @@ class SettingController extends Controller
         // overlay never has to download and decode an oversized original.
         $path = app(ImageOptimizer::class)->store($request->file('loading_logo'), 'logos', LoadingScreenSettings::LOGO_STORED_MAX_SIDE);
         Setting::updateOrCreate(['key' => 'loading_logo'], ['value' => '/storage/'.$path, 'group' => 'general']);
+    }
+
+    /**
+     * The browser-tab / home-screen icon. A new upload replaces the old file;
+     * an explicitly emptied field removes it, so the bundled /favicon.ico is
+     * used again. Any other submitted value (the current URL echoed back by
+     * the form) leaves it untouched and is never stored.
+     */
+    private function saveFavicon(Request $request): void
+    {
+        $isUpload = $request->hasFile('favicon');
+        $isRemoval = ! $isUpload && $request->has('favicon') && $request->input('favicon') === null;
+
+        if (! $isUpload && ! $isRemoval) {
+            return;
+        }
+
+        $existing = Setting::where('key', 'favicon')->first();
+
+        if ($existing?->value && str_starts_with((string) $existing->value, '/storage/')) {
+            Storage::disk('public')->delete(substr((string) $existing->value, strlen('/storage/')));
+        }
+
+        if ($isRemoval) {
+            $existing?->delete();
+
+            return;
+        }
+
+        $path = $request->file('favicon')->store('logos', 'public');
+        Setting::updateOrCreate(['key' => 'favicon'], ['value' => '/storage/'.$path, 'group' => 'general']);
     }
 
     /**

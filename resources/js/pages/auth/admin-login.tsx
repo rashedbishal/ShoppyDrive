@@ -1,12 +1,10 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
-import type { SharedPageProps } from '@/types';
+import { SiteLogo } from '@/components/shared/SiteLogo';
 
 export default function AdminLogin(): React.JSX.Element {
-    const { settings } = usePage<SharedPageProps>().props;
     const [showPassword, setShowPassword] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
@@ -39,24 +37,13 @@ export default function AdminLogin(): React.JSX.Element {
                 />
 
                 <div className="relative z-10 p-10">
-                    <div className="flex items-center gap-3">
-                        {settings.logo ? (
-                            <img
-                                src={settings.logo}
-                                alt={settings.site_name}
-                                className="h-10 w-auto object-contain"
-                            />
-                        ) : (
-                            <span className="flex size-10 items-center justify-center rounded-xl bg-[#c8102e]">
-                                <AppLogoIcon className="size-5 fill-current text-white" />
-                            </span>
-                        )}
-                        <div>
-                            <p className="text-base font-bold text-white">
-                                {settings.site_name}
-                            </p>
-                            <p className="text-xs text-gray-500">Admin Panel</p>
-                        </div>
+                    <div className="flex flex-col items-start gap-1.5">
+                        <SiteLogo
+                            plate="always"
+                            tone="onDark"
+                            className="h-11"
+                        />
+                        <p className="text-xs text-gray-500">Admin Panel</p>
                     </div>
                 </div>
 
@@ -97,24 +84,13 @@ export default function AdminLogin(): React.JSX.Element {
             <div className="flex flex-1 flex-col items-center justify-center bg-gray-950 px-4 py-12 sm:px-8">
                 <div className="w-full max-w-[400px]">
                     {/* Mobile logo */}
-                    <div className="mb-8 flex items-center gap-3 lg:hidden">
-                        {settings.logo ? (
-                            <img
-                                src={settings.logo}
-                                alt={settings.site_name}
-                                className="h-9 w-auto object-contain"
-                            />
-                        ) : (
-                            <span className="flex size-9 items-center justify-center rounded-xl bg-[#c8102e]">
-                                <AppLogoIcon className="size-4 fill-current text-white" />
-                            </span>
-                        )}
-                        <div>
-                            <p className="text-sm font-bold text-white">
-                                {settings.site_name}
-                            </p>
-                            <p className="text-xs text-gray-600">Admin Panel</p>
-                        </div>
+                    <div className="mb-8 flex flex-col items-start gap-1.5 lg:hidden">
+                        <SiteLogo
+                            plate="always"
+                            tone="onDark"
+                            className="h-10"
+                        />
+                        <p className="text-xs text-gray-600">Admin Panel</p>
                     </div>
 
                     <div className="rounded-2xl border border-gray-800 bg-gray-900 p-8">
