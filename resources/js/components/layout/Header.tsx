@@ -270,7 +270,9 @@ export default function Header(): React.JSX.Element {
         <>
             <header
                 className={cn(
-                    'sticky top-0 z-50 w-full transition-shadow duration-500',
+                    // -top-px: on some screens/zoom levels fractional pixel rounding leaves
+                    // a hairline above a `top-0` sticky header; overlapping by 1px hides it.
+                    'sticky -top-px z-50 w-full transition-shadow duration-500',
                     isScrolled ? 'shadow-[var(--shadow-card-hover)]' : '',
                 )}
             >
@@ -278,7 +280,7 @@ export default function Header(): React.JSX.Element {
                 {announcementBar?.is_visible !== false && (
                     <div
                         className={cn(
-                            'hidden grid-rows-[1fr] bg-[var(--color-secondary)] text-white transition-[grid-template-rows,opacity] duration-500 ease-in-out lg:grid',
+                            'hidden grid-rows-[1fr] bg-[var(--color-secondary)] text-white shadow-[0_-2px_0_var(--color-secondary)] transition-[grid-template-rows,opacity] duration-500 ease-in-out lg:grid',
                             shouldHideNav &&
                                 'pointer-events-none grid-rows-[0fr] opacity-0',
                         )}
