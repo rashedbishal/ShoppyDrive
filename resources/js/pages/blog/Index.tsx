@@ -6,6 +6,7 @@ import { PageHero } from '@/components/shared/PageHero';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
+import { useLiveSearch } from '@/hooks/use-live-search';
 import type { Blog, PaginatedData } from '@/types';
 
 type BlogIndexProps = {
@@ -19,14 +20,21 @@ export default function BlogIndex({
 }: BlogIndexProps): React.JSX.Element {
     const [search, setSearch] = useState(filters.search ?? '');
 
-    const submitSearch = (event: React.FormEvent): void => {
-        event.preventDefault();
+    const runSearch = (): void => {
         router.get(
             '/blog',
             { search: search.trim() || undefined },
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
+
+    const submitSearch = (event: React.FormEvent): void => {
+        event.preventDefault();
+        runSearch();
+    };
+
+    // Posts follow the search box as you type.
+    useLiveSearch(search, filters.search ?? '', runSearch);
 
     const clearSearch = (): void => {
         setSearch('');

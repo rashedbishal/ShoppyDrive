@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useBulkSelect } from '@/hooks/use-bulk-select';
+import { useLiveSearch } from '@/hooks/use-live-search';
 import { clickableRow } from '@/lib/clickable-row';
 import {
     destroyMany as bulkDestroyRoute,
@@ -69,7 +70,7 @@ export default function ProductBundlesIndex({ bundles, filters }: Props) {
         router.get(
             route('admin.product-bundles.index'),
             { search },
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -78,7 +79,7 @@ export default function ProductBundlesIndex({ bundles, filters }: Props) {
         router.get(
             route('admin.product-bundles.index'),
             {},
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -95,6 +96,9 @@ export default function ProductBundlesIndex({ bundles, filters }: Props) {
             },
         });
     };
+
+    // Results follow the search box as you type (Enter / the Search button still apply at once).
+    useLiveSearch(search, filters.search ?? '', () => applySearch());
 
     return (
         <>

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
+import { useLiveSearch } from '@/hooks/use-live-search';
 
 type Order = {
     id: number;
@@ -69,7 +70,7 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
         router.get(
             route('admin.orders.index'),
             { ...filters, search, ...overrides },
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -78,13 +79,16 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
         router.get(
             route('admin.orders.index'),
             {},
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
     const hasActiveFilters = Boolean(
         search || filters.search || filters.status || filters.payment_status,
     );
+
+    // Results follow the search box as you type (Enter / the Search button still apply at once).
+    useLiveSearch(search, filters.search ?? '', () => applyFilters({}));
 
     return (
         <>

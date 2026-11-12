@@ -49,10 +49,8 @@ class AccountProfileController extends Controller
     }
 
     /**
-     * Persists name/phone/avatar, then handles an email change: a verified
-     * account's email only changes after the code sent to the CURRENT address
-     * is entered (SEC-009, confirmEmailChange()); an unverified one (typically
-     * a mistyped address at sign-up) changes straight away and is verified again.
+     * Persists name/phone/avatar only. The email address is read-only on the
+     * profile form and is never accepted here, whatever the request carries.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
@@ -72,20 +70,6 @@ class AccountProfileController extends Controller
         }
 
         $user->update($data);
-
-        $newEmail = (string) $request->validated('email');
-
-        if ($this->emailChange->requiresCode($user, $newEmail)) {
-            $this->emailChange->start($request, $user, $newEmail);
-
-            Inertia::flash('toast', ['type' => 'success', 'message' => __('We sent a 6-digit code to :email. Enter it below to confirm your new email.', ['email' => $user->email])]);
-
-            return to_route('account.profile');
-        }
-
-        if ($newEmail !== $user->email) {
-            $user->changeEmailTo($newEmail);
-        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Profile updated.']);
 

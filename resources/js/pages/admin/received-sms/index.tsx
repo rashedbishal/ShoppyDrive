@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
+import { useLiveSearch } from '@/hooks/use-live-search';
 import {
     dialogItem,
     dialogOverlayMotion,
@@ -192,7 +193,7 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
         router.get(
             route('admin.received-sms.index'),
             { ...filters, search, ...overrides },
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -203,13 +204,16 @@ export default function ReceivedSmsIndex({ sms, filters }: Props) {
         router.get(
             route('admin.received-sms.index'),
             {},
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
     const hasActiveFilters = Boolean(
         search || filters.search || filters.matched,
     );
+
+    // Results follow the search box as you type (Enter / the Search button still apply at once).
+    useLiveSearch(search, filters.search ?? '', () => applyFilters({}));
 
     return (
         <>

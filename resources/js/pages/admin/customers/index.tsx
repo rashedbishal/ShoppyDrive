@@ -5,6 +5,7 @@ import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { DeleteCustomerDialog } from '@/components/admin/delete-customer-dialog';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
+import { useLiveSearch } from '@/hooks/use-live-search';
 
 type Customer = {
     id: number;
@@ -45,7 +46,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
         router.get(
             route('admin.customers.index'),
             { ...filters, search, ...overrides },
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -54,7 +55,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
         router.get(
             route('admin.customers.index'),
             {},
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -65,6 +66,9 @@ export default function CustomersIndex({ customers, filters }: Props) {
         filters.verified ||
         filters.orders,
     );
+
+    // Results follow the search box as you type (Enter / the Search button still apply at once).
+    useLiveSearch(search, filters.search ?? '', () => applyFilters());
 
     return (
         <>

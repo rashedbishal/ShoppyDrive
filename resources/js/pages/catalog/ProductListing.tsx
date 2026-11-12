@@ -9,7 +9,7 @@ import {
     Search,
     SlidersHorizontal,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { route } from 'ziggy-js';
 import {
@@ -23,6 +23,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
+import { useLiveSearch } from '@/hooks/use-live-search';
 import {
     PRODUCT_GRID_BESIDE_SIDEBAR_CLASS,
     SIDEBAR_LAYOUT_CLASS,
@@ -435,10 +436,28 @@ function ProductListingPage({
     const [searchInput, setSearchInput] = useState(filters.q);
     const [showAllBrands, setShowAllBrands] = useState(false);
 
+    // The search text the live search last sent, while the visitor may already
+    // have typed more: the results for the older text must not overwrite it.
+    const liveSentQ = useRef<string | null>(null);
+    const searchInputRef = useRef(searchInput);
+
+    useEffect(() => {
+        searchInputRef.current = searchInput;
+    });
+
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- resets local draft/UI state when the server props or URL change
         setDraftFilters(filters);
-        setSearchInput(filters.q);
+
+        const stillTyping =
+            liveSentQ.current !== null &&
+            searchInputRef.current.trim() !== liveSentQ.current;
+
+        if (!stillTyping) {
+            setSearchInput(filters.q);
+            liveSentQ.current = null;
+        }
+
         setIsLoading(false);
     }, [filters]);
 
@@ -538,6 +557,20 @@ function ProductListingPage({
         setDraftFilters(next);
         submitFilters(next);
     };
+
+    // Products follow the search box as you type (Enter / the Search button still apply at once).
+    useLiveSearch(searchInput, filters.q, () => {
+        const trimmed = searchInput.trim();
+
+        if (trimmed === draftFilters.q) {
+            return;
+        }
+
+        liveSentQ.current = trimmed;
+        const next = { ...draftFilters, q: trimmed, page: 1 };
+        setDraftFilters(next);
+        submitFilters(next);
+    });
 
     const handleClearAll = (): void => {
         const next: ProductListingFilters = {

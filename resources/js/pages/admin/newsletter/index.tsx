@@ -5,6 +5,7 @@ import { ClearFiltersButton } from '@/components/admin/clear-filters-button';
 import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select } from '@/components/ui/select';
+import { useLiveSearch } from '@/hooks/use-live-search';
 
 type Subscriber = {
     id: number;
@@ -61,6 +62,7 @@ export default function NewsletterIndex({
 
         router.get(route('admin.newsletter.index'), params, {
             preserveState: true,
+            preserveScroll: true,
             replace: true,
         });
     };
@@ -71,7 +73,7 @@ export default function NewsletterIndex({
         router.get(
             route('admin.newsletter.index'),
             {},
-            { preserveState: true, replace: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
@@ -89,6 +91,9 @@ export default function NewsletterIndex({
             },
         });
     };
+
+    // Results follow the search box as you type (Enter / the Search button still apply at once).
+    useLiveSearch(search, filters.search ?? '', () => applyFilters());
 
     return (
         <>

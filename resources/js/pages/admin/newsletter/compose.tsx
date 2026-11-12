@@ -727,9 +727,18 @@ export default function NewsletterCompose({
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className="mt-3 rounded-lg bg-[#1a1a2e] py-1.5 text-center text-[10px] font-bold tracking-widest text-white uppercase">
+                                                            {/* Opens this product in the CMS, in a new tab. */}
+                                                            <a
+                                                                href={route(
+                                                                    'admin.products.edit',
+                                                                    selectedProduct.id,
+                                                                )}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="mt-3 block rounded-lg bg-[#1a1a2e] py-1.5 text-center text-[10px] font-bold tracking-widest text-white uppercase transition hover:bg-[#2a2a4e]"
+                                                            >
                                                                 View Product
-                                                            </div>
+                                                            </a>
                                                         </div>
 
                                                         <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 text-center">

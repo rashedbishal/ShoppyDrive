@@ -8,7 +8,7 @@ import {
     ShieldCheck,
     TriangleAlert,
 } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 import AccountProfileController from '@/actions/App/Http/Controllers/AccountProfileController';
 import DeleteUser from '@/components/delete-user';
@@ -59,17 +59,10 @@ export default function Profile({
 
     const form = useForm({
         name: user.name,
-        email: user.email,
         phone: user.phone || '',
         avatar: null as File | null,
         remove_avatar: false,
     });
-
-    const { setData: setFormData } = form;
-
-    useEffect(() => {
-        setFormData('email', user.email);
-    }, [user.email, pendingEmailChange?.new_email, setFormData]);
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -151,6 +144,7 @@ export default function Profile({
                                         onClick={() =>
                                             fileInputRef.current?.click()
                                         }
+                                        aria-label="Change profile photo"
                                         className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-black/40 text-white opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100"
                                     >
                                         <Camera size={24} className="mb-1" />
@@ -171,21 +165,9 @@ export default function Profile({
                                         Your Profile Photo
                                     </h3>
                                     <p className="mb-4 text-sm text-[var(--color-text-secondary)]">
-                                        Upload a clear photo to help us identify
-                                        you.
+                                        Click your photo to upload a new one.
                                     </p>
                                     <div className="flex justify-center gap-2 md:justify-start">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-10 rounded-xl border-[var(--color-border)] font-bold"
-                                            onClick={() =>
-                                                fileInputRef.current?.click()
-                                            }
-                                        >
-                                            Upload New
-                                        </Button>
                                         {(avatarPreview ||
                                             (user.avatar &&
                                                 !form.data.remove_avatar)) && (
@@ -235,31 +217,18 @@ export default function Profile({
                                     <Label htmlFor="email">Email Address</Label>
                                     <div className="relative">
                                         <Input
-                                            maxLength={150}
                                             id="email"
                                             type="email"
-                                            value={form.data.email}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'email',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            autoComplete="username"
+                                            value={user.email}
+                                            disabled
+                                            readOnly
                                             className="h-12 rounded-xl pl-12"
-                                            required
                                         />
                                         <Mail
                                             size={18}
                                             className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
                                         />
                                     </div>
-                                    <InputError message={form.errors.email} />
-                                    <p className="text-[10px] font-medium text-[var(--color-text-muted)] italic">
-                                        {isUnverified
-                                            ? 'Your email is not verified yet, so a change takes effect straight away.'
-                                            : 'To change your email we send a 6-digit code to your current address.'}
-                                    </p>
                                 </div>
                             </div>
 

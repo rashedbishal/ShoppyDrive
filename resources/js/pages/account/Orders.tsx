@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
+import { useLiveSearch } from '@/hooks/use-live-search';
 import { formatCurrency, formatDate, getPrimaryImagePath } from '@/lib/utils';
 import type { Order, PaginatedData, SharedPageProps } from '@/types';
 
@@ -36,14 +37,21 @@ export default function Orders({
     const { flash } = props;
     const [search, setSearch] = useState(filters.search || '');
 
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
+    const runSearch = () => {
         router.get(
             route('account.orders'),
             { search },
-            { preserveState: true },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        runSearch();
+    };
+
+    // Orders follow the search box as you type.
+    useLiveSearch(search, filters.search || '', runSearch);
 
     const handleCancel = (orderNumber: string) => {
         if (
