@@ -87,6 +87,16 @@ it('limits the About page hero description to 200 characters', function () {
         ->assertSessionDoesntHaveErrors('about_hero_description');
 });
 
+it('limits the Contact page hero description to 400 characters', function () {
+    actingAs($this->admin, 'admin')
+        ->put(route('admin.settings.update'), ['contact_page_hero_description' => str_repeat('a', 401)])
+        ->assertSessionHasErrors('contact_page_hero_description');
+
+    actingAs($this->admin, 'admin')
+        ->put(route('admin.settings.update'), ['contact_page_hero_description' => str_repeat('a', 400)])
+        ->assertSessionDoesntHaveErrors('contact_page_hero_description');
+});
+
 it('limits the About page mission text to 400 visible characters, not counting markup', function () {
     $save = fn (string $body) => actingAs($this->admin, 'admin')
         ->put(route('admin.settings.update'), ['about_mission_body' => $body]);

@@ -133,6 +133,7 @@ function ContactContent({ content }: Props): React.JSX.Element {
                         )
                     }
                     description={content.hero_description}
+                    fullDescription
                 />
             </div>
 

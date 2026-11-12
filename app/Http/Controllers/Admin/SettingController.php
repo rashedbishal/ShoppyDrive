@@ -210,7 +210,7 @@ class SettingController extends Controller
             'contact_page_hero_eyebrow' => ['nullable', 'string', 'max:60'],
             'contact_page_hero_title' => ['nullable', 'string', 'max:100'],
             'contact_page_hero_title_highlight' => ['nullable', 'string', 'max:60'],
-            'contact_page_hero_description' => ['nullable', 'string', 'max:500'],
+            'contact_page_hero_description' => ['nullable', 'string', 'max:400'],
             'contact_page_support_hours' => ['nullable', 'string', 'max:60'],
             'referral_enabled' => ['nullable', 'boolean'],
             'referral_discount_type' => ['nullable', 'in:percent,fixed'],

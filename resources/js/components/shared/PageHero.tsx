@@ -81,10 +81,10 @@ export function PageHero({
                         {description ? (
                             <p
                                 className={cn(
-                                    'max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]',
+                                    'text-sm leading-6 text-[var(--color-text-secondary)]',
                                     fullDescription
                                         ? 'break-words'
-                                        : 'line-clamp-3 sm:line-clamp-2',
+                                        : 'line-clamp-3 max-w-2xl sm:line-clamp-2',
                                 )}
                             >
                                 {description}

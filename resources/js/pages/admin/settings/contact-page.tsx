@@ -53,8 +53,8 @@ export default function ContactPageConfig({ settings }: Props) {
     return (
         <>
             <Head title="Contact Page — Admin" />
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="flex items-center justify-between">
+            <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900">
                             Contact Page
@@ -74,11 +74,11 @@ export default function ContactPageConfig({ settings }: Props) {
                             .
                         </p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="bg-[#c8102e] text-white hover:bg-[#a50d25]"
+                            className="w-full bg-[#c8102e] text-white hover:bg-[#a50d25] sm:w-auto"
                         >
                             {processing ? 'Saving…' : 'Save Changes'}
                         </Button>
@@ -94,32 +94,34 @@ export default function ContactPageConfig({ settings }: Props) {
                     </div>
                 </div>
 
-                <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100">
+                <Card className="gap-3 py-4 shadow-sm">
+                    <CardHeader className="border-b border-slate-100 pb-3">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Hero
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-3">
-                        <SettingsField label="Eyebrow badge">
-                            <input
-                                maxLength={60}
-                                className={settingsInputClass}
-                                value={data.contact_page_hero_eyebrow}
-                                onChange={(e) =>
-                                    setData(
-                                        'contact_page_hero_eyebrow',
-                                        e.target.value,
-                                    )
-                                }
-                            />
-                            <CharCount
-                                value={data.contact_page_hero_eyebrow}
-                                max={60}
-                                className="mt-1 block text-right"
-                            />
-                        </SettingsField>
-                        <div className="grid gap-4 sm:grid-cols-2">
+                    <CardContent className="space-y-2 pt-0">
+                        <div className="sm:w-1/2">
+                            <SettingsField label="Eyebrow badge">
+                                <input
+                                    maxLength={60}
+                                    className={settingsInputClass}
+                                    value={data.contact_page_hero_eyebrow}
+                                    onChange={(e) =>
+                                        setData(
+                                            'contact_page_hero_eyebrow',
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                                <CharCount
+                                    value={data.contact_page_hero_eyebrow}
+                                    max={60}
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
+                                />
+                            </SettingsField>
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
                             <SettingsField
                                 label="Title"
                                 hint='e.g. "We&apos;re here to"'
@@ -138,7 +140,7 @@ export default function ContactPageConfig({ settings }: Props) {
                                 <CharCount
                                     value={data.contact_page_hero_title}
                                     max={100}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
                             </SettingsField>
                             <SettingsField
@@ -163,13 +165,13 @@ export default function ContactPageConfig({ settings }: Props) {
                                         data.contact_page_hero_title_highlight
                                     }
                                     max={60}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
                             </SettingsField>
                         </div>
                         <SettingsField label="Description">
                             <Textarea
-                                maxLength={500}
+                                maxLength={400}
                                 showCount
                                 textareaClassName={settingsInputClass}
                                 rows={2}
@@ -185,20 +187,20 @@ export default function ContactPageConfig({ settings }: Props) {
                     </CardContent>
                 </Card>
 
-                <Card className="shadow-sm">
-                    <CardHeader className="border-b border-slate-100">
+                <Card className="gap-3 py-4 shadow-sm">
+                    <CardHeader className="border-b border-slate-100 pb-3">
                         <CardTitle className="text-sm font-semibold text-slate-700">
                             Contact Details
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4 pt-3">
+                    <CardContent className="space-y-2 pt-0">
                         <p className="text-xs text-slate-400">
                             Phone, email, address, support hours and the seller
                             details below are shown in the site footer (phone,
                             email and address also in SEO tags) — editing them
                             here updates everywhere.
                         </p>
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-2 sm:grid-cols-2">
                             <SettingsField label="Phone">
                                 <input
                                     maxLength={30}
@@ -212,7 +214,7 @@ export default function ContactPageConfig({ settings }: Props) {
                                 <CharCount
                                     value={data.contact_phone}
                                     max={30}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
                             </SettingsField>
                             <SettingsField label="Email">
@@ -229,11 +231,11 @@ export default function ContactPageConfig({ settings }: Props) {
                                 <CharCount
                                     value={data.contact_email}
                                     max={150}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
                             </SettingsField>
                         </div>
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-2 sm:grid-cols-2">
                             <SettingsField label="Address / Location">
                                 <input
                                     maxLength={300}
@@ -250,7 +252,7 @@ export default function ContactPageConfig({ settings }: Props) {
                                 <CharCount
                                     value={data.contact_address}
                                     max={300}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
                             </SettingsField>
                             <SettingsField label="Support Hours">
@@ -269,12 +271,12 @@ export default function ContactPageConfig({ settings }: Props) {
                                 <CharCount
                                     value={data.contact_page_support_hours}
                                     max={60}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
                             </SettingsField>
                         </div>
                         {/* BIZ-034: seller identity, shown in the storefront footer. */}
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-2 sm:grid-cols-2">
                             <SettingsField label="Legal Business Name">
                                 <input
                                     maxLength={150}
@@ -291,7 +293,7 @@ export default function ContactPageConfig({ settings }: Props) {
                                 <CharCount
                                     value={data.legal_business_name}
                                     max={150}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
                             </SettingsField>
                             <SettingsField label="Trade Licence Number">
@@ -310,7 +312,7 @@ export default function ContactPageConfig({ settings }: Props) {
                                 <CharCount
                                     value={data.trade_licence_number}
                                     max={60}
-                                    className="mt-1 block text-right"
+                                    className="mt-0.5 block text-right text-[11px] leading-none"
                                 />
                             </SettingsField>
                         </div>
