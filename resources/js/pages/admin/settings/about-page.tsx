@@ -188,24 +188,26 @@ export default function AboutPageConfig({ settings }: Props) {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 pt-3">
-                        <SettingsField label="Eyebrow badge">
-                            <input
-                                maxLength={60}
-                                className={settingsInputClass}
-                                value={data.about_hero_eyebrow}
-                                onChange={(e) =>
-                                    setData(
-                                        'about_hero_eyebrow',
-                                        e.target.value,
-                                    )
-                                }
-                            />
-                            <CharCount
-                                value={data.about_hero_eyebrow}
-                                max={60}
-                                className="mt-1 block text-right"
-                            />
-                        </SettingsField>
+                        <div className="sm:w-1/2">
+                            <SettingsField label="Eyebrow badge">
+                                <input
+                                    maxLength={60}
+                                    className={settingsInputClass}
+                                    value={data.about_hero_eyebrow}
+                                    onChange={(e) =>
+                                        setData(
+                                            'about_hero_eyebrow',
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                                <CharCount
+                                    value={data.about_hero_eyebrow}
+                                    max={60}
+                                    className="mt-1 block text-right"
+                                />
+                            </SettingsField>
+                        </div>
                         <div className="grid gap-4 sm:grid-cols-2">
                             <SettingsField
                                 label="Title (first line)"

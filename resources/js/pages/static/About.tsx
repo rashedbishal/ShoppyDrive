@@ -31,7 +31,7 @@ type Props = {
 /** Long figures ("১২,০০০+ orders delivered") step down in size so they stay inside their card. */
 function statValueSize(value: string): string {
     if (value.length <= 8) {
-        return 'text-3xl sm:text-4xl';
+        return 'text-3xl sm:text-3xl';
     }
 
     if (value.length <= 14) {
@@ -47,7 +47,7 @@ function AboutPage({ content }: Props): React.JSX.Element {
             <Head title="About Us" />
 
             {/* Hero */}
-            <div className="py-6 lg:py-8">
+            <div className="py-3 lg:py-4">
                 <PageHero
                     badge={{ icon: Star, label: content.hero_eyebrow }}
                     title={
@@ -85,19 +85,19 @@ function AboutPage({ content }: Props): React.JSX.Element {
             {/* Stats */}
             {content.stats.length > 0 && (
                 <section className="border-y border-[var(--color-border)] bg-[var(--color-surface-alt)]">
-                    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-                        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
+                    <div className="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8">
+                        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
                             {content.stats.map(({ value, label }, index) => (
                                 <div
                                     key={index}
-                                    className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-5 text-center sm:px-4"
+                                    className="flex min-w-0 flex-col items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3.5 text-center sm:px-4"
                                 >
                                     <p
                                         className={`max-w-full font-black [overflow-wrap:anywhere] text-[var(--color-primary)] ${statValueSize(value)} leading-tight`}
                                     >
                                         {value}
                                     </p>
-                                    <p className="mt-1.5 max-w-full text-sm [overflow-wrap:anywhere] text-[var(--color-text-secondary)]">
+                                    <p className="mt-1 max-w-full text-sm [overflow-wrap:anywhere] text-[var(--color-text-secondary)]">
                                         {label}
                                     </p>
                                 </div>
@@ -108,10 +108,10 @@ function AboutPage({ content }: Props): React.JSX.Element {
             )}
 
             {/* Mission */}
-            <section className="py-16 lg:py-24">
+            <section className="py-9 lg:py-12">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-14">
-                        <div className="min-w-0 space-y-5">
+                    <div className="grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-10">
+                        <div className="min-w-0 space-y-3">
                             {content.mission_eyebrow && (
                                 <p className="flex items-center gap-3 text-sm font-semibold tracking-[0.2em] text-[var(--color-primary)] uppercase">
                                     <span className="h-px w-8 bg-[var(--color-primary)]" />
@@ -120,7 +120,7 @@ function AboutPage({ content }: Props): React.JSX.Element {
                                     </span>
                                 </p>
                             )}
-                            <h2 className="text-3xl font-bold [overflow-wrap:anywhere] text-[var(--color-text-primary)] sm:text-4xl">
+                            <h2 className="text-2xl font-bold [overflow-wrap:anywhere] text-[var(--color-text-primary)] sm:text-3xl">
                                 {content.mission_title}
                             </h2>
                             <div
@@ -131,17 +131,17 @@ function AboutPage({ content }: Props): React.JSX.Element {
                             />
                         </div>
                         {content.mission_features.length > 0 && (
-                            <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
                                 {content.mission_features.map(
                                     ({ icon, label }, index) => (
                                         <div
                                             key={index}
-                                            className="flex min-w-0 flex-col items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-6 text-center"
+                                            className="flex min-w-0 flex-col items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-4 text-center"
                                         >
-                                            <div className="flex size-12 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
+                                            <div className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
                                                 <LazyCategoryIcon
                                                     icon={icon}
-                                                    className="size-6 text-[var(--color-primary)]"
+                                                    className="size-5 text-[var(--color-primary)]"
                                                 />
                                             </div>
                                             <p className="max-w-full text-sm font-semibold [overflow-wrap:anywhere] text-[var(--color-text-primary)]">
@@ -158,24 +158,24 @@ function AboutPage({ content }: Props): React.JSX.Element {
 
             {/* Values */}
             {content.values.length > 0 && (
-                <section className="border-t border-[var(--color-border)] bg-[var(--color-surface-alt)] py-16 lg:py-24">
+                <section className="border-t border-[var(--color-border)] bg-[var(--color-surface-alt)] py-9 lg:py-12">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <div className="mb-12 text-center">
+                        <div className="mb-6 text-center">
                             <p className="text-sm font-semibold tracking-[0.2em] text-[var(--color-primary)] uppercase">
                                 What We Stand For
                             </p>
-                            <h2 className="mt-2 text-3xl font-bold text-[var(--color-text-primary)] sm:text-4xl">
+                            <h2 className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] sm:text-3xl">
                                 Our core values
                             </h2>
                         </div>
-                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
                             {content.values.map(
                                 ({ icon, title, description }, index) => (
                                     <div
                                         key={index}
-                                        className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6"
+                                        className="space-y-2.5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
                                     >
-                                        <div className="flex size-11 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
+                                        <div className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-primary)]/10">
                                             <LazyCategoryIcon
                                                 icon={icon}
                                                 className="size-5 text-[var(--color-primary)]"
@@ -197,24 +197,24 @@ function AboutPage({ content }: Props): React.JSX.Element {
 
             {/* Team */}
             {content.team.length > 0 && (
-                <section className="py-16 lg:py-24">
+                <section className="py-9 lg:py-12">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <div className="mb-12 text-center">
+                        <div className="mb-6 text-center">
                             <p className="text-sm font-semibold tracking-[0.2em] text-[var(--color-primary)] uppercase">
                                 The People Behind ShoppyDrive
                             </p>
-                            <h2 className="mt-2 text-3xl font-bold text-[var(--color-text-primary)] sm:text-4xl">
+                            <h2 className="mt-1 text-2xl font-bold text-[var(--color-text-primary)] sm:text-3xl">
                                 Meet our team
                             </h2>
                         </div>
-                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
                             {content.team.map(
                                 ({ name, role, initials }, index) => (
                                     <div
                                         key={index}
-                                        className="flex flex-col items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-6 text-center"
+                                        className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-5 text-center"
                                     >
-                                        <div className="flex size-16 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-hover)] text-xl font-bold text-white">
+                                        <div className="flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-hover)] text-lg font-bold text-white">
                                             {initials}
                                         </div>
                                         <div>
@@ -234,18 +234,18 @@ function AboutPage({ content }: Props): React.JSX.Element {
             )}
 
             {/* CTA */}
-            <section className="border-t border-[var(--color-border)] bg-[var(--color-surface-alt)] py-16">
+            <section className="border-t border-[var(--color-border)] bg-[var(--color-surface-alt)] py-9">
                 <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-                    <h2 className="text-3xl font-bold [overflow-wrap:anywhere] text-[var(--color-text-primary)]">
+                    <h2 className="text-2xl font-bold [overflow-wrap:anywhere] text-[var(--color-text-primary)]">
                         {content.cta_title}
                     </h2>
-                    <p className="mx-auto mt-3 max-w-xl [overflow-wrap:anywhere] text-[var(--color-text-secondary)]">
+                    <p className="mx-auto mt-2 max-w-xl [overflow-wrap:anywhere] text-[var(--color-text-secondary)]">
                         {content.cta_description}
                     </p>
-                    <div className="mt-8 flex items-center justify-center gap-4">
+                    <div className="mt-5 flex items-center justify-center gap-4">
                         <Link
                             href="/products"
-                            className="flex h-12 items-center gap-2 rounded-xl bg-[var(--color-primary)] px-8 font-semibold text-white transition hover:bg-[var(--color-primary-hover)]"
+                            className="flex h-11 items-center gap-2 rounded-xl bg-[var(--color-primary)] px-7 font-semibold text-white transition hover:bg-[var(--color-primary-hover)]"
                         >
                             Browse Products <ArrowRight className="size-4" />
                         </Link>
