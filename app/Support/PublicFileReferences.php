@@ -38,6 +38,7 @@ class PublicFileReferences
         'content-images' => 7,
         'hero-slides' => 7,
         'landing-slides' => 7,
+        'landing-testimonials' => 7,
         'logos' => 7,
         'newsletter-images' => 90,
         'product-bundles' => 7,
