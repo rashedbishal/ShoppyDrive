@@ -98,13 +98,13 @@ test('a cancelled or refunded order has no invoice, for any payment method', fun
 test('a customer cannot download another customer\'s invoice', function () {
     $order = invoiceOrder(User::factory()->create(), 'delivered');
 
-    actingAs(User::factory()->create())->get(route('account.orders.invoice', $order))->assertForbidden();
+    actingAs(User::factory()->create())->get(route('account.orders.invoice', $order))->assertNotFound();
 });
 
 test('a guest order cannot be downloaded through a customer account', function () {
     $order = invoiceOrder(User::factory()->create(), 'delivered', attributes: ['user_id' => null]);
 
-    actingAs(User::factory()->create())->get(route('account.orders.invoice', $order))->assertForbidden();
+    actingAs(User::factory()->create())->get(route('account.orders.invoice', $order))->assertNotFound();
 });
 
 test('a guest is sent to log in', function () {

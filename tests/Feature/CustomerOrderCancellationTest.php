@@ -188,7 +188,7 @@ test('a different customer cannot cancel another customer\'s order', function ()
 
     actingAs($this->otherCustomer)
         ->patch(route('account.orders.cancel', $order))
-        ->assertForbidden();
+        ->assertNotFound();
 
     expect($order->refresh()->status)->toBe(OrderStatus::PENDING);
     expect(fsa15Ledgers($order))->toBe(FSA15_UNTOUCHED);

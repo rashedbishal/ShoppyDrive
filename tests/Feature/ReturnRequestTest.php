@@ -115,7 +115,7 @@ test('a customer cannot request a return for another customer\'s order', functio
     $this->actingAs($attacker)->post(route('account.orders.return.store', $order->order_number), [
         'reason' => 'Not mine but trying anyway.',
         'items' => [['order_item_id' => $item->id, 'quantity' => 1]],
-    ])->assertForbidden();
+    ])->assertNotFound();
 
     expect(ReturnRequest::query()->count())->toBe(0);
 });

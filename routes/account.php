@@ -71,8 +71,10 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active', 'histor
     })->name('account.orders');
 
     Route::get('/orders/{order:order_number}', function (Order $order) {
+        // DISC-10: 404, not 403, so another customer's order number is
+        // indistinguishable from one that doesn't exist.
         if ($order->user_id !== auth()->id()) {
-            abort(403);
+            abort(404);
         }
 
         // PERF-001: items.variant.media / items.product.images, not just
@@ -89,8 +91,10 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active', 'histor
     Route::post('/orders/{order:order_number}/return', [ReturnRequestController::class, 'store'])->middleware('throttle:account-action')->name('account.orders.return.store');
 
     Route::get('/orders/{order:order_number}/invoice', function (Order $order) {
+        // DISC-10: 404, not 403, so another customer's order number is
+        // indistinguishable from one that doesn't exist.
         if ($order->user_id !== auth()->id()) {
-            abort(403);
+            abort(404);
         }
 
         $status = $order->status->value;
@@ -132,8 +136,10 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active', 'histor
     // this against claim()/markSent()/markFailed()/markUnknown(), all of
     // which lock the same Order row before touching it.
     Route::patch('/orders/{order:order_number}/cancel', function (Order $order, OrderCancellationService $cancellation) {
+        // DISC-10: 404, not 403, so another customer's order number is
+        // indistinguishable from one that doesn't exist.
         if ($order->user_id !== auth()->id()) {
-            abort(403);
+            abort(404);
         }
 
         $error = $cancellation->cancelAsCustomer($order);

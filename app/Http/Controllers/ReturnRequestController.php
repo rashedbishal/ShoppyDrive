@@ -15,7 +15,8 @@ class ReturnRequestController extends Controller
 {
     public function store(Request $request, Order $order, ReturnRequestService $returns): RedirectResponse
     {
-        abort_if($order->user_id !== $request->user()->id, 403);
+        // DISC-10: 404, so another customer's order number reveals nothing.
+        abort_if($order->user_id !== $request->user()->id, 404);
 
         $eligibilityError = $returns->eligibilityError($order);
 

@@ -237,7 +237,19 @@ describe('trashed orders for customers', function () {
         $order = historyOrder(['user_id' => User::factory()->create()->id, 'status' => OrderStatus::CANCELLED]);
         $order->delete();
 
-        actingAs(User::factory()->create())->get(route('account.orders.show', $order->order_number))->assertForbidden();
+        actingAs(User::factory()->create())->get(route('account.orders.show', $order->order_number))->assertNotFound();
+    });
+
+    test('another customer\'s order looks exactly like an order number that does not exist (DISC-10)', function () {
+        $order = historyOrder(['user_id' => User::factory()->create()->id]);
+        $stranger = User::factory()->create();
+
+        foreach (['account.orders.show', 'account.orders.invoice'] as $routeName) {
+            actingAs($stranger)->get(route($routeName, $order->order_number))->assertNotFound();
+            actingAs($stranger)->get(route($routeName, 'SD-DOES-NOT-EXIST'))->assertNotFound();
+        }
+        actingAs($stranger)->patch(route('account.orders.cancel', $order->order_number))->assertNotFound();
+        actingAs($stranger)->patch(route('account.orders.cancel', 'SD-DOES-NOT-EXIST'))->assertNotFound();
     });
 
     test('trashed orders still count toward a customer\'s referral and first-order history', function () {
