@@ -15,6 +15,11 @@ return [
     |
     */
 
+    // DISC-08: production never runs SSR. deploy.yml builds only the client
+    // bundle (`npm run build`, no `build:ssr`) and Hostinger shared hosting
+    // can't keep an SSR daemon alive, so with no bundle Inertia silently
+    // renders client-side there. SEO tags reach crawlers through the Blade
+    // root view instead (FE-006). `true` only matters for local Vite dev.
     'ssr' => [
         'enabled' => true,
         'url' => 'http://127.0.0.1:13714',
