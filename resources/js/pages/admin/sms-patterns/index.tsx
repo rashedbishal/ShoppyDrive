@@ -169,7 +169,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                         <h1 className="text-xl font-bold text-slate-900">
                             SMS Patterns
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             Define how to extract TxnID and amount from Bkash /
                             Nagad SMS
                         </p>
@@ -272,7 +272,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                         <div>
                                             <label className="mb-1 block text-xs font-medium text-slate-600">
                                                 Identifier *
-                                                <span className="ml-1 font-normal text-slate-400">
+                                                <span className="ml-1 font-normal text-slate-600">
                                                     — unique text that appears
                                                     in this SMS format
                                                 </span>
@@ -305,7 +305,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                         <div>
                                             <label className="mb-1 block text-xs font-medium text-slate-600">
                                                 Sender Regex
-                                                <span className="ml-1 font-normal text-slate-400">
+                                                <span className="ml-1 font-normal text-slate-600">
                                                     — 1 capture group; leave
                                                     blank to accept any sender
                                                     (FSA-02: the allowlist only
@@ -340,7 +340,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                             <div>
                                                 <label className="mb-1 block text-xs font-medium text-slate-600">
                                                     TxnID Regex *
-                                                    <span className="ml-1 font-normal text-slate-400">
+                                                    <span className="ml-1 font-normal text-slate-600">
                                                         — 1 capture group
                                                     </span>
                                                 </label>
@@ -371,7 +371,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                             <div>
                                                 <label className="mb-1 block text-xs font-medium text-slate-600">
                                                     Amount Regex *
-                                                    <span className="ml-1 font-normal text-slate-400">
+                                                    <span className="ml-1 font-normal text-slate-600">
                                                         — 1 capture group
                                                     </span>
                                                 </label>
@@ -502,14 +502,14 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                 checked={bulk.allSelected}
                                 onCheckedChange={bulk.toggleAll}
                             />
-                            <span className="text-xs font-medium text-slate-500">
+                            <span className="text-xs font-medium text-slate-600">
                                 Select all
                             </span>
                         </div>
                     )}
 
                     {patterns.length === 0 ? (
-                        <p className="py-12 text-center text-sm text-slate-400">
+                        <p className="py-12 text-center text-sm text-slate-600">
                             No patterns yet. Add one above.
                         </p>
                     ) : (
@@ -551,7 +551,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <p className="text-xs text-slate-500">
+                                            <p className="text-xs text-slate-600">
                                                 <span className="font-medium text-slate-600">
                                                     Identifier:
                                                 </span>{' '}
@@ -559,7 +559,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                     {p.identifier}
                                                 </code>
                                             </p>
-                                            <p className="text-xs text-slate-500">
+                                            <p className="text-xs text-slate-600">
                                                 <span className="font-medium text-slate-600">
                                                     Sender:
                                                 </span>{' '}
@@ -574,7 +574,7 @@ export default function SmsPatternsIndex({ patterns }: Props) {
                                                     </span>
                                                 )}
                                             </p>
-                                            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-500">
+                                            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-600">
                                                 <span>
                                                     <span className="font-medium text-slate-600">
                                                         TxnID:

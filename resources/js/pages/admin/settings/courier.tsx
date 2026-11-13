@@ -90,7 +90,7 @@ function PathaoCourierCard({ settings }: Props) {
             </CardHeader>
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4 pt-3">
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-600">
                         Get these from your{' '}
                         <a
                             href="https://merchant.pathao.com"
@@ -221,7 +221,7 @@ function PathaoCourierCard({ settings }: Props) {
                                     ))}
                                 </Select>
                             ) : data.pathao_store_id ? (
-                                <p className="text-xs text-slate-500">
+                                <p className="text-xs text-slate-600">
                                     Currently set to store ID{' '}
                                     <span className="font-mono">
                                         {data.pathao_store_id}
@@ -230,7 +230,7 @@ function PathaoCourierCard({ settings }: Props) {
                                     it.
                                 </p>
                             ) : (
-                                <p className="text-xs text-slate-400">
+                                <p className="text-xs text-slate-600">
                                     No store selected yet.
                                 </p>
                             )}
@@ -397,7 +397,7 @@ function SteadfastCourierCard({ settings }: Props) {
             </CardHeader>
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4 pt-3">
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-600">
                         Get your Api Key and Secret Key from{' '}
                         <a
                             href="https://portal.packzy.com"

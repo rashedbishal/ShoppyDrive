@@ -138,7 +138,7 @@ export default function MobileMenu({
                             content: (
                                 <div className="space-y-2">
                                     {navCategories.length === 0 ? (
-                                        <div className="flex items-center gap-2 px-3 py-3 text-sm text-[var(--color-text-muted)]">
+                                        <div className="flex items-center gap-2 px-3 py-3 text-sm text-[var(--color-text-secondary)]">
                                             <FolderOpen className="size-4 opacity-50" />
                                             No categories yet
                                         </div>

@@ -113,7 +113,7 @@ export default function IncompleteOrdersIndex({
                         <h1 className="text-xl font-bold text-slate-900">
                             Incomplete Orders
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {incompleteOrders.total} total · phone number
                             entered at checkout, order never placed
                         </p>
@@ -156,7 +156,7 @@ export default function IncompleteOrdersIndex({
                         {incompleteOrders.data.length === 0 ? (
                             <div className="flex flex-col items-center gap-2 py-16 text-center">
                                 <PhoneMissed className="size-8 text-slate-300" />
-                                <p className="text-sm text-slate-400">
+                                <p className="text-sm text-slate-600">
                                     No incomplete orders right now.
                                 </p>
                             </div>
@@ -170,7 +170,7 @@ export default function IncompleteOrdersIndex({
                                         <p className="font-mono text-sm font-bold text-slate-800">
                                             {incomplete.phone}
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             {incomplete.name || (
                                                 <span className="text-slate-300 italic">
                                                     No name provided
@@ -188,7 +188,7 @@ export default function IncompleteOrdersIndex({
                                                 <span className="min-w-0 truncate text-slate-700">
                                                     {item.product_name}
                                                     {item.variant_attributes && (
-                                                        <span className="text-slate-400">
+                                                        <span className="text-slate-600">
                                                             {' '}
                                                             (
                                                             {Object.entries(
@@ -203,7 +203,7 @@ export default function IncompleteOrdersIndex({
                                                         </span>
                                                     )}
                                                 </span>
-                                                <span className="shrink-0 text-slate-400">
+                                                <span className="shrink-0 text-slate-600">
                                                     ×{item.quantity}
                                                 </span>
                                             </div>
@@ -211,7 +211,7 @@ export default function IncompleteOrdersIndex({
                                     </div>
 
                                     <div className="flex items-center justify-between gap-3 sm:contents">
-                                        <p className="shrink-0 text-xs text-slate-400 sm:w-28">
+                                        <p className="shrink-0 text-xs text-slate-600 sm:w-28">
                                             {new Date(
                                                 incomplete.created_at,
                                             ).toLocaleDateString()}
@@ -247,7 +247,7 @@ export default function IncompleteOrdersIndex({
 
                     {incompleteOrders.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {incompleteOrders.current_page} of{' '}
                                 {incompleteOrders.last_page}
                             </p>

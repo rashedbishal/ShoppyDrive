@@ -150,7 +150,7 @@ function SmsNotificationsCard({ status }: { status: PushStatus }) {
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-3 text-sm text-slate-600">
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-600">
                     When a bKash / Nagad SMS arrives, your browser can show a
                     notification right away and the Received SMS table updates
                     by itself. This needs a one-time pair of keys, created here
@@ -171,7 +171,7 @@ function SmsNotificationsCard({ status }: { status: PushStatus }) {
                             : 'Keys are not set up'}
                     </span>
                     {status.configured && (
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-slate-600">
                             {status.subscribed_browsers} browser(s) enabled
                         </span>
                     )}
@@ -192,7 +192,7 @@ function SmsNotificationsCard({ status }: { status: PushStatus }) {
                     </div>
                 ) : (
                     !status.configured && (
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-600">
                             Only the main (mother) admin can create the keys.
                         </p>
                     )
@@ -204,12 +204,12 @@ function SmsNotificationsCard({ status }: { status: PushStatus }) {
                             This browser
                         </p>
                         {permission === 'unsupported' && (
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 This browser does not support notifications.
                             </p>
                         )}
                         {permission === 'denied' && (
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Notifications are blocked for this site. Allow
                                 them in the browser's site settings (the lock
                                 icon next to the address), then reload.
@@ -253,7 +253,7 @@ function SmsNotificationsCard({ status }: { status: PushStatus }) {
                                 Send test notification
                             </Button>
                         </div>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-600">
                             {last === null
                                 ? 'No push has been sent yet.'
                                 : `Last push (${last.kind === 'test' ? 'test' : 'SMS'}, ${new Date(last.at).toLocaleString()}): ${
@@ -417,7 +417,7 @@ export default function SmsForwarderSettings({
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 This token authenticates your Android SMS
                                 forwarder app. Set it as the Bearer token in
                                 your app's HTTP header.
@@ -466,7 +466,7 @@ export default function SmsForwarderSettings({
                                         </>
                                     )}
                                 </div>
-                                <p className="text-xs text-slate-400">
+                                <p className="text-xs text-slate-600">
                                     {fullToken
                                         ? 'Only the last 8 characters are shown for security.'
                                         : 'You have view-only access. Ask the owner for update access to reveal or regenerate this token.'}
@@ -484,7 +484,7 @@ export default function SmsForwarderSettings({
                                     >
                                         Regenerate Token
                                     </Button>
-                                    <p className="mt-2 text-xs text-slate-400">
+                                    <p className="mt-2 text-xs text-slate-600">
                                         Regenerating will invalidate the old
                                         token. You must update your Android app
                                         immediately.
@@ -532,7 +532,7 @@ export default function SmsForwarderSettings({
                                     </div>
                                 ))}
                             </div>
-                            <ol className="list-decimal space-y-1.5 border-t border-slate-100 pt-3 pl-4 text-xs text-slate-500">
+                            <ol className="list-decimal space-y-1.5 border-t border-slate-100 pt-3 pl-4 text-xs text-slate-600">
                                 <li>Copy the token on the left.</li>
                                 <li>
                                     In the app, set it as the Bearer token in

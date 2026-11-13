@@ -120,7 +120,7 @@ export default function MegaMenu({
                     <div className="pointer-events-none absolute -bottom-32 -left-24 size-[360px] rounded-full bg-[var(--color-accent)]/10 blur-[110px]" />
 
                     {navCategories.length === 0 ? (
-                        <div className="relative z-10 flex flex-col items-center gap-2 px-4 py-14 text-[var(--color-text-muted)]">
+                        <div className="relative z-10 flex flex-col items-center gap-2 px-4 py-14 text-[var(--color-text-secondary)]">
                             <FolderOpen className="size-8 opacity-40" />
                             <p className="text-sm">No categories yet</p>
                         </div>
@@ -132,7 +132,7 @@ export default function MegaMenu({
                             >
                                 {/* Category rail */}
                                 <div className="scrollbar-hide w-[260px] shrink-0 overflow-y-auto border-r border-[var(--color-border)]/70 p-2">
-                                    <p className="px-2.5 pt-1 pb-2 text-[11px] font-semibold tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
+                                    <p className="px-2.5 pt-1 pb-2 text-[11px] font-semibold tracking-[0.2em] text-[var(--color-text-secondary)] uppercase">
                                         Browse Categories
                                     </p>
                                     <div className="space-y-0.5">
@@ -375,7 +375,7 @@ export default function MegaMenu({
                                                         .sub_categories.length >
                                                     0 ? (
                                                         <>
-                                                            <p className="px-2 pt-4 pb-1.5 text-[11px] font-semibold tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
+                                                            <p className="px-2 pt-4 pb-1.5 text-[11px] font-semibold tracking-[0.2em] text-[var(--color-text-secondary)] uppercase">
                                                                 Subcategories
                                                                 <span className="ml-1.5 tracking-normal text-[var(--category-color)]">
                                                                     {
@@ -434,7 +434,7 @@ export default function MegaMenu({
                                                             </div>
                                                         </>
                                                     ) : (
-                                                        <div className="mt-3 rounded-2xl border border-dashed border-[var(--color-border)] px-6 py-8 text-center text-sm text-[var(--color-text-muted)]">
+                                                        <div className="mt-3 rounded-2xl border border-dashed border-[var(--color-border)] px-6 py-8 text-center text-sm text-[var(--color-text-secondary)]">
                                                             No subcategories yet
                                                             — browse the full
                                                             collection instead.

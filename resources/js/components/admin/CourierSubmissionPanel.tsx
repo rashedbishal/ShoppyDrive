@@ -44,7 +44,7 @@ export default function CourierSubmissionPanel({ orderId, submission }: Props) {
                     <Loader2 className="size-4 animate-spin" />
                     Sending to {label}…
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-600">
                     Started{' '}
                     {submission.claimed_at
                         ? new Date(submission.claimed_at).toLocaleString()
@@ -94,7 +94,7 @@ export default function CourierSubmissionPanel({ orderId, submission }: Props) {
                     submission={submission}
                 />
             ) : (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-600">
                     Entering a {label} consignment ID by hand isn't available
                     yet.
                     {submission.returned_consignment_id

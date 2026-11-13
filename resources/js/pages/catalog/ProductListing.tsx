@@ -175,11 +175,11 @@ function PriceRangeFilter({
         <div className="space-y-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)]/60 p-4">
             <div className="flex items-end gap-2.5">
                 <div className="flex-1 space-y-1.5">
-                    <label className="block text-[10px] font-bold tracking-[0.12em] text-[var(--color-text-muted)] uppercase">
+                    <label className="block text-[10px] font-bold tracking-[0.12em] text-[var(--color-text-secondary)] uppercase">
                         Min
                     </label>
                     <div className="relative">
-                        <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-xs font-semibold text-[var(--color-text-muted)]">
+                        <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-xs font-semibold text-[var(--color-text-secondary)]">
                             ৳
                         </span>
                         <input
@@ -205,11 +205,11 @@ function PriceRangeFilter({
                 </div>
                 <div className="mb-[18px] h-px w-3 shrink-0 bg-[var(--color-border-strong)]" />
                 <div className="flex-1 space-y-1.5">
-                    <label className="block text-[10px] font-bold tracking-[0.12em] text-[var(--color-text-muted)] uppercase">
+                    <label className="block text-[10px] font-bold tracking-[0.12em] text-[var(--color-text-secondary)] uppercase">
                         Max
                     </label>
                     <div className="relative">
-                        <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-xs font-semibold text-[var(--color-text-muted)]">
+                        <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-xs font-semibold text-[var(--color-text-secondary)]">
                             ৳
                         </span>
                         <input
@@ -305,7 +305,7 @@ function PriceRangeFilter({
                         style={{ left: `${hiPercent}%` }}
                     />
                 </div>
-                <div className="mt-2 flex justify-between text-[11px] font-semibold text-[var(--color-text-muted)]">
+                <div className="mt-2 flex justify-between text-[11px] font-semibold text-[var(--color-text-secondary)]">
                     <span>৳0</span>
                     <span>৳{cap.toLocaleString('en-BD')}</span>
                 </div>
@@ -371,7 +371,7 @@ function FilterCheckboxRow({
                 <span className="min-w-0 break-words">{label}</span>
             </span>
             {typeof count === 'number' ? (
-                <span className="shrink-0 text-xs text-[var(--color-text-muted)]">
+                <span className="shrink-0 text-xs text-[var(--color-text-secondary)]">
                     {count}
                 </span>
             ) : null}
@@ -406,7 +406,7 @@ function CategoryRow({
         >
             <span className="min-w-0 px-1.5 break-words">{label}</span>
             {typeof count === 'number' ? (
-                <span className="shrink-0 px-1.5 text-xs text-[var(--color-text-muted)]">
+                <span className="shrink-0 px-1.5 text-xs text-[var(--color-text-secondary)]">
                     {count}
                 </span>
             ) : null}
@@ -655,7 +655,7 @@ function ProductListingPage({
                             <button
                                 type="button"
                                 onClick={clearCategory}
-                                className="mb-2 inline-flex items-center gap-1 px-1.5 text-xs font-medium text-[var(--color-text-muted)] transition hover:text-[var(--color-primary)]"
+                                className="mb-2 inline-flex items-center gap-1 px-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]"
                             >
                                 <ChevronLeft className="size-3.5" />
                                 All categories
@@ -1004,7 +1004,7 @@ function ProductListingPage({
                                 <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                                     Filters
                                     {activeFilterCount > 0 ? (
-                                        <span className="ml-1.5 text-xs font-normal text-[var(--color-text-muted)]">
+                                        <span className="ml-1.5 text-xs font-normal text-[var(--color-text-secondary)]">
                                             ({activeFilterCount} active)
                                         </span>
                                     ) : null}
@@ -1140,7 +1140,7 @@ function ProductListingPage({
                                 Showing {products.from ?? 0}-{products.to ?? 0}{' '}
                                 of {products.total} products
                             </p>
-                            <p className="text-sm text-[var(--color-text-muted)]">
+                            <p className="text-sm text-[var(--color-text-secondary)]">
                                 {page.props.settings.site_name} marketplace
                             </p>
                         </div>

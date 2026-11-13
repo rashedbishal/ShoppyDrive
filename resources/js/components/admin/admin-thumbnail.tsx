@@ -39,7 +39,7 @@ export function AdminThumbnail({
     return (
         <div
             className={cn(
-                'flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-400',
+                'flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600',
                 className,
             )}
         >

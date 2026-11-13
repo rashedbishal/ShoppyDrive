@@ -38,7 +38,7 @@ function Field({
             </label>
             {children}
             {hint && !error && (
-                <p className="mt-1 text-xs text-slate-400">{hint}</p>
+                <p className="mt-1 text-xs text-slate-600">{hint}</p>
             )}
             {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>

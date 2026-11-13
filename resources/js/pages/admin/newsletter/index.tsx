@@ -105,7 +105,7 @@ export default function NewsletterIndex({
                         <h1 className="text-xl font-bold text-slate-900">
                             Newsletter
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {total_active} active subscribers
                         </p>
                     </div>
@@ -131,7 +131,7 @@ export default function NewsletterIndex({
                                 <p className="text-lg font-bold text-slate-900">
                                     {total_active}
                                 </p>
-                                <p className="text-xs text-slate-500">
+                                <p className="text-xs text-slate-600">
                                     Active subscribers
                                 </p>
                             </div>
@@ -146,7 +146,7 @@ export default function NewsletterIndex({
                                 <p className="text-lg font-bold text-slate-900">
                                     {subscribers.total}
                                 </p>
-                                <p className="text-xs text-slate-500">
+                                <p className="text-xs text-slate-600">
                                     Total (all time)
                                 </p>
                             </div>
@@ -200,7 +200,7 @@ export default function NewsletterIndex({
                     {/* Table */}
                     <div className="divide-y divide-slate-50">
                         {subscribers.data.length === 0 ? (
-                            <p className="py-12 text-center text-sm text-slate-400">
+                            <p className="py-12 text-center text-sm text-slate-600">
                                 No subscribers found.
                             </p>
                         ) : (
@@ -209,7 +209,7 @@ export default function NewsletterIndex({
                                     key={subscriber.id}
                                     className="admin-row-card flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-slate-50/60 sm:flex-nowrap sm:gap-4"
                                 >
-                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">
+                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
                                         {subscriber.email
                                             .slice(0, 2)
                                             .toUpperCase()}
@@ -221,7 +221,7 @@ export default function NewsletterIndex({
                                         >
                                             {subscriber.email}
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Subscribed{' '}
                                             {new Date(
                                                 subscriber.subscribed_at,
@@ -233,7 +233,7 @@ export default function NewsletterIndex({
                                             className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                                                 subscriber.is_active
                                                     ? 'bg-emerald-50 text-emerald-700'
-                                                    : 'bg-slate-100 text-slate-500'
+                                                    : 'bg-slate-100 text-slate-600'
                                             }`}
                                         >
                                             {subscriber.is_active
@@ -259,7 +259,7 @@ export default function NewsletterIndex({
                     {/* Pagination */}
                     {subscribers.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {subscribers.current_page} of{' '}
                                 {subscribers.last_page} &middot;{' '}
                                 {subscribers.total} total

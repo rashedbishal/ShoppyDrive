@@ -737,7 +737,7 @@ export default function ProductDetail({
                                                         d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                                                     />
                                                 </svg>
-                                                <span className="text-sm text-slate-400">
+                                                <span className="text-sm text-slate-600">
                                                     No media available
                                                 </span>
                                             </div>
@@ -816,17 +816,17 @@ export default function ProductDetail({
                                                         1,
                                                     )}
                                                 </span>
-                                                <span className="text-xs text-[var(--color-text-muted)]">
+                                                <span className="text-xs text-[var(--color-text-secondary)]">
                                                     ({product.reviews_count})
                                                 </span>
                                             </div>
                                         ) : (
-                                            <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                                            <span className="text-xs font-medium text-[var(--color-text-secondary)]">
                                                 No reviews yet
                                             </span>
                                         )}
                                         <div className="h-4 w-px bg-[var(--color-border)]" />
-                                        <span className="text-xs font-medium tracking-wide text-[var(--color-text-muted)] uppercase">
+                                        <span className="text-xs font-medium tracking-wide text-[var(--color-text-secondary)] uppercase">
                                             SKU:{' '}
                                             {selectedVariant?.sku ||
                                                 product.sku ||
@@ -867,7 +867,7 @@ export default function ProductDetail({
                                                 <span className="text-xs font-bold tracking-wide text-[var(--color-text-primary)] uppercase">
                                                     Select {attr.name}
                                                 </span>
-                                                <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                                                <span className="text-xs font-medium text-[var(--color-text-secondary)]">
                                                     {
                                                         selectedAttributes[
                                                             attr.name
@@ -1243,7 +1243,7 @@ export default function ProductDetail({
                                                 >
                                                     {/* Star picker */}
                                                     <div className="space-y-1">
-                                                        <span className="text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase">
+                                                        <span className="text-xs font-semibold tracking-wider text-[var(--color-text-secondary)] uppercase">
                                                             Your Rating *
                                                         </span>
                                                         <StarRating
@@ -1266,7 +1266,7 @@ export default function ProductDetail({
                                                     </div>
 
                                                     <div className="space-y-1">
-                                                        <label className="text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase">
+                                                        <label className="text-xs font-semibold tracking-wider text-[var(--color-text-secondary)] uppercase">
                                                             Title{' '}
                                                             <span className="font-normal normal-case">
                                                                 (optional)
@@ -1292,7 +1292,7 @@ export default function ProductDetail({
                                                     </div>
 
                                                     <div className="space-y-1">
-                                                        <label className="text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase">
+                                                        <label className="text-xs font-semibold tracking-wider text-[var(--color-text-secondary)] uppercase">
                                                             Review *
                                                         </label>
                                                         <textarea
@@ -1379,7 +1379,7 @@ export default function ProductDetail({
                                                 User Reviews
                                             </h3>
                                             <div className="flex items-center gap-2">
-                                                <span className="hidden text-sm font-medium text-[var(--color-text-muted)] sm:inline">
+                                                <span className="hidden text-sm font-medium text-[var(--color-text-secondary)] sm:inline">
                                                     Sort by:
                                                 </span>
                                                 <Select
@@ -1424,7 +1424,7 @@ export default function ProductDetail({
                                                 <h4 className="mb-1 font-bold text-[var(--color-text-primary)]">
                                                     No reviews yet
                                                 </h4>
-                                                <p className="text-sm text-[var(--color-text-muted)]">
+                                                <p className="text-sm text-[var(--color-text-secondary)]">
                                                     Be the first to review this
                                                     product!
                                                 </p>
@@ -1451,7 +1451,7 @@ export default function ProductDetail({
                                                         <p className="font-bold text-[var(--color-text-primary)]">
                                                             {method.name}
                                                         </p>
-                                                        <p className="text-xs text-[var(--color-text-muted)]">
+                                                        <p className="text-xs text-[var(--color-text-secondary)]">
                                                             {
                                                                 method.estimated_days
                                                             }{' '}
@@ -1472,7 +1472,7 @@ export default function ProductDetail({
                                                             <p className="font-bold text-[var(--color-text-primary)]">
                                                                 Inside Dhaka
                                                             </p>
-                                                            <p className="text-xs text-[var(--color-text-muted)]">
+                                                            <p className="text-xs text-[var(--color-text-secondary)]">
                                                                 1-2 business
                                                                 days
                                                             </p>
@@ -1489,7 +1489,7 @@ export default function ProductDetail({
                                                             <p className="font-bold text-[var(--color-text-primary)]">
                                                                 Outside Dhaka
                                                             </p>
-                                                            <p className="text-xs text-[var(--color-text-muted)]">
+                                                            <p className="text-xs text-[var(--color-text-secondary)]">
                                                                 3-5 business
                                                                 days
                                                             </p>

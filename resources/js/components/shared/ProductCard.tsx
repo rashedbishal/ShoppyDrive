@@ -48,6 +48,9 @@ export function ProductCard({
     const cardRef = useRef<HTMLElement>(null);
     const isInView = useInView(cardRef, { once: true, amount: 0.2 });
     const [isHovered, setIsHovered] = useState(false);
+    // The slow, staggered reveal belongs to the first appearance only; once
+    // it has played, hovering in and out uses the quick hover timing.
+    const [hasRevealed, setHasRevealed] = useState(false);
 
     const addItem = useCartStore((state) => state.addItem);
     const openCart = useUiStore((state) => state.openCart);
@@ -348,7 +351,7 @@ export function ProductCard({
 
                 <div className="flex min-w-0 flex-col gap-2.5">
                     <div className="space-y-1">
-                        <p className="truncate text-[11px] leading-4 font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
+                        <p className="truncate text-[11px] leading-4 font-semibold tracking-[0.22em] text-[var(--color-text-secondary)] uppercase">
                             {brandName}
                         </p>
                         <Link
@@ -412,7 +415,7 @@ export function ProductCard({
             ref={cardRef}
             onClick={handleCardClick}
             className={cn(
-                'group flex w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-transform duration-200 hover:shadow-[var(--shadow-card-hover)]',
+                'group flex w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-shadow duration-300 hover:shadow-[var(--shadow-card-hover)]',
                 PRODUCT_CARD_HEIGHT,
                 className,
             )}
@@ -422,12 +425,28 @@ export function ProductCard({
                     ? undefined
                     : isInView
                       ? { opacity: 1, y: 0, scale: 1 }
-                      : { opacity: 0, y: 24, scale: 0.96 }
+                      : {
+                            opacity: 0,
+                            y: MOTION.reveal.distance,
+                            scale: MOTION.reveal.scale,
+                        }
             }
-            transition={{
-                duration: 0.7,
-                ease: [0.22, 1, 0.36, 1],
-                delay: Math.min(index * MOTION.stagger, 0.42),
+            transition={
+                hasRevealed
+                    ? { duration: MOTION.cardHover.duration, ease: 'easeOut' }
+                    : {
+                          duration: MOTION.reveal.duration,
+                          ease: MOTION.reveal.ease,
+                          delay: Math.min(
+                              index * MOTION.reveal.stagger,
+                              MOTION.reveal.maxDelay,
+                          ),
+                      }
+            }
+            onAnimationComplete={() => {
+                if (isInView) {
+                    setHasRevealed(true);
+                }
             }}
             whileHover={{
                 y: -4,
@@ -447,7 +466,7 @@ export function ProductCard({
             {/* Every row below has a fixed height so the card never changes size. */}
             <div className="flex shrink-0 flex-col gap-1.5 p-2.5 sm:p-3">
                 <div className="space-y-0.5">
-                    <p className="truncate text-[11px] leading-4 font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
+                    <p className="truncate text-[11px] leading-4 font-semibold tracking-[0.22em] text-[var(--color-text-secondary)] uppercase">
                         {brandName}
                     </p>
                     <Link

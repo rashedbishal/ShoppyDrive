@@ -26,7 +26,7 @@ export default function PagesIndex({ pages }: Props) {
                     <h1 className="text-xl font-bold text-slate-900">
                         Policy &amp; Info Pages
                     </h1>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-600">
                         Edit the text of your legal and information pages. Their
                         web addresses are fixed.
                     </p>
@@ -34,7 +34,7 @@ export default function PagesIndex({ pages }: Props) {
 
                 <Card className="divide-y divide-slate-100 shadow-sm">
                     {pages.length === 0 && (
-                        <p className="p-6 text-sm text-slate-500">
+                        <p className="p-6 text-sm text-slate-600">
                             No pages found.
                         </p>
                     )}
@@ -48,7 +48,7 @@ export default function PagesIndex({ pages }: Props) {
                                 <p className="truncate text-sm font-semibold text-slate-800">
                                     {page.title}
                                 </p>
-                                <p className="truncate text-xs text-slate-400">
+                                <p className="truncate text-xs text-slate-600">
                                     /{page.slug}
                                     {page.updated_at &&
                                         ` · updated ${new Date(

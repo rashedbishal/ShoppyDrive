@@ -506,7 +506,7 @@ export default function Header(): React.JSX.Element {
                                                 <span className="truncate text-[13px] font-semibold text-[var(--color-text-primary)]">
                                                     {user.name}
                                                 </span>
-                                                <span className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
+                                                <span className="mt-0.5 text-[11px] text-[var(--color-text-secondary)]">
                                                     My account
                                                 </span>
                                             </span>
@@ -520,7 +520,7 @@ export default function Header(): React.JSX.Element {
                                             <p className="text-sm font-semibold text-[var(--color-text-primary)]">
                                                 {user.name}
                                             </p>
-                                            <p className="text-xs text-[var(--color-text-muted)]">
+                                            <p className="text-xs text-[var(--color-text-secondary)]">
                                                 {user.email}
                                             </p>
                                         </DropdownMenuLabel>

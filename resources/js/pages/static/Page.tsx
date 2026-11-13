@@ -163,7 +163,7 @@ export default function Page({ page }: PageProps): React.JSX.Element {
                             className="hidden lg:sticky lg:block lg:self-start"
                             style={{ top: sidebarTop }}
                         >
-                            <p className="mb-4 text-[10px] font-bold tracking-[0.25em] text-[var(--color-text-muted)] uppercase">
+                            <p className="mb-4 text-[10px] font-bold tracking-[0.25em] text-[var(--color-text-secondary)] uppercase">
                                 Contents
                             </p>
 
@@ -186,7 +186,7 @@ export default function Page({ page }: PageProps): React.JSX.Element {
                                                     className={`inline-flex size-6 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold transition-all ${
                                                         active
                                                             ? 'bg-[var(--color-primary)] text-white shadow-[var(--color-primary)]/30 shadow-sm'
-                                                            : 'bg-[var(--color-surface-alt)] text-[var(--color-text-muted)] group-hover:bg-[var(--color-border)]'
+                                                            : 'bg-[var(--color-surface-alt)] text-[var(--color-text-secondary)] group-hover:bg-[var(--color-border)]'
                                                     }`}
                                                 >
                                                     {number}

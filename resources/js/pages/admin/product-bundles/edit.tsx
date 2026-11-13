@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import { uniqueId } from '@/lib/unique-id';
+import { imageRecommendation } from '@/lib/upload-recommendations';
 import { cn } from '@/lib/utils';
 import { maxLength, required, validate } from '@/lib/validate';
 
@@ -350,7 +351,7 @@ export default function ProductBundleEdit({ bundle }: Props) {
                         <h1 className="text-2xl font-bold text-slate-900">
                             Edit Bundle
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             Update bundle information.
                         </p>
                     </div>
@@ -399,7 +400,7 @@ export default function ProductBundleEdit({ bundle }: Props) {
                                         <p className="text-sm font-medium text-text-primary">
                                             Bundle Image
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Upload a new image to replace the
                                             current one. Leave as-is to keep the
                                             existing image.
@@ -415,6 +416,9 @@ export default function ProductBundleEdit({ bundle }: Props) {
                                             }}
                                             error={errors.image}
                                             maxSizeMb={5}
+                                            hint={imageRecommendation(
+                                                '800 × 800 px (square)',
+                                            )}
                                             previewClassName="h-48"
                                         />
                                     </div>
@@ -504,7 +508,7 @@ export default function ProductBundleEdit({ bundle }: Props) {
                                             searchResults.length > 0) && (
                                             <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                                                 {searching && (
-                                                    <p className="px-4 py-3 text-sm text-slate-400">
+                                                    <p className="px-4 py-3 text-sm text-slate-600">
                                                         Searching...
                                                     </p>
                                                 )}
@@ -553,7 +557,7 @@ export default function ProductBundleEdit({ bundle }: Props) {
                                                                                 product.name
                                                                             }
                                                                         </p>
-                                                                        <p className="text-xs text-slate-500">
+                                                                        <p className="text-xs text-slate-600">
                                                                             ৳
                                                                             {
                                                                                 product.price
@@ -586,10 +590,10 @@ export default function ProductBundleEdit({ bundle }: Props) {
                                     {selectedItems.length === 0 ? (
                                         <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
                                             <Package className="mx-auto mb-3 size-10 text-slate-300" />
-                                            <p className="text-slate-500">
+                                            <p className="text-slate-600">
                                                 No products added yet.
                                             </p>
-                                            <p className="text-xs text-slate-400">
+                                            <p className="text-xs text-slate-600">
                                                 Search and add at least two
                                                 products — or the same product
                                                 twice with different variants.
@@ -753,7 +757,7 @@ export default function ProductBundleEdit({ bundle }: Props) {
                                                                                     item,
                                                                                 )
                                                                                 ? 'font-medium text-red-500'
-                                                                                : 'text-slate-400',
+                                                                                : 'text-slate-600',
                                                                         )}
                                                                     >
                                                                         {stockNote(
@@ -818,7 +822,7 @@ export default function ProductBundleEdit({ bundle }: Props) {
                         <Button
                             asChild
                             variant="ghost"
-                            className="text-slate-500"
+                            className="text-slate-600"
                         >
                             <Link href={listUrl}>Cancel</Link>
                         </Button>

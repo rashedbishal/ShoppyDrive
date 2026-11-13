@@ -137,7 +137,7 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
                     <h1 className="text-xl font-bold text-slate-900">
                         Reviews
                     </h1>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-600">
                         {reviews.total} total
                     </p>
                 </div>
@@ -180,7 +180,7 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
 
                     <div className="divide-y divide-slate-50">
                         {reviews.data.length === 0 ? (
-                            <p className="py-12 text-center text-sm text-slate-400">
+                            <p className="py-12 text-center text-sm text-slate-600">
                                 No reviews found.
                             </p>
                         ) : (
@@ -220,7 +220,7 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
                                                         images={review.images}
                                                     />
                                                 )}
-                                            <p className="mt-1 text-xs text-slate-400">
+                                            <p className="mt-1 text-xs text-slate-600">
                                                 {review.user?.name ?? 'Unknown'}{' '}
                                                 ·{' '}
                                                 {review.product?.name ??
@@ -274,7 +274,7 @@ export default function ReviewsIndex({ reviews, filters }: Props) {
 
                     {reviews.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {reviews.current_page} of{' '}
                                 {reviews.last_page}
                             </p>

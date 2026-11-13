@@ -128,12 +128,12 @@ export function MediaUpload({
                         </button>
                     </>
                 ) : (
-                    <div className="flex flex-col items-center gap-2 text-slate-500">
+                    <div className="flex flex-col items-center gap-2 text-slate-600">
                         <div className="rounded-full bg-slate-100 p-3">
                             <ImagePlus className="size-6 text-slate-400" />
                         </div>
                         <p className="text-sm font-medium">Click to upload an image or video</p>
-                        <p className="text-xs text-slate-400">JPG, PNG, WEBP, MP4, WEBM (max {maxSizeMb}MB)</p>
+                        <p className="text-xs text-slate-600">JPG, PNG, WEBP, MP4, WEBM (max {maxSizeMb}MB)</p>
                     </div>
                 )}
 

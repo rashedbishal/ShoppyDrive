@@ -234,7 +234,7 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                             key="variant-picker"
                             className="absolute z-10 mt-1 w-full origin-top rounded-lg border border-slate-200 bg-white p-2 shadow-lg"
                         >
-                            <p className="mb-1.5 px-1 text-xs font-semibold text-slate-500">
+                            <p className="mb-1.5 px-1 text-xs font-semibold text-slate-600">
                                 Apply the flash sale to…
                             </p>
                             <div className="max-h-64 space-y-0.5 overflow-y-auto">
@@ -248,7 +248,7 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                                     <span className="font-medium">
                                         Whole product (all variants)
                                     </span>
-                                    <span className="text-xs text-slate-400">
+                                    <span className="text-xs text-slate-600">
                                         {formatCurrency(
                                             pendingVariantFor.price,
                                         )}{' '}
@@ -269,7 +269,7 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                                             {variantLabel(variant.attributes) ||
                                                 variant.sku}
                                         </span>
-                                        <span className="text-xs text-slate-400">
+                                        <span className="text-xs text-slate-600">
                                             {formatCurrency(variant.price)} ·
                                             stock {variant.stock_quantity}
                                         </span>
@@ -296,13 +296,13 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                                     <span className="truncate">
                                         {product.name}
                                         {product.variants.length > 0 && (
-                                            <span className="ml-1.5 text-xs text-slate-400">
+                                            <span className="ml-1.5 text-xs text-slate-600">
                                                 ({product.variants.length}{' '}
                                                 variants)
                                             </span>
                                         )}
                                     </span>
-                                    <span className="shrink-0 text-xs text-slate-400">
+                                    <span className="shrink-0 text-xs text-slate-600">
                                         {formatCurrency(product.price)}
                                     </span>
                                 </button>
@@ -315,7 +315,7 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                     query.trim() !== '' &&
                     !searching &&
                     results.length === 0 && (
-                        <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-center text-xs text-slate-400 shadow-lg">
+                        <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-center text-xs text-slate-600 shadow-lg">
                             No products found.
                         </div>
                     )}
@@ -327,7 +327,7 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
 
             <div className="space-y-2">
                 {items.length === 0 ? (
-                    <p className="py-4 text-center text-sm text-slate-400">
+                    <p className="py-4 text-center text-sm text-slate-600">
                         No products added yet. Search above to add one.
                     </p>
                 ) : (
@@ -353,7 +353,7 @@ export function FlashSaleProductsCard({ items, onChange, errors }: Props) {
                                                 <p className="truncate text-sm font-semibold text-slate-800">
                                                     {item.product_name}
                                                 </p>
-                                                <p className="truncate text-xs text-slate-400">
+                                                <p className="truncate text-xs text-slate-600">
                                                     {item.variant_label ??
                                                         'Whole product (all variants)'}
                                                     {item.product_sku

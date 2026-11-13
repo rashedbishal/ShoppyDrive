@@ -78,7 +78,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
                     <h1 className="text-xl font-bold text-slate-900">
                         Customers
                     </h1>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-600">
                         {customers.total} total
                     </p>
                 </div>
@@ -159,7 +159,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
 
                     <div className="divide-y divide-slate-50">
                         {customers.data.length === 0 ? (
-                            <p className="py-12 text-center text-sm text-slate-400">
+                            <p className="py-12 text-center text-sm text-slate-600">
                                 No customers found.
                             </p>
                         ) : (
@@ -192,7 +192,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                     }}
                                     className="admin-row-card flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 hover:bg-slate-50/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#c8102e] sm:flex-nowrap sm:gap-4"
                                 >
-                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">
+                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
                                         {customer.name
                                             .slice(0, 2)
                                             .toUpperCase()}
@@ -204,12 +204,12 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                             </span>
                                             {(customer.anonymized_at ||
                                                 customer.deleted_at) && (
-                                                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                                                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
                                                     Deleted
                                                 </span>
                                             )}
                                         </p>
-                                        <p className="truncate text-xs text-slate-400">
+                                        <p className="truncate text-xs text-slate-600">
                                             {customer.email}
                                             {customer.phone
                                                 ? ` · ${customer.phone}`
@@ -220,7 +220,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                         <p className="text-sm font-semibold text-slate-800">
                                             {customer.orders_count} orders
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Joined{' '}
                                             {new Date(
                                                 customer.created_at,
@@ -261,7 +261,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
 
                     {customers.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {customers.current_page} of{' '}
                                 {customers.last_page}
                             </p>

@@ -174,7 +174,7 @@ export default function StorageCleanupIndex({
                         <HardDrive className="size-5 text-slate-400" />
                         Storage Clean-up
                     </h1>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-600">
                         {plural(totals.files, 'uploaded file')} ·{' '}
                         {formatBytes(totals.bytes)}
                     </p>
@@ -225,19 +225,19 @@ export default function StorageCleanupIndex({
 
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <Card className="p-4 shadow-sm">
-                        <p className="text-xs text-slate-500">Uploaded files</p>
+                        <p className="text-xs text-slate-600">Uploaded files</p>
                         <p className="mt-1 text-xl font-bold text-slate-900">
                             {totals.files}
                         </p>
                     </Card>
                     <Card className="p-4 shadow-sm">
-                        <p className="text-xs text-slate-500">Total size</p>
+                        <p className="text-xs text-slate-600">Total size</p>
                         <p className="mt-1 text-xl font-bold text-slate-900">
                             {formatBytes(totals.bytes)}
                         </p>
                     </Card>
                     <Card className="p-4 shadow-sm">
-                        <p className="text-xs text-slate-500">Unused files</p>
+                        <p className="text-xs text-slate-600">Unused files</p>
                         <p
                             className={`mt-1 text-xl font-bold ${totals.unused > 0 ? 'text-amber-600' : 'text-emerald-600'}`}
                         >
@@ -245,7 +245,7 @@ export default function StorageCleanupIndex({
                         </p>
                     </Card>
                     <Card className="p-4 shadow-sm">
-                        <p className="text-xs text-slate-500">Space they use</p>
+                        <p className="text-xs text-slate-600">Space they use</p>
                         <p className="mt-1 text-xl font-bold text-slate-900">
                             {formatBytes(totals.unused_bytes)}
                         </p>
@@ -271,7 +271,7 @@ export default function StorageCleanupIndex({
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[32rem] text-sm">
-                            <thead className="bg-slate-50 text-left text-xs text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs text-slate-600">
                                 <tr>
                                     <th className="px-4 py-2 font-medium">
                                         Folder
@@ -301,7 +301,7 @@ export default function StorageCleanupIndex({
                                         </td>
                                         <td className="px-4 py-2.5 text-right">
                                             {!folder.checked ? (
-                                                <span className="text-xs text-slate-400">
+                                                <span className="text-xs text-slate-600">
                                                     not checked
                                                 </span>
                                             ) : folder.unused > 0 ? (
@@ -315,7 +315,7 @@ export default function StorageCleanupIndex({
                                                     )}
                                                 </Badge>
                                             ) : (
-                                                <span className="text-slate-400">
+                                                <span className="text-slate-600">
                                                     0
                                                 </span>
                                             )}
@@ -350,7 +350,7 @@ export default function StorageCleanupIndex({
                                             <span className="break-all">
                                                 {file.path}
                                             </span>
-                                            <span className="shrink-0 text-slate-400">
+                                            <span className="shrink-0 text-slate-600">
                                                 {formatBytes(file.bytes)}
                                             </span>
                                         </li>
@@ -366,20 +366,20 @@ export default function StorageCleanupIndex({
                         <h2 className="text-sm font-semibold text-slate-700">
                             Files moved aside
                         </h2>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-600">
                             Each move makes a batch. Put a batch back if an
                             image is missing; delete it once it's{' '}
                             {purgeAfterDays} days old.
                         </p>
                     </div>
                     {batches.length === 0 ? (
-                        <p className="px-4 py-8 text-center text-sm text-slate-400">
+                        <p className="px-4 py-8 text-center text-sm text-slate-600">
                             Nothing has been moved aside.
                         </p>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[40rem] text-sm">
-                                <thead className="bg-slate-50 text-left text-xs text-slate-500">
+                                <thead className="bg-slate-50 text-left text-xs text-slate-600">
                                     <tr>
                                         <th className="px-4 py-2 font-medium">
                                             Batch
@@ -420,7 +420,7 @@ export default function StorageCleanupIndex({
                                                         Now
                                                     </Badge>
                                                 ) : (
-                                                    <span className="text-xs text-slate-500">
+                                                    <span className="text-xs text-slate-600">
                                                         From{' '}
                                                         {formatDate(
                                                             batch.purgeable_at,

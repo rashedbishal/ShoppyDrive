@@ -158,7 +158,7 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                         <h1 className="text-xl font-bold text-slate-900">
                             Categories
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {items.length} top-level categories
                         </p>
                     </div>
@@ -208,7 +208,7 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                             onClear={clearFilters}
                         />
                         {!canReorder && (
-                            <p className="flex items-center text-xs text-slate-400">
+                            <p className="flex items-center text-xs text-slate-600">
                                 Clear search to drag-and-drop reorder
                             </p>
                         )}
@@ -230,7 +230,7 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                                 checked={bulk.allSelected}
                                 onCheckedChange={bulk.toggleAll}
                             />
-                            <span className="text-xs font-medium text-slate-500">
+                            <span className="text-xs font-medium text-slate-600">
                                 Select all
                             </span>
                         </div>
@@ -240,7 +240,7 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                         {items.length === 0 ? (
                             <div className="flex flex-col items-center gap-2 py-14">
                                 <FolderOpen className="size-10 text-slate-200" />
-                                <p className="text-sm text-slate-400">
+                                <p className="text-sm text-slate-600">
                                     No categories found.
                                 </p>
                             </div>
@@ -327,7 +327,7 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                                             <p className="truncate text-sm font-semibold text-slate-800">
                                                 {cat.name}
                                             </p>
-                                            <p className="truncate text-xs text-slate-400">
+                                            <p className="truncate text-xs text-slate-600">
                                                 {cat.slug}
                                             </p>
                                         </div>
@@ -341,7 +341,7 @@ export default function CategoriesIndex({ categories, filters }: Props) {
                                                         ? 'category'
                                                         : 'categories'}
                                                 </p>
-                                                <p className="text-xs text-slate-400">
+                                                <p className="text-xs text-slate-600">
                                                     {cat.direct_products_count}{' '}
                                                     direct products
                                                 </p>

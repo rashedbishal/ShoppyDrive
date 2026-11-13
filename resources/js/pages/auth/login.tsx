@@ -150,7 +150,7 @@ export default function Login(): React.JSX.Element {
                             <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
                                 Welcome back
                             </h1>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-gray-600">
                                 Sign in to your ShoppyDrive account
                             </p>
                         </div>
@@ -214,7 +214,7 @@ export default function Login(): React.JSX.Element {
 
                         <div className="mb-4 flex items-center gap-3">
                             <div className="h-px flex-1 bg-gray-200" />
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-gray-600">
                                 or sign in with email
                             </span>
                             <div className="h-px flex-1 bg-gray-200" />
@@ -327,7 +327,7 @@ export default function Login(): React.JSX.Element {
                         </form>
                     </div>
 
-                    <p className="mt-3 text-center text-sm text-gray-500">
+                    <p className="mt-3 text-center text-sm text-gray-600">
                         New to ShoppyDrive?{' '}
                         <Link
                             href={route('register')}

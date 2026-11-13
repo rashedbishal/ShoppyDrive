@@ -117,7 +117,7 @@ export default function LandingPageCreate({ products }: Props) {
                                     URL Slug
                                 </label>
                                 <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 focus-within:ring-1 focus-within:ring-[#c8102e]">
-                                    <span className="flex h-9 shrink-0 items-center border-r border-slate-200 bg-slate-50 px-3 text-sm text-slate-400">
+                                    <span className="flex h-9 shrink-0 items-center border-r border-slate-200 bg-slate-50 px-3 text-sm text-slate-600">
                                         /lp/
                                     </span>
                                     <input
@@ -146,7 +146,7 @@ export default function LandingPageCreate({ products }: Props) {
                                         {errors.slug}
                                     </p>
                                 )}
-                                <p className="mt-1 text-xs text-slate-400">
+                                <p className="mt-1 text-xs text-slate-600">
                                     Only lowercase letters, numbers, and
                                     hyphens.
                                 </p>
@@ -194,7 +194,7 @@ export default function LandingPageCreate({ products }: Props) {
                                         )
                                     }
                                 />
-                                <p className="mt-1 text-xs text-slate-400">
+                                <p className="mt-1 text-xs text-slate-600">
                                     The most units a customer can buy in one
                                     order from this page, all options together
                                     (1 to 100). Cash-on-delivery orders are also

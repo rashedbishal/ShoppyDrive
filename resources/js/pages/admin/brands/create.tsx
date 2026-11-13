@@ -30,7 +30,7 @@ function Field({
             <label className="mb-1 block text-sm font-medium text-slate-700">
                 {label}
             </label>
-            {hint && <p className="mb-1.5 text-xs text-slate-400">{hint}</p>}
+            {hint && <p className="mb-1.5 text-xs text-slate-600">{hint}</p>}
             {children}
             {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
@@ -136,7 +136,7 @@ export default function BrandCreate() {
                                     error={errors.logo}
                                     previewClassName="h-32 object-contain"
                                     maxSizeMb={1}
-                                    hint="Transparent PNG or WebP. Square logos: 500×500 px. Wide or tall logos: 500 px on the long side (e.g. 500×250). Crop away empty space around the logo."
+                                    hint="Transparent PNG or WebP. Square logos: 500×500 px. Wide or tall logos: 500 px on the long side (e.g. 500×250). Crop away empty space around the logo. Under 100 KB recommended."
                                 />
                             </Field>
                             <Field

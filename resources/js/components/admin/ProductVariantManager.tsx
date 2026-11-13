@@ -78,7 +78,7 @@ function VariantField({
 }): React.JSX.Element {
     return (
         <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-500">
+            <span className="mb-1 block text-xs font-medium text-slate-600">
                 {label}
             </span>
             {children}
@@ -422,10 +422,10 @@ export function ProductVariantManager({
     return (
         <div className="space-y-4">
             <div>
-                <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-600 uppercase">
                     Variant attributes
                 </p>
-                <p className="mb-2 text-xs text-slate-400">
+                <p className="mb-2 text-xs text-slate-600">
                     Choose what this product comes in (e.g. Color, Size, Set).
                     Manage attributes and their values under Catalog ›
                     Attributes.
@@ -468,7 +468,7 @@ export function ProductVariantManager({
                         );
                     })}
                     {attributes.length === 0 && (
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-600">
                             No attributes yet — add some under Catalog ›
                             Attributes.
                         </p>
@@ -481,7 +481,7 @@ export function ProductVariantManager({
                     <AdminReveal key={`attribute-${attribute.id}`}>
                         <div>
                             <div className="mb-1.5 flex items-center gap-2">
-                                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
                                     {attribute.name}
                                 </p>
                                 {selectedAttributes.length > 1 && (
@@ -562,7 +562,7 @@ export function ProductVariantManager({
                     <AdminReveal key="combinations">
                         <div>
                             <div className="mb-1 flex items-center justify-between gap-3">
-                                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                <p className="text-xs font-semibold tracking-wide text-slate-600 uppercase">
                                     Combinations
                                 </p>
                                 {combinations.length <=
@@ -576,7 +576,7 @@ export function ProductVariantManager({
                                     </button>
                                 )}
                             </div>
-                            <p className="mb-2 text-xs text-slate-400">
+                            <p className="mb-2 text-xs text-slate-600">
                                 Tick the combinations you actually stock.
                             </p>
                             {combinations.length > MAX_LISTED_COMBINATIONS ? (
@@ -605,7 +605,7 @@ export function ProductVariantManager({
                                                     'flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition',
                                                     checked
                                                         ? 'border-[#c8102e]/40 bg-[#c8102e]/5 text-slate-800'
-                                                        : 'border-slate-200 text-slate-500',
+                                                        : 'border-slate-200 text-slate-600',
                                                 )}
                                             >
                                                 <input
@@ -641,11 +641,11 @@ export function ProductVariantManager({
                 {variants.length > 1 && (
                     <AdminReveal key="bulk-fill">
                         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                            <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                            <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-slate-600 uppercase">
                                 <Wand2 className="size-3.5" />
                                 Bulk-fill variants
                             </div>
-                            <p className="mb-3 text-xs text-slate-400">
+                            <p className="mb-3 text-xs text-slate-600">
                                 Fill in whichever fields are the same across
                                 every variant, then apply — fields left blank
                                 here won't change anything. SKU is excluded
@@ -956,7 +956,7 @@ export function ProductVariantManager({
                             <AnimatePresence initial={false}>
                                 {variants.length === 1 && (
                                     <AdminReveal key="only-variant">
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             This is the only variant, so it
                                             can't be removed directly — deselect
                                             its values above, or untick the

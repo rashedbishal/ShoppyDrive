@@ -34,7 +34,7 @@ function GoogleLoginCard({ settings }: Props) {
             </CardHeader>
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4 pt-3">
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-600">
                         Create an OAuth client in the{' '}
                         <a
                             href="https://console.cloud.google.com/apis/credentials"
@@ -141,7 +141,7 @@ function FacebookLoginCard({ settings }: Props) {
             </CardHeader>
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4 pt-3">
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-600">
                         Create an app in{' '}
                         <a
                             href="https://developers.facebook.com/apps"

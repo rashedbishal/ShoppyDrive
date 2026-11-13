@@ -98,7 +98,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                         <h1 className="text-xl font-bold text-slate-900">
                             Contact Messages
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {messages.total} message
                             {messages.total === 1 ? '' : 's'} received via the
                             contact form.
@@ -147,7 +147,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
 
                     <div className="divide-y divide-slate-50">
                         {messages.data.length === 0 ? (
-                            <div className="flex flex-col items-center gap-2 py-16 text-slate-400">
+                            <div className="flex flex-col items-center gap-2 py-16 text-slate-600">
                                 <Mail className="size-8" />
                                 <p className="text-sm">
                                     No contact messages found.
@@ -159,7 +159,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                                     key={message.id}
                                     className="flex items-start gap-4 px-4 py-4 hover:bg-slate-50/60"
                                 >
-                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">
+                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
                                         {message.name.slice(0, 2).toUpperCase()}
                                     </div>
                                     <div className="min-w-0 flex-1">
@@ -169,14 +169,14 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                                             </p>
                                             <a
                                                 href={`mailto:${message.email}`}
-                                                className="text-xs break-all text-slate-400 hover:underline"
+                                                className="text-xs break-all text-slate-600 hover:underline"
                                             >
                                                 {message.email}
                                             </a>
                                             <span className="text-xs text-slate-300">
                                                 ·
                                             </span>
-                                            <p className="text-xs text-slate-400">
+                                            <p className="text-xs text-slate-600">
                                                 {new Date(
                                                     message.created_at,
                                                 ).toLocaleString()}
@@ -185,7 +185,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
                                         <p className="mt-1 text-sm font-medium break-words text-slate-700">
                                             {message.subject}
                                         </p>
-                                        <p className="mt-1 text-sm break-words whitespace-pre-line text-slate-500">
+                                        <p className="mt-1 text-sm break-words whitespace-pre-line text-slate-600">
                                             {message.message}
                                         </p>
                                     </div>
@@ -204,7 +204,7 @@ export default function ContactMessagesIndex({ messages, filters }: Props) {
 
                     {messages.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {messages.current_page} of{' '}
                                 {messages.last_page} &middot; {messages.total}{' '}
                                 total

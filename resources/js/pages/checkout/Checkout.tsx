@@ -95,7 +95,7 @@ const Section = ({
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-text-primary)] text-xs font-bold text-white">
                 {step}
             </span>
-            <h3 className="text-xs font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+            <h3 className="text-xs font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                 {title}
             </h3>
         </div>
@@ -168,7 +168,7 @@ const OrderSummary = React.memo(function OrderSummary({
                 {/* Items */}
                 <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
                     {items.length === 0 ? (
-                        <p className="py-4 text-center text-sm text-[var(--color-text-muted)]">
+                        <p className="py-4 text-center text-sm text-[var(--color-text-secondary)]">
                             Your cart is empty.
                         </p>
                     ) : (
@@ -251,14 +251,14 @@ const OrderSummary = React.memo(function OrderSummary({
                                 </p>
                             )}
                             {shippingCost !== null && shippingCost > 0 && (
-                                <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
+                                <p className="mt-0.5 text-[11px] text-[var(--color-text-secondary)]">
                                     1+ item requires delivery charge
                                 </p>
                             )}
                         </div>
                         <span className="shrink-0 font-semibold">
                             {shippingCost === null ? (
-                                <span className="text-xs font-normal text-[var(--color-text-muted)]">
+                                <span className="text-xs font-normal text-[var(--color-text-secondary)]">
                                     Enter address
                                 </span>
                             ) : shippingCost === 0 ? (
@@ -291,7 +291,7 @@ const OrderSummary = React.memo(function OrderSummary({
                 </Button>
 
                 {/* Trust badge */}
-                <div className="flex items-center justify-center gap-2 text-xs text-[var(--color-text-muted)]">
+                <div className="flex items-center justify-center gap-2 text-xs text-[var(--color-text-secondary)]">
                     <ShieldCheck size={14} />
                     <span>Secure & encrypted checkout</span>
                 </div>
@@ -332,7 +332,7 @@ function OrderSummaryRow({ item }: { item: CartItem }): React.JSX.Element {
                                 .join(' · ')}
                         </p>
                     )}
-                <p className="text-xs text-[var(--color-text-muted)]">
+                <p className="text-xs text-[var(--color-text-secondary)]">
                     Qty: {item.quantity}
                 </p>
                 <p className="text-sm font-bold text-[var(--color-primary)]">
@@ -914,7 +914,7 @@ export default function Checkout({
                     <ArrowLeft size={15} />
                     Back to cart
                 </Link>
-                <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-[var(--color-text-muted)] uppercase">
+                <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-[var(--color-text-secondary)] uppercase">
                     <Lock size={13} />
                     Secure checkout
                 </div>
@@ -1031,7 +1031,7 @@ export default function Checkout({
                                         <Label htmlFor="email">
                                             Email {isGuest ? '' : '*'}
                                             {isGuest && (
-                                                <span className="font-normal text-[var(--color-text-muted)]">
+                                                <span className="font-normal text-[var(--color-text-secondary)]">
                                                     {' '}
                                                     (optional)
                                                 </span>
@@ -1088,7 +1088,7 @@ export default function Checkout({
                                             {form.errors.phone}
                                         </p>
                                     ) : (
-                                        <p className="text-xs text-[var(--color-text-muted)]">
+                                        <p className="text-xs text-[var(--color-text-secondary)]">
                                             11 digits, starting with 01 (e.g.
                                             01712345678)
                                         </p>
@@ -1151,7 +1151,7 @@ export default function Checkout({
                             {/* MODE: pick from saved addresses list */}
                             {addressMode === 'select' && (
                                 <div className="space-y-3">
-                                    <p className="text-xs font-semibold text-[var(--color-text-muted)]">
+                                    <p className="text-xs font-semibold text-[var(--color-text-secondary)]">
                                         Choose an address
                                     </p>
                                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1191,7 +1191,7 @@ export default function Checkout({
                                         <button
                                             type="button"
                                             onClick={switchToNewForm}
-                                            className="flex min-h-[80px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[var(--color-border)] p-4 text-[var(--color-text-muted)] transition-all hover:border-[var(--color-text-primary)] hover:text-[var(--color-text-primary)]"
+                                            className="flex min-h-[80px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[var(--color-border)] p-4 text-[var(--color-text-secondary)] transition-all hover:border-[var(--color-text-primary)] hover:text-[var(--color-text-primary)]"
                                         >
                                             <Plus size={18} />
                                             <span className="text-sm font-bold">
@@ -1338,7 +1338,7 @@ export default function Checkout({
 
                                     {auth.user &&
                                         (!hasAddresses ? (
-                                            <p className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                                            <p className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
                                                 <Check
                                                     size={13}
                                                     className="text-[var(--color-success)]"
@@ -1555,7 +1555,7 @@ export default function Checkout({
                                         <p className="text-sm font-bold text-[var(--color-text-primary)]">
                                             Cash on Delivery
                                         </p>
-                                        <p className="text-xs text-[var(--color-text-muted)]">
+                                        <p className="text-xs text-[var(--color-text-secondary)]">
                                             Pay with cash when your order
                                             arrives
                                         </p>
@@ -1615,7 +1615,7 @@ export default function Checkout({
                                                 </span>
                                             )}
                                         </p>
-                                        <p className="text-xs text-[var(--color-text-muted)]">
+                                        <p className="text-xs text-[var(--color-text-secondary)]">
                                             {mobileBankingAvailable
                                                 ? 'Send money & enter your Transaction ID'
                                                 : 'Mobile payment verification is temporarily unavailable. Please use Cash on Delivery.'}
@@ -1693,7 +1693,7 @@ export default function Checkout({
             <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border)] bg-white/95 p-4 backdrop-blur-sm lg:hidden">
                 <div className="flex items-center gap-4">
                     <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-semibold tracking-wide text-[var(--color-text-muted)] uppercase">
+                        <p className="text-[11px] font-semibold tracking-wide text-[var(--color-text-secondary)] uppercase">
                             Total
                         </p>
                         <p className="truncate text-lg font-bold text-[var(--color-primary)]">

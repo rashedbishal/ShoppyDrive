@@ -119,7 +119,7 @@ function SectionWrap({
                     <AnimatePresence initial={false}>
                         {!enabled && (
                             <AdminFade key="hidden-label">
-                                <span className="text-[10px] tracking-wide text-slate-400 uppercase">
+                                <span className="text-[10px] tracking-wide text-slate-600 uppercase">
                                     hidden on page
                                 </span>
                             </AdminFade>
@@ -264,7 +264,7 @@ export default function LandingPageEdit({
                             <div>
                                 <label className={labelClass}>URL Slug</label>
                                 <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 focus-within:ring-1 focus-within:ring-[#c8102e]">
-                                    <span className="flex h-9 shrink-0 items-center border-r border-slate-200 bg-slate-50 px-2 text-xs text-slate-400">
+                                    <span className="flex h-9 shrink-0 items-center border-r border-slate-200 bg-slate-50 px-2 text-xs text-slate-600">
                                         /lp/
                                     </span>
                                     <input
@@ -326,7 +326,7 @@ export default function LandingPageEdit({
                                         )
                                     }
                                 />
-                                <p className="mt-1 text-xs text-slate-400">
+                                <p className="mt-1 text-xs text-slate-600">
                                     The most units a customer can buy in one
                                     order from this page, all options together
                                     (1 to 100). Cash-on-delivery orders are also
@@ -645,7 +645,7 @@ export default function LandingPageEdit({
                                 className="mt-0.5 block text-right text-[11px] leading-none"
                             />
                         </div>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-600">
                             Images are pulled automatically from the selected
                             product's media.
                         </p>

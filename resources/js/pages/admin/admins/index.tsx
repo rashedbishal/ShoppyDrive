@@ -81,7 +81,7 @@ export default function AdminsIndex({ admins }: Props) {
                         <h1 className="text-xl font-bold text-slate-900">
                             Admin Accounts
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {admins.length} total
                         </p>
                     </div>
@@ -139,12 +139,12 @@ export default function AdminsIndex({ admins }: Props) {
                                             </span>
                                         )}
                                     </div>
-                                    <p className="truncate text-xs text-slate-400">
+                                    <p className="truncate text-xs text-slate-600">
                                         {admin.email}
                                     </p>
                                 </div>
 
-                                <p className="order-last w-full pl-12 text-xs text-slate-400 sm:order-none sm:w-auto sm:shrink-0 sm:pl-0">
+                                <p className="order-last w-full pl-12 text-xs text-slate-600 sm:order-none sm:w-auto sm:shrink-0 sm:pl-0">
                                     <span className="sm:hidden">Joined </span>
                                     {new Date(
                                         admin.created_at,

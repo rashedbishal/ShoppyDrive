@@ -82,7 +82,7 @@ export default function Cart(): React.JSX.Element {
                     {/* Cart Items */}
                     <div className="space-y-3 lg:col-span-8">
                         <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-sm">
-                            <div className="hidden grid-cols-12 gap-4 border-b border-[var(--color-border)] px-5 py-2.5 text-[11px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase md:grid">
+                            <div className="hidden grid-cols-12 gap-4 border-b border-[var(--color-border)] px-5 py-2.5 text-[11px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase md:grid">
                                 <div className="col-span-6">Product</div>
                                 <div className="col-span-2 text-center">
                                     Price
@@ -172,12 +172,12 @@ export default function Cart(): React.JSX.Element {
                         <div className="flex items-center justify-between px-2">
                             <Link
                                 href={route('products.index')}
-                                className="flex items-center gap-2 text-sm font-bold text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-primary)]"
+                                className="flex items-center gap-2 text-sm font-bold text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary)]"
                             >
                                 <ArrowLeft size={16} />
                                 Continue Shopping
                             </Link>
-                            <span className="text-sm font-medium text-[var(--color-text-muted)]">
+                            <span className="text-sm font-medium text-[var(--color-text-secondary)]">
                                 {items.length} items in your cart
                             </span>
                         </div>
@@ -190,7 +190,7 @@ export default function Cart(): React.JSX.Element {
                                 <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
                                     Order Summary
                                 </h2>
-                                <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+                                <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
                                     Review your totals before checkout.
                                 </p>
                             </div>
@@ -232,7 +232,7 @@ export default function Cart(): React.JSX.Element {
 
                                 {/* Total */}
                                 <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-4">
-                                    <p className="text-xs text-[var(--color-text-muted)]">
+                                    <p className="text-xs text-[var(--color-text-secondary)]">
                                         Estimated Total
                                     </p>
                                     <p className="mt-1 text-3xl font-bold text-[var(--color-primary)]">
@@ -251,7 +251,7 @@ export default function Cart(): React.JSX.Element {
                                     </Link>
                                 </Button>
 
-                                <div className="flex items-center justify-center gap-3 text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                <div className="flex items-center justify-center gap-3 text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                     <span>Secure Payment</span>
                                     <div className="h-1 w-1 rounded-full bg-[var(--color-border)]" />
                                     <span>Easy Returns</span>
@@ -310,7 +310,7 @@ function CartRow({
                                 ([key, value]) => (
                                     <span
                                         key={key}
-                                        className="text-[11px] font-bold tracking-wider text-[var(--color-text-muted)] uppercase"
+                                        className="text-[11px] font-bold tracking-wider text-[var(--color-text-secondary)] uppercase"
                                     >
                                         {key}: {value}
                                     </span>
@@ -332,7 +332,7 @@ function CartRow({
 
             {/* Price */}
             <div className="text-center md:col-span-2">
-                <span className="mb-1 block text-xs font-bold text-[var(--color-text-muted)] uppercase md:hidden">
+                <span className="mb-1 block text-xs font-bold text-[var(--color-text-secondary)] uppercase md:hidden">
                     Price
                 </span>
                 <span className="text-sm font-bold text-[var(--color-text-primary)]">
@@ -342,7 +342,7 @@ function CartRow({
 
             {/* Quantity */}
             <div className="flex flex-col items-center md:col-span-2">
-                <span className="mb-1 block text-xs font-bold text-[var(--color-text-muted)] uppercase md:hidden">
+                <span className="mb-1 block text-xs font-bold text-[var(--color-text-secondary)] uppercase md:hidden">
                     Quantity
                 </span>
                 {onQuantityChange ? (
@@ -364,7 +364,7 @@ function CartRow({
 
             {/* Total */}
             <div className="text-right md:col-span-2">
-                <span className="mb-1 block text-xs font-bold text-[var(--color-text-muted)] uppercase md:hidden">
+                <span className="mb-1 block text-xs font-bold text-[var(--color-text-secondary)] uppercase md:hidden">
                     Total
                 </span>
                 <span className="text-sm font-bold text-[var(--color-primary)]">

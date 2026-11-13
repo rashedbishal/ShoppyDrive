@@ -49,7 +49,7 @@ export default function HeroSlidesIndex({ slides }: Props) {
                             <h1 className="text-2xl font-bold text-slate-900">
                                 Hero Slides
                             </h1>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-slate-600">
                                 Manage the large banners at the top of the
                                 homepage.
                             </p>
@@ -65,7 +65,7 @@ export default function HeroSlidesIndex({ slides }: Props) {
 
                 <div className="grid gap-4">
                     {slides.length === 0 ? (
-                        <Card className="flex flex-col items-center justify-center py-12 text-slate-400">
+                        <Card className="flex flex-col items-center justify-center py-12 text-slate-600">
                             <p>No hero slides created yet.</p>
                         </Card>
                     ) : (
@@ -116,14 +116,14 @@ export default function HeroSlidesIndex({ slides }: Props) {
                                                 <span className="shrink-0 text-slate-300">
                                                     ·
                                                 </span>
-                                                <p className="shrink-0 text-xs whitespace-nowrap text-slate-500">
+                                                <p className="shrink-0 text-xs whitespace-nowrap text-slate-600">
                                                     Order: {slide.sort_order}
                                                 </p>
                                             </div>
                                             <h3 className="h-7 truncate text-lg leading-7 font-bold text-slate-800">
                                                 {slide.title}
                                             </h3>
-                                            <p className="line-clamp-2 h-10 text-sm leading-5 text-slate-500">
+                                            <p className="line-clamp-2 h-10 text-sm leading-5 text-slate-600">
                                                 {slide.description}
                                             </p>
                                         </div>

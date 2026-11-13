@@ -134,7 +134,7 @@ function SectionHeading({
         >
             <div className="space-y-2">
                 {eyebrow ? (
-                    <p className="text-xs font-semibold tracking-[0.24em] text-[var(--color-text-muted)] uppercase">
+                    <p className="text-xs font-semibold tracking-[0.24em] text-[var(--color-text-secondary)] uppercase">
                         {eyebrow}
                     </p>
                 ) : null}
@@ -257,7 +257,11 @@ function HeroSlider({
             onMouseLeave={() => setIsPaused(false)}
             aria-label="Homepage hero banner"
         >
-            <div className="relative min-h-[42vh] sm:min-h-[60vh] lg:min-h-[75vh]">
+            {/* The viewport-height sizes keep the hero filling the screen, but the rem
+                floors are what the slide's content needs at each breakpoint: on a short
+                viewport (a scaled-up display, a landscape phone) vh alone gave a box
+                smaller than its content and everything overlapped. */}
+            <div className="relative min-h-[max(42vh,18rem)] sm:min-h-[max(60vh,24rem)] lg:min-h-[max(75vh,30rem)]">
                 <AnimatePresence initial={false} custom={direction}>
                     <motion.div
                         key={activeSlide.id}
@@ -507,7 +511,7 @@ function CategoryCard({ category }: CategoryCardProps): React.JSX.Element {
             <span className="text-xs leading-tight font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-sm">
                 {category.name}
             </span>
-            <span className="text-[11px] text-[var(--color-text-muted)]">
+            <span className="text-[11px] text-[var(--color-text-secondary)]">
                 {category.productsCount} products
             </span>
         </Link>

@@ -75,7 +75,7 @@ export default function LandingPayment({
                                 <h1 className="text-lg font-bold text-slate-900">
                                     Pay via {providerLabel}
                                 </h1>
-                                <p className="mt-0.5 text-sm text-slate-500">
+                                <p className="mt-0.5 text-sm text-slate-600">
                                     Order #{orderNumber}
                                 </p>
                             </div>
@@ -88,13 +88,13 @@ export default function LandingPayment({
                                     borderWidth: 1,
                                 }}
                             >
-                                <p className="mb-1 text-xs text-slate-500">
+                                <p className="mb-1 text-xs text-slate-600">
                                     Send exactly
                                 </p>
                                 <p className="text-3xl font-extrabold text-slate-900">
                                     ৳{amount.toLocaleString()}
                                 </p>
-                                <p className="mt-2 text-xs text-slate-500">
+                                <p className="mt-2 text-xs text-slate-600">
                                     to this {providerLabel} number
                                 </p>
                                 <p
@@ -103,7 +103,7 @@ export default function LandingPayment({
                                 >
                                     {providerNumber}
                                 </p>
-                                <p className="mt-2 text-xs text-slate-400">
+                                <p className="mt-2 text-xs text-slate-600">
                                     Send Money → Personal
                                 </p>
                             </div>
@@ -188,7 +188,7 @@ export default function LandingPayment({
                             </form>
                         </div>
 
-                        <p className="text-center text-xs text-slate-400">
+                        <p className="text-center text-xs text-slate-600">
                             Your order will be confirmed once we verify the
                             transaction.
                         </p>

@@ -110,7 +110,7 @@ export default function CouponsIndex({ coupons, filters }: Props) {
                         <h1 className="text-xl font-bold text-slate-900">
                             Coupons
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {coupons.total} total
                         </p>
                     </div>
@@ -163,7 +163,7 @@ export default function CouponsIndex({ coupons, filters }: Props) {
                                 checked={bulk.allSelected}
                                 onCheckedChange={bulk.toggleAll}
                             />
-                            <span className="text-xs font-medium text-slate-500">
+                            <span className="text-xs font-medium text-slate-600">
                                 Select all
                             </span>
                         </div>
@@ -171,7 +171,7 @@ export default function CouponsIndex({ coupons, filters }: Props) {
 
                     <div className="divide-y divide-slate-50">
                         {coupons.data.length === 0 ? (
-                            <p className="py-12 text-center text-sm text-slate-400">
+                            <p className="py-12 text-center text-sm text-slate-600">
                                 No coupons found.
                             </p>
                         ) : (
@@ -197,7 +197,7 @@ export default function CouponsIndex({ coupons, filters }: Props) {
                                             {coupon.code}
                                         </p>
                                         <p
-                                            className="truncate text-xs text-slate-400"
+                                            className="truncate text-xs text-slate-600"
                                             title={coupon.name}
                                         >
                                             {coupon.name}
@@ -210,7 +210,7 @@ export default function CouponsIndex({ coupons, filters }: Props) {
                                                     ? `${coupon.value}%`
                                                     : `৳${coupon.value.toLocaleString()}`}
                                             </p>
-                                            <p className="text-xs text-slate-400">
+                                            <p className="text-xs text-slate-600">
                                                 {coupon.applies_to ===
                                                 'selected'
                                                     ? 'Selected items · '
@@ -223,7 +223,7 @@ export default function CouponsIndex({ coupons, filters }: Props) {
                                         </div>
                                         <div className="text-right">
                                             {coupon.expires_at && (
-                                                <p className="text-xs text-slate-400">
+                                                <p className="text-xs text-slate-600">
                                                     Exp:{' '}
                                                     {new Date(
                                                         coupon.expires_at,
@@ -271,7 +271,7 @@ export default function CouponsIndex({ coupons, filters }: Props) {
 
                     {coupons.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {coupons.current_page} of{' '}
                                 {coupons.last_page}
                             </p>

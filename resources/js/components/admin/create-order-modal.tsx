@@ -538,7 +538,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                 <p className="truncate text-sm font-semibold text-slate-800">
                                                     {selectedCustomer.name}
                                                 </p>
-                                                <p className="truncate text-xs text-slate-500">
+                                                <p className="truncate text-xs text-slate-600">
                                                     {selectedCustomer.email}
                                                     {selectedCustomer.phone
                                                         ? ` · ${selectedCustomer.phone}`
@@ -601,7 +601,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                                             customer.name
                                                                         }
                                                                     </span>
-                                                                    <span className="shrink-0 text-xs text-slate-400">
+                                                                    <span className="shrink-0 text-xs text-slate-600">
                                                                         {customer.phone ??
                                                                             customer.email}
                                                                     </span>
@@ -615,7 +615,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                 !searchingCustomers &&
                                                 customerResults.length ===
                                                     0 && (
-                                                    <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-center text-xs text-slate-400 shadow-lg">
+                                                    <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-center text-xs text-slate-600 shadow-lg">
                                                         No matching customer —
                                                         fill in the fields below
                                                         for a guest order.
@@ -850,7 +850,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                             key="variant-picker"
                                             className="absolute z-10 mt-1 w-full origin-top rounded-lg border border-slate-200 bg-white p-2 shadow-lg"
                                         >
-                                            <p className="mb-1.5 px-1 text-xs font-semibold text-slate-500">
+                                            <p className="mb-1.5 px-1 text-xs font-semibold text-slate-600">
                                                 Choose a variant of{' '}
                                                 {pendingVariantFor.name}
                                             </p>
@@ -874,7 +874,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                                 ) ||
                                                                     variant.sku}
                                                             </span>
-                                                            <span className="text-xs text-slate-400">
+                                                            <span className="text-xs text-slate-600">
                                                                 {formatCurrency(
                                                                     variant.price,
                                                                 )}{' '}
@@ -909,7 +909,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                         {product.name}
                                                         {product.variants
                                                             .length > 0 && (
-                                                            <span className="ml-1.5 text-xs text-slate-400">
+                                                            <span className="ml-1.5 text-xs text-slate-600">
                                                                 (
                                                                 {
                                                                     product
@@ -920,7 +920,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                             </span>
                                                         )}
                                                     </span>
-                                                    <span className="shrink-0 text-xs text-slate-400">
+                                                    <span className="shrink-0 text-xs text-slate-600">
                                                         {formatCurrency(
                                                             product.price,
                                                         )}
@@ -934,7 +934,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                     productQuery.trim() !== '' &&
                                     !searchingProducts &&
                                     productResults.length === 0 && (
-                                        <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-center text-xs text-slate-400 shadow-lg">
+                                        <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-center text-xs text-slate-600 shadow-lg">
                                             No products found.
                                         </div>
                                     )}
@@ -953,7 +953,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                 {lines.length === 0 ? (
                                     <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 py-8 text-center">
                                         <ShoppingBag className="size-6 text-slate-300" />
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             No products selected yet.
                                         </p>
                                     </div>
@@ -972,7 +972,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                             {line.product_name}
                                                         </p>
                                                         {line.variant_attributes && (
-                                                            <p className="truncate text-xs text-slate-400">
+                                                            <p className="truncate text-xs text-slate-600">
                                                                 {variantLabel(
                                                                     line.variant_attributes,
                                                                 )}
@@ -1013,7 +1013,7 @@ export function CreateOrderModal({ open, onOpenChange }: Props) {
                                                             <div className="mt-1.5 space-y-1">
                                                                 {line.calculated_price !==
                                                                     null && (
-                                                                    <p className="text-xs text-slate-500">
+                                                                    <p className="text-xs text-slate-600">
                                                                         Calculated
                                                                         price:{' '}
                                                                         {formatCurrency(

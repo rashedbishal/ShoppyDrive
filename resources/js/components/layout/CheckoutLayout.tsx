@@ -16,7 +16,7 @@ export default function CheckoutLayout({
             {/* Simple Footer */}
             <footer className="mt-auto border-t border-[var(--color-border)] bg-white py-8">
                 <div className="mx-auto max-w-6xl px-4 text-center">
-                    <p className="mb-4 text-sm text-[var(--color-text-muted)]">
+                    <p className="mb-4 text-sm text-[var(--color-text-secondary)]">
                         &copy; {new Date().getFullYear()} ShoppyDrive. All
                         rights reserved.
                     </p>

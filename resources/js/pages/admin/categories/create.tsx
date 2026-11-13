@@ -7,6 +7,7 @@ import { IconPicker } from '@/components/ui/icon-picker';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { RouteModal } from '@/components/ui/route-modal';
 import { scrollToFirstFormError } from '@/lib/form-error-scroll';
+import { imageRecommendation } from '@/lib/upload-recommendations';
 import { maxLength, required, validate } from '@/lib/validate';
 
 function Field({
@@ -25,7 +26,7 @@ function Field({
             <label className="mb-1 block text-sm font-medium text-slate-700">
                 {label}
             </label>
-            {hint && <p className="mb-1.5 text-xs text-slate-400">{hint}</p>}
+            {hint && <p className="mb-1.5 text-xs text-slate-600">{hint}</p>}
             {children}
             {error && (
                 <p data-form-error className="mt-1 text-xs text-red-500">
@@ -211,6 +212,9 @@ export default function CategoryCreate() {
                                     onChange={(file) => setData('image', file)}
                                     error={errors.image}
                                     maxSizeMb={5}
+                                    hint={imageRecommendation(
+                                        '1600 × 400 px (wide banner, keep key content centered)',
+                                    )}
                                     previewClassName="h-32 object-contain"
                                 />
                             </Field>

@@ -15,7 +15,7 @@ export default function PasswordRequirements({
     }
 
     return (
-        <ul className="space-y-0.5 text-xs text-gray-500">
+        <ul className="space-y-0.5 text-xs text-gray-600">
             {requirements.map((requirement) => (
                 <li key={requirement} className="flex items-start gap-1.5">
                     <span className="mt-1.5 size-1 shrink-0 rounded-full bg-gray-300" />

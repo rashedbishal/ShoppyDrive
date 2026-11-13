@@ -288,7 +288,7 @@ export default function Addresses({
                     <div className="space-y-2">
                         <Label htmlFor="phone">Phone Number</Label>
                         <div className="relative">
-                            <span className="absolute top-1/2 left-4 -translate-y-1/2 text-sm font-bold text-[var(--color-text-muted)]">
+                            <span className="absolute top-1/2 left-4 -translate-y-1/2 text-sm font-bold text-[var(--color-text-secondary)]">
                                 +880
                             </span>
                             <Input

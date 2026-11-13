@@ -586,7 +586,7 @@ function SidebarContent({
                         className={collapsed ? 'h-auto w-12' : 'h-9'}
                     />
                     {!collapsed && (
-                        <p className="text-[11px] text-slate-400">
+                        <p className="text-[11px] text-slate-600">
                             Admin Panel
                         </p>
                     )}
@@ -611,7 +611,7 @@ function SidebarContent({
                         aria-label={
                             collapsed ? 'Expand sidebar' : 'Collapse sidebar'
                         }
-                        className={`flex w-full items-center rounded-lg py-1.5 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 ${
+                        className={`flex w-full items-center rounded-lg py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800 ${
                             collapsed ? 'justify-center' : 'gap-2.5 px-2.5'
                         }`}
                     >
@@ -662,7 +662,7 @@ function SidebarContent({
                                         }
                                         disabled={hasActive}
                                         aria-expanded={isOpen}
-                                        className="group mb-1 flex w-full items-center justify-between rounded-md px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-400 uppercase transition-colors hover:text-slate-600 disabled:cursor-default disabled:hover:text-slate-400"
+                                        className="group mb-1 flex w-full items-center justify-between rounded-md px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-600 uppercase transition-colors hover:text-slate-600 disabled:cursor-default disabled:hover:text-slate-600"
                                     >
                                         {section.label}
                                         <ChevronDown
@@ -672,7 +672,7 @@ function SidebarContent({
                                         />
                                     </button>
                                 ) : (
-                                    <p className="mb-1 px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-400 uppercase">
+                                    <p className="mb-1 px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-600 uppercase">
                                         {section.label}
                                     </p>
                                 ))}
@@ -801,7 +801,7 @@ function SidebarContent({
                                 <p className="truncate text-sm font-semibold text-slate-800">
                                     {admin.name}
                                 </p>
-                                <p className="text-[11px] text-slate-400">
+                                <p className="text-[11px] text-slate-600">
                                     {admin.is_mother ? 'Super admin' : 'Admin'}
                                 </p>
                             </div>

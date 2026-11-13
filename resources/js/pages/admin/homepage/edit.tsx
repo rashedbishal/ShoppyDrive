@@ -287,7 +287,7 @@ export default function HomepageEdit({
                         <h1 className="text-2xl font-bold text-slate-900">
                             Edit Section: {section.section_name}
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             Customize the appearance and visibility of this
                             homepage section.
                         </p>
@@ -405,7 +405,7 @@ export default function HomepageEdit({
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4 pt-3">
-                                        <p className="text-sm text-slate-500">
+                                        <p className="text-sm text-slate-600">
                                             Slide content (images, titles,
                                             descriptions, CTAs) is managed under{' '}
                                             <Link
@@ -458,7 +458,7 @@ export default function HomepageEdit({
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="pt-3">
-                                        <p className="text-sm text-slate-500">
+                                        <p className="text-sm text-slate-600">
                                             Banner content (images, titles,
                                             links) is managed under{' '}
                                             <Link
@@ -591,7 +591,7 @@ export default function HomepageEdit({
                                                 searchResults.length > 0) && (
                                                 <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                                                     {searching && (
-                                                        <p className="px-4 py-3 text-sm text-slate-400">
+                                                        <p className="px-4 py-3 text-sm text-slate-600">
                                                             Searching...
                                                         </p>
                                                     )}
@@ -633,7 +633,7 @@ export default function HomepageEdit({
                                                                                     product.name
                                                                                 }
                                                                             </p>
-                                                                            <p className="text-xs text-slate-500">
+                                                                            <p className="text-xs text-slate-600">
                                                                                 ৳
                                                                                 {
                                                                                     product.price
@@ -657,10 +657,10 @@ export default function HomepageEdit({
                                         {data.featured_products.length === 0 ? (
                                             <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
                                                 <Star className="mx-auto mb-3 size-10 text-slate-300" />
-                                                <p className="text-slate-500">
+                                                <p className="text-slate-600">
                                                     No featured products yet.
                                                 </p>
-                                                <p className="text-xs text-slate-400">
+                                                <p className="text-xs text-slate-600">
                                                     Search and add products to
                                                     feature them on the
                                                     homepage.
@@ -763,7 +763,7 @@ export default function HomepageEdit({
                                                 searchResults.length > 0) && (
                                                 <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                                                     {searching && (
-                                                        <p className="px-4 py-3 text-sm text-slate-400">
+                                                        <p className="px-4 py-3 text-sm text-slate-600">
                                                             Searching...
                                                         </p>
                                                     )}
@@ -805,7 +805,7 @@ export default function HomepageEdit({
                                                                                     product.name
                                                                                 }
                                                                             </p>
-                                                                            <p className="text-xs text-slate-500">
+                                                                            <p className="text-xs text-slate-600">
                                                                                 ৳
                                                                                 {
                                                                                     product.price
@@ -829,10 +829,10 @@ export default function HomepageEdit({
                                         {data.section_products.length === 0 ? (
                                             <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
                                                 <ShoppingBag className="mx-auto mb-3 size-10 text-slate-300" />
-                                                <p className="text-slate-500">
+                                                <p className="text-slate-600">
                                                     No products added yet.
                                                 </p>
-                                                <p className="text-xs text-slate-400">
+                                                <p className="text-xs text-slate-600">
                                                     Search and add products to
                                                     this section.
                                                 </p>
@@ -928,7 +928,7 @@ export default function HomepageEdit({
                                                 brandResults.length > 0) && (
                                                 <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                                                     {searchingBrands && (
-                                                        <p className="px-4 py-3 text-sm text-slate-400">
+                                                        <p className="px-4 py-3 text-sm text-slate-600">
                                                             Searching...
                                                         </p>
                                                     )}
@@ -986,10 +986,10 @@ export default function HomepageEdit({
                                         {data.section_brands.length === 0 ? (
                                             <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
                                                 <ShoppingBag className="mx-auto mb-3 size-10 text-slate-300" />
-                                                <p className="text-slate-500">
+                                                <p className="text-slate-600">
                                                     No brands added yet.
                                                 </p>
-                                                <p className="text-xs text-slate-400">
+                                                <p className="text-xs text-slate-600">
                                                     Search and add brands to
                                                     show in this section.
                                                 </p>
@@ -1055,7 +1055,7 @@ export default function HomepageEdit({
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="pt-3">
-                                        <p className="text-sm text-slate-500">
+                                        <p className="text-sm text-slate-600">
                                             The sale's schedule, products, and
                                             pricing are managed under{' '}
                                             <Link
@@ -1093,7 +1093,7 @@ export default function HomepageEdit({
                                             <p className="text-sm font-medium text-slate-700">
                                                 Section Visibility
                                             </p>
-                                            <p className="text-xs text-slate-500">
+                                            <p className="text-xs text-slate-600">
                                                 Toggle whether this section is
                                                 shown on the storefront.
                                             </p>
@@ -1122,7 +1122,7 @@ export default function HomepageEdit({
                         <Button
                             asChild
                             variant="ghost"
-                            className="text-slate-500"
+                            className="text-slate-600"
                         >
                             <Link href={route('admin.homepage.index')}>
                                 Cancel

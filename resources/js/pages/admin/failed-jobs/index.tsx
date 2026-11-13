@@ -114,7 +114,7 @@ export default function FailedJobsIndex({
                             <TriangleAlert className="size-5 text-slate-400" />
                             Failed Jobs
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {failedJobs.total} background{' '}
                             {failedJobs.total === 1 ? 'job' : 'jobs'} failed
                             after every retry
@@ -148,7 +148,7 @@ export default function FailedJobsIndex({
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     {failedJobs.data.length === 0 ? (
-                        <p className="p-10 text-center text-sm text-slate-500">
+                        <p className="p-10 text-center text-sm text-slate-600">
                             No failed jobs.
                         </p>
                     ) : (
@@ -174,7 +174,7 @@ export default function FailedJobsIndex({
                                             {job.error ||
                                                 'No error details available.'}
                                         </p>
-                                        <p className="text-xs break-all text-slate-400">
+                                        <p className="text-xs break-all text-slate-600">
                                             {new Date(
                                                 job.failed_at,
                                             ).toLocaleString()}

@@ -167,7 +167,7 @@ export default function ErrorLogIndex({
                             <ScrollText className="size-5 text-slate-400" />
                             Error Log
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {currentFile
                                 ? `${currentFile.name} · ${formatBytes(currentFile.size)} · last written ${formatModified(currentFile.modified_at)}`
                                 : 'No log files yet'}
@@ -287,7 +287,7 @@ export default function ErrorLogIndex({
                     {entries.data.length === 0 ? (
                         <div className="py-16 text-center">
                             <ScrollText className="mx-auto mb-3 size-10 text-slate-300" />
-                            <p className="text-sm text-slate-400">
+                            <p className="text-sm text-slate-600">
                                 {file === null
                                     ? 'No log files yet.'
                                     : level !== null
@@ -298,7 +298,7 @@ export default function ErrorLogIndex({
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[44rem] text-sm">
-                                <thead className="bg-slate-50 text-left text-xs text-slate-500">
+                                <thead className="bg-slate-50 text-left text-xs text-slate-600">
                                     <tr>
                                         <th className="w-8 px-3 py-2" />
                                         <th className="px-3 py-2 font-medium">
@@ -329,7 +329,7 @@ export default function ErrorLogIndex({
                                                         )
                                                     }
                                                 >
-                                                    <td className="px-3 py-2.5 text-slate-400">
+                                                    <td className="px-3 py-2.5 text-slate-600">
                                                         <button
                                                             type="button"
                                                             aria-expanded={
@@ -351,7 +351,7 @@ export default function ErrorLogIndex({
                                                     </td>
                                                     <td className="px-3 py-2.5 whitespace-nowrap text-slate-600">
                                                         {entry.logged_at}
-                                                        <span className="block text-[11px] text-slate-400">
+                                                        <span className="block text-[11px] text-slate-600">
                                                             {entry.environment}
                                                         </span>
                                                     </td>
@@ -374,7 +374,7 @@ export default function ErrorLogIndex({
                                                                 '(no message)'}
                                                         </p>
                                                         {entry.exception && (
-                                                            <p className="mt-0.5 font-mono text-[11px] break-all text-slate-500">
+                                                            <p className="mt-0.5 font-mono text-[11px] break-all text-slate-600">
                                                                 {
                                                                     entry.exception
                                                                 }
@@ -411,7 +411,7 @@ export default function ErrorLogIndex({
                                     data={entries}
                                     onPageChange={(page) => visit({ page })}
                                 />
-                                <p className="text-xs text-slate-400">
+                                <p className="text-xs text-slate-600">
                                     Showing {entries.from}–{entries.to} of{' '}
                                     {entries.total}
                                 </p>

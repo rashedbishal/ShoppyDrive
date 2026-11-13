@@ -154,7 +154,7 @@ function ContactContent({ content }: Props): React.JSX.Element {
                                                 <Icon className="size-5 text-[var(--color-primary)]" />
                                             </div>
                                             <div>
-                                                <p className="text-xs font-semibold tracking-[0.15em] text-[var(--color-text-muted)] uppercase">
+                                                <p className="text-xs font-semibold tracking-[0.15em] text-[var(--color-text-secondary)] uppercase">
                                                     {title}
                                                 </p>
                                                 {href ? (

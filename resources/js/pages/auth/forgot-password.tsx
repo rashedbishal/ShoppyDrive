@@ -65,7 +65,7 @@ export default function ForgotPassword({
                         <h1 className="text-2xl font-bold text-gray-900">
                             Reset your password
                         </h1>
-                        <p className="text-sm leading-6 text-gray-500">
+                        <p className="text-sm leading-6 text-gray-600">
                             Enter your email and we'll send you a secure reset
                             link.
                         </p>
@@ -132,12 +132,12 @@ export default function ForgotPassword({
                     </form>
 
                     <div className="mt-5 flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
                             <ShieldCheck className="size-3.5 text-[#c8102e]" />
                             256-bit encrypted
                         </div>
                         <div className="h-4 w-px bg-gray-200" />
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-600">
                             Link expires in 60 min
                         </p>
                     </div>
@@ -145,7 +145,7 @@ export default function ForgotPassword({
 
                 <Link
                     href={route('login')}
-                    className="mt-5 flex items-center justify-center gap-2 text-sm text-gray-500 transition hover:text-gray-800"
+                    className="mt-5 flex items-center justify-center gap-2 text-sm text-gray-600 transition hover:text-gray-800"
                 >
                     <ArrowLeft className="size-4" /> Back to sign in
                 </Link>

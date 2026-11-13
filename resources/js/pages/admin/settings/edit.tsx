@@ -142,7 +142,7 @@ function LoadingScreenSlider({
                         error && 'border-red-400 focus:ring-red-500',
                     )}
                 />
-                <span className="w-6 shrink-0 text-sm text-slate-500">
+                <span className="w-6 shrink-0 text-sm text-slate-600">
                     {unit}
                 </span>
             </div>
@@ -303,7 +303,7 @@ export default function SettingsEdit({ settings }: Props) {
                     <h1 className="text-xl font-bold text-slate-900">
                         Settings
                     </h1>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-600">
                         Contact email, phone, and address (shared with the
                         footer) are now edited from{' '}
                         <Link
@@ -371,7 +371,7 @@ export default function SettingsEdit({ settings }: Props) {
                             </div>
                             <SettingsField
                                 label="Brand Logo"
-                                hint="The complete logo (mark, name and motto together), shown in the website header, footer, login pages, error pages, landing pages, CMS, emails and invoices. A wide PNG with a transparent background works best (WebP does not show in some email apps) — max 2 MB."
+                                hint="The complete logo (mark, name and motto together), shown in the website header, footer, login pages, error pages, landing pages, CMS, emails and invoices. A wide PNG with a transparent background works best (WebP does not show in some email apps), about 600 × 200 px and under 100 KB — max 2 MB."
                             >
                                 <ImageUpload
                                     value={data.logo}
@@ -381,7 +381,7 @@ export default function SettingsEdit({ settings }: Props) {
                             </SettingsField>
                             <SettingsField
                                 label="Loading Logo"
-                                hint="Shown in the middle of the screen while a page is loading, inside a turning ring. Leave empty to use the Brand Logo. A square image with a transparent background (PNG or WEBP) looks best — max 2 MB and 4096 × 4096 px. It's resized automatically so it loads fast."
+                                hint="Shown in the middle of the screen while a page is loading, inside a turning ring. Leave empty to use the Brand Logo. A square image with a transparent background (PNG or WEBP) looks best, about 512 × 512 px and under 100 KB — max 2 MB and 4096 × 4096 px. It's resized automatically so it loads fast."
                             >
                                 <ImageUpload
                                     value={data.loading_logo}
@@ -481,7 +481,7 @@ export default function SettingsEdit({ settings }: Props) {
                                                 maxSize={`${LOADING_PREVIEW_MAX_PX}px`}
                                             />
                                         </div>
-                                        <span className="text-xs text-slate-500">
+                                        <span className="text-xs text-slate-600">
                                             {previewScale < 1
                                                 ? `Preview at ${Math.round(previewScale * 100)}% of real size`
                                                 : 'Preview at real size'}
@@ -609,7 +609,7 @@ export default function SettingsEdit({ settings }: Props) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Customers always get their own order
                                 confirmation and cancellation emails. These two
                                 fields set which shop email address is told

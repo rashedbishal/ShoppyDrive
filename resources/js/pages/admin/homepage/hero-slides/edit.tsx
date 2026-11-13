@@ -126,7 +126,7 @@ export default function HeroSlideEdit({ slide }: Props) {
                         <h1 className="text-2xl font-bold text-slate-900">
                             Edit Hero Slide
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             Update homepage banner slide information.
                         </p>
                     </div>
@@ -198,7 +198,7 @@ export default function HeroSlideEdit({ slide }: Props) {
                                         <p className="text-sm font-medium text-text-primary">
                                             Slide Image or Video
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Leave as-is to keep the current
                                             media. Upload a new image or video
                                             to replace it.
@@ -210,7 +210,7 @@ export default function HeroSlideEdit({ slide }: Props) {
                                                 clearErrors('image');
                                             }}
                                             error={errors.image}
-                                            hint="Image: 1920×1080px (16:9) landscape, minimum 1600×800px. Video: same 16:9 ratio at 1920×1080px (1280×720px minimum), MP4 (H.264) or WebM, muted/no audio needed since it autoplays on loop — keep clips short (5–15s) so the loop isn't obvious. Max file size 15MB either way. The media fills the full-width hero and crops to this ratio on smaller screens."
+                                            hint="Image: 1920×1080px (16:9) landscape, minimum 1600×800px, WebP format, under 100 KB. Video: same 16:9 ratio at 1920×1080px (1280×720px minimum), MP4 (H.264) or MOV format, up to 10 MB (anything up to 15MB is accepted), muted/no audio needed since it autoplays on loop — keep clips short (5–15s) so the loop isn't obvious. The media fills the full-width hero and crops to this ratio on smaller screens."
                                             previewClassName="h-56"
                                         />
                                     </div>
@@ -341,12 +341,12 @@ export default function HeroSlideEdit({ slide }: Props) {
                                         ))}
                                     </AnimatePresence>
                                     {data.stats.length === 0 && (
-                                        <p className="py-4 text-center text-xs text-slate-400 italic">
+                                        <p className="py-4 text-center text-xs text-slate-600 italic">
                                             No stats added. The hero banner
                                             shows up to {MAX_STATS}.
                                         </p>
                                     )}
-                                    <p className="text-right text-xs text-slate-400">
+                                    <p className="text-right text-xs text-slate-600">
                                         {data.stats.length}/{MAX_STATS} stats —
                                         the hero banner only has room for{' '}
                                         {MAX_STATS}.
@@ -408,7 +408,7 @@ export default function HeroSlideEdit({ slide }: Props) {
                         <Button
                             asChild
                             variant="ghost"
-                            className="text-slate-500"
+                            className="text-slate-600"
                         >
                             <Link href={route('admin.hero-slides.index')}>
                                 Cancel

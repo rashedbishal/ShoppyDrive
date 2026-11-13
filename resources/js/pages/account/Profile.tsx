@@ -259,7 +259,7 @@ export default function Profile({
                                         />
                                     </div>
                                     <InputError message={form.errors.email} />
-                                    <p className="text-[10px] font-medium text-[var(--color-text-muted)] italic">
+                                    <p className="text-[10px] font-medium text-[var(--color-text-secondary)] italic">
                                         {emailLocked
                                             ? 'Your email comes from your Google or Facebook sign-in, so it can’t be changed here.'
                                             : isUnverified
@@ -272,7 +272,7 @@ export default function Profile({
                             <div className="max-w-md space-y-2">
                                 <Label htmlFor="phone">Phone Number</Label>
                                 <div className="relative">
-                                    <span className="absolute top-1/2 left-4 -translate-y-1/2 text-sm font-bold text-[var(--color-text-muted)]">
+                                    <span className="absolute top-1/2 left-4 -translate-y-1/2 text-sm font-bold text-[var(--color-text-secondary)]">
                                         +880
                                     </span>
                                     <Input

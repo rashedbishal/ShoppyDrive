@@ -363,7 +363,7 @@ function AttributeCard({
                             <Trash2 className="size-3.5" />
                         </button>
                     </div>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-600">
                         {attribute.values.length} value(s)
                     </p>
                 </div>
@@ -431,7 +431,7 @@ function AttributeCard({
                 {attribute.values.length === 0 ? (
                     <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 py-8 text-center">
                         <Icon className="size-6 text-slate-300" />
-                        <p className="text-sm text-slate-400">
+                        <p className="text-sm text-slate-600">
                             No {attribute.name.toLowerCase()} values yet.
                         </p>
                         <button
@@ -686,7 +686,7 @@ export default function AttributesIndex({ attributes }: Props) {
                             <h1 className="text-xl font-bold text-slate-900">
                                 Attributes
                             </h1>
-                            <p className="max-w-md text-sm text-slate-500">
+                            <p className="max-w-md text-sm text-slate-600">
                                 Attributes (Color, Size, Set, …) and their
                                 values that products build variants from. Turn
                                 on “Images per value” for attributes that change
@@ -780,7 +780,7 @@ export default function AttributesIndex({ attributes }: Props) {
                                                             ? 'color'
                                                             : `${formAttribute?.name ?? ''} value`}
                                                     </DialogPrimitive.Title>
-                                                    <DialogPrimitive.Description className="mt-0.5 truncate text-xs text-slate-500">
+                                                    <DialogPrimitive.Description className="mt-0.5 truncate text-xs text-slate-600">
                                                         {isColor
                                                             ? 'Shown as a swatch on product pages.'
                                                             : 'Shown as an option on product pages.'}
@@ -800,7 +800,7 @@ export default function AttributesIndex({ attributes }: Props) {
                                                 >
                                                     <label
                                                         htmlFor="attribute-value-name"
-                                                        className="mb-1.5 block text-[11px] font-semibold tracking-wider text-slate-500 uppercase"
+                                                        className="mb-1.5 block text-[11px] font-semibold tracking-wider text-slate-600 uppercase"
                                                     >
                                                         {isColor
                                                             ? 'Color name'
@@ -844,7 +844,7 @@ export default function AttributesIndex({ attributes }: Props) {
                                                     >
                                                         <label
                                                             htmlFor="attribute-value-hex"
-                                                            className="mb-1.5 block text-[11px] font-semibold tracking-wider text-slate-500 uppercase"
+                                                            className="mb-1.5 block text-[11px] font-semibold tracking-wider text-slate-600 uppercase"
                                                         >
                                                             Color
                                                         </label>
@@ -937,7 +937,7 @@ export default function AttributesIndex({ attributes }: Props) {
                                                                 form.data
                                                                     .color_hex,
                                                             ) && (
-                                                                <span className="shrink-0 font-mono text-[11px] text-slate-500">
+                                                                <span className="shrink-0 font-mono text-[11px] text-slate-600">
                                                                     {hexToRgb(
                                                                         form
                                                                             .data
@@ -1084,7 +1084,7 @@ export default function AttributesIndex({ attributes }: Props) {
                                 >
                                     Images per value
                                 </p>
-                                <p className="text-xs text-slate-400">
+                                <p className="text-xs text-slate-600">
                                     Lets each value have its own product photo
                                     (like Color). Leave off when the value
                                     doesn't change the look (like Size).

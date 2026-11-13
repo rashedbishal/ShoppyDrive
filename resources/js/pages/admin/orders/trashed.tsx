@@ -96,7 +96,7 @@ export default function TrashedOrders({
                         <h1 className="text-xl font-bold text-slate-900">
                             Trashed Orders
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {orders.total} total · deleted cancelled orders
                         </p>
                     </div>
@@ -126,7 +126,7 @@ export default function TrashedOrders({
 
                     <div className="divide-y divide-slate-50">
                         {orders.data.length === 0 ? (
-                            <p className="py-12 text-center text-sm text-slate-400">
+                            <p className="py-12 text-center text-sm text-slate-600">
                                 No trashed orders.
                             </p>
                         ) : (
@@ -139,7 +139,7 @@ export default function TrashedOrders({
                                         <p className="font-mono text-sm font-bold text-slate-800">
                                             {order.order_number}
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             {order.user?.name ?? 'Guest'} ·
                                             Deleted{' '}
                                             {new Date(
@@ -210,7 +210,7 @@ export default function TrashedOrders({
 
                     {orders.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {orders.current_page} of {orders.last_page}
                             </p>
                             <div className="flex gap-1">

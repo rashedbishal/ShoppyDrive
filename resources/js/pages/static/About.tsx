@@ -221,7 +221,7 @@ function AboutPage({ content }: Props): React.JSX.Element {
                                             <p className="font-semibold [overflow-wrap:anywhere] text-[var(--color-text-primary)]">
                                                 {name}
                                             </p>
-                                            <p className="text-sm [overflow-wrap:anywhere] text-[var(--color-text-muted)]">
+                                            <p className="text-sm [overflow-wrap:anywhere] text-[var(--color-text-secondary)]">
                                                 {role}
                                             </p>
                                         </div>

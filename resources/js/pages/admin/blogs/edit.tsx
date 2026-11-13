@@ -10,6 +10,7 @@ import {
     STORABLE_DATETIME_MAX,
     STORABLE_DATETIME_MIN,
 } from '@/lib/storable-date';
+import { imageRecommendation } from '@/lib/upload-recommendations';
 import { maxLength, required, validate } from '@/lib/validate';
 import type { Blog } from '@/types';
 
@@ -34,7 +35,7 @@ function Field({
             </label>
             {children}
             {hint && !error && (
-                <p className="mt-1 text-xs text-slate-400">{hint}</p>
+                <p className="mt-1 text-xs text-slate-600">{hint}</p>
             )}
             {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
@@ -188,6 +189,9 @@ export default function BlogEdit({ blog }: Props) {
                                     }
                                     error={errors.featured_image}
                                     maxSizeMb={5}
+                                    hint={imageRecommendation(
+                                        '1280 × 720 px (16:9)',
+                                    )}
                                     previewClassName="h-32 object-cover"
                                 />
                             </Field>

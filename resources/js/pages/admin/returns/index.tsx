@@ -130,7 +130,7 @@ export default function ReturnsIndex({ returns, filters }: Props) {
                     <h1 className="text-xl font-bold text-slate-900">
                         Return Requests
                     </h1>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-600">
                         {returns.total} total
                     </p>
                 </div>
@@ -169,7 +169,7 @@ export default function ReturnsIndex({ returns, filters }: Props) {
 
                     <div className="divide-y divide-slate-50">
                         {returns.data.length === 0 ? (
-                            <p className="py-12 text-center text-sm text-slate-400">
+                            <p className="py-12 text-center text-sm text-slate-600">
                                 No return requests found.
                             </p>
                         ) : (
@@ -196,7 +196,7 @@ export default function ReturnsIndex({ returns, filters }: Props) {
                                                         .toUpperCase() +
                                                         r.status.slice(1)}
                                                 </Badge>
-                                                <span className="text-xs text-slate-400">
+                                                <span className="text-xs text-slate-600">
                                                     {r.items.length} item
                                                     {r.items.length === 1
                                                         ? ''
@@ -206,14 +206,14 @@ export default function ReturnsIndex({ returns, filters }: Props) {
                                             <p className="mt-1 line-clamp-2 text-xs text-slate-600">
                                                 {r.reason}
                                             </p>
-                                            <p className="mt-1 text-xs text-slate-400">
+                                            <p className="mt-1 text-xs text-slate-600">
                                                 {r.user?.name ?? 'Unknown'} ·{' '}
                                                 {new Date(
                                                     r.created_at,
                                                 ).toLocaleDateString()}
                                             </p>
                                             {r.admin_note && (
-                                                <p className="mt-1 text-xs break-words text-slate-500 italic">
+                                                <p className="mt-1 text-xs break-words text-slate-600 italic">
                                                     Note: {r.admin_note}
                                                 </p>
                                             )}
@@ -269,7 +269,7 @@ export default function ReturnsIndex({ returns, filters }: Props) {
 
                     {returns.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {returns.current_page} of{' '}
                                 {returns.last_page}
                             </p>

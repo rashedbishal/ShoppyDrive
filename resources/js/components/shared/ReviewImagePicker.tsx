@@ -81,11 +81,11 @@ export function ReviewImagePicker({
     return (
         <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase">
+                <span className="text-xs font-semibold tracking-wider text-[var(--color-text-secondary)] uppercase">
                     Photos{' '}
                     <span className="font-normal normal-case">(optional)</span>
                 </span>
-                <span className="text-xs text-[var(--color-text-muted)]">
+                <span className="text-xs text-[var(--color-text-secondary)]">
                     {files.length} / {max}
                 </span>
             </div>
@@ -138,7 +138,7 @@ export function ReviewImagePicker({
                 aria-label="Add review photos"
             />
 
-            <p className="text-[11px] leading-relaxed text-[var(--color-text-muted)]">
+            <p className="text-[11px] leading-relaxed text-[var(--color-text-secondary)]">
                 {reviewImageRulesText(max)}. Large photos are resized to{' '}
                 {REVIEW_IMAGE_STORED_MAX_SIDE} px on the longest side.
             </p>

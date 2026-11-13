@@ -113,7 +113,7 @@ export default function Footer(): React.JSX.Element {
                                         <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
                                             {label}
                                         </p>
-                                        <p className="truncate text-xs text-[var(--color-text-muted)]">
+                                        <p className="truncate text-xs text-[var(--color-text-secondary)]">
                                             {sub}
                                         </p>
                                     </div>
@@ -191,7 +191,7 @@ export default function Footer(): React.JSX.Element {
 
                     {/* Quick links */}
                     <div className="space-y-4">
-                        <h3 className="text-xs font-bold tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
+                        <h3 className="text-xs font-bold tracking-[0.2em] text-[var(--color-text-secondary)] uppercase">
                             Quick Links
                         </h3>
                         <nav className="space-y-2.5">
@@ -210,7 +210,7 @@ export default function Footer(): React.JSX.Element {
 
                     {/* Customer care */}
                     <div className="space-y-4">
-                        <h3 className="text-xs font-bold tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
+                        <h3 className="text-xs font-bold tracking-[0.2em] text-[var(--color-text-secondary)] uppercase">
                             Customer Care
                         </h3>
                         <nav className="space-y-2.5">
@@ -274,7 +274,7 @@ export default function Footer(): React.JSX.Element {
                                     {form.errors.email}
                                 </p>
                             ) : (
-                                <p className="text-xs text-[var(--color-text-muted)]">
+                                <p className="text-xs text-[var(--color-text-secondary)]">
                                     No spam. Unsubscribe any time via the link
                                     in our emails.
                                 </p>
@@ -283,7 +283,7 @@ export default function Footer(): React.JSX.Element {
 
                         {/* Payment methods */}
                         <div className="space-y-2">
-                            <p className="text-[11px] font-semibold tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
+                            <p className="text-[11px] font-semibold tracking-[0.2em] text-[var(--color-text-secondary)] uppercase">
                                 We Accept
                             </p>
                             <div className="flex flex-wrap gap-2">
@@ -305,7 +305,7 @@ export default function Footer(): React.JSX.Element {
                 {/* Bottom bar */}
                 <div className="mt-12 flex flex-col gap-4 border-t border-[var(--color-border)] pt-6 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
-                        <p className="text-sm text-[var(--color-text-muted)]">
+                        <p className="text-sm text-[var(--color-text-secondary)]">
                             &copy; {new Date().getFullYear()}{' '}
                             <span className="text-[var(--color-text-secondary)]">
                                 {settings.site_name}
@@ -315,7 +315,7 @@ export default function Footer(): React.JSX.Element {
                         {/* BIZ-034: who the seller is, from Admin › Contact Page. */}
                         {settings.legal_business_name ||
                         settings.trade_licence_number ? (
-                            <p className="text-xs text-[var(--color-text-muted)]">
+                            <p className="text-xs text-[var(--color-text-secondary)]">
                                 {settings.legal_business_name
                                     ? `Sold by ${settings.legal_business_name}`
                                     : null}
@@ -329,7 +329,7 @@ export default function Footer(): React.JSX.Element {
                             </p>
                         ) : null}
                     </div>
-                    <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--color-text-muted)]">
+                    <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--color-text-secondary)]">
                         {policyLinks.map(({ label, href }) => (
                             <Link
                                 key={href}

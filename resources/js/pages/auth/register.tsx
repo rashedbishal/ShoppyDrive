@@ -159,7 +159,7 @@ export default function Register({
                             <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
                                 Create your account
                             </h1>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-gray-600">
                                 Free forever. No credit card required.
                             </p>
                         </div>
@@ -259,7 +259,7 @@ export default function Register({
 
                         <div className="mb-3 flex items-center gap-3">
                             <div className="h-px flex-1 bg-gray-200" />
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-gray-600">
                                 or register with email
                             </span>
                             <div className="h-px flex-1 bg-gray-200" />
@@ -330,7 +330,7 @@ export default function Register({
                                     className="text-xs font-medium whitespace-nowrap text-gray-700"
                                 >
                                     Phone{' '}
-                                    <span className="text-gray-400">
+                                    <span className="text-gray-600">
                                         (optional)
                                     </span>
                                 </label>
@@ -358,7 +358,7 @@ export default function Register({
                                         className="text-xs font-medium text-gray-700"
                                     >
                                         Referral code{' '}
-                                        <span className="text-gray-400">
+                                        <span className="text-gray-600">
                                             (optional)
                                         </span>
                                     </label>
@@ -495,7 +495,7 @@ export default function Register({
                         </form>
                     </div>
 
-                    <p className="mt-3 text-center text-sm text-gray-500">
+                    <p className="mt-3 text-center text-sm text-gray-600">
                         Already have an account?{' '}
                         <Link
                             href={route('login')}

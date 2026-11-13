@@ -61,7 +61,7 @@ export default function ResetPassword({
                         <h1 className="text-2xl font-bold text-gray-900">
                             Create new password
                         </h1>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-600">
                             Setting a new password for{' '}
                             <span className="font-medium text-gray-700">
                                 {email}
@@ -154,7 +154,7 @@ export default function ResetPassword({
                                             />
                                         ))}
                                     </div>
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-xs text-gray-600">
                                         Strength:{' '}
                                         <span
                                             className={`font-medium ${strength === 3 ? 'text-green-600' : strength === 2 ? 'text-amber-500' : 'text-red-500'}`}

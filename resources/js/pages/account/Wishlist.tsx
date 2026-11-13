@@ -188,7 +188,7 @@ export default function Wishlist({
                                     <p className="text-xs font-semibold text-[var(--color-text-primary)]">
                                         {text}
                                     </p>
-                                    <p className="text-[11px] text-[var(--color-text-muted)]">
+                                    <p className="text-[11px] text-[var(--color-text-secondary)]">
                                         {sub}
                                     </p>
                                 </div>

@@ -71,7 +71,7 @@ export function PageHero({
                     </Badge>
                     <div className="space-y-1.5">
                         {eyebrow ? (
-                            <p className="text-xs font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
+                            <p className="text-xs font-semibold tracking-[0.22em] text-[var(--color-text-secondary)] uppercase">
                                 {eyebrow}
                             </p>
                         ) : null}

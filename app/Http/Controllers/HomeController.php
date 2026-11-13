@@ -117,7 +117,11 @@ class HomeController extends Controller
         if (! empty($brandIds)) {
             $brands = Brand::active()
                 ->whereIn('id', $brandIds)
-                ->get(['id', 'name', 'slug', 'logo', 'description', 'created_at']);
+                ->select(['id', 'name', 'slug', 'logo', 'description', 'created_at'])
+                ->withCount([
+                    'products as products_count' => static fn ($query) => $query->visible(),
+                ])
+                ->get();
             $brands = DisplayOrderSettings::applyToCollection($brands, 'homepage_brands', fn (Brand $brand) => $brand->created_at);
         } else {
             $brands = collect();

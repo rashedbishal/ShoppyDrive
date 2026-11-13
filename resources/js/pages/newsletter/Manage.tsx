@@ -35,13 +35,13 @@ export default function Manage(): React.JSX.Element {
                     </h1>
 
                     {submitted ? (
-                        <p className="text-sm leading-6 text-gray-500">
+                        <p className="text-sm leading-6 text-gray-600">
                             If that email is subscribed to our newsletter, we've
                             sent a link to manage it — check your inbox.
                         </p>
                     ) : (
                         <>
-                            <p className="mb-6 text-sm leading-6 text-gray-500">
+                            <p className="mb-6 text-sm leading-6 text-gray-600">
                                 Enter your email and, if it's subscribed, we'll
                                 send you a link to unsubscribe.
                             </p>

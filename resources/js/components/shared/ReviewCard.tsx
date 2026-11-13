@@ -54,7 +54,7 @@ export function ReviewCard({ review }: ReviewCardProps): React.JSX.Element {
                         <h4 className="truncate font-bold text-[var(--color-text-primary)]">
                             {review.user.name}
                         </h4>
-                        <span className="text-xs text-[var(--color-text-muted)]">
+                        <span className="text-xs text-[var(--color-text-secondary)]">
                             {formatDate(review.created_at)}
                         </span>
                     </div>

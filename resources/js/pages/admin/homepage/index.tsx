@@ -185,7 +185,7 @@ export default function HomepageIndex({ sections }: Props) {
                         <h1 className="text-2xl font-bold text-slate-900">
                             Homepage Management
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             Control sections and content on your storefront home
                             page.
                         </p>
@@ -201,7 +201,7 @@ export default function HomepageIndex({ sections }: Props) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="mb-4 text-xs text-slate-500">
+                            <p className="mb-4 text-xs text-slate-600">
                                 Manage the large sliding banners at the top of
                                 your homepage.
                             </p>
@@ -226,7 +226,7 @@ export default function HomepageIndex({ sections }: Props) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="mb-4 text-xs text-slate-500">
+                            <p className="mb-4 text-xs text-slate-600">
                                 Control the wide visual banners between product
                                 sections.
                             </p>
@@ -255,7 +255,7 @@ export default function HomepageIndex({ sections }: Props) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="mb-4 text-xs text-slate-500">
+                            <p className="mb-4 text-xs text-slate-600">
                                 Set which flash sale is currently active on the
                                 homepage.
                             </p>
@@ -284,7 +284,7 @@ export default function HomepageIndex({ sections }: Props) {
                             <CardTitle className="text-base font-semibold">
                                 Page Sections
                             </CardTitle>
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="mt-1 text-xs text-slate-600">
                                 {isReordering
                                     ? 'Drag rows by their handle, then confirm to save or cancel to discard.'
                                     : 'Enter reorder mode to change the order sections appear on the storefront homepage.'}
@@ -302,7 +302,7 @@ export default function HomepageIndex({ sections }: Props) {
                                                 type="button"
                                                 variant="ghost"
                                                 size="sm"
-                                                className="w-full text-slate-500 sm:w-auto"
+                                                className="w-full text-slate-600 sm:w-auto"
                                                 onClick={cancelReordering}
                                                 disabled={savingOrder}
                                             >
@@ -409,7 +409,7 @@ export default function HomepageIndex({ sections }: Props) {
                                                 </Badge>
                                             )}
                                         </div>
-                                        <p className="truncate text-xs text-slate-400">
+                                        <p className="truncate text-xs text-slate-600">
                                             {section.title ||
                                                 'Using default title'}{' '}
                                             {section.description

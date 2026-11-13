@@ -33,7 +33,7 @@ function StatusPill({
 }) {
     return (
         <span
-            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'} ${className}`}
+            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'} ${className}`}
         >
             {active ? 'Active' : 'Inactive'}
         </span>
@@ -83,7 +83,7 @@ export default function LandingPagesIndex({ pages }: Props) {
                         <h1 className="text-xl font-bold text-slate-900">
                             Landing Pages
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {pages.length} total
                         </p>
                     </div>
@@ -114,14 +114,14 @@ export default function LandingPagesIndex({ pages }: Props) {
                                 checked={bulk.allSelected}
                                 onCheckedChange={bulk.toggleAll}
                             />
-                            <span className="text-xs font-medium text-slate-500">
+                            <span className="text-xs font-medium text-slate-600">
                                 Select all
                             </span>
                         </div>
                     )}
 
                     {pages.length === 0 ? (
-                        <div className="py-16 text-center text-sm text-slate-400">
+                        <div className="py-16 text-center text-sm text-slate-600">
                             No landing pages yet. Create one to get started.
                         </div>
                     ) : (
@@ -164,7 +164,7 @@ export default function LandingPagesIndex({ pages }: Props) {
                                                 className="hidden sm:inline-block"
                                             />
                                         </div>
-                                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-400">
+                                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-600">
                                             <span className="hidden font-mono break-all sm:inline">
                                                 /lp/{page.slug}
                                             </span>
@@ -184,7 +184,7 @@ export default function LandingPagesIndex({ pages }: Props) {
                                     />
                                     {/* Phone card: the slug gets the full card width on its own row. */}
                                     <p
-                                        className="w-full overflow-hidden font-mono text-xs text-ellipsis whitespace-nowrap text-slate-500 sm:hidden"
+                                        className="w-full overflow-hidden font-mono text-xs text-ellipsis whitespace-nowrap text-slate-600 sm:hidden"
                                         title={`/lp/${page.slug}`}
                                     >
                                         /lp/{page.slug}

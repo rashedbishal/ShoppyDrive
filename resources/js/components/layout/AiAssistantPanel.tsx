@@ -340,7 +340,7 @@ export default function AiAssistantPanel({
                         ))}
                         {sending && (
                             <div className="flex justify-start">
-                                <p className="rounded-2xl rounded-bl-sm bg-white px-3.5 py-2 text-sm text-slate-400 shadow-sm ring-1 ring-slate-200">
+                                <p className="rounded-2xl rounded-bl-sm bg-white px-3.5 py-2 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
                                     Typing…
                                 </p>
                             </div>

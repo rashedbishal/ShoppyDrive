@@ -26,7 +26,7 @@ export function OrderTimeline({
         shipped: 'text-purple-500 bg-purple-50 border-purple-100',
         delivered: 'text-green-500 bg-green-50 border-green-100',
         cancelled: 'text-red-500 bg-red-50 border-red-100',
-        refunded: 'text-gray-500 bg-gray-50 border-gray-100',
+        refunded: 'text-gray-600 bg-gray-50 border-gray-100',
     };
 
     return (
@@ -75,7 +75,7 @@ export function OrderTimeline({
                                 >
                                     {item.status.replace('_', ' ')}
                                 </h4>
-                                <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-muted)] uppercase">
+                                <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-secondary)] uppercase">
                                     {formatDate(item.created_at, 'full')}
                                 </span>
                             </div>

@@ -338,7 +338,7 @@ export default function TrackOrder({
                                                     status={order.status}
                                                 />
                                             </div>
-                                            <p className="text-xs font-medium text-[var(--color-text-muted)]">
+                                            <p className="text-xs font-medium text-[var(--color-text-secondary)]">
                                                 Placed on{' '}
                                                 {formatDate(
                                                     order.created_at,
@@ -349,7 +349,7 @@ export default function TrackOrder({
                                     </div>
 
                                     <div className="text-right">
-                                        <p className="mb-0.5 text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                        <p className="mb-0.5 text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                             Current Status
                                         </p>
                                         <p className="text-sm font-bold tracking-tight text-[var(--color-text-primary)] uppercase">
@@ -380,7 +380,7 @@ export default function TrackOrder({
                                                     <p className="text-sm font-bold text-[var(--color-text-primary)]">
                                                         3-5 Business Days
                                                     </p>
-                                                    <p className="text-xs font-medium text-[var(--color-text-muted)]">
+                                                    <p className="text-xs font-medium text-[var(--color-text-secondary)]">
                                                         Inside Dhaka Delivery
                                                     </p>
                                                 </div>
@@ -441,7 +441,7 @@ export default function TrackOrder({
                     )}
                 </AnimatePresence>
 
-                <div className="mt-12 text-center text-sm text-[var(--color-text-muted)]">
+                <div className="mt-12 text-center text-sm text-[var(--color-text-secondary)]">
                     <p>
                         Have a question about your order?{' '}
                         <Link

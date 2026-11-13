@@ -86,7 +86,7 @@ export default function AiAssistantSettings({
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-5 pt-3">
-                                <p className="text-xs text-slate-500">
+                                <p className="text-xs text-slate-600">
                                     The API key from console.groq.com. Shoppers
                                     never see this — it's only used by the
                                     server when talking to Groq on their behalf.
@@ -120,7 +120,7 @@ export default function AiAssistantSettings({
                                                 {showKey ? 'Hide' : 'Show'}
                                             </Button>
                                         </div>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Only the last 6 characters are shown
                                             for security.
                                         </p>
@@ -158,7 +158,7 @@ export default function AiAssistantSettings({
                                         />
                                     </div>
                                 ) : (
-                                    <p className="text-xs text-slate-400">
+                                    <p className="text-xs text-slate-600">
                                         You have view-only access. Ask the owner
                                         for update access to change this.
                                     </p>
@@ -190,7 +190,7 @@ export default function AiAssistantSettings({
                                                 label,
                                             }))}
                                         />
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Only models that support tool
                                             calling (needed for product search
                                             and order lookup) are offered here.
@@ -203,7 +203,7 @@ export default function AiAssistantSettings({
                                         <p className="text-sm font-medium text-slate-700">
                                             Show the assistant on the storefront
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Adds a third button to the WhatsApp
                                             / Messenger widget. Turning this off
                                             hides it immediately without losing

@@ -69,7 +69,7 @@ export default function MarketingSettingsEdit({
                     <h1 className="text-xl font-bold text-slate-900">
                         Marketing &amp; Tracking
                     </h1>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-600">
                         Custom tracking code and Facebook attribution. Nothing
                         here loads on admin pages — only the storefront.
                     </p>

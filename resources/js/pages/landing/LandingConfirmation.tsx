@@ -130,12 +130,12 @@ export default function LandingConfirmation({
                                             )}
                                             {item.product_name}
                                             {item.variant_label && (
-                                                <span className="text-slate-500">
+                                                <span className="text-slate-600">
                                                     {' '}
                                                     ({item.variant_label})
                                                 </span>
                                             )}{' '}
-                                            <span className="text-slate-400">
+                                            <span className="text-slate-600">
                                                 ×{item.quantity}
                                             </span>
                                         </span>
@@ -146,13 +146,13 @@ export default function LandingConfirmation({
                                 ))}
                             </div>
                             <div className="space-y-1 border-t border-slate-100 pt-2 text-sm">
-                                <div className="flex justify-between text-slate-500">
+                                <div className="flex justify-between text-slate-600">
                                     <span>Subtotal</span>
                                     <span>
                                         ৳{order.subtotal.toLocaleString()}
                                     </span>
                                 </div>
-                                <div className="flex justify-between text-slate-500">
+                                <div className="flex justify-between text-slate-600">
                                     <span>Delivery</span>
                                     <span>
                                         {order.shipping_cost === 0
@@ -229,7 +229,7 @@ export default function LandingConfirmation({
                                     <Download className="size-4" />
                                     Download Invoice (PDF)
                                 </a>
-                                <p className="text-center text-xs text-slate-400">
+                                <p className="text-center text-xs text-slate-600">
                                     Your invoice download has started
                                     automatically. Use the button above if it
                                     didn't.
