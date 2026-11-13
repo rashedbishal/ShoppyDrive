@@ -46,6 +46,7 @@ const TYPE_LABEL: Record<PointTransaction['type'], string> = {
     revoke: 'Reversed',
     refund: 'Refunded',
     revoke_order: 'Reversed (order refunded)',
+    refund_partial: 'Refunded (partial return)',
 };
 
 const TYPE_VARIANT: Record<
@@ -58,6 +59,7 @@ const TYPE_VARIANT: Record<
     earn_review: 'default',
     earn_daily_login: 'default',
     refund: 'default',
+    refund_partial: 'default',
     redeem: 'secondary',
     revoke: 'destructive',
     revoke_order: 'destructive',

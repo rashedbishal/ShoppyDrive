@@ -566,7 +566,8 @@ export interface PointTransaction {
         | 'redeem'
         | 'revoke'
         | 'refund'
-        | 'revoke_order';
+        | 'revoke_order'
+        | 'refund_partial';
     points: number;
     currency_amount: number | null;
     note: string | null;
