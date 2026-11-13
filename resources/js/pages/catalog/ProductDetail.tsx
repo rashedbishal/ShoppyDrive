@@ -643,7 +643,7 @@ export default function ProductDetail({
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <Breadcrumb
                         items={breadcrumbItems}
-                        className="mb-4 lg:mb-5"
+                        className="mb-3 lg:mb-4"
                     />
 
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6 xl:gap-8">
@@ -785,9 +785,9 @@ export default function ProductDetail({
 
                         {/* Right Column: Product Info */}
                         <div className="lg:col-span-5 xl:col-span-4">
-                            <div className="sticky top-24 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm sm:p-5 md:p-6">
+                            <div className="sticky top-24 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm sm:p-5">
                                 {/* Brand & Stats */}
-                                <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                                     {/* A product with no brand shows no label. A brand
                                         shown here is always active: a product whose
                                         brand is inactive 404s (isPubliclyVisible). */}
@@ -835,11 +835,11 @@ export default function ProductDetail({
                                     </div>
                                 </div>
 
-                                <h1 className="mb-2 font-serif text-2xl leading-tight font-bold text-[var(--color-text-primary)] sm:text-[1.7rem]">
+                                <h1 className="mb-2 font-display text-2xl leading-tight font-bold text-[var(--color-text-primary)] sm:text-[1.7rem]">
                                     {product.name}
                                 </h1>
 
-                                <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                                <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                                     <span className="text-3xl font-bold text-[var(--color-primary)]">
                                         {formatCurrency(currentPrice)}
                                     </span>
@@ -850,14 +850,14 @@ export default function ProductDetail({
                                     )}
                                 </div>
 
-                                <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                                <p className="mb-3 line-clamp-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
                                     {product.short_description}
                                 </p>
 
-                                <div className="mb-4 h-px w-full bg-[var(--color-border)]" />
+                                <div className="mb-3 h-px w-full bg-[var(--color-border)]" />
 
                                 {/* Variant Selectors */}
-                                <div className="mb-4 space-y-4">
+                                <div className="mb-3 space-y-3">
                                     {attributes.map((attr) => (
                                         <div
                                             key={attr.id}
@@ -974,7 +974,7 @@ export default function ProductDetail({
                                 </div>
 
                                 {/* Stock & Quantity */}
-                                <div className="mb-4">
+                                <div className="mb-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <div
@@ -1003,7 +1003,7 @@ export default function ProductDetail({
                                 </div>
 
                                 {/* Actions */}
-                                <div className="relative mb-4 flex flex-col gap-2">
+                                <div className="relative mb-3 flex flex-col gap-2">
                                     <CryBabyEasterEgg
                                         key={product.id}
                                         productId={product.id}
@@ -1018,7 +1018,7 @@ export default function ProductDetail({
                                             onClick={onAddToCartClick}
                                             disabled={isOutOfStock}
                                             size="lg"
-                                            className="flex h-12 w-full gap-2 rounded-xl text-base font-bold shadow-[var(--color-primary)]/20 shadow-lg"
+                                            className="flex h-11 w-full gap-2 rounded-xl text-base font-bold shadow-[var(--color-primary)]/20 shadow-lg"
                                         >
                                             <ShoppingCart size={20} />
                                             Add to Cart
@@ -1028,7 +1028,7 @@ export default function ProductDetail({
                                             disabled={isOutOfStock}
                                             variant="secondary"
                                             size="lg"
-                                            className="h-12 w-full rounded-xl text-base font-bold"
+                                            className="h-11 w-full rounded-xl text-base font-bold"
                                         >
                                             Buy Now
                                         </Button>
@@ -1074,9 +1074,9 @@ export default function ProductDetail({
                                 </div>
 
                                 {/* Trust Badges */}
-                                <div className="grid grid-cols-3 gap-2 border-t border-[var(--color-border)] pt-4">
+                                <div className="grid grid-cols-3 gap-2 border-t border-[var(--color-border)] pt-3">
                                     <div className="flex flex-col items-center gap-1.5 text-center">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-600">
                                             <ShieldCheck size={16} />
                                         </div>
                                         <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-primary)] uppercase">
@@ -1084,7 +1084,7 @@ export default function ProductDetail({
                                         </span>
                                     </div>
                                     <div className="flex flex-col items-center gap-1.5 text-center">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-50 text-green-600">
+                                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-green-50 text-green-600">
                                             <Truck size={16} />
                                         </div>
                                         <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-primary)] uppercase">
@@ -1092,7 +1092,7 @@ export default function ProductDetail({
                                         </span>
                                     </div>
                                     <div className="flex flex-col items-center gap-1.5 text-center">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-50 text-amber-600">
                                             <Undo2 size={16} />
                                         </div>
                                         <span className="text-[10px] font-bold tracking-tighter text-[var(--color-text-primary)] uppercase">
@@ -1105,14 +1105,14 @@ export default function ProductDetail({
                     </div>
 
                     {/* Tabs Section */}
-                    <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm sm:p-5 md:mt-8 md:p-6">
+                    <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm sm:p-5 md:mt-6">
                         <Tabs defaultValue="description" className="w-full">
                             {/* Phones: three equal columns with short labels. sm+: full labels, left-aligned.
                             The active underline comes from TabsTrigger itself. */}
-                            <TabsList className="mb-4 grid w-full grid-cols-3 border-b border-[var(--color-border)] sm:mb-5 sm:flex sm:justify-start sm:gap-6">
+                            <TabsList className="mb-3 grid w-full grid-cols-3 border-b border-[var(--color-border)] sm:mb-4 sm:flex sm:justify-start sm:gap-6">
                                 <TabsTrigger
                                     value="description"
-                                    className="px-1 py-2.5 text-sm font-bold sm:px-0 sm:py-3 sm:text-base"
+                                    className="px-1 py-2 text-sm font-bold sm:px-0 sm:py-2.5 sm:text-base"
                                 >
                                     <span className="sm:hidden">
                                         Description
@@ -1123,7 +1123,7 @@ export default function ProductDetail({
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="reviews"
-                                    className="px-1 py-2.5 text-sm font-bold sm:px-0 sm:py-3 sm:text-base"
+                                    className="px-1 py-2 text-sm font-bold sm:px-0 sm:py-2.5 sm:text-base"
                                 >
                                     Reviews
                                     <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--color-surface-alt)] px-1.5 text-xs font-bold text-[var(--color-text-secondary)] sm:text-sm">
@@ -1132,7 +1132,7 @@ export default function ProductDetail({
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="shipping"
-                                    className="px-1 py-2.5 text-sm font-bold sm:px-0 sm:py-3 sm:text-base"
+                                    className="px-1 py-2 text-sm font-bold sm:px-0 sm:py-2.5 sm:text-base"
                                 >
                                     <span className="sm:hidden">Shipping</span>
                                     <span className="hidden sm:inline">
@@ -1154,8 +1154,8 @@ export default function ProductDetail({
 
                                 {product.specifications &&
                                     product.specifications.length > 0 && (
-                                        <div className="mt-5 border-t border-[var(--color-border)] pt-5">
-                                            <h4 className="mb-4 text-base font-bold text-[var(--color-text-primary)] sm:text-lg">
+                                        <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+                                            <h4 className="mb-3 text-base font-bold text-[var(--color-text-primary)] sm:text-lg">
                                                 Product specifications
                                             </h4>
                                             <div className="grid grid-cols-1 overflow-hidden rounded-2xl border border-[var(--color-border)] sm:grid-cols-2">
@@ -1197,12 +1197,12 @@ export default function ProductDetail({
                             </TabsContent>
 
                             <TabsContent value="reviews" className="mt-0">
-                                <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-8">
+                                <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
                                     <div className="min-w-0 lg:col-span-4">
                                         <RatingBreakdown
                                             breakdown={ratingBreakdown}
                                         />
-                                        <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-white p-4 sm:mt-5 sm:p-5">
+                                        <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-white p-4 sm:mt-4">
                                             <h4 className="mb-1 flex items-center gap-2 font-bold text-[var(--color-text-primary)]">
                                                 <MessageSquare
                                                     size={16}
@@ -1239,7 +1239,7 @@ export default function ProductDetail({
                                             ) : (
                                                 <form
                                                     onSubmit={submitReview}
-                                                    className="mt-4 space-y-4"
+                                                    className="mt-3 space-y-3"
                                                 >
                                                     {/* Star picker */}
                                                     <div className="space-y-1">
@@ -1374,7 +1374,7 @@ export default function ProductDetail({
                                         </div>
                                     </div>
                                     <div className="min-w-0 lg:col-span-8">
-                                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] pb-3 sm:mb-5">
+                                        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] pb-3 sm:mb-4">
                                             <h3 className="text-base font-bold text-[var(--color-text-primary)] sm:text-lg">
                                                 User Reviews
                                             </h3>
@@ -1417,7 +1417,7 @@ export default function ProductDetail({
                                                 ))}
                                             </div>
                                         ) : (
-                                            <div className="rounded-2xl bg-[var(--color-surface-alt)] px-4 py-8 text-center sm:py-12">
+                                            <div className="rounded-2xl bg-[var(--color-surface-alt)] px-4 py-6 text-center sm:py-8">
                                                 <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-white text-[var(--color-text-muted)] sm:size-16">
                                                     <MessageSquare className="size-7 sm:size-8" />
                                                 </div>
@@ -1435,7 +1435,7 @@ export default function ProductDetail({
                             </TabsContent>
 
                             <TabsContent value="shipping" className="mt-0">
-                                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-8">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                                     <div className="min-w-0">
                                         <h4 className="mb-3 flex items-center gap-2 text-base font-bold text-[var(--color-text-primary)] sm:mb-4 sm:text-lg">
                                             <Truck className="size-5 shrink-0 text-[var(--color-primary)] sm:size-6" />
@@ -1563,7 +1563,7 @@ export default function ProductDetail({
                 <ProductCarousel
                     title="You May Also Like"
                     products={relatedProducts}
-                    className="mt-4"
+                    className="mt-0"
                 />
 
                 {recentlyViewed.length > 1 && (

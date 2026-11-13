@@ -73,7 +73,7 @@ export default function Dashboard({
                 {/* Header */}
                 <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
                     <div>
-                        <h1 className="mb-1 font-serif text-3xl font-bold text-[var(--color-text-primary)]">
+                        <h1 className="mb-1 font-display text-3xl font-bold text-[var(--color-text-primary)]">
                             Account Dashboard
                         </h1>
                         <p className="text-[var(--color-text-secondary)]">

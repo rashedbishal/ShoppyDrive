@@ -117,7 +117,7 @@ export default function Profile({
             <div className="space-y-8">
                 {/* Header */}
                 <div>
-                    <h1 className="mb-1 font-serif text-3xl font-bold text-[var(--color-text-primary)]">
+                    <h1 className="mb-1 font-display text-3xl font-bold text-[var(--color-text-primary)]">
                         Profile Information
                     </h1>
                     <p className="text-[var(--color-text-secondary)]">

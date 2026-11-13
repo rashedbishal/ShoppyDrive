@@ -304,7 +304,7 @@ export default function OrderDetail({
                         </Link>
                         <div>
                             <div className="mb-1 flex items-center gap-3">
-                                <h1 className="font-serif text-2xl font-bold text-[var(--color-text-primary)]">
+                                <h1 className="font-display text-2xl font-bold text-[var(--color-text-primary)]">
                                     Order #{order.order_number}
                                 </h1>
                                 <OrderStatusBadge status={order.status} />

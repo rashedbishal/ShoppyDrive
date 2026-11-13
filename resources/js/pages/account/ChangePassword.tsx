@@ -86,7 +86,7 @@ export default function ChangePassword(): React.JSX.Element {
             <div className="space-y-8">
                 {/* Header */}
                 <div>
-                    <h1 className="mb-1 font-serif text-3xl font-bold text-[var(--color-text-primary)]">
+                    <h1 className="mb-1 font-display text-3xl font-bold text-[var(--color-text-primary)]">
                         Security Settings
                     </h1>
                     <p className="text-[var(--color-text-secondary)]">

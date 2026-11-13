@@ -59,7 +59,7 @@ export function ProductCarousel({
         <section className={`py-4 ${className ?? ''}`}>
             <div className="mb-3 flex items-center justify-between">
                 {title && (
-                    <h2 className="font-serif text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">
+                    <h2 className="font-display text-xl font-bold text-[var(--color-text-primary)] md:text-2xl">
                         {title}
                     </h2>
                 )}
