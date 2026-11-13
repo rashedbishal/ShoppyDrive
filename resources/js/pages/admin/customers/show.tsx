@@ -92,7 +92,7 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                                     className="size-10 shrink-0 rounded-full object-cover"
                                 />
                             ) : (
-                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-500">
+                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-600">
                                     {customer.name.slice(0, 2).toUpperCase()}
                                 </div>
                             )}
@@ -110,7 +110,7 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                                         </Badge>
                                     )}
                                 </div>
-                                <p className="truncate text-sm break-all text-slate-500">
+                                <p className="truncate text-sm break-all text-slate-600">
                                     {customer.email}
                                 </p>
                             </div>
@@ -149,7 +149,7 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                             </CardHeader>
                             <CardContent className="p-0">
                                 {orders.length === 0 ? (
-                                    <p className="px-4 py-8 text-center text-sm text-slate-400">
+                                    <p className="px-4 py-8 text-center text-sm text-slate-600">
                                         No orders yet.
                                     </p>
                                 ) : (
@@ -163,7 +163,7 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                                                     <p className="font-mono text-sm font-bold text-slate-800">
                                                         {order.order_number}
                                                     </p>
-                                                    <p className="text-xs text-slate-400">
+                                                    <p className="text-xs text-slate-600">
                                                         {new Date(
                                                             order.created_at,
                                                         ).toLocaleDateString()}
@@ -209,13 +209,13 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                             </CardHeader>
                             <CardContent className="space-y-3 pt-3 text-sm">
                                 <div>
-                                    <p className="text-xs text-slate-400">
+                                    <p className="text-xs text-slate-600">
                                         Email
                                     </p>
                                     <p className="text-slate-800">
                                         {customer.email}
                                     </p>
-                                    <p className="text-xs text-slate-400">
+                                    <p className="text-xs text-slate-600">
                                         {customer.email_verified_at
                                             ? '✓ Verified'
                                             : 'Not verified'}
@@ -223,7 +223,7 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                                 </div>
                                 {customer.phone && (
                                     <div>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Phone
                                         </p>
                                         <p className="text-slate-800">
@@ -232,7 +232,7 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                                     </div>
                                 )}
                                 <div>
-                                    <p className="text-xs text-slate-400">
+                                    <p className="text-xs text-slate-600">
                                         Joined
                                     </p>
                                     <p className="text-slate-800">
@@ -243,7 +243,7 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                                 </div>
                                 {customer.social_accounts.length > 0 && (
                                     <div>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Connected via
                                         </p>
                                         <div className="flex gap-1.5">
@@ -272,7 +272,7 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                             <CardContent className="space-y-3 pt-3 text-sm">
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Balance
                                         </p>
                                         <p
@@ -282,7 +282,7 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Spendable at checkout
                                         </p>
                                         <p className="text-lg font-bold text-slate-800">
@@ -291,12 +291,12 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                                     </div>
                                 </div>
                                 {points.history.length === 0 ? (
-                                    <p className="text-xs text-slate-400">
+                                    <p className="text-xs text-slate-600">
                                         No points activity yet.
                                     </p>
                                 ) : (
                                     <div className="divide-y divide-slate-100">
-                                        <p className="pb-1 text-xs text-slate-400">
+                                        <p className="pb-1 text-xs text-slate-600">
                                             Latest {points.history.length}{' '}
                                             entries
                                         </p>
@@ -312,12 +312,12 @@ export default function CustomerShow({ customer, orders, points }: Props) {
                                                             ` · ${row.order_number}`}
                                                     </p>
                                                     {row.note && (
-                                                        <p className="text-xs break-words text-slate-500">
+                                                        <p className="text-xs break-words text-slate-600">
                                                             {row.note}
                                                         </p>
                                                     )}
                                                     {row.date && (
-                                                        <p className="text-[11px] text-slate-400">
+                                                        <p className="text-[11px] text-slate-600">
                                                             {new Date(
                                                                 row.date,
                                                             ).toLocaleString(

@@ -349,7 +349,7 @@ export default function ProductCreate({
                                 <AnimatePresence initial={false}>
                                     {hasVariants ? (
                                         <AdminReveal key="sku-field-a">
-                                            <p className="text-xs text-slate-400">
+                                            <p className="text-xs text-slate-600">
                                                 SKU is set per color/size
                                                 variant below instead, since
                                                 each variant needs its own.
@@ -591,7 +591,7 @@ export default function ProductCreate({
                                         {hasVariants &&
                                             data.variants.length > 0 && (
                                                 <AdminReveal key="computed-pricing">
-                                                    <p className="mt-3 text-xs text-slate-500">
+                                                    <p className="mt-3 text-xs text-slate-600">
                                                         Computed from{' '}
                                                         {data.variants.length}{' '}
                                                         variant
@@ -686,7 +686,7 @@ export default function ProductCreate({
                                         className="mt-1 block text-right"
                                     />
 
-                                    <p className="mt-1 text-xs text-slate-500">
+                                    <p className="mt-1 text-xs text-slate-600">
                                         If this product's name is in Bangla, add
                                         its English name here (e.g. "shirt,
                                         t-shirt") so customers can find it by
@@ -893,7 +893,7 @@ export default function ProductCreate({
                                     />
                                     Crying baby on Add to Cart
                                 </label>
-                                <p className="text-xs text-slate-400">
+                                <p className="text-xs text-slate-600">
                                     Plays the crying-baby GIF beside the Add to
                                     Cart button when a shopper lingers for a
                                     minute without adding the product, or

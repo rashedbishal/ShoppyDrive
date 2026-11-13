@@ -37,7 +37,7 @@ export function BlogCard({ blog }: { blog: Blog }): React.JSX.Element {
             </div>
 
             <div className="flex flex-1 flex-col gap-3 p-5">
-                <p className="text-xs font-medium text-[var(--color-text-muted)]">
+                <p className="text-xs font-medium text-[var(--color-text-secondary)]">
                     {[blog.author_name, formatBlogDate(blog.published_at)]
                         .filter(Boolean)
                         .join(' · ')}

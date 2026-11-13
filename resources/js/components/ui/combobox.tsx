@@ -127,7 +127,7 @@ export function ComboboxField<T extends ComboboxItem>({
                         )}
                     >
                         {filtered.length === 0 ? (
-                            <p className="col-span-full px-3 py-6 text-center text-sm text-slate-400">
+                            <p className="col-span-full px-3 py-6 text-center text-sm text-slate-600">
                                 {emptyMessage}
                             </p>
                         ) : (
@@ -149,7 +149,7 @@ export function ComboboxField<T extends ComboboxItem>({
                             ))
                         )}
                         {query.trim() === '' && options.length > filtered.length && (
-                            <p className="col-span-full px-3 pt-1.5 pb-1 text-center text-xs text-slate-400">
+                            <p className="col-span-full px-3 pt-1.5 pb-1 text-center text-xs text-slate-600">
                                 Showing {maxResults} of {options.length} — type to search
                             </p>
                         )}

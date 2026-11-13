@@ -90,7 +90,7 @@ export default function BlogsIndex({ blogs, filters }: Props) {
                         <h1 className="text-xl font-bold text-slate-900">
                             Blog
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {blogs.total} total
                         </p>
                     </div>
@@ -145,7 +145,7 @@ export default function BlogsIndex({ blogs, filters }: Props) {
                                 checked={bulk.allSelected}
                                 onCheckedChange={bulk.toggleAll}
                             />
-                            <span className="text-xs font-medium text-slate-500">
+                            <span className="text-xs font-medium text-slate-600">
                                 Select all
                             </span>
                         </div>
@@ -153,7 +153,7 @@ export default function BlogsIndex({ blogs, filters }: Props) {
 
                     <div className="divide-y divide-slate-50">
                         {blogs.data.length === 0 ? (
-                            <p className="py-12 text-center text-sm text-slate-400">
+                            <p className="py-12 text-center text-sm text-slate-600">
                                 No blog posts found.
                             </p>
                         ) : (
@@ -184,7 +184,7 @@ export default function BlogsIndex({ blogs, filters }: Props) {
                                         <p className="truncate text-sm font-bold text-slate-800">
                                             {blog.title}
                                         </p>
-                                        <p className="truncate text-xs text-slate-400">
+                                        <p className="truncate text-xs text-slate-600">
                                             {blog.author_name ??
                                                 'Unknown author'}
                                             {blog.published_at
@@ -233,7 +233,7 @@ export default function BlogsIndex({ blogs, filters }: Props) {
 
                     {blogs.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {blogs.current_page} of {blogs.last_page}
                             </p>
                             <div className="flex gap-1">

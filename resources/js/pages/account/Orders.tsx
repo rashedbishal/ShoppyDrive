@@ -132,7 +132,7 @@ export default function Orders({
                                             <Package size={24} />
                                         </div>
                                         <div>
-                                            <p className="mb-1 text-[10px] leading-none font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                            <p className="mb-1 text-[10px] leading-none font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                                 Order ID
                                             </p>
                                             <h3 className="font-mono text-lg font-bold text-[var(--color-text-primary)]">
@@ -143,7 +143,7 @@ export default function Orders({
 
                                     <div className="flex flex-wrap items-center gap-3 sm:gap-6">
                                         <div className="hidden text-right sm:block">
-                                            <p className="mb-1 text-[10px] leading-none font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                            <p className="mb-1 text-[10px] leading-none font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                                 Date Placed
                                             </p>
                                             <p className="flex items-center justify-end gap-1.5 text-sm font-bold text-[var(--color-text-primary)]">
@@ -211,7 +211,7 @@ export default function Orders({
                                         </div>
 
                                         <div className="text-right">
-                                            <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                            <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                                 Total Amount
                                             </p>
                                             <p className="text-2xl font-bold text-[var(--color-primary)]">

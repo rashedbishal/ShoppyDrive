@@ -143,7 +143,7 @@ export default function ErrorPage({
                             </span>
                         </div>
 
-                        <p className="mb-2 text-xs font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
+                        <p className="mb-2 text-xs font-semibold tracking-[0.22em] text-[var(--color-text-secondary)] uppercase">
                             Error {status}
                         </p>
                         <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--color-text-primary)] sm:text-4xl">
@@ -233,7 +233,7 @@ export default function ErrorPage({
 
                         {showStorefrontHelpers ? (
                             <div className="mt-10">
-                                <p className="mb-3 text-xs font-semibold tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
+                                <p className="mb-3 text-xs font-semibold tracking-[0.2em] text-[var(--color-text-secondary)] uppercase">
                                     Popular right now
                                 </p>
                                 <div className="flex flex-wrap justify-center gap-2">
@@ -252,7 +252,7 @@ export default function ErrorPage({
                     </div>
                 </main>
 
-                <footer className="pb-6 text-center text-xs text-[var(--color-text-muted)]">
+                <footer className="pb-6 text-center text-xs text-[var(--color-text-secondary)]">
                     © {new Date().getFullYear()} {siteName}
                 </footer>
             </div>

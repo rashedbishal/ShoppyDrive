@@ -116,7 +116,7 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
                         <h1 className="text-xl font-bold text-slate-900">
                             Sub-categories
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {subCategories.total} total
                         </p>
                     </div>
@@ -181,7 +181,7 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
                                 checked={bulk.allSelected}
                                 onCheckedChange={bulk.toggleAll}
                             />
-                            <span className="text-xs font-medium text-slate-500">
+                            <span className="text-xs font-medium text-slate-600">
                                 Select all
                             </span>
                         </div>
@@ -189,7 +189,7 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
 
                     <div className="divide-y divide-slate-50">
                         {subCategories.data.length === 0 ? (
-                            <p className="py-12 text-center text-sm text-slate-400">
+                            <p className="py-12 text-center text-sm text-slate-600">
                                 No sub-categories found.
                             </p>
                         ) : (
@@ -218,7 +218,7 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
                                         <p className="truncate text-sm font-semibold text-slate-800">
                                             {cat.name}
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             {cat.slug}
                                             {cat.category
                                                 ? ` · category: ${cat.category.name}`
@@ -264,7 +264,7 @@ export default function SubCategoriesIndex({ subCategories, filters }: Props) {
 
                     {subCategories.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {subCategories.current_page} of{' '}
                                 {subCategories.last_page}
                             </p>

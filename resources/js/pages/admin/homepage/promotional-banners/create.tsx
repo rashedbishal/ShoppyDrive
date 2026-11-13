@@ -62,7 +62,7 @@ export default function PromotionalBannerCreate() {
                         <h1 className="text-2xl font-bold text-slate-900">
                             Add Promotional Banner
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             Create a new wide banner for the homepage.
                         </p>
                     </div>
@@ -134,7 +134,7 @@ export default function PromotionalBannerCreate() {
                                         <p className="text-sm font-medium text-text-primary">
                                             Banner Image
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Leave empty to use a placeholder.
                                             Upload your own image to replace it.
                                         </p>
@@ -240,7 +240,7 @@ export default function PromotionalBannerCreate() {
                         <Button
                             asChild
                             variant="ghost"
-                            className="text-slate-500"
+                            className="text-slate-600"
                         >
                             <Link
                                 href={route('admin.promotional-banners.index')}

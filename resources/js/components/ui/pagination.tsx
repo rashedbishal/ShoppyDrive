@@ -59,7 +59,7 @@ function Pagination({ data, onPageChange, className }: PaginationProps) {
                 <div className="flex items-center gap-1">
                     {pageItems.map((item, index) =>
                         item === "..." ? (
-                            <span key={`ellipsis-${index}`} className="px-2 text-sm text-text-muted">
+                            <span key={`ellipsis-${index}`} className="px-2 text-sm text-text-secondary">
                                 ...
                             </span>
                         ) : (

@@ -127,18 +127,18 @@ function PriceRangeFilter({
         <div className="space-y-5">
             <div className="flex items-stretch gap-2">
                 <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 py-2">
-                    <span className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                    <span className="text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                         Min
                     </span>
                     <span className="text-sm font-bold text-[var(--color-primary)]">
                         ৳{sliderLo.toLocaleString('en-BD')}
                     </span>
                 </div>
-                <div className="flex items-center text-sm text-[var(--color-text-muted)]">
+                <div className="flex items-center text-sm text-[var(--color-text-secondary)]">
                     —
                 </div>
                 <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 py-2">
-                    <span className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                    <span className="text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                         Max
                     </span>
                     <span className="text-sm font-bold text-[var(--color-primary)]">
@@ -212,11 +212,11 @@ function PriceRangeFilter({
 
             <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                    <label className="text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                         Min price
                     </label>
                     <div className="relative">
-                        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-bold text-[var(--color-text-muted)]">
+                        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-bold text-[var(--color-text-secondary)]">
                             ৳
                         </span>
                         <input
@@ -234,11 +234,11 @@ function PriceRangeFilter({
                     </div>
                 </div>
                 <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                    <label className="text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                         Max price
                     </label>
                     <div className="relative">
-                        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-bold text-[var(--color-text-muted)]">
+                        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-bold text-[var(--color-text-secondary)]">
                             ৳
                         </span>
                         <input

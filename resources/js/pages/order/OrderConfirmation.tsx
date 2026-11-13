@@ -135,7 +135,7 @@ export default function OrderConfirmation({
                                 <Package size={20} />
                             </div>
                             <div>
-                                <h3 className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                <h3 className="text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                     Order Number
                                 </h3>
                                 <p className="font-mono text-lg font-bold text-[var(--color-text-primary)]">
@@ -194,7 +194,7 @@ export default function OrderConfirmation({
                                 <Truck size={20} />
                             </div>
                             <div>
-                                <h3 className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                <h3 className="text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                     Shipping To
                                 </h3>
                                 <p className="truncate text-sm font-bold text-[var(--color-text-primary)]">
@@ -272,7 +272,7 @@ export default function OrderConfirmation({
                         <Button
                             variant="ghost"
                             asChild
-                            className="h-14 rounded-2xl font-bold text-[var(--color-text-muted)]"
+                            className="h-14 rounded-2xl font-bold text-[var(--color-text-secondary)]"
                         >
                             <a
                                 href={route(
@@ -293,7 +293,7 @@ export default function OrderConfirmation({
                     transition={{ delay: 1 }}
                     className="mt-20 text-center"
                 >
-                    <p className="text-xs font-medium text-[var(--color-text-muted)]">
+                    <p className="text-xs font-medium text-[var(--color-text-secondary)]">
                         Need help with your order?{' '}
                         <Link
                             href={route('contact')}

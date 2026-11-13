@@ -30,7 +30,7 @@ export default function ConfirmPassword(): React.JSX.Element {
                         <h1 className="text-2xl font-bold text-gray-900">
                             Secure area
                         </h1>
-                        <p className="text-sm leading-6 text-gray-500">
+                        <p className="text-sm leading-6 text-gray-600">
                             Please confirm your password to access this section.
                         </p>
                     </div>
@@ -106,7 +106,7 @@ export default function ConfirmPassword(): React.JSX.Element {
 
                     <Link
                         href={route('password.request')}
-                        className="mt-4 block text-center text-sm text-gray-500 transition hover:text-gray-800"
+                        className="mt-4 block text-center text-sm text-gray-600 transition hover:text-gray-800"
                     >
                         Forgot your password?
                     </Link>

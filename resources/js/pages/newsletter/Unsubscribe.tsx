@@ -167,7 +167,7 @@ function ConfirmStep({
             </div>
 
             <div className="mt-7 rounded-2xl bg-[var(--color-surface-alt)] p-4 text-left sm:p-5">
-                <p className="mb-3 text-xs font-semibold tracking-wide text-[var(--color-text-muted)] uppercase">
+                <p className="mb-3 text-xs font-semibold tracking-wide text-[var(--color-text-secondary)] uppercase">
                     You'll miss out on
                 </p>
                 <ul className="grid gap-3 sm:grid-cols-3">
@@ -183,7 +183,7 @@ function ConfirmStep({
                                 <span className="block text-sm font-semibold text-[var(--color-text-primary)]">
                                     {label}
                                 </span>
-                                <span className="block text-xs leading-5 text-[var(--color-text-muted)]">
+                                <span className="block text-xs leading-5 text-[var(--color-text-secondary)]">
                                     {text}
                                 </span>
                             </span>
@@ -211,7 +211,7 @@ function ConfirmStep({
                     <Link href={route('home')}>Keep me subscribed</Link>
                 </Button>
             </form>
-            <p className="mt-4 text-xs text-[var(--color-text-muted)]">
+            <p className="mt-4 text-xs text-[var(--color-text-secondary)]">
                 Order and delivery emails aren't affected — you'll still get
                 those.
             </p>
@@ -243,7 +243,7 @@ function SuccessStep({ email }: { email: string }): React.JSX.Element {
                     </Link>
                 </Button>
             </div>
-            <p className="mt-5 text-xs leading-5 text-[var(--color-text-muted)]">
+            <p className="mt-5 text-xs leading-5 text-[var(--color-text-secondary)]">
                 Changed your mind? You can subscribe again any time from the
                 newsletter box at the bottom of every page.
             </p>

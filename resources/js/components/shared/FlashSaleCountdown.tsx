@@ -60,7 +60,7 @@ export function FlashSaleCountdown({
                         <span className="min-w-[36px] rounded bg-[var(--color-secondary)] px-2 py-1 text-center text-lg font-bold text-white">
                             {formatNumber(timeLeft.days)}
                         </span>
-                        <span className="mt-1 font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase">
+                        <span className="mt-1 font-sans text-[10px] font-bold text-[var(--color-text-secondary)] uppercase">
                             Days
                         </span>
                     </div>
@@ -74,7 +74,7 @@ export function FlashSaleCountdown({
                 <span className="min-w-[36px] rounded bg-[var(--color-secondary)] px-2 py-1 text-center text-lg font-bold text-white">
                     {formatNumber(timeLeft.hours)}
                 </span>
-                <span className="mt-1 font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase">
+                <span className="mt-1 font-sans text-[10px] font-bold text-[var(--color-text-secondary)] uppercase">
                     Hrs
                 </span>
             </div>
@@ -87,7 +87,7 @@ export function FlashSaleCountdown({
                 <span className="min-w-[36px] rounded bg-[var(--color-secondary)] px-2 py-1 text-center text-lg font-bold text-white">
                     {formatNumber(timeLeft.minutes)}
                 </span>
-                <span className="mt-1 font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase">
+                <span className="mt-1 font-sans text-[10px] font-bold text-[var(--color-text-secondary)] uppercase">
                     Min
                 </span>
             </div>
@@ -100,7 +100,7 @@ export function FlashSaleCountdown({
                 <span className="min-w-[36px] animate-pulse rounded bg-[var(--color-primary)] px-2 py-1 text-center text-lg font-bold text-white">
                     {formatNumber(timeLeft.seconds)}
                 </span>
-                <span className="mt-1 font-sans text-[10px] font-bold text-[var(--color-text-muted)] uppercase">
+                <span className="mt-1 font-sans text-[10px] font-bold text-[var(--color-text-secondary)] uppercase">
                     Sec
                 </span>
             </div>

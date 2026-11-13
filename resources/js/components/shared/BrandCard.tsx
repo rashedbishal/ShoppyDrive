@@ -75,7 +75,7 @@ export function BrandCard({
                 <h3 className="truncate text-sm font-semibold text-[var(--color-text-primary)] transition group-hover:text-[var(--color-primary)]">
                     {brand.name}
                 </h3>
-                <p className="text-xs text-[var(--color-text-muted)]">
+                <p className="text-xs text-[var(--color-text-secondary)]">
                     {brand.productsCount}{' '}
                     {brand.productsCount === 1 ? 'item' : 'items'}
                 </p>

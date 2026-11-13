@@ -54,7 +54,7 @@ export default function PromotionalBannersIndex({ banners }: Props) {
                             <h1 className="text-2xl font-bold text-slate-900">
                                 Promotional Banners
                             </h1>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-slate-600">
                                 Wide visual banners shown between product
                                 sections.
                             </p>
@@ -70,7 +70,7 @@ export default function PromotionalBannersIndex({ banners }: Props) {
 
                 <div className="grid gap-6">
                     {banners.length === 0 ? (
-                        <Card className="flex flex-col items-center justify-center py-12 text-slate-400">
+                        <Card className="flex flex-col items-center justify-center py-12 text-slate-600">
                             <p>No promotional banners created yet.</p>
                         </Card>
                     ) : (
@@ -117,7 +117,7 @@ export default function PromotionalBannersIndex({ banners }: Props) {
                                                     <Badge className="border-none bg-primary/10 text-[10px] font-bold text-primary uppercase hover:bg-primary/20">
                                                         {banner.badge}
                                                     </Badge>
-                                                    <span className="text-xs text-slate-400">
+                                                    <span className="text-xs text-slate-600">
                                                         Order:{' '}
                                                         {banner.sort_order}
                                                     </span>
@@ -126,11 +126,11 @@ export default function PromotionalBannersIndex({ banners }: Props) {
                                             <h3 className="line-clamp-2 text-lg font-bold break-words text-slate-800">
                                                 {banner.title}
                                             </h3>
-                                            <p className="line-clamp-2 text-sm text-slate-500">
+                                            <p className="line-clamp-2 text-sm text-slate-600">
                                                 {banner.description}
                                             </p>
                                             {banner.href && (
-                                                <p className="truncate font-mono text-[10px] text-slate-400">
+                                                <p className="truncate font-mono text-[10px] text-slate-600">
                                                     Link: {banner.href}
                                                 </p>
                                             )}

@@ -116,7 +116,7 @@ export default function MobilePayment({
             <div className="mx-auto max-w-lg space-y-5">
                 {/* Header */}
                 <div className="text-center">
-                    <div className="mb-4 flex items-center justify-center gap-1.5 text-[var(--color-text-muted)]">
+                    <div className="mb-4 flex items-center justify-center gap-1.5 text-[var(--color-text-secondary)]">
                         <Lock size={14} />
                         <span className="text-xs font-bold tracking-widest uppercase">
                             Secure Checkout
@@ -128,7 +128,7 @@ export default function MobilePayment({
                     <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
                         Complete Your Payment
                     </h1>
-                    <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+                    <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
                         Order {orderNumber}
                     </p>
                 </div>
@@ -149,7 +149,7 @@ export default function MobilePayment({
                         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-pink-600 text-xs font-bold text-white">
                             1
                         </span>
-                        <h2 className="text-sm font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                        <h2 className="text-sm font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                             Select Payment Method
                         </h2>
                     </div>
@@ -186,7 +186,7 @@ export default function MobilePayment({
                                         className="h-full w-full object-contain p-1 transition-transform duration-300 ease-in-out group-hover:scale-110"
                                     />
                                     {!number && (
-                                        <span className="absolute bottom-1.5 text-[10px] text-slate-400">
+                                        <span className="absolute bottom-1.5 text-[10px] text-slate-600">
                                             Not configured
                                         </span>
                                     )}
@@ -207,7 +207,7 @@ export default function MobilePayment({
                                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-pink-600 text-xs font-bold text-white">
                                     2
                                 </span>
-                                <h2 className="text-sm font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                <h2 className="text-sm font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                     Send Money via {selectedProvider.label}
                                 </h2>
                             </div>
@@ -230,7 +230,7 @@ export default function MobilePayment({
                             {paymentNumber ? (
                                 <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-white p-4">
                                     <div>
-                                        <p className="mb-0.5 text-xs font-semibold tracking-wide text-[var(--color-text-muted)] uppercase">
+                                        <p className="mb-0.5 text-xs font-semibold tracking-wide text-[var(--color-text-secondary)] uppercase">
                                             {selectedProvider.numberLabel}
                                         </p>
                                         <p className="font-mono text-xl font-bold text-[var(--color-text-primary)]">
@@ -260,7 +260,7 @@ export default function MobilePayment({
                                 </div>
                             )}
 
-                            <p className="text-xs text-[var(--color-text-muted)]">
+                            <p className="text-xs text-[var(--color-text-secondary)]">
                                 Use <strong>Send Money</strong> in your{' '}
                                 {selectedProvider.label} app. You'll receive a
                                 confirmation SMS with a{' '}
@@ -275,14 +275,14 @@ export default function MobilePayment({
                                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-pink-600 text-xs font-bold text-white">
                                         3
                                     </span>
-                                    <h2 className="text-sm font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                    <h2 className="text-sm font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                         Enter Transaction ID
                                     </h2>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setProvider(null)}
-                                    className="flex items-center gap-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                                    className="flex items-center gap-1 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                                 >
                                     <ChevronLeft size={13} />
                                     Change
@@ -342,13 +342,13 @@ export default function MobilePayment({
                     </>
                 )}
 
-                <p className="text-center text-xs text-[var(--color-text-muted)]">
+                <p className="text-center text-xs text-[var(--color-text-secondary)]">
                     Having trouble? Contact support with Order ID:{' '}
                     <strong>{orderNumber}</strong>
                 </p>
 
                 {holdsPoints && (
-                    <p className="text-center text-xs text-[var(--color-text-muted)]">
+                    <p className="text-center text-xs text-[var(--color-text-secondary)]">
                         Your loyalty points are on hold for this payment. Not
                         paying?{' '}
                         <Link

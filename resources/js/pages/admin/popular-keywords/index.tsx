@@ -185,7 +185,7 @@ function KeywordRow({
                             <button
                                 type="button"
                                 onClick={() => setEditing(false)}
-                                className="shrink-0 text-xs text-slate-400 hover:text-slate-600"
+                                className="shrink-0 text-xs text-slate-600 hover:text-slate-600"
                             >
                                 Cancel
                             </button>
@@ -208,11 +208,11 @@ function KeywordRow({
                                     {keyword.keyword}
                                 </span>
                             </button>
-                            <span className="shrink-0 text-[11px] text-slate-400">
+                            <span className="shrink-0 text-[11px] text-slate-600">
                                 #{keyword.sort_order}
                             </span>
                             {!keyword.is_active && (
-                                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-400">
+                                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">
                                     hidden
                                 </span>
                             )}
@@ -351,7 +351,7 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                         </h1>
                         <Search className="size-5 text-slate-400" />
                     </div>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-600">
                         These keywords appear in the search bar when customers
                         click on it.
                     </p>
@@ -382,14 +382,14 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                                     checked={bulk.allSelected}
                                     onCheckedChange={bulk.toggleAll}
                                 />
-                                <span className="text-xs font-medium text-slate-500">
+                                <span className="text-xs font-medium text-slate-600">
                                     Select all
                                 </span>
                             </div>
                         )}
 
                         {keywords.length === 0 ? (
-                            <div className="py-10 text-center text-sm text-slate-400">
+                            <div className="py-10 text-center text-sm text-slate-600">
                                 No keywords yet. Add one using the form.
                             </div>
                         ) : (
@@ -489,7 +489,7 @@ export default function PopularKeywordsIndex({ keywords }: Props) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-3">
-                                <ul className="list-disc space-y-1.5 pl-4 text-xs text-slate-500">
+                                <ul className="list-disc space-y-1.5 pl-4 text-xs text-slate-600">
                                     <li>
                                         Click any keyword to edit it inline.
                                     </li>

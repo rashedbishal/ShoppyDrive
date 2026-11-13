@@ -224,7 +224,7 @@ export default function BrandsIndex({ brands, filters }: Props) {
                             <h1 className="text-xl font-bold text-slate-900">
                                 Brands
                             </h1>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-slate-600">
                                 {brands.total} total
                             </p>
                         </div>
@@ -290,7 +290,7 @@ export default function BrandsIndex({ brands, filters }: Props) {
                                 checked={bulk.allSelected}
                                 onCheckedChange={bulk.toggleAll}
                             />
-                            <span className="text-xs font-medium text-slate-500">
+                            <span className="text-xs font-medium text-slate-600">
                                 Select all {brands.data.length} on this page
                             </span>
                         </div>
@@ -300,7 +300,7 @@ export default function BrandsIndex({ brands, filters }: Props) {
                         {brands.data.length === 0 ? (
                             <div className="flex flex-col items-center gap-2 py-16 text-center">
                                 <Tag className="size-8 text-slate-200" />
-                                <p className="text-sm text-slate-400">
+                                <p className="text-sm text-slate-600">
                                     No brands found.
                                 </p>
                             </div>
@@ -321,7 +321,7 @@ export default function BrandsIndex({ brands, filters }: Props) {
 
                     {brands.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {brands.current_page} of {brands.last_page}
                             </p>
                             <div className="flex gap-1">

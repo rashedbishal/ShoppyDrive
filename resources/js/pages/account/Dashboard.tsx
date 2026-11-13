@@ -104,7 +104,7 @@ export default function Dashboard({
                             >
                                 <stat.icon size={24} />
                             </div>
-                            <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                            <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                 {stat.label}
                             </p>
                             <p className="text-xl font-bold text-[var(--color-text-primary)]">
@@ -136,7 +136,7 @@ export default function Dashboard({
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse text-left">
                             <thead>
-                                <tr className="bg-[var(--color-surface-alt)] text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                <tr className="bg-[var(--color-surface-alt)] text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                     <th className="px-8 py-4">Order ID</th>
                                     <th className="px-8 py-4">Date</th>
                                     <th className="px-8 py-4">Status</th>

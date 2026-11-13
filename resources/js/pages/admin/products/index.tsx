@@ -136,7 +136,7 @@ export default function ProductsIndex({
                         <h1 className="text-xl font-bold text-slate-900">
                             Products
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {products.total} total
                         </p>
                     </div>
@@ -164,7 +164,7 @@ export default function ProductsIndex({
                             <p className="text-sm font-semibold text-slate-800">
                                 Crying baby easter egg
                             </p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 On for {cryBabyEnabledCount}{' '}
                                 {cryBabyEnabledCount === 1
                                     ? 'product'
@@ -244,7 +244,7 @@ export default function ProductsIndex({
 
                     <div className="divide-y divide-slate-50">
                         {products.data.length === 0 ? (
-                            <p className="py-12 text-center text-sm text-slate-400">
+                            <p className="py-12 text-center text-sm text-slate-600">
                                 No products found.
                             </p>
                         ) : (
@@ -268,7 +268,7 @@ export default function ProductsIndex({
                                         <p className="truncate text-sm font-semibold text-slate-800">
                                             {p.name}
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             {p.sku ?? '—'} ·{' '}
                                             {p.category?.name ?? 'No category'}
                                         </p>
@@ -278,7 +278,7 @@ export default function ProductsIndex({
                                             <p className="text-sm font-bold text-slate-800">
                                                 ৳{p.price.toLocaleString()}
                                             </p>
-                                            <p className="text-xs text-slate-400">
+                                            <p className="text-xs text-slate-600">
                                                 Stock: {p.stock_quantity}
                                             </p>
                                         </div>
@@ -335,7 +335,7 @@ export default function ProductsIndex({
 
                     {products.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {products.current_page} of{' '}
                                 {products.last_page}
                             </p>

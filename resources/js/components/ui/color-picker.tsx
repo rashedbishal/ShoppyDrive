@@ -62,7 +62,7 @@ export function ColorPicker({ value, onChange, error, className }: ColorPickerPr
                                 <span
                                     title={option.label}
                                     className={cn(
-                                        'flex size-7 items-center justify-center rounded-md border border-dashed bg-white text-slate-400',
+                                        'flex size-7 items-center justify-center rounded-md border border-dashed bg-white text-slate-600',
                                         selected ? 'border-[#c8102e] text-[#c8102e]' : 'border-slate-300',
                                     )}
                                 >
@@ -76,7 +76,7 @@ export function ColorPicker({ value, onChange, error, className }: ColorPickerPr
                                 <span
                                     title={option.label}
                                     className={cn(
-                                        'flex size-7 items-center justify-center rounded-md border bg-white text-slate-400',
+                                        'flex size-7 items-center justify-center rounded-md border bg-white text-slate-600',
                                         selected ? 'border-[#c8102e] text-[#c8102e]' : 'border-slate-300',
                                     )}
                                 >
@@ -107,7 +107,7 @@ export function ColorPicker({ value, onChange, error, className }: ColorPickerPr
                             onChange={(e) => onChange(e.target.value)}
                             className="size-11 cursor-pointer rounded-lg border border-slate-200 p-1"
                         />
-                        <span className="text-xs text-slate-500">{value}</span>
+                        <span className="text-xs text-slate-600">{value}</span>
                     </div>
                 )}
             </div>

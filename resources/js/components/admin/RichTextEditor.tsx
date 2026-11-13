@@ -107,7 +107,7 @@ function InsertImageDialog({
                         previewClassName="h-40 object-contain"
                     />
 
-                    <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
+                    <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
                         <div className="h-px flex-1 bg-slate-200" />
                         OR
                         <div className="h-px flex-1 bg-slate-200" />
@@ -456,7 +456,7 @@ export function RichTextEditor({
                         }
                     }}
                     style={{ minHeight }}
-                    className="p-4 text-sm text-slate-800 focus:outline-none [&_a]:text-[#c8102e] [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:text-slate-500 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_img]:max-w-full [&_img]:rounded [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                    className="p-4 text-sm text-slate-800 focus:outline-none [&_a]:text-[#c8102e] [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-slate-300 [&_blockquote]:pl-4 [&_blockquote]:text-slate-600 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_img]:max-w-full [&_img]:rounded [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
                 />
                 {maxTextLength !== undefined ? (
                     <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-3 py-1">

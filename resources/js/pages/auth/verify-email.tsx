@@ -71,7 +71,7 @@ export default function VerifyEmail({
                     <h1 className="mb-2 text-2xl font-bold text-gray-900">
                         Check your inbox
                     </h1>
-                    <p className="mb-6 text-sm leading-6 text-gray-500">
+                    <p className="mb-6 text-sm leading-6 text-gray-600">
                         We sent a 6-digit verification code to your email. Enter
                         it below to activate your ShoppyDrive account.
                     </p>
@@ -148,7 +148,7 @@ export default function VerifyEmail({
                         )}
                     </button>
 
-                    <p className="mt-4 text-xs text-gray-400">
+                    <p className="mt-4 text-xs text-gray-600">
                         Check spam/junk if you don't see it.
                     </p>
 
@@ -156,7 +156,7 @@ export default function VerifyEmail({
                         href={route('logout')}
                         method="post"
                         as="button"
-                        className="mt-4 block text-sm text-gray-500 transition hover:text-gray-800"
+                        className="mt-4 block text-sm text-gray-600 transition hover:text-gray-800"
                     >
                         Sign out and use a different account
                     </Link>

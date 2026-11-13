@@ -43,7 +43,7 @@ function Field({
             <label className="mb-1 block text-sm font-medium text-slate-700">
                 {label}
             </label>
-            {hint && <p className="mb-1.5 text-xs text-slate-400">{hint}</p>}
+            {hint && <p className="mb-1.5 text-xs text-slate-600">{hint}</p>}
             {children}
             {error && (
                 <p data-form-error className="mt-1 text-xs text-red-500">
@@ -109,7 +109,7 @@ export default function CategoryEdit({ category }: Props) {
                         <span className="text-sm font-semibold text-slate-700">
                             {category.sub_categories_count}
                         </span>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-slate-600">
                             sub-
                             {category.sub_categories_count === 1
                                 ? 'category'
@@ -120,7 +120,7 @@ export default function CategoryEdit({ category }: Props) {
                         <span className="text-sm font-semibold text-slate-700">
                             {category.direct_products_count}
                         </span>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-slate-600">
                             direct products
                         </span>
                     </div>

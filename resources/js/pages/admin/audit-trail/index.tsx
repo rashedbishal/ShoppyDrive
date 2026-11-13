@@ -96,7 +96,7 @@ function ClearLogsModal({ onClose }: { onClose: () => void }) {
                         <h2 className="text-base font-semibold text-slate-900">
                             Clear the entire audit trail?
                         </h2>
-                        <p className="mt-0.5 text-sm text-slate-500">
+                        <p className="mt-0.5 text-sm text-slate-600">
                             This permanently deletes every log entry — admin
                             activity and order activity alike. This cannot be
                             undone. Enter your password to confirm.
@@ -199,7 +199,7 @@ export default function AuditTrailIndex({
                             <History className="size-5 text-slate-400" />
                             Audit Trail
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {activities.total} total entries
                         </p>
                     </div>
@@ -252,7 +252,7 @@ export default function AuditTrailIndex({
                         {activities.data.length === 0 ? (
                             <div className="py-16 text-center">
                                 <History className="mx-auto mb-3 size-10 text-slate-300" />
-                                <p className="text-sm text-slate-400">
+                                <p className="text-sm text-slate-600">
                                     No activity logged yet.
                                 </p>
                             </div>
@@ -282,7 +282,7 @@ export default function AuditTrailIndex({
                                             <p className="text-sm break-words text-slate-700">
                                                 {item.description}
                                             </p>
-                                            <p className="mt-0.5 text-xs break-words text-slate-400">
+                                            <p className="mt-0.5 text-xs break-words text-slate-600">
                                                 {item.causer.name}
                                                 {item.causer.type !==
                                                     'System' &&
@@ -291,7 +291,7 @@ export default function AuditTrailIndex({
                                                 {item.log_name_label}
                                             </p>
                                         </div>
-                                        <p className="order-last w-full text-xs text-slate-400 sm:order-none sm:w-auto sm:shrink-0">
+                                        <p className="order-last w-full text-xs text-slate-600 sm:order-none sm:w-auto sm:shrink-0">
                                             {new Date(
                                                 item.created_at,
                                             ).toLocaleString('en-BD', {
@@ -312,7 +312,7 @@ export default function AuditTrailIndex({
                                     data={activities}
                                     onPageChange={handlePageChange}
                                 />
-                                <p className="text-xs text-slate-400">
+                                <p className="text-xs text-slate-600">
                                     Showing {activities.from}–{activities.to} of{' '}
                                     {activities.total}
                                 </p>

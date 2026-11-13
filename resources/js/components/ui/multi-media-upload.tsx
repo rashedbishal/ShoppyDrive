@@ -199,7 +199,7 @@ export function MultiMediaUpload({
                                     'flex w-full items-center justify-center gap-1 rounded-lg border px-1 py-1 text-[10px] font-semibold transition-colors',
                                     index === (primaryIndex ?? 0)
                                         ? 'border-amber-400 bg-amber-50 text-amber-700'
-                                        : 'border-slate-200 text-slate-500 hover:border-slate-300',
+                                        : 'border-slate-200 text-slate-600 hover:border-slate-300',
                                 )}
                             >
                                 <Star className="size-3" /> Default
@@ -218,7 +218,7 @@ export function MultiMediaUpload({
                                         'flex w-full items-center justify-center gap-1 rounded-lg border px-1 py-1 text-[10px] font-semibold transition-colors',
                                         index === hoverIndex
                                             ? 'border-[#c8102e] bg-[#c8102e]/10 text-[#c8102e]'
-                                            : 'border-slate-200 text-slate-500 hover:border-slate-300',
+                                            : 'border-slate-200 text-slate-600 hover:border-slate-300',
                                     )}
                                 >
                                     <MousePointer2 className="size-3" /> Hover
@@ -255,13 +255,13 @@ export function MultiMediaUpload({
                     <div className="rounded-full bg-slate-100 p-2.5">
                         <ImagePlus className="size-5 text-slate-400" />
                     </div>
-                    <p className="mt-1.5 text-xs leading-tight font-medium text-slate-500">Add Media</p>
-                    <p className="text-[10px] leading-tight text-slate-400">Images or Videos</p>
+                    <p className="mt-1.5 text-xs leading-tight font-medium text-slate-600">Add Media</p>
+                    <p className="text-[10px] leading-tight text-slate-600">Images or Videos</p>
                 </div>
             </div>
 
             {onPrimaryChange && previews.length > 0 && (
-                <p className="mt-2 text-xs text-slate-400">
+                <p className="mt-2 text-xs text-slate-600">
                     Default is the main picture shoppers see. Hover is the
                     picture a product card swaps to when hovered: choose one, or
                     leave it unset for no swap.

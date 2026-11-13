@@ -83,7 +83,7 @@ function BrandListingContent({
                             ) : null}
                         </div>
                         {search ? (
-                            <p className="px-4 text-xs text-[var(--color-text-muted)]">
+                            <p className="px-4 text-xs text-[var(--color-text-secondary)]">
                                 Showing {filtered.length} of {brands.length}{' '}
                                 brands
                             </p>

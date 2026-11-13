@@ -186,13 +186,13 @@ function RevenueChart({ data }: { data: ChartPoint[] }) {
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
             <div className="mb-5 flex items-start justify-between">
                 <div>
-                    <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase">
+                    <p className="text-xs font-semibold tracking-widest text-slate-600 uppercase">
                         Revenue
                     </p>
                     <p className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
                         {fmt(totalRevenue)}
                     </p>
-                    <p className="mt-0.5 text-xs text-slate-400">
+                    <p className="mt-0.5 text-xs text-slate-600">
                         {totalOrders} orders · last 7 days
                     </p>
                 </div>
@@ -234,7 +234,7 @@ function RevenueChart({ data }: { data: ChartPoint[] }) {
                                     style={{ height: `${height}%` }}
                                 />
                                 <span
-                                    className={`text-[10px] font-medium ${isToday ? 'text-[#c8102e]' : 'text-slate-400'}`}
+                                    className={`text-[10px] font-medium ${isToday ? 'text-[#c8102e]' : 'text-slate-600'}`}
                                 >
                                     {point.label}
                                 </span>
@@ -256,13 +256,13 @@ function VisitorsChart({ data }: { data: VisitorChartPoint[] }) {
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
             <div className="mb-5 flex items-start justify-between">
                 <div>
-                    <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase">
+                    <p className="text-xs font-semibold tracking-widest text-slate-600 uppercase">
                         Visitors
                     </p>
                     <p className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
                         {totalVisitors.toLocaleString()}
                     </p>
-                    <p className="mt-0.5 text-xs text-slate-400">
+                    <p className="mt-0.5 text-xs text-slate-600">
                         {totalPageViews.toLocaleString()} page views · last 7
                         days
                     </p>
@@ -305,7 +305,7 @@ function VisitorsChart({ data }: { data: VisitorChartPoint[] }) {
                                     style={{ height: `${height}%` }}
                                 />
                                 <span
-                                    className={`text-[10px] font-medium ${isToday ? 'text-blue-600' : 'text-slate-400'}`}
+                                    className={`text-[10px] font-medium ${isToday ? 'text-blue-600' : 'text-slate-600'}`}
                                 >
                                     {point.label}
                                 </span>
@@ -361,14 +361,14 @@ function StatCard({
                 )}
             </div>
             <div className="mt-2.5 sm:mt-3">
-                <p className="truncate text-xs font-medium text-slate-400">
+                <p className="truncate text-xs font-medium text-slate-600">
                     {label}
                 </p>
                 <p className="mt-0.5 text-xl font-bold tracking-tight whitespace-nowrap text-slate-900 sm:text-2xl">
                     {value}
                 </p>
                 {sub && (
-                    <p className="mt-0.5 text-[11px] leading-4 text-slate-400 sm:text-xs">
+                    <p className="mt-0.5 text-[11px] leading-4 text-slate-600 sm:text-xs">
                         {sub}
                     </p>
                 )}
@@ -484,14 +484,14 @@ export default function Dashboard({
                 {/* ── Header ── */}
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <p className="text-[11px] font-semibold tracking-[0.18em] text-slate-400 uppercase">
+                        <p className="text-[11px] font-semibold tracking-[0.18em] text-slate-600 uppercase">
                             Admin Panel
                         </p>
                         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
                             Dashboard
                         </h1>
                     </div>
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-slate-600">
                         {new Date().toLocaleDateString('en-US', {
                             weekday: 'long',
                             year: 'numeric',
@@ -651,7 +651,7 @@ export default function Dashboard({
                     <RevenueChart data={chartData} />
 
                     <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                        <p className="mb-4 text-xs font-semibold tracking-widest text-slate-400 uppercase">
+                        <p className="mb-4 text-xs font-semibold tracking-widest text-slate-600 uppercase">
                             Quick Actions
                         </p>
                         <div className="grid grid-cols-3 gap-2.5">
@@ -703,7 +703,7 @@ export default function Dashboard({
                                 <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-100">
                                     <ShoppingCart className="size-5 text-slate-300" />
                                 </div>
-                                <p className="text-sm font-medium text-slate-400">
+                                <p className="text-sm font-medium text-slate-600">
                                     No orders yet
                                 </p>
                                 <p className="text-xs text-slate-300">
@@ -739,7 +739,7 @@ export default function Dashboard({
                                                 <p className="font-mono text-xs font-semibold text-slate-800">
                                                     {order.order_number}
                                                 </p>
-                                                <p className="truncate text-[11px] text-slate-400">
+                                                <p className="truncate text-[11px] text-slate-600">
                                                     {order.user?.name ??
                                                         'Guest'}
                                                 </p>
@@ -748,7 +748,7 @@ export default function Dashboard({
                                                 <p className="text-sm font-bold text-slate-800">
                                                     {fmt(order.total)}
                                                 </p>
-                                                <p className="text-[11px] text-slate-400">
+                                                <p className="text-[11px] text-slate-600">
                                                     {new Date(
                                                         order.created_at,
                                                     ).toLocaleDateString(
@@ -794,7 +794,7 @@ export default function Dashboard({
                                 <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-50">
                                     <CheckCircle2 className="size-5 text-emerald-400" />
                                 </div>
-                                <p className="text-sm font-medium text-slate-400">
+                                <p className="text-sm font-medium text-slate-600">
                                     All products stocked
                                 </p>
                                 <p className="text-xs text-slate-300">
@@ -832,7 +832,7 @@ export default function Dashboard({
                                                 <p className="truncate text-xs font-semibold text-slate-800">
                                                     {product.name}
                                                 </p>
-                                                <p className="font-mono text-[11px] text-slate-400">
+                                                <p className="font-mono text-[11px] text-slate-600">
                                                     {product.sku ?? '—'}
                                                 </p>
                                             </div>

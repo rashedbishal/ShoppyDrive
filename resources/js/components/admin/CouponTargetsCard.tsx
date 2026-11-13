@@ -213,7 +213,7 @@ export function CouponTargetsCard({
                 {value.applies_to === 'selected' && (
                     <AdminReveal key="coupon-targets">
                         <div className="space-y-4 border-t border-slate-100 pt-3">
-                            <p className="text-xs text-slate-400">
+                            <p className="text-xs text-slate-600">
                                 Mix categories, subcategories and products. The
                                 discount and minimum order count only these
                                 items. Anything matching more than one is still
@@ -221,7 +221,7 @@ export function CouponTargetsCard({
                             </p>
 
                             <div>
-                                <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-600 uppercase">
                                     Categories
                                 </p>
                                 <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto">
@@ -245,7 +245,7 @@ export function CouponTargetsCard({
                                         </button>
                                     ))}
                                     {categories.length === 0 && (
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             No categories yet.
                                         </p>
                                     )}
@@ -253,7 +253,7 @@ export function CouponTargetsCard({
                             </div>
 
                             <div>
-                                <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-600 uppercase">
                                     Subcategories
                                 </p>
                                 <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto">
@@ -291,7 +291,7 @@ export function CouponTargetsCard({
                                         );
                                     })}
                                     {subCategories.length === 0 && (
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             No subcategories yet.
                                         </p>
                                     )}
@@ -299,7 +299,7 @@ export function CouponTargetsCard({
                             </div>
 
                             <div>
-                                <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                                <p className="mb-1.5 text-xs font-semibold tracking-wide text-slate-600 uppercase">
                                     Products
                                 </p>
                                 <div ref={searchRef} className="relative">
@@ -340,7 +340,7 @@ export function CouponTargetsCard({
                                                         {rowsFor(
                                                             pendingVariantFor.id,
                                                         ).length > 0 && (
-                                                            <span className="text-xs text-slate-400">
+                                                            <span className="text-xs text-slate-600">
                                                                 {hasWhole(
                                                                     pendingVariantFor.id,
                                                                 )
@@ -381,7 +381,7 @@ export function CouponTargetsCard({
                                                                         variant.label
                                                                     }
                                                                     {taken && (
-                                                                        <span className="text-xs text-slate-400">
+                                                                        <span className="text-xs text-slate-600">
                                                                             {hasWhole(
                                                                                 pendingVariantFor.id,
                                                                             )
@@ -421,7 +421,7 @@ export function CouponTargetsCard({
                                                         >
                                                             {product.name}
                                                             {added && (
-                                                                <span className="text-xs text-slate-400">
+                                                                <span className="text-xs text-slate-600">
                                                                     Added
                                                                 </span>
                                                             )}
@@ -445,7 +445,7 @@ export function CouponTargetsCard({
                                                         <p className="truncate text-sm font-medium text-slate-800">
                                                             {row.product_name}
                                                         </p>
-                                                        <p className="truncate text-xs text-slate-400">
+                                                        <p className="truncate text-xs text-slate-600">
                                                             {row.variant_label ??
                                                                 'Whole product'}
                                                         </p>

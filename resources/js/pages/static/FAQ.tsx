@@ -87,7 +87,7 @@ function AccordionItem({
                     className={`flex size-7 shrink-0 items-center justify-center rounded-lg transition-all duration-200 ${
                         isOpen
                             ? 'bg-[var(--color-primary)] text-white'
-                            : 'bg-[var(--color-surface-alt)] text-[var(--color-text-muted)]'
+                            : 'bg-[var(--color-surface-alt)] text-[var(--color-text-secondary)]'
                     }`}
                 >
                     <ChevronDown
@@ -204,7 +204,7 @@ export default function FAQ({ page }: PageProps): React.JSX.Element {
                                 <button
                                     type="button"
                                     onClick={() => setQuery('')}
-                                    className="absolute top-1/2 right-4 -translate-y-1/2 text-xs text-[var(--color-text-muted)] transition hover:text-[var(--color-text-primary)]"
+                                    className="absolute top-1/2 right-4 -translate-y-1/2 text-xs text-[var(--color-text-secondary)] transition hover:text-[var(--color-text-primary)]"
                                 >
                                     Clear
                                 </button>
@@ -253,7 +253,7 @@ export default function FAQ({ page }: PageProps): React.JSX.Element {
                                     <h2 className="text-base font-bold text-[var(--color-text-primary)] sm:text-lg">
                                         {group.title}
                                     </h2>
-                                    <span className="ml-auto rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-text-muted)]">
+                                    <span className="ml-auto rounded-full border border-[var(--color-border)] bg-[var(--color-surface-alt)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-text-secondary)]">
                                         {group.items.length}
                                     </span>
                                 </div>

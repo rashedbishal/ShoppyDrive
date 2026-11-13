@@ -275,7 +275,7 @@ function InlinePayment({
                 <button
                     type="button"
                     onClick={() => router.get(route('lp.show', slug))}
-                    className="flex items-center gap-1.5 text-xs text-slate-500 transition-colors hover:text-slate-800"
+                    className="flex items-center gap-1.5 text-xs text-slate-600 transition-colors hover:text-slate-800"
                 >
                     <ArrowLeft className="size-3.5" /> Back to order form
                 </button>
@@ -296,7 +296,7 @@ function InlinePayment({
                 <h2 className="text-lg font-bold text-slate-900">
                     Complete Payment via {providerLabel}
                 </h2>
-                <p className="mt-0.5 text-xs text-slate-400">
+                <p className="mt-0.5 text-xs text-slate-600">
                     Order #{pending.order_number}
                 </p>
             </div>
@@ -308,11 +308,11 @@ function InlinePayment({
                     border: `1px solid ${providerColor}30`,
                 }}
             >
-                <p className="text-xs text-slate-500">Send exactly</p>
+                <p className="text-xs text-slate-600">Send exactly</p>
                 <p className="text-3xl font-extrabold text-slate-900">
                     {formatCurrency(pending.amount)}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-slate-600">
                     to this {providerLabel} number
                 </p>
                 <p
@@ -321,7 +321,7 @@ function InlinePayment({
                 >
                     {providerNumber}
                 </p>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-600">
                     Send Money → Personal
                 </p>
             </div>
@@ -481,7 +481,7 @@ function OptionCard({
                     )}
                 </div>
                 {option.detail && (
-                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
+                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">
                         {option.detail}
                     </p>
                 )}
@@ -572,7 +572,7 @@ function OptionCard({
                         {option.name}
                     </p>
                     {option.detail && (
-                        <p className="line-clamp-1 text-[11px] text-slate-500">
+                        <p className="line-clamp-1 text-[11px] text-slate-600">
                             {option.detail}
                         </p>
                     )}
@@ -671,7 +671,7 @@ function SectionHeading({
                 <p
                     className={cn(
                         'mt-3 text-base',
-                        light ? 'text-white/70' : 'text-slate-500',
+                        light ? 'text-white/70' : 'text-slate-600',
                     )}
                 >
                     {subtitle}
@@ -877,7 +877,7 @@ function OrderSection({
                                         : 'Quantity'}
                                 </h3>
                                 {hasVariants && (
-                                    <span className="text-xs font-medium text-slate-500">
+                                    <span className="text-xs font-medium text-slate-600">
                                         {qty} of {maxQuantity} max
                                     </span>
                                 )}
@@ -1107,7 +1107,7 @@ function OrderSection({
                                 <div>
                                     <FieldLabel htmlFor={`${fieldId}-email`}>
                                         Email{' '}
-                                        <span className="font-normal text-slate-400">
+                                        <span className="font-normal text-slate-600">
                                             (optional)
                                         </span>
                                     </FieldLabel>
@@ -1233,7 +1233,7 @@ function OrderSection({
                                 <div>
                                     <FieldLabel htmlFor={`${fieldId}-notes`}>
                                         {sel.notes_label || 'Order notes'}{' '}
-                                        <span className="font-normal text-slate-400">
+                                        <span className="font-normal text-slate-600">
                                             (optional)
                                         </span>
                                     </FieldLabel>
@@ -1333,7 +1333,7 @@ function OrderSection({
                                                     Mobile Banking (Bkash /
                                                     Nagad)
                                                     {!mobileBankingAvailable && (
-                                                        <span className="ml-1 font-normal text-slate-500">
+                                                        <span className="ml-1 font-normal text-slate-600">
                                                             — temporarily
                                                             unavailable
                                                         </span>
@@ -1420,7 +1420,7 @@ function OrderSection({
                                               )}`}
                                     </span>
                                 </button>
-                                <p className="text-center text-xs text-slate-500">
+                                <p className="text-center text-xs text-slate-600">
                                     🔒 Your details are only used to deliver
                                     this order.
                                 </p>
@@ -1975,7 +1975,7 @@ export default function LandingPageShow({
                                                     'Choose your set'}
                                             </h3>
                                             {description.selection_hint && (
-                                                <p className="mt-0.5 text-sm text-slate-500">
+                                                <p className="mt-0.5 text-sm text-slate-600">
                                                     {description.selection_hint}
                                                 </p>
                                             )}

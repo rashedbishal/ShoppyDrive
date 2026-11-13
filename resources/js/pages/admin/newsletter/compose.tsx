@@ -171,7 +171,7 @@ export default function NewsletterCompose({
                             <h1 className="text-xl font-bold text-slate-900">
                                 Send Newsletter
                             </h1>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-slate-600">
                                 Will be sent to{' '}
                                 <strong>{active_subscribers_count}</strong>{' '}
                                 active subscribers via BCC
@@ -201,7 +201,7 @@ export default function NewsletterCompose({
                                 <p className="font-semibold text-slate-900">
                                     Custom Email
                                 </p>
-                                <p className="mt-1 text-sm text-slate-500">
+                                <p className="mt-1 text-sm text-slate-600">
                                     Write a custom message with rich text
                                     formatting, images, and file attachments.
                                 </p>
@@ -224,7 +224,7 @@ export default function NewsletterCompose({
                                 <p className="font-semibold text-slate-900">
                                     Product Promotion
                                 </p>
-                                <p className="mt-1 text-sm text-slate-500">
+                                <p className="mt-1 text-sm text-slate-600">
                                     Promote a specific product with its details,
                                     price, and a professional layout.
                                 </p>
@@ -270,7 +270,7 @@ export default function NewsletterCompose({
                                         <p className="text-[15px] font-semibold text-slate-900">
                                             Confirm Send
                                         </p>
-                                        <p className="text-[13px] text-slate-500">
+                                        <p className="text-[13px] text-slate-600">
                                             This will send to{' '}
                                             <strong>
                                                 {active_subscribers_count}
@@ -337,7 +337,7 @@ export default function NewsletterCompose({
                                 ? 'Custom Email'
                                 : 'Product Promotion'}
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             Sending to{' '}
                             <strong>{active_subscribers_count}</strong> active
                             subscribers via BCC
@@ -405,11 +405,11 @@ export default function NewsletterCompose({
                                     <div>
                                         <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                                             Attachments{' '}
-                                            <span className="font-normal text-slate-400">
+                                            <span className="font-normal text-slate-600">
                                                 (optional)
                                             </span>
                                         </label>
-                                        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500 transition hover:border-[#c8102e] hover:text-[#c8102e]">
+                                        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-600 transition hover:border-[#c8102e] hover:text-[#c8102e]">
                                             <Paperclip className="size-4" />
                                             <span>Click to attach files</span>
                                             <input
@@ -669,7 +669,7 @@ export default function NewsletterCompose({
                                         <AdminReveal key="selected-product">
                                             <Card className="overflow-hidden p-0 shadow-sm">
                                                 <div className="border-b border-slate-100 px-4 py-3">
-                                                    <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                                                    <p className="text-xs font-semibold tracking-wider text-slate-600 uppercase">
                                                         Preview
                                                     </p>
                                                 </div>
@@ -709,7 +709,7 @@ export default function NewsletterCompose({
                                                                 }
                                                             </p>
                                                             {selectedProduct.short_description && (
-                                                                <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-slate-500">
+                                                                <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-slate-600">
                                                                     {
                                                                         selectedProduct.short_description
                                                                     }
@@ -742,7 +742,7 @@ export default function NewsletterCompose({
                                                         </div>
 
                                                         <div className="border-t border-slate-100 bg-slate-50 px-4 py-3 text-center">
-                                                            <p className="text-[10px] text-slate-400">
+                                                            <p className="text-[10px] text-slate-600">
                                                                 Sent via
                                                                 ShoppyDrive
                                                                 Newsletter

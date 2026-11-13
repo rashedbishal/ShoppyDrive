@@ -24,7 +24,7 @@ const inputClass =
 const textareaClass =
     'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#c8102e] resize-none';
 const labelClass = 'mb-1 block text-xs font-medium text-slate-600';
-const hintClass = 'mt-1 text-[11px] text-slate-400';
+const hintClass = 'mt-1 text-[11px] text-slate-600';
 
 export function variantLabel(variant: BuilderVariant): string {
     const values = Object.values(variant.attributes ?? {});
@@ -419,7 +419,7 @@ export function HeroExtras({
                             type="button"
                             disabled={uploading || extra.length >= 12}
                             onClick={() => fileRef.current?.click()}
-                            className="flex size-16 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-slate-300 text-[10px] text-slate-500 hover:border-[#c8102e] hover:text-[#c8102e] disabled:opacity-50"
+                            className="flex size-16 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-slate-300 text-[10px] text-slate-600 hover:border-[#c8102e] hover:text-[#c8102e] disabled:opacity-50"
                         >
                             <Upload className="size-4" />
                             {uploading ? 'Uploading…' : 'Add'}
@@ -532,7 +532,7 @@ export function CombosEditor({
 
     if (variants.length === 0) {
         return (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600">
                 This product has no variants, so there is nothing to combine.
                 Add variants to the product first.
             </p>
@@ -541,7 +541,7 @@ export function CombosEditor({
 
     return (
         <>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600">
                 Single variants are always orderable on their own. Build combos
                 (e.g. a couple set) out of this product's variants — a combo
                 takes stock from each variant it contains. Save the page after
@@ -1015,7 +1015,7 @@ export function ContactEditor({
 
     return (
         <>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600">
                 Shown in the delivery section and on the order success page.
                 Leave empty to use the site's contact details.
             </p>
@@ -1181,7 +1181,7 @@ export function TestimonialImagesEditor({
 
             {testimonials.mode === 'image' && (
                 <div className="space-y-2.5">
-                    <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500">
+                    <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-600">
                         <p className="mb-1 text-xs font-semibold text-slate-600">
                             Suggested image sizes
                         </p>
@@ -1270,7 +1270,7 @@ export function TestimonialImagesEditor({
                                 images.length >= TESTIMONIAL_IMAGE_LIMIT
                             }
                             onClick={() => fileRef.current?.click()}
-                            className="flex h-28 w-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 text-[10px] text-slate-500 hover:border-[#c8102e] hover:text-[#c8102e] disabled:opacity-50"
+                            className="flex h-28 w-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 text-[10px] text-slate-600 hover:border-[#c8102e] hover:text-[#c8102e] disabled:opacity-50"
                         >
                             <Upload className="size-4" />
                             {uploading ? 'Uploading…' : 'Add images'}

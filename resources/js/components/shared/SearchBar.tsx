@@ -560,7 +560,7 @@ export function SearchBar({
                                                                 {sub.name}
                                                             </p>
                                                             {sub.category_name && (
-                                                                <p className="text-xs text-gray-400">
+                                                                <p className="text-xs text-gray-600">
                                                                     in{' '}
                                                                     {
                                                                         sub.category_name
@@ -603,7 +603,7 @@ export function SearchBar({
                             !hasResults &&
                             query.trim().length >= 2 && (
                                 <div className="px-4 py-6 text-center">
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-sm text-gray-600">
                                         No results found for{' '}
                                         <span className="font-semibold text-gray-800">
                                             "{query}"
@@ -623,7 +623,7 @@ export function SearchBar({
                             <div className="p-4">
                                 <div className="mb-3 flex items-center gap-2">
                                     <TrendingUp className="size-4 text-gray-400" />
-                                    <p className="text-[11px] font-bold tracking-widest text-gray-400 uppercase">
+                                    <p className="text-[11px] font-bold tracking-widest text-gray-600 uppercase">
                                         Popular searches
                                     </p>
                                 </div>
@@ -661,7 +661,7 @@ function SectionHeader({
         <div
             className={`px-4 pt-3 pb-1 ${border ? 'border-t border-gray-100' : ''}`}
         >
-            <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+            <p className="text-[10px] font-bold tracking-widest text-gray-600 uppercase">
                 {label}
             </p>
         </div>

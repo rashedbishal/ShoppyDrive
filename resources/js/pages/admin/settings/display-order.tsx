@@ -45,7 +45,7 @@ export default function DisplayOrderSettings({
                     <h1 className="text-xl font-bold text-slate-900">
                         Display Order
                     </h1>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="mt-1 text-sm text-slate-600">
                         The category and search results pages keep their own
                         sort dropdown for shoppers and aren't listed here.
                         Everything below has no customer-facing sort control —

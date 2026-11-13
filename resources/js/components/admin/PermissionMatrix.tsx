@@ -61,7 +61,7 @@ export function PermissionMatrix({ catalog, value, onChange }: Props) {
         <div className="space-y-5">
             {catalog.map((group) => (
                 <div key={group.group}>
-                    <p className="mb-2 text-xs font-semibold tracking-widest text-slate-400 uppercase">
+                    <p className="mb-2 text-xs font-semibold tracking-widest text-slate-600 uppercase">
                         {group.group}
                     </p>
                     <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">

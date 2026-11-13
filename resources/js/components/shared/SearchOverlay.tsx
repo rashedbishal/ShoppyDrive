@@ -71,7 +71,7 @@ export function SearchOverlay({
                         {/* Popular Searches / Suggestions */}
                         <div className="space-y-6">
                             <div>
-                                <h3 className="mb-4 text-xs font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                <h3 className="mb-4 text-xs font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                     Popular Searches
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
@@ -87,12 +87,12 @@ export function SearchOverlay({
                             </div>
 
                             <div>
-                                <h3 className="mb-4 text-xs font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                <h3 className="mb-4 text-xs font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                     Recent Views
                                 </h3>
                                 <div className="grid grid-cols-2 gap-4">
                                     {/* This would ideally come from the same localStorage used in ProductDetail */}
-                                    <p className="col-span-2 text-sm text-[var(--color-text-muted)] italic">
+                                    <p className="col-span-2 text-sm text-[var(--color-text-secondary)] italic">
                                         No recent views yet.
                                     </p>
                                 </div>

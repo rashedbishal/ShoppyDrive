@@ -99,7 +99,7 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
                         <h1 className="text-xl font-bold text-slate-900">
                             Orders
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {orders.total} total
                         </p>
                     </div>
@@ -165,7 +165,7 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
 
                     <div className="divide-y divide-slate-50">
                         {orders.data.length === 0 ? (
-                            <p className="py-12 text-center text-sm text-slate-400">
+                            <p className="py-12 text-center text-sm text-slate-600">
                                 No orders found.
                             </p>
                         ) : (
@@ -191,7 +191,7 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
                                                 </Badge>
                                             )}
                                         </div>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             {order.user?.name ?? 'Guest'} ·{' '}
                                             {new Date(
                                                 order.created_at,
@@ -229,7 +229,7 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
 
                     {orders.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {orders.current_page} of {orders.last_page}
                             </p>
                             <div className="flex gap-1">

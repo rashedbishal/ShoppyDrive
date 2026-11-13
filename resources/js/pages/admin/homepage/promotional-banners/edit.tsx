@@ -186,7 +186,7 @@ export default function PromotionalBannerEdit({
                         <h1 className="text-2xl font-bold text-slate-900">
                             Edit Promotional Banner
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             Update homepage banner information.
                         </p>
                     </div>
@@ -258,7 +258,7 @@ export default function PromotionalBannerEdit({
                                         <p className="text-sm font-medium text-text-primary">
                                             Banner Image
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             Upload a new image to replace the
                                             current one. Leave as-is to keep the
                                             existing image.
@@ -302,7 +302,7 @@ export default function PromotionalBannerEdit({
                                             searchResults.length > 0) && (
                                             <div className="absolute top-full right-0 left-0 z-50 mt-1 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                                                 {searching && (
-                                                    <p className="px-4 py-3 text-sm text-slate-400">
+                                                    <p className="px-4 py-3 text-sm text-slate-600">
                                                         Searching...
                                                     </p>
                                                 )}
@@ -344,7 +344,7 @@ export default function PromotionalBannerEdit({
                                                                                 product.name
                                                                             }
                                                                         </p>
-                                                                        <p className="text-xs text-slate-500">
+                                                                        <p className="text-xs text-slate-600">
                                                                             ৳
                                                                             {
                                                                                 product.price
@@ -368,10 +368,10 @@ export default function PromotionalBannerEdit({
                                     {selectedProducts.length === 0 ? (
                                         <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-10 text-center">
                                             <Package className="mx-auto mb-3 size-10 text-slate-300" />
-                                            <p className="text-slate-500">
+                                            <p className="text-slate-600">
                                                 No products added yet.
                                             </p>
-                                            <p className="text-xs text-slate-400">
+                                            <p className="text-xs text-slate-600">
                                                 Search and add products —
                                                 "Explore now" will link to them.
                                             </p>
@@ -469,7 +469,7 @@ export default function PromotionalBannerEdit({
                                         <AnimatePresence initial={false}>
                                             {hasProducts && (
                                                 <AdminReveal key="has-products">
-                                                    <p className="text-xs text-slate-400">
+                                                    <p className="text-xs text-slate-600">
                                                         Auto-set to show this
                                                         banner's products.
                                                         Remove all products to
@@ -546,7 +546,7 @@ export default function PromotionalBannerEdit({
                         <Button
                             asChild
                             variant="ghost"
-                            className="text-slate-500"
+                            className="text-slate-600"
                         >
                             <Link
                                 href={route('admin.promotional-banners.index')}

@@ -113,7 +113,7 @@ function FlashSalesContent({
                             ]}
                             aside={
                                 <div className="space-y-2 lg:justify-self-end">
-                                    <p className="text-xs font-semibold tracking-[0.2em] text-[var(--color-text-muted)] uppercase">
+                                    <p className="text-xs font-semibold tracking-[0.2em] text-[var(--color-text-secondary)] uppercase">
                                         Ends in
                                     </p>
                                     <CountdownTimer
@@ -173,7 +173,7 @@ function FlashSalesContent({
                 {upcomingSales.length > 0 ? (
                     <section className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                         <div className="space-y-2">
-                            <p className="text-xs font-semibold tracking-[0.24em] text-[var(--color-text-muted)] uppercase">
+                            <p className="text-xs font-semibold tracking-[0.24em] text-[var(--color-text-secondary)] uppercase">
                                 Coming up
                             </p>
                             <h2 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-3xl">
@@ -222,7 +222,7 @@ function FlashSalesContent({
                     <section className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                             <div className="space-y-2">
-                                <p className="text-xs font-semibold tracking-[0.24em] text-[var(--color-text-muted)] uppercase">
+                                <p className="text-xs font-semibold tracking-[0.24em] text-[var(--color-text-secondary)] uppercase">
                                     Deals
                                 </p>
                                 <h2 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-3xl">

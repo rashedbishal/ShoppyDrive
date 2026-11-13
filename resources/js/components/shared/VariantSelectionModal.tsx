@@ -174,7 +174,7 @@ export function VariantSelectionModal({
                                                 <span className="text-sm font-bold tracking-wide text-[var(--color-text-primary)] uppercase">
                                                     Select {attr.name}
                                                 </span>
-                                                <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                                                <span className="text-xs font-medium text-[var(--color-text-secondary)]">
                                                     {selectedAttributes[
                                                         attr.name
                                                     ] ?? ''}
@@ -302,7 +302,7 @@ export function VariantSelectionModal({
                                                 ) : null}
                                             </div>
                                             {selectedVariant?.sku ? (
-                                                <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                                                <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
                                                     SKU: {selectedVariant.sku}
                                                 </p>
                                             ) : null}

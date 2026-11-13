@@ -111,7 +111,7 @@ export default function CartDrawer(): React.JSX.Element {
                                             This order gets free delivery
                                         </p>
                                     ) : isEstimate ? (
-                                        <p className="mt-0.5 text-[11px] text-[var(--color-text-muted)]">
+                                        <p className="mt-0.5 text-[11px] text-[var(--color-text-secondary)]">
                                             Estimate. Set by your address at
                                             checkout
                                         </p>

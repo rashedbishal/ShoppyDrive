@@ -36,7 +36,7 @@ export function FormPageHeader({
                     {title}
                 </h1>
                 {description && (
-                    <p className="truncate text-sm text-slate-500">
+                    <p className="truncate text-sm text-slate-600">
                         {description}
                     </p>
                 )}

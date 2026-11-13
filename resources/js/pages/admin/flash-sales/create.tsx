@@ -104,7 +104,7 @@ export default function FlashSaleCreate() {
                         <h1 className="text-2xl font-bold text-slate-900">
                             Add Flash Sale
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             Schedule a time-limited discount on selected
                             products.
                         </p>
@@ -228,7 +228,7 @@ export default function FlashSaleCreate() {
                         <Button
                             asChild
                             variant="ghost"
-                            className="text-slate-500"
+                            className="text-slate-600"
                         >
                             <Link href={listUrl}>Cancel</Link>
                         </Button>

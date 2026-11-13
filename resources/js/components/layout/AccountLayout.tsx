@@ -81,7 +81,7 @@ export default function AccountLayout({
                                     <p className="font-semibold text-[var(--color-text-primary)]">
                                         {auth.user?.name}
                                     </p>
-                                    <p className="text-xs text-[var(--color-text-muted)]">
+                                    <p className="text-xs text-[var(--color-text-secondary)]">
                                         {auth.user?.email}
                                     </p>
                                 </div>
@@ -91,7 +91,7 @@ export default function AccountLayout({
                                         <p className="text-sm font-bold text-[var(--color-text-primary)]">
                                             {account_stats?.orders_count ?? 0}
                                         </p>
-                                        <p className="text-[11px] text-[var(--color-text-muted)]">
+                                        <p className="text-[11px] text-[var(--color-text-secondary)]">
                                             Orders
                                         </p>
                                     </div>
@@ -99,7 +99,7 @@ export default function AccountLayout({
                                         <p className="text-sm font-bold text-[var(--color-text-primary)]">
                                             {account_stats?.wishlist_count ?? 0}
                                         </p>
-                                        <p className="text-[11px] text-[var(--color-text-muted)]">
+                                        <p className="text-[11px] text-[var(--color-text-secondary)]">
                                             Wishlist
                                         </p>
                                     </div>
@@ -108,7 +108,7 @@ export default function AccountLayout({
                                             {account_stats?.addresses_count ??
                                                 0}
                                         </p>
-                                        <p className="text-[11px] text-[var(--color-text-muted)]">
+                                        <p className="text-[11px] text-[var(--color-text-secondary)]">
                                             Addresses
                                         </p>
                                     </div>

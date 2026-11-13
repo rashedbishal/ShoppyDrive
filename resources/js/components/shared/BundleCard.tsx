@@ -192,7 +192,7 @@ export function BundleCard({
                         </Fragment>
                     ))}
                     {extraCount > 0 && (
-                        <span className="shrink-0 text-xs font-semibold text-[var(--color-text-muted)]">
+                        <span className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]">
                             +{extraCount}
                         </span>
                     )}

@@ -344,7 +344,7 @@ function Select({
                     )}
                     {...(props as ComponentProps<typeof ListboxButton>)}
                 >
-                    <span className={cn("min-w-0 flex-1 truncate", !selectedOption && "text-text-muted")}>
+                    <span className={cn("min-w-0 flex-1 truncate", !selectedOption && "text-text-secondary")}>
                         {selectedOption ? selectedOption.label : placeholderLabel}
                     </span>
                     <ChevronDown className="size-4 shrink-0 text-text-muted transition-transform duration-200 group-data-open:rotate-180 group-data-open:text-primary" />

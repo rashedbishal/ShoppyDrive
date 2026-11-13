@@ -109,7 +109,7 @@ export default function CategoryShow({
                         </CardHeader>
 
                         <CardContent className="flex items-center justify-between pb-6">
-                            <div className="flex items-center gap-2 text-sm text-slate-500">
+                            <div className="flex items-center gap-2 text-sm text-slate-600">
                                 <Star className="size-4 text-amber-500" />
                                 Product detail
                             </div>

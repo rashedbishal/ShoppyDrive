@@ -85,7 +85,7 @@ export default function CourierReadiness({ live, current, recent }: Props) {
                     <h1 className="text-xl font-bold text-slate-900">
                         Courier verification readiness
                     </h1>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-600">
                         Required after every production deployment before any
                         courier consignment can be verified or a courier-handled
                         order refunded. This records your attestation; it does

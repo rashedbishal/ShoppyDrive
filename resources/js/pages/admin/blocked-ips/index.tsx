@@ -92,7 +92,7 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                         <h1 className="text-xl font-bold text-slate-900">
                             Blocked IPs
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             Customers ordering from a blocked IP address can't
                             place new orders and see an error on checkout.
                         </p>
@@ -165,7 +165,7 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                                         <div>
                                             <label className="mb-1 block text-xs font-medium text-slate-600">
                                                 Reason
-                                                <span className="ml-1 font-normal text-slate-400">
+                                                <span className="ml-1 font-normal text-slate-600">
                                                     — optional, visible to
                                                     admins only
                                                 </span>
@@ -225,7 +225,7 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
 
                 <Card className="overflow-hidden p-0 shadow-sm">
                     {blockedIps.length === 0 ? (
-                        <p className="py-12 text-center text-sm text-slate-400">
+                        <p className="py-12 text-center text-sm text-slate-600">
                             No IP addresses are blocked.
                         </p>
                     ) : (
@@ -241,11 +241,11 @@ export default function BlockedIpsIndex({ blockedIps }: Props) {
                                             {blockedIp.ip_address}
                                         </p>
                                         {blockedIp.reason && (
-                                            <p className="text-xs break-words text-slate-500">
+                                            <p className="text-xs break-words text-slate-600">
                                                 {blockedIp.reason}
                                             </p>
                                         )}
-                                        <p className="text-[11px] text-slate-400">
+                                        <p className="text-[11px] text-slate-600">
                                             Blocked{' '}
                                             {new Date(
                                                 blockedIp.created_at,

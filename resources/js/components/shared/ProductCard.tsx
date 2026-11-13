@@ -348,7 +348,7 @@ export function ProductCard({
 
                 <div className="flex min-w-0 flex-col gap-2.5">
                     <div className="space-y-1">
-                        <p className="truncate text-[11px] leading-4 font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
+                        <p className="truncate text-[11px] leading-4 font-semibold tracking-[0.22em] text-[var(--color-text-secondary)] uppercase">
                             {brandName}
                         </p>
                         <Link
@@ -447,7 +447,7 @@ export function ProductCard({
             {/* Every row below has a fixed height so the card never changes size. */}
             <div className="flex shrink-0 flex-col gap-1.5 p-2.5 sm:p-3">
                 <div className="space-y-0.5">
-                    <p className="truncate text-[11px] leading-4 font-semibold tracking-[0.22em] text-[var(--color-text-muted)] uppercase">
+                    <p className="truncate text-[11px] leading-4 font-semibold tracking-[0.22em] text-[var(--color-text-secondary)] uppercase">
                         {brandName}
                     </p>
                     <Link

@@ -93,7 +93,7 @@ function DeleteModal({
                             <h2 className="text-[15px] font-semibold text-slate-900">
                                 Delete SMS
                             </h2>
-                            <p className="mt-0.5 text-[13px] text-slate-500">
+                            <p className="mt-0.5 text-[13px] text-slate-600">
                                 This action cannot be undone. Enter your admin
                                 password to confirm.
                             </p>
@@ -104,7 +104,7 @@ function DeleteModal({
                         <div className="mb-1 line-clamp-2 rounded-lg bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
                             {sms.content}
                         </div>
-                        <p className="mb-3.5 text-[11px] text-slate-400">
+                        <p className="mb-3.5 text-[11px] text-slate-600">
                             From: {sms.sender}
                         </p>
                     </motion.div>
@@ -258,7 +258,7 @@ export default function ReceivedSmsIndex({
                                 Live
                             </span>
                         </div>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {sms.total} total · updates every 15 seconds
                         </p>
                     </div>
@@ -302,7 +302,7 @@ export default function ReceivedSmsIndex({
                         {sms.data.length === 0 ? (
                             <div className="py-16 text-center">
                                 <MessageSquare className="mx-auto mb-3 size-10 text-slate-300" />
-                                <p className="text-sm text-slate-400">
+                                <p className="text-sm text-slate-600">
                                     No SMS received yet.
                                 </p>
                             </div>
@@ -333,7 +333,7 @@ export default function ReceivedSmsIndex({
                                                 )}
                                                 <span className="font-mono text-sm font-bold text-slate-800">
                                                     {item.parsed_transaction_id ?? (
-                                                        <span className="font-normal text-slate-400">
+                                                        <span className="font-normal text-slate-600">
                                                             No TrxID parsed
                                                         </span>
                                                     )}
@@ -358,10 +358,10 @@ export default function ReceivedSmsIndex({
                                                         : 'Pending'}
                                                 </Badge>
                                             </div>
-                                            <p className="truncate text-xs text-slate-400">
+                                            <p className="truncate text-xs text-slate-600">
                                                 From: {item.sender}
                                             </p>
-                                            <p className="line-clamp-2 text-xs leading-relaxed text-slate-500">
+                                            <p className="line-clamp-2 text-xs leading-relaxed text-slate-600">
                                                 {item.content}
                                             </p>
                                             {!item.is_matched &&
@@ -411,7 +411,7 @@ export default function ReceivedSmsIndex({
                                             )}
                                         </div>
                                         <div className="flex shrink-0 items-center gap-3">
-                                            <p className="text-xs text-slate-400">
+                                            <p className="text-xs text-slate-600">
                                                 {new Date(
                                                     item.received_at,
                                                 ).toLocaleString('en-BD', {
@@ -443,7 +443,7 @@ export default function ReceivedSmsIndex({
                                     data={sms}
                                     onPageChange={handlePageChange}
                                 />
-                                <p className="text-xs text-slate-400">
+                                <p className="text-xs text-slate-600">
                                     Showing {sms.from}–{sms.to} of {sms.total}
                                 </p>
                             </div>

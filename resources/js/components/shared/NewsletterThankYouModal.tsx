@@ -292,7 +292,7 @@ export default function NewsletterThankYouModal({
                                             <DialogPrimitive.Close className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-6 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.98]">
                                                 Continue shopping
                                             </DialogPrimitive.Close>
-                                            <p className="mt-3 text-xs text-[var(--color-text-muted)]">
+                                            <p className="mt-3 text-xs text-[var(--color-text-secondary)]">
                                                 You can unsubscribe any time
                                                 from the link in our emails.
                                             </p>

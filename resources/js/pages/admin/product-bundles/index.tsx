@@ -109,7 +109,7 @@ export default function ProductBundlesIndex({ bundles, filters }: Props) {
                         <h1 className="text-xl font-bold text-slate-900">
                             Bundles
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {bundles.total} total
                         </p>
                     </div>
@@ -162,7 +162,7 @@ export default function ProductBundlesIndex({ bundles, filters }: Props) {
                                 checked={bulk.allSelected}
                                 onCheckedChange={bulk.toggleAll}
                             />
-                            <span className="text-xs font-medium text-slate-500">
+                            <span className="text-xs font-medium text-slate-600">
                                 Select all
                             </span>
                         </div>
@@ -170,7 +170,7 @@ export default function ProductBundlesIndex({ bundles, filters }: Props) {
 
                     <div className="divide-y divide-slate-50">
                         {bundles.data.length === 0 ? (
-                            <p className="py-12 text-center text-sm text-slate-400">
+                            <p className="py-12 text-center text-sm text-slate-600">
                                 No bundles found.
                             </p>
                         ) : (
@@ -200,7 +200,7 @@ export default function ProductBundlesIndex({ bundles, filters }: Props) {
                                         <p className="truncate text-sm font-semibold text-slate-800">
                                             {bundle.name}
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-600">
                                             {bundle.discount_type ===
                                             'fixed_price'
                                                 ? `Bundle price: ৳${bundle.bundle_price?.toLocaleString() ?? '—'}`
@@ -208,7 +208,7 @@ export default function ProductBundlesIndex({ bundles, filters }: Props) {
                                         </p>
                                     </div>
                                     <div className="order-last flex w-full items-center gap-2 pl-7 sm:order-none sm:w-auto sm:gap-4 sm:pl-0">
-                                        <p className="mr-auto text-xs text-slate-500 sm:mr-0">
+                                        <p className="mr-auto text-xs text-slate-600 sm:mr-0">
                                             {bundle.items_count} products
                                         </p>
                                         <Badge
@@ -251,7 +251,7 @@ export default function ProductBundlesIndex({ bundles, filters }: Props) {
 
                     {bundles.last_page > 1 && (
                         <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Page {bundles.current_page} of{' '}
                                 {bundles.last_page}
                             </p>

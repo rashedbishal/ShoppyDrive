@@ -193,7 +193,7 @@ export default function ChangePassword(): React.JSX.Element {
                                     {form.data.password && (
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                                <span className="text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                                     Strength:{' '}
                                                     {
                                                         strengthLabels[
@@ -201,7 +201,7 @@ export default function ChangePassword(): React.JSX.Element {
                                                         ]
                                                     }
                                                 </span>
-                                                <span className="text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                                <span className="text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                                     {strength * 25}%
                                                 </span>
                                             </div>
@@ -249,7 +249,7 @@ export default function ChangePassword(): React.JSX.Element {
                                                 ].map((item) => (
                                                     <li
                                                         key={item.label}
-                                                        className={`flex items-center gap-2 text-[10px] font-bold tracking-tight uppercase ${item.check ? 'text-green-600' : 'text-gray-400'}`}
+                                                        className={`flex items-center gap-2 text-[10px] font-bold tracking-tight uppercase ${item.check ? 'text-green-600' : 'text-gray-600'}`}
                                                     >
                                                         <CheckCircle2
                                                             size={10}

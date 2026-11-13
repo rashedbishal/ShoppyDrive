@@ -81,7 +81,7 @@ function ReportTable({ report }: { report: RestoreReport }) {
                                     <dd className="text-sm font-semibold text-slate-800">
                                         {value}
                                     </dd>
-                                    <dt className="text-[10px] text-slate-400">
+                                    <dt className="text-[10px] text-slate-600">
                                         {label}
                                     </dt>
                                 </div>
@@ -99,7 +99,7 @@ function ReportTable({ report }: { report: RestoreReport }) {
                                 <dd className="text-sm font-semibold text-slate-800">
                                     {value}
                                 </dd>
-                                <dt className="text-[10px] text-slate-400">
+                                <dt className="text-[10px] text-slate-600">
                                     {label}
                                 </dt>
                             </div>
@@ -110,7 +110,7 @@ function ReportTable({ report }: { report: RestoreReport }) {
 
             <div className="hidden overflow-x-auto rounded-lg border border-slate-200 sm:block">
                 <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-left text-xs text-slate-500">
+                    <thead className="bg-slate-50 text-left text-xs text-slate-600">
                         <tr>
                             <th className="px-3 py-2 font-medium">Table</th>
                             <th className="px-3 py-2 text-right font-medium">
@@ -339,7 +339,7 @@ function UploadBackup({ maxMegabytes }: { maxMegabytes: number }) {
                     setData('backup', event.target.files?.[0] ?? null)
                 }
             />
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600">
                 Up to {maxMegabytes} MB, subject to your hosting upload limit.
             </p>
             {errors.backup && (
@@ -372,7 +372,7 @@ export default function DatabaseBackupIndex({
                         <DatabaseBackup className="size-5" />
                         Database Backup
                     </h1>
-                    <p className="mt-0.5 text-sm text-slate-500">
+                    <p className="mt-0.5 text-sm text-slate-600">
                         Download all shop data as a .sql file, or restore one.
                         Only you can see this page.
                     </p>
@@ -463,7 +463,7 @@ export default function DatabaseBackupIndex({
                         <h2 className="font-semibold text-slate-900">
                             Restore a backup
                         </h2>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             Upload a file to check it first. New rows are added,
                             changed rows are updated, identical rows are
                             skipped, and nothing is ever deleted. Restoring

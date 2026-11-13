@@ -383,7 +383,7 @@ export default function ConvertIncompleteOrder({
                         <h1 className="text-2xl font-bold text-slate-900">
                             Convert to Order
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             Creates a real, cash-on-delivery order for{' '}
                             {incompleteOrder.phone}.
                         </p>
@@ -630,7 +630,7 @@ export default function ConvertIncompleteOrder({
                                                 key="variant-picker"
                                                 className="absolute z-10 mt-1 w-full origin-top rounded-lg border border-slate-200 bg-white p-2 shadow-lg"
                                             >
-                                                <p className="mb-1.5 px-1 text-xs font-semibold text-slate-500">
+                                                <p className="mb-1.5 px-1 text-xs font-semibold text-slate-600">
                                                     Choose a variant of{' '}
                                                     {pendingVariantFor.name}
                                                 </p>
@@ -654,7 +654,7 @@ export default function ConvertIncompleteOrder({
                                                                     ) ||
                                                                         variant.sku}
                                                                 </span>
-                                                                <span className="text-xs text-slate-400">
+                                                                <span className="text-xs text-slate-600">
                                                                     {formatCurrency(
                                                                         variant.price,
                                                                     )}{' '}
@@ -689,7 +689,7 @@ export default function ConvertIncompleteOrder({
                                                             {product.name}
                                                             {product.variants
                                                                 .length > 0 && (
-                                                                <span className="ml-1.5 text-xs text-slate-400">
+                                                                <span className="ml-1.5 text-xs text-slate-600">
                                                                     (
                                                                     {
                                                                         product
@@ -700,7 +700,7 @@ export default function ConvertIncompleteOrder({
                                                                 </span>
                                                             )}
                                                         </span>
-                                                        <span className="shrink-0 text-xs text-slate-400">
+                                                        <span className="shrink-0 text-xs text-slate-600">
                                                             {formatCurrency(
                                                                 product.price,
                                                             )}
@@ -714,7 +714,7 @@ export default function ConvertIncompleteOrder({
                                         query.trim() !== '' &&
                                         !searching &&
                                         results.length === 0 && (
-                                            <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-center text-xs text-slate-400 shadow-lg">
+                                            <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 text-center text-xs text-slate-600 shadow-lg">
                                                 No products found.
                                             </div>
                                         )}
@@ -730,7 +730,7 @@ export default function ConvertIncompleteOrder({
                                     {lines.length === 0 ? (
                                         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 py-8 text-center">
                                             <ShoppingBag className="size-6 text-slate-300" />
-                                            <p className="text-xs text-slate-400">
+                                            <p className="text-xs text-slate-600">
                                                 No products selected yet.
                                             </p>
                                         </div>
@@ -751,13 +751,13 @@ export default function ConvertIncompleteOrder({
                                                                 }
                                                             </p>
                                                             {line.variant_attributes && (
-                                                                <p className="truncate text-xs text-slate-400">
+                                                                <p className="truncate text-xs text-slate-600">
                                                                     {variantLabel(
                                                                         line.variant_attributes,
                                                                     )}
                                                                 </p>
                                                             )}
-                                                            <p className="text-xs text-slate-400">
+                                                            <p className="text-xs text-slate-600">
                                                                 {formatCurrency(
                                                                     line.price,
                                                                 )}{' '}

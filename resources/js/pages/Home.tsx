@@ -134,7 +134,7 @@ function SectionHeading({
         >
             <div className="space-y-2">
                 {eyebrow ? (
-                    <p className="text-xs font-semibold tracking-[0.24em] text-[var(--color-text-muted)] uppercase">
+                    <p className="text-xs font-semibold tracking-[0.24em] text-[var(--color-text-secondary)] uppercase">
                         {eyebrow}
                     </p>
                 ) : null}
@@ -507,7 +507,7 @@ function CategoryCard({ category }: CategoryCardProps): React.JSX.Element {
             <span className="text-xs leading-tight font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-sm">
                 {category.name}
             </span>
-            <span className="text-[11px] text-[var(--color-text-muted)]">
+            <span className="text-[11px] text-[var(--color-text-secondary)]">
                 {category.productsCount} products
             </span>
         </Link>

@@ -42,7 +42,7 @@ export function RatingBreakdown({
                         />
                     ))}
                 </div>
-                <span className="text-sm font-medium text-[var(--color-text-muted)]">
+                <span className="text-sm font-medium text-[var(--color-text-secondary)]">
                     {total} Reviews
                 </span>
             </div>
@@ -70,7 +70,7 @@ export function RatingBreakdown({
                                     style={{ width: `${pct}%` }}
                                 />
                             </div>
-                            <span className="w-8 text-right text-xs font-medium text-[var(--color-text-muted)]">
+                            <span className="w-8 text-right text-xs font-medium text-[var(--color-text-secondary)]">
                                 {count}
                             </span>
                         </div>

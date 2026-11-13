@@ -197,7 +197,7 @@ export default function AdminCreate({ sectionCatalog }: Props) {
                             <CardTitle className="text-sm font-semibold text-slate-700">
                                 Permissions
                             </CardTitle>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Pick which sections this admin can see. Each one
                                 defaults to view-only — check Create, Update or
                                 Delete to grant more.

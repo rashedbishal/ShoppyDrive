@@ -247,7 +247,7 @@ export function CustomerErasureCard(): React.JSX.Element {
                         </div>
                         <ul className="max-h-64 divide-y divide-slate-100 overflow-auto rounded-lg border border-slate-200">
                             {results.length === 0 ? (
-                                <li className="px-3 py-3 text-xs text-slate-400">
+                                <li className="px-3 py-3 text-xs text-slate-600">
                                     {searching
                                         ? 'Searching…'
                                         : 'No customers found.'}
@@ -263,12 +263,12 @@ export function CustomerErasureCard(): React.JSX.Element {
                                             <span className="min-w-0 truncate text-slate-700">
                                                 {customerLabel(customer)}
                                                 {customer.anonymized && (
-                                                    <span className="ml-1 text-xs text-slate-400">
+                                                    <span className="ml-1 text-xs text-slate-600">
                                                         (anonymized)
                                                     </span>
                                                 )}
                                             </span>
-                                            <span className="shrink-0 text-xs text-slate-400">
+                                            <span className="shrink-0 text-xs text-slate-600">
                                                 {customer.orders_count}{' '}
                                                 {customer.orders_count === 1
                                                     ? 'order'
@@ -289,14 +289,14 @@ export function CustomerErasureCard(): React.JSX.Element {
                             <button
                                 type="button"
                                 onClick={reset}
-                                className="text-xs font-medium text-slate-500 underline hover:text-slate-800"
+                                className="text-xs font-medium text-slate-600 underline hover:text-slate-800"
                             >
                                 Choose someone else
                             </button>
                         </div>
 
                         {summary === null ? (
-                            <p className="text-xs text-slate-400">
+                            <p className="text-xs text-slate-600">
                                 Checking what would be deleted…
                             </p>
                         ) : (
@@ -310,7 +310,7 @@ export function CustomerErasureCard(): React.JSX.Element {
                                             key={label}
                                             className="flex justify-between gap-2"
                                         >
-                                            <dt className="text-slate-500">
+                                            <dt className="text-slate-600">
                                                 {label}
                                             </dt>
                                             <dd className="font-semibold text-slate-800">
@@ -320,7 +320,7 @@ export function CustomerErasureCard(): React.JSX.Element {
                                     ))}
                                 </dl>
                                 {summary.unfinished_orders > 0 && (
-                                    <p className="mt-2 text-xs text-slate-500">
+                                    <p className="mt-2 text-xs text-slate-600">
                                         {summary.unfinished_orders} unfinished{' '}
                                         {summary.unfinished_orders === 1
                                             ? 'order puts its'

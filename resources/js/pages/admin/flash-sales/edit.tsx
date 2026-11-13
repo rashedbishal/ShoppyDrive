@@ -172,7 +172,7 @@ export default function FlashSaleEdit({ flashSale }: Props) {
                         <h1 className="text-2xl font-bold text-slate-900">
                             Edit Flash Sale
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {flashSale.name}
                         </p>
                     </div>
@@ -294,7 +294,7 @@ export default function FlashSaleEdit({ flashSale }: Props) {
                         <Button
                             asChild
                             variant="ghost"
-                            className="text-slate-500"
+                            className="text-slate-600"
                         >
                             <Link href={listUrl}>Cancel</Link>
                         </Button>

@@ -327,7 +327,7 @@ export default function AboutPageConfig({ settings }: Props) {
                             ))}
                         </AnimatePresence>
                         {data.about_stats.length === 0 && (
-                            <p className="py-4 text-center text-xs text-slate-400 italic">
+                            <p className="py-4 text-center text-xs text-slate-600 italic">
                                 No stats added. Max 4 recommended.
                             </p>
                         )}
@@ -392,7 +392,7 @@ export default function AboutPageConfig({ settings }: Props) {
 
                         <div className="border-t border-slate-100 pt-4">
                             <div className="mb-3 flex items-center justify-between">
-                                <h5 className="text-xs font-bold text-slate-400 uppercase">
+                                <h5 className="text-xs font-bold text-slate-600 uppercase">
                                     Feature Badges
                                 </h5>
                                 <Button
@@ -459,7 +459,7 @@ export default function AboutPageConfig({ settings }: Props) {
                                     )}
                                 </AnimatePresence>
                                 {data.about_mission_features.length === 0 && (
-                                    <p className="py-4 text-center text-xs text-slate-400 italic">
+                                    <p className="py-4 text-center text-xs text-slate-600 italic">
                                         No feature badges added. Max 4
                                         recommended.
                                     </p>
@@ -540,7 +540,7 @@ export default function AboutPageConfig({ settings }: Props) {
                             ))}
                         </AnimatePresence>
                         {data.about_values.length === 0 && (
-                            <p className="py-4 text-center text-xs text-slate-400 italic">
+                            <p className="py-4 text-center text-xs text-slate-600 italic">
                                 No values added. Max 4 recommended.
                             </p>
                         )}
@@ -618,7 +618,7 @@ export default function AboutPageConfig({ settings }: Props) {
                             ))}
                         </AnimatePresence>
                         {data.about_team.length === 0 && (
-                            <p className="py-4 text-center text-xs text-slate-400 italic">
+                            <p className="py-4 text-center text-xs text-slate-600 italic">
                                 No team members added.
                             </p>
                         )}

@@ -423,7 +423,7 @@ export default function OrderShow({
                                 {order.payment_status}
                             </Badge>
                         </div>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {new Date(order.created_at).toLocaleString()}
                         </p>
                     </div>
@@ -490,12 +490,12 @@ export default function OrderShow({
                                                     {item.product_name}
                                                 </p>
                                                 {orderedOptions(item) && (
-                                                    <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">
+                                                    <p className="text-xs font-medium tracking-wide text-slate-600 uppercase">
                                                         {orderedOptions(item)}
                                                     </p>
                                                 )}
                                                 {item.sku && (
-                                                    <p className="font-mono text-xs text-slate-400">
+                                                    <p className="font-mono text-xs text-slate-600">
                                                         {item.sku}
                                                     </p>
                                                 )}
@@ -505,7 +505,7 @@ export default function OrderShow({
                                                     ৳
                                                     {item.subtotal.toLocaleString()}
                                                 </p>
-                                                <p className="text-xs text-slate-400">
+                                                <p className="text-xs text-slate-600">
                                                     ×{item.quantity}
                                                 </p>
                                             </div>
@@ -513,7 +513,7 @@ export default function OrderShow({
                                     ))}
                                 </div>
                                 <div className="space-y-1.5 border-t border-slate-100 px-4 py-3">
-                                    <div className="flex justify-between text-xs text-slate-500">
+                                    <div className="flex justify-between text-xs text-slate-600">
                                         <span>Subtotal</span>
                                         <span>
                                             ৳{order.subtotal.toLocaleString()}
@@ -533,7 +533,7 @@ export default function OrderShow({
                                             </span>
                                         </div>
                                     )}
-                                    <div className="flex justify-between text-xs text-slate-500">
+                                    <div className="flex justify-between text-xs text-slate-600">
                                         <span>Shipping</span>
                                         <span>
                                             ৳
@@ -541,7 +541,7 @@ export default function OrderShow({
                                         </span>
                                     </div>
                                     {order.tax > 0 && (
-                                        <div className="flex justify-between text-xs text-slate-500">
+                                        <div className="flex justify-between text-xs text-slate-600">
                                             <span>Tax</span>
                                             <span>
                                                 ৳{order.tax.toLocaleString()}
@@ -571,11 +571,11 @@ export default function OrderShow({
                                             <p className="font-semibold break-words">
                                                 {order.user.name}
                                             </p>
-                                            <p className="break-all text-slate-500">
+                                            <p className="break-all text-slate-600">
                                                 {order.user.email}
                                             </p>
                                             {order.user.phone && (
-                                                <p className="text-slate-500">
+                                                <p className="text-slate-600">
                                                     {order.user.phone}
                                                 </p>
                                             )}
@@ -590,7 +590,7 @@ export default function OrderShow({
                                             </Link>
                                         </>
                                     ) : (
-                                        <p className="text-slate-400">
+                                        <p className="text-slate-600">
                                             Guest order
                                         </p>
                                     )}
@@ -637,7 +637,7 @@ export default function OrderShow({
                                                     className="space-y-3"
                                                 >
                                                     <div>
-                                                        <p className="mb-1 text-xs font-medium text-slate-500">
+                                                        <p className="mb-1 text-xs font-medium text-slate-600">
                                                             Recipient name
                                                         </p>
                                                         <p className="text-sm font-semibold text-slate-800">
@@ -647,7 +647,7 @@ export default function OrderShow({
                                                                     .name
                                                             }
                                                         </p>
-                                                        <p className="mt-0.5 text-xs text-slate-400">
+                                                        <p className="mt-0.5 text-xs text-slate-600">
                                                             Not editable here.
                                                         </p>
                                                     </div>
@@ -881,7 +881,7 @@ export default function OrderShow({
                             </CardHeader>
                             <CardContent className="pt-3">
                                 {order.status_histories.length === 0 ? (
-                                    <p className="text-sm text-slate-400">
+                                    <p className="text-sm text-slate-600">
                                         No history yet.
                                     </p>
                                 ) : (
@@ -903,11 +903,11 @@ export default function OrderShow({
                                                     {h.status}
                                                 </p>
                                                 {h.notes && (
-                                                    <p className="text-xs text-slate-400">
+                                                    <p className="text-xs text-slate-600">
                                                         {h.notes}
                                                     </p>
                                                 )}
-                                                <p className="text-[11px] text-slate-400">
+                                                <p className="text-[11px] text-slate-600">
                                                     {new Date(
                                                         h.created_at,
                                                     ).toLocaleString()}
@@ -932,7 +932,7 @@ export default function OrderShow({
                                 <CardContent className="space-y-2 pt-3 text-sm text-slate-700">
                                     {order.traffic_source && (
                                         <div>
-                                            <p className="text-xs text-slate-500">
+                                            <p className="text-xs text-slate-600">
                                                 Came From
                                             </p>
                                             <div className="mt-0.5 flex items-center gap-2">
@@ -948,7 +948,7 @@ export default function OrderShow({
                                                     ] ?? order.traffic_source}
                                                 </Badge>
                                                 {order.traffic_referrer && (
-                                                    <span className="text-xs text-slate-400">
+                                                    <span className="text-xs text-slate-600">
                                                         via{' '}
                                                         {order.traffic_referrer}
                                                     </span>
@@ -959,7 +959,7 @@ export default function OrderShow({
                                     {order.ip_address && (
                                         <div className="flex items-center justify-between gap-2">
                                             <div>
-                                                <p className="text-xs text-slate-500">
+                                                <p className="text-xs text-slate-600">
                                                     IP Address
                                                 </p>
                                                 <p className="font-mono font-medium">
@@ -981,7 +981,7 @@ export default function OrderShow({
                                     )}
                                     {order.user_agent && (
                                         <div>
-                                            <p className="text-xs text-slate-500">
+                                            <p className="text-xs text-slate-600">
                                                 Browser / Device
                                             </p>
                                             <p className="text-xs font-medium break-all text-slate-600">
@@ -1003,7 +1003,7 @@ export default function OrderShow({
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3 pt-3">
-                                <p className="text-xs text-slate-500">
+                                <p className="text-xs text-slate-600">
                                     Status now advances automatically from the
                                     courier (see the Courier card below) and can
                                     no longer be set by hand, except marking a
@@ -1171,7 +1171,7 @@ export default function OrderShow({
                             <CardContent className="space-y-3 pt-3">
                                 {order.tracking_number && (
                                     <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-sm">
-                                        <span className="text-slate-500">
+                                        <span className="text-slate-600">
                                             Tracking
                                         </span>
                                         <span className="font-mono font-medium text-slate-800">
@@ -1190,7 +1190,7 @@ export default function OrderShow({
                                     <>
                                         <div className="space-y-1 text-sm text-slate-700">
                                             <div className="flex justify-between">
-                                                <span className="text-slate-500">
+                                                <span className="text-slate-600">
                                                     Provider
                                                 </span>
                                                 <span className="font-medium">
@@ -1198,7 +1198,7 @@ export default function OrderShow({
                                                 </span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-slate-500">
+                                                <span className="text-slate-600">
                                                     Consignment ID
                                                 </span>
                                                 <span className="font-mono font-medium">
@@ -1208,7 +1208,7 @@ export default function OrderShow({
                                                 </span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-slate-500">
+                                                <span className="text-slate-600">
                                                     Status
                                                 </span>
                                                 <Badge variant="info">
@@ -1219,7 +1219,7 @@ export default function OrderShow({
                                             {order.pathao_delivery_fee !==
                                                 null && (
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-500">
+                                                    <span className="text-slate-600">
                                                         Delivery fee
                                                     </span>
                                                     <span className="font-medium">
@@ -1247,7 +1247,7 @@ export default function OrderShow({
                                     <>
                                         <div className="space-y-1 text-sm text-slate-700">
                                             <div className="flex justify-between">
-                                                <span className="text-slate-500">
+                                                <span className="text-slate-600">
                                                     Provider
                                                 </span>
                                                 <span className="font-medium">
@@ -1255,7 +1255,7 @@ export default function OrderShow({
                                                 </span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-slate-500">
+                                                <span className="text-slate-600">
                                                     Consignment ID
                                                 </span>
                                                 <span className="font-mono font-medium">
@@ -1266,7 +1266,7 @@ export default function OrderShow({
                                             </div>
                                             {order.steadfast_tracking_code && (
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-500">
+                                                    <span className="text-slate-600">
                                                         Tracking code
                                                     </span>
                                                     <span className="font-mono font-medium">
@@ -1277,7 +1277,7 @@ export default function OrderShow({
                                                 </div>
                                             )}
                                             <div className="flex justify-between">
-                                                <span className="text-slate-500">
+                                                <span className="text-slate-600">
                                                     Status
                                                 </span>
                                                 <Badge variant="info">
@@ -1320,7 +1320,7 @@ export default function OrderShow({
                                                     }
                                                 </p>
                                             )}
-                                        <p className="text-xs text-slate-500">
+                                        <p className="text-xs text-slate-600">
                                             Not sent to a courier yet. This
                                             books a pickup from the selected
                                             provider using this order's shipping
@@ -1454,7 +1454,7 @@ export default function OrderShow({
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="pt-3">
-                                    <p className="mb-3 text-xs text-slate-500">
+                                    <p className="mb-3 text-xs text-slate-600">
                                         Moves this cancelled order to trash. It
                                         can be restored or permanently deleted
                                         from there.

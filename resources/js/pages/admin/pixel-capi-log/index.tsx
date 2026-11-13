@@ -79,7 +79,7 @@ function DetailRow({
 }) {
     return (
         <div className="grid gap-0.5 sm:grid-cols-[10rem_1fr] sm:gap-3">
-            <dt className="text-xs font-medium text-slate-500">{label}</dt>
+            <dt className="text-xs font-medium text-slate-600">{label}</dt>
             <dd className="text-xs break-all text-slate-700">
                 {children ?? '—'}
             </dd>
@@ -126,13 +126,13 @@ function EventDetails({ event }: { event: LoggedEvent }) {
                 <DetailRow label="fbc cookie">{event.fbc ?? '—'}</DetailRow>
             </dl>
             <div>
-                <p className="mb-1 text-xs font-medium text-slate-500">
+                <p className="mb-1 text-xs font-medium text-slate-600">
                     Event data
                 </p>
                 <pre className="max-h-72 overflow-auto rounded-lg bg-slate-900 p-3 text-[11px] leading-relaxed text-slate-100">
                     {JSON.stringify(event.custom_data ?? {}, null, 2)}
                 </pre>
-                <p className="mt-1 text-[11px] text-slate-400">
+                <p className="mt-1 text-[11px] text-slate-600">
                     Customer email, phone and name are added and hashed only at
                     the moment of sending, so they are never stored here.
                 </p>
@@ -203,7 +203,7 @@ export default function PixelCapiLogIndex({
                             <Radar className="size-5 text-slate-400" />
                             Pixel &amp; CAPI Log
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             {events.total} logged{' '}
                             {events.total === 1 ? 'event' : 'events'}
                         </p>
@@ -270,7 +270,7 @@ export default function PixelCapiLogIndex({
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {STATUS_ORDER.map((status) => (
                         <Card key={status} className="p-4 shadow-sm">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 {STATUS_META[status].label}
                             </p>
                             <p className="mt-1 text-xl font-bold text-slate-900">
@@ -284,14 +284,14 @@ export default function PixelCapiLogIndex({
                     {events.data.length === 0 ? (
                         <div className="py-16 text-center">
                             <Radar className="mx-auto mb-3 size-10 text-slate-300" />
-                            <p className="text-sm text-slate-400">
+                            <p className="text-sm text-slate-600">
                                 No events logged yet.
                             </p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[44rem] text-sm">
-                                <thead className="bg-slate-50 text-left text-xs text-slate-500">
+                                <thead className="bg-slate-50 text-left text-xs text-slate-600">
                                     <tr>
                                         <th className="w-8 px-3 py-2" />
                                         <th className="px-3 py-2 font-medium">
@@ -331,7 +331,7 @@ export default function PixelCapiLogIndex({
                                                         )
                                                     }
                                                 >
-                                                    <td className="px-3 py-2.5 text-slate-400">
+                                                    <td className="px-3 py-2.5 text-slate-600">
                                                         <button
                                                             type="button"
                                                             aria-expanded={
@@ -427,7 +427,7 @@ export default function PixelCapiLogIndex({
                                     data={events}
                                     onPageChange={handlePageChange}
                                 />
-                                <p className="text-xs text-slate-400">
+                                <p className="text-xs text-slate-600">
                                     Showing {events.from}–{events.to} of{' '}
                                     {events.total}
                                 </p>

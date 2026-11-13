@@ -137,7 +137,7 @@ function RequestReturnDialog({
                                 <p className="line-clamp-1 text-sm font-semibold text-[var(--color-text-primary)]">
                                     {item.product_name}
                                 </p>
-                                <p className="text-xs text-[var(--color-text-muted)]">
+                                <p className="text-xs text-[var(--color-text-secondary)]">
                                     Ordered: {item.quantity}
                                 </p>
                             </div>
@@ -428,11 +428,11 @@ export default function OrderDetail({
                                                     {item.product_name}
                                                 </p>
                                                 {orderedOptions(item) && (
-                                                    <p className="mt-1 text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase">
+                                                    <p className="mt-1 text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
                                                         {orderedOptions(item)}
                                                     </p>
                                                 )}
-                                                <p className="mt-1.5 font-mono text-xs text-[var(--color-text-muted)]">
+                                                <p className="mt-1.5 font-mono text-xs text-[var(--color-text-secondary)]">
                                                     SKU: {item.sku || 'N/A'}
                                                 </p>
                                             </div>
@@ -440,7 +440,7 @@ export default function OrderDetail({
 
                                         <div className="mt-2 flex items-center justify-between gap-4 rounded-xl bg-[var(--color-surface-alt)] p-4 sm:mt-0 sm:justify-end sm:gap-8 sm:rounded-none sm:bg-transparent sm:p-0">
                                             <div className="text-left sm:text-right">
-                                                <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase sm:hidden">
+                                                <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase sm:hidden">
                                                     Price
                                                 </p>
                                                 <p className="text-sm font-bold text-[var(--color-text-primary)]">
@@ -448,7 +448,7 @@ export default function OrderDetail({
                                                 </p>
                                             </div>
                                             <div className="text-center">
-                                                <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase sm:hidden">
+                                                <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase sm:hidden">
                                                     Qty
                                                 </p>
                                                 <p className="text-sm font-bold text-[var(--color-text-secondary)]">
@@ -456,7 +456,7 @@ export default function OrderDetail({
                                                 </p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-muted)] uppercase sm:hidden">
+                                                <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase sm:hidden">
                                                     Subtotal
                                                 </p>
                                                 <p className="text-sm font-bold text-[var(--color-primary)]">
@@ -624,7 +624,7 @@ export default function OrderDetail({
                                                     ? 'Paid via Online'
                                                     : 'Cash on Delivery'}
                                             </p>
-                                            <p className="text-[10px] font-medium text-[var(--color-text-muted)]">
+                                            <p className="text-[10px] font-medium text-[var(--color-text-secondary)]">
                                                 Transaction ID:{' '}
                                                 {(order.payment_method as string) ===
                                                 'sslcommerz'

@@ -142,7 +142,7 @@ function LoadingScreenSlider({
                         error && 'border-red-400 focus:ring-red-500',
                     )}
                 />
-                <span className="w-6 shrink-0 text-sm text-slate-500">
+                <span className="w-6 shrink-0 text-sm text-slate-600">
                     {unit}
                 </span>
             </div>
@@ -303,7 +303,7 @@ export default function SettingsEdit({ settings }: Props) {
                     <h1 className="text-xl font-bold text-slate-900">
                         Settings
                     </h1>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-600">
                         Contact email, phone, and address (shared with the
                         footer) are now edited from{' '}
                         <Link
@@ -481,7 +481,7 @@ export default function SettingsEdit({ settings }: Props) {
                                                 maxSize={`${LOADING_PREVIEW_MAX_PX}px`}
                                             />
                                         </div>
-                                        <span className="text-xs text-slate-500">
+                                        <span className="text-xs text-slate-600">
                                             {previewScale < 1
                                                 ? `Preview at ${Math.round(previewScale * 100)}% of real size`
                                                 : 'Preview at real size'}
@@ -609,7 +609,7 @@ export default function SettingsEdit({ settings }: Props) {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 pt-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Customers always get their own order
                                 confirmation and cancellation emails. These two
                                 fields set which shop email address is told

@@ -170,7 +170,7 @@ export function ProductSpecificationsManager({
                 <AnimatePresence initial={false}>
                     {specifications.length === 0 && (
                         <AdminReveal key="empty">
-                            <p className="py-2 text-xs text-slate-400 italic">
+                            <p className="py-2 text-xs text-slate-600 italic">
                                 No specifications added. These show as a
                                 "Product specifications" card on the product
                                 page.

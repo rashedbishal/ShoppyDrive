@@ -59,7 +59,7 @@ export default function ContactPageConfig({ settings }: Props) {
                         <h1 className="text-xl font-bold text-slate-900">
                             Contact Page
                         </h1>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-600">
                             Edit the page copy and contact details shown on{' '}
                             <code className="rounded bg-slate-100 px-1">
                                 /contact
@@ -194,7 +194,7 @@ export default function ContactPageConfig({ settings }: Props) {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2 pt-0">
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-600">
                             Phone, email, address, support hours and the seller
                             details below are shown in the site footer (phone,
                             email and address also in SEO tags) — editing them

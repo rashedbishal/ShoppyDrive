@@ -32,7 +32,7 @@ export default function BlogShow({
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <Link
                         href="/blog"
-                        className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-muted)] transition hover:text-[var(--color-primary)]"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:text-[var(--color-primary)]"
                     >
                         <ArrowLeft className="size-4" />
                         Back to Blog
@@ -42,7 +42,7 @@ export default function BlogShow({
                         <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)] sm:text-4xl">
                             {blog.title}
                         </h1>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--color-text-muted)]">
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--color-text-secondary)]">
                             {blog.author_name ? (
                                 <span className="inline-flex items-center gap-1.5">
                                     <User className="size-4" />

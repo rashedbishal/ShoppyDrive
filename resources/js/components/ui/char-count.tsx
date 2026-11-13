@@ -26,7 +26,7 @@ export function CharCount({
                     ? 'font-semibold text-destructive'
                     : length >= max * 0.85
                       ? 'text-amber-600'
-                      : 'text-text-muted',
+                      : 'text-text-secondary',
                 className,
             )}
         >
