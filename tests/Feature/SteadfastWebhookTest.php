@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\CourierEvidenceSource;
 use App\Enums\CourierEvidenceType;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Models\Coupon;
 use App\Models\CourierDeliveryEvidence;
 use App\Models\Order;
@@ -458,10 +459,23 @@ it('webhooks still move an order forward', function (string $from, string $raw, 
 })->with([
     'processing to delivered' => ['processing', 'delivered', OrderStatus::DELIVERED],
     'shipped to delivered' => ['shipped', 'delivered', OrderStatus::DELIVERED],
-    'shipped to partly delivered' => ['shipped', 'partial_delivered', OrderStatus::DELIVERED],
 ]);
 
-it('a genuine courier cancellation of a shipped order still runs its side effects once', function () {
+it('a partly delivered report never marks the order delivered or paid (DISC-03)', function () {
+    configureSteadfastWebhookSecret();
+    [$order] = makeShippedSteadfastOrder('shipped', 'unknown');
+
+    postSignedSteadfastWebhook(['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'partial_delivered'])->assertOk();
+
+    $order->refresh();
+    expect($order->status)->toBe(OrderStatus::SHIPPED)
+        ->and($order->delivered_at)->toBeNull()
+        ->and($order->payment_status)->not->toBe(PaymentStatus::PAID)
+        ->and($order->steadfast_status)->toBe('partial_delivered')
+        ->and(CourierDeliveryEvidence::where('order_id', $order->id)->where('raw_status', 'partial_delivered')->sole()->is_partial)->toBeTrue();
+});
+
+it('a genuine courier cancellation of a shipped order cancels it once but never restocks (DISC-02)', function () {
     configureSteadfastWebhookSecret();
     [$order, , $product] = makeShippedSteadfastOrder();
     $payload = ['notification_type' => 'delivery_status', 'consignment_id' => 'CONSIGN-ABC', 'status' => 'cancelled'];
@@ -470,8 +484,10 @@ it('a genuine courier cancellation of a shipped order still runs its side effect
     postSignedSteadfastWebhook($payload)->assertOk();
 
     expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED);
-    expect($order->stock_restored_at)->not->toBeNull();
-    expect($product->refresh()->stock_quantity)->toBe(6);
+    expect($order->stock_restored_at)->toBeNull();
+    expect($order->restock_skipped_at)->not->toBeNull();
+    expect($product->refresh()->stock_quantity)->toBe(5);
+    expect($order->statusHistories()->latest('id')->value('notes'))->toContain('Stock was not restored automatically');
 });
 
 it('a stale webhook leaves terminal orders alone', function (string $status) {

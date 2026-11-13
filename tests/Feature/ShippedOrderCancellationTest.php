@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\InventoryType;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\PointTransactionType;
@@ -7,7 +8,9 @@ use App\Http\Controllers\Admin\OrderController;
 use App\Mail\OrderCancelledMail;
 use App\Models\Coupon;
 use App\Models\CouponUse;
+use App\Models\CourierDeliveryEvidence;
 use App\Models\CourierSubmission;
+use App\Models\InventoryLog;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
@@ -96,6 +99,8 @@ function fsa11Ledgers(Order $order): array
 
 const FSA11_UNTOUCHED = ['stock' => 10, 'points' => 40, 'coupon_used' => 1, 'coupon_uses' => 1, 'refund_rows' => 0];
 const FSA11_REVERSED_ONCE = ['stock' => 12, 'points' => 100, 'coupon_used' => 0, 'coupon_uses' => 0, 'refund_rows' => 1];
+// DISC-02: a courier cancellation reverses points and the coupon once, but never restocks.
+const FSA11_COURIER_CANCELLED = ['stock' => 10, 'points' => 100, 'coupon_used' => 0, 'coupon_uses' => 0, 'refund_rows' => 1];
 
 test('an admin cannot cancel a shipped order, and nothing is reversed', function (PaymentStatus $paymentStatus) {
     $order = fsa11Order(['payment_status' => $paymentStatus]);
@@ -204,14 +209,59 @@ test('an unresolved courier submission still blocks cancelling a processing orde
         ->and(fsa11Ledgers($order))->toBe(FSA11_UNTOUCHED);
 });
 
-test('the courier\'s return report cancels a shipped order and reverses everything once', function () {
+test('the courier\'s return report cancels a shipped order and reverses points and coupon once, without restocking (DISC-02)', function () {
     $order = fsa11Order();
 
     CourierOrderStatusMapper::sync($order, 'pathao', 'return_in_transit');
     CourierOrderStatusMapper::sync($order, 'pathao', 'returned');
 
+    $order->refresh();
+    expect($order->status)->toBe(OrderStatus::CANCELLED)
+        ->and($order->stock_restored_at)->toBeNull()
+        ->and($order->restock_skipped_at)->not->toBeNull()
+        ->and(fsa11Ledgers($order))->toBe(FSA11_COURIER_CANCELLED);
+});
+
+test('no courier cancel or return status ever restocks a dispatched order (DISC-02)', function (string $raw) {
+    $order = fsa11Order();
+
+    CourierOrderStatusMapper::sync($order, 'pathao', $raw);
+
+    $order->refresh();
+    expect($order->status)->toBe(OrderStatus::CANCELLED)
+        ->and($order->stock_restored_at)->toBeNull()
+        ->and($order->restock_skipped_at)->not->toBeNull()
+        ->and(fsa11Ledgers($order)['stock'])->toBe(10)
+        ->and(InventoryLog::where('reference_id', $order->id)->where('type', InventoryType::RELEASE)->count())->toBe(0)
+        ->and(OrderStatusHistory::where('order_id', $order->id)->latest('id')->value('notes'))
+        ->toContain('Stock was not restored automatically');
+})->with(['pickup_cancelled', 'return_requested', 'return_in_transit', 'returned', 'paid_return', 'return_to_merchant']);
+
+test('repeated courier reports after a courier cancellation never restock (DISC-02)', function () {
+    $order = fsa11Order();
+
+    foreach (['returned', 'pickup_cancelled', 'returned', 'Delivered', 'return_to_inventory'] as $raw) {
+        CourierOrderStatusMapper::sync($order->refresh(), 'pathao', $raw);
+    }
+
     expect($order->refresh()->status)->toBe(OrderStatus::CANCELLED)
-        ->and(fsa11Ledgers($order))->toBe(FSA11_REVERSED_ONCE);
+        ->and($order->stock_restored_at)->toBeNull()
+        ->and(fsa11Ledgers($order))->toBe(FSA11_COURIER_CANCELLED);
+});
+
+test('a Pathao partial delivery report never marks the order delivered or paid (DISC-03)', function () {
+    $order = fsa11Order();
+
+    CourierOrderStatusMapper::sync($order, 'pathao', 'Partial_Delivery');
+
+    $order->refresh();
+    expect($order->status)->toBe(OrderStatus::SHIPPED)
+        ->and($order->delivered_at)->toBeNull()
+        ->and($order->payment_status)->toBe(PaymentStatus::UNPAID)
+        ->and($order->pathao_order_status)->toBe('Partial_Delivery')
+        ->and(CourierOrderStatusMapper::isUnrecognized('pathao', 'Partial_Delivery'))->toBeTrue()
+        ->and(CourierDeliveryEvidence::where('order_id', $order->id)->where('raw_status', 'Partial_Delivery')->sole()->is_partial)->toBeTrue()
+        ->and(fsa11Ledgers($order))->toBe(FSA11_UNTOUCHED);
 });
 
 test('a late delivered report after the courier cancelled leaves the order, stock and payment untouched but recorded', function () {
@@ -224,7 +274,7 @@ test('a late delivered report after the courier cancelled leaves the order, stoc
     expect($order->status)->toBe(OrderStatus::CANCELLED)
         ->and($order->payment_status)->toBe(PaymentStatus::UNPAID)
         ->and($order->delivered_at)->toBeNull()
-        ->and(fsa11Ledgers($order))->toBe(FSA11_REVERSED_ONCE)
+        ->and(fsa11Ledgers($order))->toBe(FSA11_COURIER_CANCELLED)
         ->and(OrderStatusHistory::where('order_id', $order->id)->latest('id')->value('notes'))
         ->toContain('order is already cancelled; status left unchanged');
 });

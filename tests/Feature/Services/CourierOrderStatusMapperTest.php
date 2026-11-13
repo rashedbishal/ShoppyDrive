@@ -58,7 +58,9 @@ it('maps steadfast statuses to order statuses', function () {
     expect(CourierOrderStatusMapper::forSteadfast('in_review'))->toBe(OrderStatus::PENDING);
     expect(CourierOrderStatusMapper::forSteadfast('pending'))->toBe(OrderStatus::PENDING);
     expect(CourierOrderStatusMapper::forSteadfast('delivered'))->toBe(OrderStatus::DELIVERED);
-    expect(CourierOrderStatusMapper::forSteadfast('partial_delivered'))->toBe(OrderStatus::DELIVERED);
+    // DISC-03: a partial delivery is never a delivered order.
+    expect(CourierOrderStatusMapper::forSteadfast('partial_delivered'))->toBeNull();
+    expect(CourierOrderStatusMapper::forPathao('partial_delivery'))->toBeNull();
     expect(CourierOrderStatusMapper::forSteadfast('cancelled'))->toBe(OrderStatus::CANCELLED);
     expect(CourierOrderStatusMapper::forSteadfast('unknown'))->toBeNull();
 });

@@ -46,7 +46,10 @@ class CourierOrderStatusMapper
 
         'delivered' => OrderStatus::DELIVERED,
         'delivery' => OrderStatus::DELIVERED,
-        'partial_delivery' => OrderStatus::DELIVERED,
+        // DISC-03 (owner decision): one order is one delivery unit, so
+        // `partial_delivery` is deliberately unmapped and never becomes
+        // DELIVERED. It is still recorded as evidence (is_partial) and
+        // flagged on the order; the order keeps its current status.
 
         'pickup_cancelled' => OrderStatus::CANCELLED,
         'return_requested' => OrderStatus::CANCELLED,
@@ -79,7 +82,7 @@ class CourierOrderStatusMapper
         'in_review' => OrderStatus::PENDING,
 
         'delivered' => OrderStatus::DELIVERED,
-        'partial_delivered' => OrderStatus::DELIVERED,
+        // DISC-03: `partial_delivered` deliberately unmapped (see PATHAO_MAP).
 
         'cancelled' => OrderStatus::CANCELLED,
     ];
@@ -227,6 +230,17 @@ class CourierOrderStatusMapper
                 }
             }
 
+            // DISC-02 (owner decision): once a parcel is with a courier, no
+            // courier report may put stock back. Saved with the status
+            // change, so the CANCELLED hook's InventoryService::restoreForOrder()
+            // already sees it and skips (the BIZ-012 flag); the admin restocks
+            // by hand in Products when the goods are physically back.
+            $restockSkipped = $statusChanged && $mapped === OrderStatus::CANCELLED;
+
+            if ($restockSkipped && $lockedOrder->restock_skipped_at === null) {
+                $lockedOrder->forceFill(['restock_skipped_at' => now()]);
+            }
+
             $lockedOrder->update($updates);
 
             $ignored = ! $statusChanged
@@ -238,6 +252,10 @@ class CourierOrderStatusMapper
                 $ignored => " — order is already {$lockedOrder->status->value}; status left unchanged.",
                 default => '.',
             };
+
+            if ($restockSkipped) {
+                $note .= ' Stock was not restored automatically; restock the items in Products if they are physically back.';
+            }
 
             if ($extraNote) {
                 $note .= ' '.$extraNote;
