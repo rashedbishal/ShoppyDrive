@@ -10,6 +10,7 @@ use App\Models\CourierSubmission;
 use App\Models\Order;
 use App\Services\CourierOrderStatusMapper;
 use App\Services\CourierSubmissionService;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * DISC-20: Pathao reports its own spellings (`Delivered`, `Picked`,
@@ -148,7 +149,7 @@ test('an order delivered through Pathao "Delivered" stays delivered and paid on 
         ->and($order->payment_status)->toBe(PaymentStatus::PAID);
 });
 
-test('statuses deliberately left unmapped stay unrecognized and leave the order unchanged', function (string $raw) {
+test('statuses needing a human stay unmapped, flagged unrecognized, and leave the order unchanged', function (string $raw) {
     $order = pathaoSentCodOrder(OrderStatus::SHIPPED);
 
     CourierOrderStatusMapper::sync($order, 'pathao', $raw);
@@ -160,4 +161,88 @@ test('statuses deliberately left unmapped stay unrecognized and leave the order 
         ->and($order->payment_status)->toBe(PaymentStatus::UNPAID)
         ->and($order->delivered_at)->toBeNull()
         ->and($order->stock_restored_at)->toBeNull();
-})->with(['Return', 'Delivery_Failed', 'Pickup_Failed', 'Payment_Invoice']);
+})->with(['Delivery_Failed', 'Pickup_Failed', 'lost', 'damaged', 'handed_over_to_admin', 'Partial_Delivery', 'some_brand_new_status']);
+
+test('known preserved statuses leave the order unchanged and are not flagged unrecognized (DISC-20)', function (string $raw) {
+    $order = pathaoSentCodOrder(OrderStatus::SHIPPED);
+
+    CourierOrderStatusMapper::sync($order, 'pathao', $raw);
+    $order->refresh();
+
+    expect(CourierOrderStatusMapper::forPathao($raw))->toBeNull()
+        ->and(CourierOrderStatusMapper::isUnrecognized('pathao', $raw))->toBeFalse()
+        ->and($order->status)->toBe(OrderStatus::SHIPPED)
+        ->and($order->pathao_order_status)->toBe($raw)
+        ->and($order->payment_status)->toBe(PaymentStatus::UNPAID)
+        ->and($order->delivered_at)->toBeNull()
+        ->and($order->stock_restored_at)->toBeNull();
+})->with([
+    'on_hold', 'return_on_hold', 'exchange', 'reprocess_pending', 'reprocessed', 'at_inventory',
+    'Return', 'return_requested', 'return_in_transit', 'return_at_sorting', 'assigned_for_return',
+    'returned', 'paid_return', 'returned_to_inventory', 'return_to_merchant', 'return_to_inventory', 'Payment_Invoice',
+]);
+
+test('the admin order page shows the Pathao courier status and when it arrived, separately from the order status (DISC-20)', function () {
+    $order = pathaoSentCodOrder(OrderStatus::SHIPPED);
+    CourierOrderStatusMapper::sync($order, 'pathao', 'reprocess_pending');
+
+    $this->actingAs(createAdmin(), 'admin')
+        ->get(route('admin.orders.show', $order))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('order.status', 'shipped')
+            ->where('order.pathao_status_label', 'Reprocess Pending')
+            ->whereNot('order.pathao_status_updated_at', null)
+            ->where('order.needsCourierInvestigation', false));
+});
+
+test('a never-seen Pathao status still raises the investigation banner on an active order (DISC-20)', function () {
+    $order = pathaoSentCodOrder(OrderStatus::SHIPPED);
+    CourierOrderStatusMapper::sync($order, 'pathao', 'some_brand_new_status');
+
+    $this->actingAs(createAdmin(), 'admin')
+        ->get(route('admin.orders.show', $order))
+        ->assertInertia(fn ($page) => $page->where('order.needsCourierInvestigation', true));
+});
+
+test('a final order whose latest Pathao status maps elsewhere shows a display-only note, changing nothing (DISC-20 D1b)', function () {
+    Mail::fake();
+    $order = pathaoSentCodOrder(OrderStatus::SHIPPED);
+    CourierOrderStatusMapper::sync($order, 'pathao', 'Delivered');
+    $order->refresh();
+    $before = $order->only(['status', 'payment_status', 'delivered_at', 'stock_restored_at', 'restock_skipped_at']);
+    Mail::fake();
+
+    CourierOrderStatusMapper::sync($order, 'pathao', 'pickup_cancelled');
+
+    expect($order->refresh()->only(array_keys($before)))->toEqual($before);
+    Mail::assertNothingQueued();
+
+    $this->actingAs(createAdmin(), 'admin')
+        ->get(route('admin.orders.show', $order))
+        ->assertInertia(fn ($page) => $page
+            ->where('order.status', 'delivered')
+            ->where('order.courierStatusConflict', [
+                'order_status' => 'delivered',
+                'courier_status' => 'pickup_cancelled',
+                'courier_status_label' => 'Pickup Cancelled',
+                'courier_mapped_status' => 'cancelled',
+            ]));
+});
+
+test('no D1b note when the statuses agree, the courier status is preserved or unmapped, or the order is not final (DISC-20)', function (OrderStatus $start, array $reports) {
+    $order = pathaoSentCodOrder($start);
+    foreach ($reports as $raw) {
+        CourierOrderStatusMapper::sync($order->refresh(), 'pathao', $raw);
+    }
+
+    $this->actingAs(createAdmin(), 'admin')
+        ->get(route('admin.orders.show', $order))
+        ->assertInertia(fn ($page) => $page->where('order.courierStatusConflict', null));
+})->with([
+    'delivered, courier agrees (alias)' => [OrderStatus::SHIPPED, ['delivery', 'Delivered']],
+    'delivered, then a preserved return status' => [OrderStatus::SHIPPED, ['delivery', 'returned']],
+    'delivered, then an unmapped status' => [OrderStatus::SHIPPED, ['delivery', 'lost']],
+    'cancelled, courier agrees' => [OrderStatus::SHIPPED, ['pickup_cancelled']],
+    'active order, mapped status differs' => [OrderStatus::SHIPPED, ['picked']],
+]);

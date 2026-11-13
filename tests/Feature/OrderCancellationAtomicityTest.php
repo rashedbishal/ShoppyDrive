@@ -246,7 +246,7 @@ test('the pathao sync command keeps syncing other orders when one order rolls ba
     $otherOrder = atomicityOrder(User::factory()->create(), ['order_number' => 'ORD-OTHER', 'points_redeemed' => 0, 'pathao_consignment_id' => 'CONSIGN-OK']);
 
     Http::fake([
-        '*/aladdin/api/v1/orders/CONSIGN-FAIL/info' => Http::response(['type' => 'success', 'data' => ['order_status_slug' => 'returned']]),
+        '*/aladdin/api/v1/orders/CONSIGN-FAIL/info' => Http::response(['type' => 'success', 'data' => ['order_status_slug' => 'pickup_cancelled']]),
         '*/aladdin/api/v1/orders/CONSIGN-OK/info' => Http::response(['type' => 'success', 'data' => ['order_status_slug' => 'in_transit']]),
     ]);
 

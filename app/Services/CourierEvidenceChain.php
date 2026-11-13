@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\CourierEvidenceType;
 use App\Enums\CourierSubmissionState;
 use App\Enums\OrderStatus;
 use App\Models\CourierDeliveryEvidence;
@@ -211,6 +212,31 @@ class CourierEvidenceChain
             ->when($targetType === OrderDeliveryVerification::TARGET_SUBMISSION, fn ($q) => $q->where('courier_submission_id', $submissionId))
             ->latest('id')
             ->first();
+    }
+
+    /**
+     * DISC-20, read-only: when the order's current courier status for this
+     * provider was received (its latest transition/observation row on the
+     * current consignment). A repeated identical report writes no row, so
+     * this is when the current status first arrived. Null if none.
+     */
+    public function latestStatusReceivedAt(Order $order, string $provider): ?string
+    {
+        $consignmentId = $provider === 'pathao' ? $order->pathao_consignment_id : $order->steadfast_consignment_id;
+
+        if ($consignmentId === null) {
+            return null;
+        }
+
+        return CourierDeliveryEvidence::query()
+            ->where('order_id', $order->id)
+            ->where('provider', $provider)
+            ->where('consignment_id', $consignmentId)
+            ->whereIn('evidence_type', [CourierEvidenceType::TRANSITION, CourierEvidenceType::OBSERVATION])
+            ->latest('received_at')
+            ->first(['received_at'])
+            ?->received_at
+            ?->toIso8601String();
     }
 
     /**

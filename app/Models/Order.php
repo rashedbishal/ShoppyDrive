@@ -12,8 +12,6 @@ use App\Mail\NewOrderAlertMail;
 use App\Mail\OrderCancelledMail;
 use App\Mail\OrderDeliveredMail;
 use App\Mail\OrderPlacedMail;
-use App\Mail\OrderStatusUpdatedMail;
-use App\Mail\ShippedWithTrackingMail;
 use App\Services\CouponService;
 use App\Services\InventoryService;
 use App\Services\LoyaltyPointsService;
@@ -285,12 +283,16 @@ class Order extends Model
                 static::dispatchAdminMail(CancelledOrderAlertMail::class, $order, OrderNotificationRecipients::cancellation());
             }
 
+            // Owner email policy (2026-11-14): customers get exactly three
+            // order emails — placed (`created` above), delivered and
+            // cancelled. Every other status change (pending, processing,
+            // shipped, refunded) sends nothing, whoever or whatever made it.
+            // Each fires only when `status` actually changes, so a repeated
+            // report can never resend it.
             match ($order->status) {
-                OrderStatus::SHIPPED => static::dispatchMail(ShippedWithTrackingMail::class, $order),
                 OrderStatus::DELIVERED => static::dispatchMail(OrderDeliveredMail::class, $order),
                 OrderStatus::CANCELLED => static::dispatchMail(OrderCancelledMail::class, $order),
-                OrderStatus::PROCESSING, OrderStatus::REFUNDED => static::dispatchMail(OrderStatusUpdatedMail::class, $order),
-                OrderStatus::PENDING => null,
+                OrderStatus::PENDING, OrderStatus::PROCESSING, OrderStatus::SHIPPED, OrderStatus::REFUNDED => null,
             };
         });
     }

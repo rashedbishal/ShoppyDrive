@@ -209,11 +209,11 @@ test('an unresolved courier submission still blocks cancelling a processing orde
         ->and(fsa11Ledgers($order))->toBe(FSA11_UNTOUCHED);
 });
 
-test('the courier\'s return report cancels a shipped order and reverses points and coupon once, without restocking (DISC-02)', function () {
+test('the courier\'s cancellation report cancels a shipped order and reverses points and coupon once, without restocking (DISC-02)', function () {
     $order = fsa11Order();
 
     CourierOrderStatusMapper::sync($order, 'pathao', 'return_in_transit');
-    CourierOrderStatusMapper::sync($order, 'pathao', 'returned');
+    CourierOrderStatusMapper::sync($order, 'pathao', 'pickup_cancelled');
 
     $order->refresh();
     expect($order->status)->toBe(OrderStatus::CANCELLED)
@@ -222,7 +222,7 @@ test('the courier\'s return report cancels a shipped order and reverses points a
         ->and(fsa11Ledgers($order))->toBe(FSA11_COURIER_CANCELLED);
 });
 
-test('no courier cancel or return status ever restocks a dispatched order (DISC-02)', function (string $raw) {
+test('a courier cancellation never restocks a dispatched order (DISC-02)', function (string $raw) {
     $order = fsa11Order();
 
     CourierOrderStatusMapper::sync($order, 'pathao', $raw);
@@ -235,7 +235,21 @@ test('no courier cancel or return status ever restocks a dispatched order (DISC-
         ->and(InventoryLog::where('reference_id', $order->id)->where('type', InventoryType::RELEASE)->count())->toBe(0)
         ->and(OrderStatusHistory::where('order_id', $order->id)->latest('id')->value('notes'))
         ->toContain('Stock was not restored automatically');
-})->with(['pickup_cancelled', 'return_requested', 'return_in_transit', 'returned', 'paid_return', 'return_to_merchant']);
+})->with(['pickup_cancelled', 'Pickup_Cancelled']);
+
+test('no Pathao return status cancels or restocks the order; it is recorded and shown (DISC-20)', function (string $raw) {
+    $order = fsa11Order();
+
+    CourierOrderStatusMapper::sync($order, 'pathao', $raw);
+
+    $order->refresh();
+    expect($order->status)->toBe(OrderStatus::SHIPPED)
+        ->and($order->pathao_order_status)->toBe($raw)
+        ->and($order->stock_restored_at)->toBeNull()
+        ->and(CourierOrderStatusMapper::isUnrecognized('pathao', $raw))->toBeFalse()
+        ->and(CourierDeliveryEvidence::where('order_id', $order->id)->where('raw_status', $raw)->count())->toBe(1)
+        ->and(fsa11Ledgers($order))->toBe(FSA11_UNTOUCHED);
+})->with(['return_requested', 'return_in_transit', 'return_at_sorting', 'assigned_for_return', 'returned', 'paid_return', 'returned_to_inventory', 'return_to_merchant', 'return_to_inventory']);
 
 test('repeated courier reports after a courier cancellation never restock (DISC-02)', function () {
     $order = fsa11Order();
@@ -266,7 +280,7 @@ test('a Pathao partial delivery report never marks the order delivered or paid (
 
 test('a late delivered report after the courier cancelled leaves the order, stock and payment untouched but recorded', function () {
     $order = fsa11Order();
-    CourierOrderStatusMapper::sync($order, 'pathao', 'returned');
+    CourierOrderStatusMapper::sync($order, 'pathao', 'pickup_cancelled');
 
     CourierOrderStatusMapper::sync($order, 'pathao', 'Delivery');
 
