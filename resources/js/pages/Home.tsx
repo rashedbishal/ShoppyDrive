@@ -257,7 +257,11 @@ function HeroSlider({
             onMouseLeave={() => setIsPaused(false)}
             aria-label="Homepage hero banner"
         >
-            <div className="relative min-h-[42vh] sm:min-h-[60vh] lg:min-h-[75vh]">
+            {/* The viewport-height sizes keep the hero filling the screen, but the rem
+                floors are what the slide's content needs at each breakpoint: on a short
+                viewport (a scaled-up display, a landscape phone) vh alone gave a box
+                smaller than its content and everything overlapped. */}
+            <div className="relative min-h-[max(42vh,18rem)] sm:min-h-[max(60vh,24rem)] lg:min-h-[max(75vh,30rem)]">
                 <AnimatePresence initial={false} custom={direction}>
                     <motion.div
                         key={activeSlide.id}
