@@ -49,8 +49,10 @@ it('maps pathao slugs to order statuses', function () {
     expect(CourierOrderStatusMapper::forPathao('at_sorting_hub'))->toBe(OrderStatus::PROCESSING);
     expect(CourierOrderStatusMapper::forPathao('assigned_for_delivery'))->toBe(OrderStatus::SHIPPED);
     expect(CourierOrderStatusMapper::forPathao('delivery'))->toBe(OrderStatus::DELIVERED);
-    expect(CourierOrderStatusMapper::forPathao('returned'))->toBe(OrderStatus::CANCELLED);
-    expect(CourierOrderStatusMapper::forPathao('on_hold'))->toBe(OrderStatus::PROCESSING);
+    expect(CourierOrderStatusMapper::forPathao('pickup_cancelled'))->toBe(OrderStatus::CANCELLED);
+    // DISC-20: returns and holds preserve the order's status.
+    expect(CourierOrderStatusMapper::forPathao('returned'))->toBeNull();
+    expect(CourierOrderStatusMapper::forPathao('on_hold'))->toBeNull();
     expect(CourierOrderStatusMapper::forPathao('totally_unknown_status'))->toBeNull();
 });
 
@@ -156,20 +158,20 @@ it('a late delivered webhook after cancellation writes a history note once, then
     expect($order->status)->toBe(OrderStatus::CANCELLED);
 });
 
-it('a courier-reported return still legitimately cancels an active (non-terminal) order', function () {
+it('a courier-reported cancellation still legitimately cancels an active (non-terminal) order', function () {
     $order = makeMapperTestOrder(['status' => 'shipped']);
 
-    CourierOrderStatusMapper::sync($order, 'pathao', 'return_to_merchant');
+    CourierOrderStatusMapper::sync($order, 'pathao', 'pickup_cancelled');
 
     expect($order->status)->toBe(OrderStatus::CANCELLED);
 });
 
-it('a courier that reports a return and then later reports delivered cannot flip the order back', function () {
+it('a courier that reports a cancellation and then later reports delivered cannot flip the order back', function () {
     $order = makeMapperTestOrder(['status' => 'shipped']);
 
-    // The courier itself reports the parcel coming back — a legitimate
-    // return, correctly cancels the order.
-    CourierOrderStatusMapper::sync($order, 'pathao', 'return_to_merchant');
+    // The courier itself reports the parcel cancelled (DISC-20: the status
+    // Pathao sends after a dashboard cancellation), which cancels the order.
+    CourierOrderStatusMapper::sync($order, 'pathao', 'pickup_cancelled');
     expect($order->status)->toBe(OrderStatus::CANCELLED);
 
     // A later, conflicting "delivered" signal for the same shipment must
@@ -200,17 +202,26 @@ it('does not change order status for an unrecognized raw status', function () {
 
 // MED-02: Pathao is polled, so each report is its current state rather than a
 // delayed event, and it can legitimately step back from shipped.
-it('lets pathao report a real step back from shipped', function (string $raw, OrderStatus $expected) {
+it('lets pathao report a real, explicitly mapped step back from shipped', function (string $raw, OrderStatus $expected) {
     $order = makeMapperTestOrder(['status' => 'shipped', 'pathao_order_status' => 'in_transit']);
 
     CourierOrderStatusMapper::sync($order, 'pathao', $raw);
 
     expect($order->refresh()->status)->toBe($expected);
 })->with([
-    'on hold' => ['on_hold', OrderStatus::PROCESSING],
     'back at the sorting hub' => ['at_sorting_hub', OrderStatus::PROCESSING],
-    'reprocess pending' => ['reprocess_pending', OrderStatus::PROCESSING],
+    'picked again' => ['picked', OrderStatus::PROCESSING],
 ]);
+
+// DISC-20 (owner decision C): these are recorded and shown, never applied.
+it('keeps a shipped order shipped for holds and reprocessing', function (string $raw) {
+    $order = makeMapperTestOrder(['status' => 'shipped', 'pathao_order_status' => 'in_transit']);
+
+    CourierOrderStatusMapper::sync($order, 'pathao', $raw);
+
+    expect($order->refresh()->status)->toBe(OrderStatus::SHIPPED)
+        ->and($order->pathao_order_status)->toBe($raw);
+})->with(['on_hold', 'reprocess_pending', 'reprocessed', 'at_inventory', 'exchange', 'return_on_hold']);
 
 it('lets pathao return an on-hold order to shipped and then delivered', function () {
     $order = makeMapperTestOrder(['status' => 'shipped', 'pathao_order_status' => 'in_transit']);

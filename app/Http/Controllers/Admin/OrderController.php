@@ -279,6 +279,8 @@ class OrderController extends Controller
                 'pathao_status_label' => $order->pathao_order_status
                     ? CourierOrderStatusMapper::label($order->pathao_order_status)
                     : null,
+                // DISC-20: when the current Pathao courier status arrived.
+                'pathao_status_updated_at' => $courierEvidence->latestStatusReceivedAt($order, 'pathao'),
                 'steadfast_status_label' => $order->steadfast_status
                     ? CourierOrderStatusMapper::label($order->steadfast_status)
                     : null,
@@ -286,6 +288,9 @@ class OrderController extends Controller
                 // didn't map to anything recognized (e.g. a lost parcel) —
                 // see possibleLostParcel()'s docblock.
                 'needsCourierInvestigation' => $this->possibleLostParcel($order),
+                // DISC-20 (D1b): display-only note when a final order disagrees
+                // with what Pathao now reports.
+                'courierStatusConflict' => $this->courierStatusConflict($order),
             ]),
             // PAY-RETURN-001
             'refundSummary' => $refunds->summary($order),
@@ -293,6 +298,36 @@ class OrderController extends Controller
             'canVerifyDelivery' => (bool) Auth::guard('admin')->user()?->is_mother,
             'canConfirmLostParcel' => (bool) Auth::guard('admin')->user()?->is_mother && $order->lost_confirmed_at === null,
         ]);
+    }
+
+    /**
+     * DISC-20 (owner decision D1b): when the order is in a protected final
+     * status (delivered, cancelled, refunded) but the latest Pathao status
+     * maps to a different order status, the admin is told — display only.
+     * Nothing changes: final statuses stay protected, and no payment,
+     * reward, coupon, stock, return or email effect follows. Unmapped and
+     * deliberately preserved Pathao statuses never produce a note.
+     *
+     * @return array{order_status: string, courier_status: string, courier_status_label: string, courier_mapped_status: string}|null
+     */
+    private function courierStatusConflict(Order $order): ?array
+    {
+        if (! CourierOrderStatusMapper::isTerminal($order->status) || $order->pathao_order_status === null) {
+            return null;
+        }
+
+        $mapped = CourierOrderStatusMapper::forPathao($order->pathao_order_status);
+
+        if ($mapped === null || $mapped === $order->status) {
+            return null;
+        }
+
+        return [
+            'order_status' => $order->status->value,
+            'courier_status' => $order->pathao_order_status,
+            'courier_status_label' => CourierOrderStatusMapper::label($order->pathao_order_status),
+            'courier_mapped_status' => $mapped->value,
+        ];
     }
 
     /**

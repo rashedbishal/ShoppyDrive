@@ -6,6 +6,7 @@ import {
     Ban,
     Globe,
     History,
+    Info,
     MapPin,
     Package,
     Pencil,
@@ -90,6 +91,7 @@ type Order = {
     pathao_consignment_id: string | null;
     pathao_order_status: string | null;
     pathao_status_label: string | null;
+    pathao_status_updated_at: string | null;
     pathao_delivery_fee: number | null;
     pathao_sent_at: string | null;
     steadfast_consignment_id: string | null;
@@ -98,6 +100,12 @@ type Order = {
     steadfast_status_label: string | null;
     steadfast_sent_at: string | null;
     needsCourierInvestigation: boolean;
+    courierStatusConflict: {
+        order_status: string;
+        courier_status: string;
+        courier_status_label: string;
+        courier_mapped_status: string;
+    } | null;
     shipping_address: {
         name: string;
         phone: string;
@@ -429,6 +437,40 @@ export default function OrderShow({
                     </div>
                 </div>
 
+                {order.courierStatusConflict && (
+                    <div className="flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
+                        <Info className="mt-0.5 size-4 shrink-0" />
+                        <div>
+                            <p className="font-medium">
+                                Courier status differs from the order status
+                            </p>
+                            <p className="text-sky-800">
+                                ShoppyDrive order status:{' '}
+                                <span className="font-semibold capitalize">
+                                    {order.courierStatusConflict.order_status}
+                                </span>
+                                . Latest Pathao status:{' '}
+                                <span className="font-semibold">
+                                    {
+                                        order.courierStatusConflict
+                                            .courier_status_label
+                                    }
+                                </span>{' '}
+                                (would mean{' '}
+                                <span className="capitalize">
+                                    {
+                                        order.courierStatusConflict
+                                            .courier_mapped_status
+                                    }
+                                </span>
+                                ). The order status is final, so nothing was
+                                changed automatically — no payment, reward,
+                                coupon, stock or email change. Check with Pathao
+                                if this is unexpected.
+                            </p>
+                        </div>
+                    </div>
+                )}
                 {order.needsCourierInvestigation && (
                     <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
                         <AlertTriangle className="mt-0.5 size-4 shrink-0" />
@@ -1209,13 +1251,25 @@ export default function OrderShow({
                                             </div>
                                             <div className="flex justify-between">
                                                 <span className="text-slate-600">
-                                                    Status
+                                                    Courier status
                                                 </span>
                                                 <Badge variant="info">
                                                     {order.pathao_status_label ??
                                                         'Unknown'}
                                                 </Badge>
                                             </div>
+                                            {order.pathao_status_updated_at && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-600">
+                                                        Status Received At
+                                                    </span>
+                                                    <span className="font-medium">
+                                                        {new Date(
+                                                            order.pathao_status_updated_at,
+                                                        ).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            )}
                                             {order.pathao_delivery_fee !==
                                                 null && (
                                                 <div className="flex justify-between">

@@ -606,7 +606,8 @@ it('retries mark-refunded after a real InnoDB deadlock without duplicating any s
     expect(OrderStatusHistory::where('order_id', $order->id)->count())->toBe(1);
     expect($product->refresh()->stock_quantity)->toBe(12);
     expect(OrderItem::where('order_id', $order->id)->value('restocked_quantity'))->toBe(2);
-    expect((int) $monitor->query("SELECT COUNT(*) FROM jobs WHERE payload LIKE '%OrderStatusUpdatedMail%'")->fetchColumn() - $mailJobsBefore)->toBe(1);
+    // Owner email policy (2026-11-14): a refund sends the customer no status email.
+    expect((int) $monitor->query("SELECT COUNT(*) FROM jobs WHERE payload LIKE '%OrderStatusUpdatedMail%'")->fetchColumn() - $mailJobsBefore)->toBe(0);
     expect((int) $monitor->query("SELECT COUNT(*) FROM cache WHERE `key` LIKE 'deadlock-ballast-{$order->id}-%'")->fetchColumn())->toBe(0);
 })->skip(fn () => DB::connection()->getDriverName() !== 'mysql', 'requires a real MySQL connection to exercise InnoDB locking-read semantics');
 

@@ -119,7 +119,7 @@ test('only a cancellation sends the cancellation alert, and only once', function
 
     $order->update(['status' => OrderStatus::SHIPPED]);
     Mail::assertNotQueued(CancelledOrderAlertMail::class);
-    Mail::assertQueued(ShippedWithTrackingMail::class);
+    Mail::assertNotQueued(ShippedWithTrackingMail::class); // owner email policy: no shipped email
 
     $order->update(['status' => OrderStatus::CANCELLED]);
     $order->update(['status' => OrderStatus::CANCELLED]);

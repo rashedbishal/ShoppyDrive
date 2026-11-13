@@ -21,9 +21,9 @@ class CourierOrderStatusMapper
         // DISC-20: Pathao's own spellings, from its official WooCommerce
         // plugin's status vocabulary (`Pickup_Requested`, `Picked`,
         // `Delivered`, …), which production's `/info` reports also use. The
-        // older keys stay alongside. `Return`, `Delivery_Failed`,
-        // `Pickup_Failed` and `Payment_Invoice` are deliberately unmapped
-        // (DISC-02 / need a human / not a status change).
+        // older keys stay alongside. `Delivery_Failed` and `Pickup_Failed`
+        // are deliberately unmapped and flagged (need a human); `Return` and
+        // `Payment_Invoice` are preserved (see PATHAO_PRESERVED).
         'pickup_requested' => OrderStatus::PENDING,
         'assigned_for_pickup' => OrderStatus::PENDING,
 
@@ -32,11 +32,6 @@ class CourierOrderStatusMapper
         'at_sorting_hub' => OrderStatus::PROCESSING,
         'at_sorting' => OrderStatus::PROCESSING,
         'first_mile_hub' => OrderStatus::PROCESSING,
-        'reprocess_pending' => OrderStatus::PROCESSING,
-        'reprocessed' => OrderStatus::PROCESSING,
-        'at_inventory' => OrderStatus::PROCESSING,
-        'on_hold' => OrderStatus::PROCESSING,
-        'exchange' => OrderStatus::PROCESSING,
 
         'assigned_for_delivery' => OrderStatus::SHIPPED,
         'received_at_last_mile_hub' => OrderStatus::SHIPPED,
@@ -51,16 +46,41 @@ class CourierOrderStatusMapper
         // DELIVERED. It is still recorded as evidence (is_partial) and
         // flagged on the order; the order keeps its current status.
 
+        // DISC-20: the status Pathao reports after a merchant cancels the
+        // parcel in the Pathao dashboard (owner-confirmed, order 9). Every
+        // return status is deliberately NOT here: see PATHAO_PRESERVED.
         'pickup_cancelled' => OrderStatus::CANCELLED,
-        'return_requested' => OrderStatus::CANCELLED,
-        'return_at_sorting' => OrderStatus::CANCELLED,
-        'return_in_transit' => OrderStatus::CANCELLED,
-        'assigned_for_return' => OrderStatus::CANCELLED,
-        'return_to_merchant' => OrderStatus::CANCELLED,
-        'returned' => OrderStatus::CANCELLED,
-        'paid_return' => OrderStatus::CANCELLED,
-        'returned_to_inventory' => OrderStatus::CANCELLED,
-        'return_to_inventory' => OrderStatus::CANCELLED,
+    ];
+
+    /**
+     * DISC-20 (owner decisions 2026-11-13/14): known Pathao statuses that
+     * deliberately leave the order's own status unchanged. The raw status is
+     * still stored and shown to the admin as the courier status, with its
+     * evidence row, but these are routine, so they are not flagged as
+     * "unrecognized" (that banner stays for lost, damaged, partial delivery,
+     * failed attempts and any key never seen before). Return statuses stay
+     * here until Pathao confirms which one means the parcel is back.
+     *
+     * @var list<string>
+     */
+    private const PATHAO_PRESERVED = [
+        'on_hold',
+        'return_on_hold',
+        'exchange',
+        'reprocess_pending',
+        'reprocessed',
+        'at_inventory',
+        'return',
+        'return_requested',
+        'return_in_transit',
+        'return_at_sorting',
+        'assigned_for_return',
+        'returned',
+        'paid_return',
+        'returned_to_inventory',
+        'return_to_merchant',
+        'return_to_inventory',
+        'payment_invoice',
     ];
 
     /**
@@ -110,7 +130,12 @@ class CourierOrderStatusMapper
      */
     public static function isUnrecognized(string $provider, string $rawStatus): bool
     {
-        return ($provider === 'pathao' ? self::forPathao($rawStatus) : self::forSteadfast($rawStatus)) === null;
+        if ($provider === 'pathao') {
+            return self::forPathao($rawStatus) === null
+                && ! in_array(self::normalize($rawStatus), self::PATHAO_PRESERVED, true);
+        }
+
+        return self::forSteadfast($rawStatus) === null;
     }
 
     /**

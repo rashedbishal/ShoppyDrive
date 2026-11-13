@@ -18,6 +18,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\User;
+use App\Services\CourierOrderStatusMapper;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -75,33 +76,43 @@ test('a checkout that rolls back due to insufficient stock never creates the ord
     expect(Order::query()->count())->toBe(0);
 });
 
-test('order status transitions send the correct dedicated email', function () {
-    Mail::fake();
+/**
+ * Owner email policy (2026-11-14): a customer gets exactly three order
+ * emails — placed, delivered, cancelled — and nothing for any other status.
+ */
+function notifyOrder(string $number, string $status, string $paymentStatus = 'unpaid'): Order
+{
     $user = User::factory()->create(['email' => 'buyer@example.com']);
-    $order = Order::create([
-        'order_number' => 'ORD-NOTIFY-1', 'user_id' => $user->id, 'status' => 'processing',
-        'payment_status' => 'paid', 'payment_method' => 'cod', 'subtotal' => 100,
+
+    return Order::create([
+        'order_number' => $number, 'user_id' => $user->id, 'status' => $status,
+        'payment_status' => $paymentStatus, 'payment_method' => 'cod', 'subtotal' => 100,
         'shipping_cost' => 0, 'discount' => 0, 'tax' => 0, 'total' => 100,
         'shipping_address' => ['email' => 'buyer@example.com'], 'billing_address' => [],
     ]);
-    Mail::fake(); // clear the creation-time OrderPlacedMail/NewOrderAlertMail before asserting transitions
+}
 
-    $order->update(['status' => OrderStatus::SHIPPED]);
-    Mail::assertQueued(ShippedWithTrackingMail::class, fn ($mail) => $mail->order->is($order));
+test('placing an order sends the customer the order confirmation email', function () {
+    Mail::fake();
+
+    $order = notifyOrder('ORD-NOTIFY-0', 'pending');
+
+    Mail::assertQueued(OrderPlacedMail::class, fn ($mail) => $mail->order->is($order) && $mail->hasTo('buyer@example.com'));
+});
+
+test('delivering an order sends the delivery email', function () {
+    Mail::fake();
+    $order = notifyOrder('ORD-NOTIFY-1', 'shipped');
+    Mail::fake(); // clear the creation-time emails before asserting the transition
 
     $order->update(['status' => OrderStatus::DELIVERED]);
+
     Mail::assertQueued(OrderDeliveredMail::class, fn ($mail) => $mail->order->is($order));
 });
 
 test('cancelling an order sends OrderCancelledMail', function () {
     Mail::fake();
-    $user = User::factory()->create(['email' => 'buyer@example.com']);
-    $order = Order::create([
-        'order_number' => 'ORD-NOTIFY-2', 'user_id' => $user->id, 'status' => 'pending',
-        'payment_status' => 'unpaid', 'payment_method' => 'cod', 'subtotal' => 100,
-        'shipping_cost' => 0, 'discount' => 0, 'tax' => 0, 'total' => 100,
-        'shipping_address' => ['email' => 'buyer@example.com'], 'billing_address' => [],
-    ]);
+    $order = notifyOrder('ORD-NOTIFY-2', 'pending');
     Mail::fake();
 
     $order->update(['status' => OrderStatus::CANCELLED]);
@@ -110,39 +121,70 @@ test('cancelling an order sends OrderCancelledMail', function () {
     Mail::assertNotQueued(OrderStatusUpdatedMail::class);
 });
 
-test('a refund sends the generic status-updated email, not a dedicated one', function () {
+test('no other status change sends the customer any email', function (string $from, OrderStatus $to) {
     Mail::fake();
-    $user = User::factory()->create(['email' => 'buyer@example.com']);
-    $order = Order::create([
-        'order_number' => 'ORD-NOTIFY-3', 'user_id' => $user->id, 'status' => 'delivered',
-        'payment_status' => 'paid', 'payment_method' => 'cod', 'subtotal' => 100,
-        'shipping_cost' => 0, 'discount' => 0, 'tax' => 0, 'total' => 100,
-        'shipping_address' => ['email' => 'buyer@example.com'], 'billing_address' => [],
-    ]);
+    $order = notifyOrder('ORD-NOTIFY-3-'.$to->value, $from, 'paid');
     Mail::fake();
 
-    $order->update(['status' => OrderStatus::REFUNDED]);
+    $order->update(['status' => $to]);
 
-    Mail::assertQueued(OrderStatusUpdatedMail::class, fn ($mail) => $mail->order->is($order));
-});
+    Mail::assertNotQueued(ShippedWithTrackingMail::class);
+    Mail::assertNotQueued(OrderStatusUpdatedMail::class);
+    Mail::assertNotQueued(OrderDeliveredMail::class);
+    Mail::assertNotQueued(OrderCancelledMail::class);
+    Mail::assertNotQueued(OrderPlacedMail::class);
+})->with([
+    'pending to processing' => ['pending', OrderStatus::PROCESSING],
+    'processing to shipped' => ['processing', OrderStatus::SHIPPED],
+    'shipped back to processing' => ['shipped', OrderStatus::PROCESSING],
+    'processing back to pending' => ['processing', OrderStatus::PENDING],
+    'delivered to refunded' => ['delivered', OrderStatus::REFUNDED],
+]);
 
 test('re-asserting the same status again does not resend the email', function () {
     Mail::fake();
-    $user = User::factory()->create(['email' => 'buyer@example.com']);
-    $order = Order::create([
-        'order_number' => 'ORD-NOTIFY-4', 'user_id' => $user->id, 'status' => 'processing',
-        'payment_status' => 'paid', 'payment_method' => 'cod', 'subtotal' => 100,
-        'shipping_cost' => 0, 'discount' => 0, 'tax' => 0, 'total' => 100,
-        'shipping_address' => ['email' => 'buyer@example.com'], 'billing_address' => [],
-    ]);
+    $order = notifyOrder('ORD-NOTIFY-4', 'shipped');
     Mail::fake();
 
-    $order->update(['status' => OrderStatus::SHIPPED]);
-    Mail::assertQueued(ShippedWithTrackingMail::class, 1);
+    $order->update(['status' => OrderStatus::DELIVERED]);
+    Mail::assertQueued(OrderDeliveredMail::class, 1);
 
-    // Simulates a retried courier webhook reporting the same mapped status.
-    $order->update(['status' => OrderStatus::SHIPPED]);
-    Mail::assertQueued(ShippedWithTrackingMail::class, 1);
+    // Simulates a retried courier report of the same mapped status.
+    $order->update(['status' => OrderStatus::DELIVERED]);
+    Mail::assertQueued(OrderDeliveredMail::class, 1);
+});
+
+test('courier reports send customer email only for delivered and cancelled, never twice', function () {
+    Mail::fake();
+    $order = notifyOrder('ORD-NOTIFY-5', 'pending');
+    $order->forceFill(['pathao_consignment_id' => 'PT-NOTIFY-5'])->save();
+    Mail::fake();
+
+    foreach (['pending', 'picked', 'in_transit', 'on_hold', 'exchange', 'reprocess_pending', 'reprocessed', 'at_inventory',
+        'return_requested', 'returned', 'Partial_Delivery', 'lost', 'damaged', 'assigned_for_delivery'] as $raw) {
+        CourierOrderStatusMapper::sync($order->refresh(), 'pathao', $raw);
+    }
+    Mail::assertNothingQueued();
+
+    CourierOrderStatusMapper::sync($order->refresh(), 'pathao', 'delivery');
+    CourierOrderStatusMapper::sync($order->refresh(), 'pathao', 'delivery');
+    CourierOrderStatusMapper::sync($order->refresh(), 'pathao', 'Delivered');
+
+    Mail::assertQueued(OrderDeliveredMail::class, 1);
+    Mail::assertNotQueued(ShippedWithTrackingMail::class);
+    Mail::assertNotQueued(OrderStatusUpdatedMail::class);
+});
+
+test('a courier cancellation sends the cancellation email once', function () {
+    Mail::fake();
+    $order = notifyOrder('ORD-NOTIFY-7', 'shipped');
+    $order->forceFill(['steadfast_consignment_id' => 'SF-NOTIFY-7'])->save();
+    Mail::fake();
+
+    CourierOrderStatusMapper::sync($order->refresh(), 'steadfast', 'cancelled');
+    CourierOrderStatusMapper::sync($order->refresh(), 'steadfast', 'cancelled');
+
+    Mail::assertQueued(OrderCancelledMail::class, 1);
 });
 
 test('a guest order with no email on file sends no customer email but still alerts the admin', function () {
