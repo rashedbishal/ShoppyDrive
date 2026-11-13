@@ -321,6 +321,7 @@ test('three abandoned checkout attempts in one run send the customer one reminde
 });
 
 test('a later abandoned checkout inside the 7-day cooldown is not mailed, and is not retried', function () {
+    $this->freezeTime();
     Mail::fake();
     $user = User::factory()->create();
     $user->forceFill(['last_abandoned_cart_reminder_at' => now()->subDays(6)])->save();
