@@ -169,7 +169,7 @@ export function BundleCard({
                 </div>
 
                 {/* The "equation": component thumbnails joined by + signs, resolving to the deal. */}
-                <div className="flex items-center gap-2 overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-3">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-3">
                     {visibleItems.map((item, index) => (
                         <Fragment key={item.id}>
                             {index > 0 && (
@@ -196,24 +196,26 @@ export function BundleCard({
                             +{extraCount}
                         </span>
                     )}
-                    <Equal className="size-3.5 shrink-0 text-[var(--color-text-muted)]" />
-                    {isFixedPrice ? (
-                        <span className="flex shrink-0 items-baseline gap-1.5">
-                            <span className="text-base font-bold text-[var(--color-text-primary)]">
-                                {formatCurrency(bundleTotal)}
-                            </span>
-                            {savings > 0 && (
-                                <span className="text-xs text-[var(--color-text-muted)] line-through">
-                                    {formatCurrency(originalTotal)}
+                    <div className="flex shrink-0 items-center gap-2">
+                        <Equal className="size-3.5 shrink-0 text-[var(--color-text-muted)]" />
+                        {isFixedPrice ? (
+                            <span className="flex shrink-0 items-baseline gap-1.5">
+                                <span className="text-base font-bold text-[var(--color-text-primary)]">
+                                    {formatCurrency(bundleTotal)}
                                 </span>
-                            )}
-                        </span>
-                    ) : (
-                        <span className="flex shrink-0 items-center gap-1 rounded-full bg-[var(--color-success)]/10 px-2.5 py-1 text-xs font-bold text-[var(--color-success)]">
-                            <Truck className="size-3.5" />
-                            Free delivery
-                        </span>
-                    )}
+                                {savings > 0 && (
+                                    <span className="text-xs text-[var(--color-text-muted)] line-through">
+                                        {formatCurrency(originalTotal)}
+                                    </span>
+                                )}
+                            </span>
+                        ) : (
+                            <span className="flex shrink-0 items-center gap-1 rounded-full bg-[var(--color-success)]/10 px-2.5 py-1 text-xs font-bold text-[var(--color-success)]">
+                                <Truck className="size-3.5" />
+                                Free delivery
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex items-center justify-between gap-3">

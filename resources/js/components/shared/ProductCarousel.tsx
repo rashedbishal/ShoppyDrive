@@ -91,7 +91,7 @@ export function ProductCarousel({
             <div
                 ref={scrollContainerRef}
                 onScroll={checkScroll}
-                className="scrollbar-hide flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:gap-4"
+                className="scrollbar-hide -mt-2 -mb-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overflow-y-hidden pt-2 pb-6 md:gap-4"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 {/* 2 cards per view on mobile, 3 on tablet, 4 on desktop — same sizing as other product rows */}
