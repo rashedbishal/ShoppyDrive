@@ -821,11 +821,6 @@ router.on('navigate', (event) => {
     const startupAppliedThisCart = initialPageCartApplied;
     initialPageCartApplied = false;
 
-    // Inertia preserves the original document between visits, so Blade only
-    // writes this attribute on the initial load. Keep it in sync with the
-    // server-resolved CMS theme after every subsequent visit as well.
-    document.documentElement.dataset.theme = props.theme as string | undefined;
-
     // FE-005: a 500/503 response skips shared props entirely
     // (AppServiceProvider::configureErrorPages() calls Inertia::flushShared()
     // for server errors — the database or shared props may be exactly
