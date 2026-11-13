@@ -42,6 +42,15 @@ export const MOTION = {
         duration: 0.25,
     },
     stagger: 0.06,
+    /** Product cards fading up as they scroll into view: slow and eased in both directions, never a sudden jump. */
+    reveal: {
+        duration: 0.9,
+        distance: 20,
+        scale: 0.98,
+        ease: [0.4, 0, 0.2, 1],
+        stagger: 0.08,
+        maxDelay: 0.4,
+    },
 } as const;
 
 /**
