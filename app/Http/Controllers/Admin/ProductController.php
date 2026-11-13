@@ -55,7 +55,11 @@ class ProductController extends Controller
             ->when($request->status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->when($request->category_id, fn ($q) => $q->where('category_id', $request->category_id))
             ->when($request->sub_category_id, fn ($q) => $q->where('sub_category_id', $request->sub_category_id))
+            // `id` breaks ties between products created in the same second (imports,
+            // seeders): without it the database may order them differently after any
+            // row is updated, so an edited product jumped around the list.
             ->latest()
+            ->latest('id')
             ->paginate(20)
             ->withQueryString();
 

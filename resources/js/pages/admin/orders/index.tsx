@@ -195,7 +195,13 @@ export default function OrdersIndex({ orders, filters, statuses }: Props) {
                                             {order.user?.name ?? 'Guest'} ·{' '}
                                             {new Date(
                                                 order.created_at,
-                                            ).toLocaleDateString()}
+                                            ).toLocaleString(undefined, {
+                                                year: 'numeric',
+                                                month: 'numeric',
+                                                day: 'numeric',
+                                                hour: 'numeric',
+                                                minute: '2-digit',
+                                            })}
                                         </p>
                                     </div>
                                     <div className="order-last flex w-full items-center gap-2 sm:order-none sm:w-auto sm:gap-4">

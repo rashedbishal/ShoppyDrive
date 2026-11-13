@@ -55,3 +55,19 @@ test('a search stays inside the chosen status filter, whether it matches by name
     'by name' => [['name' => 'Findme Kettle']],
     'by sku' => [['sku' => 'Findme-1']],
 ]);
+
+test('products created in the same second list newest-first by id, and an update does not move one', function () {
+    $createdAt = now()->subDay();
+    $products = Product::factory()->count(3)->create(['created_at' => $createdAt]);
+    $expectedOrder = $products->pluck('id')->sortDesc()->values()->all();
+
+    actingAs($this->admin, 'admin');
+
+    $listedIds = fn (): array => collect($this->get(route('admin.products.index'))->viewData('page')['props']['products']['data'])->pluck('id')->all();
+
+    expect($listedIds())->toBe($expectedOrder);
+
+    $products->get(1)->update(['short_description' => 'Edited']);
+
+    expect($listedIds())->toBe($expectedOrder);
+});
