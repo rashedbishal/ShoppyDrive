@@ -53,41 +53,43 @@ function BrandListingContent({
                             iconClassName: 'text-[var(--color-success)]',
                         },
                     ]}
-                    aside={
-                        <div className="space-y-2">
-                            <div className="relative">
-                                <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
-                                <Input
-                                    maxLength={64}
-                                    type="search"
-                                    placeholder="Search brands..."
-                                    value={search}
-                                    onChange={(event) =>
-                                        setSearch(event.target.value)
-                                    }
-                                    aria-label="Search brands"
-                                    className="h-11 rounded-full border-[var(--color-border)] bg-[var(--color-surface)] pr-11 pl-11 shadow-sm"
-                                />
-                                {search ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => setSearch('')}
-                                        aria-label="Clear search"
-                                        className="absolute top-1/2 right-3 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)]"
-                                    >
-                                        <X className="size-4" />
-                                    </button>
-                                ) : null}
-                            </div>
+                />
+
+                {/* Search */}
+                <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="mx-auto max-w-xl space-y-2">
+                        <div className="relative">
+                            <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
+                            <Input
+                                maxLength={64}
+                                type="search"
+                                placeholder="Search brands..."
+                                value={search}
+                                onChange={(event) =>
+                                    setSearch(event.target.value)
+                                }
+                                aria-label="Search brands"
+                                className="h-11 rounded-full border-[var(--color-border)] bg-[var(--color-surface)] pr-11 pl-11 shadow-sm"
+                            />
                             {search ? (
-                                <p className="px-4 text-xs text-[var(--color-text-muted)]">
-                                    Showing {filtered.length} of {brands.length}{' '}
-                                    brands
-                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => setSearch('')}
+                                    aria-label="Clear search"
+                                    className="absolute top-1/2 right-3 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-text-primary)]"
+                                >
+                                    <X className="size-4" />
+                                </button>
                             ) : null}
                         </div>
-                    }
-                />
+                        {search ? (
+                            <p className="px-4 text-xs text-[var(--color-text-muted)]">
+                                Showing {filtered.length} of {brands.length}{' '}
+                                brands
+                            </p>
+                        ) : null}
+                    </div>
+                </section>
 
                 {/* Brand grid */}
                 <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
