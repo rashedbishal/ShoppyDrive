@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\Product;
 use App\Models\ProductMedia;
+use App\Models\ProductVariant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -70,4 +71,30 @@ test('products created in the same second list newest-first by id, and an update
     $products->get(1)->update(['short_description' => 'Edited']);
 
     expect($listedIds())->toBe($expectedOrder);
+});
+
+test('the list shows a variant product\'s live stock, the total of its variants, not the stale product column', function () {
+    $product = Product::factory()->create(['stock_quantity' => 50]);
+    $red = ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 4]);
+    ProductVariant::factory()->create(['product_id' => $product->id, 'stock_quantity' => 6]);
+
+    actingAs($this->admin, 'admin');
+
+    $this->get(route('admin.products.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('products.data.0.available_stock', 10));
+
+    // An order or cancellation changes only the variant's stock.
+    $red->decrement('stock_quantity', 3);
+
+    $this->get(route('admin.products.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('products.data.0.available_stock', 7));
+});
+
+test('the list shows a product without variants at its own stock', function () {
+    Product::factory()->create(['stock_quantity' => 12]);
+
+    actingAs($this->admin, 'admin');
+
+    $this->get(route('admin.products.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('products.data.0.available_stock', 12));
 });

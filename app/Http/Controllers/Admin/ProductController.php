@@ -48,6 +48,12 @@ class ProductController extends Controller
             'brand:id,name',
             'images' => fn ($q) => $q->select(['id', 'product_id', 'path', 'is_primary', 'sort_order'])->orderBy('sort_order'),
         ])
+            // Orders and cancellations change a variant product's stock on its
+            // variants, not on `products.stock_quantity` (that column is only
+            // re-summed when the product is saved), so the list totals the
+            // variants itself, in the query.
+            ->withCount('variants')
+            ->withSum('variants', 'stock_quantity')
             ->when($request->search, fn ($q) => $q->where(fn ($match) => $match
                 ->where('name', 'like', "%{$request->search}%")
                 ->orWhere('sku', 'like', "%{$request->search}%")))
@@ -74,6 +80,11 @@ class ProductController extends Controller
 
             return array_merge(Arr::except($product->toArray(), 'images'), [
                 'primary_image_url' => $primaryImage?->path,
+                // Same rule as Product::available_stock: the variants' total
+                // when the product has variants, otherwise its own stock.
+                'available_stock' => $product->variants_count > 0
+                    ? (int) $product->variants_sum_stock_quantity
+                    : (int) $product->stock_quantity,
             ]);
         });
 

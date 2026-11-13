@@ -15,6 +15,7 @@ type Product = {
     sku: string | null;
     price: number;
     stock_quantity: number;
+    available_stock: number;
     is_active: boolean;
     is_featured: boolean;
     cry_baby_enabled: boolean;
@@ -279,7 +280,7 @@ export default function ProductsIndex({
                                                 ৳{p.price.toLocaleString()}
                                             </p>
                                             <p className="text-xs text-slate-600">
-                                                Stock: {p.stock_quantity}
+                                                Stock: {p.available_stock}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2">
