@@ -18,7 +18,17 @@ class CourierOrderStatusMapper
     /** @var array<string, OrderStatus> */
     private const PATHAO_MAP = [
         'pending' => OrderStatus::PENDING,
+        // DISC-20: Pathao's own spellings, from its official WooCommerce
+        // plugin's status vocabulary (`Pickup_Requested`, `Picked`,
+        // `Delivered`, …), which production's `/info` reports also use. The
+        // older keys stay alongside. `Return`, `Delivery_Failed`,
+        // `Pickup_Failed` and `Payment_Invoice` are deliberately unmapped
+        // (DISC-02 / need a human / not a status change).
+        'pickup_requested' => OrderStatus::PENDING,
+        'assigned_for_pickup' => OrderStatus::PENDING,
 
+        'picked' => OrderStatus::PROCESSING,
+        'at_the_sorting_hub' => OrderStatus::PROCESSING,
         'at_sorting_hub' => OrderStatus::PROCESSING,
         'at_sorting' => OrderStatus::PROCESSING,
         'first_mile_hub' => OrderStatus::PROCESSING,
@@ -29,10 +39,12 @@ class CourierOrderStatusMapper
         'exchange' => OrderStatus::PROCESSING,
 
         'assigned_for_delivery' => OrderStatus::SHIPPED,
+        'received_at_last_mile_hub' => OrderStatus::SHIPPED,
         'at_delivery_hub' => OrderStatus::SHIPPED,
         'in_transit' => OrderStatus::SHIPPED,
         'reattempt_requested' => OrderStatus::SHIPPED,
 
+        'delivered' => OrderStatus::DELIVERED,
         'delivery' => OrderStatus::DELIVERED,
         'partial_delivery' => OrderStatus::DELIVERED,
 
