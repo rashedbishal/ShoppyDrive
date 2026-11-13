@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import { uniqueId } from '@/lib/unique-id';
+import { imageRecommendation } from '@/lib/upload-recommendations';
 import { cn } from '@/lib/utils';
 import { maxLength, required, validate } from '@/lib/validate';
 
@@ -360,6 +361,9 @@ export default function ProductBundleCreate() {
                                             }}
                                             error={errors.image}
                                             maxSizeMb={5}
+                                            hint={imageRecommendation(
+                                                '800 × 800 px (square)',
+                                            )}
                                             previewClassName="h-48"
                                         />
                                     </div>

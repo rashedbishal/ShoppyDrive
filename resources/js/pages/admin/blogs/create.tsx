@@ -10,6 +10,7 @@ import {
     STORABLE_DATETIME_MAX,
     STORABLE_DATETIME_MIN,
 } from '@/lib/storable-date';
+import { imageRecommendation } from '@/lib/upload-recommendations';
 import { maxLength, required, validate } from '@/lib/validate';
 
 function Field({
@@ -197,6 +198,9 @@ export default function BlogCreate() {
                                     }
                                     error={errors.featured_image}
                                     maxSizeMb={5}
+                                    hint={imageRecommendation(
+                                        '1280 × 720 px (16:9)',
+                                    )}
                                     previewClassName="h-32 object-cover"
                                 />
                             </Field>

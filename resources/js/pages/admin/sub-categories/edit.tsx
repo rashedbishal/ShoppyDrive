@@ -7,6 +7,7 @@ import { RouteModal } from '@/components/ui/route-modal';
 import { Select } from '@/components/ui/select';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
 import { scrollToFirstFormError } from '@/lib/form-error-scroll';
+import { imageRecommendation } from '@/lib/upload-recommendations';
 import {
     maxLength,
     minValue,
@@ -244,6 +245,9 @@ export default function SubCategoryEdit({
                                     onChange={(file) => setData('image', file)}
                                     error={errors.image}
                                     maxSizeMb={5}
+                                    hint={imageRecommendation(
+                                        '400 × 400 px (square, shown as a small circle, so keep the subject centered)',
+                                    )}
                                     previewClassName="h-32 object-contain"
                                 />
                             </Field>

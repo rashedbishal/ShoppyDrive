@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight, Plus, Trash2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { CharCount } from '@/components/ui/char-count';
+import { imageRecommendation } from '@/lib/upload-recommendations';
 
 /** Loosely typed on purpose: the page builder's `sections` is one free-form JSON blob. */
 type Sections = Record<string, any>;
@@ -445,6 +446,9 @@ export function HeroExtras({
                             {uploadError}
                         </p>
                     )}
+                    <p className={hintClass}>
+                        {imageRecommendation('1200 × 1200 px (square)')}
+                    </p>
                     <p className={hintClass}>
                         Uploaded slides are saved on the page when you press
                         "Save All Changes".
@@ -1292,6 +1296,11 @@ export function TestimonialImagesEditor({
                             }}
                         />
                     </div>
+                    <p className={hintClass}>
+                        Each image must be a JPG, PNG or WebP under{' '}
+                        {TESTIMONIAL_IMAGE_MAX_KB} KB. WebP at 720 × 1280 px
+                        (9:16, a tall phone screenshot) usually fits.
+                    </p>
                     <p className={hintClass}>
                         {images.length} of {TESTIMONIAL_IMAGE_LIMIT} images.
                         They appear in this order, as a swipeable carousel.

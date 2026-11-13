@@ -25,6 +25,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { ImageUpload } from '@/components/ui/image-upload';
+import { imageRecommendation } from '@/lib/upload-recommendations';
 
 const TOOLBAR_ACTIONS = [
     { label: 'Bold', icon: Bold, command: 'bold' },
@@ -105,6 +106,7 @@ function InsertImageDialog({
                         }}
                         error={errors.image}
                         previewClassName="h-40 object-contain"
+                        hint={imageRecommendation('up to 1200 px wide')}
                     />
 
                     <div className="flex items-center gap-2 text-xs font-medium text-slate-600">

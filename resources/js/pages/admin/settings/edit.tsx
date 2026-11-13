@@ -371,7 +371,7 @@ export default function SettingsEdit({ settings }: Props) {
                             </div>
                             <SettingsField
                                 label="Brand Logo"
-                                hint="The complete logo (mark, name and motto together), shown in the website header, footer, login pages, error pages, landing pages, CMS, emails and invoices. A wide PNG with a transparent background works best (WebP does not show in some email apps) — max 2 MB."
+                                hint="The complete logo (mark, name and motto together), shown in the website header, footer, login pages, error pages, landing pages, CMS, emails and invoices. A wide PNG with a transparent background works best (WebP does not show in some email apps), about 600 × 200 px and under 100 KB — max 2 MB."
                             >
                                 <ImageUpload
                                     value={data.logo}
@@ -381,7 +381,7 @@ export default function SettingsEdit({ settings }: Props) {
                             </SettingsField>
                             <SettingsField
                                 label="Loading Logo"
-                                hint="Shown in the middle of the screen while a page is loading, inside a turning ring. Leave empty to use the Brand Logo. A square image with a transparent background (PNG or WEBP) looks best — max 2 MB and 4096 × 4096 px. It's resized automatically so it loads fast."
+                                hint="Shown in the middle of the screen while a page is loading, inside a turning ring. Leave empty to use the Brand Logo. A square image with a transparent background (PNG or WEBP) looks best, about 512 × 512 px and under 100 KB — max 2 MB and 4096 × 4096 px. It's resized automatically so it loads fast."
                             >
                                 <ImageUpload
                                     value={data.loading_logo}

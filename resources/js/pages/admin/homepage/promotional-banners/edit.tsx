@@ -270,7 +270,7 @@ export default function PromotionalBannerEdit({
                                                 clearErrors('image');
                                             }}
                                             error={errors.image}
-                                            hint="Best resolution: 1200×800px (3:2) landscape, minimum 800×600px. Banners display two per row and crop to fill, so keep key content centered."
+                                            hint="Best resolution: 1200×800px (3:2) landscape, minimum 800×600px. Banners display two per row and crop to fill, so keep key content centered. WebP format, under 100 KB recommended."
                                             previewClassName="h-48"
                                         />
                                     </div>

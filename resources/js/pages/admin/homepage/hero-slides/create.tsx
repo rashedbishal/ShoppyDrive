@@ -196,7 +196,7 @@ export default function HeroSlideCreate() {
                                                 clearErrors('image');
                                             }}
                                             error={errors.image}
-                                            hint="Image: 1920×1080px (16:9) landscape, minimum 1600×800px. Video: same 16:9 ratio at 1920×1080px (1280×720px minimum), MP4 (H.264) or WebM, muted/no audio needed since it autoplays on loop — keep clips short (5–15s) so the loop isn't obvious. Max file size 15MB either way. The media fills the full-width hero and crops to this ratio on smaller screens."
+                                            hint="Image: 1920×1080px (16:9) landscape, minimum 1600×800px, WebP format, under 100 KB. Video: same 16:9 ratio at 1920×1080px (1280×720px minimum), MP4 (H.264) or MOV format, up to 10 MB (anything up to 15MB is accepted), muted/no audio needed since it autoplays on loop — keep clips short (5–15s) so the loop isn't obvious. The media fills the full-width hero and crops to this ratio on smaller screens."
                                             previewClassName="h-56"
                                         />
                                     </div>

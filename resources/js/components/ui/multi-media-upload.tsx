@@ -1,5 +1,6 @@
 import { Film, ImagePlus, MousePointer2, Star, X } from 'lucide-react';
 import React, { useRef, useState, useEffect } from 'react';
+import { imageRecommendation, RECOMMENDED_VIDEO } from '@/lib/upload-recommendations';
 import { cn } from '@/lib/utils';
 
 // FSA-20: mirrors the backend limits in ProductRequest.php exactly (image
@@ -259,6 +260,13 @@ export function MultiMediaUpload({
                     <p className="text-[10px] leading-tight text-slate-600">Images or Videos</p>
                 </div>
             </div>
+
+            <p className="mt-2 text-xs text-slate-600">
+                Images: {imageRecommendation('1200 × 900 px (4:3)')} Videos:{' '}
+                {RECOMMENDED_VIDEO}, 1280 × 960 px (4:3). Larger files are
+                accepted (images up to 5MB, videos up to 50MB), but smaller
+                files load faster.
+            </p>
 
             {onPrimaryChange && previews.length > 0 && (
                 <p className="mt-2 text-xs text-slate-600">
