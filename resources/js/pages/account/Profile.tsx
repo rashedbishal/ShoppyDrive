@@ -195,9 +195,11 @@ export default function Profile({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-x-5 gap-y-4 md:grid-cols-2">
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="name">Full Name</Label>
+                            <div className="grid grid-cols-1 gap-x-5 gap-y-2 md:grid-cols-2">
+                                <div className="space-y-1">
+                                    <Label htmlFor="name" className="h-5">
+                                        Full Name
+                                    </Label>
                                     <div className="relative">
                                         <Input
                                             maxLength={100}
@@ -223,8 +225,8 @@ export default function Profile({
                                         </p>
                                     )}
                                 </div>
-                                <div className="space-y-1.5">
-                                    <div className="flex items-center justify-between gap-2">
+                                <div className="space-y-1 md:relative">
+                                    <div className="flex h-5 items-center justify-between gap-2">
                                         <Label htmlFor="email">
                                             Email Address
                                         </Label>
@@ -273,40 +275,47 @@ export default function Profile({
                                         />
                                     </div>
                                     <InputError message={form.errors.email} />
-                                    <p className="text-[10px] font-medium text-[var(--color-text-secondary)] italic">
-                                        {emailLocked
-                                            ? 'Your email comes from your Google or Facebook sign-in, so it can’t be changed here.'
-                                            : isUnverified
-                                              ? 'Your email is not verified yet, so a change takes effect straight away.'
-                                              : 'To change your email we send a 6-digit code to your current address.'}
-                                    </p>
-                                    {isUnverified && (
-                                        <p className="text-[10px] leading-relaxed text-amber-800">
-                                            Verify your email to use your
-                                            account fully.{' '}
-                                            <Link
-                                                href={route(
-                                                    'verification.send',
-                                                )}
-                                                method="post"
-                                                as="button"
-                                                className="font-bold underline"
-                                            >
-                                                Resend the verification email
-                                            </Link>
+                                    {/* From md up this sits beside Phone Number, so it doesn't make the Full Name row taller. */}
+                                    <div className="space-y-1 md:absolute md:inset-x-0 md:top-full md:mt-1">
+                                        <p className="text-[10px] font-medium text-[var(--color-text-secondary)] italic">
+                                            {emailLocked
+                                                ? 'Your email comes from your Google or Facebook sign-in, so it can’t be changed here.'
+                                                : isUnverified
+                                                  ? 'Your email is not verified yet, so a change takes effect straight away.'
+                                                  : 'To change your email we send a 6-digit code to your current address.'}
                                         </p>
-                                    )}
-                                    {isUnverified &&
-                                        status === 'verification-link-sent' && (
-                                            <p className="text-[10px] font-bold text-green-700">
-                                                A new verification message has
-                                                been sent.
+                                        {isUnverified && (
+                                            <p className="text-[10px] leading-relaxed text-amber-800">
+                                                Verify your email to use your
+                                                account fully.{' '}
+                                                <Link
+                                                    href={route(
+                                                        'verification.send',
+                                                    )}
+                                                    method="post"
+                                                    as="button"
+                                                    className="font-bold underline"
+                                                >
+                                                    Resend the verification
+                                                    email
+                                                </Link>
                                             </p>
                                         )}
+                                        {isUnverified &&
+                                            status ===
+                                                'verification-link-sent' && (
+                                                <p className="text-[10px] font-bold text-green-700">
+                                                    A new verification message
+                                                    has been sent.
+                                                </p>
+                                            )}
+                                    </div>
                                 </div>
 
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="phone">Phone Number</Label>
+                                <div className="space-y-1">
+                                    <Label htmlFor="phone" className="h-5">
+                                        Phone Number
+                                    </Label>
                                     <div className="relative">
                                         <span className="absolute top-1/2 left-3.5 -translate-y-1/2 text-sm font-bold text-[var(--color-text-secondary)]">
                                             +880
