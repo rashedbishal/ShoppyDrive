@@ -64,6 +64,25 @@
         width: calc(var(--spinner-size) * {{ $bootLook['loading_logo_size'] / $bootRing }});
         height: calc(var(--spinner-size) * {{ $bootLook['loading_logo_size'] / $bootRing }});
     }
+    #boot-loader .boot-loader-mark-fallback {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: calc(var(--spinner-size) * {{ $bootLook['loading_logo_size'] / $bootRing }} * 0.6);
+        height: calc(var(--spinner-size) * {{ $bootLook['loading_logo_size'] / $bootRing }} * 0.6);
+        border-radius: 22%;
+        background-color: var(--color-secondary, #1a1a2e);
+        box-shadow: var(--shadow-modal, 0 20px 60px rgba(0, 0, 0, 0.18));
+    }
+    #boot-loader .boot-loader-mark-fallback svg {
+        position: static;
+        width: 50%;
+        height: 50%;
+        fill: #ffffff;
+        filter: none;
+        animation: none;
+    }
     @keyframes boot-loader-turn {
         to {
             transform: rotate(360deg);
@@ -107,7 +126,10 @@
         @if($bootLogo)
             <img src="{{ $bootLogo }}" alt="" decoding="async" fetchpriority="high">
         @else
-            <img src="/apple-touch-icon.png" alt="" decoding="async" fetchpriority="high">
+            {{-- No logo uploaded: the same built-in mark as LoadingLogoSpinner (AppLogoIcon in a rounded square). --}}
+            <span class="boot-loader-mark-fallback">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M8 7V6a4 4 0 1 1 8 0v1h2.1a1 1 0 0 1 1 .92l1 12.5A2.4 2.4 0 0 1 17.7 23H6.3a2.4 2.4 0 0 1-2.4-2.58l1-12.5A1 1 0 0 1 5.9 7H8Zm2 0h4V6a2 2 0 1 0-4 0v1Zm-1.5 3.25a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5Zm7 0a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5Z" /></svg>
+            </span>
         @endif
     </span>
 </div>

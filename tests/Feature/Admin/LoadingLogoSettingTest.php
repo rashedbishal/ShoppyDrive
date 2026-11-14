@@ -269,3 +269,10 @@ test('the full-load loader falls back to the brand logo', function () {
 
     $this->get('/order/track')->assertOk()->assertSee('<img src="/storage/logos/brand.png"', false);
 });
+
+test('with no logo uploaded the full-load loader shows the same built-in mark as the app loader', function () {
+    $this->get('/order/track')
+        ->assertOk()
+        ->assertSee('<span class="boot-loader-mark-fallback">', false)
+        ->assertDontSee('apple-touch-icon.png" alt=""', false);
+});
