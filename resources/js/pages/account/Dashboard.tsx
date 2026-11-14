@@ -1,11 +1,10 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ShoppingBag,
     Heart,
     MapPin,
     ChevronRight,
     Package,
-    TrendingUp,
 } from 'lucide-react';
 import React from 'react';
 
@@ -19,7 +18,21 @@ interface DashboardProps {
     totalOrders: number;
     wishlistCount: number;
     addressCount: number;
-    totalSpent: number;
+}
+
+/** DISC-46: one place for the order-status badge colour (table and cards). */
+function statusVariant(
+    status: string,
+): 'success' | 'error' | 'info' | 'warning' {
+    if (status === 'delivered') {
+        return 'success';
+    }
+
+    if (status === 'cancelled') {
+        return 'error';
+    }
+
+    return status === 'processing' ? 'info' : 'warning';
 }
 
 export default function Dashboard({
@@ -27,7 +40,6 @@ export default function Dashboard({
     totalOrders = 0,
     wishlistCount = 0,
     addressCount = 0,
-    totalSpent = 0,
 }: DashboardProps): React.JSX.Element {
     const stats = [
         {
@@ -54,15 +66,10 @@ export default function Dashboard({
             bg: 'bg-amber-50',
             href: route('account.addresses'),
         },
-        {
-            label: 'Total Spent',
-            value: formatCurrency(totalSpent),
-            icon: TrendingUp,
-            color: 'text-green-600',
-            bg: 'bg-green-50',
-            href: route('account.orders'),
-        },
     ];
+
+    const openOrder = (orderNumber: string) =>
+        router.visit(route('account.orders.show', orderNumber));
 
     return (
         <>
@@ -91,7 +98,7 @@ export default function Dashboard({
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 md:gap-6">
                     {stats.map((stat) => (
                         <Link
                             key={stat.label}
@@ -132,29 +139,64 @@ export default function Dashboard({
                         </Link>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-left">
-                            <thead>
-                                <tr className="bg-[var(--color-surface-alt)] text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
-                                    <th className="px-8 py-4">Order ID</th>
-                                    <th className="px-8 py-4">Date</th>
-                                    <th className="px-8 py-4">Status</th>
-                                    <th className="px-8 py-4">Items</th>
-                                    <th className="px-8 py-4">Total</th>
-                                    <th className="px-8 py-4 text-right">
-                                        Action
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[var(--color-border)]">
-                                {recentOrders.length > 0 ? (
-                                    recentOrders.map((order) => (
+                    {recentOrders.length === 0 ? (
+                        <div className="flex flex-col items-center px-8 py-20 text-center">
+                            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-surface-alt)] text-[var(--color-text-muted)]">
+                                <ShoppingBag size={32} />
+                            </div>
+                            <h3 className="mb-1 text-lg font-bold text-[var(--color-text-primary)]">
+                                No orders yet
+                            </h3>
+                            <p className="mb-6 text-sm text-[var(--color-text-secondary)]">
+                                Start shopping to see your orders here.
+                            </p>
+                            <Button
+                                asChild
+                                className="rounded-xl px-8 font-bold"
+                            >
+                                <Link href={route('products.index')}>
+                                    Start Shopping
+                                </Link>
+                            </Button>
+                        </div>
+                    ) : (
+                        <>
+                            {/* DISC-46: tablet/desktop — a table whose whole row opens the order. */}
+                            <table className="hidden w-full border-collapse text-left md:table">
+                                <thead>
+                                    <tr className="bg-[var(--color-surface-alt)] text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
+                                        <th className="px-8 py-4">Order ID</th>
+                                        <th className="px-8 py-4">Date</th>
+                                        <th className="px-8 py-4">Status</th>
+                                        <th className="px-8 py-4">Items</th>
+                                        <th className="px-8 py-4">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[var(--color-border)]">
+                                    {recentOrders.map((order) => (
                                         <tr
                                             key={order.id}
-                                            className="group transition-colors hover:bg-[var(--color-surface-alt)]"
+                                            role="link"
+                                            tabIndex={0}
+                                            aria-label={`View order ${order.order_number}`}
+                                            onClick={() =>
+                                                openOrder(order.order_number)
+                                            }
+                                            onKeyDown={(e) => {
+                                                if (
+                                                    e.key === 'Enter' ||
+                                                    e.key === ' '
+                                                ) {
+                                                    e.preventDefault();
+                                                    openOrder(
+                                                        order.order_number,
+                                                    );
+                                                }
+                                            }}
+                                            className="group cursor-pointer transition-colors hover:bg-[var(--color-surface-alt)] focus-visible:bg-[var(--color-surface-alt)] focus-visible:outline-none"
                                         >
                                             <td className="px-8 py-6">
-                                                <span className="font-mono text-sm font-bold text-[var(--color-text-primary)]">
+                                                <span className="font-mono text-sm font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-primary)]">
                                                     #{order.order_number}
                                                 </span>
                                             </td>
@@ -163,18 +205,9 @@ export default function Dashboard({
                                             </td>
                                             <td className="px-8 py-6">
                                                 <Badge
-                                                    variant={
-                                                        order.status ===
-                                                        'delivered'
-                                                            ? 'success'
-                                                            : order.status ===
-                                                                'cancelled'
-                                                              ? 'error'
-                                                              : order.status ===
-                                                                  'processing'
-                                                                ? 'info'
-                                                                : 'warning'
-                                                    }
+                                                    variant={statusVariant(
+                                                        order.status,
+                                                    )}
                                                     className="rounded-full text-[10px] font-bold uppercase"
                                                 >
                                                     {order.status}
@@ -193,61 +226,64 @@ export default function Dashboard({
                                                     )}
                                                 </span>
                                             </td>
-                                            <td className="px-8 py-6 text-right">
-                                                <Button
-                                                    asChild
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="rounded-lg font-bold"
-                                                >
-                                                    <Link
-                                                        href={route(
-                                                            'account.orders.show',
-                                                            order.order_number,
-                                                        )}
-                                                    >
-                                                        Details
-                                                    </Link>
-                                                </Button>
-                                            </td>
                                         </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td
-                                            colSpan={6}
-                                            className="px-8 py-20 text-center"
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* DISC-46: phones — one tappable card per order, no sideways scrolling. */}
+                            <ul className="divide-y divide-[var(--color-border)] md:hidden">
+                                {recentOrders.map((order) => (
+                                    <li key={order.id}>
+                                        <Link
+                                            href={route(
+                                                'account.orders.show',
+                                                order.order_number,
+                                            )}
+                                            className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-[var(--color-surface-alt)]"
                                         >
-                                            <div className="flex flex-col items-center">
-                                                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-surface-alt)] text-[var(--color-text-muted)]">
-                                                    <ShoppingBag size={32} />
-                                                </div>
-                                                <h3 className="mb-1 text-lg font-bold text-[var(--color-text-primary)]">
-                                                    No orders yet
-                                                </h3>
-                                                <p className="mb-6 text-sm text-[var(--color-text-secondary)]">
-                                                    Start shopping to see your
-                                                    orders here.
-                                                </p>
-                                                <Button
-                                                    asChild
-                                                    className="rounded-xl px-8 font-bold"
-                                                >
-                                                    <Link
-                                                        href={route(
-                                                            'products.index',
+                                            <div className="min-w-0 flex-1 space-y-1.5">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="truncate font-mono text-sm font-bold text-[var(--color-text-primary)]">
+                                                        #{order.order_number}
+                                                    </span>
+                                                    <Badge
+                                                        variant={statusVariant(
+                                                            order.status,
                                                         )}
+                                                        className="shrink-0 rounded-full text-[10px] font-bold uppercase"
                                                     >
-                                                        Start Shopping
-                                                    </Link>
-                                                </Button>
+                                                        {order.status}
+                                                    </Badge>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2 text-sm">
+                                                    <span className="text-[var(--color-text-secondary)]">
+                                                        {formatDate(
+                                                            order.created_at,
+                                                        )}{' '}
+                                                        · {order.items.length}{' '}
+                                                        {order.items.length ===
+                                                        1
+                                                            ? 'item'
+                                                            : 'items'}
+                                                    </span>
+                                                    <span className="font-bold text-[var(--color-primary)]">
+                                                        {formatCurrency(
+                                                            order.total,
+                                                        )}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                            <ChevronRight
+                                                size={16}
+                                                className="shrink-0 text-[var(--color-text-muted)]"
+                                            />
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </>
+                    )}
                 </div>
             </div>
         </>

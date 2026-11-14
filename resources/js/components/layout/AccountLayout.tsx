@@ -7,7 +7,6 @@ import {
     LayoutDashboard,
     Link2,
     Lock,
-    LogOut,
     MapPin,
     Package,
     User,
@@ -123,8 +122,12 @@ export default function AccountLayout({
                         </div>
 
                         {/* Nav */}
-                        <nav className="mt-3 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)]">
-                            <div className="space-y-0.5 p-2">
+                        {/* DISC-48: below lg (stacked layout) the menu is compact
+                            wrapping pills, never scrolling; from lg it is the
+                            sidebar list. Logging out is done from the site header and
+                            mobile menu. */}
+                        <nav className="mt-3 lg:overflow-hidden lg:rounded-2xl lg:border lg:border-[var(--color-border)] lg:bg-[var(--color-surface-alt)]">
+                            <div className="flex flex-wrap gap-2 lg:block lg:space-y-0.5 lg:p-2">
                                 {visibleNavItems.map(
                                     ({ label, href, icon: Icon }) => {
                                         const isActive =
@@ -139,35 +142,29 @@ export default function AccountLayout({
                                             <Link
                                                 key={href}
                                                 href={href}
-                                                className={cn(
-                                                    'flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition',
+                                                aria-current={
                                                     isActive
-                                                        ? 'bg-[var(--color-primary)] text-white'
-                                                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
+                                                        ? 'page'
+                                                        : undefined
+                                                }
+                                                className={cn(
+                                                    'inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium transition lg:flex lg:justify-between lg:rounded-xl lg:border-0 lg:px-3.5 lg:py-2.5 lg:text-sm',
+                                                    isActive
+                                                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
+                                                        : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] lg:bg-transparent lg:hover:bg-[var(--color-surface)]',
                                                 )}
                                             >
-                                                <span className="flex items-center gap-3">
-                                                    <Icon className="size-4 shrink-0" />
+                                                <span className="flex items-center gap-1.5 lg:gap-3">
+                                                    <Icon className="size-3.5 shrink-0 lg:size-4" />
                                                     {label}
                                                 </span>
                                                 {isActive ? (
-                                                    <ChevronRight className="size-3.5" />
+                                                    <ChevronRight className="hidden size-3.5 lg:block" />
                                                 ) : null}
                                             </Link>
                                         );
                                     },
                                 )}
-                            </div>
-
-                            <div className="border-t border-[var(--color-border)] p-2">
-                                <button
-                                    type="button"
-                                    onClick={() => router.post(route('logout'))}
-                                    className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-[var(--color-error)] transition hover:bg-[var(--color-error)]/10"
-                                >
-                                    <LogOut className="size-4 shrink-0" />
-                                    Sign out
-                                </button>
                             </div>
                         </nav>
                     </aside>

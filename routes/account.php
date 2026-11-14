@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\OrderStatus;
 use App\Http\Controllers\AccountPasswordController;
 use App\Http\Controllers\AccountProfileController;
 use App\Http\Controllers\AddressController;
@@ -35,16 +34,11 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active', 'histor
 
         $addressCount = Address::where('user_id', $user->id)->count();
 
-        $totalSpent = Order::where('user_id', $user->id)
-            ->whereNotIn('status', [OrderStatus::CANCELLED->value, OrderStatus::REFUNDED->value])
-            ->sum('total');
-
         return inertia('account/Dashboard', [
             'recentOrders' => $recentOrders,
             'totalOrders' => $totalOrders,
             'wishlistCount' => $wishlistCount,
             'addressCount' => $addressCount,
-            'totalSpent' => (float) $totalSpent,
         ]);
     })->name('account.dashboard');
     // DB-001 (L5): a customer still sees their own orders after an admin
