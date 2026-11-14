@@ -83,17 +83,17 @@ export default function Connections({ hasPassword, connections }: Props) {
         <>
             <Head title="Connected accounts" />
 
-            <div className="space-y-8">
+            <div className="space-y-5">
                 <div>
-                    <h1 className="mb-1 font-display text-3xl font-bold text-[var(--color-text-primary)]">
+                    <h1 className="mb-0.5 font-display text-2xl font-bold text-[var(--color-text-primary)]">
                         Connected Accounts
                     </h1>
-                    <p className="text-[var(--color-text-secondary)]">
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                         Manage how you sign in to your ShoppyDrive account.
                     </p>
                 </div>
 
-                <div className="space-y-6 rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-sm">
+                <div className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-sm md:p-6">
                     <Heading
                         variant="small"
                         title="Login methods"
@@ -104,10 +104,10 @@ export default function Connections({ hasPassword, connections }: Props) {
                         <InputError message={errors.connections} />
                     )}
 
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between rounded-xl border border-border p-4">
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
                             <div className="flex items-center gap-3">
-                                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+                                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
                                     <KeyRound className="size-4 text-muted-foreground" />
                                 </span>
                                 <div>
@@ -138,10 +138,10 @@ export default function Connections({ hasPassword, connections }: Props) {
                             return (
                                 <div
                                     key={key}
-                                    className="flex items-center justify-between rounded-xl border border-border p-4"
+                                    className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+                                        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
                                             <Icon />
                                         </span>
                                         <div>
@@ -196,7 +196,7 @@ export default function Connections({ hasPassword, connections }: Props) {
                 </div>
 
                 {!hasPassword && (
-                    <div className="space-y-6 rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-sm">
+                    <div className="space-y-4 rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-sm md:p-6">
                         <Heading
                             variant="small"
                             title="Set a password"
@@ -218,7 +218,7 @@ export default function Connections({ hasPassword, connections }: Props) {
                                 setNewPasswordConfirmation('');
                             }}
                             resetOnSuccess
-                            className="space-y-6"
+                            className="space-y-4"
                         >
                             {({ errors: formErrors, processing }) => (
                                 <>

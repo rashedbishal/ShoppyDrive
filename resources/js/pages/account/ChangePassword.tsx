@@ -120,27 +120,27 @@ export default function ChangePassword({
         <>
             <Head title="Change Password" />
 
-            <div className="space-y-8">
+            <div className="space-y-5">
                 {/* Header */}
                 <div>
-                    <h1 className="mb-1 font-display text-3xl font-bold text-[var(--color-text-primary)]">
+                    <h1 className="mb-0.5 font-display text-2xl font-bold text-[var(--color-text-primary)]">
                         Security Settings
                     </h1>
-                    <p className="text-[var(--color-text-secondary)]">
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                         Manage your password and protect your account from
                         unauthorized access.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
                     {/* Left: Form */}
                     <div className="lg:col-span-8">
                         <form
                             onSubmit={handleSubmit}
-                            className="space-y-8 rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-sm md:p-10"
+                            className="space-y-5 rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-sm md:p-6"
                         >
-                            <div className="space-y-6">
-                                <div className="space-y-2">
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
                                     <Label htmlFor="current_password">
                                         Current Password
                                     </Label>
@@ -160,24 +160,24 @@ export default function ChangePassword({
                                                     e.target.value,
                                                 )
                                             }
-                                            className="h-12 rounded-xl pl-12"
+                                            className="h-10 rounded-xl pl-10"
                                             required
                                         />
                                         <Lock
-                                            size={18}
-                                            className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
+                                            size={16}
+                                            className="absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--color-text-muted)]"
                                         />
                                         <button
                                             type="button"
                                             onClick={() =>
                                                 setShowPassword(!showPassword)
                                             }
-                                            className="absolute top-1/2 right-4 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                                            className="absolute top-1/2 right-3.5 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
                                         >
                                             {showPassword ? (
-                                                <EyeOff size={18} />
+                                                <EyeOff size={16} />
                                             ) : (
-                                                <Eye size={18} />
+                                                <Eye size={16} />
                                             )}
                                         </button>
                                     </div>
@@ -190,8 +190,8 @@ export default function ChangePassword({
 
                                 <div className="h-px w-full bg-[var(--color-border)]" />
 
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
+                                <div className="space-y-3">
+                                    <div className="space-y-1.5">
                                         <Label htmlFor="password">
                                             New Password
                                         </Label>
@@ -211,12 +211,12 @@ export default function ChangePassword({
                                                         e.target.value,
                                                     )
                                                 }
-                                                className="h-12 rounded-xl pl-12"
+                                                className="h-10 rounded-xl pl-10"
                                                 required
                                             />
                                             <Lock
-                                                size={18}
-                                                className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
+                                                size={16}
+                                                className="absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--color-text-muted)]"
                                             />
                                         </div>
                                         {form.errors.password && (
@@ -258,7 +258,7 @@ export default function ChangePassword({
                                                     ),
                                                 )}
                                             </div>
-                                            <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1">
+                                            <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
                                                 {checklist.map((item) => (
                                                     <li
                                                         key={item.label}
@@ -290,7 +290,7 @@ export default function ChangePassword({
                                     )}
                                 </div>
 
-                                <div className="space-y-2">
+                                <div className="space-y-1.5">
                                     <Label htmlFor="password_confirmation">
                                         Confirm New Password
                                     </Label>
@@ -312,12 +312,12 @@ export default function ChangePassword({
                                                     e.target.value,
                                                 )
                                             }
-                                            className="h-12 rounded-xl pl-12"
+                                            className="h-10 rounded-xl pl-10"
                                             required
                                         />
                                         <Lock
-                                            size={18}
-                                            className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
+                                            size={16}
+                                            className="absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--color-text-muted)]"
                                         />
                                     </div>
                                     {(confirmationError ??
@@ -331,12 +331,11 @@ export default function ChangePassword({
                                 </div>
                             </div>
 
-                            <div className="flex justify-end border-t border-[var(--color-border)] pt-6">
+                            <div className="flex justify-end border-t border-[var(--color-border)] pt-4">
                                 <Button
                                     type="submit"
                                     disabled={form.processing}
-                                    size="lg"
-                                    className="h-14 rounded-xl px-12 font-bold shadow-[var(--color-primary)]/20 shadow-lg"
+                                    className="h-10 rounded-xl px-8 font-bold shadow-[var(--color-primary)]/20 shadow-md"
                                 >
                                     Update Password
                                 </Button>
@@ -345,17 +344,17 @@ export default function ChangePassword({
                     </div>
 
                     {/* Right: Tips */}
-                    <div className="space-y-8 lg:col-span-4">
-                        <div className="rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-sm">
-                            <h3 className="mb-6 flex items-center gap-2 text-sm font-bold tracking-widest text-[var(--color-text-primary)] uppercase">
+                    <div className="space-y-5 lg:col-span-4">
+                        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-sm">
+                            <h3 className="mb-4 flex items-center gap-2 text-sm font-bold tracking-widest text-[var(--color-text-primary)] uppercase">
                                 <ShieldCheck
                                     size={18}
                                     className="text-[var(--color-primary)]"
                                 />
                                 Security Tips
                             </h3>
-                            <div className="space-y-6">
-                                <div className="flex gap-4">
+                            <div className="space-y-4">
+                                <div className="flex gap-3">
                                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
                                         <AlertTriangle size={16} />
                                     </div>
@@ -365,7 +364,7 @@ export default function ChangePassword({
                                         name.
                                     </p>
                                 </div>
-                                <div className="flex gap-4">
+                                <div className="flex gap-3">
                                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                                         <ShieldCheck size={16} />
                                     </div>
