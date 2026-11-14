@@ -208,7 +208,7 @@ export default function ReferralConfig({ settings }: Props) {
                                 </SettingsField>
                                 <SettingsField
                                     label="Reward Cap Amount"
-                                    hint="Maximum ৳ value a referrer can earn from referrals per cap period below. A referral that would exceed it is held and granted once the next period starts, not forfeited."
+                                    hint="Maximum ৳ value a referrer can earn from referrals per cap period below. A referral that would exceed it is held and granted once the next period starts, not forfeited. 0 = no limit."
                                 >
                                     <input
                                         max={99999999.99}

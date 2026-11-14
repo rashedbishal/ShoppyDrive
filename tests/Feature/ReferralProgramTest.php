@@ -876,3 +876,62 @@ test('DISC-11: the Rewards page note covers any reversal, shows only below zero,
         ->and($text)->toContain('{pointsBalance < 0 && (')
         ->and($text)->toContain('Math.max(0, pointsBalance) * pointsValue');
 });
+
+// ── DISC-36: the settings page shows the values actually in effect ──────────
+
+test('DISC-36: with nothing saved, the referral settings page shows the defaults the app uses, not 0', function () {
+    actingAs(createMotherAdmin(), 'admin');
+    $referrals = app(ReferralService::class);
+    $loyalty = app(LoyaltyPointsService::class);
+
+    $this->get(route('admin.settings.referral'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('settings.referral_enabled', $referrals->isEnabled())
+            ->where('settings.referral_min_order_amount', fn ($value) => (float) $value === $referrals->minOrderAmountForDiscount())
+            ->where('settings.referral_reward_points', $referrals->rewardPoints())
+            ->where('settings.referral_reward_delay_days', $referrals->rewardDelayDays())
+            ->where('settings.referral_unlock_order_count', $referrals->unlockOrderCount())
+            ->where('settings.referral_reward_cap_amount', fn ($value) => (float) $value === $referrals->rewardCapAmount())
+            ->where('settings.referral_reward_cap_period', $referrals->rewardCapPeriod())
+            ->where('settings.points_redeem_value_bdt', fn ($value) => (float) $value === $referrals->pointsValue())
+            ->where('settings.loyalty_earn_rate_bdt_per_point', fn ($value) => (float) $value === $loyalty->earnRateBdtPerPoint())
+            ->where('settings.loyalty_earn_delay_days', $loyalty->earnDelayDays())
+            ->where('settings.daily_login_base_points', $loyalty->dailyLoginBasePoints())
+            ->where('settings.daily_login_cap_days', $loyalty->dailyLoginCapDays())
+            ->where('settings.points_redeem_max_percent', fn ($value) => (float) $value === $loyalty->redeemMaxPercent())
+            ->where('settings.registration_bonus_points', 20)
+            ->where('settings.review_bonus_points', 15)
+            ->where('settings.referral_discount_type', 'percent')
+            ->where('settings.referral_discount_value', 0)
+        );
+
+    // And they are the real, non-zero defaults.
+    expect($referrals->rewardPoints())->toBe(100)
+        ->and($loyalty->earnRateBdtPerPoint())->toBe(150.0)
+        ->and($loyalty->redeemMaxPercent())->toBe(50.0);
+});
+
+test('DISC-36: a saved value, including a deliberate 0, still wins over the default', function () {
+    actingAs(createMotherAdmin(), 'admin');
+    Setting::updateOrCreate(['key' => 'referral_reward_points'], ['value' => 0, 'group' => 'referral']);
+    Setting::updateOrCreate(['key' => 'points_redeem_max_percent'], ['value' => 25, 'group' => 'referral']);
+
+    $this->get(route('admin.settings.referral'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('settings.referral_reward_points', 0)
+            ->where('settings.points_redeem_max_percent', 25)
+            ->where('settings.review_bonus_points', 15));
+});
+
+test('DISC-36: a setting saved as null shows the default, as the app treats it', function () {
+    actingAs(createMotherAdmin(), 'admin');
+    Setting::updateOrCreate(['key' => 'daily_login_cap_days'], ['value' => null, 'group' => 'referral']);
+
+    $this->get(route('admin.settings.referral'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('settings.daily_login_cap_days', app(LoyaltyPointsService::class)->dailyLoginCapDays()));
+});
+
+test('DISC-36: the reward cap hint explains that 0 means no limit', function () {
+    expect((string) file_get_contents(resource_path('js/pages/admin/settings/referral.tsx')))->toContain('0 = no limit.');
+});

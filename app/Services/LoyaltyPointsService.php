@@ -49,6 +49,23 @@ class LoyaltyPointsService
 
     private const DEFAULT_REDEEM_MAX_PERCENT = 50.0;
 
+    /**
+     * DISC-36: the loyalty settings' fallbacks while never saved (the same
+     * ones the getters below use), shown by Admin > Settings > Referral &
+     * Loyalty. ReferralService::SETTING_DEFAULTS covers the referral half.
+     *
+     * @var array<string, int|float>
+     */
+    public const SETTING_DEFAULTS = [
+        'loyalty_earn_rate_bdt_per_point' => self::DEFAULT_EARN_RATE_BDT_PER_POINT,
+        'loyalty_earn_delay_days' => self::DEFAULT_EARN_DELAY_DAYS,
+        'registration_bonus_points' => self::DEFAULT_REGISTRATION_BONUS_POINTS,
+        'review_bonus_points' => self::DEFAULT_REVIEW_BONUS_POINTS,
+        'daily_login_base_points' => self::DEFAULT_DAILY_LOGIN_BASE_POINTS,
+        'daily_login_cap_days' => self::DEFAULT_DAILY_LOGIN_CAP_DAYS,
+        'points_redeem_max_percent' => self::DEFAULT_REDEEM_MAX_PERCENT,
+    ];
+
     private const DHAKA_TIMEZONE = 'Asia/Dhaka';
 
     public function __construct(

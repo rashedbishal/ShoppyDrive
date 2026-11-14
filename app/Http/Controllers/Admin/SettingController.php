@@ -7,7 +7,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\ImageOptimizer;
+use App\Services\LoyaltyPointsService;
 use App\Services\PathaoCourierService;
+use App\Services\ReferralService;
 use App\Services\SteadfastCourierService;
 use App\Support\LoadingScreenSettings;
 use App\Support\ReviewImageSettings;
@@ -126,8 +128,19 @@ class SettingController extends Controller
 
     public function referralConfig(): Response
     {
+        // DISC-36: a setting never saved (or saved as null) shows the default
+        // the app actually uses for it, not 0, so saving the page can't
+        // silently overwrite those defaults with zeros.
+        $saved = $this->settingsProp(self::FIELD_GROUPS['referral_program'])
+            ->reject(fn ($value) => $value === null)
+            ->all();
+
         return Inertia::render('admin/settings/referral', [
-            'settings' => $this->settingsProp(self::FIELD_GROUPS['referral_program']),
+            'settings' => array_merge(
+                ReferralService::SETTING_DEFAULTS,
+                LoyaltyPointsService::SETTING_DEFAULTS,
+                $saved,
+            ),
         ]);
     }
 

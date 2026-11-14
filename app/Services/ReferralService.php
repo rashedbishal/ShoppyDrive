@@ -33,6 +33,29 @@ class ReferralService
 
     private const DEFAULT_REWARD_CAP_PERIOD = 'month';
 
+    private const DEFAULT_POINTS_VALUE_BDT = 1.0;
+
+    /**
+     * DISC-36: what each referral setting falls back to while its Setting row
+     * has never been saved (the same fallbacks the getters below use), so
+     * Admin > Settings > Referral & Loyalty shows the value actually in effect
+     * instead of 0. LoyaltyPointsService::SETTING_DEFAULTS covers the rest.
+     *
+     * @var array<string, bool|int|float|string>
+     */
+    public const SETTING_DEFAULTS = [
+        'referral_enabled' => false,
+        'referral_discount_type' => 'percent',
+        'referral_discount_value' => 0,
+        'referral_min_order_amount' => 0,
+        'referral_reward_points' => self::DEFAULT_REWARD_POINTS,
+        'referral_reward_delay_days' => self::DEFAULT_REWARD_DELAY_DAYS,
+        'referral_unlock_order_count' => self::DEFAULT_UNLOCK_ORDER_COUNT,
+        'referral_reward_cap_amount' => self::DEFAULT_REWARD_CAP_AMOUNT,
+        'referral_reward_cap_period' => self::DEFAULT_REWARD_CAP_PERIOD,
+        'points_redeem_value_bdt' => self::DEFAULT_POINTS_VALUE_BDT,
+    ];
+
     /**
      * Resolve a referral code typed/pre-filled at registration into the
      * referring user's id. Returns null for a blank/unknown code, and also
@@ -437,7 +460,7 @@ class ReferralService
 
     public function pointsValue(): float
     {
-        return max(0.0, (float) (Setting::find('points_redeem_value_bdt')?->value ?? 1.0));
+        return max(0.0, (float) (Setting::find('points_redeem_value_bdt')?->value ?? self::DEFAULT_POINTS_VALUE_BDT));
     }
 
     /**
