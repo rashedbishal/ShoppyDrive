@@ -93,6 +93,7 @@
         @endif
     </head>
     <body class="antialiased">
+        @include('partials.boot-loader')
         <x-inertia::app />
 
         {{-- Custom Footer: same as Custom Header above, rendered just before

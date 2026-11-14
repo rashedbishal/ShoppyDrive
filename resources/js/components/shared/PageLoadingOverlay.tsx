@@ -79,6 +79,26 @@ export default function PageLoadingOverlay(): React.JSX.Element {
     const [look, setLook] = useState<LoaderLook>(readInitialLook);
     const showTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // The server-drawn loader (resources/views/partials/boot-loader.blade.php)
+    // covers a full browser load until the app is on screen; fade it out
+    // once the first page has painted.
+    useEffect(() => {
+        const bootLoader = document.getElementById('boot-loader');
+
+        if (!bootLoader) {
+            return;
+        }
+
+        const frame = requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+                bootLoader.classList.add('is-done');
+                setTimeout(() => bootLoader.remove(), 300);
+            }),
+        );
+
+        return () => cancelAnimationFrame(frame);
+    }, []);
+
     useEffect(() => {
         return router.on('navigate', (event) => {
             const brand = brandOf(

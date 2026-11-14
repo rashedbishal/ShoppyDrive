@@ -244,3 +244,28 @@ test('a loading logo larger than 4096 pixels on a side is rejected', function ()
 
     expect(loadingLogoValue())->toBeNull();
 });
+
+/*
+ * Owner report 2026-11-14: on a full browser load the bare page background
+ * (e.g. the Glassmorphism gradient) showed before the app's loader could
+ * start, so the first HTML response now carries the same loader itself.
+ */
+test('a full page load shows the CMS loader before the app starts', function () {
+    Setting::updateOrCreate(['key' => 'loading_logo'], ['value' => '/storage/logos/spin.png', 'group' => 'general']);
+    Setting::updateOrCreate(['key' => 'loading_spin_seconds'], ['value' => 2, 'group' => 'general']);
+    Setting::updateOrCreate(['key' => 'loading_ring_size'], ['value' => 300, 'group' => 'general']);
+
+    $this->get('/order/track')
+        ->assertOk()
+        ->assertSee('<div id="boot-loader"', false)
+        ->assertSee('<img src="/storage/logos/spin.png"', false)
+        ->assertSee('viewBox="0 0 300 300"', false)
+        ->assertSee('boot-loader-turn 3.6s linear infinite', false)
+        ->assertSee('<noscript><style>#boot-loader { display: none; }</style></noscript>', false);
+});
+
+test('the full-load loader falls back to the brand logo', function () {
+    Setting::updateOrCreate(['key' => 'logo'], ['value' => '/storage/logos/brand.png', 'group' => 'general']);
+
+    $this->get('/order/track')->assertOk()->assertSee('<img src="/storage/logos/brand.png"', false);
+});
