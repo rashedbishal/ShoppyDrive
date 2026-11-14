@@ -264,7 +264,7 @@ export function TargetRing({
     const onTrack = target.target !== null && target.projected >= target.target;
 
     return (
-        <div className="dash-rise flex min-w-0 flex-col rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="dash-rise flex h-full min-w-0 flex-col rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
                 <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
                     <Target className="size-4 text-brand" /> Monthly target
