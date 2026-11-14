@@ -20,6 +20,7 @@
         "mews/purifier": "^3.4",
         "minishlink/web-push": "^11.0",
         "spatie/laravel-activitylog": "^4.12",
+        "spatie/laravel-health": "^1.41",
         "spatie/laravel-sitemap": "^8.0",
         "tightenco/ziggy": "^2.6"
     },

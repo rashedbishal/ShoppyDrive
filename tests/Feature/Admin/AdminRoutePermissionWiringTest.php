@@ -121,6 +121,13 @@ const LOW05_EXEMPT_ADMIN_ROUTES = [
     'admin.error-log.download',
     'admin.error-log.clear',
 
+    // System Health (DISC-37): spatie/laravel-health results. Mother admin
+    // only, enforced by `admin.mother` on the route group (verified by
+    // SystemHealthTest): they reveal the server's weak points, so it's
+    // deliberately not a grantable AdminSections entry.
+    'admin.system-health.index',
+    'admin.system-health.run',
+
     // Storage Clean-up: the storage:audit command as a page. Mother admin
     // only, enforced by `admin.mother` on the route group (verified by
     // StorageCleanupPageTest): it moves and deletes files the whole site

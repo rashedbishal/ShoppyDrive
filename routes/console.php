@@ -62,14 +62,24 @@ Schedule::command('steadfast:sync-statuses')->everyThirtyMinutes()->withoutOverl
 // was lost, and gives up on ones too old for Meta to accept.
 Schedule::command('meta:dispatch-pending')->everyTenMinutes()->withoutOverlapping(30, false);
 
+// DISC-37: System Health heartbeats. Both run before app:drain-queue so the
+// queue heartbeat job is processed in the same run, and health:check (after
+// the drain, below) sees fresh heartbeats rather than a false alarm.
+Schedule::command('health:schedule-check-heartbeat')->everyMinute()->withoutOverlapping(5, false);
+Schedule::command('health:queue-check-heartbeat')->everyMinute()->withoutOverlapping(5, false);
+
 // Hostinger shared hosting can't keep a worker process alive, and its
 // disabled pcntl_signal() crashes `queue:work`'s daemon mode, so the
 // every-minute cron that drives this scheduler drains the database queue
 // with app:drain-queue instead (see DrainQueueCommand). It stops once the
 // `default` queue is empty or after 50s; the 5-minute lock means a run the
 // host kills only blocks new ones briefly. Jobs moved to any other queue name
-// are left alone. Kept last so jobs queued by the tasks above go out in the
-// same run.
+// are left alone. Kept after every task that queues jobs so they go out in
+// the same run; only health:check (which queues nothing) follows it.
 Schedule::command('app:drain-queue')
     ->everyMinute()
     ->withoutOverlapping(5, false);
+
+// DISC-37: run every System Health check and store the results for Admin >
+// System Health; a failed check emails the mother admin (at most hourly).
+Schedule::command('health:check')->everyMinute()->withoutOverlapping(5, false);

@@ -31,23 +31,31 @@ function scheduledEvents(): array
     ], app(Schedule::class)->events());
 }
 
-it('schedules the queue drainer every minute as the last task, with a short overlap lock', function () {
+it('schedules the queue drainer every minute after every job-queuing task, with a short overlap lock', function () {
     $events = scheduledEvents();
+    $commands = array_column($events, 'command');
+    $drainIndex = array_search('app:drain-queue', $commands, true);
 
-    expect(end($events))->toMatchArray([
-        'command' => 'app:drain-queue',
-        'expression' => '* * * * *',
-        'withoutOverlapping' => true,
-        'expiresAt' => 5,
-        'releaseOnTerminationSignals' => false,
-    ]);
+    expect($drainIndex)->not->toBeFalse()
+        ->and($events[$drainIndex])->toMatchArray([
+            'command' => 'app:drain-queue',
+            'expression' => '* * * * *',
+            'withoutOverlapping' => true,
+            'expiresAt' => 5,
+            'releaseOnTerminationSignals' => false,
+        ])
+        // DISC-37: only health:check (which queues nothing) runs after the
+        // drain, so it sees the queue heartbeat processed in the same run.
+        ->and(array_slice($commands, $drainIndex + 1))->toBe(['health:check'])
+        ->and(array_search('health:queue-check-heartbeat', $commands, true))->toBeLessThan($drainIndex)
+        ->and(array_search('health:schedule-check-heartbeat', $commands, true))->toBeLessThan($drainIndex);
 });
 
 it('leaves the existing scheduled tasks and their lock durations unchanged', function () {
     $events = scheduledEvents();
 
-    // 6 + DB-002's 4 nightly retention tasks + DB-004's hourly cache prune + OPS-001's sitemap rebuild + BIZ-027's Steadfast check + the Meta Conversions API outbox sweeper.
-    expect($events)->toHaveCount(14);
+    // 6 + DB-002's 4 nightly retention tasks + DB-004's hourly cache prune + OPS-001's sitemap rebuild + BIZ-027's Steadfast check + the Meta Conversions API outbox sweeper + DISC-37's 3 System Health tasks.
+    expect($events)->toHaveCount(17);
     expect(array_slice($events, 0, 5))->toBe([
         ['command' => 'pathao:sync-statuses', 'expression' => '*/15 * * * *', 'withoutOverlapping' => true, 'expiresAt' => 30, 'releaseOnTerminationSignals' => false, 'timezone' => 'UTC'],
         ['command' => 'rewards:grant-due', 'expression' => '0 1 * * *', 'withoutOverlapping' => true, 'expiresAt' => 1440, 'releaseOnTerminationSignals' => false, 'timezone' => 'Asia/Dhaka'],

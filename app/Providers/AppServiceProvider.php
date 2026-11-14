@@ -6,6 +6,7 @@ use App\Models\Admin;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Services\OrderPermanentDeletionService;
+use App\Support\Health\DiskSpaceCheck;
 use App\Support\PasswordPolicy;
 use App\Support\SecurityRateLimits;
 use App\Support\SmsForwarderToken;
@@ -26,6 +27,15 @@ use Illuminate\Validation\Rules\Password;
 use Inertia\ExceptionResponse;
 use Inertia\Inertia;
 use Spatie\Activitylog\Facades\CauserResolver;
+use Spatie\Health\Checks\Checks\CacheCheck;
+use Spatie\Health\Checks\Checks\DatabaseCheck;
+use Spatie\Health\Checks\Checks\DatabaseSizeCheck;
+use Spatie\Health\Checks\Checks\DebugModeCheck;
+use Spatie\Health\Checks\Checks\EnvironmentCheck;
+use Spatie\Health\Checks\Checks\OptimizedAppCheck;
+use Spatie\Health\Checks\Checks\QueueCheck;
+use Spatie\Health\Checks\Checks\ScheduleCheck;
+use Spatie\Health\Facades\Health;
 use Throwable;
 
 class AppServiceProvider extends ServiceProvider
@@ -49,6 +59,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureErrorPages();
         $this->configureRateLimiting();
         $this->configureActivityLogCauser();
+        $this->configureHealthChecks();
 
         // Guard against double-registering on persistent-worker setups
         // (Octane, or a long-lived `artisan serve` process reusing the
@@ -58,6 +69,36 @@ class AppServiceProvider extends ServiceProvider
         if (! Event::hasListeners(Registered::class)) {
             Event::listen(Registered::class, SendEmailVerificationNotification::class);
         }
+    }
+
+    /**
+     * DISC-37: Admin > System Health (mother-only). Run every minute by the
+     * scheduler (routes/console.php); a failure emails the mother admin. The
+     * scheduler and queue heartbeats live in the `database` cache store,
+     * which deploy's `cache:clear` (file store) does not wipe, so a deploy
+     * never looks like a stopped cron or queue.
+     */
+    private function configureHealthChecks(): void
+    {
+        // Replace rather than append, so a second boot() (some tests call it
+        // again) can't register duplicates, which the package refuses.
+        Health::clearChecks()->checks([
+            DatabaseCheck::new(),
+            DiskSpaceCheck::new()
+                ->warnWhenUsedSpaceIsAbovePercentage(70)
+                ->failWhenUsedSpaceIsAbovePercentage(90),
+            DebugModeCheck::new(),
+            EnvironmentCheck::new(),
+            ScheduleCheck::new()
+                ->useCacheStore('database')
+                ->heartbeatMaxAgeInMinutes(3),
+            QueueCheck::new()
+                ->useCacheStore('database')
+                ->failWhenHealthJobTakesLongerThanMinutes(5),
+            CacheCheck::new(),
+            OptimizedAppCheck::new(),
+            DatabaseSizeCheck::new()->failWhenSizeAboveGb(1.0),
+        ]);
     }
 
     /**

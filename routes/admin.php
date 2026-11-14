@@ -51,6 +51,7 @@ use App\Http\Controllers\Admin\SmsPatternController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\StorageCleanupController;
 use App\Http\Controllers\Admin\SubCategoryController;
+use App\Http\Controllers\Admin\SystemHealthController;
 use App\Http\Controllers\Admin\SystemMonitorController;
 use App\Support\AdminSections;
 use Illuminate\Routing\PendingResourceRegistration;
@@ -297,6 +298,13 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
         Route::get('/', [ErrorLogController::class, 'index'])->name('index');
         Route::get('download', [ErrorLogController::class, 'download'])->name('download')->middleware('throttle:mother-actions');
         Route::delete('/', [ErrorLogController::class, 'clear'])->name('clear')->middleware('throttle:mother-actions');
+    });
+
+    // DISC-37: spatie/laravel-health results. Mother admin only, so deliberately
+    // not in AdminSections: they reveal the server's weak points.
+    Route::middleware('admin.mother')->prefix('system-health')->name('system-health.')->group(function () {
+        Route::get('/', [SystemHealthController::class, 'index'])->name('index');
+        Route::post('run', [SystemHealthController::class, 'run'])->name('run')->middleware('throttle:mother-actions');
     });
 
     // The storage:audit command as a page. Mother admin only, so deliberately
