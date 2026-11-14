@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Admin;
+use App\Support\PasswordPolicy;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rules\Password;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\password;
@@ -46,10 +46,10 @@ class CreateMotherAdminCommand extends Command
         $password = $this->option('password') ?? password(
             label: 'Admin password',
             required: true,
-            // SEC-010: matches Password::default() below, which in
-            // production is 12+ characters, mixed case, letters, numbers,
-            // symbols, and not found in a known breach — the same policy
-            // customers get (AppServiceProvider::configureDefaults()).
+            // SEC-010/DISC-33: matches PasswordPolicy::adminRule() below,
+            // which in production is 12+ characters, mixed case, letters,
+            // numbers, symbols, and not found in a known breach (customers
+            // need only 8+ characters; the other rules are the same).
             hint: app()->isProduction()
                 ? 'Minimum 12 characters, with uppercase, lowercase, numbers and symbols.'
                 : 'Minimum 8 characters.',
@@ -60,7 +60,7 @@ class CreateMotherAdminCommand extends Command
             [
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'email', 'max:255', 'unique:admins,email,'.($existing?->id ?? 'NULL')],
-                'password' => ['required', Password::default()],
+                'password' => ['required', PasswordPolicy::adminRule()],
             ],
         );
 

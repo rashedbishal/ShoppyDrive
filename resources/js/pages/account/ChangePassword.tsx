@@ -14,7 +14,58 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { passwordMismatchMessage, passwordsMatch } from '@/lib/password-match';
 
-export default function ChangePassword(): React.JSX.Element {
+/** DISC-32: App\Support\PasswordPolicy::checks(), the real server rule. */
+type PasswordChecks = {
+    min_length: number;
+    mixed_case: boolean;
+    numbers: boolean;
+    symbols: boolean;
+    uncompromised: boolean;
+};
+
+/**
+ * The browser-checkable rules from the server's policy, using the same
+ * patterns as Laravel's Password rule so the two always agree. The breach
+ * check (`uncompromised`) can only run on the server and is listed separately.
+ */
+function passwordChecklist(
+    password: string,
+    checks: PasswordChecks,
+): { label: string; check: boolean }[] {
+    return [
+        {
+            label: `${checks.min_length}+ Characters`,
+            check: [...password].length >= checks.min_length,
+        },
+        ...(checks.mixed_case
+            ? [
+                  {
+                      label: 'Upper & Lower Case',
+                      check: /(\p{Ll}+.*\p{Lu})|(\p{Lu}+.*\p{Ll})/u.test(
+                          password,
+                      ),
+                  },
+              ]
+            : []),
+        ...(checks.numbers
+            ? [{ label: 'Numbers', check: /\p{N}/u.test(password) }]
+            : []),
+        ...(checks.symbols
+            ? [
+                  {
+                      label: 'Symbols',
+                      check: /\p{Z}|\p{S}|\p{P}/u.test(password),
+                  },
+              ]
+            : []),
+    ];
+}
+
+export default function ChangePassword({
+    passwordChecks,
+}: {
+    passwordChecks: PasswordChecks;
+}): React.JSX.Element {
     const [showPassword, setShowPassword] = useState(false);
 
     const form = useForm({
@@ -44,33 +95,19 @@ export default function ChangePassword(): React.JSX.Element {
         });
     };
 
-    const getPasswordStrength = (pass: string) => {
-        if (!pass) {
-            return 0;
-        }
-
-        let strength = 0;
-
-        if (pass.length > 7) {
-            strength++;
-        }
-
-        if (/[A-Z]/.test(pass)) {
-            strength++;
-        }
-
-        if (/[0-9]/.test(pass)) {
-            strength++;
-        }
-
-        if (/[^A-Za-z0-9]/.test(pass)) {
-            strength++;
-        }
-
-        return strength;
-    };
-
-    const strength = getPasswordStrength(form.data.password);
+    const checklist = passwordChecklist(form.data.password, passwordChecks);
+    const totalChecks = checklist.length;
+    const strength = checklist.filter((item) => item.check).length;
+    // "Strong" only when every real rule is met; partial progress is scaled
+    // onto the four labels whatever the number of rules.
+    const strengthLevel =
+        strength === totalChecks
+            ? 3
+            : Math.min(
+                  2,
+                  Math.max(0, Math.ceil((strength / totalChecks) * 4) - 1),
+              );
+    const strengthPercent = Math.round((strength / totalChecks) * 100);
     const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong'];
     const strengthColors = [
         'bg-red-400',
@@ -197,56 +234,32 @@ export default function ChangePassword(): React.JSX.Element {
                                                     Strength:{' '}
                                                     {
                                                         strengthLabels[
-                                                            strength - 1
+                                                            strengthLevel
                                                         ]
                                                     }
                                                 </span>
                                                 <span className="text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
-                                                    {strength * 25}%
+                                                    {strengthPercent}%
                                                 </span>
                                             </div>
                                             <div className="flex h-1.5 w-full gap-1 overflow-hidden rounded-full bg-[var(--color-surface-alt)]">
-                                                {[...Array(4)].map((_, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className={`h-full flex-1 transition-all duration-500 ${
-                                                            i < strength
-                                                                ? strengthColors[
-                                                                      strength -
-                                                                          1
-                                                                  ]
-                                                                : 'bg-gray-200'
-                                                        }`}
-                                                    />
-                                                ))}
+                                                {[...Array(totalChecks)].map(
+                                                    (_, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className={`h-full flex-1 transition-all duration-500 ${
+                                                                i < strength
+                                                                    ? strengthColors[
+                                                                          strengthLevel
+                                                                      ]
+                                                                    : 'bg-gray-200'
+                                                            }`}
+                                                        />
+                                                    ),
+                                                )}
                                             </div>
                                             <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1">
-                                                {[
-                                                    {
-                                                        label: '8+ Characters',
-                                                        check:
-                                                            form.data.password
-                                                                .length > 7,
-                                                    },
-                                                    {
-                                                        label: 'Upper Case',
-                                                        check: /[A-Z]/.test(
-                                                            form.data.password,
-                                                        ),
-                                                    },
-                                                    {
-                                                        label: 'Numbers',
-                                                        check: /[0-9]/.test(
-                                                            form.data.password,
-                                                        ),
-                                                    },
-                                                    {
-                                                        label: 'Symbols',
-                                                        check: /[^A-Za-z0-9]/.test(
-                                                            form.data.password,
-                                                        ),
-                                                    },
-                                                ].map((item) => (
+                                                {checklist.map((item) => (
                                                     <li
                                                         key={item.label}
                                                         className={`flex items-center gap-2 text-[10px] font-bold tracking-tight uppercase ${item.check ? 'text-green-600' : 'text-gray-600'}`}
@@ -262,6 +275,16 @@ export default function ChangePassword(): React.JSX.Element {
                                                         {item.label}
                                                     </li>
                                                 ))}
+                                                {passwordChecks.uncompromised && (
+                                                    <li className="col-span-2 flex items-center gap-2 text-[10px] font-bold tracking-tight text-gray-600 uppercase">
+                                                        <ShieldCheck
+                                                            size={10}
+                                                        />
+                                                        Not a known leaked
+                                                        password · checked when
+                                                        you save
+                                                    </li>
+                                                )}
                                             </ul>
                                         </div>
                                     )}

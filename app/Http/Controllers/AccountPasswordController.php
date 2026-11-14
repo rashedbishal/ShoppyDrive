@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Settings\PasswordUpdateRequest;
+use App\Support\PasswordPolicy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,7 +25,10 @@ class AccountPasswordController extends Controller
     {
         abort_unless($request->user()->has_password, 404);
 
-        return Inertia::render('account/ChangePassword');
+        return Inertia::render('account/ChangePassword', [
+            // DISC-32: drives the strength meter and checklist from the real policy.
+            'passwordChecks' => PasswordPolicy::checks(),
+        ]);
     }
 
     /**

@@ -20,12 +20,13 @@ test('requirements() matches the non-production fallback outside production', fu
     expect(PasswordPolicy::requirements())->toBe(['At least 8 characters']);
 });
 
-test('requirements() describes the full strengthened policy in production', function () {
+test('requirements() describes the full strengthened customer policy in production', function () {
     app()->detectEnvironment(fn () => 'production');
     expect(app()->isProduction())->toBeTrue();
 
+    // DISC-33 (owner, 2026-11-14): customers need 8+ characters; admins 12+.
     expect(PasswordPolicy::requirements())->toBe([
-        'At least 12 characters',
+        'At least 8 characters',
         'Upper and lower case letters',
         'At least one number',
         'At least one symbol (e.g. ! @ # $ %)',

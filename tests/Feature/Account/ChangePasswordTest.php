@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use App\Support\PasswordPolicy;
 use Illuminate\Support\Facades\Hash;
 
 test('a logged-in customer can change their password from the account page', function () {
@@ -93,4 +94,52 @@ test('DISC-31: the account dashboard no longer has the Account Security card', f
 
     expect($dashboard)->not->toContain('Account Security')
         ->and($dashboard)->not->toContain("route('account.password')");
+});
+
+// ── DISC-32: the strength meter and checklist follow the real policy ────────
+
+test('DISC-32: outside production the page checks only the 8-character fallback', function () {
+    expect(PasswordPolicy::checks())->toBe([
+        'min_length' => 8,
+        'mixed_case' => false,
+        'numbers' => false,
+        'symbols' => false,
+        'uncompromised' => false,
+    ]);
+});
+
+test('DISC-32: in production the page checks the full policy, matching the requirement list', function () {
+    app()->detectEnvironment(fn () => 'production');
+
+    try {
+        expect(PasswordPolicy::checks())->toBe([
+            'min_length' => 8, // DISC-33: customers need 8+ characters.
+            'mixed_case' => true,
+            'numbers' => true,
+            'symbols' => true,
+            'uncompromised' => true,
+        ])->and(PasswordPolicy::requirements()[0])->toBe('At least 8 characters');
+    } finally {
+        app()->detectEnvironment(fn () => 'testing');
+    }
+});
+
+test('DISC-32: the change-password page receives the policy checks from the server', function () {
+    $this->actingAs(User::factory()->create())->get(route('account.password'))
+        ->assertInertia(fn ($page) => $page
+            ->component('account/ChangePassword')
+            ->where('passwordChecks', PasswordPolicy::checks()));
+});
+
+test('DISC-32: the page no longer hardcodes the old 8-character checklist', function () {
+    // Source-level check (this project has no JavaScript test runner).
+    $text = (string) preg_replace('/\s+/', ' ', (string) file_get_contents(resource_path('js/pages/account/ChangePassword.tsx')));
+
+    expect($text)->not->toContain("'8+ Characters'")
+        ->and($text)->not->toContain('length > 7')
+        ->and($text)->toContain('passwordChecklist(form.data.password, passwordChecks)')
+        // The same patterns as Laravel's Password rule.
+        ->and($text)->toContain('/(\\p{Ll}+.*\\p{Lu})|(\\p{Lu}+.*\\p{Ll})/u')
+        ->and($text)->toContain('/\\p{Z}|\\p{S}|\\p{P}/u')
+        ->and($text)->toContain('Not a known leaked password · checked when you save');
 });
