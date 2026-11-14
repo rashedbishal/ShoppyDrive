@@ -44,14 +44,28 @@ function readableTextOn(hex: string): string {
     return onWhite >= onDark ? '#ffffff' : '#1a1a2e';
 }
 
-/** The preview applies the picked colour to its own box only, before saving. */
+/**
+ * The preview applies the picked colour to its own box only, before saving.
+ *
+ * DISC-45: the Tailwind `brand` utilities read `--color-brand*`, which
+ * app.css's `@theme` defines once on :root as `var(--brand*)`, so the value
+ * is fixed there; overriding only `--brand*` on this box left the preview
+ * showing the saved colour. Both sets are overridden here.
+ */
 function previewStyle(hex: string): CSSProperties {
-    return {
-        '--brand': hex,
-        '--brand-hover': `color-mix(in srgb, ${hex} 82.5%, black)`,
-        '--brand-light': `color-mix(in srgb, ${hex} 6%, white)`,
-        '--brand-foreground': readableTextOn(hex),
-    } as CSSProperties;
+    const shades = {
+        brand: hex,
+        'brand-hover': `color-mix(in srgb, ${hex} 82.5%, black)`,
+        'brand-light': `color-mix(in srgb, ${hex} 6%, white)`,
+        'brand-foreground': readableTextOn(hex),
+    };
+
+    return Object.fromEntries(
+        Object.entries(shades).flatMap(([name, value]) => [
+            [`--${name}`, value],
+            [`--color-${name}`, value],
+        ]),
+    ) as CSSProperties;
 }
 
 export default function BrandColorSettings({

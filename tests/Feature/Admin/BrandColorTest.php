@@ -134,3 +134,13 @@ test('a tampered saved value falls back to the original red', function () {
     expect(BrandColor::hex())->toBe('#c8102e')
         ->and(BrandColor::css())->toBeNull();
 });
+
+test('DISC-45: the live preview overrides the Tailwind brand tokens, not only --brand', function () {
+    // app.css's @theme fixes --color-brand to var(--brand) on :root, so the
+    // preview box must override --color-brand* itself to show the picked colour.
+    $page = (string) file_get_contents(resource_path('js/pages/admin/settings/brand-color.tsx'));
+
+    expect($page)->toContain('[`--color-${name}`, value]')
+        ->toContain('[`--${name}`, value]')
+        ->toContain('style={previewStyle(preview)}');
+});
