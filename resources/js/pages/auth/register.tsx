@@ -385,9 +385,6 @@ export default function Register({
                                         )}
                                     </button>
                                 </div>
-                                <PasswordRequirements
-                                    requirements={passwordRequirements}
-                                />
                                 <InputError message={errors.password} />
                             </div>
 
@@ -436,6 +433,14 @@ export default function Register({
                                         confirmationError ??
                                         errors.password_confirmation
                                     }
+                                />
+                            </div>
+
+                            {/* Full width under both password fields, so each hint fits on one line. */}
+                            <div className="col-span-2">
+                                <PasswordRequirements
+                                    requirements={passwordRequirements}
+                                    nowrap
                                 />
                             </div>
 
