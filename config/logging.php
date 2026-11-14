@@ -5,9 +5,12 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
 
-// OPS-007: production's .env may still hold the framework defaults (one
-// never-rotated file at debug level) and .env isn't deployed, so production's
-// logging is set here: one file per day, 30 days kept, info and above.
+// OPS-007: production's .env may still hold the framework defaults (debug
+// level) and .env isn't deployed, so production's logging is set here.
+// DISC-44 (owner decision 2026-11-14): one file, storage/logs/laravel.log,
+// info and above — no daily files. Instead of daily rotation, `logs:trim`
+// (nightly) keeps it from growing past its size limit, and Admin › Error Log
+// "Clear Log" empties it on demand; neither ever deletes the file.
 $isProduction = env('APP_ENV') === 'production';
 
 return [
@@ -23,7 +26,7 @@ return [
     |
     */
 
-    'default' => $isProduction ? 'daily' : env('LOG_CHANNEL', 'stack'),
+    'default' => $isProduction ? 'single' : env('LOG_CHANNEL', 'stack'),
 
     /*
     |--------------------------------------------------------------------------
@@ -66,7 +69,7 @@ return [
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
-            'level' => env('LOG_LEVEL', 'debug'),
+            'level' => $isProduction ? 'info' : env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
         ],
 

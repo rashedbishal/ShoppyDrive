@@ -51,6 +51,10 @@ Schedule::command('queue:prune-failed --hours=720')->dailyAt('03:40')->timezone(
 Schedule::command('queue:prune-batches --hours=720 --unfinished=720 --cancelled=720')->dailyAt('03:45')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
 Schedule::command('activitylog:clean --force')->dailyAt('03:50')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
 
+// DISC-44: production logs to one laravel.log (no daily files); once it is
+// over 20 MB this keeps only its newest 10 MB, in place.
+Schedule::command('logs:trim')->dailyAt('03:55')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
+
 // OPS-001: keeps /sitemap.xml current for search engines.
 Schedule::command('sitemap:generate')->dailyAt('04:00')->timezone('Asia/Dhaka')->withoutOverlapping(1440, false);
 
