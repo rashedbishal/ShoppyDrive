@@ -29,7 +29,6 @@ class ReferralController extends Controller
             ->paginate(15);
 
         return Inertia::render('account/Referral', [
-            'referralCode' => $user->referral_code,
             'referralLink' => route('register', ['ref' => $user->referral_code]),
             'pointsBalance' => $user->points_balance,
             'referredCount' => $user->referredUsers()->count(),

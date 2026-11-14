@@ -16,8 +16,6 @@ class CreateNewUser implements CreatesNewUsers
 
     public const string EMAIL_UNAVAILABLE_MESSAGE = "We couldn't create an account with this email. Try signing in or resetting your password.";
 
-    public const string REFERRAL_CODE_INVALID_MESSAGE = "This referral code isn't valid. Check it, or leave the field empty.";
-
     public function __construct(
         private readonly ReferralService $referrals,
     ) {}
@@ -33,16 +31,15 @@ class CreateNewUser implements CreatesNewUsers
             'name' => $this->nameRules(),
             'email' => ['required', 'string', 'email', 'max:150'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'referral_code' => ['nullable', 'string', 'max:20'],
             'password' => $this->passwordRules(),
         ])->after(function (ValidatorInstance $validator) use ($input): void {
             $this->guardAgainstDuplicateEmail($validator, $input['email'] ?? null);
-            $this->guardAgainstUnknownReferralCode($validator, $input['referral_code'] ?? null);
         })->validate();
 
-        $referredById = $this->referrals->resolveReferrerId(
-            $input['referral_code'] ?? session('pending_referral_code'),
-        );
+        // DISC-30 (owner decision 2026-11-14): referrals come only from the
+        // referral link, which the register page stashes in the session when
+        // it is valid. A code sent in the form is ignored.
+        $referredById = $this->referrals->resolveReferrerId(session('pending_referral_code'));
         session()->forget('pending_referral_code');
 
         $user = User::create([
@@ -58,25 +55,6 @@ class CreateNewUser implements CreatesNewUsers
         // that never verify get no points.
 
         return $user;
-    }
-
-    /**
-     * DISC-12: a typed referral code that matches no customer used to be
-     * silently ignored, so the customer lost the welcome discount unknowingly.
-     * Only while the program is on (the field is only shown then); an empty
-     * field stays valid, and matching stays case-insensitive through
-     * ReferralService::resolveReferrerId(). An invalid ?ref= link never
-     * reaches here as a code: the form only pre-fills a valid one.
-     */
-    private function guardAgainstUnknownReferralCode(ValidatorInstance $validator, mixed $code): void
-    {
-        if (! is_string($code) || trim($code) === '' || ! $this->referrals->isEnabled()) {
-            return;
-        }
-
-        if ($this->referrals->resolveReferrerId($code) === null) {
-            $validator->errors()->add('referral_code', self::REFERRAL_CODE_INVALID_MESSAGE);
-        }
     }
 
     /**

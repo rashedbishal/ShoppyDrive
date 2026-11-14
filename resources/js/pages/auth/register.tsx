@@ -34,10 +34,6 @@ export default function Register({
         phone: '',
         password: '',
         password_confirmation: '',
-        // DISC-12: pre-fill only a valid ?ref= code. An invalid link leaves the
-        // field empty (its warning banner still shows), so it never trips the
-        // typed-code validation and sign-up works without a referral as before.
-        referral_code: referralCodeValid ? (referralCode ?? '') : '',
     });
 
     const confirmationError = passwordMismatchMessage(
@@ -190,12 +186,11 @@ export default function Register({
                                     <Gift className="mt-0.5 size-4 shrink-0 text-amber-600" />
                                     <p className="text-xs text-gray-700">
                                         <span className="font-semibold text-amber-700">
-                                            Invalid referral code.
+                                            Invalid referral link.
                                         </span>{' '}
-                                        &ldquo;{referralCode}&rdquo;
-                                        doesn&apos;t match an existing referral
-                                        code — you can still create an account
-                                        without one.
+                                        This referral link isn&apos;t valid —
+                                        you can still create an account without
+                                        one.
                                     </p>
                                 </div>
                             )}
@@ -350,40 +345,6 @@ export default function Register({
                                     />
                                 </div>
                             </div>
-
-                            {settings.referral_enabled && (
-                                <div className="col-span-2 space-y-1">
-                                    <label
-                                        htmlFor="referral_code"
-                                        className="text-xs font-medium text-gray-700"
-                                    >
-                                        Referral code{' '}
-                                        <span className="text-gray-600">
-                                            (optional)
-                                        </span>
-                                    </label>
-                                    <div className="relative">
-                                        <Gift className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-400" />
-                                        <input
-                                            maxLength={20}
-                                            id="referral_code"
-                                            type="text"
-                                            value={data.referral_code}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'referral_code',
-                                                    e.target.value.toUpperCase(),
-                                                )
-                                            }
-                                            placeholder="e.g. AB12CD34EF56"
-                                            className="h-10 w-full rounded-lg border border-gray-200 bg-white pr-3 pl-10 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none"
-                                        />
-                                    </div>
-                                    <InputError
-                                        message={errors.referral_code}
-                                    />
-                                </div>
-                            )}
 
                             {/* Password */}
                             <div className="space-y-1">

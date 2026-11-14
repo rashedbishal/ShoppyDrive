@@ -14,7 +14,6 @@ type DailyLoginStatus = {
 };
 
 interface ReferralProps {
-    referralCode: string;
     referralLink: string;
     pointsBalance: number;
     referredCount: number;
@@ -66,7 +65,6 @@ const TYPE_VARIANT: Record<
 };
 
 export default function Referral({
-    referralCode,
     referralLink,
     pointsBalance,
     referredCount,
@@ -239,12 +237,6 @@ export default function Referral({
                                     )}
                                 </button>
                             </div>
-                            <p className="mt-2 text-xs text-[var(--color-text-secondary)]">
-                                Your code:{' '}
-                                <span className="font-mono font-semibold">
-                                    {referralCode}
-                                </span>
-                            </p>
                         </div>
                     ) : (
                         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">

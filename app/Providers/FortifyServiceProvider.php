@@ -135,6 +135,18 @@ class FortifyServiceProvider extends ServiceProvider
                 session(['pending_referral_code' => $code]);
             }
 
+            // DISC-30: a visitor who opened a valid referral link earlier and
+            // comes back to Register without ?ref= still gets the referral, so
+            // still show them the banner (re-checked, in case it no longer resolves).
+            if ($code === null) {
+                $pendingCode = session('pending_referral_code');
+
+                if (is_string($pendingCode)) {
+                    $referrerId = app(ReferralService::class)->resolveReferrerId($pendingCode);
+                    $code = $referrerId !== null ? $pendingCode : null;
+                }
+            }
+
             return Inertia::render('auth/register', [
                 'referralCode' => $code,
                 'referralCodeValid' => $code !== null ? $referrerId !== null : null,
