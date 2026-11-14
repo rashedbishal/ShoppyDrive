@@ -100,11 +100,29 @@ class CourierOrderStatusMapper
     private const STEADFAST_MAP = [
         'pending' => OrderStatus::PENDING,
         'in_review' => OrderStatus::PENDING,
+        // DISC-29: the six statuses Steadfast told the owner it provides,
+        // spelling confirmed exact by Steadfast (2026-11-14). The API docs'
+        // spellings stay alongside (owner decision) as a harmless fallback.
+        'pending_parcels' => OrderStatus::PENDING,
 
         'delivered' => OrderStatus::DELIVERED,
+        'delivered_parcels' => OrderStatus::DELIVERED,
         // DISC-03: `partial_delivered` deliberately unmapped (see PATHAO_MAP).
 
         'cancelled' => OrderStatus::CANCELLED,
+        'cancelled_parcels' => OrderStatus::CANCELLED,
+    ];
+
+    /**
+     * DISC-29 (owner decision 2026-11-14): known Steadfast statuses that
+     * leave the order's own status unchanged without the "unrecognized"
+     * banner, like PATHAO_PRESERVED. `waiting_approval` is a routine step
+     * before Steadfast settles a parcel as delivered or cancelled.
+     *
+     * @var list<string>
+     */
+    private const STEADFAST_PRESERVED = [
+        'waiting_approval',
     ];
 
     public static function forPathao(string $rawStatus): ?OrderStatus
@@ -135,7 +153,8 @@ class CourierOrderStatusMapper
                 && ! in_array(self::normalize($rawStatus), self::PATHAO_PRESERVED, true);
         }
 
-        return self::forSteadfast($rawStatus) === null;
+        return self::forSteadfast($rawStatus) === null
+            && ! in_array(self::normalize($rawStatus), self::STEADFAST_PRESERVED, true);
     }
 
     /**

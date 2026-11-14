@@ -67,6 +67,38 @@ it('maps steadfast statuses to order statuses', function () {
     expect(CourierOrderStatusMapper::forSteadfast('unknown'))->toBeNull();
 });
 
+it('maps the steadfast parcel status names alongside the api spellings', function () {
+    expect(CourierOrderStatusMapper::forSteadfast('pending_parcels'))->toBe(OrderStatus::PENDING);
+    expect(CourierOrderStatusMapper::forSteadfast('delivered_parcels'))->toBe(OrderStatus::DELIVERED);
+    expect(CourierOrderStatusMapper::forSteadfast('Cancelled Parcels'))->toBe(OrderStatus::CANCELLED);
+    expect(CourierOrderStatusMapper::forSteadfast('waiting_approval'))->toBeNull();
+});
+
+it('treats steadfast waiting_approval as a known status, not an unrecognized one', function () {
+    expect(CourierOrderStatusMapper::isUnrecognized('steadfast', 'waiting_approval'))->toBeFalse();
+    expect(CourierOrderStatusMapper::isUnrecognized('steadfast', 'delivered_parcels'))->toBeFalse();
+    expect(CourierOrderStatusMapper::isUnrecognized('steadfast', 'partial_delivered'))->toBeTrue();
+    expect(CourierOrderStatusMapper::isUnrecognized('steadfast', 'delivered_approval_pending'))->toBeTrue();
+});
+
+it('leaves the order status unchanged when steadfast reports waiting_approval', function () {
+    $order = makeMapperTestOrder(['status' => 'shipped']);
+
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'waiting_approval');
+
+    expect($order->status)->toBe(OrderStatus::SHIPPED);
+    expect($order->steadfast_status)->toBe('waiting_approval');
+});
+
+it('settles a delivered_parcels report like delivered', function () {
+    $order = makeMapperTestOrder(['status' => 'shipped']);
+
+    CourierOrderStatusMapper::sync($order, 'steadfast', 'delivered_parcels');
+
+    expect($order->status)->toBe(OrderStatus::DELIVERED);
+    expect($order->payment_status)->toBe(PaymentStatus::PAID);
+});
+
 it('humanizes a raw status into readable text', function () {
     expect(CourierOrderStatusMapper::label('assigned_for_delivery'))->toBe('Assigned For Delivery');
     expect(CourierOrderStatusMapper::label('in_review'))->toBe('In Review');
