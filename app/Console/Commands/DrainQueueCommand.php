@@ -59,6 +59,13 @@ class DrainQueueCommand extends Command
     public const NEWSLETTER_QUEUE = 'newsletter';
 
     /**
+     * Every queue the worker reads. A job on any other queue name (e.g. the
+     * `held-backlog` jobs set aside on purpose) is never run: it is
+     * "parked" (App\Support\ParkedJobs).
+     */
+    public const WORKER_QUEUES = [self::QUEUE, self::NEWSLETTER_QUEUE];
+
+    /**
      * OPS-002: the one place this command is known to have actually run —
      * read by DashboardController to warn an admin when cron itself has
      * stopped firing (a stalled queue otherwise creates no failed rows, so

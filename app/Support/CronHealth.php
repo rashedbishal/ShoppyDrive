@@ -67,6 +67,7 @@ class CronHealth
      *     last_drained_seconds_ago: int|null,
      *     oldest_pending_job_seconds: int|null,
      *     pending_jobs: int,
+     *     parked_jobs: int,
      *     failed_jobs: int,
      *     alert_active_since: int|null,
      *     alert_email_configured: bool,
@@ -84,7 +85,11 @@ class CronHealth
             'threshold_seconds' => self::STALL_SECONDS,
             'last_drained_seconds_ago' => $lastDrained,
             'oldest_pending_job_seconds' => DrainQueueCommand::oldestPendingJobAgeSeconds(),
-            'pending_jobs' => DB::table((string) config('queue.connections.database.table', 'jobs'))->count(),
+            // Only jobs the worker will run; parked ones are counted apart.
+            'pending_jobs' => DB::table((string) config('queue.connections.database.table', 'jobs'))
+                ->whereIn('queue', DrainQueueCommand::WORKER_QUEUES)
+                ->count(),
+            'parked_jobs' => ParkedJobs::count(),
             'failed_jobs' => DB::connection(config('queue.failed.database'))->table(config('queue.failed.table'))->count(),
             'alert_active_since' => is_int($alertActiveSince) ? $alertActiveSince : null,
             'alert_email_configured' => self::alertRecipient() !== null,

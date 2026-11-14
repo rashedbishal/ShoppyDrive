@@ -151,6 +151,13 @@ const LOW05_EXEMPT_ADMIN_ROUTES = [
     // DashboardInsightsTest); the dashboard itself is ungated, see above.
     'admin.dashboard.target',
 
+    // Parked background jobs (owner request 2026-11-14): deleting them is
+    // mother admin only with her password, enforced by `admin.mother` and
+    // `throttle:mother-actions` on the route, like clearing the audit trail
+    // (verified by ParkedJobsTest). Viewing them stays on the System Monitor
+    // page, gated normally by admin.can:failed_jobs,view.
+    'admin.monitor.parked-jobs.destroy',
+
     // DB-001: permanent order deletion is mother-admin only, confirmed
     // gated only by ['admin.mother', 'throttle:mother-actions'].
     'admin.orders.permanentDelete.confirm',
