@@ -122,7 +122,7 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active', 'histor
     Route::put('/addresses/{address}', [AddressController::class, 'update'])->middleware('throttle:account-action')->name('account.addresses.update');
     Route::delete('/addresses/{address}', [AddressController::class, 'destroy'])->middleware('throttle:account-action')->name('account.addresses.destroy');
     Route::patch('/addresses/{address}/default', [AddressController::class, 'setDefault'])->middleware('throttle:account-action')->name('account.addresses.default');
-    Route::get('/password', fn () => inertia('account/ChangePassword'))->name('account.password');
+    Route::get('/password', [AccountPasswordController::class, 'edit'])->name('account.password');
     Route::put('/password', [AccountPasswordController::class, 'update'])->middleware('throttle:6,1')->name('account.password.update');
     Route::delete('/profile', [AccountProfileController::class, 'destroy'])->middleware('throttle:account-action')->name('account.profile.destroy');
 

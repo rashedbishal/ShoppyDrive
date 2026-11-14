@@ -61,6 +61,8 @@ export interface User extends Timestamped {
     avatar?: string | null;
     role: UserRole;
     email_verified_at: string | null;
+    /** False for a customer who has only ever signed in with Google/Facebook. */
+    has_password?: boolean;
     referral_code?: string;
     points_balance?: number;
 }

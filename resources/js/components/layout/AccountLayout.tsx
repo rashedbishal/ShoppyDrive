@@ -37,6 +37,12 @@ export default function AccountLayout({
     const page = usePage<SharedPageProps>();
     const { auth, account_stats } = page.props;
     const currentPath = page.url.split('?')[0];
+    // DISC-31: a customer who signed in only with Google/Facebook has no
+    // password to change; they set one in Connected Accounts instead.
+    const visibleNavItems = navItems.filter(
+        ({ href }) =>
+            href !== '/account/password' || auth.user?.has_password !== false,
+    );
     const [loading, setLoading] = useState(false);
 
     // The sidebar stays put while a tab loads; only the content dims.
@@ -119,36 +125,38 @@ export default function AccountLayout({
                         {/* Nav */}
                         <nav className="mt-3 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-alt)]">
                             <div className="space-y-0.5 p-2">
-                                {navItems.map(({ label, href, icon: Icon }) => {
-                                    const isActive =
-                                        href === '/account'
-                                            ? currentPath === '/account'
-                                            : currentPath === href ||
-                                              currentPath.startsWith(
-                                                  href + '/',
-                                              );
+                                {visibleNavItems.map(
+                                    ({ label, href, icon: Icon }) => {
+                                        const isActive =
+                                            href === '/account'
+                                                ? currentPath === '/account'
+                                                : currentPath === href ||
+                                                  currentPath.startsWith(
+                                                      href + '/',
+                                                  );
 
-                                    return (
-                                        <Link
-                                            key={href}
-                                            href={href}
-                                            className={cn(
-                                                'flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition',
-                                                isActive
-                                                    ? 'bg-[var(--color-primary)] text-white'
-                                                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
-                                            )}
-                                        >
-                                            <span className="flex items-center gap-3">
-                                                <Icon className="size-4 shrink-0" />
-                                                {label}
-                                            </span>
-                                            {isActive ? (
-                                                <ChevronRight className="size-3.5" />
-                                            ) : null}
-                                        </Link>
-                                    );
-                                })}
+                                        return (
+                                            <Link
+                                                key={href}
+                                                href={href}
+                                                className={cn(
+                                                    'flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition',
+                                                    isActive
+                                                        ? 'bg-[var(--color-primary)] text-white'
+                                                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
+                                                )}
+                                            >
+                                                <span className="flex items-center gap-3">
+                                                    <Icon className="size-4 shrink-0" />
+                                                    {label}
+                                                </span>
+                                                {isActive ? (
+                                                    <ChevronRight className="size-3.5" />
+                                                ) : null}
+                                            </Link>
+                                        );
+                                    },
+                                )}
                             </div>
 
                             <div className="border-t border-[var(--color-border)] p-2">

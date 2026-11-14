@@ -6,7 +6,6 @@ import {
     ChevronRight,
     Package,
     TrendingUp,
-    ShieldCheck,
 } from 'lucide-react';
 import React from 'react';
 
@@ -248,43 +247,6 @@ export default function Dashboard({
                                 )}
                             </tbody>
                         </table>
-                    </div>
-                </div>
-
-                {/* Account Security Banner */}
-                <div className="flex flex-col items-center justify-between gap-8 rounded-3xl bg-gradient-to-r from-[var(--color-secondary)] to-[#2A2A4E] p-8 text-white md:flex-row md:p-10">
-                    <div className="flex items-center gap-6">
-                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-amber-400">
-                            <ShieldCheck size={40} />
-                        </div>
-                        <div>
-                            <h3 className="mb-2 text-xl font-bold">
-                                Account Security
-                            </h3>
-                            <p className="max-w-md text-sm text-blue-100">
-                                Keep your account safe by updating your password
-                                regularly.
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex gap-4">
-                        <Button
-                            asChild
-                            variant="outline"
-                            className="rounded-xl border-white/20 font-bold text-white hover:bg-white/10"
-                        >
-                            <Link href={route('account.password')}>
-                                Change Password
-                            </Link>
-                        </Button>
-                        <Button
-                            asChild
-                            className="rounded-xl bg-white font-bold text-[var(--color-secondary)] hover:bg-gray-100"
-                        >
-                            <Link href={route('account.profile')}>
-                                Manage Profile
-                            </Link>
-                        </Button>
                     </div>
                 </div>
             </div>
