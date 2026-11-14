@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace App\Mail;
 
+use App\Concerns\AttachesOrderInvoice;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 class OrderPlacedMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use AttachesOrderInvoice, Queueable, SerializesModels;
 
     public function __construct(
         public readonly Order $order,
@@ -28,5 +30,15 @@ class OrderPlacedMail extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(view: 'emails.orders.placed');
+    }
+
+    /**
+     * DISC-38: the PDF invoice (none for a cancelled/refunded order).
+     *
+     * @return list<Attachment>
+     */
+    public function attachments(): array
+    {
+        return $this->orderInvoiceAttachments($this->order);
     }
 }

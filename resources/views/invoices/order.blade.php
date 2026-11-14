@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <title>Invoice #{{ $order->order_number }}</title>
     <style>
+        /* DISC-40: A4 comes from OrderInvoice's mPDF config; mPDF mis-paginates
+           a `size: A4` here (one page becomes ~160). */
         @page {
             margin: 0;
-            size: A4;
         }
         * {
             box-sizing: border-box;
@@ -53,7 +54,10 @@
             width: 100%;
             margin-bottom: 18px;
         }
-        .meta-outer td {
+        /* DISC-40: mPDF draws a <div>'s background/border line by line, so
+           the panels are single-cell tables and the columns get their own
+           class (a descendant `td` rule would also size the inner tables). */
+        .meta-col {
             vertical-align: top;
             width: 50%;
         }
@@ -66,18 +70,23 @@
             margin-bottom: 5px;
         }
         .info-panel {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .info-panel-cell {
             background-color: #f8fafc;
             border-left: 3px solid #0f172a;
             padding: 10px 13px;
             font-size: 8.5pt;
+            vertical-align: top;
         }
-        .info-panel .cust-name {
+        .cust-name {
             font-weight: bold;
             font-size: 10pt;
             color: #0f172a;
             margin-bottom: 3px;
         }
-        .info-panel p {
+        .info-panel-cell p {
             margin: 2px 0;
             color: #4b5563;
         }
@@ -181,6 +190,32 @@
             border-radius: 3px;
         }
 
+        .badge-unpaid {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .copy-tag {
+            display: block;
+            margin-top: 3px;
+            font-size: 7.5pt;
+            letter-spacing: 2px;
+            color: #64748b;
+        }
+        .items tfoot tr.amount-row td {
+            font-weight: bold;
+            font-size: 9.5pt;
+            border-bottom: none;
+            padding: 8px 9px;
+        }
+        .items tfoot tr.amount-row.paid td {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .items tfoot tr.amount-row.due td {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
         .footer {
             margin-top: 24px;
             padding-top: 12px;
@@ -198,11 +233,18 @@
     </style>
 </head>
 <body>
+@php
+    // DISC-38: normally set by App\Support\OrderInvoice; defaults keep a
+    // direct render of this view (tests) working.
+    $parcel ??= null;
+    $amountLabel ??= \App\Support\OrderInvoice::amountLabel($order);
+    $isPaid = \App\Support\OrderInvoice::isPaid($order);
+@endphp
 
 <div class="top-bar">
     <table class="top-bar-table">
         <tr>
-            <td>
+            <td style="width: 60%;">
                 @php
                     // The logo uploaded in Admin › Settings when dompdf can read it (PNG/JPG), else the bundled copy.
                     $invoiceLogo = null;
@@ -217,12 +259,17 @@
                     $invoiceLogoMime = strtolower(pathinfo($invoiceLogo, PATHINFO_EXTENSION)) === 'png' ? 'png' : 'jpeg';
                 @endphp
                 @if(is_file($invoiceLogo))
-                    <img src="data:image/{{ $invoiceLogoMime }};base64,{{ base64_encode(file_get_contents($invoiceLogo)) }}" alt="ShoppyDrive" style="max-height: 56px; width: auto;">
+                    <img src="data:image/{{ $invoiceLogoMime }};base64,{{ base64_encode(file_get_contents($invoiceLogo)) }}" alt="ShoppyDrive" style="height: 56px;">
                 @else
                     <div class="brand">ShoppyDrive</div>
                 @endif
             </td>
-            <td class="invoice-word">INVOICE</td>
+            <td class="invoice-word" style="width: 40%;">
+                INVOICE
+                @if($parcel)
+                    <div class="copy-tag">PARCEL COPY</div>
+                @endif
+            </td>
         </tr>
     </table>
 </div>
@@ -230,7 +277,7 @@
 <div class="page-body">
 
     @php
-        $addr = $order->billing_address ?? $order->shipping_address ?? [];
+        $addr = $order->billing_address ?: ($order->shipping_address ?: []);
         $addrLine = ($addr['address_line1'] ?? '');
         if (!empty($addr['address_line2'])) {
             $addrLine .= ', ' . $addr['address_line2'];
@@ -248,9 +295,9 @@
 
     <table class="meta-outer">
         <tr>
-            <td style="padding-right: 13px;">
+            <td class="meta-col" style="padding-right: 13px;">
                 <div class="col-label">Billed To</div>
-                <div class="info-panel">
+                <table class="info-panel"><tr><td class="info-panel-cell">
                     <div class="cust-name">{{ $addr['name'] ?? $order->user?->name ?? '' }}</div>
                     @if(!empty($addr['phone']))
                         <p>{{ $addr['phone'] }}</p>
@@ -266,11 +313,11 @@
                     @if($email)
                         <p>{{ $email }}</p>
                     @endif
-                </div>
+                </td></tr></table>
             </td>
-            <td style="padding-left: 13px;">
+            <td class="meta-col" style="padding-left: 13px;">
                 <div class="col-label">Invoice Details</div>
-                <div class="info-panel">
+                <table class="info-panel"><tr><td class="info-panel-cell">
                     <table style="width: 100%;">
                         <tr class="detail-row">
                             <td class="dl">Order Number</td>
@@ -287,11 +334,27 @@
                         <tr class="detail-row">
                             <td class="dl">Payment Status</td>
                             <td class="dv">
-                                <span class="badge">{{ $paymentStatus }}</span>
+                                <span class="{{ $isPaid ? 'badge' : 'badge badge-unpaid' }}">{{ $paymentStatus }}</span>
                             </td>
                         </tr>
+                        @if($parcel)
+                            <tr class="detail-row">
+                                <td class="dl">Courier</td>
+                                <td class="dv">{{ $parcel['courier'] }}</td>
+                            </tr>
+                            <tr class="detail-row">
+                                <td class="dl">Consignment ID</td>
+                                <td class="dv">{{ $parcel['consignment_id'] }}</td>
+                            </tr>
+                            @if($parcel['tracking_code'])
+                                <tr class="detail-row">
+                                    <td class="dl">Tracking Code</td>
+                                    <td class="dv">{{ $parcel['tracking_code'] }}</td>
+                                </tr>
+                            @endif
+                        @endif
                     </table>
-                </div>
+                </td></tr></table>
             </td>
         </tr>
     </table>
@@ -355,6 +418,10 @@
             @endif
             <tr class="grand-row">
                 <td colspan="4" class="tl">Grand Total (BDT)</td>
+                <td class="tv">{{ number_format($order->total, 2) }}</td>
+            </tr>
+            <tr class="amount-row {{ $isPaid ? 'paid' : 'due' }}">
+                <td colspan="4" class="tl">{{ $amountLabel }} (BDT)</td>
                 <td class="tv">{{ number_format($order->total, 2) }}</td>
             </tr>
         </tfoot>

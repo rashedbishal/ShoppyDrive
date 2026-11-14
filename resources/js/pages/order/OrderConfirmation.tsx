@@ -48,17 +48,9 @@ export default function OrderConfirmation({
               ? 'Total Refunded'
               : 'Total Due on Delivery';
 
-    const canDownloadInvoice = (() => {
-        if (order.status === 'cancelled' || order.status === 'refunded') {
-            return false;
-        }
-
-        if (order.payment_method === 'cod') {
-            return order.status === 'delivered';
-        }
-
-        return true;
-    })();
+    // DISC-38: decided on the server (App\Support\OrderInvoice) — every
+    // order except a cancelled or refunded one, COD included.
+    const canDownloadInvoice = order.invoice_available === true;
 
     // No line items here — OrderConfirmationAccess::payload() (FSA-03)
     // deliberately never sends items/totals-breakdown to this public page.
@@ -276,7 +268,7 @@ export default function OrderConfirmation({
                         >
                             <a
                                 href={route(
-                                    'account.orders.invoice',
+                                    'order.invoice',
                                     order.order_number,
                                 )}
                             >

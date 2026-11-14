@@ -12,6 +12,7 @@ use App\Http\Controllers\WishlistController;
 use App\Models\Coupon;
 use App\Models\Order;
 use App\Support\OrderConfirmationAccess;
+use App\Support\OrderInvoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -66,6 +67,22 @@ Route::get('/order/{order:order_number}/confirmation', function (Request $reques
         'keepCart' => (bool) $order->is_buy_now,
     ]);
 })->middleware('throttle:order-tracking')->name('order.confirmation');
+
+// DISC-38: the invoice from the confirmation page, for exactly whoever may
+// see that page (the logged-in owner, or the guest session that just placed
+// or paid for the order). Generated on request; 404 for anyone else.
+Route::get('/order/{order:order_number}/invoice', function (Request $request, Order $order) {
+    abort_unless(OrderConfirmationAccess::allows($request, $order), 404);
+
+    return OrderInvoice::download($order);
+})->middleware('throttle:invoice-download')->name('order.invoice');
+
+// DISC-38: the invoice from Track Order. OrderTrackingController hands out
+// this 30-minute signed URL only after the visitor proved the order number
+// plus its phone or email, so the signature is the access check.
+Route::get('/order/track/{order:order_number}/invoice', fn (Order $order) => OrderInvoice::download($order))
+    ->middleware(['signed', 'throttle:invoice-download'])
+    ->name('order.track.invoice');
 
 Route::post('/coupon/validate', function (Request $request) {
     $request->validate([

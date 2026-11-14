@@ -75,6 +75,8 @@ final class OrderConfirmationAccess
             'order_number' => $order->order_number,
             'status' => $order->status->value,
             'payment_method' => $order->payment_method->value,
+            // DISC-38: drives the "Download Invoice" button (OrderInvoice rule).
+            'invoice_available' => OrderInvoice::isAvailable($order),
             'total' => (float) $order->total,
             'created_at' => $order->created_at?->toISOString(),
             'shipping_address' => [

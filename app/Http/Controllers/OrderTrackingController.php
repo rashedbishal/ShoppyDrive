@@ -6,9 +6,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Support\BangladeshiPhone;
+use App\Support\OrderInvoice;
 use App\Support\SecurityRateLimits;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -80,7 +82,16 @@ class OrderTrackingController extends Controller
             'status' => $order->status->value,
             'created_at' => $order->created_at?->toISOString(),
             'total' => (float) $order->total,
+            // DISC-39: "Total Paid" only once paid (bKash/Nagad, or COD after
+            // delivery); otherwise "Total Payment".
+            'payment_status' => $order->payment_status->value,
             'tracking_number' => $order->tracking_number,
+            // DISC-38: only built here, after the order number plus its
+            // phone/email matched; expires in 30 minutes. Null when the order
+            // has no invoice (cancelled or refunded).
+            'invoice_url' => OrderInvoice::isAvailable($order)
+                ? URL::temporarySignedRoute('order.track.invoice', now()->addMinutes(30), ['order' => $order->order_number])
+                : null,
             'items' => $order->items->map(fn ($item) => [
                 'id' => $item->id,
                 'product_name' => $item->product_name,

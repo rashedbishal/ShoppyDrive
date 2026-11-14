@@ -63,10 +63,13 @@ test('a delivered cash on delivery order downloads a real PDF', function () {
     assertPdfDownload(actingAs($user)->get(route('account.orders.invoice', $order)), $order);
 });
 
-test('an undelivered cash on delivery order has no invoice yet', function (string $status) {
+test('DISC-38: an undelivered cash on delivery order has an invoice from the moment it is placed', function (string $status) {
+    // Owner decision 2026-11-14 (replaces "no COD invoice before delivery"):
+    // the invoice says "Payment Amount" until the order is paid.
     $user = User::factory()->create();
+    $order = invoiceOrder($user, $status, attributes: ['payment_status' => 'unpaid']);
 
-    actingAs($user)->get(route('account.orders.invoice', invoiceOrder($user, $status)))->assertForbidden();
+    assertPdfDownload(actingAs($user)->get(route('account.orders.invoice', $order)), $order);
 })->with(['pending', 'processing', 'shipped']);
 
 test('a prepaid order has an invoice before delivery', function (string $status, string $paymentMethod) {
@@ -190,10 +193,10 @@ test('a cancelled or refunded guest landing-page order has no invoice, for any p
     ['refunded', 'mobile_banking'],
 ]);
 
-test('an undelivered guest landing-page cash on delivery order has no invoice yet', function (string $status) {
-    $order = invoiceOrder(User::factory()->create(), $status, 'cod', ['user_id' => null, 'guest_token' => 'lp-undelivered-cod-'.$status]);
+test('DISC-38: an undelivered guest landing-page cash on delivery order has an invoice from placement', function (string $status) {
+    $order = invoiceOrder(User::factory()->create(), $status, 'cod', ['user_id' => null, 'payment_status' => 'unpaid', 'guest_token' => 'lp-undelivered-cod-'.$status]);
 
-    get(route('lp.invoice', $order->guest_token))->assertForbidden();
+    assertPdfDownload(get(route('lp.invoice', $order->guest_token)), $order);
 })->with(['pending', 'processing', 'shipped']);
 
 test('a prepaid guest landing-page order has an invoice before delivery', function (string $status) {

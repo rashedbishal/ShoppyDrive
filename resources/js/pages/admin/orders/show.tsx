@@ -4,6 +4,7 @@ import {
     AlertTriangle,
     ArrowLeft,
     Ban,
+    Download,
     Globe,
     History,
     Info,
@@ -30,6 +31,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CharCount } from '@/components/ui/char-count';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useAdminListUrl } from '@/hooks/use-admin-list-url';
@@ -144,6 +151,8 @@ type Props = {
     courierEvidence: CourierEvidence;
     canVerifyDelivery: boolean;
     canConfirmLostParcel: boolean;
+    /** DISC-38: which invoice copies exist (App\Support\OrderInvoice). */
+    invoice: { available: boolean; parcel: boolean };
 };
 
 const taka = (value: number | null) =>
@@ -189,6 +198,7 @@ export default function OrderShow({
     courierEvidence,
     canVerifyDelivery,
     canConfirmLostParcel,
+    invoice,
 }: Props) {
     const listUrl = useAdminListUrl('admin.orders.index');
     const [isVerifyOpen, setIsVerifyOpen] = useState(false);
@@ -435,6 +445,78 @@ export default function OrderShow({
                             {new Date(order.created_at).toLocaleString()}
                         </p>
                     </div>
+                    {invoice.available && (
+                        <DropdownMenu modal={false}>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="shrink-0"
+                                >
+                                    <Download className="size-4" />
+                                    <span className="hidden sm:inline">
+                                        Download invoice
+                                    </span>
+                                    <span className="sm:hidden">Invoice</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64">
+                                <DropdownMenuItem asChild>
+                                    <a
+                                        href={route('admin.orders.invoice', {
+                                            order: order.id,
+                                            copy: 'customer',
+                                        })}
+                                        className="flex flex-col items-start gap-0.5"
+                                    >
+                                        <span className="font-medium">
+                                            Customer copy
+                                        </span>
+                                        <span className="text-xs text-slate-500">
+                                            The same invoice the customer was
+                                            emailed.
+                                        </span>
+                                    </a>
+                                </DropdownMenuItem>
+                                {invoice.parcel ? (
+                                    <DropdownMenuItem asChild>
+                                        <a
+                                            href={route(
+                                                'admin.orders.invoice',
+                                                {
+                                                    order: order.id,
+                                                    copy: 'parcel',
+                                                },
+                                            )}
+                                            className="flex flex-col items-start gap-0.5"
+                                        >
+                                            <span className="font-medium">
+                                                Parcel copy
+                                            </span>
+                                            <span className="text-xs text-slate-500">
+                                                Adds the courier and consignment
+                                                ID.
+                                            </span>
+                                        </a>
+                                    </DropdownMenuItem>
+                                ) : (
+                                    <DropdownMenuItem
+                                        disabled
+                                        className="flex flex-col items-start gap-0.5"
+                                    >
+                                        <span className="font-medium">
+                                            Parcel copy
+                                        </span>
+                                        <span className="text-xs text-slate-500">
+                                            Available after the order is sent to
+                                            Steadfast or Pathao.
+                                        </span>
+                                    </DropdownMenuItem>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
                 </div>
 
                 {order.courierStatusConflict && (

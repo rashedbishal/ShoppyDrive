@@ -31,14 +31,17 @@ use App\Services\OrderPermanentDeletionService;
 use App\Services\RefundCalculator;
 use App\Services\RefundService;
 use App\Support\AdminListUrl;
+use App\Support\OrderInvoice;
 use App\Support\OrderNumberGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class OrderController extends Controller
 {
@@ -239,6 +242,21 @@ class OrderController extends Controller
         return redirect()->route('admin.orders.show', $order);
     }
 
+    /**
+     * DISC-38: the customer copy (same as the emailed invoice) or the parcel
+     * copy, which adds the courier and consignment ID and exists only once
+     * the order was booked with Steadfast or Pathao. None for a cancelled or
+     * refunded order.
+     */
+    public function invoice(Request $request, Order $order): SymfonyResponse
+    {
+        $copy = $request->validate([
+            'copy' => ['nullable', Rule::in([OrderInvoice::CUSTOMER_COPY, OrderInvoice::PARCEL_COPY])],
+        ])['copy'] ?? OrderInvoice::CUSTOMER_COPY;
+
+        return OrderInvoice::download($order, $copy);
+    }
+
     public function show(Order $order, RefundCalculator $refunds, CourierEvidenceChain $courierEvidence): Response
     {
         $order->load(['user:id,name,email,phone', 'items.product:id,name,slug', 'items.variant:id,attributes', 'statusHistories']);
@@ -295,6 +313,11 @@ class OrderController extends Controller
             // PAY-RETURN-001
             'refundSummary' => $refunds->summary($order),
             'courierEvidence' => $courierEvidence->displaySummary($order),
+            // DISC-38: which invoice copies Download offers (OrderInvoice rule).
+            'invoice' => [
+                'available' => OrderInvoice::isAvailable($order),
+                'parcel' => OrderInvoice::hasParcelCopy($order),
+            ],
             'canVerifyDelivery' => (bool) Auth::guard('admin')->user()?->is_mother,
             'canConfirmLostParcel' => (bool) Auth::guard('admin')->user()?->is_mother && $order->lost_confirmed_at === null,
         ]);

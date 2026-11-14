@@ -6,6 +6,7 @@ import {
     Calendar,
     ArrowRight,
     XCircle,
+    Download,
 } from 'lucide-react';
 import React, { useState } from 'react';
 
@@ -17,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
 import { useLiveSearch } from '@/hooks/use-live-search';
+import { orderHasInvoice } from '@/lib/order-invoice';
 import { formatCurrency, formatDate, getPrimaryImagePath } from '@/lib/utils';
 import type { Order, PaginatedData, SharedPageProps } from '@/types';
 
@@ -263,6 +265,26 @@ export default function Orders({
                                                             className="ml-2"
                                                         />
                                                     </Link>
+                                                </Button>
+                                            )}
+                                            {orderHasInvoice(order) && (
+                                                <Button
+                                                    asChild
+                                                    variant="outline"
+                                                    className="flex-1 rounded-xl border-[var(--color-border)] font-bold hover:bg-[var(--color-surface-alt)] sm:flex-none"
+                                                >
+                                                    <a
+                                                        href={route(
+                                                            'account.orders.invoice',
+                                                            order.order_number,
+                                                        )}
+                                                    >
+                                                        <Download
+                                                            size={16}
+                                                            className="mr-2"
+                                                        />
+                                                        Invoice
+                                                    </a>
                                                 </Button>
                                             )}
                                             {order.status === 'pending' && (

@@ -33,6 +33,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { orderHasInvoice } from '@/lib/order-invoice';
 import { formatCurrency, formatDate, getPrimaryImagePath } from '@/lib/utils';
 import type { Order, OrderItem, SharedPageProps } from '@/types';
 
@@ -252,17 +253,7 @@ export default function OrderDetail({
         );
     };
 
-    const canDownloadInvoice = (() => {
-        if (order.status === 'cancelled' || order.status === 'refunded') {
-            return false;
-        }
-
-        if (order.payment_method === 'cod') {
-            return order.status === 'delivered';
-        }
-
-        return true;
-    })();
+    const canDownloadInvoice = orderHasInvoice(order);
 
     const [returnDialogOpen, setReturnDialogOpen] = useState(false);
     const latestReturn = order.latest_return_request;

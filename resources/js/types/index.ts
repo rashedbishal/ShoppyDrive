@@ -369,6 +369,10 @@ export interface Order extends Timestamped, SoftDeletable {
     status: OrderStatus;
     payment_status: PaymentStatus;
     payment_method: PaymentMethod;
+    /** DISC-38: set by the order confirmation page (App\Support\OrderInvoice). */
+    invoice_available?: boolean;
+    /** DISC-38: Track Order only — a short-lived signed invoice download link. */
+    invoice_url?: string | null;
     subtotal: number;
     shipping_cost: number;
     discount: number;

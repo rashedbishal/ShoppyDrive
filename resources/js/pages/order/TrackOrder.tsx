@@ -8,6 +8,7 @@ import {
     AlertCircle,
     CheckCircle2,
     Loader2,
+    Download,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
@@ -424,7 +425,11 @@ export default function TrackOrder({
                                                 ))}
                                                 <div className="flex items-end justify-between border-t border-[var(--color-border)] pt-2.5">
                                                     <span className="font-bold text-[var(--color-text-primary)]">
-                                                        Total Paid
+                                                        {/* DISC-39: paid orders (bKash/Nagad, or COD once delivered) only. */}
+                                                        {order.payment_status ===
+                                                        'paid'
+                                                            ? 'Total Paid'
+                                                            : 'Total Payment'}
                                                     </span>
                                                     <span className="text-lg font-bold text-[var(--color-primary)]">
                                                         {formatCurrency(
@@ -434,6 +439,23 @@ export default function TrackOrder({
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* DISC-38: a 30-minute signed link, only sent after the order number plus phone/email matched; absent for cancelled/refunded orders. */}
+                                        {order.invoice_url && (
+                                            <Button
+                                                asChild
+                                                variant="outline"
+                                                className="h-11 w-full rounded-xl border-[var(--color-border)] font-bold hover:bg-[var(--color-surface-alt)]"
+                                            >
+                                                <a href={order.invoice_url}>
+                                                    <Download
+                                                        size={16}
+                                                        className="mr-2"
+                                                    />
+                                                    Download Invoice
+                                                </a>
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             </div>

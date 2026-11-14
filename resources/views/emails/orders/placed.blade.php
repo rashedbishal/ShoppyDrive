@@ -31,5 +31,8 @@
     </table>
 
     <p>Payment method: {{ strtoupper($order->payment_method->value) }}</p>
+    @if (\App\Support\OrderInvoice::isAvailable($order))
+        <p>Your invoice is attached to this email as a PDF.</p>
+    @endif
     <p>We'll email you again once it ships.</p>
 @endsection

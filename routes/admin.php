@@ -171,6 +171,8 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
     Route::delete('orders/incomplete/{incompleteOrder}', [IncompleteOrderController::class, 'destroy'])->name('orders.incomplete.destroy')->middleware(AdminSections::middleware('incomplete_orders', 'delete'));
 
     Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show')->middleware(AdminSections::middleware('orders', 'view'));
+    // DISC-38: customer copy or (after the courier booking) parcel copy.
+    Route::get('orders/{order}/invoice', [OrderController::class, 'invoice'])->name('orders.invoice')->middleware([AdminSections::middleware('orders', 'view'), 'throttle:60,1']);
     Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy')->middleware(AdminSections::middleware('orders', 'delete'));
     Route::patch('orders/{order}/restore', [OrderController::class, 'restore'])->name('orders.restore')->withTrashed()->middleware(AdminSections::middleware('trashed_orders', 'update'));
     // DB-001: permanent deletion is mother-admin only (no section permission

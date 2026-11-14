@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Exceptions\InsufficientStockException;
@@ -23,11 +22,11 @@ use App\Services\ShippingCostCalculator;
 use App\Support\BangladeshDistricts;
 use App\Support\BangladeshiPhone;
 use App\Support\CartManager;
+use App\Support\OrderInvoice;
 use App\Support\OrderNumberGenerator;
 use App\Support\PaidOrderStockFailure;
 use App\Support\SafeLogContext;
 use App\Support\SmsForwarderHeartbeat;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
@@ -798,25 +797,11 @@ class LandingPageController extends Controller
     {
         $order = Order::where('guest_token', $guestToken)->with('items')->firstOrFail();
 
-        // LP-INVOICE-STATUS-001: the same two rules account.php's invoice
-        // route already enforces — an invoice must never imply payment was
-        // received for an order that was cancelled/refunded (order status
-        // stays authoritative) or for a COD order not yet delivered. The
+        // LP-INVOICE-STATUS-001 / DISC-38: the same rules as every other
+        // invoice (OrderInvoice): none for a cancelled/refunded order; a COD
+        // order's invoice says "Payment Amount" until it is paid. The
         // guest_token itself remains this route's access control, unchanged.
-        $status = $order->status->value;
-        $isCod = $order->payment_method->value === 'cod';
-
-        if (in_array($status, ['cancelled', 'refunded'], true)) {
-            abort(403, 'Invoice is not available for cancelled or refunded orders.');
-        }
-
-        if ($isCod && $status !== OrderStatus::DELIVERED->value) {
-            abort(403, 'Invoice is only available after delivery for Cash on Delivery orders.');
-        }
-
-        $pdf = Pdf::loadView('invoices.order', ['order' => $order]);
-
-        return $pdf->download("invoice-{$order->order_number}.pdf");
+        return OrderInvoice::download($order);
     }
 
     /**

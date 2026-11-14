@@ -151,3 +151,23 @@ test('the live requirements check with no order number reports not found', funct
 
     $response->assertOk()->assertExactJson(['found' => false]);
 });
+
+test('DISC-39: the lookup sends the payment status, and the page labels the total from it', function () {
+    $page = (string) file_get_contents(resource_path('js/pages/order/TrackOrder.tsx'));
+
+    expect($page)->toContain('order.payment_status ===')
+        ->toContain("? 'Total Paid'")
+        ->toContain(": 'Total Payment'")
+        ->and(substr_count($page, 'Total Paid'))->toBe(1);
+});
+
+test('DISC-39: a COD order is sent as unpaid until paid, a paid order as paid', function () {
+    $order = createTrackableOrder();
+    $lookup = ['order_number' => $order->order_number, 'phone' => '01700000000'];
+
+    $this->get(route('order.track', $lookup))->assertInertia(fn ($page) => $page->where('order.payment_status', 'unpaid'));
+
+    $order->update(['payment_status' => 'paid']);
+
+    $this->get(route('order.track', $lookup))->assertInertia(fn ($page) => $page->where('order.payment_status', 'paid'));
+});

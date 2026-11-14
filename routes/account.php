@@ -12,7 +12,7 @@ use App\Models\Address;
 use App\Models\Order;
 use App\Models\Wishlist;
 use App\Services\OrderCancellationService;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Support\OrderInvoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -97,22 +97,9 @@ Route::middleware(['auth', 'verified', 'auth.session', 'account.active', 'histor
             abort(404);
         }
 
-        $status = $order->status->value;
-        $isCod = $order->payment_method->value === 'cod';
-
-        if (in_array($status, ['cancelled', 'refunded'])) {
-            abort(403, 'Invoice is not available for cancelled or refunded orders.');
-        }
-
-        if ($isCod && $status !== OrderStatus::DELIVERED->value) {
-            abort(403, 'Invoice is only available after delivery for Cash on Delivery orders.');
-        }
-
-        $order->load(['items.product', 'items.variant', 'user']);
-
-        $pdf = Pdf::loadView('invoices.order', ['order' => $order]);
-
-        return $pdf->download("invoice-{$order->order_number}.pdf");
+        // DISC-38: every non-cancelled/refunded order, COD included, from
+        // placement (owner decision 2026-11-14) — see OrderInvoice.
+        return OrderInvoice::download($order);
     })->middleware('throttle:invoice-download')->name('account.orders.invoice');
     Route::get('/referral', [ReferralController::class, 'index'])->name('account.referral');
     Route::post('/referral/daily-login', [ReferralController::class, 'claimDailyLogin'])->middleware('throttle:account-action')->name('account.referral.daily-login');

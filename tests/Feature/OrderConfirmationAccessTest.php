@@ -59,7 +59,9 @@ test('the customer who placed the order sees only the allow-listed confirmation 
             ->where('order.payment_method', 'cod')
             ->where('order.shipping_address.name', 'Confirmation Buyer')
             ->where('order.shipping_address.email', 'buyer@example.com')
-            ->has('order', 6)
+            // DISC-38: plus the invoice_available flag (no customer data).
+            ->where('order.invoice_available', true)
+            ->has('order', 7)
             ->missing('order.shipping_address.phone')
             ->missing('order.items')
             ->missing('order.user_id')
