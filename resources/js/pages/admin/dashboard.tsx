@@ -740,18 +740,18 @@ export default function Dashboard({
                     <Deferred
                         data="overview"
                         fallback={
-                            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 2xl:grid-cols-7">
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 2xl:grid-cols-8">
                                 {Array.from({ length: 7 }, (_, index) => (
                                     <Skeleton
                                         key={index}
-                                        className={`h-44 ${index === 6 ? 'col-span-2 2xl:col-span-1' : ''}`}
+                                        className={`h-44 ${index === 6 ? 'col-span-2' : ''}`}
                                     />
                                 ))}
                             </div>
                         }
                     >
                         {overview ? (
-                            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 2xl:grid-cols-7">
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 2xl:grid-cols-8">
                                 <KpiCard
                                     label="Revenue collected"
                                     icon={CircleDollarSign}
@@ -802,7 +802,8 @@ export default function Dashboard({
                                 ) : (
                                     <TodaySoFar today={overview.today} />
                                 )}
-                                <div className="col-span-2 2xl:col-span-1">
+                                {/* Two columns at every width: the ring and its text need ~400px side by side. */}
+                                <div className="col-span-2">
                                     <TargetRing
                                         target={overview.target}
                                         canEdit={access.edit_target}

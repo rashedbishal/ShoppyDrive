@@ -75,14 +75,14 @@ export default function Dashboard({
         <>
             <Head title="My Dashboard" />
 
-            <div className="space-y-8">
+            <div className="space-y-5">
                 {/* Header */}
-                <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
                     <div>
-                        <h1 className="mb-1 font-display text-3xl font-bold text-[var(--color-text-primary)]">
+                        <h1 className="mb-0.5 font-display text-2xl font-bold text-[var(--color-text-primary)]">
                             Account Dashboard
                         </h1>
-                        <p className="text-[var(--color-text-secondary)]">
+                        <p className="text-sm text-[var(--color-text-secondary)]">
                             Manage your orders, addresses and account settings
                             here.
                         </p>
@@ -98,36 +98,38 @@ export default function Dashboard({
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 md:gap-6">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     {stats.map((stat) => (
                         <Link
                             key={stat.label}
                             href={stat.href}
-                            className="group rounded-3xl border border-[var(--color-border)] bg-white p-6 shadow-sm transition-all hover:border-[var(--color-primary)]"
+                            className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-sm transition-all hover:border-[var(--color-primary)]"
                         >
                             <div
-                                className={`h-12 w-12 rounded-2xl ${stat.bg} ${stat.color} mb-4 flex items-center justify-center transition-transform group-hover:scale-110`}
+                                className={`h-10 w-10 shrink-0 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110`}
                             >
-                                <stat.icon size={24} />
+                                <stat.icon size={20} />
                             </div>
-                            <p className="mb-1 text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
-                                {stat.label}
-                            </p>
-                            <p className="text-xl font-bold text-[var(--color-text-primary)]">
-                                {stat.value}
-                            </p>
+                            <div className="min-w-0">
+                                <p className="mb-0.5 truncate text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
+                                    {stat.label}
+                                </p>
+                                <p className="truncate text-lg leading-tight font-bold text-[var(--color-text-primary)]">
+                                    {stat.value}
+                                </p>
+                            </div>
                         </Link>
                     ))}
                 </div>
 
                 {/* Recent Orders */}
-                <div className="overflow-hidden rounded-3xl border border-[var(--color-border)] bg-white shadow-sm">
-                    <div className="flex items-center justify-between border-b border-[var(--color-border)] p-6 md:p-8">
+                <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-sm">
+                    <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3 md:px-6">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-surface-alt)] text-[var(--color-primary)]">
-                                <Package size={20} />
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-surface-alt)] text-[var(--color-primary)]">
+                                <Package size={16} />
                             </div>
-                            <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
+                            <h2 className="text-base font-bold text-[var(--color-text-primary)]">
                                 Recent Orders
                             </h2>
                         </div>
@@ -140,14 +142,14 @@ export default function Dashboard({
                     </div>
 
                     {recentOrders.length === 0 ? (
-                        <div className="flex flex-col items-center px-8 py-20 text-center">
-                            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-surface-alt)] text-[var(--color-text-muted)]">
-                                <ShoppingBag size={32} />
+                        <div className="flex flex-col items-center px-6 py-12 text-center">
+                            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-surface-alt)] text-[var(--color-text-muted)]">
+                                <ShoppingBag size={24} />
                             </div>
-                            <h3 className="mb-1 text-lg font-bold text-[var(--color-text-primary)]">
+                            <h3 className="mb-1 text-base font-bold text-[var(--color-text-primary)]">
                                 No orders yet
                             </h3>
-                            <p className="mb-6 text-sm text-[var(--color-text-secondary)]">
+                            <p className="mb-4 text-sm text-[var(--color-text-secondary)]">
                                 Start shopping to see your orders here.
                             </p>
                             <Button
@@ -165,11 +167,21 @@ export default function Dashboard({
                             <table className="hidden w-full border-collapse text-left md:table">
                                 <thead>
                                     <tr className="bg-[var(--color-surface-alt)] text-[10px] font-bold tracking-widest text-[var(--color-text-secondary)] uppercase">
-                                        <th className="px-8 py-4">Order ID</th>
-                                        <th className="px-8 py-4">Date</th>
-                                        <th className="px-8 py-4">Status</th>
-                                        <th className="px-8 py-4">Items</th>
-                                        <th className="px-8 py-4">Total</th>
+                                        <th className="px-4 py-2.5 md:px-6">
+                                            Order ID
+                                        </th>
+                                        <th className="px-4 py-2.5 md:px-6">
+                                            Date
+                                        </th>
+                                        <th className="px-4 py-2.5 md:px-6">
+                                            Status
+                                        </th>
+                                        <th className="px-4 py-2.5 md:px-6">
+                                            Items
+                                        </th>
+                                        <th className="px-4 py-2.5 md:px-6">
+                                            Total
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[var(--color-border)]">
@@ -195,15 +207,15 @@ export default function Dashboard({
                                             }}
                                             className="group cursor-pointer transition-colors hover:bg-[var(--color-surface-alt)] focus-visible:bg-[var(--color-surface-alt)] focus-visible:outline-none"
                                         >
-                                            <td className="px-8 py-6">
+                                            <td className="px-4 py-3 md:px-6">
                                                 <span className="font-mono text-sm font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-primary)]">
                                                     #{order.order_number}
                                                 </span>
                                             </td>
-                                            <td className="px-8 py-6 text-sm text-[var(--color-text-secondary)]">
+                                            <td className="px-4 py-3 text-sm text-[var(--color-text-secondary)] md:px-6">
                                                 {formatDate(order.created_at)}
                                             </td>
-                                            <td className="px-8 py-6">
+                                            <td className="px-4 py-3 md:px-6">
                                                 <Badge
                                                     variant={statusVariant(
                                                         order.status,
@@ -213,13 +225,13 @@ export default function Dashboard({
                                                     {order.status}
                                                 </Badge>
                                             </td>
-                                            <td className="px-8 py-6 text-sm font-medium text-[var(--color-text-primary)]">
+                                            <td className="px-4 py-3 text-sm font-medium text-[var(--color-text-primary)] md:px-6">
                                                 {order.items.length}{' '}
                                                 {order.items.length === 1
                                                     ? 'item'
                                                     : 'items'}
                                             </td>
-                                            <td className="px-8 py-6">
+                                            <td className="px-4 py-3 md:px-6">
                                                 <span className="font-bold text-[var(--color-primary)]">
                                                     {formatCurrency(
                                                         order.total,
@@ -240,7 +252,7 @@ export default function Dashboard({
                                                 'account.orders.show',
                                                 order.order_number,
                                             )}
-                                            className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-[var(--color-surface-alt)]"
+                                            className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--color-surface-alt)]"
                                         >
                                             <div className="min-w-0 flex-1 space-y-1.5">
                                                 <div className="flex items-center justify-between gap-2">

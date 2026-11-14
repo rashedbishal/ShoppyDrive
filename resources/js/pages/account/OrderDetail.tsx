@@ -22,6 +22,7 @@ import { OrderTimeline } from '@/components/shared/OrderTimeline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
     Dialog,
     DialogContent,
@@ -113,7 +114,7 @@ function RequestReturnDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent appearance="premium" className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Request a return</DialogTitle>
                     <DialogDescription>
@@ -237,19 +238,29 @@ export default function OrderDetail({
     const { props } = usePage<SharedPageProps>();
     const { flash } = props;
 
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
+
     const handleCancel = () => {
-        if (
-            !confirm(
-                'Are you sure you want to cancel this order? This cannot be undone.',
-            )
-        ) {
+        setCancelDialogOpen(true);
+    };
+
+    const confirmCancel = () => {
+        if (cancelling) {
             return;
         }
 
         router.patch(
             route('account.orders.cancel', order.order_number),
             {},
-            { preserveScroll: true },
+            {
+                preserveScroll: true,
+                onStart: () => setCancelling(true),
+                onFinish: () => {
+                    setCancelling(false);
+                    setCancelDialogOpen(false);
+                },
+            },
         );
     };
 
@@ -669,6 +680,20 @@ export default function OrderDetail({
                 order={order}
                 open={returnDialogOpen}
                 onOpenChange={setReturnDialogOpen}
+            />
+
+            <ConfirmDialog
+                open={cancelDialogOpen}
+                onOpenChange={(open) =>
+                    !cancelling && setCancelDialogOpen(open)
+                }
+                title="Cancel this order?"
+                description={`Are you sure you want to cancel order #${order.order_number}? This cannot be undone.`}
+                confirmLabel="Cancel Order"
+                processingLabel="Cancelling…"
+                cancelLabel="Keep Order"
+                onConfirm={confirmCancel}
+                processing={cancelling}
             />
         </>
     );

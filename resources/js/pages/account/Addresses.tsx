@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { AddressCard } from '@/components/shared/AddressCard';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
@@ -160,10 +161,21 @@ export default function Addresses({
         }
     };
 
+    // The address awaiting the customer's confirmation to delete.
+    const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+
     const handleDelete = (id: number) => {
-        if (confirm('Are you sure you want to delete this address?')) {
-            form.delete(route('account.addresses.destroy', id));
+        setDeleteTargetId(id);
+    };
+
+    const confirmDelete = () => {
+        if (deleteTargetId === null || form.processing) {
+            return;
         }
+
+        form.delete(route('account.addresses.destroy', deleteTargetId), {
+            onFinish: () => setDeleteTargetId(null),
+        });
     };
 
     const handleSetDefault = (id: number) => {
@@ -457,6 +469,17 @@ export default function Addresses({
                     </div>
                 </form>
             </Modal>
+
+            <ConfirmDialog
+                open={deleteTargetId !== null}
+                onOpenChange={(open) =>
+                    !open && !form.processing && setDeleteTargetId(null)
+                }
+                title="Delete this address?"
+                description="Are you sure you want to delete this address? This cannot be undone."
+                onConfirm={confirmDelete}
+                processing={deleteTargetId !== null && form.processing}
+            />
         </>
     );
 }

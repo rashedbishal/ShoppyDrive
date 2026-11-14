@@ -55,6 +55,13 @@ class DashboardAnalytics
     /** Products with no sale in this many days count as slow movers. */
     public const SLOW_MOVER_DAYS = 60;
 
+    /**
+     * Traffic sources shown as their own bar; the rest are summed into one
+     * "Other" bar. Any utm_source value or referring site becomes a source,
+     * so without a cap the fixed-height chart would fill with unreadable slivers.
+     */
+    public const TRAFFIC_SOURCE_LIMIT = 6;
+
     /** @var array<string, Collection<int, object>> */
     private array $ordersMemo = [];
 
@@ -703,6 +710,32 @@ class DashboardAnalytics
         ];
     }
 
+    /**
+     * The busiest TRAFFIC_SOURCE_LIMIT sources, then the rest summed into one
+     * "other" row (at most LIMIT + 1 bars), so totals stay exact however many
+     * sources pile up.
+     *
+     * @param  Collection<int, array{source: string, orders: int, revenue: float}>  $sources  sorted by orders, busiest first
+     * @return list<array{source: string, orders: int, revenue: float}>
+     */
+    private function topTrafficSources(Collection $sources): array
+    {
+        if ($sources->count() <= self::TRAFFIC_SOURCE_LIMIT) {
+            return $sources->all();
+        }
+
+        // A source literally named "other" (?utm_source=other) joins the "other" row.
+        $named = $sources->reject(fn (array $row): bool => $row['source'] === 'other')->values();
+        $top = $named->take(self::TRAFFIC_SOURCE_LIMIT);
+        $rest = $sources->reject(fn (array $row): bool => $top->contains('source', $row['source']));
+
+        return $top->push([
+            'source' => 'other',
+            'orders' => (int) $rest->sum('orders'),
+            'revenue' => round((float) $rest->sum('revenue'), 2),
+        ])->all();
+    }
+
     // ── Marketing & traffic ─────────────────────────────────────────────────
 
     /**
@@ -733,16 +766,17 @@ class DashboardAnalytics
                 ->groupBy('term');
 
             return [
-                'traffic_sources' => $orders->groupBy(fn (object $order): string => $order->traffic_source ?: 'direct')
-                    ->map(fn (Collection $group, string $source): array => [
-                        'source' => $source,
-                        'orders' => $group->count(),
-                        'revenue' => round((float) $group->filter(fn (object $order): bool => $this->isCollected($order))
-                            ->sum(fn (object $order): float => (float) $order->total - ($refunds[$order->id] ?? 0.0)), 2),
-                    ])
-                    ->sortByDesc('orders')
-                    ->values()
-                    ->all(),
+                'traffic_sources' => $this->topTrafficSources(
+                    $orders->groupBy(fn (object $order): string => $order->traffic_source ?: 'direct')
+                        ->map(fn (Collection $group, string $source): array => [
+                            'source' => $source,
+                            'orders' => $group->count(),
+                            'revenue' => round((float) $group->filter(fn (object $order): bool => $this->isCollected($order))
+                                ->sum(fn (object $order): float => (float) $order->total - ($refunds[$order->id] ?? 0.0)), 2),
+                        ])
+                        ->sortByDesc('orders')
+                        ->values(),
+                ),
                 'devices' => [
                     'mobile' => (int) $visits->sum('mobile_visitors'),
                     'tablet' => (int) $visits->sum('tablet_visitors'),

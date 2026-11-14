@@ -5,7 +5,7 @@ import {
     Phone,
     Camera,
     Save,
-    ShieldCheck,
+    BadgeCheck,
     TriangleAlert,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
@@ -114,29 +114,28 @@ export default function Profile({
         <>
             <Head title="My Profile" />
 
-            <div className="space-y-8">
+            <div className="space-y-5">
                 {/* Header */}
                 <div>
-                    <h1 className="mb-1 font-display text-3xl font-bold text-[var(--color-text-primary)]">
+                    <h1 className="mb-0.5 font-display text-2xl font-bold text-[var(--color-text-primary)]">
                         Profile Information
                     </h1>
-                    <p className="text-[var(--color-text-secondary)]">
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                         Update your account details and manage how we
                         communicate with you.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-                    {/* Left: Form */}
-                    <div className="lg:col-span-8">
+                <div>
+                    <div className="space-y-4">
                         <form
                             onSubmit={handleSubmit}
-                            className="space-y-8 rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-sm md:p-10"
+                            className="space-y-5 rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-sm md:p-6"
                         >
                             {/* Avatar Upload */}
-                            <div className="flex flex-col items-center gap-8 border-b border-[var(--color-border)] pb-8 md:flex-row">
+                            <div className="flex flex-col items-center gap-5 border-b border-[var(--color-border)] pb-5 md:flex-row">
                                 <div className="group relative">
-                                    <Avatar className="h-32 w-32 border-4 border-white shadow-xl">
+                                    <Avatar className="h-20 w-20 border-2 border-white shadow-md">
                                         <AvatarImage
                                             src={
                                                 avatarPreview ||
@@ -146,7 +145,7 @@ export default function Profile({
                                                 undefined
                                             }
                                         />
-                                        <AvatarFallback className="bg-[var(--color-primary-light)] text-3xl font-bold text-[var(--color-primary)]">
+                                        <AvatarFallback className="bg-[var(--color-primary-light)] text-2xl font-bold text-[var(--color-primary)]">
                                             {getInitials(user.name)}
                                         </AvatarFallback>
                                     </Avatar>
@@ -158,8 +157,8 @@ export default function Profile({
                                         aria-label="Change profile photo"
                                         className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-black/40 text-white opacity-0 backdrop-blur-[2px] transition-opacity group-hover:opacity-100"
                                     >
-                                        <Camera size={24} className="mb-1" />
-                                        <span className="text-[10px] font-bold tracking-widest uppercase">
+                                        <Camera size={18} className="mb-0.5" />
+                                        <span className="text-[8px] font-bold tracking-widest uppercase">
                                             Change Photo
                                         </span>
                                     </button>
@@ -172,10 +171,10 @@ export default function Profile({
                                     />
                                 </div>
                                 <div className="text-center md:text-left">
-                                    <h3 className="mb-1 text-lg font-bold text-[var(--color-text-primary)]">
+                                    <h3 className="mb-0.5 text-base font-bold text-[var(--color-text-primary)]">
                                         Your Profile Photo
                                     </h3>
-                                    <p className="mb-4 text-sm text-[var(--color-text-secondary)]">
+                                    <p className="mb-2 text-sm text-[var(--color-text-secondary)]">
                                         Click your photo to upload a new one.
                                     </p>
                                     <div className="flex justify-center gap-2 md:justify-start">
@@ -186,7 +185,7 @@ export default function Profile({
                                                 type="button"
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-10 rounded-xl font-bold text-[var(--color-error)]"
+                                                className="h-8 rounded-lg px-3 font-bold text-[var(--color-error)]"
                                                 onClick={handleRemoveAvatar}
                                             >
                                                 Remove
@@ -196,9 +195,11 @@ export default function Profile({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">Full Name</Label>
+                            <div className="grid grid-cols-1 gap-x-5 gap-y-2 md:grid-cols-2">
+                                <div className="space-y-1">
+                                    <Label htmlFor="name" className="h-5">
+                                        Full Name
+                                    </Label>
                                     <div className="relative">
                                         <Input
                                             maxLength={100}
@@ -210,12 +211,12 @@ export default function Profile({
                                                     e.target.value,
                                                 )
                                             }
-                                            className="h-12 rounded-xl pl-12"
+                                            className="h-10 rounded-xl pl-10"
                                             required
                                         />
                                         <User
-                                            size={18}
-                                            className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
+                                            size={16}
+                                            className="absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--color-text-muted)]"
                                         />
                                     </div>
                                     {form.errors.name && (
@@ -224,8 +225,23 @@ export default function Profile({
                                         </p>
                                     )}
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="email">Email Address</Label>
+                                <div className="space-y-1 md:relative">
+                                    <div className="flex h-5 items-center justify-between gap-2">
+                                        <Label htmlFor="email">
+                                            Email Address
+                                        </Label>
+                                        {isUnverified ? (
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                                                <TriangleAlert size={12} />
+                                                Not verified
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-700">
+                                                <BadgeCheck size={12} />
+                                                Verified
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="relative">
                                         {emailLocked ? (
                                             <Input
@@ -234,7 +250,7 @@ export default function Profile({
                                                 value={user.email}
                                                 disabled
                                                 readOnly
-                                                className="h-12 rounded-xl pl-12"
+                                                className="h-10 rounded-xl pl-10"
                                             />
                                         ) : (
                                             <Input
@@ -249,70 +265,99 @@ export default function Profile({
                                                     )
                                                 }
                                                 autoComplete="username"
-                                                className="h-12 rounded-xl pl-12"
+                                                className="h-10 rounded-xl pl-10"
                                                 required
                                             />
                                         )}
                                         <Mail
-                                            size={18}
-                                            className="absolute top-1/2 left-4 -translate-y-1/2 text-[var(--color-text-muted)]"
+                                            size={16}
+                                            className="absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--color-text-muted)]"
                                         />
                                     </div>
                                     <InputError message={form.errors.email} />
-                                    <p className="text-[10px] font-medium text-[var(--color-text-secondary)] italic">
-                                        {emailLocked
-                                            ? 'Your email comes from your Google or Facebook sign-in, so it can’t be changed here.'
-                                            : isUnverified
-                                              ? 'Your email is not verified yet, so a change takes effect straight away.'
-                                              : 'To change your email we send a 6-digit code to your current address.'}
-                                    </p>
+                                    {/* From md up this sits beside Phone Number, so it doesn't make the Full Name row taller. */}
+                                    <div className="space-y-1 md:absolute md:inset-x-0 md:top-full md:mt-1">
+                                        <p className="text-[10px] font-medium text-[var(--color-text-secondary)] italic">
+                                            {emailLocked
+                                                ? 'Your email comes from your Google or Facebook sign-in, so it can’t be changed here.'
+                                                : isUnverified
+                                                  ? 'Your email is not verified yet, so a change takes effect straight away.'
+                                                  : 'To change your email we send a 6-digit code to your current address.'}
+                                        </p>
+                                        {isUnverified && (
+                                            <p className="text-[10px] leading-relaxed text-amber-800">
+                                                Verify your email to use your
+                                                account fully.{' '}
+                                                <Link
+                                                    href={route(
+                                                        'verification.send',
+                                                    )}
+                                                    method="post"
+                                                    as="button"
+                                                    className="font-bold underline"
+                                                >
+                                                    Resend the verification
+                                                    email
+                                                </Link>
+                                            </p>
+                                        )}
+                                        {isUnverified &&
+                                            status ===
+                                                'verification-link-sent' && (
+                                                <p className="text-[10px] font-bold text-green-700">
+                                                    A new verification message
+                                                    has been sent.
+                                                </p>
+                                            )}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <Label htmlFor="phone" className="h-5">
+                                        Phone Number
+                                    </Label>
+                                    <div className="relative">
+                                        <span className="absolute top-1/2 left-3.5 -translate-y-1/2 text-sm font-bold text-[var(--color-text-secondary)]">
+                                            +880
+                                        </span>
+                                        <Input
+                                            maxLength={20}
+                                            id="phone"
+                                            value={form.data.phone}
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'phone',
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder="1XXXXXXXXX"
+                                            className="h-10 rounded-xl pl-14"
+                                        />
+                                        <Phone
+                                            size={16}
+                                            className="absolute top-1/2 right-3.5 -translate-y-1/2 text-[var(--color-text-muted)]"
+                                        />
+                                    </div>
+                                    {form.errors.phone && (
+                                        <p className="text-xs font-bold text-[var(--color-error)]">
+                                            {form.errors.phone}
+                                        </p>
+                                    )}
+                                    {form.errors.avatar && (
+                                        <p className="text-xs font-bold text-[var(--color-error)]">
+                                            {form.errors.avatar}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
-                            <div className="max-w-md space-y-2">
-                                <Label htmlFor="phone">Phone Number</Label>
-                                <div className="relative">
-                                    <span className="absolute top-1/2 left-4 -translate-y-1/2 text-sm font-bold text-[var(--color-text-secondary)]">
-                                        +880
-                                    </span>
-                                    <Input
-                                        maxLength={20}
-                                        id="phone"
-                                        value={form.data.phone}
-                                        onChange={(e) =>
-                                            form.setData(
-                                                'phone',
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="1XXXXXXXXX"
-                                        className="h-12 rounded-xl pl-16"
-                                    />
-                                    <Phone
-                                        size={18}
-                                        className="absolute top-1/2 right-4 -translate-y-1/2 text-[var(--color-text-muted)]"
-                                    />
-                                </div>
-                                {form.errors.phone && (
-                                    <p className="text-xs font-bold text-[var(--color-error)]">
-                                        {form.errors.phone}
-                                    </p>
-                                )}
-                                {form.errors.avatar && (
-                                    <p className="text-xs font-bold text-[var(--color-error)]">
-                                        {form.errors.avatar}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="flex justify-end border-t border-[var(--color-border)] pt-6">
+                            <div className="flex justify-end border-t border-[var(--color-border)] pt-4">
                                 <Button
                                     type="submit"
                                     disabled={form.processing}
-                                    size="lg"
-                                    className="h-14 rounded-xl px-10 font-bold shadow-[var(--color-primary)]/20 shadow-lg"
+                                    className="h-10 rounded-xl px-6 font-bold shadow-[var(--color-primary)]/20 shadow-md"
                                 >
-                                    <Save size={20} className="mr-2" />
+                                    <Save size={16} className="mr-2" />
                                     {form.processing
                                         ? 'Saving...'
                                         : 'Save Changes'}
@@ -322,7 +367,7 @@ export default function Profile({
 
                         {/* SEC-009: an email change waits for the code sent to the current address. */}
                         {pendingEmailChange && (
-                            <div className="mt-6 space-y-4 rounded-3xl border border-amber-200 bg-amber-50 p-6">
+                            <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 md:p-5">
                                 <p className="text-sm text-[var(--color-text-primary)]">
                                     To change your email to{' '}
                                     <strong>
@@ -355,7 +400,7 @@ export default function Profile({
                                                     autoComplete="one-time-code"
                                                     maxLength={6}
                                                     required
-                                                    className="h-12 max-w-40 rounded-xl tracking-widest"
+                                                    className="h-10 max-w-40 rounded-xl tracking-widest"
                                                     placeholder="123456"
                                                 />
                                                 <InputError
@@ -381,9 +426,9 @@ export default function Profile({
                             </div>
                         )}
 
-                        <div className="mt-6 space-y-4 rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-sm">
+                        <div className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-sm md:p-6">
                             <div>
-                                <h3 className="text-lg font-bold text-[var(--color-text-primary)]">
+                                <h3 className="text-base font-bold text-[var(--color-text-primary)]">
                                     Email preferences
                                 </h3>
                                 <p className="text-sm text-[var(--color-text-secondary)]">
@@ -410,68 +455,8 @@ export default function Profile({
                             </div>
                         </div>
 
-                        <div className="mt-6 rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-sm">
+                        <div className="rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-sm md:p-6">
                             <DeleteUser />
-                        </div>
-                    </div>
-
-                    {/* Right: Verification */}
-                    <div className="lg:col-span-4">
-                        <div className="rounded-3xl border border-[var(--color-border)] bg-white p-8 shadow-sm">
-                            <h3 className="mb-6 flex items-center gap-2 text-sm font-bold tracking-widest text-[var(--color-text-primary)] uppercase">
-                                <ShieldCheck
-                                    size={18}
-                                    className="text-[var(--color-success)]"
-                                />
-                                Trust & Safety
-                            </h3>
-                            {isUnverified ? (
-                                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                                    <div className="mb-2 flex items-center justify-between">
-                                        <span className="text-xs font-bold text-amber-800">
-                                            Email not verified
-                                        </span>
-                                        <TriangleAlert
-                                            size={16}
-                                            className="text-amber-600"
-                                        />
-                                    </div>
-                                    <p className="text-[10px] leading-relaxed text-amber-800">
-                                        Verify your email to use your account
-                                        fully.{' '}
-                                        <Link
-                                            href={route('verification.send')}
-                                            method="post"
-                                            as="button"
-                                            className="font-bold underline"
-                                        >
-                                            Resend the verification email
-                                        </Link>
-                                    </p>
-                                    {status === 'verification-link-sent' && (
-                                        <p className="mt-2 text-[10px] font-bold text-green-700">
-                                            A new verification message has been
-                                            sent.
-                                        </p>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="rounded-2xl border border-green-100 bg-green-50 p-4">
-                                    <div className="mb-2 flex items-center justify-between">
-                                        <span className="text-xs font-bold text-green-800">
-                                            Email Verified
-                                        </span>
-                                        <ShieldCheck
-                                            size={16}
-                                            className="text-green-600"
-                                        />
-                                    </div>
-                                    <p className="text-[10px] leading-relaxed text-green-700">
-                                        Your email address is verified. This
-                                        helps us ensure your account's security.
-                                    </p>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>

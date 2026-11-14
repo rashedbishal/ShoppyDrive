@@ -75,7 +75,8 @@
       "Bash(sed -i '1364s/text-lg font-bold text-\\\\[var\\(--color-text-primary\\)\\\\] sm:text-xl/text-base font-bold text-[var\\(--color-text-primary\\)] sm:text-lg/' resources/js/pages/catalog/ProductDetail.tsx)",
       "mcp__laravel-boost__database-schema",
       "Bash(grep -n \"customer.name$\" -B3 -A8 resources/js/pages/admin/customers/index.tsx)",
-      "Bash(grep -v \"data-form-error$\")"
+      "Bash(grep -v \"data-form-error$\")",
+      "Bash(git log *)"
     ],
     "additionalDirectories": [
       "/media/saadman/data3/Projects/ShoppyDrive/resources/css",

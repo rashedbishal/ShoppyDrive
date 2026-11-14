@@ -89,6 +89,38 @@ test('revenue KPIs use collected money net of refunds, compared with the previou
         ->and(collect($overview['trend'])->sum('previous_revenue'))->toEqual(300);
 });
 
+test('traffic sources show the busiest few and sum the rest into one Other row', function () {
+    // Nine sources: "s1" has 9 orders, "s2" 8, … "s9" 1 (10 revenue per order, all paid).
+    foreach (range(1, 9) as $index) {
+        foreach (range(1, 10 - $index) as $ignored) {
+            insightsOrder([
+                'total' => 10,
+                'payment_status' => 'paid',
+                'status' => 'delivered',
+                'created_at' => now()->subDay(),
+            ])->forceFill(['traffic_source' => "s{$index}"])->save();
+        }
+    }
+
+    $sources = app(DashboardAnalytics::class)
+        ->marketing(insightsRange(['range' => '7d']), fn (): bool => true)['traffic_sources'];
+
+    expect($sources)->toHaveCount(DashboardAnalytics::TRAFFIC_SOURCE_LIMIT + 1)
+        ->and(array_column($sources, 'source'))->toBe(['s1', 's2', 's3', 's4', 's5', 's6', 'other'])
+        ->and(end($sources))->toBe(['source' => 'other', 'orders' => 6, 'revenue' => 60.0])
+        ->and(array_sum(array_column($sources, 'orders')))->toBe(45);
+});
+
+test('a few traffic sources are listed as they are, with no Other row', function () {
+    insightsOrder(['created_at' => now()->subDay()])->forceFill(['traffic_source' => 'facebook'])->save();
+    insightsOrder(['created_at' => now()->subDay()])->forceFill(['traffic_source' => null])->save();
+
+    $sources = app(DashboardAnalytics::class)
+        ->marketing(insightsRange(['range' => '7d']), fn (): bool => true)['traffic_sources'];
+
+    expect(array_column($sources, 'source'))->toEqualCanonicalizing(['facebook', 'direct']);
+});
+
 test('the mother admin gets every panel, and each one loads without errors', function () {
     $product = Product::factory()->create(['name' => 'Hoodie']);
     $customer = User::factory()->create();
