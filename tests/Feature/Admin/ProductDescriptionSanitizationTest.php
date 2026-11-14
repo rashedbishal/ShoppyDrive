@@ -23,6 +23,7 @@ test('creating a product strips malicious HTML from description', function () {
     actingAs($this->admin, 'admin');
 
     $response = $this->post(route('admin.products.store'), [
+        'stock_password' => 'password',
         'name' => 'Test Product',
         'slug' => 'test-product',
         'short_description' => 'A short description.',
@@ -53,7 +54,7 @@ test('updating a product preserves legitimate formatting in description', functi
         'sub_category_id' => $this->subCategory->id,
     ]);
 
-    $response = $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + [
+    $response = $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product), 'stock_password' => 'password'] + [
         'name' => $product->name,
         'slug' => $product->slug,
         'short_description' => 'A short description.',
@@ -77,6 +78,7 @@ test('a relative uploaded image URL in description survives sanitization', funct
     actingAs($this->admin, 'admin');
 
     $response = $this->post(route('admin.products.store'), [
+        'stock_password' => 'password',
         'name' => 'Test Product',
         'slug' => 'test-product',
         'short_description' => 'A short description.',

@@ -1,6 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { AnimatePresence } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AdminReveal } from '@/components/admin/admin-motion';
 import { FormPageHeader } from '@/components/admin/form-page-header';
 import {
@@ -9,6 +9,7 @@ import {
 } from '@/components/admin/product-form-field';
 import type { SpecificationRow } from '@/components/admin/ProductSpecificationsManager';
 import { ProductSpecificationsManager } from '@/components/admin/ProductSpecificationsManager';
+import { StockPasswordDialog } from '@/components/admin/ProductStockGuard';
 import type {
     VariantAttributeOption,
     VariantRow,
@@ -40,6 +41,7 @@ const FIELD_LABELS: Record<string, string> = {
     name: 'Product name',
     slug: 'Slug',
     sku: 'SKU',
+    stock_password: 'Password for the stock change',
     short_description: 'Short description',
     description: 'Description',
     category_id: 'Category',
@@ -99,35 +101,43 @@ export default function ProductCreate({
     variantAttributes,
 }: Props) {
     const listUrl = useAdminListUrl('admin.products.index');
-    const { data, setData, post, processing, errors, setError, clearErrors } =
-        useForm({
-            name: '',
-            slug: '',
-            sku: '',
-            short_description: '',
-            description: '',
-            specifications: [] as SpecificationRow[],
-            category_id: '',
-            sub_category_id: '',
-            brand_id: '',
-            price: '',
-            compare_price: '',
-            cost_price: '',
-            stock_quantity: '0',
-            low_stock_threshold: '5',
-            is_active: true,
-            is_featured: false,
-            variant_attribute_ids: [] as number[],
-            variants: [] as VariantRow[],
-            cry_baby_enabled: false,
-            images: [] as (File | string)[],
-            media_tags: [] as (string | null)[],
-            primary_image_index: null as number | null,
-            hover_image_index: null as number | null,
-            meta_title: '',
-            meta_description: '',
-            meta_keywords: '',
-        });
+    const {
+        data,
+        setData,
+        post,
+        transform,
+        processing,
+        errors,
+        setError,
+        clearErrors,
+    } = useForm({
+        name: '',
+        slug: '',
+        sku: '',
+        short_description: '',
+        description: '',
+        specifications: [] as SpecificationRow[],
+        category_id: '',
+        sub_category_id: '',
+        brand_id: '',
+        price: '',
+        compare_price: '',
+        cost_price: '',
+        stock_quantity: '0',
+        low_stock_threshold: '5',
+        is_active: true,
+        is_featured: false,
+        variant_attribute_ids: [] as number[],
+        variants: [] as VariantRow[],
+        cry_baby_enabled: false,
+        images: [] as (File | string)[],
+        media_tags: [] as (string | null)[],
+        primary_image_index: null as number | null,
+        hover_image_index: null as number | null,
+        meta_title: '',
+        meta_description: '',
+        meta_keywords: '',
+    });
 
     const hasVariants = data.variant_attribute_ids.length > 0;
 
@@ -246,7 +256,42 @@ export default function ProductCreate({
             return;
         }
 
-        post(route('admin.products.store'));
+        // Owner decision 2026-11-14: a new product's starting stock needs the
+        // admin's password (the server enforces it; this only asks first).
+        if (hasStartingStock()) {
+            setStockPasswordOpen(true);
+
+            return;
+        }
+
+        save(null);
+    };
+
+    const [stockPasswordOpen, setStockPasswordOpen] = useState(false);
+
+    const hasStartingStock = (): boolean =>
+        hasVariants
+            ? data.variants.some((row) => Number(row.stock_quantity || 0) > 0)
+            : Number(data.stock_quantity || 0) > 0;
+
+    const save = (stock: { password: string; reason: string } | null) => {
+        transform((formData) =>
+            stock
+                ? {
+                      ...formData,
+                      stock_password: stock.password,
+                      stock_reason: stock.reason,
+                  }
+                : formData,
+        );
+        post(route('admin.products.store'), {
+            onSuccess: () => setStockPasswordOpen(false),
+            onError: (formErrors) => {
+                if (formErrors.stock_password) {
+                    setStockPasswordOpen(true);
+                }
+            },
+        });
     };
 
     return (
@@ -917,6 +962,19 @@ export default function ProductCreate({
                     </div>
                 </form>
             </div>
+
+            <StockPasswordDialog
+                open={stockPasswordOpen}
+                processing={processing}
+                error={
+                    (errors as Record<string, string | undefined>)
+                        .stock_password
+                }
+                description="This new product starts with stock. Enter your password to create it. The starting stock is recorded in the Audit Trail."
+                confirmLabel="Create product"
+                onConfirm={(password, reason) => save({ password, reason })}
+                onClose={() => setStockPasswordOpen(false)}
+            />
         </>
     );
 }

@@ -28,6 +28,8 @@ final class AdminSections
     public const SECTIONS = [
         // Catalog
         'products' => ['label' => 'Products', 'group' => 'Catalog', 'abilities' => ['create', 'update', 'delete']],
+        // Owner decision 2026-11-14: manual stock add/remove (Stock Management).
+        'stock' => ['label' => 'Stock Management', 'group' => 'Catalog', 'abilities' => ['update']],
         'categories' => ['label' => 'Categories', 'group' => 'Catalog', 'abilities' => ['create', 'update', 'delete']],
         'sub_categories' => ['label' => 'Sub-categories', 'group' => 'Catalog', 'abilities' => ['create', 'update', 'delete']],
         'brands' => ['label' => 'Brands', 'group' => 'Catalog', 'abilities' => ['create', 'update', 'delete']],

@@ -1,6 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { AnimatePresence } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AdminReveal } from '@/components/admin/admin-motion';
 import { FormPageHeader } from '@/components/admin/form-page-header';
 import {
@@ -9,6 +9,10 @@ import {
 } from '@/components/admin/product-form-field';
 import type { SpecificationRow } from '@/components/admin/ProductSpecificationsManager';
 import { ProductSpecificationsManager } from '@/components/admin/ProductSpecificationsManager';
+import {
+    StockPasswordDialog,
+    useLiveProductStock,
+} from '@/components/admin/ProductStockGuard';
 import type {
     VariantAttributeOption,
     VariantRow,
@@ -83,6 +87,7 @@ type Product = {
 type Props = {
     product: Product;
     stockToken: string;
+    stockStateUrl: string;
     categories: { id: number; name: string }[];
     subCategories: { id: number; name: string; category_id: number }[];
     brands: { id: number; name: string }[];
@@ -137,74 +142,94 @@ function mediaTagFor(
 export default function ProductEdit({
     product,
     stockToken,
+    stockStateUrl,
     categories,
     subCategories,
     brands,
     variantAttributes,
 }: Props) {
     const listUrl = useAdminListUrl('admin.products.index');
-    const { data, setData, post, processing, errors, setError, clearErrors } =
-        useForm({
-            _method: 'PUT',
-            // Kept from when the form first loaded, even after a failed save:
-            // it proves the stock shown here is still current.
-            stock_token: stockToken,
-            name: product.name,
-            slug: product.slug,
-            sku: product.sku ?? '',
-            short_description: product.short_description ?? '',
-            description: product.description ?? '',
-            specifications: product.specifications ?? [],
-            category_id: product.category_id ? String(product.category_id) : '',
-            sub_category_id: product.sub_category_id
-                ? String(product.sub_category_id)
-                : '',
-            brand_id: product.brand_id ? String(product.brand_id) : '',
-            price: String(product.price),
-            compare_price: product.compare_price
-                ? String(product.compare_price)
-                : '',
-            cost_price: product.cost_price ? String(product.cost_price) : '',
-            stock_quantity: String(product.stock_quantity),
-            low_stock_threshold: String(product.low_stock_threshold),
-            is_active: product.is_active,
-            is_featured: product.is_featured,
-            free_delivery: product.free_delivery,
-            free_delivery_min_qty: product.free_delivery_min_qty
-                ? String(product.free_delivery_min_qty)
-                : '',
-            variant_attribute_ids: product.variant_attribute_ids ?? [],
-            variants: product.variants.map(
-                (v): VariantRow => ({
-                    value_ids: variantValueIds(v),
-                    sku: v.sku ?? '',
-                    price: String(v.price),
-                    compare_price: v.compare_price
-                        ? String(v.compare_price)
-                        : '',
-                    cost_price: v.cost_price ? String(v.cost_price) : '',
-                    stock_quantity: String(v.stock_quantity),
-                    low_stock_threshold: v.low_stock_threshold
-                        ? String(v.low_stock_threshold)
-                        : '5',
-                    is_default: v.is_default,
-                }),
-            ),
-            cry_baby_enabled: product.cry_baby_enabled,
-            images: product.media.length
-                ? product.media.map((m) => m.path)
-                : ([] as (File | string)[]),
-            media_tags: product.media.map((m) =>
-                mediaTagFor(m, product.variants, variantAttributes),
-            ) as (string | null)[],
-            primary_image_index: mediaFlagIndex(product.media, 'is_primary'),
-            hover_image_index: mediaFlagIndex(product.media, 'is_hover'),
-            meta_title: product.meta_title ?? '',
-            meta_description: product.meta_description ?? '',
-            meta_keywords: product.meta_keywords ?? '',
-        });
+    const {
+        data,
+        setData,
+        post,
+        transform,
+        processing,
+        errors,
+        setError,
+        clearErrors,
+    } = useForm({
+        _method: 'PUT',
+        // Kept from when the form first loaded, even after a failed save:
+        // it proves the stock shown here is still current.
+        stock_token: stockToken,
+        name: product.name,
+        slug: product.slug,
+        sku: product.sku ?? '',
+        short_description: product.short_description ?? '',
+        description: product.description ?? '',
+        specifications: product.specifications ?? [],
+        category_id: product.category_id ? String(product.category_id) : '',
+        sub_category_id: product.sub_category_id
+            ? String(product.sub_category_id)
+            : '',
+        brand_id: product.brand_id ? String(product.brand_id) : '',
+        price: String(product.price),
+        compare_price: product.compare_price
+            ? String(product.compare_price)
+            : '',
+        cost_price: product.cost_price ? String(product.cost_price) : '',
+        stock_quantity: String(product.stock_quantity),
+        low_stock_threshold: String(product.low_stock_threshold),
+        is_active: product.is_active,
+        is_featured: product.is_featured,
+        free_delivery: product.free_delivery,
+        free_delivery_min_qty: product.free_delivery_min_qty
+            ? String(product.free_delivery_min_qty)
+            : '',
+        variant_attribute_ids: product.variant_attribute_ids ?? [],
+        variants: product.variants.map(
+            (v): VariantRow => ({
+                value_ids: variantValueIds(v),
+                sku: v.sku ?? '',
+                price: String(v.price),
+                compare_price: v.compare_price ? String(v.compare_price) : '',
+                cost_price: v.cost_price ? String(v.cost_price) : '',
+                stock_quantity: String(v.stock_quantity),
+                low_stock_threshold: v.low_stock_threshold
+                    ? String(v.low_stock_threshold)
+                    : '5',
+                is_default: v.is_default,
+            }),
+        ),
+        cry_baby_enabled: product.cry_baby_enabled,
+        images: product.media.length
+            ? product.media.map((m) => m.path)
+            : ([] as (File | string)[]),
+        media_tags: product.media.map((m) =>
+            mediaTagFor(m, product.variants, variantAttributes),
+        ) as (string | null)[],
+        primary_image_index: mediaFlagIndex(product.media, 'is_primary'),
+        hover_image_index: mediaFlagIndex(product.media, 'is_hover'),
+        meta_title: product.meta_title ?? '',
+        meta_description: product.meta_description ?? '',
+        meta_keywords: product.meta_keywords ?? '',
+    });
 
     const hasVariants = data.variant_attribute_ids.length > 0;
+
+    const [stockPasswordOpen, setStockPasswordOpen] = useState(false);
+    const { conflicts: stockConflicts, stockChanged } = useLiveProductStock({
+        url: stockStateUrl,
+        initialProductStock: product.stock_quantity,
+        initialVariants: product.variants.map((v) => ({
+            valueIds: variantValueIds(v),
+            stock_quantity: v.stock_quantity,
+        })),
+        data,
+        setData,
+        paused: processing,
+    });
 
     const setImages = (files: (File | string)[]) => {
         setData((prev) => ({ ...prev, ...remapProductMedia(prev, files) }));
@@ -294,8 +319,34 @@ export default function ProductEdit({
             return;
         }
 
+        // Owner decision 2026-11-14: a stock change needs the admin's password.
+        if (stockChanged()) {
+            setStockPasswordOpen(true);
+
+            return;
+        }
+
+        save(null);
+    };
+
+    const save = (stock: { password: string; reason: string } | null) => {
+        transform((formData) =>
+            stock
+                ? {
+                      ...formData,
+                      stock_password: stock.password,
+                      stock_reason: stock.reason,
+                  }
+                : formData,
+        );
         post(route('admin.products.update', product.id), {
             forceFormData: true,
+            onSuccess: () => setStockPasswordOpen(false),
+            onError: (formErrors) => {
+                if (formErrors.stock_password) {
+                    setStockPasswordOpen(true);
+                }
+            },
         });
     };
 
@@ -313,6 +364,22 @@ export default function ProductEdit({
                     onSubmit={handleSubmit}
                     className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]"
                 >
+                    {stockConflicts.length > 0 && (
+                        <div className="lg:col-span-2">
+                            <Alert variant="warning">
+                                <AlertTitle>
+                                    Stock changed while you were editing
+                                </AlertTitle>
+                                <AlertDescription>
+                                    {stockConflicts.join(', ')} changed
+                                    elsewhere (an order, a cancellation or Stock
+                                    Management). Your typed value was kept;
+                                    reload the page to see the latest stock
+                                    before saving.
+                                </AlertDescription>
+                            </Alert>
+                        </div>
+                    )}
                     <AnimatePresence initial={false}>
                         {errorMessages.length > 0 && (
                             <AdminReveal
@@ -1029,6 +1096,17 @@ export default function ProductEdit({
                     </div>
                 </form>
             </div>
+
+            <StockPasswordDialog
+                open={stockPasswordOpen}
+                processing={processing}
+                error={
+                    (errors as Record<string, string | undefined>)
+                        .stock_password
+                }
+                onConfirm={(password, reason) => save({ password, reason })}
+                onClose={() => setStockPasswordOpen(false)}
+            />
         </>
     );
 }

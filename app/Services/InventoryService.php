@@ -15,6 +15,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\ReturnRequest;
+use App\Support\OrderNotificationRecipients;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -370,22 +371,25 @@ class InventoryService
      * Queued + afterCommit() for the same reasons as every other mail
      * dispatched from order creation: never let a mail failure affect
      * the order, and never alert for a decrement that gets rolled back.
+     * Also used by StockAdjustmentService for manual stock changes.
      */
-    private function maybeAlertLowStock(string $productName, ?string $sku, int $before, int $after, ?int $threshold): void
+    public function maybeAlertLowStock(string $productName, ?string $sku, int $before, int $after, ?int $threshold): void
     {
         if ($threshold === null || $before <= $threshold || $after > $threshold) {
             return;
         }
 
-        $adminEmail = Admin::where('is_mother', true)->value('email');
+        // Owner decision 2026-11-14: the "Stock Alert Email" setting, else
+        // the main admin (the previous recipient).
+        $recipient = OrderNotificationRecipients::stockAlert();
 
-        if (! $adminEmail) {
-            Log::warning('No mother admin configured — skipping low-stock alert.', ['product' => $productName]);
+        if (! $recipient) {
+            Log::warning('No stock alert email or mother admin configured — skipping low-stock alert.', ['product' => $productName]);
 
             return;
         }
 
-        Mail::to($adminEmail)->send((new LowStockAlertMail($productName, $sku, $after, $threshold))->afterCommit());
+        Mail::to($recipient)->send((new LowStockAlertMail($productName, $sku, $after, $threshold))->afterCommit());
     }
 
     /**

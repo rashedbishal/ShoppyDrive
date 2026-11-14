@@ -262,6 +262,7 @@ test('a product image upload accepts a valid JPEG and still accepts a genuine vi
     actingAs($admin, 'admin');
 
     $response = $this->post(route('admin.products.store'), [
+        'stock_password' => 'x',
         'name' => 'Good Product', 'slug' => 'good-product',
         'short_description' => 'A short description.',
         'description' => '<p>A full description.</p>',
@@ -284,6 +285,7 @@ test('a product image upload rejects an SVG disguised with a .jpg extension', fu
     actingAs($admin, 'admin');
 
     $response = $this->post(route('admin.products.store'), [
+        'stock_password' => 'x',
         'name' => 'Evil Product', 'slug' => 'evil-product',
         'short_description' => 'A short description.',
         'description' => '<p>A full description.</p>',
@@ -314,6 +316,7 @@ test('a product image upload of exactly 5MB is accepted', function () {
     [, $category, $subCategory] = fsa20ProductFixture();
 
     $response = $this->post(route('admin.products.store'), [
+        'stock_password' => 'x',
         'name' => 'Exact Image', 'slug' => 'exact-image',
         'short_description' => 'A short description.',
         'description' => '<p>A full description.</p>',
@@ -330,6 +333,7 @@ test('a product image upload larger than 5MB is rejected', function () {
     [, $category, $subCategory] = fsa20ProductFixture();
 
     $response = $this->post(route('admin.products.store'), [
+        'stock_password' => 'x',
         'name' => 'Oversized Image', 'slug' => 'oversized-image',
         'short_description' => 'A short description.',
         'description' => '<p>A full description.</p>',
@@ -346,6 +350,7 @@ test('a product video upload of exactly 50MB is accepted', function () {
     [, $category, $subCategory] = fsa20ProductFixture();
 
     $response = $this->post(route('admin.products.store'), [
+        'stock_password' => 'x',
         'name' => 'Exact Video', 'slug' => 'exact-video',
         'short_description' => 'A short description.',
         'description' => '<p>A full description.</p>',
@@ -362,6 +367,7 @@ test('a product video upload larger than 50MB is rejected', function () {
     [, $category, $subCategory] = fsa20ProductFixture();
 
     $response = $this->post(route('admin.products.store'), [
+        'stock_password' => 'x',
         'name' => 'Oversized Video', 'slug' => 'oversized-video',
         'short_description' => 'A short description.',
         'description' => '<p>A full description.</p>',
@@ -378,6 +384,7 @@ test('exactly 10 newly uploaded media files are accepted', function () {
     [, $category, $subCategory] = fsa20ProductFixture();
 
     $response = $this->post(route('admin.products.store'), [
+        'stock_password' => 'x',
         'name' => 'Ten Files', 'slug' => 'ten-files',
         'short_description' => 'A short description.',
         'description' => '<p>A full description.</p>',
@@ -396,6 +403,7 @@ test('11 newly uploaded media files are rejected in one submission', function ()
     [, $category, $subCategory] = fsa20ProductFixture();
 
     $response = $this->post(route('admin.products.store'), [
+        'stock_password' => 'x',
         'name' => 'Eleven Files', 'slug' => 'eleven-files',
         'short_description' => 'A short description.',
         'description' => '<p>A full description.</p>',
@@ -462,6 +470,7 @@ test('a mixed batch containing one oversized file is rejected without storing an
     [, $category, $subCategory] = fsa20ProductFixture();
 
     $response = $this->post(route('admin.products.store'), [
+        'stock_password' => 'x',
         'name' => 'Mixed Batch', 'slug' => 'mixed-batch',
         'short_description' => 'A short description.',
         'description' => '<p>A full description.</p>',

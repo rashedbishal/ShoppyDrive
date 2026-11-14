@@ -25,6 +25,9 @@ class OrderNotificationRecipients
 
     public const CANCELLATION_KEY = 'order_cancellation_email';
 
+    /** Owner decision 2026-11-14: low-stock alerts, from any cause. */
+    public const STOCK_ALERT_KEY = 'stock_alert_email';
+
     public static function newOrder(): ?string
     {
         return self::configured(self::NEW_ORDER_KEY) ?? self::motherAdmin();
@@ -33,6 +36,11 @@ class OrderNotificationRecipients
     public static function cancellation(): ?string
     {
         return self::configured(self::CANCELLATION_KEY) ?? self::motherAdmin();
+    }
+
+    public static function stockAlert(): ?string
+    {
+        return self::configured(self::STOCK_ALERT_KEY) ?? self::motherAdmin();
     }
 
     private static function configured(string $key): ?string

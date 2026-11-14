@@ -48,6 +48,8 @@ function uniqueTestMigration(): object
 function variantFormPayload(array $rows, array $overrides = []): array
 {
     return array_merge([
+        // Owner decision 2026-11-14: starting stock and stock changes need the admin's password.
+        'stock_password' => 'password',
         'name' => 'Unique Shirt',
         'slug' => 'unique-shirt',
         'short_description' => 'A short description.',
@@ -71,7 +73,8 @@ function productWithSkus(array $rows): Product
 
 function saveProduct(Product $product, array $rows): TestResponse
 {
-    return test()->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + variantFormPayload($rows));
+    // Owner decision 2026-11-14: a save that adds or removes stocked variants needs the admin's password.
+    return test()->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product), 'stock_password' => 'password'] + variantFormPayload($rows));
 }
 
 test('the database refuses a duplicate SKU', function () {

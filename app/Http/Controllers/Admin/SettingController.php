@@ -80,7 +80,7 @@ class SettingController extends Controller
         'site_name', 'logo', 'loading_logo', 'favicon', 'loading_spin_seconds', 'loading_ring_size', 'loading_logo_size',
         'loading_ring_thickness', 'currency_symbol', 'guest_checkout_enabled',
         'review_images_enabled', 'review_images_max',
-        'order_notification_email', 'order_cancellation_email',
+        'order_notification_email', 'order_cancellation_email', 'stock_alert_email',
         'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number', 'social_links',
     ];
 
@@ -142,6 +142,9 @@ class SettingController extends Controller
             // (see OrderNotificationRecipients); empty means the main admin.
             'order_notification_email' => ['nullable', 'email', 'max:150'],
             'order_cancellation_email' => ['nullable', 'email', 'max:150'],
+            // Low-stock alerts from any cause (orders or manual changes);
+            // empty means the main admin.
+            'stock_alert_email' => ['nullable', 'email', 'max:150'],
             'contact_phone' => ['nullable', 'string', 'max:30'],
             'contact_address' => ['nullable', 'string', 'max:300'],
             'legal_business_name' => ['nullable', 'string', 'max:150'],
@@ -298,7 +301,7 @@ class SettingController extends Controller
         $fields = [
             'site_name', 'contact_email', 'contact_phone', 'contact_address', 'currency_symbol',
             'legal_business_name', 'trade_licence_number',
-            'order_notification_email', 'order_cancellation_email',
+            'order_notification_email', 'order_cancellation_email', 'stock_alert_email',
             'social_links',
             'whatsapp_number', 'messenger_link', 'bkash_number', 'nagad_number',
             'google_client_id', 'google_client_secret', 'google_redirect_uri',

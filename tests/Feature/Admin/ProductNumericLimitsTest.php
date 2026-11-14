@@ -23,6 +23,8 @@ beforeEach(function () {
 function numericLimitPayload(array $overrides = []): array
 {
     return array_merge([
+        // Owner decision 2026-11-14: starting stock and stock changes need the admin's password.
+        'stock_password' => 'password',
         'name' => 'Limit Product',
         'slug' => 'limit-product',
         'short_description' => 'A short description.',

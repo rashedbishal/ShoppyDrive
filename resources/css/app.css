@@ -1213,6 +1213,22 @@ body:has(.admin-shell) {
 }
 
 /*
+ * Select dropdown lists in the CMS are always solid white. The storefront
+ * theme is set on <html>, so it also applies to admin pages, and the glass
+ * themes make `--color-surface` translucent on purpose (their panels add a
+ * backdrop blur), which let the rows behind an open admin list show through.
+ * The storefront keeps its themed lists.
+ */
+body:has(.admin-shell) [data-select-options-panel] {
+    border-color: #e2e8f0;
+    background-color: #ffffff;
+    color: #0f172a;
+    /* The options read these; a dark theme would make them light-on-white. */
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #334155;
+}
+
+/*
  * Toasts are always solid. They used to read `--popover`, which doesn't exist
  * (only `--ui-popover` does), so the background resolved to nothing and the
  * page showed through. Fixed light colours regardless of the Sonner theme (a

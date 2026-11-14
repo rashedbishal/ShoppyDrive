@@ -6,6 +6,7 @@ import {
     Award,
     Ban,
     Bot,
+    Boxes,
     ChevronDown,
     DatabaseBackup,
     FileText,
@@ -95,6 +96,13 @@ const navSections: NavSection[] = [
                 icon: Package,
                 extraMatches: [] as string[],
                 section: 'products',
+            },
+            {
+                label: 'Stock Management',
+                href: '/admin/stock',
+                icon: Boxes,
+                extraMatches: [] as string[],
+                section: 'stock',
             },
             {
                 label: 'Categories',

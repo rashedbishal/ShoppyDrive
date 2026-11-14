@@ -109,6 +109,7 @@ test('admin can create a product with the cry baby easter egg enabled', function
 
     actingAs($this->admin, 'admin')
         ->post(route('admin.products.store'), [
+            'stock_password' => 'password',
             'name' => 'Crying Toy',
             'slug' => 'crying-toy',
             'short_description' => 'A short description.',

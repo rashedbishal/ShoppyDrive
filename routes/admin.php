@@ -47,6 +47,7 @@ use App\Http\Controllers\Admin\SecuritySettingsController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SmsForwarderSettingsController;
 use App\Http\Controllers\Admin\SmsPatternController;
+use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\StorageCleanupController;
 use App\Http\Controllers\Admin\SubCategoryController;
 use App\Http\Controllers\Admin\SystemMonitorController;
@@ -105,6 +106,10 @@ Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'hi
 
     Route::patch('products/cry-baby', [ProductController::class, 'updateCryBabyForAll'])->name('products.cry-baby.update-all')->middleware(AdminSections::middleware('products', 'update'));
     $guardResource(Route::resource('products', ProductController::class)->except(['show']), 'products');
+    Route::get('products/{product}/stock-state', [ProductController::class, 'stockState'])->name('products.stock-state')->middleware(AdminSections::middleware('products', 'view'));
+    // Owner decisions 2026-11-14: Stock Management (manual add/remove).
+    Route::get('stock', [StockController::class, 'index'])->name('stock.index')->middleware(AdminSections::middleware('stock', 'view'));
+    Route::post('stock/adjust', [StockController::class, 'adjust'])->name('stock.adjust')->middleware(AdminSections::middleware('stock', 'update'));
 
     Route::get('attributes', [AttributeController::class, 'index'])->name('attributes.index')->middleware(AdminSections::middleware('attributes', 'view'));
     $guardResource(Route::resource('attributes', AttributeController::class)->only(['store', 'update', 'destroy']), 'attributes');

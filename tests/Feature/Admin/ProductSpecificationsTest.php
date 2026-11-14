@@ -24,6 +24,8 @@ beforeEach(function () {
 function specProductPayload(array $overrides = []): array
 {
     return array_merge([
+        // Owner decision 2026-11-14: starting stock and stock changes need the admin's password.
+        'stock_password' => 'password',
         'name' => 'Spec Product',
         'slug' => 'spec-product',
         'short_description' => 'A short description.',
@@ -77,7 +79,7 @@ test('updating a product replaces its specifications', function () {
         'specifications' => [['key' => 'Old Key', 'value' => 'Old Value']],
     ]);
 
-    $this->put(route('admin.products.update', $product), specProductPayload([
+    $this->put(route('admin.products.update', $product), specProductPayload(['stock_password' => 'password',
         'slug' => $product->slug,
         'stock_token' => ProductStockToken::for($product),
         'specifications' => [['key' => 'New Key', 'value' => 'New Value']],

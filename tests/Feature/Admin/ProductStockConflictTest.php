@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\AttributeType;
+use App\Enums\InventoryType;
 use App\Models\Attribute;
 use App\Models\AttributeValue;
 use App\Models\Category;
@@ -61,6 +62,8 @@ function flatSavePayload(Product $product, string $token, array $overrides = [])
 {
     return array_merge([
         'stock_token' => $token,
+        // Owner decision 2026-11-14: a stock change on the edit form needs the admin's password.
+        'stock_password' => 'password',
         'name' => 'Changed Name',
         'slug' => $product->slug,
         'short_description' => 'A short description.',
@@ -122,8 +125,13 @@ test('an unchanged form saves new stock, as before', function () {
 
     expect($product->refresh()->stock_quantity)->toBe(99);
     expect($product->name)->toBe('Changed Name');
-    expect(InventoryLog::query()->count())->toBe($logs);
+    // Owner decision 2026-11-14: a manual stock change from the edit form is
+    // recorded like one from Stock Management (one ADJUSTMENT row, one
+    // "stock_adjusted" Audit Trail entry).
+    expect(InventoryLog::query()->count())->toBe($logs + 1);
+    expect(InventoryLog::query()->latest('id')->first()->type)->toBe(InventoryType::ADJUSTMENT);
     expect(Activity::query()->where('subject_type', Product::class)->where('subject_id', $product->id)->where('event', 'updated')->count())->toBe(1);
+    expect(Activity::query()->where('log_name', 'stock')->where('event', 'stock_adjusted')->count())->toBe(1);
 });
 
 test('an unchanged form saves new variant stock', function () {

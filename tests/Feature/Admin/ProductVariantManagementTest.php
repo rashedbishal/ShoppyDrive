@@ -41,6 +41,8 @@ beforeEach(function () {
 function baseProductPayload(array $overrides = []): array
 {
     $payload = array_merge([
+        // Owner decision 2026-11-14: starting stock and stock changes need the admin's password.
+        'stock_password' => 'password',
         'name' => 'Test Product',
         'slug' => 'test-product',
         'short_description' => 'A short description.',
@@ -366,7 +368,7 @@ test('a product can resubmit its own existing variant SKU without self-conflicti
         'attributes' => ['Color' => 'Red'], 'is_default' => true,
     ]);
 
-    $response = $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + baseProductPayload([
+    $response = $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product), 'stock_password' => 'password'] + baseProductPayload([
         'category_id' => $this->category->id,
         'sub_category_id' => $this->subCategory->id,
         'has_color_variant' => true,
@@ -523,7 +525,8 @@ test('turning off a size variant that has an order-frozen combo detaches it from
     ]);
 
     // Admin turns the "Has Size Variant" toggle off, leaving only a blue, size-less variant.
-    $response = $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + baseProductPayload([
+    // The new size-less variant starts with stock, so the save needs the admin's password.
+    $response = $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product), 'stock_password' => 'password'] + baseProductPayload([
         'category_id' => $this->category->id,
         'sub_category_id' => $this->subCategory->id,
         'has_color_variant' => true,

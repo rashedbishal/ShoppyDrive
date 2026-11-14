@@ -27,6 +27,8 @@ beforeEach(function () {
 function cleanupProductPayload(array $overrides = []): array
 {
     return array_merge([
+        // Owner decision 2026-11-14: starting stock and stock changes need the admin's password.
+        'stock_password' => 'password',
         'name' => 'Cleanup Product',
         'slug' => 'cleanup-product',
         'short_description' => 'A short description.',

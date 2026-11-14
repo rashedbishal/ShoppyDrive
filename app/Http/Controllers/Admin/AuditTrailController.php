@@ -28,6 +28,8 @@ class AuditTrailController extends Controller
     private const LOG_NAME_LABELS = [
         'admin' => 'Admin Activity',
         'orders' => 'Order Activity',
+        // Owner decision 2026-11-14: manual stock changes (StockAdjustmentService).
+        'stock' => 'Stock Activity',
     ];
 
     public function index(Request $request): Response|RedirectResponse

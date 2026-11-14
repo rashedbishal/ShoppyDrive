@@ -40,6 +40,8 @@ beforeEach(function () {
 function atomicProductPayload(array $overrides = []): array
 {
     return array_merge([
+        // Owner decision 2026-11-14: starting stock and stock changes need the admin's password.
+        'stock_password' => 'password',
         'name' => 'Atomic Shirt',
         'slug' => 'atomic-shirt',
         'short_description' => 'A short description.',
@@ -160,7 +162,7 @@ test('a failed update keeps the previous data and files, and removes new uploads
     [$product, $oldPath] = existingProductWithMedia();
     failOn($model, $event);
 
-    expect(fn () => $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + atomicProductPayload([
+    expect(fn () => $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product), 'stock_password' => 'password'] + atomicProductPayload([
         'name' => 'Changed Shirt',
         'images' => [UploadedFile::fake()->image('new.jpg')],
     ])))->toThrow(RuntimeException::class, 'Simulated failure.');
@@ -183,7 +185,7 @@ test('a successful update replaces media rows and keeps the old file for order h
         'price' => 100, 'quantity' => 1, 'subtotal' => 100, 'product_snapshot' => ['image' => $oldPath],
     ]);
 
-    $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + atomicProductPayload([
+    $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product), 'stock_password' => 'password'] + atomicProductPayload([
         'name' => 'Changed Shirt',
         'images' => [UploadedFile::fake()->image('new.jpg')],
     ]))->assertRedirect(route('admin.products.index'));
@@ -200,7 +202,7 @@ test('a successful update replaces media rows and keeps the old file for order h
 test('an update keeping its existing media keeps the same path', function () {
     [$product, $oldPath] = existingProductWithMedia();
 
-    $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + atomicProductPayload(['images' => [$oldPath]]))->assertRedirect();
+    $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product), 'stock_password' => 'password'] + atomicProductPayload(['images' => [$oldPath]]))->assertRedirect();
 
     expect($product->media()->pluck('path')->all())->toBe([$oldPath]);
     expect(Storage::disk('public')->allFiles('products'))->toBe(['products/old.jpg']);
@@ -209,7 +211,7 @@ test('an update keeping its existing media keeps the same path', function () {
 test('an update that sends no images leaves media alone', function () {
     [$product, $oldPath] = existingProductWithMedia();
 
-    $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + atomicProductPayload())->assertRedirect();
+    $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product), 'stock_password' => 'password'] + atomicProductPayload())->assertRedirect();
 
     expect($product->media()->pluck('path')->all())->toBe([$oldPath]);
 });
@@ -223,7 +225,7 @@ test('an update keeping its existing video media keeps its video type', function
     $product = Product::factory()->create(['category_id' => $this->category->id, 'has_color_variant' => true]);
     $product->media()->create(['path' => '/storage/products/clip.mp4', 'type' => 'video', 'is_primary' => true, 'sort_order' => 0]);
 
-    $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + atomicProductPayload([
+    $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product), 'stock_password' => 'password'] + atomicProductPayload([
         'images' => ['/storage/products/clip.mp4'],
     ]))->assertRedirect();
 
@@ -233,7 +235,7 @@ test('an update keeping its existing video media keeps its video type', function
 test('an update keeping its existing image media keeps its image type', function () {
     [$product, $oldPath] = existingProductWithMedia();
 
-    $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product)] + atomicProductPayload(['images' => [$oldPath]]))->assertRedirect();
+    $this->put(route('admin.products.update', $product), ['stock_token' => ProductStockToken::for($product), 'stock_password' => 'password'] + atomicProductPayload(['images' => [$oldPath]]))->assertRedirect();
 
     expect(ProductMedia::where('product_id', $product->id)->firstOrFail()->type)->toBe('image');
 });

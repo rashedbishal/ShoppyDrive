@@ -24,6 +24,8 @@ beforeEach(function () {
 function keywordProductPayload(array $overrides = []): array
 {
     return array_merge([
+        // Owner decision 2026-11-14: starting stock and stock changes need the admin's password.
+        'stock_password' => 'password',
         'name' => 'শার্ট',
         'slug' => 'bangla-shirt',
         'short_description' => 'A short description.',
@@ -63,7 +65,7 @@ test('updating a product replaces its search keywords', function () {
         'meta_keywords' => 'old keyword',
     ]);
 
-    $this->put(route('admin.products.update', $product), keywordProductPayload([
+    $this->put(route('admin.products.update', $product), keywordProductPayload(['stock_password' => 'password',
         'slug' => $product->slug,
         'stock_token' => ProductStockToken::for($product),
         'meta_keywords' => 'shirt, formal shirt',

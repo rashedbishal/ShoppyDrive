@@ -106,6 +106,7 @@ test('creating a product still opens the first page, where the new product is li
 
     actingAs($this->admin, 'admin')
         ->post(route('admin.products.store'), [
+            'stock_password' => 'password',
             'name' => 'Brand new product',
             'slug' => 'brand-new-product',
             'short_description' => 'A short description.',

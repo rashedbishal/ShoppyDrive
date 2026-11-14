@@ -188,6 +188,7 @@ export default function SettingsEdit({ settings }: Props) {
             (settings.order_notification_email as string) ?? '',
         order_cancellation_email:
             (settings.order_cancellation_email as string) ?? '',
+        stock_alert_email: (settings.stock_alert_email as string) ?? '',
         logo:
             (settings.logo as string | null) ?? (null as File | string | null),
         loading_logo:
@@ -611,7 +612,7 @@ export default function SettingsEdit({ settings }: Props) {
                         <CardContent className="space-y-4 pt-3">
                             <p className="text-xs text-slate-600">
                                 Customers always get their own order
-                                confirmation and cancellation emails. These two
+                                confirmation and cancellation emails. These
                                 fields set which shop email address is told
                                 about each event. Leave a field empty to send it
                                 to the main admin's login email instead.
@@ -670,6 +671,34 @@ export default function SettingsEdit({ settings }: Props) {
                                     {errors.order_cancellation_email && (
                                         <p className="mt-1 text-xs font-medium text-red-600">
                                             {errors.order_cancellation_email}
+                                        </p>
+                                    )}
+                                </SettingsField>
+                                <SettingsField
+                                    label="Stock Alert Email"
+                                    hint="Receives low-stock alerts, whether stock fell through an order or a manual change."
+                                >
+                                    <input
+                                        maxLength={150}
+                                        type="email"
+                                        className={settingsInputClass}
+                                        value={data.stock_alert_email}
+                                        onChange={(e) =>
+                                            setData(
+                                                'stock_alert_email',
+                                                e.target.value,
+                                            )
+                                        }
+                                        placeholder="stock@yourshop.com"
+                                    />
+                                    <CharCount
+                                        value={data.stock_alert_email}
+                                        max={150}
+                                        className="mt-1 block text-right"
+                                    />
+                                    {errors.stock_alert_email && (
+                                        <p className="mt-1 text-xs font-medium text-red-600">
+                                            {errors.stock_alert_email}
                                         </p>
                                     )}
                                 </SettingsField>

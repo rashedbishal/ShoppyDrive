@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\StaleProductStockException;
+use App\Exceptions\StockAdjustmentException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProductRequest;
+use App\Models\Admin;
 use App\Models\Attribute;
 use App\Models\AttributeValue;
 use App\Models\Brand;
@@ -18,14 +20,17 @@ use App\Models\ProductMedia;
 use App\Models\ProductVariant;
 use App\Models\SubCategory;
 use App\Services\ImageOptimizer;
+use App\Services\StockAdjustmentService;
 use App\Support\AdminListUrl;
 use App\Support\CatalogFilterCache;
+use App\Support\MotherPasswordGate;
 use App\Support\ProductStockToken;
 use App\Support\SearchSuggestionCache;
 use App\Support\UnusedUploadRemover;
 use App\Support\VariantAttributeLabels;
 use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -125,8 +130,19 @@ class ProductController extends Controller
         ]);
     }
 
-    public function store(ProductRequest $request): RedirectResponse
+    public function store(ProductRequest $request, StockAdjustmentService $stock): RedirectResponse
     {
+        // Owner decision 2026-11-14: a new product's starting stock needs the
+        // admin's password and is recorded, like a change on the edit form.
+        $admin = $request->user('admin');
+        $passwordVerified = $this->confirmStockPassword($request, $admin);
+
+        if ($passwordVerified instanceof RedirectResponse) {
+            return $passwordVerified;
+        }
+
+        $stockReason = $this->stockReason($request);
+
         $data = $request->validated();
         $images = $data['images'] ?? [];
         $mediaTags = $data['media_tags'] ?? [];
@@ -150,13 +166,18 @@ class ProductController extends Controller
         }
 
         try {
-            $this->saveAtomically($images, function (array $media) use ($data, $variants, $mediaTags, $primaryIndex, $hoverIndex): void {
+            $this->saveAtomically($images, function (array $media) use ($data, $variants, $mediaTags, $primaryIndex, $hoverIndex, $stock, $admin, $passwordVerified, $stockReason): void {
                 $product = Product::create($data);
 
                 $variantsByKey = $this->syncVariants($product, $variants);
 
+                $nothingYet = ['product' => 0, 'has_variants' => false, 'variants' => []];
+                $this->recordStockChanges($stock, $admin, $product, $nothingYet, $this->stockSnapshot($product), $passwordVerified, $stockReason, StockAdjustmentService::SOURCE_PRODUCT_CREATE);
+
                 $this->syncMedia($product, $media, $mediaTags, $variantsByKey, $primaryIndex, $hoverIndex);
             });
+        } catch (StockAdjustmentException $e) {
+            return back()->withErrors(['stock_password' => $e->getMessage()]);
         } catch (UniqueConstraintViolationException $e) {
             return $this->duplicateSkuResponse($e);
         }
@@ -177,6 +198,8 @@ class ProductController extends Controller
         return Inertia::render('admin/products/edit', [
             'product' => $product,
             'stockToken' => ProductStockToken::for($product),
+            // Owner decisions 2026-11-14: polled by the form (see stockState()).
+            'stockStateUrl' => route('admin.products.stock-state', $product),
             'categories' => Category::active()->orderBy('name')->get(['id', 'name']),
             'subCategories' => SubCategory::active()->orderBy('name')->get(['id', 'name', 'category_id']),
             'brands' => Brand::active()->orderBy('name')->get(['id', 'name']),
@@ -184,8 +207,20 @@ class ProductController extends Controller
         ]);
     }
 
-    public function update(ProductRequest $request, Product $product): RedirectResponse
+    public function update(ProductRequest $request, Product $product, StockAdjustmentService $stock): RedirectResponse
     {
+        // Owner decisions 2026-11-14: changing stock here needs the admin's
+        // password, like Stock Management. Checked before the transaction so
+        // a wrong password's lockout hit isn't rolled back with it.
+        $admin = $request->user('admin');
+        $passwordVerified = $this->confirmStockPassword($request, $admin);
+
+        if ($passwordVerified instanceof RedirectResponse) {
+            return $passwordVerified;
+        }
+
+        $stockReason = $this->stockReason($request);
+
         $data = $request->validated();
         $images = $data['images'] ?? null;
         $mediaTags = $data['media_tags'] ?? [];
@@ -220,12 +255,15 @@ class ProductController extends Controller
         $existingMediaTypes = $product->media()->pluck('type', 'path')->all();
 
         try {
-            $this->saveAtomically($images, function (?array $media) use ($product, $data, $variants, $mediaTags, $primaryIndex, $hoverIndex, $stockToken): void {
+            $this->saveAtomically($images, function (?array $media) use ($product, $data, $variants, $mediaTags, $primaryIndex, $hoverIndex, $stockToken, $stock, $admin, $passwordVerified, $stockReason): void {
                 ProductStockToken::lockAndVerify($product, $stockToken);
+                $stockBefore = $this->stockSnapshot($product);
 
                 $product->update($data);
 
                 $variantsByKey = $this->syncVariants($product, $variants);
+
+                $this->recordStockChanges($stock, $admin, $product, $stockBefore, $this->stockSnapshot($product), $passwordVerified, $stockReason, StockAdjustmentService::SOURCE_PRODUCT_EDIT);
 
                 if ($media !== null) {
                     $this->syncMedia($product, $media, $mediaTags, $variantsByKey, $primaryIndex, $hoverIndex);
@@ -235,11 +273,179 @@ class ProductController extends Controller
             Inertia::flash('toast', ['type' => 'error', 'message' => $e->getMessage()]);
 
             return back()->withErrors(['stock_token' => $e->getMessage()]);
+        } catch (StockAdjustmentException $e) {
+            return back()->withErrors(['stock_password' => $e->getMessage()]);
         } catch (UniqueConstraintViolationException $e) {
             return $this->duplicateSkuResponse($e);
         }
 
         return AdminListUrl::redirect('admin.products.index')->with('success', 'Product updated.');
+    }
+
+    /**
+     * Owner decisions 2026-11-14: what the edit form polls every few seconds,
+     * so stock changed elsewhere (Stock Management, orders, cancellations)
+     * shows without a refresh. Read-only; carries a fresh stock token so the
+     * form can keep saving when only untouched fields changed.
+     */
+    public function stockState(Product $product): JsonResponse
+    {
+        return response()->json($this->liveStock($product));
+    }
+
+    /**
+     * @return array{token: string, stock_quantity: int, variants: list<array{key: string, stock_quantity: int}>}
+     */
+    private function liveStock(Product $product): array
+    {
+        return [
+            'token' => ProductStockToken::for($product),
+            'stock_quantity' => (int) Product::query()->whereKey($product->id)->value('stock_quantity'),
+            'variants' => ProductVariant::query()
+                ->where('product_id', $product->id)
+                ->orderBy('id')
+                ->get(['id', 'stock_quantity', 'attribute_value_ids', 'color_value_id', 'size_value_id'])
+                ->map(fn (ProductVariant $variant): array => [
+                    'key' => $this->stockKey($variant->valueIds()),
+                    'stock_quantity' => (int) $variant->stock_quantity,
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /** The same key the edit form builds from a variant row's value ids. */
+    private function stockKey(array $valueIds): string
+    {
+        $ids = array_map('intval', $valueIds);
+        sort($ids);
+
+        return implode('-', $ids);
+    }
+
+    /**
+     * Checks the admin's password when the form sent one (owner decisions
+     * 2026-11-14), before the save's transaction so a wrong password's lockout
+     * hit isn't rolled back with it. Returns whether it was confirmed, or the
+     * error response. Whether one was actually needed is decided once the
+     * save knows what stock changed (recordStockChanges()).
+     */
+    private function confirmStockPassword(Request $request, Admin $admin): bool|RedirectResponse
+    {
+        $password = (string) $request->input('stock_password', '');
+
+        if ($password === '') {
+            return false;
+        }
+
+        if (MotherPasswordGate::isLocked($admin)) {
+            return back()->withErrors(['stock_password' => MotherPasswordGate::lockedMessage($admin)]);
+        }
+
+        if (! MotherPasswordGate::verify($admin, $password)) {
+            return back()->withErrors(['stock_password' => 'Incorrect password.']);
+        }
+
+        return true;
+    }
+
+    private function stockReason(Request $request): ?string
+    {
+        $reason = $request->input('stock_reason');
+
+        return is_string($reason) ? mb_substr($reason, 0, 255) : null;
+    }
+
+    /**
+     * @return array{product: int, has_variants: bool, variants: array<int, array{stock: int, sku: string|null, threshold: int|null, attributes: array<string, string>|null}>}
+     */
+    private function stockSnapshot(Product $product): array
+    {
+        $variants = ProductVariant::query()
+            ->where('product_id', $product->id)
+            ->get(['id', 'stock_quantity', 'sku', 'low_stock_threshold', 'attributes'])
+            ->mapWithKeys(fn (ProductVariant $variant): array => [$variant->id => [
+                'stock' => (int) $variant->stock_quantity,
+                'sku' => $variant->sku,
+                'threshold' => $variant->low_stock_threshold,
+                'attributes' => is_array($variant->attributes) ? $variant->attributes : null,
+            ]])
+            ->all();
+
+        return [
+            'product' => (int) Product::query()->whereKey($product->id)->value('stock_quantity'),
+            'has_variants' => $variants !== [],
+            'variants' => $variants,
+        ];
+    }
+
+    /**
+     * Records every stock change the edit form made, the same way Stock
+     * Management does, after refusing the save if the admin's password wasn't
+     * confirmed (owner decisions 2026-11-14). Covered:
+     *  - the product's own stock, when it has no variants;
+     *  - each existing variant whose stock changed;
+     *  - a new variant's starting stock (0 → n);
+     *  - a removed variant's stock (n → 0);
+     *  - switching between "no variants" and "with variants": the product's
+     *    own stock counts as removed (n → 0) or set (0 → n), and the variants
+     *    as added or removed.
+     * For a product with variants, the product's own column is just their
+     * total, so it is never recorded separately.
+     *
+     * @param  array{product: int, has_variants: bool, variants: array<int, array{stock: int, sku: string|null, threshold: int|null, attributes: array<string, string>|null}>}  $before
+     * @param  array{product: int, has_variants: bool, variants: array<int, array{stock: int, sku: string|null, threshold: int|null, attributes: array<string, string>|null}>}  $after
+     *
+     * @throws StockAdjustmentException
+     */
+    private function recordStockChanges(StockAdjustmentService $stock, Admin $admin, Product $product, array $before, array $after, bool $passwordVerified, ?string $reason, string $source): void
+    {
+        /** @var list<array{0: int|null, 1: int, 2: int, 3: array{stock: int, sku: string|null, threshold: int|null, attributes: array<string, string>|null}|null}> $changes */
+        $changes = [];
+
+        $productStockBefore = $before['has_variants'] ? 0 : $before['product'];
+        $productStockAfter = $after['has_variants'] ? 0 : $after['product'];
+
+        if ($productStockBefore !== $productStockAfter) {
+            $changes[] = [null, $productStockBefore, $productStockAfter, null];
+        }
+
+        foreach ($before['variants'] + $after['variants'] as $variantId => $row) {
+            $from = $before['variants'][$variantId]['stock'] ?? 0;
+            $to = $after['variants'][$variantId]['stock'] ?? 0;
+
+            if ($from !== $to) {
+                $changes[] = [$variantId, $from, $to, $before['variants'][$variantId] ?? $after['variants'][$variantId]];
+            }
+        }
+
+        if ($changes === []) {
+            return;
+        }
+
+        if (! $passwordVerified) {
+            throw StockAdjustmentException::passwordRequired();
+        }
+
+        $existing = ProductVariant::query()->whereKey(array_filter(array_column($changes, 0)))->get()->keyBy('id');
+
+        foreach ($changes as [$variantId, $from, $to, $row]) {
+            $variant = null;
+
+            if ($variantId !== null) {
+                // A removed variant is gone from the database, so it is
+                // described from the snapshot taken before the save.
+                $variant = $existing->get($variantId) ?? (new ProductVariant)->forceFill([
+                    'id' => $variantId,
+                    'product_id' => $product->id,
+                    'sku' => $row['sku'],
+                    'low_stock_threshold' => $row['threshold'],
+                    'attributes' => $row['attributes'],
+                ]);
+            }
+
+            $stock->record($admin, $product, $variant, $from, $to, $reason, $source);
+        }
     }
 
     public function destroy(Product $product): RedirectResponse

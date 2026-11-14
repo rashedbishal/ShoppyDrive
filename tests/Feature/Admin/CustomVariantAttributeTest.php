@@ -50,6 +50,8 @@ function customVariantRow(array $valueIds, array $overrides = []): array
 function customVariantPayload(array $attributeIds, array $variants, array $overrides = []): array
 {
     return [
+        // Owner decision 2026-11-14: starting stock and stock changes need the admin's password.
+        'stock_password' => 'password',
         'name' => 'Steel Spoon', 'slug' => 'steel-spoon', 'is_active' => true,
         'short_description' => 'A short description.',
         'description' => '<p>A full description.</p>',
