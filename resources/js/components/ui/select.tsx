@@ -361,7 +361,7 @@ function Select({
                     // admin z-40, storefront/checkout z-50), so lists never cover a navbar.
                     // pointer-events-auto: re-enables clicks when portaled into a dialog's
                     // pointer-events-none portal target (see dialog.tsx DialogContent).
-                    className="pointer-events-auto z-20 max-h-[min(var(--anchor-max-height),20rem)] min-w-[max(var(--button-width),10rem)] overflow-y-auto rounded-xl border border-border bg-surface p-1 text-text-primary shadow-[var(--shadow-dropdown)] outline-none transition duration-150 ease-out [--anchor-max-height:20rem] data-closed:-translate-y-1 data-closed:scale-[0.98] data-closed:opacity-0"
+                    className="pointer-events-auto z-20 max-h-[min(var(--anchor-max-height),20rem)] min-w-[max(var(--button-width),10rem)] overflow-y-auto rounded-xl border border-border bg-popover p-1 text-text-primary shadow-[var(--shadow-dropdown)] backdrop-blur-[var(--ui-blur)] outline-none transition duration-150 ease-out [--anchor-max-height:20rem] data-closed:-translate-y-1 data-closed:scale-[0.98] data-closed:opacity-0"
                 >
                     {itemOptions.map((option) => (
                         <ListboxOption

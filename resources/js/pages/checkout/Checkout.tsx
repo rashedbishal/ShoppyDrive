@@ -1018,7 +1018,7 @@ export default function Checkout({
                                                 )
                                             }
                                             placeholder="Your full name"
-                                            className="h-11 rounded-xl"
+                                            className="h-11 rounded-xl focus-visible:ring-1"
                                             required
                                         />
                                         {form.errors.name && (
@@ -1049,7 +1049,7 @@ export default function Checkout({
                                                 )
                                             }
                                             placeholder="example@mail.com"
-                                            className="h-11 rounded-xl"
+                                            className="h-11 rounded-xl focus-visible:ring-1"
                                             required={!isGuest}
                                         />
                                         {form.errors.email && (
@@ -1075,7 +1075,7 @@ export default function Checkout({
                                             )
                                         }
                                         placeholder="01712345678"
-                                        className="h-11 rounded-xl"
+                                        className="h-11 rounded-xl focus-visible:ring-1"
                                         // FE-012: room to paste "+880 1712-345678"; the
                                         // cleaner shortens it to 11 digits.
                                         maxLength={20}
@@ -1233,7 +1233,7 @@ export default function Checkout({
                                                 )
                                             }
                                             placeholder="Street address, house number"
-                                            className="h-11 rounded-xl"
+                                            className="h-11 rounded-xl focus-visible:ring-1"
                                             required
                                         />
                                         {form.errors.address_line1 && (
@@ -1257,7 +1257,7 @@ export default function Checkout({
                                                     )
                                                 }
                                                 options={DISTRICT_OPTIONS}
-                                                className="h-11 rounded-xl"
+                                                className="h-11 rounded-xl focus-visible:ring-1 data-open:ring-1"
                                                 required
                                                 error={form.errors.state}
                                             />
@@ -1274,7 +1274,7 @@ export default function Checkout({
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="h-11 rounded-xl"
+                                                    className="h-11 rounded-xl focus-visible:ring-1 data-open:ring-1"
                                                     required
                                                     error={form.errors.city}
                                                 >
@@ -1304,7 +1304,7 @@ export default function Checkout({
                                                         )
                                                     }
                                                     placeholder="e.g. Sylhet"
-                                                    className="h-11 rounded-xl"
+                                                    className="h-11 rounded-xl focus-visible:ring-1"
                                                     disabled={!form.data.state}
                                                     required
                                                 />
@@ -1332,7 +1332,7 @@ export default function Checkout({
                                                 )
                                             }
                                             placeholder="e.g. 1212"
-                                            className="h-11 rounded-xl"
+                                            className="h-11 rounded-xl focus-visible:ring-1"
                                         />
                                     </div>
 
@@ -1421,7 +1421,7 @@ export default function Checkout({
                                                 handleApplyCoupon())
                                             }
                                             placeholder="Enter coupon code"
-                                            className="h-11 rounded-xl uppercase"
+                                            className="h-11 rounded-xl uppercase focus-visible:ring-1"
                                         />
                                         <Button
                                             type="button"
@@ -1503,7 +1503,7 @@ export default function Checkout({
                                                         ),
                                                     )
                                                 }
-                                                className="h-9 w-28 rounded-lg"
+                                                className="h-9 w-28 rounded-lg focus-visible:ring-1"
                                             />
                                             <span className="text-xs text-[var(--color-text-secondary)]">
                                                 points (worth{' '}
