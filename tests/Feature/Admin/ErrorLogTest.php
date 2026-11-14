@@ -182,3 +182,21 @@ test('admins other than the mother admin cannot view, download or clear', functi
 
     expect(filesize($path))->toBeGreaterThan(0);
 });
+
+test('DISC-42: entries are ordered by their date and time, newest first, even when the file is not', function () {
+    writeLog($this->logDirectory, 'laravel.log', implode("\n", [
+        '[2026-11-14 10:00:00] production.ERROR: Ten o\'clock',
+        '[2026-11-14 12:30:00] production.ERROR: Half past twelve',
+        '[2026-11-14 09:15:00] production.WARNING: Quarter past nine',
+        '[2026-11-14T11:00:00.123456+00:00] production.INFO: Eleven, ISO format',
+        '[2026-11-14 12:30:00] production.ERROR: Also half past twelve, later in the file',
+    ])."\n");
+
+    actingAs($this->mother, 'admin')->get(route('admin.error-log.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('entries.data.0.message', 'Also half past twelve, later in the file')
+            ->where('entries.data.1.message', 'Half past twelve')
+            ->where('entries.data.2.message', 'Eleven, ISO format')
+            ->where('entries.data.3.message', 'Ten o\'clock')
+            ->where('entries.data.4.message', 'Quarter past nine'));
+});

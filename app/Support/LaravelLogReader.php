@@ -101,7 +101,31 @@ class LaravelLogReader
             $entries[] = $this->entry($offset + $begin, $match, rtrim(substr($content, $begin, $end - $begin)));
         }
 
-        return ['entries' => array_reverse($entries), 'truncated' => $offset > 0];
+        return ['entries' => $this->newestFirst($entries), 'truncated' => $offset > 0];
+    }
+
+    /**
+     * DISC-42: newest date and time first, by each entry's own timestamp
+     * rather than its position in the file (a file is not always written in
+     * time order, e.g. overlapping processes or mixed timestamp formats).
+     * Entries in the same second keep their file order, later lines first;
+     * one whose timestamp can't be read (not expected: ENTRY_START only
+     * matches a date and time) goes last.
+     *
+     * @param  list<array{id: int, logged_at: string, environment: string, level: string, message: string, exception: string|null, location: string|null, text: string}>  $entries
+     * @return list<array{id: int, logged_at: string, environment: string, level: string, message: string, exception: string|null, location: string|null, text: string}>
+     */
+    private function newestFirst(array $entries): array
+    {
+        $times = [];
+
+        foreach ($entries as $entry) {
+            $times[$entry['id']] = strtotime($entry['logged_at']) ?: 0;
+        }
+
+        usort($entries, fn (array $a, array $b): int => [$times[$b['id']], $b['id']] <=> [$times[$a['id']], $a['id']]);
+
+        return $entries;
     }
 
     /** Empties a listed file (logging carries on into it); false for any other name. */
