@@ -162,6 +162,21 @@ class RefundCalculator
             ->all();
     }
 
+    /**
+     * Read-only: refunds recorded between two UTC times, for the admin
+     * dashboard.
+     *
+     * @return array{count: int, amount: float}
+     */
+    public function refundTotalsBetween(\DateTimeInterface $from, \DateTimeInterface $to): array
+    {
+        $row = OrderRefund::whereBetween('created_at', [$from, $to])
+            ->selectRaw('COUNT(*) as refunds, COALESCE(SUM(amount), 0) as amount')
+            ->first();
+
+        return ['count' => (int) $row?->refunds, 'amount' => round((float) $row?->amount, 2)];
+    }
+
     public function refundedPaisa(Order $order, bool $lock = false): int
     {
         $query = OrderRefund::where('order_id', $order->id);

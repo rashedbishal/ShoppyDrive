@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\FlashSaleItem;
 use App\Models\Product;
 use App\Models\Review;
+use App\Models\SearchLog;
 use App\Models\SubCategory;
 use App\Support\ProductCardData;
 use App\Support\ProductSearchQuery;
@@ -80,6 +81,8 @@ class SearchController extends Controller
             ->paginate(12)
             ->withQueryString();
 
+        $this->logSearch($request, $query, $products->total());
+
         // Same gap as ProductListingController's listing grid, same fix:
         // batched for just this page's ~12 products, one extra query, not
         // one per product.
@@ -129,6 +132,26 @@ class SearchController extends Controller
                 'page' => $products->currentPage(),
             ],
         ]);
+    }
+
+    /**
+     * Dashboard search insights: counts a typed search once, on its first
+     * results page. Filtering, sorting, paging and Inertia prefetches of the
+     * same search aren't new searches, and bots aren't counted.
+     */
+    private function logSearch(Request $request, string $query, int $resultsCount): void
+    {
+        $isRefinement = collect(['category', 'brand', 'min_price', 'max_price', 'rating', 'in_stock', 'sort', 'page'])
+            ->contains(fn (string $key): bool => $request->filled($key));
+
+        if (! SearchTerm::isSearchable($query)
+            || $isRefinement
+            || $request->header('Purpose') === 'prefetch'
+            || preg_match('/bot|crawl|spider|slurp|facebookexternalhit|bingpreview/i', (string) $request->userAgent()) === 1) {
+            return;
+        }
+
+        SearchLog::record($query, $resultsCount);
     }
 
     public function suggestions(Request $request): JsonResponse

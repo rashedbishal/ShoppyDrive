@@ -16,6 +16,7 @@ use App\Models\Order;
 use App\Models\PendingCheckout;
 use App\Models\Product;
 use App\Models\ReceivedSms;
+use App\Models\SearchLog;
 use App\Models\User;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -97,6 +98,16 @@ test('unmatched SMS go after 90 days and matched ones after a year', function ()
         ->and(ReceivedSms::whereKey($evidence->id)->exists())->toBeTrue()
         ->and(ReceivedSms::whereKey($oldMatched->id)->exists())->toBeFalse()
         ->and(Order::whereKey($order->id)->exists())->toBeTrue();
+});
+
+test('dashboard search counts are removed after a year', function () {
+    $old = SearchLog::create(['date' => now()->subDays(Prune::SEARCH_LOG_DAYS + 1)->toDateString(), 'term' => 'old', 'searches' => 3]);
+    $recent = SearchLog::create(['date' => now()->subDays(Prune::SEARCH_LOG_DAYS - 1)->toDateString(), 'term' => 'recent', 'searches' => 3]);
+
+    $this->artisan('data:prune')->assertSuccessful();
+
+    expect(SearchLog::whereKey($old->id)->exists())->toBeFalse()
+        ->and(SearchLog::whereKey($recent->id)->exists())->toBeTrue();
 });
 
 test('more rows than one batch are all removed', function () {

@@ -146,6 +146,11 @@ const LOW05_EXEMPT_ADMIN_ROUTES = [
     'admin.settings.brand-color.update',
     'admin.settings.brand-color.destroy',
 
+    // Dashboard monthly revenue target (owner decisions 2026-11-14): mother
+    // admin only, enforced by `admin.mother` on the route (verified by
+    // DashboardInsightsTest); the dashboard itself is ungated, see above.
+    'admin.dashboard.target',
+
     // DB-001: permanent order deletion is mother-admin only, confirmed
     // gated only by ['admin.mother', 'throttle:mother-actions'].
     'admin.orders.permanentDelete.confirm',

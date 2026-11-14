@@ -1,6 +1,13 @@
-import { Head, Link } from '@inertiajs/react';
+import { Deferred, Head, Link, router } from '@inertiajs/react';
 import {
     AlertTriangle,
+    BadgePercent,
+    CircleDollarSign,
+    Gauge,
+    Megaphone,
+    MessageSquareText,
+    Receipt,
+    UserPlus,
     ArrowRight,
     ArrowUpRight,
     ArrowDownRight,
@@ -21,6 +28,51 @@ import {
     Zap,
     Image,
 } from 'lucide-react';
+import { useState } from 'react';
+import {
+    ProductPanels,
+    PromotionPanels,
+} from '@/components/admin/dashboard/catalog';
+import {
+    ActionNeededPanel,
+    LiveOrders,
+} from '@/components/admin/dashboard/operations';
+import {
+    CourierPanel,
+    Heatmap,
+    OrderHealthPanels,
+} from '@/components/admin/dashboard/orders';
+import {
+    KpiCard,
+    RangePicker,
+    TargetRing,
+    TrendChart,
+} from '@/components/admin/dashboard/overview';
+import {
+    CustomerPanels,
+    MarketingPanels,
+    ReviewPanels,
+} from '@/components/admin/dashboard/people';
+import type {
+    ActionNeeded,
+    CourierRow,
+    CustomerInsights,
+    DashboardAccess,
+    DashboardRange,
+    LiveFeed,
+    Marketing,
+    OrderHealth,
+    Overview,
+    ProductInsights,
+    Promotions,
+    ReviewInsights,
+} from '@/components/admin/dashboard/types';
+import {
+    CountUp,
+    money,
+    percent,
+    Skeleton,
+} from '@/components/admin/dashboard/ui';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -88,7 +140,35 @@ type Props = {
     visitorChartData: VisitorChartPoint[];
     recentOrders: RecentOrder[];
     lowStockProducts: LowStockProduct[];
+    // 2026-11-14 additions; null when the admin can't open that area,
+    // undefined until a deferred panel has loaded.
+    range: DashboardRange;
+    access: DashboardAccess;
+    overview?: Overview | null;
+    actionNeeded?: ActionNeeded;
+    orderHealth?: OrderHealth | null;
+    couriers?: CourierRow[] | null;
+    productInsights?: ProductInsights | null;
+    promotions?: Promotions | null;
+    customerInsights?: CustomerInsights | null;
+    marketing?: Marketing;
+    reviewInsights?: ReviewInsights | null;
+    liveFeed: LiveFeed | null;
 };
+
+/** Every prop that depends on the selected date range. */
+const RANGE_PROPS = [
+    'range',
+    'overview',
+    'actionNeeded',
+    'orderHealth',
+    'couriers',
+    'productInsights',
+    'promotions',
+    'customerInsights',
+    'marketing',
+    'reviewInsights',
+];
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -329,7 +409,7 @@ function StatCard({
     className = '',
 }: {
     label: string;
-    value: string | number;
+    value: React.ReactNode;
     sub?: string;
     icon: React.ElementType;
     iconBg: string;
@@ -377,31 +457,91 @@ function StatCard({
     );
 }
 
-function AlertBadge({
-    count,
-    label,
-    href,
-    color,
+/** Today up to now against yesterday up to the same time. */
+function TodaySoFar({
+    today,
+    wide = false,
 }: {
-    count: number;
-    label: string;
-    href: string;
-    color: string;
+    today: Overview['today'];
+    wide?: boolean;
 }) {
-    if (count === 0) {
-        return null;
-    }
+    const items = [
+        {
+            label: 'Collected',
+            value: today.revenue,
+            previous: today.yesterday_revenue,
+            format: money,
+        },
+        {
+            label: 'Orders',
+            value: today.orders,
+            previous: today.yesterday_orders,
+            format: (n: number) => Math.round(n).toLocaleString('en-IN'),
+        },
+    ];
 
     return (
-        <Link
-            href={href}
-            className={`flex items-center justify-between rounded-xl border px-4 py-2.5 transition hover:shadow-sm ${color}`}
-        >
-            <span className="text-sm font-medium">{label}</span>
-            <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-bold">
-                {count}
+        <div className="dash-rise min-w-0 rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-brand-light p-4 shadow-sm">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                <Clock className="size-3.5 text-brand" /> Today so far · until{' '}
+                {today.as_of}
+            </p>
+            <div
+                className={`mt-3 grid gap-3 ${wide ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1'}`}
+            >
+                {items.map((item) => {
+                    const ahead = item.value >= item.previous;
+
+                    return (
+                        <div key={item.label} className="min-w-0">
+                            <p className="text-[11px] text-slate-500">
+                                {item.label}
+                            </p>
+                            <p className="truncate text-lg font-bold text-slate-900 tabular-nums">
+                                <CountUp
+                                    value={item.value}
+                                    format={item.format}
+                                />
+                            </p>
+                            <p
+                                className={`text-[11px] font-medium ${ahead ? 'text-emerald-600' : 'text-red-500'}`}
+                            >
+                                {item.value === item.previous
+                                    ? 'Same as'
+                                    : ahead
+                                      ? 'Ahead of'
+                                      : 'Behind'}{' '}
+                                yesterday ({item.format(item.previous)} by now)
+                            </p>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+function SectionTitle({
+    icon: Icon,
+    title,
+    subtitle,
+}: {
+    icon: React.ElementType;
+    title: string;
+    subtitle: string;
+}) {
+    return (
+        <div className="flex items-end gap-3 pt-2">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
+                <Icon className="size-4" />
             </span>
-        </Link>
+            <div>
+                <h2 className="text-base font-bold tracking-tight text-slate-900">
+                    {title}
+                </h2>
+                <p className="text-xs text-slate-500">{subtitle}</p>
+            </div>
+        </div>
     );
 }
 
@@ -413,7 +553,32 @@ export default function Dashboard({
     visitorChartData,
     recentOrders,
     lowStockProducts,
+    range,
+    access,
+    overview,
+    actionNeeded,
+    orderHealth,
+    couriers,
+    productInsights,
+    promotions,
+    customerInsights,
+    marketing,
+    reviewInsights,
+    liveFeed,
 }: Props) {
+    const [loadingRange, setLoadingRange] = useState(false);
+
+    const changeRange = (params: Record<string, string>) => {
+        router.get(route('admin.dashboard'), params, {
+            only: RANGE_PROPS,
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            onStart: () => setLoadingRange(true),
+            onFinish: () => setLoadingRange(false),
+        });
+    };
+
     const revenueChange = pct(stats.today_revenue, stats.yesterday_revenue);
     const ordersChange = diff(stats.today_orders, stats.yesterday_orders);
     const visitorsChange = diff(stats.today_visitors, stats.yesterday_visitors);
@@ -480,25 +645,38 @@ export default function Dashboard({
         <>
             <Head title="Dashboard — Admin" />
 
-            <div className="space-y-6 pb-10">
+            <div
+                className={`space-y-6 pb-10 transition-opacity duration-300 ${loadingRange ? 'opacity-60' : ''}`}
+                aria-busy={loadingRange}
+            >
                 {/* ── Header ── */}
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
                         <p className="text-[11px] font-semibold tracking-[0.18em] text-slate-600 uppercase">
                             Admin Panel
                         </p>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
                             Dashboard
                         </h1>
+                        <p className="mt-1 text-sm text-slate-600">
+                            {new Date().toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                            })}
+                            <span className="text-slate-400">
+                                {' '}
+                                · Showing {range.label}
+                            </span>
+                        </p>
                     </div>
-                    <p className="text-sm text-slate-600">
-                        {new Date().toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                        })}
-                    </p>
+                    <RangePicker
+                        key={`${range.preset}-${range.from}-${range.to}`}
+                        range={range}
+                        loading={loadingRange}
+                        onChange={changeRange}
+                    />
                 </div>
 
                 {/* BE-011: every Pathao status check is failing, so courier statuses stopped updating. */}
@@ -557,48 +735,89 @@ export default function Dashboard({
                     </div>
                 )}
 
-                {/* ── Alert bar (only shown if there's something to act on) ── */}
-                {(stats.pending_orders > 0 ||
-                    stats.low_stock_count > 0 ||
-                    stats.pending_reviews > 0 ||
-                    (stats.failed_jobs ?? 0) > 0) && (
-                    <div className="grid gap-2 sm:grid-cols-3">
-                        <AlertBadge
-                            count={stats.pending_orders}
-                            label="Pending orders"
-                            href={
-                                route('admin.orders.index') + '?status=pending'
-                            }
-                            color="border-amber-200 bg-amber-50 text-amber-800"
-                        />
-                        <AlertBadge
-                            count={stats.low_stock_count}
-                            label="Low stock products"
-                            href={route('admin.products.index')}
-                            color="border-red-200 bg-red-50 text-red-800"
-                        />
-                        <AlertBadge
-                            count={stats.pending_reviews}
-                            label="Reviews need approval"
-                            href={
-                                route('admin.reviews.index') + '?status=pending'
-                            }
-                            color="border-violet-200 bg-violet-50 text-violet-800"
-                        />
-                        <AlertBadge
-                            count={stats.failed_jobs ?? 0}
-                            label="Failed background jobs"
-                            href={route('admin.failed-jobs.index')}
-                            color="border-red-200 bg-red-50 text-red-800"
-                        />
-                    </div>
+                {/* ── Period KPIs + monthly target (Orders access) ── */}
+                {access.orders && (
+                    <Deferred
+                        data="overview"
+                        fallback={
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 2xl:grid-cols-7">
+                                {Array.from({ length: 7 }, (_, index) => (
+                                    <Skeleton
+                                        key={index}
+                                        className={`h-44 ${index === 6 ? 'col-span-2 2xl:col-span-1' : ''}`}
+                                    />
+                                ))}
+                            </div>
+                        }
+                    >
+                        {overview ? (
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 2xl:grid-cols-7">
+                                <KpiCard
+                                    label="Revenue collected"
+                                    icon={CircleDollarSign}
+                                    compare={overview.kpis.revenue}
+                                    format={money}
+                                    trend={overview.trend}
+                                    trendKey="revenue"
+                                />
+                                <KpiCard
+                                    label="Orders"
+                                    icon={Receipt}
+                                    compare={overview.kpis.orders}
+                                    trend={overview.trend}
+                                    trendKey="orders"
+                                />
+                                <KpiCard
+                                    label="Average order value"
+                                    icon={BadgePercent}
+                                    compare={overview.kpis.average_order_value}
+                                    format={money}
+                                />
+                                <KpiCard
+                                    label="Visitors"
+                                    icon={Eye}
+                                    compare={overview.kpis.visitors}
+                                    trend={
+                                        range.days > 1
+                                            ? overview.trend
+                                            : undefined
+                                    }
+                                    trendKey="visitors"
+                                />
+                                <KpiCard
+                                    label="Conversion rate"
+                                    icon={Gauge}
+                                    compare={overview.kpis.conversion_rate}
+                                    format={percent}
+                                    hint="Orders per 100 visitors"
+                                />
+                                {overview.kpis.new_customers ? (
+                                    <KpiCard
+                                        label="New customers"
+                                        icon={UserPlus}
+                                        compare={overview.kpis.new_customers}
+                                        trend={overview.trend}
+                                        trendKey="new_customers"
+                                    />
+                                ) : (
+                                    <TodaySoFar today={overview.today} />
+                                )}
+                                <div className="col-span-2 2xl:col-span-1">
+                                    <TargetRing
+                                        target={overview.target}
+                                        canEdit={access.edit_target}
+                                    />
+                                </div>
+                            </div>
+                        ) : null}
+                    </Deferred>
                 )}
 
-                {/* ── Stat cards ── */}
+                {/* ── Today: the original cards, shown to every admin ── */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
                     <StatCard
                         label="Today's Visitors"
-                        value={stats.today_visitors.toLocaleString()}
+                        value={<CountUp value={stats.today_visitors} />}
                         sub={`Yesterday: ${stats.yesterday_visitors.toLocaleString()}`}
                         icon={Eye}
                         iconBg="bg-cyan-50"
@@ -607,7 +826,9 @@ export default function Dashboard({
                     />
                     <StatCard
                         label="Today's Revenue"
-                        value={fmt(stats.today_revenue)}
+                        value={
+                            <CountUp value={stats.today_revenue} format={fmt} />
+                        }
                         sub={`Yesterday: ${fmt(stats.yesterday_revenue)}`}
                         icon={ShoppingBag}
                         iconBg="bg-rose-50"
@@ -616,7 +837,7 @@ export default function Dashboard({
                     />
                     <StatCard
                         label="Today's Orders"
-                        value={stats.today_orders}
+                        value={<CountUp value={stats.today_orders} />}
                         sub={`${stats.pending_orders} pending · ${stats.processing_orders} processing`}
                         icon={Package}
                         iconBg="bg-blue-50"
@@ -625,7 +846,7 @@ export default function Dashboard({
                     />
                     <StatCard
                         label="Total Customers"
-                        value={stats.total_customers.toLocaleString()}
+                        value={<CountUp value={stats.total_customers} />}
                         sub={`+${stats.new_customers_this_week} this week`}
                         icon={Users}
                         iconBg="bg-violet-50"
@@ -633,7 +854,7 @@ export default function Dashboard({
                     />
                     <StatCard
                         label="Active Products"
-                        value={stats.total_products.toLocaleString()}
+                        value={<CountUp value={stats.total_products} />}
                         sub={
                             stats.low_stock_count > 0
                                 ? `${stats.low_stock_count} low stock`
@@ -646,211 +867,393 @@ export default function Dashboard({
                     />
                 </div>
 
-                {/* ── Revenue chart + quick actions ── */}
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
-                    <RevenueChart data={chartData} />
-
-                    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                        <p className="mb-4 text-xs font-semibold tracking-widest text-slate-600 uppercase">
-                            Quick Actions
-                        </p>
-                        <div className="grid grid-cols-3 gap-2.5">
-                            {quickActions.map((action) => {
-                                const Icon = action.icon;
-
-                                return (
-                                    <Link
-                                        key={action.label}
-                                        href={action.href}
-                                        className="group flex flex-col items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-center transition hover:border-slate-200 hover:bg-white hover:shadow-sm"
-                                    >
-                                        <div
-                                            className={`flex size-9 items-center justify-center rounded-xl ${action.color} text-white shadow-sm transition group-hover:scale-105`}
-                                        >
-                                            <Icon className="size-4" />
-                                        </div>
-                                        <span className="text-[10px] leading-tight font-semibold text-slate-600">
-                                            {action.label}
-                                        </span>
-                                    </Link>
-                                );
-                            })}
+                {/* ── Trend + needs action ── */}
+                <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+                    {access.orders ? (
+                        <Deferred
+                            data="overview"
+                            fallback={<Skeleton className="h-96" />}
+                        >
+                            {overview ? (
+                                <div className="min-w-0 space-y-5">
+                                    <TrendChart
+                                        trend={overview.trend}
+                                        rangeLabel={range.label}
+                                        showCustomers={
+                                            overview.kpis.new_customers !== null
+                                        }
+                                    />
+                                    {overview.kpis.new_customers && (
+                                        <TodaySoFar
+                                            today={overview.today}
+                                            wide
+                                        />
+                                    )}
+                                </div>
+                            ) : null}
+                        </Deferred>
+                    ) : (
+                        <div className="min-w-0 space-y-5">
+                            <RevenueChart data={chartData} />
+                            <VisitorsChart data={visitorChartData} />
                         </div>
-                    </div>
+                    )}
+                    <Deferred
+                        data="actionNeeded"
+                        fallback={<Skeleton className="h-96" />}
+                    >
+                        <ActionNeededPanel
+                            data={actionNeeded}
+                            fallback={{
+                                pending_orders: stats.pending_orders,
+                                low_stock: stats.low_stock_count,
+                                pending_reviews: stats.pending_reviews,
+                                failed_jobs: stats.failed_jobs,
+                            }}
+                        />
+                    </Deferred>
                 </div>
 
-                {/* ── Visitors chart ── */}
-                <VisitorsChart data={visitorChartData} />
+                {/* ── Live orders (or the original recent orders) + low stock + quick actions ── */}
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+                    {liveFeed ? (
+                        <LiveOrders initial={liveFeed} />
+                    ) : (
+                        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
+                            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                                <p className="text-sm font-semibold text-slate-800">
+                                    Recent Orders
+                                </p>
+                                <Link
+                                    href={route('admin.orders.index')}
+                                    className="flex items-center gap-1 text-xs font-medium text-brand hover:underline"
+                                >
+                                    View all <ArrowRight className="size-3" />
+                                </Link>
+                            </div>
 
-                {/* ── Recent orders + low stock ── */}
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-                    {/* Recent orders */}
-                    <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
-                        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-                            <p className="text-sm font-semibold text-slate-800">
-                                Recent Orders
-                            </p>
-                            <Link
-                                href={route('admin.orders.index')}
-                                className="flex items-center gap-1 text-xs font-medium text-brand hover:underline"
-                            >
-                                View all <ArrowRight className="size-3" />
-                            </Link>
+                            {recentOrders.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center gap-2 py-14">
+                                    <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-100">
+                                        <ShoppingCart className="size-5 text-slate-300" />
+                                    </div>
+                                    <p className="text-sm font-medium text-slate-600">
+                                        No orders yet
+                                    </p>
+                                    <p className="text-xs text-slate-300">
+                                        Orders will appear here once customers
+                                        start buying
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-slate-50">
+                                    {recentOrders.map((order) => {
+                                        const sc =
+                                            orderStatusConfig[order.status] ??
+                                            orderStatusConfig['pending'];
+                                        const StatusIcon = sc.icon;
+
+                                        return (
+                                            <Link
+                                                key={order.id}
+                                                href={route(
+                                                    'admin.orders.show',
+                                                    order.id,
+                                                )}
+                                                className="flex items-center gap-4 px-5 py-3 transition hover:bg-slate-50/60"
+                                            >
+                                                <div
+                                                    className={`flex size-8 shrink-0 items-center justify-center rounded-xl ${sc.bg}`}
+                                                >
+                                                    <StatusIcon
+                                                        className={`size-3.5 ${sc.text}`}
+                                                    />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="font-mono text-xs font-semibold text-slate-800">
+                                                        {order.order_number}
+                                                    </p>
+                                                    <p className="truncate text-[11px] text-slate-600">
+                                                        {order.user?.name ??
+                                                            'Guest'}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-bold text-slate-800">
+                                                        {fmt(order.total)}
+                                                    </p>
+                                                    <p className="text-[11px] text-slate-600">
+                                                        {new Date(
+                                                            order.created_at,
+                                                        ).toLocaleDateString(
+                                                            'en-US',
+                                                            {
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                            },
+                                                        )}
+                                                    </p>
+                                                </div>
+                                                <span
+                                                    className={`hidden shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold sm:inline ${sc.bg} ${sc.text}`}
+                                                >
+                                                    {sc.label}
+                                                </span>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="min-w-0 space-y-5">
+                        {/* Low stock */}
+                        <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
+                            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                                <div className="flex items-center gap-2">
+                                    <AlertTriangle className="size-4 text-amber-500" />
+                                    <p className="text-sm font-semibold text-slate-800">
+                                        Low Stock
+                                    </p>
+                                </div>
+                                <Link
+                                    href={route('admin.products.index')}
+                                    className="flex items-center gap-1 text-xs font-medium text-brand hover:underline"
+                                >
+                                    Manage <ArrowRight className="size-3" />
+                                </Link>
+                            </div>
+
+                            {lowStockProducts.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center gap-2 py-14">
+                                    <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-50">
+                                        <CheckCircle2 className="size-5 text-emerald-400" />
+                                    </div>
+                                    <p className="text-sm font-medium text-slate-600">
+                                        All products stocked
+                                    </p>
+                                    <p className="text-xs text-slate-300">
+                                        No items are below their threshold
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-slate-50">
+                                    {lowStockProducts.map((product) => {
+                                        const ratio =
+                                            product.stock_quantity /
+                                            Math.max(
+                                                product.low_stock_threshold,
+                                                1,
+                                            );
+                                        const urgent = ratio <= 0.5;
+
+                                        return (
+                                            <Link
+                                                key={product.id}
+                                                href={route(
+                                                    'admin.products.edit',
+                                                    product.id,
+                                                )}
+                                                className="flex items-center gap-3 px-5 py-3 transition hover:bg-slate-50/60"
+                                            >
+                                                <div
+                                                    className={`flex size-8 shrink-0 items-center justify-center rounded-xl ${urgent ? 'bg-red-50' : 'bg-amber-50'}`}
+                                                >
+                                                    <Box
+                                                        className={`size-3.5 ${urgent ? 'text-red-500' : 'text-amber-500'}`}
+                                                    />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-xs font-semibold text-slate-800">
+                                                        {product.name}
+                                                    </p>
+                                                    <p className="font-mono text-[11px] text-slate-600">
+                                                        {product.sku ?? '—'}
+                                                    </p>
+                                                </div>
+                                                <div className="shrink-0 text-right">
+                                                    <span
+                                                        className={`rounded-full px-2 py-0.5 text-xs font-bold ${urgent ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}
+                                                    >
+                                                        {product.stock_quantity}{' '}
+                                                        left
+                                                    </span>
+                                                </div>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
 
-                        {recentOrders.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center gap-2 py-14">
-                                <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-100">
-                                    <ShoppingCart className="size-5 text-slate-300" />
-                                </div>
-                                <p className="text-sm font-medium text-slate-600">
-                                    No orders yet
-                                </p>
-                                <p className="text-xs text-slate-300">
-                                    Orders will appear here once customers start
-                                    buying
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-slate-50">
-                                {recentOrders.map((order) => {
-                                    const sc =
-                                        orderStatusConfig[order.status] ??
-                                        orderStatusConfig['pending'];
-                                    const StatusIcon = sc.icon;
+                        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                            <p className="mb-4 text-xs font-semibold tracking-widest text-slate-600 uppercase">
+                                Quick Actions
+                            </p>
+                            <div className="grid grid-cols-3 gap-2.5">
+                                {quickActions.map((action) => {
+                                    const Icon = action.icon;
 
                                     return (
                                         <Link
-                                            key={order.id}
-                                            href={route(
-                                                'admin.orders.show',
-                                                order.id,
-                                            )}
-                                            className="flex items-center gap-4 px-5 py-3 transition hover:bg-slate-50/60"
+                                            key={action.label}
+                                            href={action.href}
+                                            className="group flex flex-col items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-center transition hover:border-slate-200 hover:bg-white hover:shadow-sm"
                                         >
                                             <div
-                                                className={`flex size-8 shrink-0 items-center justify-center rounded-xl ${sc.bg}`}
+                                                className={`flex size-9 items-center justify-center rounded-xl ${action.color} text-white shadow-sm transition group-hover:scale-105`}
                                             >
-                                                <StatusIcon
-                                                    className={`size-3.5 ${sc.text}`}
-                                                />
+                                                <Icon className="size-4" />
                                             </div>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="font-mono text-xs font-semibold text-slate-800">
-                                                    {order.order_number}
-                                                </p>
-                                                <p className="truncate text-[11px] text-slate-600">
-                                                    {order.user?.name ??
-                                                        'Guest'}
-                                                </p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-sm font-bold text-slate-800">
-                                                    {fmt(order.total)}
-                                                </p>
-                                                <p className="text-[11px] text-slate-600">
-                                                    {new Date(
-                                                        order.created_at,
-                                                    ).toLocaleDateString(
-                                                        'en-US',
-                                                        {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                        },
-                                                    )}
-                                                </p>
-                                            </div>
-                                            <span
-                                                className={`hidden shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold sm:inline ${sc.bg} ${sc.text}`}
-                                            >
-                                                {sc.label}
+                                            <span className="text-[10px] leading-tight font-semibold text-slate-600">
+                                                {action.label}
                                             </span>
                                         </Link>
                                     );
                                 })}
                             </div>
-                        )}
-                    </div>
-
-                    {/* Low stock */}
-                    <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
-                        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-                            <div className="flex items-center gap-2">
-                                <AlertTriangle className="size-4 text-amber-500" />
-                                <p className="text-sm font-semibold text-slate-800">
-                                    Low Stock
-                                </p>
-                            </div>
-                            <Link
-                                href={route('admin.products.index')}
-                                className="flex items-center gap-1 text-xs font-medium text-brand hover:underline"
-                            >
-                                Manage <ArrowRight className="size-3" />
-                            </Link>
                         </div>
-
-                        {lowStockProducts.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center gap-2 py-14">
-                                <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-50">
-                                    <CheckCircle2 className="size-5 text-emerald-400" />
-                                </div>
-                                <p className="text-sm font-medium text-slate-600">
-                                    All products stocked
-                                </p>
-                                <p className="text-xs text-slate-300">
-                                    No items are below their threshold
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-slate-50">
-                                {lowStockProducts.map((product) => {
-                                    const ratio =
-                                        product.stock_quantity /
-                                        Math.max(
-                                            product.low_stock_threshold,
-                                            1,
-                                        );
-                                    const urgent = ratio <= 0.5;
-
-                                    return (
-                                        <Link
-                                            key={product.id}
-                                            href={route(
-                                                'admin.products.edit',
-                                                product.id,
-                                            )}
-                                            className="flex items-center gap-3 px-5 py-3 transition hover:bg-slate-50/60"
-                                        >
-                                            <div
-                                                className={`flex size-8 shrink-0 items-center justify-center rounded-xl ${urgent ? 'bg-red-50' : 'bg-amber-50'}`}
-                                            >
-                                                <Box
-                                                    className={`size-3.5 ${urgent ? 'text-red-500' : 'text-amber-500'}`}
-                                                />
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="truncate text-xs font-semibold text-slate-800">
-                                                    {product.name}
-                                                </p>
-                                                <p className="font-mono text-[11px] text-slate-600">
-                                                    {product.sku ?? '—'}
-                                                </p>
-                                            </div>
-                                            <div className="shrink-0 text-right">
-                                                <span
-                                                    className={`rounded-full px-2 py-0.5 text-xs font-bold ${urgent ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}
-                                                >
-                                                    {product.stock_quantity}{' '}
-                                                    left
-                                                </span>
-                                            </div>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
-                        )}
                     </div>
                 </div>
+
+                {/* ── Sales ── */}
+                {access.orders && (
+                    <>
+                        <SectionTitle
+                            icon={Receipt}
+                            title="Sales & orders"
+                            subtitle={`How orders did · ${range.label}`}
+                        />
+                        <Deferred
+                            data={['orderHealth', 'couriers']}
+                            fallback={
+                                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                                    <Skeleton className="h-80" />
+                                    <Skeleton className="h-80" />
+                                    <Skeleton className="h-80" />
+                                </div>
+                            }
+                        >
+                            <>
+                                {orderHealth && (
+                                    <OrderHealthPanels data={orderHealth} />
+                                )}
+                                <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+                                    {couriers && (
+                                        <CourierPanel rows={couriers} />
+                                    )}
+                                    <Deferred
+                                        data="marketing"
+                                        fallback={<Skeleton className="h-72" />}
+                                    >
+                                        {marketing?.heatmap ? (
+                                            <Heatmap grid={marketing.heatmap} />
+                                        ) : (
+                                            <></>
+                                        )}
+                                    </Deferred>
+                                </div>
+                            </>
+                        </Deferred>
+                    </>
+                )}
+
+                {/* ── Products ── */}
+                {access.products && (
+                    <>
+                        <SectionTitle
+                            icon={Box}
+                            title="Products & stock"
+                            subtitle={`What sells and what doesn't · ${range.label}`}
+                        />
+                        <Deferred
+                            data="productInsights"
+                            fallback={<Skeleton className="h-96" />}
+                        >
+                            {productInsights ? (
+                                <ProductPanels data={productInsights} />
+                            ) : (
+                                <></>
+                            )}
+                        </Deferred>
+                    </>
+                )}
+
+                {access.promotions && (
+                    <>
+                        <SectionTitle
+                            icon={Zap}
+                            title="Promotions"
+                            subtitle={`Flash sales, coupons and bundles · ${range.label}`}
+                        />
+                        <Deferred
+                            data="promotions"
+                            fallback={<Skeleton className="h-64" />}
+                        >
+                            {promotions ? (
+                                <PromotionPanels data={promotions} />
+                            ) : (
+                                <></>
+                            )}
+                        </Deferred>
+                    </>
+                )}
+
+                {/* ── Customers ── */}
+                {access.customers && access.orders && (
+                    <>
+                        <SectionTitle
+                            icon={Users}
+                            title="Customers"
+                            subtitle={`Who buys and where · ${range.label}`}
+                        />
+                        <Deferred
+                            data="customerInsights"
+                            fallback={<Skeleton className="h-96" />}
+                        >
+                            {customerInsights ? (
+                                <CustomerPanels data={customerInsights} />
+                            ) : (
+                                <></>
+                            )}
+                        </Deferred>
+                    </>
+                )}
+
+                {/* ── Marketing ── */}
+                <SectionTitle
+                    icon={Megaphone}
+                    title="Marketing & traffic"
+                    subtitle={`Where shoppers come from and what they look for · ${range.label}`}
+                />
+                <Deferred
+                    data="marketing"
+                    fallback={<Skeleton className="h-72" />}
+                >
+                    {marketing ? <MarketingPanels data={marketing} /> : <></>}
+                </Deferred>
+
+                {/* ── Reviews ── */}
+                {access.reviews && (
+                    <>
+                        <SectionTitle
+                            icon={MessageSquareText}
+                            title="Reviews"
+                            subtitle="What customers say"
+                        />
+                        <Deferred
+                            data="reviewInsights"
+                            fallback={<Skeleton className="h-72" />}
+                        >
+                            {reviewInsights ? (
+                                <ReviewPanels data={reviewInsights} />
+                            ) : (
+                                <></>
+                            )}
+                        </Deferred>
+                    </>
+                )}
 
                 {/* ── Bottom strip — nav shortcuts ── */}
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

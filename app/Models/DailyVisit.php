@@ -12,6 +12,9 @@ class DailyVisit extends Model
         'date',
         'visitor_count',
         'page_view_count',
+        'mobile_visitors',
+        'tablet_visitors',
+        'desktop_visitors',
     ];
 
     protected function casts(): array
@@ -20,6 +23,9 @@ class DailyVisit extends Model
             'date' => 'date',
             'visitor_count' => 'integer',
             'page_view_count' => 'integer',
+            'mobile_visitors' => 'integer',
+            'tablet_visitors' => 'integer',
+            'desktop_visitors' => 'integer',
         ];
     }
 }

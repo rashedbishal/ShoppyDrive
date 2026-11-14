@@ -9,6 +9,7 @@ use App\Models\Cart;
 use App\Models\IncompleteOrder;
 use App\Models\MetaTrackingEvent;
 use App\Models\ReceivedSms;
+use App\Models\SearchLog;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -31,7 +32,7 @@ use Illuminate\Support\Facades\Storage;
  * evidence; order deletion is still blocked by the Payment record itself.
  */
 #[Signature('data:prune')]
-#[Description('Delete unfinished checkouts, guest carts, received SMS and Meta tracking events past their retention period.')]
+#[Description('Delete unfinished checkouts, guest carts, received SMS, Meta tracking events and dashboard search counts past their retention period.')]
 class PruneOldDataCommand extends Command
 {
     public const INCOMPLETE_ORDER_DAYS = 60;
@@ -45,6 +46,12 @@ class PruneOldDataCommand extends Command
     /** Meta only accepts events up to 7 days old; the rest is a delivery log holding IP addresses. */
     public const META_TRACKING_EVENT_DAYS = 30;
 
+    /**
+     * Dashboard search counts (2026-11-14): kept for one year, the longest
+     * range the dashboard can show. They hold no visitor data.
+     */
+    public const SEARCH_LOG_DAYS = 366;
+
     /** Small batches, so a large first run doesn't hold locks on shared hosting. */
     private const BATCH_SIZE = 500;
 
@@ -56,6 +63,7 @@ class PruneOldDataCommand extends Command
             'unmatched_sms' => $this->deleteInBatches(ReceivedSms::query()->where('is_matched', false)->where('created_at', '<', $this->daysAgo(self::UNMATCHED_SMS_DAYS))),
             'matched_sms' => $this->deleteInBatches(ReceivedSms::query()->where('is_matched', true)->where('created_at', '<', $this->daysAgo(self::MATCHED_SMS_DAYS))),
             'meta_tracking_events' => $this->deleteInBatches(MetaTrackingEvent::query()->where('created_at', '<', $this->daysAgo(self::META_TRACKING_EVENT_DAYS))),
+            'search_logs' => $this->deleteInBatches(SearchLog::query()->whereDate('date', '<', $this->daysAgo(self::SEARCH_LOG_DAYS)->toDateString())),
         ];
 
         $deleted['abandoned_restore_uploads'] = $this->deleteAbandonedRestoreUploads();

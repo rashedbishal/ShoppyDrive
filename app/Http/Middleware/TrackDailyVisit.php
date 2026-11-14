@@ -90,7 +90,25 @@ class TrackDailyVisit
 
         if ($request->cookie(self::COOKIE_NAME) !== $today) {
             $visit->increment('visitor_count');
+            $visit->increment(self::deviceColumn((string) $request->userAgent()));
             Cookie::queue(self::COOKIE_NAME, $today, 60 * 24);
         }
+    }
+
+    /**
+     * The dashboard's device split. Tablets are checked first because an
+     * Android tablet's user agent has no "Mobile" token and an iPad's does.
+     */
+    public static function deviceColumn(string $userAgent): string
+    {
+        if (preg_match('/ipad|tablet|kindle|silk|playbook|android(?!.*mobile)/i', $userAgent) === 1) {
+            return 'tablet_visitors';
+        }
+
+        if (preg_match('/mobi|iphone|ipod|android|blackberry|opera mini|iemobile|windows phone/i', $userAgent) === 1) {
+            return 'mobile_visitors';
+        }
+
+        return 'desktop_visitors';
     }
 }

@@ -104,6 +104,12 @@ $guardResource = function (PendingResourceRegistration $resource, string $sectio
 Route::middleware(['redirect-customer-from-admin', 'admin', 'admin.session', 'history.encrypt', 'admin.remember-list'])->prefix('admin')->name('admin.')->group(function () use ($guardResource): void {
     Route::get('/', fn () => redirect()->route('admin.dashboard'))->name('index');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/dashboard/live', [DashboardController::class, 'live'])
+        ->middleware('admin.can:orders,view')
+        ->name('dashboard.live');
+    Route::put('/dashboard/target', [DashboardController::class, 'updateTarget'])
+        ->middleware('admin.mother')
+        ->name('dashboard.target');
 
     Route::patch('products/cry-baby', [ProductController::class, 'updateCryBabyForAll'])->name('products.cry-baby.update-all')->middleware(AdminSections::middleware('products', 'update'));
     $guardResource(Route::resource('products', ProductController::class)->except(['show']), 'products');

@@ -15,8 +15,13 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\User;
+use App\Services\Dashboard\DashboardAnalytics;
 use App\Services\RefundCalculator;
+use App\Support\Dashboard\DashboardRange;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -26,9 +31,12 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __construct(private readonly RefundCalculator $refundCalculator) {}
+    public function __construct(
+        private readonly RefundCalculator $refundCalculator,
+        private readonly DashboardAnalytics $analytics,
+    ) {}
 
-    public function __invoke(): Response
+    public function __invoke(Request $request): Response
     {
         // BE-09: "today" means the Dhaka calendar day, not the UTC one the
         // server clock runs on — a 3am Dhaka order is still "today" here,
@@ -141,7 +149,76 @@ class DashboardController extends Controller
             'visitorChartData' => $visitorChartData,
             'recentOrders' => $recentOrders,
             'lowStockProducts' => $lowStockProducts,
+            ...$this->insights($request),
         ]);
+    }
+
+    /**
+     * The 2026-11-14 dashboard additions. Each panel is sent only to admins
+     * who can open the area it reports on (owner decision; the mother admin
+     * sees everything) and loads just after the page, so the dashboard
+     * itself opens as fast as before. The original props above are
+     * unchanged and still shown to every admin.
+     *
+     * @return array<string, mixed>
+     */
+    private function insights(Request $request): array
+    {
+        $admin = Auth::guard('admin')->user();
+        $can = fn (string $section): bool => $admin->canAccess($section);
+        $range = DashboardRange::fromRequest($request);
+        $orders = $can('orders');
+
+        return [
+            'range' => $range->toArray(),
+            'access' => [
+                'orders' => $orders,
+                'products' => $can('products'),
+                'customers' => $can('customers'),
+                'reviews' => $can('reviews'),
+                'promotions' => $can('flash_sales') || $can('bundles') || $can('coupons'),
+                'edit_target' => (bool) $admin->is_mother,
+            ],
+            'overview' => $orders ? Inertia::defer(fn (): array => $this->analytics->overview($range, $can('customers')), 'overview') : null,
+            'actionNeeded' => Inertia::defer(fn (): array => $this->analytics->actionNeeded($can), 'overview'),
+            'orderHealth' => $orders ? Inertia::defer(fn (): array => $this->analytics->orderHealth($range), 'insights') : null,
+            'couriers' => $orders ? Inertia::defer(fn (): array => $this->analytics->couriers($range), 'insights') : null,
+            'productInsights' => $can('products')
+                ? Inertia::defer(fn (): array => $this->analytics->products($range, $can('stock')), 'insights')
+                : null,
+            'promotions' => $can('flash_sales') || $can('bundles') || $can('coupons')
+                ? Inertia::defer(fn (): array => $this->analytics->promotions($range, $can), 'insights')
+                : null,
+            'customerInsights' => $can('customers') && $orders
+                ? Inertia::defer(fn (): array => $this->analytics->customers($range, $can), 'people')
+                : null,
+            'marketing' => Inertia::defer(fn (): array => $this->analytics->marketing($range, $can), 'people'),
+            'reviewInsights' => $can('reviews') ? Inertia::defer(fn (): array => $this->analytics->reviews($range), 'people') : null,
+            'liveFeed' => $orders ? $this->analytics->liveOrders() : null,
+        ];
+    }
+
+    /** The live order feed the dashboard polls every few seconds. */
+    public function live(): JsonResponse
+    {
+        return response()->json($this->analytics->liveOrders());
+    }
+
+    /** Mother admin only: the monthly revenue target the dashboard ring tracks. */
+    public function updateTarget(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'target' => ['nullable', 'numeric', 'min:0', 'max:9999999999'],
+        ], [
+            'target.numeric' => 'Enter the target as a number, like 500000.',
+            'target.max' => 'That target is too large.',
+        ]);
+
+        DashboardAnalytics::saveMonthlyTarget(isset($validated['target']) ? (float) $validated['target'] : null);
+
+        return back()->with('success', isset($validated['target']) && (float) $validated['target'] > 0
+            ? 'Monthly target saved.'
+            : 'Monthly target removed.');
     }
 
     /**
